@@ -1,45 +1,85 @@
-# MyFitAI Development Pack — UI V2
+# MyFitAI
 
-## Riferimento canonico
+## Riferimento canonico UI
 `assets/MOCK_APPROVATO_MYFITAI_V2_COMPLETO.png`
 
-## Stato
-Pacchetto fermato alla fase UI/mock navigabile. Le Activity coprono il flusso V2 approvato, incluse misure corporee fronte/retro, BIA, evoluzione fisica, menu alimentare, dettaglio pasto, lista spesa, sgarro, notifiche, progressi, review, storico/export e profilo.
+## Piano di sviluppo autorevole
+Lo stato reale del progetto e l'ordine vincolante delle attività sono definiti in:
 
-## Regola principale
-Fedeltà visuale 100% al mock approvato. Leggere `AGENTS.md` prima di qualunque modifica.
+`DEVELOPMENT_PLAN.md`
 
-## Non ancora implementato
-Room/persistenza reale; API OpenAI; agenti reali; JSON schema runtime; motore calorie/macros; Personal Response Engine; scheduler notifiche Android; versionamento reale dei piani; dati dinamici.
+Quel file distingue esplicitamente **FATTO** e **DA FARE**. Quando cambia lo stato del progetto va aggiornato quel documento senza segnare come completato ciò che esiste solo come mock, specifica o scaffold.
 
-## Prossimo step quando autorizzato
-Verifica visuale su device/emulatore Activity per Activity, correzione differenze rispetto al mock, quindi solo dopo collegamento dati e logica.
+## Stato attuale
+La base Android e la UI/mock navigabile sono presenti sul branch `develop`. Le Activity coprono il flusso approvato: Splash, Onboarding, Dashboard, Profilo, Misure corporee fronte/retro, BIA, Evoluzione fisica, Allenamenti, Piano alimentare, Dettaglio pasto, Lista spesa, Sgarro, Piano adattato, Notifiche, Storico, Review/Analisi IA, Export e Impostazioni.
 
-## Stato agenti IA
-Le definizioni dei tre agenti V1 sono ora incluse nel pacchetto, insieme agli schemi JSON e a esempi di richieste. Sono **solo specifiche**: non sono ancora collegate al codice Android né a OpenAI.
+La UI deve mantenere fedeltà visuale 100% al mock approvato. Prima di considerare chiusa una schermata è obbligatorio il confronto su device/emulatore.
 
-Agenti pronti:
+## Architettura IA definita
+L'app è l'orchestratore. I calcoli affidabili restano locali/deterministici.
+
+Pipeline prevista:
+
+`App -> Local Calculation Engine -> AiProvider -> Agent -> JSON -> Schema Validator -> Business Validator -> Persistenza -> UI`
+
+Provider previsti:
+- Gemini
+- OpenAI/GPT
+
+Gli agenti disponibili come specifiche sono:
 - NutritionAgent
 - PlanReviewAgent
 - ProgressAnalysisAgent
 
-La lista della spesa resta deterministica e locale: deriva dal piano alimentare, non richiede un LLM.
+Gemini e OpenAI devono produrre lo stesso JSON canonico definito in `06-ai/schemas/`. Gli agenti possono restituire `agentValidation`, ma solo `appValidation` calcolato localmente è autorevole.
 
-## Aggiornamento V4 — provider AI selezionabile
-Predisposta architettura runtime Gemini/OpenAI senza chiamate di rete:
-- UI Impostazioni: `Usa Gemini` + campo OpenAI API key quando Gemini è OFF.
-- Contratto `AiProvider` e selector runtime.
-- Cartelle agenti separate Gemini e OpenAI/GPT.
-- Stessi JSON Schema e stessi validator per entrambi i provider.
+## Regole nutrizionali già definite
+- target nutrizionali dinamici calcolati dall'app;
+- tolleranza ufficiale ±3% su calorie e macro;
+- nessuna compensazione punitiva dopo uno sgarro;
+- modifica solo dei pasti futuri;
+- piani versionati e non sovrascritti;
+- valutazione prudente di sodio, fibre, grassi, volume e timing;
+- nessuna blacklist automatica di alimenti comuni;
+- condimenti e bevande caloriche sempre conteggiati;
+- `displayDose` pratica e coerente con la quantità numerica, per esempio `1 cucchiaino`, `1/2 cucchiaino`, `1 bustina da X g`, `1 bicchiere da X ml`;
+- vietate indicazioni vaghe come `q.b.` o `un filo` quando incidono sui valori nutrizionali;
+- preferenza per frutta, verdura e altri alimenti stagionali quando equivalenti e compatibili con target, timing, tolleranza e preferenze;
+- nessuna regola arbitraria come frutta solo al mattino o carboidrati vietati la sera.
 
-### V6 AI policy
-Allineati Gemini e OpenAI su tolleranza ±3%, comfort digestivo/ritenzione basati su criteri documentabili e benchmark provider-parity.
+Riferimenti condivisi:
+- `06-ai/providers/shared/CONDIMENTS_BEVERAGES_RULES.md`
+- `06-ai/providers/shared/SEASONALITY_TIMING_RULES.md`
+- `06-ai/providers/shared/PROVIDER_CONTRACT.md`
+- `06-ai/providers/shared/JSON_FORMAT_PARITY.md`
 
+## Sicurezza OpenAI BYOK
+La chiave OpenAI deve essere protetta tramite Android Keystore e AES-GCM. Non deve mai finire in chiaro in Room, SharedPreferences normali, file, log, crash report, backup, analytics, repository, BuildConfig, intent, navigation args o export.
 
-Le note digestive devono essere fattuali e prudenti, senza claim fisiologici o marketing non necessari.
+Vedi `06-ai/05-openai-key-security.md`.
 
-## V8 — JSON parity Gemini/OpenAI
-Entrambi i provider devono restituire esattamente gli stessi DTO JSON definiti in `06-ai/schemas/`. Non sono ammessi alias o formati diversi per provider. Vedi `06-ai/providers/shared/JSON_FORMAT_PARITY.md`.
+## Cosa NON è ancora completato
+Sono ancora da implementare e verificare, nell'ordine definito in `DEVELOPMENT_PLAN.md`:
+- QA visuale reale su device/emulatore;
+- Room e persistenza reale;
+- profilo/BIA/misure reali;
+- motore locale di calcolo e target dinamici;
+- dashboard e trend reali;
+- allenamenti reali;
+- modello dati piano alimentare;
+- integrazione rete Gemini/OpenAI;
+- JSON Schema validation runtime e Business Validator;
+- generazione reale del piano;
+- adattamento reale post-sgarro con versionamento;
+- Personal Response Engine;
+- weekly review reale;
+- lista spesa deterministica;
+- notifiche Android locali;
+- export reale;
+- QA finale V1.
 
-## V9 security update
-OpenAI BYOK credentials are now required to use Android Keystore-backed encrypted storage. See `06-ai/05-openai-key-security.md`. Raw API keys must never enter ordinary persistence, exports, logs or backups.
+## Branching
+- `develop`: sviluppo corrente.
+- `main`: stabile.
+
+Il passaggio su `main` va fatto solo dopo verifica della fase prevista dal piano.
