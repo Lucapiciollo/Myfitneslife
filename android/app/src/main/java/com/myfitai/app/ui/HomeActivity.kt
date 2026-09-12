@@ -5,5 +5,5 @@ import com.myfitai.app.R
 import com.myfitai.app.navigation.BottomNavBinder
 
 class HomeActivity : BaseShellActivity() {
- override fun onCreate(savedInstanceState: Bundle?) { super.onCreate(savedInstanceState); setContentView(R.layout.activity_home_v2); bindBottom(BottomNavBinder.Tab.HOME); findViewById<android.view.View>(R.id.profileButton).setOnClickListener { go(ProfileActivity::class.java) }; findViewById<android.view.View>(R.id.aiCard).setOnClickListener { go(MealDetailActivity::class.java) }; findViewById<android.view.View>(R.id.statusCard).setOnClickListener { go(WorkoutsActivity::class.java) } }
+ override fun onCreate(savedInstanceState: Bundle?) { super.onCreate(savedInstanceState); setContentView(R.layout.activity_home); bindBottom(BottomNavBinder.Tab.HOME); findViewById<android.view.View>(R.id.profileButton).setOnClickListener { go(ProfileActivity::class.java) }; findViewById<android.view.View>(R.id.newMeasureButton).setOnClickListener { go(BiaActivity::class.java) }; findViewById<android.view.View>(R.id.aiCard).setOnClickListener { go(AiAnalysisActivity::class.java) }; findViewById<android.view.View>(R.id.statusCard).setOnClickListener { go(HistoryActivity::class.java) } }
 }

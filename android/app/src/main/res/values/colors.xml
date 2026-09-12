@@ -4,5 +4,6 @@
     <color name="accent_green">#20B653</color><color name="accent_green_dark">#11853A</color><color name="accent_blue">#4A8FD8</color><color name="accent_purple">#8B6ACB</color><color name="accent_orange">#E78A43</color>
     <color name="text_primary">#18201C</color><color name="text_secondary">#59635D</color><color name="text_muted">#8B948E</color>
     <color name="semantic_positive">#20B653</color><color name="semantic_warning">#D99A22</color><color name="semantic_error">#D94C46</color><color name="divider">#DDE3DE</color>
+    <color name="metric_label">#24323A</color><color name="metric_value">#0A1115</color><color name="metric_positive">#1A9A59</color>
     <color name="white">#FFFFFFFF</color><color name="black">#FF000000</color><color name="transparent">#00000000</color>
 </resources>

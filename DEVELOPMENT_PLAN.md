@@ -243,9 +243,10 @@ App Android personale, local-first, per:
 - Rimappate le schermate di misure, BIA, storico ed evoluzione alla sezione Progresso senza introdurre persistenza o logica reale.
 - Eseguita build debug e smoke test su AVD `Medium_Phone_API_35`: Splash, onboarding, Home e routing dei quattro tab verificati.
 - Corretti un attributo XML Android non valido in `activity_cheat_entry.xml` e l’allineamento Java/Kotlin JVM 17 necessario alla build.
-- Riallineata la Dashboard/Home al mock v2: tre metriche compatte, andamento peso, prossimo pasto, prossimo allenamento e routing dei card verso i dettagli corretti.
+- Errore corretto in questa sessione: era stato introdotto un layout `activity_home_v2.xml` con contenuti reinterpretati (tre metriche, andamento peso, prossimo pasto, prossimo allenamento) al posto della struttura approvata. Ripristinato `HomeActivity` sul layout originale `activity_home.xml`, che già conteneva header, 4 metriche (Peso, Grasso corporeo, Grasso viscerale, Massa muscolare), sezione "Il tuo stato", "Suggerimento IA di oggi" e pulsante "+ Nuova misurazione". File errato rimosso.
+- Struttura Home verificata a runtime dopo clean/rebuild/reinstall (uiautomator dump testuale): tutti gli elementi richiesti sono presenti in portrait e in landscape con scroll. Centralizzati in `colors.xml`/`dimens.xml` i colori e le spaziature di `activity_home.xml` che erano duplicati come valori letterali.
 
-La QA visuale completa dello step 6 non è marcata completata: è stato verificato solo il flusso di avvio e il routing dei tab. Restano il confronto di ogni Activity con il mock approvato, portrait/landscape dove previsto e dimensioni diverse.
+La Home NON è considerata completata: la struttura e la presenza degli elementi sono verificate, ma il confronto pixel-per-pixel (spacing, dimensioni, typography, colori, radius, icone) con `assets/MOCK_APPROVATO_MYFITAI_V2_COMPLETO.png` non è stato ancora completato in questa sessione. Le altre Activity restano nello stesso stato: da confrontare una alla volta con il mock prima di passare allo step 7.
 
 ### Prossimo step
 Completare la verifica UI su device/emulatore per tutte le Activity, in portrait e landscape dove previsto, prima di passare allo step 7 Persistenza locale.
