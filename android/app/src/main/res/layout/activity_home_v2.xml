@@ -1,0 +1,94 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg_primary">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Ciao Luca 👋"
+                        android:textColor="@color/text_primary"
+                        android:textSize="22sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Continua, stai facendo un ottimo lavoro!"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="13sp" />
+                </LinearLayout>
+                <TextView
+                    android:id="@+id/profileButton"
+                    android:layout_width="56dp"
+                    android:layout_height="40dp"
+                    android:gravity="center"
+                    android:text="Oggi⌄"
+                    android:textColor="@color/text_secondary" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:orientation="horizontal">
+                <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="88dp" android:orientation="vertical" android:padding="10dp" android:background="@drawable/bg_metric_light">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Peso" android:textColor="@color/text_secondary" android:textSize="11sp" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="78,4 kg" android:textColor="@color/text_primary" android:textSize="20sp" android:textStyle="bold" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="+2,1 kg" android:textColor="@color/accent_green" android:textSize="11sp" />
+                </LinearLayout>
+                <Space android:layout_width="6dp" android:layout_height="1dp" />
+                <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="88dp" android:orientation="vertical" android:padding="10dp" android:background="@drawable/bg_metric_light">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Grasso" android:textColor="@color/text_secondary" android:textSize="11sp" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="14,2 %" android:textColor="@color/text_primary" android:textSize="20sp" android:textStyle="bold" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="+2,8 %" android:textColor="@color/accent_green" android:textSize="11sp" />
+                </LinearLayout>
+                <Space android:layout_width="6dp" android:layout_height="1dp" />
+                <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="88dp" android:orientation="vertical" android:padding="10dp" android:background="@drawable/bg_metric_light">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Massa" android:textColor="@color/text_secondary" android:textSize="11sp" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="66,8 kg" android:textColor="@color/text_primary" android:textSize="20sp" android:textStyle="bold" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="+0,6 kg" android:textColor="@color/accent_green" android:textSize="11sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="18dp" android:text="Andamento peso" android:textColor="@color/text_primary" android:textSize="17sp" android:textStyle="bold" />
+            <TextView android:layout_width="match_parent" android:layout_height="72dp" android:layout_marginTop="6dp" android:background="@drawable/bg_card_soft" android:gravity="center_vertical" android:padding="12dp" android:text="▁▂▂▃▂▃▃▄▃▅▆▇" android:textColor="@color/accent_green" android:textSize="28sp" />
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="18dp" android:text="Prossimo pasto" android:textColor="@color/text_primary" android:textSize="17sp" android:textStyle="bold" />
+            <LinearLayout android:id="@+id/aiCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:background="@drawable/bg_white_card" android:orientation="vertical" android:padding="14dp">
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="12:30  Pranzo" android:textColor="@color/text_primary" android:textSize="16sp" android:textStyle="bold" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="Riso basmati, pollo e verdure\n520 kcal" android:textColor="@color/text_secondary" android:textSize="13sp" />
+            </LinearLayout>
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:text="Prossimo allenamento" android:textColor="@color/text_primary" android:textSize="17sp" android:textStyle="bold" />
+            <LinearLayout android:id="@+id/statusCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:background="@drawable/bg_white_card" android:orientation="vertical" android:padding="14dp">
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Oggi 18:30" android:textColor="@color/text_primary" android:textSize="16sp" android:textStyle="bold" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="Upper Body" android:textColor="@color/text_secondary" android:textSize="13sp" />
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+
+    <include layout="@layout/view_bottom_navigation" />
+</LinearLayout>

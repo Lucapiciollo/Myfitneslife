@@ -243,6 +243,7 @@ App Android personale, local-first, per:
 - Rimappate le schermate di misure, BIA, storico ed evoluzione alla sezione Progresso senza introdurre persistenza o logica reale.
 - Eseguita build debug e smoke test su AVD `Medium_Phone_API_35`: Splash, onboarding, Home e routing dei quattro tab verificati.
 - Corretti un attributo XML Android non valido in `activity_cheat_entry.xml` e l’allineamento Java/Kotlin JVM 17 necessario alla build.
+- Riallineata la Dashboard/Home al mock v2: tre metriche compatte, andamento peso, prossimo pasto, prossimo allenamento e routing dei card verso i dettagli corretti.
 
 La QA visuale completa dello step 6 non è marcata completata: è stato verificato solo il flusso di avvio e il routing dei tab. Restano il confronto di ogni Activity con il mock approvato, portrait/landscape dove previsto e dimensioni diverse.
 
