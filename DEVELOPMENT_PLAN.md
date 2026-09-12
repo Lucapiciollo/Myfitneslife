@@ -234,6 +234,19 @@ App Android personale, local-first, per:
 - [ ] Test export.
 - [ ] Test regressione UI.
 
+## Stato sessione 2026-09-13
+
+### Fatto in questa sessione
+- Corretto il tema Android da Material3 dark a Material3 light, coerentemente con il mock approvato.
+- Sostituite le pseudo-icone Unicode della bottom navigation con vector drawable Android e content description.
+- Riallineata la bottom navigation al mock approvato: Home, Alimentazione, Progresso, Altro.
+- Rimappate le schermate di misure, BIA, storico ed evoluzione alla sezione Progresso senza introdurre persistenza o logica reale.
+
+La QA visuale dello step 6 non è marcata completata: la build Android non è stata eseguita perché il checkout non contiene `gradlew` e Gradle non è installato, e non è stato usato un emulatore/device.
+
+### Prossimo step
+Completare la verifica UI su device/emulatore per tutte le Activity, in portrait e landscape dove previsto, prima di passare allo step 7 Persistenza locale.
+
 ## Fuori perimetro V1 salvo nuova decisione
 - social/community;
 - marketplace;

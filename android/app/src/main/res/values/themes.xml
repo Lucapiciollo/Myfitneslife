@@ -1,6 +1,6 @@
 <resources>
-<style name="Theme.MyFitAI" parent="Theme.Material3.Dark.NoActionBar">
-    <item name="android:fontFamily">sans</item><item name="android:windowLightStatusBar">false</item>
+<style name="Theme.MyFitAI" parent="Theme.Material3.Light.NoActionBar">
+    <item name="android:fontFamily">sans</item><item name="android:windowLightStatusBar">true</item>
     <item name="android:statusBarColor">@color/bg_primary</item><item name="android:navigationBarColor">@color/bg_primary</item>
     <item name="colorPrimary">@color/accent_green</item><item name="colorOnPrimary">@color/bg_primary</item>
     <item name="colorSurface">@color/surface_primary</item><item name="colorOnSurface">@color/text_primary</item>
