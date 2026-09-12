@@ -3,4 +3,12 @@
     <string name="nav_food">Alimentazione</string>
     <string name="nav_progress">Progresso</string>
     <string name="nav_more">Altro</string>
+    <string name="dashboard_profile_cd">Profilo</string>
+    <string name="dashboard_greeting">Ciao Luca 👋</string>
+    <string name="dashboard_subtitle">Continua, stai facendo un ottimo lavoro!</string>
+    <string name="dashboard_metric_weight">Peso</string>
+    <string name="dashboard_metric_fat">Grasso</string>
+    <string name="dashboard_metric_muscle">Massa muscolare</string>
+    <string name="dashboard_next_meal_title">Prossimo pasto</string>
+    <string name="dashboard_next_workout_title">Prossimo allenamento</string>
 </resources>

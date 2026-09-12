@@ -1,1 +1,160 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:background="@color/bg_primary"><ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:fillViewport="true"><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="@dimen/space_16"><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical"><LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical"><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Ciao Marco 👋" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="22sp"/><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Continua così!" android:textColor="@color/text_primary" android:textSize="16sp"/></LinearLayout><TextView android:id="@+id/profileButton" android:layout_width="56dp" android:layout_height="40dp" android:gravity="center" android:text="Oggi⌄" android:textColor="@color/text_secondary"/></LinearLayout><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_16" android:orientation="horizontal"><LinearLayout android:layout_width="0dp" android:layout_height="112dp" android:layout_weight="1" android:orientation="vertical" android:padding="@dimen/space_12" android:background="@drawable/bg_metric_light"><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Peso" android:textColor="@color/metric_label" android:textSize="12sp"/><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_6" android:text="81,2 kg" android:textColor="@color/metric_value" android:textStyle="bold" android:textSize="24sp"/><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_2" android:text="-0,8 kg" android:textColor="@color/metric_positive" android:textSize="12sp"/></LinearLayout><Space android:layout_width="@dimen/space_10" android:layout_height="1dp"/><LinearLayout android:layout_width="0dp" android:layout_height="112dp" android:layout_weight="1" android:orientation="vertical" android:padding="@dimen/space_12" android:background="@drawable/bg_metric_light"><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Grasso corporeo" android:textColor="@color/metric_label" android:textSize="12sp"/><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_6" android:text="16,4%" android:textColor="@color/metric_value" android:textStyle="bold" android:textSize="24sp"/><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_2" android:text="-1,2%" android:textColor="@color/metric_positive" android:textSize="12sp"/></LinearLayout></LinearLayout><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_10" android:orientation="horizontal"><LinearLayout android:layout_width="0dp" android:layout_height="112dp" android:layout_weight="1" android:orientation="vertical" android:padding="@dimen/space_12" android:background="@drawable/bg_metric_light"><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Grasso viscerale" android:textColor="@color/metric_label" android:textSize="12sp"/><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_6" android:text="7" android:textColor="@color/metric_value" android:textStyle="bold" android:textSize="24sp"/><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_2" android:text="-2" android:textColor="@color/metric_positive" android:textSize="12sp"/></LinearLayout><Space android:layout_width="@dimen/space_10" android:layout_height="1dp"/><LinearLayout android:layout_width="0dp" android:layout_height="112dp" android:layout_weight="1" android:orientation="vertical" android:padding="@dimen/space_12" android:background="@drawable/bg_metric_light"><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Massa muscolare" android:textColor="@color/metric_label" android:textSize="12sp"/><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_6" android:text="68,1 kg" android:textColor="@color/metric_value" android:textStyle="bold" android:textSize="24sp"/><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_2" android:text="+1,1 kg" android:textColor="@color/metric_positive" android:textSize="12sp"/></LinearLayout></LinearLayout><TextView style="@style/Text.MyFitAI.Section" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_16" android:layout_marginBottom="@dimen/space_8" android:text="Il tuo stato"/><LinearLayout android:id="@+id/statusCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="14dp" android:background="@drawable/bg_positive"><TextView android:layout_width="40dp" android:layout_height="40dp" android:gravity="center" android:background="@drawable/bg_logo_circle" android:text="✓" android:textColor="@color/accent_green"/><LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="12dp" android:orientation="vertical"><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Ricomposizione positiva" android:textColor="@color/accent_green" android:textStyle="bold"/><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="Stai perdendo grasso mantenendo la massa muscolare." android:textColor="@color/text_primary" android:textSize="13sp"/></LinearLayout></LinearLayout><TextView style="@style/Text.MyFitAI.Section" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_16" android:layout_marginBottom="@dimen/space_8" android:text="Suggerimento IA di oggi"/><LinearLayout android:id="@+id/aiCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="14dp" android:background="@drawable/bg_ai"><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Dopo lo sgarro di ieri, oggi ti propongo pasti più leggeri e ricchi di proteine." android:textColor="@color/text_primary" android:textSize="14sp"/></LinearLayout><TextView android:id="@+id/newMeasureButton" android:layout_width="match_parent" android:layout_height="52dp" android:layout_marginTop="@dimen/space_16" android:gravity="center" android:background="@drawable/bg_button_green" android:text="+ Nuova misurazione" android:textColor="@color/bg_primary" android:textStyle="bold" android:textSize="15sp"/></LinearLayout></ScrollView><include layout="@layout/view_bottom_navigation"/></LinearLayout>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg_primary">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@color/dashboard_header_bg"
+                android:paddingHorizontal="@dimen/space_20"
+                android:paddingTop="@dimen/space_24"
+                android:paddingBottom="@dimen/space_32">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+                    <TextView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:gravity="center"
+                        android:importantForAccessibility="no"
+                        android:text="‹"
+                        android:textColor="@color/white"
+                        android:textSize="24sp" />
+                    <Space
+                        android:layout_width="0dp"
+                        android:layout_height="1dp"
+                        android:layout_weight="1" />
+                    <FrameLayout
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:background="@drawable/bg_logo_circle">
+                        <ImageView
+                            android:id="@+id/profileButton"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="@string/dashboard_profile_cd"
+                            android:src="@drawable/ic_profile"
+                            app:tint="@color/accent_green" />
+                    </FrameLayout>
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_16"
+                    android:text="@string/dashboard_greeting"
+                    android:textColor="@color/white"
+                    android:textSize="24sp"
+                    android:textStyle="bold" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_4"
+                    android:text="@string/dashboard_subtitle"
+                    android:textColor="@color/surface_soft"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="-22dp"
+                android:background="@drawable/bg_sheet_top_rounded"
+                android:orientation="vertical"
+                android:padding="@dimen/space_20">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/dashboard_metric_weight" android:textColor="@color/text_secondary" android:textSize="12sp" />
+                        <TextView android:id="@+id/metricWeightValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:text="78,4 kg" android:textColor="@color/metric_value" android:textSize="20sp" android:textStyle="bold" />
+                        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_2" android:gravity="center_vertical" android:orientation="horizontal">
+                            <ImageView android:layout_width="10dp" android:layout_height="10dp" android:importantForAccessibility="no" android:src="@drawable/ic_trend_down" />
+                            <TextView android:id="@+id/metricWeightDelta" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="@dimen/space_2" android:text="-2,1 kg" android:textColor="@color/accent_green" android:textSize="12sp" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/dashboard_metric_fat" android:textColor="@color/text_secondary" android:textSize="12sp" />
+                        <TextView android:id="@+id/metricFatValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:text="14,2 %" android:textColor="@color/metric_value" android:textSize="20sp" android:textStyle="bold" />
+                        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_2" android:gravity="center_vertical" android:orientation="horizontal">
+                            <ImageView android:layout_width="10dp" android:layout_height="10dp" android:importantForAccessibility="no" android:src="@drawable/ic_trend_down" />
+                            <TextView android:id="@+id/metricFatDelta" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="@dimen/space_2" android:text="-2,8 %" android:textColor="@color/accent_green" android:textSize="12sp" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/dashboard_metric_muscle" android:textColor="@color/text_secondary" android:textSize="12sp" />
+                        <TextView android:id="@+id/metricMuscleValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:text="66,8 kg" android:textColor="@color/metric_value" android:textSize="20sp" android:textStyle="bold" />
+                        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_2" android:gravity="center_vertical" android:orientation="horizontal">
+                            <ImageView android:layout_width="10dp" android:layout_height="10dp" android:importantForAccessibility="no" android:src="@drawable/ic_trend_up" />
+                            <TextView android:id="@+id/metricMuscleDelta" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="@dimen/space_2" android:text="+0,6 kg" android:textColor="@color/accent_green" android:textSize="12sp" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </LinearLayout>
+
+                <com.myfitai.app.ui.widgets.TrendLineChartView
+                    android:id="@+id/weightTrendChart"
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/dashboard_chart_height"
+                    android:layout_marginTop="@dimen/space_16" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_12"
+                    android:orientation="horizontal">
+                    <TextView android:id="@+id/rangeButton1W" android:layout_width="wrap_content" android:layout_height="@dimen/dashboard_pill_height" android:gravity="center" android:paddingHorizontal="@dimen/space_16" android:text="1W" android:textColor="@color/text_muted" android:textSize="12sp" />
+                    <TextView android:id="@+id/rangeButton1M" android:layout_width="wrap_content" android:layout_height="@dimen/dashboard_pill_height" android:background="@drawable/bg_pill_selected" android:gravity="center" android:paddingHorizontal="@dimen/space_16" android:text="1M" android:textColor="@color/accent_green_dark" android:textSize="12sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/rangeButton3M" android:layout_width="wrap_content" android:layout_height="@dimen/dashboard_pill_height" android:gravity="center" android:paddingHorizontal="@dimen/space_16" android:text="3M" android:textColor="@color/text_muted" android:textSize="12sp" />
+                    <TextView android:id="@+id/rangeButton1Y" android:layout_width="wrap_content" android:layout_height="@dimen/dashboard_pill_height" android:gravity="center" android:paddingHorizontal="@dimen/space_16" android:text="1Y" android:textColor="@color/text_muted" android:textSize="12sp" />
+                </LinearLayout>
+
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:text="@string/dashboard_next_meal_title" android:textColor="@color/text_primary" android:textSize="17sp" android:textStyle="bold" />
+                <LinearLayout android:id="@+id/nextMealCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_12" android:gravity="center_vertical" android:orientation="horizontal">
+                    <ImageView android:layout_width="36dp" android:layout_height="36dp" android:importantForAccessibility="no" android:src="@drawable/ic_clock" />
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="@dimen/space_12" android:layout_weight="1" android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="12:30" android:textColor="@color/text_primary" android:textSize="20sp" android:textStyle="bold" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_2" android:text="Riso basmati, pollo e verdure" android:textColor="@color/text_secondary" android:textSize="13sp" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="520 kcal" android:textColor="@color/text_secondary" android:textSize="13sp" />
+                    </LinearLayout>
+                    <com.google.android.material.imageview.ShapeableImageView android:layout_width="@dimen/dashboard_thumbnail_size" android:layout_height="@dimen/dashboard_thumbnail_size" android:contentDescription="@string/dashboard_next_meal_title" android:scaleType="centerCrop" android:src="@drawable/img_next_meal" app:shapeAppearanceOverlay="@style/ShapeAppearance.MyFitAI.Thumbnail" />
+                </LinearLayout>
+
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:text="@string/dashboard_next_workout_title" android:textColor="@color/text_primary" android:textSize="17sp" android:textStyle="bold" />
+                <LinearLayout android:id="@+id/nextWorkoutCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_12" android:gravity="center_vertical" android:orientation="horizontal">
+                    <ImageView android:layout_width="36dp" android:layout_height="36dp" android:importantForAccessibility="no" android:src="@drawable/ic_workout" />
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="@dimen/space_12" android:layout_weight="1" android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Oggi 18:30" android:textColor="@color/text_primary" android:textSize="20sp" android:textStyle="bold" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_2" android:text="Upper Body" android:textColor="@color/text_secondary" android:textSize="13sp" />
+                    </LinearLayout>
+                    <com.google.android.material.imageview.ShapeableImageView android:layout_width="@dimen/dashboard_thumbnail_size" android:layout_height="@dimen/dashboard_thumbnail_size" android:contentDescription="@string/dashboard_next_workout_title" android:scaleType="centerCrop" android:src="@drawable/img_next_workout" app:shapeAppearanceOverlay="@style/ShapeAppearance.MyFitAI.Thumbnail" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+
+    <include layout="@layout/view_bottom_navigation" />
+</LinearLayout>

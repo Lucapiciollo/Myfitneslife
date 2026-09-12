@@ -11,4 +11,5 @@
 <style name="Text.MyFitAI.Body" parent="TextAppearance.Material3.BodyMedium"><item name="android:textColor">@color/text_secondary</item></style>
 <style name="Text.MyFitAI.Caption" parent="TextAppearance.Material3.BodySmall"><item name="android:textColor">@color/text_muted</item></style>
 <style name="Widget.MyFitAI.Card" parent="Widget.Material3.CardView.Filled"><item name="cardBackgroundColor">@color/surface_primary</item><item name="cardCornerRadius">@dimen/radius_medium</item><item name="cardElevation">0dp</item></style>
+<style name="ShapeAppearance.MyFitAI.Thumbnail" parent="ShapeAppearance.Material3.Corner.Medium"><item name="cornerSize">@dimen/radius_medium</item></style>
 </resources>
