@@ -1,80 +1,51 @@
 package com.myfitai.app.ui.widgets
 
 import android.content.Context
-import android.graphics.Canvas
-import android.graphics.LinearGradient
-import android.graphics.Paint
-import android.graphics.Path
-import android.graphics.Shader
+import android.graphics.Color
 import android.util.AttributeSet
-import android.view.View
+import android.widget.FrameLayout
 import com.myfitai.app.R
+import info.appdev.charting.charts.LineChart
+import info.appdev.charting.data.EntryFloat
+import info.appdev.charting.data.LineData
+import info.appdev.charting.data.LineDataSet
 
-/** Grafico a linea dati-driven per l'andamento peso in Dashboard. */
+/** Grafico a linea dati-driven (MPAndroidChart/AppDevNext) per l'andamento peso in Dashboard. */
 class WeightTrendChartView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
-) : View(context, attrs) {
+) : FrameLayout(context, attrs) {
 
-    private var values: List<Float> = emptyList()
+    private val chart = LineChart(context)
 
-    private val linePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style = Paint.Style.STROKE
-        strokeWidth = 5f
-        color = context.getColor(R.color.accent_green_dark)
-    }
-    private val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
-    private val gridPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style = Paint.Style.STROKE
-        strokeWidth = 1f
-        color = context.getColor(R.color.divider)
-    }
-
-    fun setData(newValues: List<Float>) {
-        values = newValues
-        invalidate()
+    init {
+        addView(chart, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
+        chart.description.isEnabled = false
+        chart.legend.isEnabled = false
+        chart.axisRight.isEnabled = false
+        chart.axisLeft.isEnabled = false
+        chart.xAxis.isEnabled = false
+        chart.setTouchEnabled(false)
+        chart.isPinchZoom = false
+        chart.setBackgroundColor(Color.TRANSPARENT)
+        chart.setDrawGridBackground(false)
+        chart.setDrawBorders(false)
     }
 
-    override fun onDraw(canvas: Canvas) {
-        super.onDraw(canvas)
-        if (values.size < 2) return
-        val w = width.toFloat()
-        val h = height.toFloat()
-        val min = values.min()
-        val max = values.max()
-        val range = (max - min).takeIf { it > 0f } ?: 1f
-        val stepX = w / (values.size - 1)
-
-        val gridLines = 4
-        for (i in 0..gridLines) {
-            val x = w * i / gridLines
-            canvas.drawLine(x, 0f, x, h, gridPaint)
+    fun setData(values: List<Float>) {
+        val entries = values.mapIndexed { index, value -> EntryFloat(index.toFloat(), value) }.toMutableList()
+        val dataSet = LineDataSet<EntryFloat>(entries, "weight").apply {
+            color = context.getColor(R.color.accent_green_dark)
+            lineWidth = 2f
+            isDrawCircles = false
+            isDrawValues = false
+            isHighlight = false
+            lineMode = LineDataSet.Mode.CUBIC_BEZIER
+            isDrawFilled = true
+            fillColor = context.getColor(R.color.accent_green)
+            fillAlpha = 60
         }
-
-        val linePath = Path()
-        val fillPath = Path()
-        values.forEachIndexed { index, value ->
-            val x = index * stepX
-            val y = h - ((value - min) / range) * h
-            if (index == 0) {
-                linePath.moveTo(x, y)
-                fillPath.moveTo(x, h)
-                fillPath.lineTo(x, y)
-            } else {
-                linePath.lineTo(x, y)
-                fillPath.lineTo(x, y)
-            }
-        }
-        fillPath.lineTo(w, h)
-        fillPath.close()
-
-        fillPaint.shader = LinearGradient(
-            0f, 0f, 0f, h,
-            context.getColor(R.color.chart_fill_start),
-            context.getColor(R.color.chart_fill_end),
-            Shader.TileMode.CLAMP,
-        )
-        canvas.drawPath(fillPath, fillPaint)
-        canvas.drawPath(linePath, linePaint)
+        chart.data = LineData(dataSet)
+        chart.invalidate()
     }
 }
