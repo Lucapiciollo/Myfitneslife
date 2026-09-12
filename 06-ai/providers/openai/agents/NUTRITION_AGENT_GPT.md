@@ -82,6 +82,21 @@ Per ogni pasto aggiungi, se previsto dallo schema condiviso o dal contratto runt
 
 Se non vi sono elementi concreti, usa rischi bassi e nessun flag; non inventare criticità.
 
+## Condimenti e bevande — VINCOLANTE
+Applica integralmente `06-ai/providers/shared/CONDIMENTS_BEVERAGES_RULES.md`.
+
+Regole non derogabili:
+- nessun condimento calorico o bevanda calorica può essere omesso dai calcoli;
+- ogni ingrediente deve avere `quantity`, `unit` e `displayDose` coerenti;
+- `displayDose` deve essere pratica per l'utente (es. `1 cucchiaino`, `1/2 cucchiaino`, `1 bustina da 5 g`, `1 bicchiere da 200 ml`) ma non sostituisce mai la quantità numerica;
+- per olio e altri liquidi usare conversioni domestiche standard solo quando definite: 1 cucchiaino = 5 ml, 1/2 cucchiaino = 2.5 ml, 1 cucchiaio = 15 ml;
+- non usare `q.b.`, `un filo`, `un po'`, `una manciata` per ingredienti che incidono su calorie, macro o sodio;
+- non assumere il peso di una bustina di zucchero o di una confezione se non è noto: indicare il peso esatto quando disponibile oppure non presentare la dose domestica come certa;
+- acqua e bevande non caloriche non entrano nei macro; latte, succhi, bevande vegetali, sport drink, bibite zuccherate e alcol devono essere conteggiati;
+- se un pasto è più ricco di sodio/grassi/fibre/volume, riequilibrare i pasti successivi senza vietare automaticamente il singolo alimento e mantenendo i target entro ±3%.
+
+Prima dell'output verifica anche che ogni ingrediente abbia `displayDose` e che sia compatibile con `quantity` + `unit`.
+
 ## JSON FORMAT PARITY — VINCOLANTE
 Per ogni operazione devi produrre ESATTAMENTE il formato definito nello schema condiviso in `06-ai/schemas/`. Gemini e OpenAI condividono lo stesso contratto.
 
