@@ -23,6 +23,7 @@ Non applicare valori assoluti fissi: usa sempre i target presenti nella richiest
 - Le calorie dichiarate sono ragionevolmente coerenti con i macro.
 - Ogni pasto contiene orario, ingredienti e quantità.
 - Le quantità sono numeriche e l'unità è separata.
+- Ogni ingrediente contiene `displayDose` pratica e coerente con `quantity` + `unit`.
 - Gli ingredienti non sono ambigui.
 - `nutritionConfidence` è coerente: ristorante/pizza/sushi/gelato tipicamente `ESTIMATED`.
 - `weightState` usa `RAW`, `COOKED` o `NOT_APPLICABLE` in modo semanticamente corretto.
@@ -53,6 +54,19 @@ Valuta anche, senza fare diagnosi e senza usare teorie non documentate di “com
 - corretta distinzione fra possibile ritenzione idrica transitoria e aumento di grasso.
 
 Non rifiutare un piano solo perché contiene pizza, sushi o gelato: verifica che siano inseriti in modo coerente con target dinamici, tolleranza ±3%, varietà e comfort digestivo. Segnala solo rischi concreti e motivati.
+
+## Condimenti e bevande — CONTROLLO VINCOLANTE
+Applica `06-ai/providers/shared/CONDIMENTS_BEVERAGES_RULES.md`.
+
+Sono hard violation:
+- condimento calorico rilevante presente ma non quantificato;
+- bevanda calorica non conteggiata nei totali;
+- `displayDose` assente;
+- `displayDose` incoerente con `quantity`/`unit`;
+- diciture vaghe come `q.b.`, `un filo`, `un po'`, `una manciata` su ingredienti che incidono su calorie, macro o sodio;
+- dose domestica presentata come esatta quando l'equivalenza non è nota.
+
+Conversioni domestiche ammesse quando applicabili: 1 cucchiaino = 5 ml, 1/2 cucchiaino = 2.5 ml, 1 cucchiaio = 15 ml. Il peso di bustine/confezioni non deve essere inventato.
 
 ## JSON FORMAT PARITY — VINCOLANTE
 Per ogni operazione devi produrre ESATTAMENTE il formato definito nello schema condiviso in `06-ai/schemas/`. Gemini e OpenAI condividono lo stesso contratto.
