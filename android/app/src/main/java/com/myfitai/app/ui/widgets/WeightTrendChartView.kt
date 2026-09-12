@@ -11,7 +11,7 @@ import android.view.View
 import com.myfitai.app.R
 
 /** Grafico a linea dati-driven per l'andamento peso in Dashboard. */
-class TrendLineChartView @JvmOverloads constructor(
+class WeightTrendChartView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
 ) : View(context, attrs) {

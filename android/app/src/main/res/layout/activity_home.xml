@@ -115,7 +115,7 @@
                     </LinearLayout>
                 </LinearLayout>
 
-                <com.myfitai.app.ui.widgets.TrendLineChartView
+                <com.myfitai.app.ui.widgets.WeightTrendChartView
                     android:id="@+id/weightTrendChart"
                     android:layout_width="match_parent"
                     android:layout_height="@dimen/dashboard_chart_height"

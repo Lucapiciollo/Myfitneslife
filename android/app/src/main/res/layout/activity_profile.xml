@@ -1,1 +1,66 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:background="@color/bg_primary"><ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:fillViewport="true"><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp"><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:paddingBottom="12dp"><TextView android:id="@+id/backButton" android:layout_width="40dp" android:layout_height="40dp" android:gravity="center" android:text="‹" android:textSize="32sp" android:textColor="@color/text_primary"/><TextView android:id="@+id/title" style="@style/Text.MyFitAI.ScreenTitle" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Il tuo profilo"/><Space android:layout_width="40dp" android:layout_height="40dp"/></LinearLayout><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical"><TextView android:layout_width="64dp" android:layout_height="64dp" android:gravity="center" android:background="@drawable/bg_logo_circle" android:text="M" android:textColor="@color/text_primary" android:textSize="26sp"/><LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="14dp" android:orientation="vertical"><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Marco" android:textColor="@color/text_primary" android:textSize="18sp" android:textStyle="bold"/><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="34 anni • 178 cm • 81,2 kg" android:textColor="@color/text_secondary" android:textSize="13sp"/></LinearLayout><TextView android:layout_width="40dp" android:layout_height="40dp" android:gravity="center" android:text="✎" android:textColor="@color/text_primary" android:textSize="20sp"/></LinearLayout><TextView style="@style/Text.MyFitAI.Section" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:layout_marginBottom="8dp" android:text="Obiettivo"/><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@drawable/bg_card" android:orientation="vertical"><LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:orientation="horizontal" android:gravity="center_vertical" android:paddingHorizontal="12dp"><TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Obiettivo" android:textColor="@color/text_secondary" android:textSize="14sp"/><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Ridurre grasso viscerale" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="14sp"/></LinearLayout><LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:orientation="horizontal" android:gravity="center_vertical" android:paddingHorizontal="12dp"><TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Focus" android:textColor="@color/text_secondary" android:textSize="14sp"/><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Migliorare composizione" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="14sp"/></LinearLayout></LinearLayout><TextView style="@style/Text.MyFitAI.Section" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:layout_marginBottom="8dp" android:text="Livello di attività"/><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@drawable/bg_card" android:orientation="vertical"><LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:orientation="horizontal" android:gravity="center_vertical" android:paddingHorizontal="12dp"><TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Allenamento" android:textColor="@color/text_secondary" android:textSize="14sp"/><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="6 volte/settimana" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="14sp"/></LinearLayout><LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:orientation="horizontal" android:gravity="center_vertical" android:paddingHorizontal="12dp"><TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Lavoro" android:textColor="@color/text_secondary" android:textSize="14sp"/><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Sedentario" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="14sp"/></LinearLayout><LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:orientation="horizontal" android:gravity="center_vertical" android:paddingHorizontal="12dp"><TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Passi medi" android:textColor="@color/text_secondary" android:textSize="14sp"/><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="8.000" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="14sp"/></LinearLayout></LinearLayout><TextView style="@style/Text.MyFitAI.Section" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:layout_marginBottom="8dp" android:text="Preferenze alimentari"/><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@drawable/bg_card" android:orientation="vertical"><LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:orientation="horizontal" android:gravity="center_vertical" android:paddingHorizontal="12dp"><TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Restrizioni" android:textColor="@color/text_secondary" android:textSize="14sp"/><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Nessuna" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="14sp"/></LinearLayout></LinearLayout><TextView android:id="@+id/saveButton" android:layout_width="match_parent" android:layout_height="52dp" android:layout_marginTop="16dp" android:gravity="center" android:background="@drawable/bg_button_green" android:text="Salva" android:textColor="@color/bg_primary" android:textStyle="bold" android:textSize="15sp"/></LinearLayout></ScrollView></LinearLayout>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg_primary">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="@dimen/space_16">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingBottom="@dimen/space_12">
+                <TextView android:id="@+id/backButton" android:layout_width="40dp" android:layout_height="40dp" android:gravity="center" android:text="‹" android:textColor="@color/text_primary" android:textSize="32sp" />
+                <TextView android:id="@+id/title" style="@style/Text.MyFitAI.ScreenTitle" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Il tuo profilo" />
+                <Space android:layout_width="40dp" android:layout_height="40dp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingVertical="@dimen/space_12">
+                <com.google.android.material.imageview.ShapeableImageView
+                    android:layout_width="64dp"
+                    android:layout_height="64dp"
+                    android:contentDescription="@string/profile_avatar_cd"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/img_profile_avatar"
+                    app:shapeAppearanceOverlay="@style/ShapeAppearance.MyFitAI.Avatar" />
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="@dimen/space_16" android:layout_weight="1" android:orientation="vertical">
+                    <TextView android:id="@+id/profileName" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Luca Piciollo" android:textColor="@color/text_primary" android:textSize="18sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/profileStats" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_2" android:text="43 anni | 186 cm | 78,4 kg" android:textColor="@color/text_secondary" android:textSize="13sp" />
+                    <TextView android:id="@+id/profileGoal" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_2" android:text="Obiettivo: Ricomposizione" android:textColor="@color/text_secondary" android:textSize="13sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginTop="@dimen/space_8" android:background="@color/divider" />
+
+            <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowPersonalData" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_person" app:srLabel="@string/profile_row_personal_data" />
+            <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowGoals" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_target" app:srLabel="@string/profile_row_goals" />
+            <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowFoodPreferences" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="@string/profile_row_food_preferences" />
+            <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDaySchedule" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_clock" app:srLabel="@string/profile_row_day_schedule" />
+            <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowWorkouts" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_workout" app:srLabel="@string/profile_row_workouts" />
+            <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowOpenAiKey" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_key" app:srLabel="@string/profile_row_openai_key" />
+            <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowNotifications" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_bell" app:srLabel="@string/profile_row_notifications" />
+            <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowExport" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_export" app:srLabel="@string/profile_row_export" />
+            <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowSettings" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_gear" app:srLabel="@string/profile_row_settings" />
+        </LinearLayout>
+    </ScrollView>
+
+    <include layout="@layout/view_bottom_navigation" />
+</LinearLayout>

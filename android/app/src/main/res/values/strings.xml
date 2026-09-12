@@ -11,4 +11,16 @@
     <string name="dashboard_metric_muscle">Massa muscolare</string>
     <string name="dashboard_next_meal_title">Prossimo pasto</string>
     <string name="dashboard_next_workout_title">Prossimo allenamento</string>
+    <string name="profile_avatar_cd">Foto profilo</string>
+    <string name="profile_row_personal_data">Dati personali</string>
+    <string name="profile_row_goals">Obiettivi</string>
+    <string name="profile_row_food_preferences">Preferenze alimentari</string>
+    <string name="profile_row_day_schedule">Orari della giornata</string>
+    <string name="profile_row_workouts">Allenamenti</string>
+    <string name="profile_row_openai_key">Chiave OpenAI</string>
+    <string name="profile_row_notifications">Notifiche</string>
+    <string name="profile_row_export">Esporta dati</string>
+    <string name="profile_row_settings">Impostazioni</string>
+    <string name="profile_openai_configured">Configurata</string>
+    <string name="profile_openai_not_configured">Non configurata</string>
 </resources>
