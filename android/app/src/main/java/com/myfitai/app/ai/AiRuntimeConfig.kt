@@ -1,6 +1,10 @@
 package com.myfitai.app.ai
 
-/** Runtime configuration contains only credential presence, never the raw key. */
+/**
+ * Runtime configuration deliberately carries only credential presence, never
+ * the persisted OpenAI API key itself. The key is loaded just-in-time from
+ * SecureOpenAiKeyStore by the OpenAI transport layer and must not be cached.
+ */
 data class AiRuntimeConfig(
     val useGemini: Boolean = true,
     val openAiConfigured: Boolean = false

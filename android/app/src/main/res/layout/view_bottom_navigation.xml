@@ -1,0 +1,12 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/bottomNav" android:layout_width="match_parent" android:layout_height="68dp" android:orientation="horizontal" android:gravity="center" android:paddingHorizontal="6dp" android:paddingVertical="6dp" android:background="@color/surface_primary">
+<TextView android:id="@+id/navHome" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:text="⌂
+Home" android:textSize="10sp" android:textColor="@color/text_secondary"/>
+<TextView android:id="@+id/navMeasures" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:text="◫
+Misure" android:textSize="10sp" android:textColor="@color/text_secondary"/>
+<TextView android:id="@+id/navFood" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:text="♨
+Alimentazione" android:textSize="10sp" android:textColor="@color/text_secondary"/>
+<TextView android:id="@+id/navWorkout" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:text="◆
+Allenamento" android:textSize="10sp" android:textColor="@color/text_secondary"/>
+<TextView android:id="@+id/navMore" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:text="☷
+Altro" android:textSize="10sp" android:textColor="@color/text_secondary"/>
+</LinearLayout>

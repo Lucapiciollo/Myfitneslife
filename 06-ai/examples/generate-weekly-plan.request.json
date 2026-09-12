@@ -1,0 +1,33 @@
+{
+  "operation": "GENERATE_WEEKLY_PLAN",
+  "weekStart": "2026-09-14",
+  "profile": {
+    "sex": "male",
+    "age": 43,
+    "heightCm": 186,
+    "weightKg": 89
+  },
+  "targets": {
+    "kcal": 2600,
+    "proteinG": 180,
+    "carbsG": 301,
+    "fatG": 75,
+    "dailyTolerancePct": 3
+  },
+  "schedule": {
+    "wakeTime": "07:00",
+    "trainingTime": "18:30",
+    "trainingDays": ["MON", "TUE", "WED", "THU", "FRI", "SAT"]
+  },
+  "preferences": {
+    "liked": ["pasta", "riso", "pollo", "pesce", "yogurt", "frutta", "verdura"],
+    "disliked": [],
+    "excluded": [],
+    "flexibleFoods": ["pizza", "sushi", "gelato"]
+  },
+  "history": {
+    "favorablePatterns": [],
+    "unfavorablePatterns": []
+  },
+  "evidenceIds": []
+}

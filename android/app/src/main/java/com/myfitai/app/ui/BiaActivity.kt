@@ -5,11 +5,5 @@ import com.myfitai.app.R
 import com.myfitai.app.navigation.BottomNavBinder
 
 class BiaActivity : BaseShellActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_bia)
-        bindBottom(BottomNavBinder.Tab.MEASURES)
-        bindBack()
-        findViewById<android.view.View>(R.id.saveButton).setOnClickListener { go(BodyMeasuresActivity::class.java) }
-    }
+ override fun onCreate(savedInstanceState: Bundle?) { super.onCreate(savedInstanceState); setContentView(R.layout.activity_bia); bindBottom(BottomNavBinder.Tab.MEASURES); bindBack(); findViewById<android.view.View>(R.id.saveButton).setOnClickListener { go(BodyMeasuresActivity::class.java) } }
 }

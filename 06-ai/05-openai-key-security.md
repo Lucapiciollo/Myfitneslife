@@ -1,15 +1,33 @@
-# OpenAI BYOK Key Security — IMPERATIVE
+# OpenAI API key security — IMPERATIVE
 
-La chiave API OpenAI inserita dall'utente è un segreto.
+This requirement is non-negotiable for MyFitAI.
 
-Obblighi:
-- Android Keystore come root of trust.
-- Chiave AES non esportabile.
-- Cifratura AES-256-GCM del valore OpenAI.
-- Persistenza soltanto di ciphertext, IV e metadata necessari.
-- Mai salvare raw key in Room, normali SharedPreferences, file, log, crash report, analytics, telemetria, export, backup, repository, BuildConfig, Intent o navigation arguments.
-- `android:allowBackup=false` non deve essere indebolito.
-- UI credenziali protetta con `FLAG_SECURE`.
-- Supportare replace e delete della chiave.
-- Svuotare il campo UI dopo il salvataggio.
-- Nessun agente o sviluppatore può derogare a questa regola.
+## Storage
+- Never persist the OpenAI API key in plaintext.
+- Android Keystore is the root of trust.
+- Use a non-exportable AES-256 key generated in `AndroidKeyStore`.
+- Persist only AES-GCM ciphertext and its IV in app-private storage.
+- Never store the API key in Room, DataStore/plain preferences, ordinary SharedPreferences, files, resources, BuildConfig, source code, Gradle properties, or repository secrets intended for the APK.
+
+## Runtime
+- Load the API key only just-in-time for an OpenAI request.
+- Do not place the key in `AiRuntimeConfig`, navigation arguments, intents, bundles, models, analytics events, exception messages or debug UI.
+- Do not cache it longer than needed by the transport call.
+- Do not print/log request headers containing credentials.
+
+## Backup / screen / telemetry
+- Android application backups MUST be disabled for V1 (`allowBackup=false`).
+- Key material/ciphertext must never be exported by MyFitAI data export.
+- Credential-editing UI uses `FLAG_SECURE` to prevent screenshots/screen recording.
+- Never send API keys to analytics, crash reporting, diagnostics or remote logging.
+
+## Lifecycle
+- User can replace the key by securely saving a new value.
+- User can remove the saved credential from Settings.
+- If ciphertext cannot be decrypted, treat the provider as not configured; never expose crypto details or the credential.
+
+## Current implementation
+`android/app/src/main/java/com/myfitai/app/security/SecureOpenAiKeyStore.kt`
+implements AES/GCM using a non-exportable Android Keystore AES key.
+
+Any agent or developer changing credential handling MUST preserve these guarantees.

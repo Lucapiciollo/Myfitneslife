@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ProgressReviewResponse",
+  "type": "object",
+  "required": ["status", "classification", "confidence", "observations", "patterns"],
+  "properties": {
+    "status": {"enum": ["OK", "NEEDS_INPUT", "OUT_OF_SCOPE"]},
+    "classification": {"enum": ["POSITIVE_RECOMPOSITION", "STABLE", "WEIGHT_LOSS_WITH_MUSCLE_RISK", "NEGATIVE_TREND", "INSUFFICIENT_DATA"]},
+    "confidence": {"enum": ["LOW", "MEDIUM", "HIGH"]},
+    "observations": {"type": "array", "items": {"type": "string"}},
+    "patterns": {"type": "array", "items": {"type": "object", "required": ["type", "description", "confidence"], "properties": {"type": {"enum": ["FAVORABLE", "UNFAVORABLE", "UNCERTAIN"]}, "description": {"type": "string"}, "confidence": {"enum": ["LOW", "MEDIUM", "HIGH"]}}, "additionalProperties": false}},
+    "comparabilityWarnings": {"type": "array", "items": {"type": "string"}},
+    "evidenceIds": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
+  },
+  "additionalProperties": false
+}

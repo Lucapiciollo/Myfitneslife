@@ -45,23 +45,11 @@ class SettingsActivity : BaseShellActivity() {
                 return@setOnClickListener
             }
             runCatching { secureKeyStore.save(candidate) }
-                .onSuccess {
-                    openAiKeyInput.text?.clear()
-                    Toast.makeText(this, "Chiave salvata in modo sicuro", Toast.LENGTH_SHORT).show()
-                    renderProviderState()
-                }
-                .onFailure {
-                    Toast.makeText(this, "Impossibile salvare la chiave", Toast.LENGTH_SHORT).show()
-                }
+                .onSuccess { openAiKeyInput.text?.clear(); Toast.makeText(this, "Chiave salvata in modo sicuro", Toast.LENGTH_SHORT).show(); renderProviderState() }
+                .onFailure { Toast.makeText(this, "Impossibile salvare la chiave", Toast.LENGTH_SHORT).show() }
         }
 
-        deleteKeyButton.setOnClickListener {
-            secureKeyStore.delete()
-            openAiKeyInput.text?.clear()
-            Toast.makeText(this, "Chiave OpenAI rimossa", Toast.LENGTH_SHORT).show()
-            renderProviderState()
-        }
-
+        deleteKeyButton.setOnClickListener { secureKeyStore.delete(); openAiKeyInput.text?.clear(); Toast.makeText(this, "Chiave OpenAI rimossa", Toast.LENGTH_SHORT).show(); renderProviderState() }
         useGeminiSwitch.setOnCheckedChangeListener { _, _ -> renderProviderState() }
         renderProviderState()
         findViewById<View>(R.id.title).setOnLongClickListener { go(ExportActivity::class.java); true }
