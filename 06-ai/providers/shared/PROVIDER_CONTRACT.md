@@ -28,5 +28,17 @@ Il Business Validator considera valido un valore nutrizionale entro ±3% del rel
 ## Regola condivisa su comfort digestivo
 Gemini e OpenAI devono applicare la stessa policy su gonfiore e ritenzione: nessuna teoria non documentata di food-combining, nessuna diagnosi, valutazione solo di fattori concreti (sodio, grassi/fibre/volume pre-workout, carico fermentabile se supportato dallo storico, tolleranza individuale). Gli stessi input devono produrre gli stessi campi strutturati e passare gli stessi validator.
 
+## Condimenti e bevande — regola condivisa vincolante
+Gemini e OpenAI devono applicare integralmente `CONDIMENTS_BEVERAGES_RULES.md`.
+
+Ogni condimento o bevanda con impatto nutrizionale deve essere quantificato e conteggiato. Ogni ingrediente deve avere quantità numerica, unità e `displayDose` pratica e coerente. Sono vietate quantità vaghe per elementi che incidono su calorie, macro o sodio. Le conversioni domestiche devono derivare da equivalenze note e non possono essere inventate.
+
+## Stagionalità e timing — regola condivisa vincolante
+Gemini e OpenAI devono applicare integralmente `SEASONALITY_TIMING_RULES.md`.
+
+Quando più alternative sono equivalenti e compatibili, preferire frutta, verdura e altri alimenti realmente stagionali rispetto alla data e all'area geografica fornite dall'app. La stagionalità è subordinata a sicurezza, target dinamici ±3%, timing, comfort digestivo, preferenze e aderenza. Non inventare la stagionalità se i dati necessari non sono disponibili.
+
+Gli orari devono essere coerenti con quelli forniti dall'app e con allenamento/sonno, senza regole pseudo-scientifiche rigide (es. frutta solo al mattino, carboidrati vietati la sera). Ogni sostituzione stagionale deve mantenere calorie e macro nei target dinamici entro ±3%.
+
 ## JSON parity vincolante — V8
 Gemini e OpenAI devono usare gli stessi schema canonici in `06-ai/schemas/`. Nessun provider può introdurre un DTO alternativo o alias di campo. Una risposta semanticamente valida ma con chiavi diverse è comunque `INVALID_SCHEMA` e non raggiunge Business Validator, persistenza o UI. Vedi `JSON_FORMAT_PARITY.md`.
