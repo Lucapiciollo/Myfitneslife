@@ -22,7 +22,7 @@ class OpenAiProvider(
         val body = JSONObject()
             .put("model", model)
             .put("instructions", request.systemPrompt)
-            .put("input", request.userPrompt)
+            .put("input", buildInput(request))
             .put("store", false)
             .put("max_output_tokens", request.maxOutputTokens)
             .put(
@@ -45,6 +45,22 @@ class OpenAiProvider(
         val jsonText = extractOutputText(JSONObject(raw))
             ?: throw AiTransportException.InvalidResponse()
         return AiRawResponse(type, model, jsonText)
+    }
+
+    private fun buildInput(request: AiStructuredRequest): Any {
+        val image = request.image ?: return request.userPrompt
+        val content = JSONArray()
+            .put(JSONObject().put("type", "input_text").put("text", request.userPrompt))
+            .put(
+                JSONObject()
+                    .put("type", "input_image")
+                    .put("image_url", "data:${image.mimeType};base64,${image.base64Data}")
+            )
+        return JSONArray().put(
+            JSONObject()
+                .put("role", "user")
+                .put("content", content)
+        )
     }
 
     private fun extractOutputText(root: JSONObject): String? {
