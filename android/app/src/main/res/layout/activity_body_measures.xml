@@ -8,7 +8,9 @@
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:fillViewport="true">
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -26,104 +28,68 @@
                 android:layout_width="match_parent"
                 android:layout_height="44dp" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="290dp"
-                android:layout_marginTop="@dimen/space_12"
-                android:orientation="horizontal">
+            <LinearLayout android:id="@+id/measureContent" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="290dp" android:layout_marginTop="@dimen/space_12" android:orientation="horizontal">
+                    <androidx.constraintlayout.widget.ConstraintLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent">
+                        <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/img_body_front" android:contentDescription="Corpo fronte" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent" />
+                        <LinearLayout android:id="@+id/markerChest" style="@style/Widget.MyFitAI.BodyMarker" app:layout_constraintHorizontal_bias="0.62" app:layout_constraintVertical_bias="0.16" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent"><View style="@style/Widget.MyFitAI.BodyMarkerDot" /><TextView style="@style/Widget.MyFitAI.BodyMarkerLabel" android:text="Torace" /></LinearLayout>
+                        <LinearLayout android:id="@+id/markerArm" style="@style/Widget.MyFitAI.BodyMarker" app:layout_constraintHorizontal_bias="0.18" app:layout_constraintVertical_bias="0.30" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent"><View style="@style/Widget.MyFitAI.BodyMarkerDot" /><TextView style="@style/Widget.MyFitAI.BodyMarkerLabel" android:text="Braccio" /></LinearLayout>
+                        <LinearLayout android:id="@+id/markerWaist" style="@style/Widget.MyFitAI.BodyMarker" app:layout_constraintHorizontal_bias="0.22" app:layout_constraintVertical_bias="0.50" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent"><View style="@style/Widget.MyFitAI.BodyMarkerDot" /><TextView style="@style/Widget.MyFitAI.BodyMarkerLabel" android:text="Vita" /></LinearLayout>
+                        <LinearLayout android:id="@+id/markerThigh" style="@style/Widget.MyFitAI.BodyMarker" app:layout_constraintHorizontal_bias="0.30" app:layout_constraintVertical_bias="0.72" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent"><View style="@style/Widget.MyFitAI.BodyMarkerDot" /><TextView style="@style/Widget.MyFitAI.BodyMarkerLabel" android:text="Coscia" /></LinearLayout>
+                    </androidx.constraintlayout.widget.ConstraintLayout>
+                    <androidx.constraintlayout.widget.ConstraintLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="match_parent">
+                        <ImageView android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:src="@drawable/img_body_back" android:contentDescription="Corpo retro" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent" />
+                        <LinearLayout android:id="@+id/markerShoulders" style="@style/Widget.MyFitAI.BodyMarker" app:layout_constraintHorizontal_bias="0.78" app:layout_constraintVertical_bias="0.14" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent"><View style="@style/Widget.MyFitAI.BodyMarkerDot" /><TextView style="@style/Widget.MyFitAI.BodyMarkerLabel" android:text="Spalle" /></LinearLayout>
+                        <LinearLayout android:id="@+id/markerAbdomen" style="@style/Widget.MyFitAI.BodyMarker" app:layout_constraintHorizontal_bias="0.68" app:layout_constraintVertical_bias="0.42" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent"><View style="@style/Widget.MyFitAI.BodyMarkerDot" /><TextView style="@style/Widget.MyFitAI.BodyMarkerLabel" android:text="Addome" /></LinearLayout>
+                        <LinearLayout android:id="@+id/markerGlutes" style="@style/Widget.MyFitAI.BodyMarker" app:layout_constraintHorizontal_bias="0.62" app:layout_constraintVertical_bias="0.58" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent"><View style="@style/Widget.MyFitAI.BodyMarkerDot" /><TextView style="@style/Widget.MyFitAI.BodyMarkerLabel" android:text="Glutei" /></LinearLayout>
+                        <LinearLayout android:id="@+id/markerCalf" style="@style/Widget.MyFitAI.BodyMarker" app:layout_constraintHorizontal_bias="0.70" app:layout_constraintVertical_bias="0.80" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent"><View style="@style/Widget.MyFitAI.BodyMarkerDot" /><TextView style="@style/Widget.MyFitAI.BodyMarkerLabel" android:text="Polpaccio" /></LinearLayout>
+                    </androidx.constraintlayout.widget.ConstraintLayout>
+                </LinearLayout>
 
-                <androidx.constraintlayout.widget.ConstraintLayout
-                    android:layout_width="0dp"
-                    android:layout_weight="1"
-                    android:layout_height="match_parent">
-                    <ImageView
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:scaleType="fitCenter"
-                        android:src="@drawable/img_body_front"
-                        android:contentDescription="Corpo fronte"
-                        app:layout_constraintTop_toTopOf="parent"
-                        app:layout_constraintBottom_toBottomOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintEnd_toEndOf="parent" />
-                    <LinearLayout android:id="@+id/markerChest" style="@style/Widget.MyFitAI.BodyMarker" app:layout_constraintHorizontal_bias="0.62" app:layout_constraintVertical_bias="0.16" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent">
-                        <View style="@style/Widget.MyFitAI.BodyMarkerDot" />
-                        <TextView style="@style/Widget.MyFitAI.BodyMarkerLabel" android:text="Torace" />
-                    </LinearLayout>
-                    <LinearLayout android:id="@+id/markerArm" style="@style/Widget.MyFitAI.BodyMarker" app:layout_constraintHorizontal_bias="0.18" app:layout_constraintVertical_bias="0.30" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent">
-                        <View style="@style/Widget.MyFitAI.BodyMarkerDot" />
-                        <TextView style="@style/Widget.MyFitAI.BodyMarkerLabel" android:text="Braccio" />
-                    </LinearLayout>
-                    <LinearLayout android:id="@+id/markerWaist" style="@style/Widget.MyFitAI.BodyMarker" app:layout_constraintHorizontal_bias="0.22" app:layout_constraintVertical_bias="0.50" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent">
-                        <View style="@style/Widget.MyFitAI.BodyMarkerDot" />
-                        <TextView style="@style/Widget.MyFitAI.BodyMarkerLabel" android:text="Vita" />
-                    </LinearLayout>
-                    <LinearLayout android:id="@+id/markerThigh" style="@style/Widget.MyFitAI.BodyMarker" app:layout_constraintHorizontal_bias="0.30" app:layout_constraintVertical_bias="0.72" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent">
-                        <View style="@style/Widget.MyFitAI.BodyMarkerDot" />
-                        <TextView style="@style/Widget.MyFitAI.BodyMarkerLabel" android:text="Coscia" />
-                    </LinearLayout>
-                </androidx.constraintlayout.widget.ConstraintLayout>
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_16" android:orientation="horizontal">
+                    <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Valori attuali (cm)" android:textStyle="bold" android:textColor="@color/text_primary" android:textSize="15sp" />
+                    <TextView android:id="@+id/measureDate" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="14/09/2026" android:textColor="@color/text_secondary" android:textSize="13sp" />
+                </LinearLayout>
 
-                <androidx.constraintlayout.widget.ConstraintLayout
-                    android:layout_width="0dp"
-                    android:layout_weight="1"
-                    android:layout_height="match_parent">
-                    <ImageView
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:scaleType="fitCenter"
-                        android:src="@drawable/img_body_back"
-                        android:contentDescription="Corpo retro"
-                        app:layout_constraintTop_toTopOf="parent"
-                        app:layout_constraintBottom_toBottomOf="parent"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintEnd_toEndOf="parent" />
-                    <LinearLayout android:id="@+id/markerShoulders" style="@style/Widget.MyFitAI.BodyMarker" app:layout_constraintHorizontal_bias="0.78" app:layout_constraintVertical_bias="0.14" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent">
-                        <View style="@style/Widget.MyFitAI.BodyMarkerDot" />
-                        <TextView style="@style/Widget.MyFitAI.BodyMarkerLabel" android:text="Spalle" />
-                    </LinearLayout>
-                    <LinearLayout android:id="@+id/markerAbdomen" style="@style/Widget.MyFitAI.BodyMarker" app:layout_constraintHorizontal_bias="0.68" app:layout_constraintVertical_bias="0.42" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent">
-                        <View style="@style/Widget.MyFitAI.BodyMarkerDot" />
-                        <TextView style="@style/Widget.MyFitAI.BodyMarkerLabel" android:text="Addome" />
-                    </LinearLayout>
-                    <LinearLayout android:id="@+id/markerGlutes" style="@style/Widget.MyFitAI.BodyMarker" app:layout_constraintHorizontal_bias="0.62" app:layout_constraintVertical_bias="0.58" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent">
-                        <View style="@style/Widget.MyFitAI.BodyMarkerDot" />
-                        <TextView style="@style/Widget.MyFitAI.BodyMarkerLabel" android:text="Glutei" />
-                    </LinearLayout>
-                    <LinearLayout android:id="@+id/markerCalf" style="@style/Widget.MyFitAI.BodyMarker" app:layout_constraintHorizontal_bias="0.70" app:layout_constraintVertical_bias="0.80" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent">
-                        <View style="@style/Widget.MyFitAI.BodyMarkerDot" />
-                        <TextView style="@style/Widget.MyFitAI.BodyMarkerLabel" android:text="Polpaccio" />
-                    </LinearLayout>
-                </androidx.constraintlayout.widget.ConstraintLayout>
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:background="@drawable/bg_card" android:orientation="vertical" android:paddingHorizontal="@dimen/space_16">
+                    <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowChest" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                    <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowWaist" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                    <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowAbdomen" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                    <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowArmLeft" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                    <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowArmRight" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                    <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowThighLeft" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                    <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowThighRight" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                    <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowCalfLeft" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                    <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowCalfRight" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                </LinearLayout>
             </LinearLayout>
 
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_16" android:orientation="horizontal">
-                <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Valori attuali (cm)" android:textStyle="bold" android:textColor="@color/text_primary" android:textSize="15sp" />
-                <TextView android:id="@+id/measureDate" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="14/09/2026" android:textColor="@color/text_secondary" android:textSize="13sp" />
+            <LinearLayout android:id="@+id/trendContent" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:text="Andamento misura" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="17sp" />
+                <com.myfitai.app.ui.widgets.SelectableSegmentView android:id="@+id/trendMetricSegment" android:layout_width="match_parent" android:layout_height="44dp" android:layout_marginTop="@dimen/space_8" />
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_16" android:orientation="horizontal" android:gravity="center_vertical">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                        <TextView android:id="@+id/trendMetricLabel" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Vita" android:textColor="@color/text_secondary" android:textSize="13sp" />
+                        <TextView android:id="@+id/trendCurrentValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:text="84 cm" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="28sp" />
+                    </LinearLayout>
+                    <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="end">
+                        <TextView android:id="@+id/trendDeltaPrevious" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="-1,2 cm vs precedente" android:textColor="@color/semantic_positive" android:textStyle="bold" android:textSize="12sp" />
+                        <TextView android:id="@+id/trendDeltaPeriod" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:text="-3,4 cm nel periodo" android:textColor="@color/text_secondary" android:textSize="12sp" />
+                    </LinearLayout>
+                </LinearLayout>
+                <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="260dp" android:layout_marginTop="@dimen/space_12" app:cardCornerRadius="@dimen/radius_medium" app:cardElevation="0dp" app:cardBackgroundColor="@color/surface_primary">
+                    <com.myfitai.app.ui.widgets.BodyMeasurementTrendView android:id="@+id/bodyMeasurementTrendChart" android:layout_width="match_parent" android:layout_height="match_parent" android:layout_margin="@dimen/space_8" />
+                </com.google.android.material.card.MaterialCardView>
+                <com.myfitai.app.ui.widgets.SelectableSegmentView android:id="@+id/trendRangeSegment" android:layout_width="match_parent" android:layout_height="40dp" android:layout_marginTop="@dimen/space_12" />
             </LinearLayout>
 
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:background="@drawable/bg_card" android:orientation="vertical" android:paddingHorizontal="@dimen/space_16">
-                <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowChest" android:layout_width="match_parent" android:layout_height="wrap_content" />
-                <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowWaist" android:layout_width="match_parent" android:layout_height="wrap_content" />
-                <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowAbdomen" android:layout_width="match_parent" android:layout_height="wrap_content" />
-                <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowArmLeft" android:layout_width="match_parent" android:layout_height="wrap_content" />
-                <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowArmRight" android:layout_width="match_parent" android:layout_height="wrap_content" />
-                <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowThighLeft" android:layout_width="match_parent" android:layout_height="wrap_content" />
-                <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowThighRight" android:layout_width="match_parent" android:layout_height="wrap_content" />
-                <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowCalfLeft" android:layout_width="match_parent" android:layout_height="wrap_content" />
-                <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowCalfRight" android:layout_width="match_parent" android:layout_height="wrap_content" />
+            <LinearLayout android:id="@+id/historyContent" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:text="Storico misurazioni" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="17sp" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:text="Confronta rapidamente le rilevazioni nel tempo." android:textColor="@color/text_secondary" android:textSize="13sp" />
+                <LinearLayout android:id="@+id/historyList" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_12" android:orientation="vertical" />
             </LinearLayout>
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/saveButton"
-                android:layout_width="match_parent"
-                android:layout_height="52dp"
-                android:layout_marginTop="@dimen/space_16"
-                android:text="+  Nuova misurazione"
-                android:textAllCaps="false"
-                android:textStyle="bold"
-                app:cornerRadius="12dp"
-                app:backgroundTint="@color/accent_green" />
+            <com.google.android.material.button.MaterialButton android:id="@+id/saveButton" style="@style/Widget.MyFitAI.Button.Primary" android:layout_width="match_parent" android:layout_height="52dp" android:layout_marginTop="@dimen/space_20" android:layout_marginBottom="@dimen/space_8" android:text="+  Nuova misurazione" />
         </LinearLayout>
     </ScrollView>
     <include layout="@layout/view_bottom_navigation" />
