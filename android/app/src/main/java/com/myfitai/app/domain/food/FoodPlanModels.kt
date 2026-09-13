@@ -32,6 +32,19 @@ data class FoodPlanDay(
     val carbsG: Float?,
     val fatG: Float?,
     val meals: List<FoodMeal>,
+    val supplements: List<FoodSupplement> = emptyList(),
+    val hydrationNote: String? = null,
+)
+
+data class FoodSupplement(
+    val kind: String,
+    val name: String,
+    val dose: Float,
+    val unit: String,
+    val timeMinutes: Int?,
+    val kcal: Int,
+    val proteinG: Float,
+    val notes: String?,
 )
 
 data class FoodMeal(
