@@ -19,21 +19,31 @@ import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.temporal.TemporalAdjusters
 
+private fun planWeekMonday(date: LocalDate): LocalDate =
+    date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+
+private fun todayIndexInWeek(weekStart: LocalDate): Int {
+    val today = LocalDate.now()
+    return if (!today.isBefore(weekStart) && !today.isAfter(weekStart.plusDays(6))) {
+        (today.toEpochDay() - weekStart.toEpochDay()).toInt()
+    } else 0
+}
+
 class FoodPlanViewModel(
     private val repository: MealPlanRepository,
     private val activeProfileStore: ActiveProfileStore,
 ) : ViewModel() {
 
     data class State(
-        val weekStart: LocalDate = mondayOf(LocalDate.now()),
+        val weekStart: LocalDate = planWeekMonday(LocalDate.now()),
         val snapshot: FoodPlanSnapshot? = null,
         val selectedDayIndex: Int = 0,
         val selectedDay: FoodPlanDay? = null,
         val hasPlan: Boolean = false,
     )
 
-    private val selectedWeekStart = MutableStateFlow(mondayOf(LocalDate.now()))
-    private val selectedDayIndex = MutableStateFlow(indexForToday(selectedWeekStart.value))
+    private val selectedWeekStart = MutableStateFlow(planWeekMonday(LocalDate.now()))
+    private val selectedDayIndex = MutableStateFlow(todayIndexInWeek(selectedWeekStart.value))
 
     private val source = activeProfileStore.activeProfileId.flatMapLatest { profileId ->
         if (profileId <= 0L) {
@@ -55,7 +65,9 @@ class FoodPlanViewModel(
             weekStart = weekStart,
             snapshot = snapshot,
             selectedDayIndex = safeIndex,
-            selectedDay = snapshot?.version?.days?.firstOrNull { it.dateEpochDay == weekStart.plusDays(safeIndex.toLong()).toEpochDay() },
+            selectedDay = snapshot?.version?.days?.firstOrNull {
+                it.dateEpochDay == weekStart.plusDays(safeIndex.toLong()).toEpochDay()
+            },
             hasPlan = snapshot != null,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), State())
@@ -82,16 +94,6 @@ class FoodPlanViewModel(
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(FoodPlanViewModel::class.java))
             return FoodPlanViewModel(repository, activeProfileStore) as T
-        }
-    }
-
-    companion object {
-        private fun mondayOf(date: LocalDate): LocalDate = date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-        private fun indexForToday(weekStart: LocalDate): Int {
-            val today = LocalDate.now()
-            return if (!today.isBefore(weekStart) && !today.isAfter(weekStart.plusDays(6))) {
-                (today.toEpochDay() - weekStart.toEpochDay()).toInt()
-            } else 0
         }
     }
 }
