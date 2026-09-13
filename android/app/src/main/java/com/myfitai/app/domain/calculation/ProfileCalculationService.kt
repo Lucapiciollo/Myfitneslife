@@ -50,7 +50,11 @@ class ProfileCalculationService(
                 weightKg = weightKg,
                 heightCm = profile.heightCm?.toDouble(),
                 ageYears = ageYears,
-                biologicalSex = null,
+                biologicalSex = when (profile.biologicalSex?.trim()?.lowercase()) {
+                    "maschio", "male", "m" -> LocalCalculationEngine.BiologicalSex.MALE
+                    "femmina", "female", "f" -> LocalCalculationEngine.BiologicalSex.FEMALE
+                    else -> null
+                },
                 bodyFatPercent = latestBia?.bodyFatPercent?.toDouble(),
                 activityLevel = ProfileCalculationMapper.activity(profile.activityLevel),
                 goal = ProfileCalculationMapper.goal(profile.goal),
@@ -63,9 +67,7 @@ class ProfileCalculationService(
         val muscleTrend = trendOf(biaHistory.mapNotNull { row -> row.muscleMassKg?.let { row.measuredAtEpochMillis to it.toDouble() } })
         val waistTrend = trendOf(bodyHistory.mapNotNull { row -> row.waistCm?.let { row.measuredAtEpochMillis to it.toDouble() } })
 
-        val bodyFatDelta = bodyFatTrend.delta
-        val muscleDelta = muscleTrend.delta
-        val recomposition = LocalCalculationEngine.classifyRecomposition(bodyFatDelta, muscleDelta)
+        val recomposition = LocalCalculationEngine.classifyRecomposition(bodyFatTrend.delta, muscleTrend.delta)
 
         return Snapshot(
             profileId = profileId,
