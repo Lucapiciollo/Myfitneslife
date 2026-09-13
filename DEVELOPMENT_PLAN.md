@@ -279,6 +279,12 @@ Dal nuovo documento di specifica ricevuto in questa sessione (icone Material Sym
 
 La Home e il Profilo non sono ancora marcati come step 6 completato: restano da verificare in modo più rigoroso alcuni dettagli pixel (icone, radius esatti) elencati sopra, e le altre 14 Activity del piano restano da confrontare singolarmente con il mock.
 
+- Bioimpedenziometria (BIA) ricostruita da zero confrontando `99-screen-references/05_bia_reference.png`: header con `SelectableSegmentView` "Nuova misurazione/Storico", campi Data e Ora reali (`TextInputLayout`+`TextInputEditText` readonly con `MaterialDatePicker`/`MaterialTimePicker` funzionanti, non testo statico), sezione "Condizioni della misura" con 4 `MaterialCheckBox` reali (A digiuno, Appena sveglio, Dopo bagno, Nessun allenamento recente), sezione "Risultati" con 7 righe reali (`MeasurementRowView`, esteso con icona opzionale: Peso, Grasso corporeo, Grasso viscerale, Massa muscolare, Muscolo scheletrico, Acqua corporea, BMR), pulsante "Salva misurazione".
+- Bug corretto: l'icona orologio (`ic_clock`/`ic_setting_clock`) si renderizzava come un disco pieno invece di un quadrante con lancette (la sagoma delle lancette non veniva ritagliata dal cerchio pieno). Corretto aggiungendo `android:fillType="evenOdd"`, verificato visivamente prima/dopo.
+- Semplificazione dichiarata: le 7 righe "Risultati" usano un pallino verde generico come icona invece di 7 icone semantiche distinte (bilancia, percentuale, ecc.), per evitare il rischio di introdurre altri path SVG non verificati.
+- Gap di navigazione preesistente confermato anche per `BiaActivity`: non raggiungibile da nessun punto del flusso reale attuale. Verificata solo con `android:exported="true"` temporaneo, poi ripristinato a non-exported prima del commit.
+- Verificato a runtime dopo clean/rebuild/reinstall: struttura corretta, `MaterialDatePicker` si apre correttamente al tap sul campo Data, checkbox e righe risultato mostrano i valori corretti, icona orologio corretta dopo il fix.
+
 ### Prossimo step
 Completare la verifica UI su device/emulatore per tutte le Activity, in portrait e landscape dove previsto, prima di passare allo step 7 Persistenza locale.
 
