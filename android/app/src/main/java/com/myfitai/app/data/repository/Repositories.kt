@@ -3,7 +3,10 @@ package com.myfitai.app.data.repository
 import androidx.room.withTransaction
 import com.myfitai.app.data.local.MyFitAiDatabase
 import com.myfitai.app.data.local.entity.*
+import com.myfitai.app.domain.food.FoodSupplement
 import kotlinx.coroutines.flow.Flow
+import org.json.JSONArray
+import org.json.JSONObject
 
 class UserProfileRepository(private val db: MyFitAiDatabase) {
     val profiles: Flow<List<UserProfileEntity>> = db.userProfileDao().observeAll()
@@ -77,6 +80,17 @@ data class MealDraft(
     val ingredients: List<IngredientDraft>,
 )
 
+data class SupplementDraft(
+    val kind: String,
+    val name: String,
+    val dose: Float,
+    val unit: String,
+    val timeMinutes: Int?,
+    val kcal: Int,
+    val proteinG: Float,
+    val notes: String?,
+)
+
 data class DayDraft(
     val dateEpochDay: Long,
     val totalKcal: Int?,
@@ -84,6 +98,8 @@ data class DayDraft(
     val carbsG: Float?,
     val fatG: Float?,
     val meals: List<MealDraft>,
+    val supplements: List<SupplementDraft> = emptyList(),
+    val hydrationNote: String? = null,
 )
 
 data class PlanVersionDraft(
@@ -140,6 +156,8 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
                 proteinG = day.proteinG,
                 carbsG = day.carbsG,
                 fatG = day.fatG,
+                supplementsJson = serializeSupplements(day.supplements),
+                hydrationNote = day.hydrationNote,
             ))).single()
 
             day.meals.forEachIndexed { mealIndex, meal ->
@@ -217,6 +235,8 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
                         },
                     )
                 },
+                supplements = parseSupplements(day.supplementsJson),
+                hydrationNote = day.hydrationNote,
             )
         }
         com.myfitai.app.domain.food.FoodPlanSnapshot(
@@ -268,5 +288,45 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
                 )
             },
         )
+    }
+
+    private fun serializeSupplements(values: List<SupplementDraft>): String? {
+        if (values.isEmpty()) return null
+        val array = JSONArray()
+        values.forEach { value ->
+            array.put(JSONObject().apply {
+                put("kind", value.kind)
+                put("name", value.name)
+                put("dose", value.dose.toDouble())
+                put("unit", value.unit)
+                if (value.timeMinutes == null) put("timeMinutes", JSONObject.NULL) else put("timeMinutes", value.timeMinutes)
+                put("kcal", value.kcal)
+                put("proteinG", value.proteinG.toDouble())
+                put("notes", value.notes ?: "")
+            })
+        }
+        return array.toString()
+    }
+
+    private fun parseSupplements(json: String?): List<FoodSupplement> {
+        if (json.isNullOrBlank()) return emptyList()
+        return runCatching {
+            val array = JSONArray(json)
+            buildList {
+                for (i in 0 until array.length()) {
+                    val item = array.getJSONObject(i)
+                    add(FoodSupplement(
+                        kind = item.optString("kind"),
+                        name = item.optString("name"),
+                        dose = item.optDouble("dose", 0.0).toFloat(),
+                        unit = item.optString("unit"),
+                        timeMinutes = if (item.isNull("timeMinutes")) null else item.optInt("timeMinutes"),
+                        kcal = item.optInt("kcal", 0),
+                        proteinG = item.optDouble("proteinG", 0.0).toFloat(),
+                        notes = item.optString("notes").takeIf { it.isNotBlank() },
+                    ))
+                }
+            }
+        }.getOrDefault(emptyList())
     }
 }
