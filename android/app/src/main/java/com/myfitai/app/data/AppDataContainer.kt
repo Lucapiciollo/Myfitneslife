@@ -7,6 +7,7 @@ import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.profile.ProfilePhotoStore
 import com.myfitai.app.data.repository.*
 import com.myfitai.app.domain.calculation.ProfileCalculationService
+import com.myfitai.app.domain.export.ProfileExportService
 import com.myfitai.app.domain.food.CheatAdjustmentService
 import com.myfitai.app.domain.food.NutritionPlanGenerationService
 import com.myfitai.app.domain.personalization.PersonalResponseService
@@ -81,6 +82,12 @@ class AppDataContainer private constructor(context: Context) {
     val notificationScheduler = NotificationScheduler(
         context = appContext,
         plans = mealPlanRepository,
+        activeProfileStore = activeProfileStore,
+    )
+
+    val profileExportService = ProfileExportService(
+        context = appContext,
+        db = db,
         activeProfileStore = activeProfileStore,
     )
 
