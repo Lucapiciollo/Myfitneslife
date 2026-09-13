@@ -8,6 +8,7 @@ import com.myfitai.app.data.repository.IngredientDraft
 import com.myfitai.app.data.repository.MealDraft
 import com.myfitai.app.data.repository.MealPlanRepository
 import com.myfitai.app.data.repository.PlanVersionDraft
+import com.myfitai.app.data.repository.SupplementDraft
 import com.myfitai.app.data.repository.UserProfileRepository
 import com.myfitai.app.data.repository.WorkoutRepository
 import com.myfitai.app.domain.calculation.NutritionBusinessValidator
@@ -68,6 +69,7 @@ class NutritionPlanGenerationService(
         val from = monday.atStartOfDay(zone).toInstant().toEpochMilli()
         val to = monday.plusDays(7).atStartOfDay(zone).toInstant().toEpochMilli() - 1
         val weekWorkouts = workouts.between(profileId, from, to).first()
+        val sportsMode = SportsNutritionClassifier.classify(profile.activityLevel, weekWorkouts)
         val personalContext = personalResponse.promptContext()
 
         val request = AiStructuredRequest(
@@ -81,6 +83,8 @@ class NutritionPlanGenerationService(
                     "${dt.toLocalDate()} ${dt.toLocalTime()} | ${w.type} | ${w.title} | ${w.durationMinutes ?: 0} min | rest=${w.isRestDay}"
                 },
                 personalContext = personalContext,
+                snapshot = snapshot,
+                sportsMode = sportsMode,
             ),
             schemaName = NutritionPlanContract.SCHEMA_NAME,
             schemaJson = NutritionPlanContract.schemaJson,
@@ -94,7 +98,7 @@ class NutritionPlanGenerationService(
             businessValidator = { json ->
                 runCatching {
                     val response = NutritionPlanContract.parse(json)
-                    NutritionPlanContract.validateBusiness(response, monday, targets).getOrThrow()
+                    NutritionPlanContract.validateBusiness(response, monday, targets, sportsMode).getOrThrow()
                     parsed = response
                 }
             },
@@ -139,6 +143,21 @@ class NutritionPlanGenerationService(
                             },
                         )
                     },
+                    supplements = day.supplements.map { supplement ->
+                        SupplementDraft(
+                            kind = supplement.kind,
+                            name = supplement.name,
+                            dose = supplement.dose,
+                            unit = supplement.unit,
+                            timeMinutes = supplement.timeMinutes,
+                            kcal = supplement.kcal,
+                            proteinG = supplement.proteinG,
+                            carbsG = supplement.carbsG,
+                            fatG = supplement.fatG,
+                            notes = supplement.notes,
+                        )
+                    },
+                    hydrationNote = day.hydrationNote.takeIf { it.isNotBlank() },
                 )
             },
         )
@@ -155,29 +174,24 @@ class NutritionPlanGenerationService(
         targets: NutritionBusinessValidator.Targets,
         workoutContext: List<String>,
         personalContext: String,
+        snapshot: ProfileCalculationService.Snapshot,
+        sportsMode: SportsNutritionClassifier.Mode,
     ): String = buildString {
         appendLine("Generate the nutrition plan for the week starting ${monday.toEpochDay()} ($monday).")
-        appendLine("The app-calculated DAILY targets are authoritative and must be respected within ±3% for every day:")
-        appendLine("kcal=${targets.kcal.toInt()}, proteinG=${String.format(Locale.US, "%.1f", targets.proteinG)}, carbsG=${String.format(Locale.US, "%.1f", targets.carbsG)}, fatG=${String.format(Locale.US, "%.1f", targets.fatG)}")
-        appendLine("Profile goal: ${profile.goal ?: "not specified"}")
-        appendLine("Activity: ${profile.activityLevel ?: "not specified"}")
-        appendLine("Wake minutes: ${profile.wakeTimeMinutes ?: "not specified"}; sleep minutes: ${profile.sleepTimeMinutes ?: "not specified"}")
-        appendLine("Dietary preferences: ${profile.dietaryPreferencesJson ?: "none specified"}")
-        appendLine("Planned workouts this week:")
-        if (workoutContext.isEmpty()) appendLine("none") else workoutContext.forEach { appendLine(it) }
-        if (personalContext.isNotBlank()) {
-            appendLine()
-            appendLine(personalContext)
-        }
-        appendLine("Use practical foods and explicit quantities. Count oils, dressings and caloric drinks. displayDose must be understandable to a person while quantity+unit remain numeric/structured.")
-        appendLine("Use weightState to clarify raw/cooked/drained state where relevant and nutritionConfidence to express estimate quality.")
-        appendLine("Prefer seasonal variety when compatible with preferences and targets. Do not invent allergies, intolerances or medical diagnoses.")
-        appendLine("Do not use punitive compensation. Timing around training may be adjusted prudently without changing the daily authoritative targets.")
-        appendLine("Historical patterns are descriptive context only: never treat them as causal and never use them to override app-calculated targets.")
-        appendLine("agentValidation is advisory only; the app will independently validate all totals.")
+        appendLine("DAILY_TARGETS_AUTHORITATIVE:kcal=${targets.kcal.toInt()}|P=${String.format(Locale.US, "%.1f", targets.proteinG)}|C=${String.format(Locale.US, "%.1f", targets.carbsG)}|F=${String.format(Locale.US, "%.1f", targets.fatG)}|tolerance=3%")
+        appendLine("SPORT_MODE:${sportsMode.name}")
+        appendLine("PROFILE_GOAL:${profile.goal ?: "unknown"}|ACTIVITY:${profile.activityLevel ?: "unknown"}")
+        appendLine("WAKE:${profile.wakeTimeMinutes ?: "unknown"}|SLEEP:${profile.sleepTimeMinutes ?: "unknown"}")
+        appendLine("PREFERENCES:${profile.dietaryPreferencesJson ?: "none"}")
+        appendLine("BIA_CONTEXT:weightKg=${snapshot.latestWeightKg ?: "unknown"}|bodyFatPct=${snapshot.latestBodyFatPercent ?: "unknown"}|muscleKg=${snapshot.latestMuscleMassKg ?: "unknown"}|skeletalMuscleKg=${snapshot.latestSkeletalMuscleKg ?: "unknown"}|bodyWaterPct=${snapshot.latestBodyWaterPercent ?: "unknown"}|waistCm=${snapshot.latestWaistCm ?: "unknown"}")
+        appendLine("TRENDS:weightDelta=${snapshot.weightTrend.delta ?: "unknown"}|bodyFatDelta=${snapshot.bodyFatTrend.delta ?: "unknown"}|muscleDelta=${snapshot.muscleMassTrend.delta ?: "unknown"}|waistDelta=${snapshot.waistTrend.delta ?: "unknown"}|recomposition=${snapshot.recompositionState}")
+        appendLine("PLANNED_WORKOUTS:")
+        if (workoutContext.isEmpty()) appendLine("none") else workoutContext.forEach(::appendLine)
+        if (personalContext.isNotBlank()) appendLine(personalContext)
+        appendLine("RULES: BIA is context, not diagnosis. Do not claim BIA proves protein deficiency or dehydration. Protein powder may be used even in NORMAL mode only when useful to meet the authoritative protein target or for practical meal composition. Creatine may be suggested only in SPORT mode. Creatine contributes 0 kcal/macros. Protein powder calories/macros count toward daily totals. hydrationNote may prudently encourage hydration when BIA/context supports attention, without diagnosing dehydration. Prefer ordinary foods first; supplements are optional tools, not mandatory. Count oils, dressings, caloric drinks and every caloric supplement. No punitive compensation.")
     }
 
     companion object {
-        private const val SYSTEM_PROMPT = """You are MyFitAI Nutrition Agent. Return only JSON conforming exactly to the supplied schema. The app is the authority for numerical targets. Build a complete 7-day plan, each day within ±3% of kcal, protein, carbohydrates and fat targets. Daily totals must also agree with the sum of meal totals within ±3%. Every ingredient requires a positive numeric quantity, unit, displayDose, weightState, nutritionConfidence and category. Count condiments and caloric beverages. Personal-history observations are associative/descriptive only and must never be treated as causal evidence or used to override local targets. Be factual and cautious; do not make medical claims."""
+        private const val SYSTEM_PROMPT = """You are MyFitAI Nutrition Agent. Return only schema JSON. Work exclusively at nutritional level. Build a complete 7-day plan within ±3% of the app's authoritative kcal and macro targets. Use BIA/body measurements only as descriptive context: never diagnose protein deficiency, dehydration or disease from BIA. Protein powder is permitted when it helps meet protein targets or practical meal timing, including non-sport profiles; its full kcal/macros must be counted. Creatine is permitted only when SPORT_MODE=SPORT and must be represented separately with zero kcal/macros. Prefer ordinary foods first. Keep supplements separate from meals. Hydration guidance must be cautious and factual. The app independently validates totals and supplement rules."""
     }
 }
