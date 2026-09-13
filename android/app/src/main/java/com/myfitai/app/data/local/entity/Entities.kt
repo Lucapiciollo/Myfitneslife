@@ -11,9 +11,7 @@ data class UserProfileEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
     val birthDateEpochDay: Long?,
-    val biologicalSex: String? = null,
     val heightCm: Float?,
-    val initialWeightKg: Float? = null,
     val currentWeightKg: Float?,
     val goal: String?,
     val activityLevel: String?,
@@ -24,6 +22,8 @@ data class UserProfileEntity(
     val photoPath: String? = null,
     @ColumnInfo(defaultValue = "0") val createdAtEpochMillis: Long,
     val updatedAtEpochMillis: Long,
+    val biologicalSex: String? = null,
+    val initialWeightKg: Float? = null,
 )
 
 @Entity(
