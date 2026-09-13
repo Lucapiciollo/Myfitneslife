@@ -1,9 +1,14 @@
 package com.myfitai.app.ui
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -11,6 +16,7 @@ import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.domain.calculation.LocalCalculationEngine
 import com.myfitai.app.navigation.BottomNavBinder
+import com.myfitai.app.notifications.NotificationPreferences
 import com.myfitai.app.ui.home.HomeViewModel
 import com.myfitai.app.ui.widgets.MealCardView
 import com.myfitai.app.ui.widgets.MetricCardView
@@ -38,12 +44,17 @@ class HomeActivity : BaseShellActivity() {
         )
     }
 
+    private val notificationPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) lifecycleScope.launch { runCatching { data.notificationScheduler.refresh() } }
+    }
+
     private var currentNextMealId: Long? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
         bindBottom(BottomNavBinder.Tab.HOME)
+        requestNotificationPermissionOnce()
 
         findViewById<android.view.View>(R.id.profileButton).setOnClickListener { go(ProfileActivity::class.java) }
         findViewById<android.view.View>(R.id.nextMealCard).setOnClickListener {
@@ -64,6 +75,15 @@ class HomeActivity : BaseShellActivity() {
         }
 
         observeDashboard()
+    }
+
+    private fun requestNotificationPermissionOnce() {
+        if (Build.VERSION.SDK_INT < 33) return
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) return
+        val prefs = NotificationPreferences(this)
+        if (prefs.permissionPrompted) return
+        prefs.permissionPrompted = true
+        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 
     private fun observeDashboard() {
