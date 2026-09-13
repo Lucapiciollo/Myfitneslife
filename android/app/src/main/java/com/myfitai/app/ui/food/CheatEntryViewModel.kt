@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.myfitai.app.domain.food.CheatAdjustmentService
+import com.myfitai.app.notifications.NotificationScheduler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -11,6 +12,7 @@ import kotlinx.coroutines.launch
 
 class CheatEntryViewModel(
     private val service: CheatAdjustmentService,
+    private val notificationScheduler: NotificationScheduler,
 ) : ViewModel() {
 
     data class State(
@@ -27,11 +29,13 @@ class CheatEntryViewModel(
         _state.value = State(running = true)
         viewModelScope.launch {
             runCatching { service.registerAndAdapt(input) }
-                .onSuccess { _state.value = State(result = it) }
+                .onSuccess {
+                    runCatching { notificationScheduler.refresh() }
+                    _state.value = State(result = it)
+                }
                 .onFailure { error ->
                     val message = when (error) {
-                        is CheatAdjustmentService.AdjustmentException.NeedsInput ->
-                            "Completa prima: ${error.fields.joinToString()}"
+                        is CheatAdjustmentService.AdjustmentException.NeedsInput -> "Completa prima: ${error.fields.joinToString()}"
                         else -> error.message ?: "Impossibile registrare lo sgarro"
                     }
                     _state.value = State(error = message)
@@ -43,11 +47,14 @@ class CheatEntryViewModel(
         if (_state.value.result != null) _state.value = State()
     }
 
-    class Factory(private val service: CheatAdjustmentService) : ViewModelProvider.Factory {
+    class Factory(
+        private val service: CheatAdjustmentService,
+        private val notificationScheduler: NotificationScheduler,
+    ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(CheatEntryViewModel::class.java))
-            return CheatEntryViewModel(service) as T
+            return CheatEntryViewModel(service, notificationScheduler) as T
         }
     }
 }
