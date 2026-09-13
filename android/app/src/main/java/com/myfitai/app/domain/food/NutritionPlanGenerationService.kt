@@ -12,6 +12,7 @@ import com.myfitai.app.data.repository.UserProfileRepository
 import com.myfitai.app.data.repository.WorkoutRepository
 import com.myfitai.app.domain.calculation.NutritionBusinessValidator
 import com.myfitai.app.domain.calculation.ProfileCalculationService
+import com.myfitai.app.domain.personalization.PersonalResponseService
 import kotlinx.coroutines.flow.first
 import java.time.LocalDate
 import java.time.ZoneId
@@ -24,6 +25,7 @@ class NutritionPlanGenerationService(
     private val workouts: WorkoutRepository,
     private val plans: MealPlanRepository,
     private val activeProfileStore: ActiveProfileStore,
+    private val personalResponse: PersonalResponseService,
 ) {
     sealed class GenerationException(message: String) : Exception(message) {
         class NeedsInput(val fields: List<String>) : GenerationException("NEEDS_INPUT: ${fields.joinToString()}")
@@ -66,13 +68,20 @@ class NutritionPlanGenerationService(
         val from = monday.atStartOfDay(zone).toInstant().toEpochMilli()
         val to = monday.plusDays(7).atStartOfDay(zone).toInstant().toEpochMilli() - 1
         val weekWorkouts = workouts.between(profileId, from, to).first()
+        val personalContext = personalResponse.promptContext()
 
         val request = AiStructuredRequest(
             systemPrompt = SYSTEM_PROMPT,
-            userPrompt = buildUserPrompt(monday, profile, targets, weekWorkouts.map { w ->
-                val dt = java.time.Instant.ofEpochMilli(w.startedAtEpochMillis).atZone(zone)
-                "${dt.toLocalDate()} ${dt.toLocalTime()} | ${w.type} | ${w.title} | ${w.durationMinutes ?: 0} min | rest=${w.isRestDay}"
-            }),
+            userPrompt = buildUserPrompt(
+                monday = monday,
+                profile = profile,
+                targets = targets,
+                workoutContext = weekWorkouts.map { w ->
+                    val dt = java.time.Instant.ofEpochMilli(w.startedAtEpochMillis).atZone(zone)
+                    "${dt.toLocalDate()} ${dt.toLocalTime()} | ${w.type} | ${w.title} | ${w.durationMinutes ?: 0} min | rest=${w.isRestDay}"
+                },
+                personalContext = personalContext,
+            ),
             schemaName = NutritionPlanContract.SCHEMA_NAME,
             schemaJson = NutritionPlanContract.schemaJson,
             maxOutputTokens = 16_000,
@@ -145,6 +154,7 @@ class NutritionPlanGenerationService(
         profile: com.myfitai.app.data.local.entity.UserProfileEntity,
         targets: NutritionBusinessValidator.Targets,
         workoutContext: List<String>,
+        personalContext: String,
     ): String = buildString {
         appendLine("Generate the nutrition plan for the week starting ${monday.toEpochDay()} ($monday).")
         appendLine("The app-calculated DAILY targets are authoritative and must be respected within ±3% for every day:")
@@ -155,14 +165,19 @@ class NutritionPlanGenerationService(
         appendLine("Dietary preferences: ${profile.dietaryPreferencesJson ?: "none specified"}")
         appendLine("Planned workouts this week:")
         if (workoutContext.isEmpty()) appendLine("none") else workoutContext.forEach { appendLine(it) }
+        if (personalContext.isNotBlank()) {
+            appendLine()
+            appendLine(personalContext)
+        }
         appendLine("Use practical foods and explicit quantities. Count oils, dressings and caloric drinks. displayDose must be understandable to a person while quantity+unit remain numeric/structured.")
         appendLine("Use weightState to clarify raw/cooked/drained state where relevant and nutritionConfidence to express estimate quality.")
         appendLine("Prefer seasonal variety when compatible with preferences and targets. Do not invent allergies, intolerances or medical diagnoses.")
         appendLine("Do not use punitive compensation. Timing around training may be adjusted prudently without changing the daily authoritative targets.")
+        appendLine("Historical patterns are descriptive context only: never treat them as causal and never use them to override app-calculated targets.")
         appendLine("agentValidation is advisory only; the app will independently validate all totals.")
     }
 
     companion object {
-        private const val SYSTEM_PROMPT = """You are MyFitAI Nutrition Agent. Return only JSON conforming exactly to the supplied schema. The app is the authority for numerical targets. Build a complete 7-day plan, each day within ±3% of kcal, protein, carbohydrates and fat targets. Daily totals must also agree with the sum of meal totals within ±3%. Every ingredient requires a positive numeric quantity, unit, displayDose, weightState, nutritionConfidence and category. Count condiments and caloric beverages. Be factual and cautious; do not make medical claims."""
+        private const val SYSTEM_PROMPT = """You are MyFitAI Nutrition Agent. Return only JSON conforming exactly to the supplied schema. The app is the authority for numerical targets. Build a complete 7-day plan, each day within ±3% of kcal, protein, carbohydrates and fat targets. Daily totals must also agree with the sum of meal totals within ±3%. Every ingredient requires a positive numeric quantity, unit, displayDose, weightState, nutritionConfidence and category. Count condiments and caloric beverages. Personal-history observations are associative/descriptive only and must never be treated as causal evidence or used to override local targets. Be factual and cautious; do not make medical claims."""
     }
 }
