@@ -3,6 +3,7 @@ package com.myfitai.app.data.local
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.myfitai.app.data.local.entity.BiaMeasurementEntity
 import com.myfitai.app.data.local.entity.BodyMeasurementEntity
 import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.data.repository.DayDraft
@@ -34,10 +35,8 @@ class MyFitAiDatabaseTest {
 
     @Test
     fun bodyMeasurements_areIsolatedByProfile_andRangeAscending() = runBlocking {
-        val profile1 = profile("Uno")
-        val profile2 = profile("Due")
-        val profile1Id = db.userProfileDao().insert(profile1)
-        val profile2Id = db.userProfileDao().insert(profile2)
+        val profile1Id = db.userProfileDao().insert(profile("Uno"))
+        val profile2Id = db.userProfileDao().insert(profile("Due"))
 
         val dao = db.bodyMeasurementDao()
         dao.insert(measure(profile1Id, 1000, 90f))
@@ -53,6 +52,40 @@ class MyFitAiDatabaseTest {
 
         val otherProfile = dao.observeAll(profile2Id).first()
         assertEquals(listOf(4000L), otherProfile.map { it.measuredAtEpochMillis })
+    }
+
+    @Test
+    fun bodyMeasurements_sameTimestamp_keepNewestInsertFirst() = runBlocking {
+        val profileId = db.userProfileDao().insert(profile("Storico misure"))
+        val dao = db.bodyMeasurementDao()
+        val firstId = dao.insert(measure(profileId, 5000, 90f))
+        val secondId = dao.insert(measure(profileId, 5000, 89f))
+
+        val all = dao.observeAll(profileId).first()
+        assertEquals(listOf(secondId, firstId), all.map { it.id })
+        assertEquals(listOf(89f, 90f), all.map { it.waistCm })
+    }
+
+    @Test
+    fun biaHistory_isIsolatedByProfile_andChronological() = runBlocking {
+        val profile1Id = db.userProfileDao().insert(profile("BIA uno"))
+        val profile2Id = db.userProfileDao().insert(profile("BIA due"))
+        val dao = db.biaMeasurementDao()
+
+        dao.insert(bia(profile1Id, 1000, 80f))
+        dao.insert(bia(profile1Id, 3000, 78f))
+        dao.insert(bia(profile1Id, 2000, null))
+        dao.insert(bia(profile2Id, 4000, 70f))
+
+        val all = dao.observeAll(profile1Id).first()
+        assertEquals(listOf(3000L, 2000L, 1000L), all.map { it.measuredAtEpochMillis })
+        assertEquals(listOf(78f, null, 80f), all.map { it.weightKg })
+
+        val range = dao.observeBetween(profile1Id, 1000, 2500).first()
+        assertEquals(listOf(1000L, 2000L), range.map { it.measuredAtEpochMillis })
+
+        val otherProfile = dao.observeAll(profile2Id).first()
+        assertEquals(listOf(70f), otherProfile.map { it.weightKg })
     }
 
     @Test
@@ -111,5 +144,21 @@ class MyFitAiDatabaseTest {
         thighRightCm = null,
         calfLeftCm = null,
         calfRightCm = null,
+    )
+
+    private fun bia(profileId: Long, at: Long, weight: Float?) = BiaMeasurementEntity(
+        profileId = profileId,
+        measuredAtEpochMillis = at,
+        weightKg = weight,
+        bodyFatPercent = null,
+        visceralFatLevel = null,
+        muscleMassKg = null,
+        skeletalMuscleKg = null,
+        bodyWaterPercent = null,
+        bmrKcal = null,
+        fasting = false,
+        justWokeUp = false,
+        afterBathroom = false,
+        noRecentWorkout = false,
     )
 }
