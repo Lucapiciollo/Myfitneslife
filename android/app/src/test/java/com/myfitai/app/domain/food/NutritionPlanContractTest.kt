@@ -67,7 +67,7 @@ class NutritionPlanContractTest {
                 workout(2_000L, "PESI", "Lower"),
             ),
         )
-        val base = responseWithMacroRoomForSupplement()
+        val base = response()
         val changed = withFirstDaySupplements(
             base,
             listOf(creatine(kcal = 0, protein = 0f, carbs = 0f, fat = 0f)),
@@ -176,16 +176,26 @@ class NutritionPlanContractTest {
                 NutritionPlanContract.GeneratedIngredient("Riso", 100f, "g", "100 g", "crudo", "high", "cereali"),
             ),
         )
+        val validDayMeal = meal.copy(
+            kcal = 800,
+            proteinG = 53.333f,
+            carbsG = 93.333f,
+            fatG = 23.333f,
+        )
         return NutritionPlanContract.Response(
             weekStartEpochDay = week.toEpochDay(),
-            days = (0L..6L).map { offset ->
+            days = (0L..6L).mapIndexed { index, offset ->
                 NutritionPlanContract.GeneratedDay(
                     dateEpochDay = week.plusDays(offset).toEpochDay(),
                     totalKcal = 2400,
                     proteinG = 160f,
                     carbsG = 280f,
                     fatG = 70f,
-                    meals = listOf(meal, meal.copy(type = "Cena"), meal.copy(type = "Colazione")),
+                    meals = if (index == 0) {
+                        listOf(meal, meal.copy(type = "Cena"), meal.copy(type = "Colazione"))
+                    } else {
+                        listOf(validDayMeal, validDayMeal.copy(type = "Cena"), validDayMeal.copy(type = "Colazione"))
+                    },
                 )
             },
             agentValidation = NutritionPlanContract.AgentValidation(false, "advisory only"),
