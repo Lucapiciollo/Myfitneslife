@@ -1,6 +1,7 @@
 package com.myfitai.app.data
 
 import android.content.Context
+import com.myfitai.app.ai.AiRuntimeService
 import com.myfitai.app.data.local.MyFitAiDatabase
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.profile.ProfilePhotoStore
@@ -8,7 +9,7 @@ import com.myfitai.app.data.repository.*
 import com.myfitai.app.domain.calculation.ProfileCalculationService
 
 /**
- * Composition root del layer dati. Activity/ViewModel non devono conoscere i DAO.
+ * Composition root del layer dati/app. Activity/ViewModel non devono conoscere i DAO.
  */
 class AppDataContainer private constructor(context: Context) {
     private val appContext = context.applicationContext
@@ -31,6 +32,8 @@ class AppDataContainer private constructor(context: Context) {
         bodyMeasurements = bodyMeasurementRepository,
         activeProfileStore = activeProfileStore,
     )
+
+    val aiRuntimeService = AiRuntimeService(appContext)
 
     companion object {
         @Volatile private var instance: AppDataContainer? = null
