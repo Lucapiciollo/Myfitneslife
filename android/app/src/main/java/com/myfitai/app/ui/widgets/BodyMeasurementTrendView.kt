@@ -4,18 +4,13 @@ import android.content.Context
 import android.graphics.Color
 import android.util.AttributeSet
 import android.widget.FrameLayout
-import com.github.mikephil.charting.charts.LineChart
-import com.github.mikephil.charting.components.XAxis
-import com.github.mikephil.charting.data.Entry
-import com.github.mikephil.charting.data.LineData
-import com.github.mikephil.charting.data.LineDataSet
-import com.github.mikephil.charting.formatter.ValueFormatter
 import com.myfitai.app.R
+import info.appdev.charting.charts.LineChart
+import info.appdev.charting.data.EntryFloat
+import info.appdev.charting.data.LineData
+import info.appdev.charting.data.LineDataSet
 
-/**
- * Grafico riutilizzabile per l'andamento delle misure corporee.
- * Incapsula AndroidChart/MPAndroidChart e mantiene lo stile MyFitAI centralizzato.
- */
+/** Grafico riutilizzabile per l'andamento delle misure corporee. */
 class BodyMeasurementTrendView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
@@ -27,81 +22,43 @@ class BodyMeasurementTrendView @JvmOverloads constructor(
 
     init {
         addView(chart, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
-        configureChart()
+        chart.description.isEnabled = false
+        chart.legend.isEnabled = false
+        chart.axisRight.isEnabled = false
+        chart.axisLeft.isEnabled = true
+        chart.axisLeft.textColor = context.getColor(R.color.text_secondary)
+        chart.axisLeft.isDrawAxisLine = false
+        chart.axisLeft.isDrawGridLines = true
+        chart.axisLeft.gridColor = context.getColor(R.color.divider)
+        chart.xAxis.isEnabled = false
+        chart.setTouchEnabled(true)
+        chart.isPinchZoom = false
+        chart.setBackgroundColor(Color.TRANSPARENT)
+        chart.setDrawGridBackground(false)
+        chart.setDrawBorders(false)
     }
 
-    private fun configureChart() = with(chart) {
-        description.isEnabled = false
-        legend.isEnabled = false
-        setTouchEnabled(true)
-        isDragEnabled = true
-        setScaleEnabled(false)
-        setPinchZoom(false)
-        setDrawGridBackground(false)
-        setNoDataText("Nessuna misurazione disponibile")
-        setNoDataTextColor(context.getColor(R.color.text_secondary))
-        setBackgroundColor(Color.TRANSPARENT)
-        extraBottomOffset = 6f
-        extraTopOffset = 10f
-
-        axisRight.isEnabled = false
-        axisLeft.apply {
-            textColor = context.getColor(R.color.text_secondary)
-            textSize = 10f
-            setDrawAxisLine(false)
-            setDrawGridLines(true)
-            gridColor = context.getColor(R.color.divider)
-            gridLineWidth = 0.6f
-        }
-        xAxis.apply {
-            position = XAxis.XAxisPosition.BOTTOM
-            textColor = context.getColor(R.color.text_secondary)
-            textSize = 10f
-            setDrawAxisLine(false)
-            setDrawGridLines(false)
-            granularity = 1f
-        }
-    }
-
-    fun setPoints(points: List<Point>, unit: String = "cm") {
+    fun setPoints(points: List<Point>) {
         if (points.isEmpty()) {
             chart.clear()
             chart.invalidate()
             return
         }
-
-        val entries = points.mapIndexed { index, point -> Entry(index.toFloat(), point.value) }
-        val dataSet = LineDataSet(entries, "").apply {
-            color = context.getColor(R.color.accent_green)
+        val entries = points.mapIndexed { index, point -> EntryFloat(index.toFloat(), point.value) }.toMutableList()
+        val dataSet = LineDataSet<EntryFloat>(entries, "measurement").apply {
+            color = context.getColor(R.color.accent_green_dark)
             lineWidth = 2.4f
-            mode = LineDataSet.Mode.CUBIC_BEZIER
-            cubicIntensity = 0.18f
-            setDrawCircles(true)
-            circleRadius = 3.2f
-            setCircleColor(context.getColor(R.color.accent_green))
-            setDrawCircleHole(true)
-            circleHoleRadius = 1.5f
-            circleHoleColor = context.getColor(R.color.white)
-            setDrawValues(false)
-            setDrawFilled(true)
+            isDrawCircles = true
+            circleRadius = 3f
+            circleColor = context.getColor(R.color.accent_green)
+            isDrawValues = false
+            isHighlight = true
+            lineMode = LineDataSet.Mode.CUBIC_BEZIER
+            isDrawFilled = true
             fillColor = context.getColor(R.color.accent_green)
-            fillAlpha = 28
-            highLightColor = context.getColor(R.color.accent_green_dark)
-            highlightLineWidth = 1f
+            fillAlpha = 42
         }
-
-        chart.xAxis.valueFormatter = object : ValueFormatter() {
-            override fun getFormattedValue(value: Float): String {
-                val index = value.toInt()
-                return points.getOrNull(index)?.label.orEmpty()
-            }
-        }
-        chart.axisLeft.valueFormatter = object : ValueFormatter() {
-            override fun getFormattedValue(value: Float): String = "${value.toInt()} $unit"
-        }
-
         chart.data = LineData(dataSet)
-        chart.notifyDataSetChanged()
         chart.invalidate()
     }
 }
