@@ -39,7 +39,7 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 - [x] Piani/versioni/giorni/pasti/ingredienti persistenti.
 - [x] Sgarri e review persistenti.
 - [x] DB v4: ogni giorno del piano supporta `supplementsJson` e `hydrationNote`.
-- [ ] Migration test reale 3 -> 4 su database storico.
+- [x] Migration test reale 3 -> 4 su database storico.
 
 ### Motore locale
 - [x] BMI.
@@ -122,17 +122,18 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 ## QA E VERIFICA
 
 ### Ultimo stato noto
-- Una build/debug + unit test era verde su un commit precedente alle modifiche più recenti.
-- Le modifiche successive a profilo, export, consiglio IA, cambio pasto, nutrizione sportiva, BIA context e supplementi NON sono ancora state verificate con una build completa sull'HEAD corrente.
-- Nessun instrumented/device test viene dichiarato eseguito per le ultime modifiche.
+- `:app:assembleDebug` verde sull'HEAD verificato con Gradle 9.6.0, Java 17 e Android SDK locale.
+- `:app:testDebugUnitTest` verde: 34 test eseguiti.
+- `:app:connectedDebugAndroidTest` verde: 11 test eseguiti su `SM-A546B - 16` e 11 su `Medium_Phone(AVD) - 17`.
+- La suite instrumented copre persistenza Room, piani legacy senza supplementi, migration 3 -> 4 e conservazione di supplementi/hydration note nel cambio versione del pasto.
 - La CI non parte sui push a `develop`; resta disponibile via pull request o `workflow_dispatch`.
 
 ### Prossimi step obbligatori
-- [ ] Build `:app:assembleDebug` sull'HEAD corrente.
-- [ ] Unit test `:app:testDebugUnitTest` sull'HEAD corrente.
-- [ ] Correggere eventuali regressioni di compilazione/migrazione introdotte da DB v4 e nuovo contratto nutrizionale.
-- [ ] Test runtime dei flussi: generazione piano, supplementi, hydration note, cambio pasto, sgarro, consiglio IA.
-- [ ] Verifica migrazione DB 3 -> 4.
+- [x] Build `:app:assembleDebug` sull'HEAD corrente.
+- [x] Unit test `:app:testDebugUnitTest` sull'HEAD corrente.
+- [x] Correggere le regressioni di compilazione/migrazione introdotte da DB v4 e nuovo contratto nutrizionale.
+- [x] Test runtime Room di supplementi, hydration note, compatibilità legacy e cambio versione del pasto.
+- [x] Verifica migrazione DB 3 -> 4.
 - [ ] QA grafica/pixel su device/emulatore.
 - [ ] Smoke test delle Activity principali.
 
