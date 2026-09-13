@@ -87,32 +87,23 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
 
-                    <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical">
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/dashboard_metric_weight" android:textColor="@color/text_secondary" android:textSize="12sp" />
-                        <TextView android:id="@+id/metricWeightValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:text="78,4 kg" android:textColor="@color/metric_value" android:textSize="20sp" android:textStyle="bold" />
-                        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_2" android:gravity="center_vertical" android:orientation="horizontal">
-                            <ImageView android:layout_width="10dp" android:layout_height="10dp" android:importantForAccessibility="no" android:src="@drawable/ic_trend_down" />
-                            <TextView android:id="@+id/metricWeightDelta" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="@dimen/space_2" android:text="-2,1 kg" android:textColor="@color/accent_green" android:textSize="12sp" />
-                        </LinearLayout>
-                    </LinearLayout>
+                    <com.myfitai.app.ui.widgets.MetricCardView
+                        android:id="@+id/metricWeight"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content" />
 
-                    <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical">
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/dashboard_metric_fat" android:textColor="@color/text_secondary" android:textSize="12sp" />
-                        <TextView android:id="@+id/metricFatValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:text="14,2 %" android:textColor="@color/metric_value" android:textSize="20sp" android:textStyle="bold" />
-                        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_2" android:gravity="center_vertical" android:orientation="horizontal">
-                            <ImageView android:layout_width="10dp" android:layout_height="10dp" android:importantForAccessibility="no" android:src="@drawable/ic_trend_down" />
-                            <TextView android:id="@+id/metricFatDelta" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="@dimen/space_2" android:text="-2,8 %" android:textColor="@color/accent_green" android:textSize="12sp" />
-                        </LinearLayout>
-                    </LinearLayout>
+                    <com.myfitai.app.ui.widgets.MetricCardView
+                        android:id="@+id/metricFat"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content" />
 
-                    <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical">
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/dashboard_metric_muscle" android:textColor="@color/text_secondary" android:textSize="12sp" />
-                        <TextView android:id="@+id/metricMuscleValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:text="66,8 kg" android:textColor="@color/metric_value" android:textSize="20sp" android:textStyle="bold" />
-                        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_2" android:gravity="center_vertical" android:orientation="horizontal">
-                            <ImageView android:layout_width="10dp" android:layout_height="10dp" android:importantForAccessibility="no" android:src="@drawable/ic_trend_up" />
-                            <TextView android:id="@+id/metricMuscleDelta" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="@dimen/space_2" android:text="+0,6 kg" android:textColor="@color/accent_green" android:textSize="12sp" />
-                        </LinearLayout>
-                    </LinearLayout>
+                    <com.myfitai.app.ui.widgets.MetricCardView
+                        android:id="@+id/metricMuscle"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content" />
                 </LinearLayout>
 
                 <com.myfitai.app.ui.widgets.WeightTrendChartView
@@ -121,37 +112,33 @@
                     android:layout_height="@dimen/dashboard_chart_height"
                     android:layout_marginTop="@dimen/space_16" />
 
-                <LinearLayout
+                <com.myfitai.app.ui.widgets.TimeRangeSelectorView
+                    android:id="@+id/timeRangeSelector"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_12" />
+
+                <com.myfitai.app.ui.widgets.SectionHeaderView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_12"
-                    android:orientation="horizontal">
-                    <TextView android:id="@+id/rangeButton1W" android:layout_width="wrap_content" android:layout_height="@dimen/dashboard_pill_height" android:gravity="center" android:paddingHorizontal="@dimen/space_16" android:text="1W" android:textColor="@color/text_muted" android:textSize="12sp" />
-                    <TextView android:id="@+id/rangeButton1M" android:layout_width="wrap_content" android:layout_height="@dimen/dashboard_pill_height" android:background="@drawable/bg_pill_selected" android:gravity="center" android:paddingHorizontal="@dimen/space_16" android:text="1M" android:textColor="@color/accent_green_dark" android:textSize="12sp" android:textStyle="bold" />
-                    <TextView android:id="@+id/rangeButton3M" android:layout_width="wrap_content" android:layout_height="@dimen/dashboard_pill_height" android:gravity="center" android:paddingHorizontal="@dimen/space_16" android:text="3M" android:textColor="@color/text_muted" android:textSize="12sp" />
-                    <TextView android:id="@+id/rangeButton1Y" android:layout_width="wrap_content" android:layout_height="@dimen/dashboard_pill_height" android:gravity="center" android:paddingHorizontal="@dimen/space_16" android:text="1Y" android:textColor="@color/text_muted" android:textSize="12sp" />
-                </LinearLayout>
+                    android:layout_marginTop="@dimen/space_20"
+                    android:text="@string/dashboard_next_meal_title" />
+                <com.myfitai.app.ui.widgets.MealCardView
+                    android:id="@+id/nextMealCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_12" />
 
-                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:text="@string/dashboard_next_meal_title" android:textColor="@color/text_primary" android:textSize="17sp" android:textStyle="bold" />
-                <LinearLayout android:id="@+id/nextMealCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_12" android:gravity="center_vertical" android:orientation="horizontal">
-                    <ImageView android:layout_width="36dp" android:layout_height="36dp" android:importantForAccessibility="no" android:src="@drawable/ic_clock" />
-                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="@dimen/space_12" android:layout_weight="1" android:orientation="vertical">
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="12:30" android:textColor="@color/text_primary" android:textSize="20sp" android:textStyle="bold" />
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_2" android:text="Riso basmati, pollo e verdure" android:textColor="@color/text_secondary" android:textSize="13sp" />
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="520 kcal" android:textColor="@color/text_secondary" android:textSize="13sp" />
-                    </LinearLayout>
-                    <com.google.android.material.imageview.ShapeableImageView android:layout_width="@dimen/dashboard_thumbnail_size" android:layout_height="@dimen/dashboard_thumbnail_size" android:contentDescription="@string/dashboard_next_meal_title" android:scaleType="centerCrop" android:src="@drawable/img_next_meal" app:shapeAppearanceOverlay="@style/ShapeAppearance.MyFitAI.Thumbnail" />
-                </LinearLayout>
-
-                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:text="@string/dashboard_next_workout_title" android:textColor="@color/text_primary" android:textSize="17sp" android:textStyle="bold" />
-                <LinearLayout android:id="@+id/nextWorkoutCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_12" android:gravity="center_vertical" android:orientation="horizontal">
-                    <ImageView android:layout_width="36dp" android:layout_height="36dp" android:importantForAccessibility="no" android:src="@drawable/ic_workout" />
-                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="@dimen/space_12" android:layout_weight="1" android:orientation="vertical">
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Oggi 18:30" android:textColor="@color/text_primary" android:textSize="20sp" android:textStyle="bold" />
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_2" android:text="Upper Body" android:textColor="@color/text_secondary" android:textSize="13sp" />
-                    </LinearLayout>
-                    <com.google.android.material.imageview.ShapeableImageView android:layout_width="@dimen/dashboard_thumbnail_size" android:layout_height="@dimen/dashboard_thumbnail_size" android:contentDescription="@string/dashboard_next_workout_title" android:scaleType="centerCrop" android:src="@drawable/img_next_workout" app:shapeAppearanceOverlay="@style/ShapeAppearance.MyFitAI.Thumbnail" />
-                </LinearLayout>
+                <com.myfitai.app.ui.widgets.SectionHeaderView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_20"
+                    android:text="@string/dashboard_next_workout_title" />
+                <com.myfitai.app.ui.widgets.WorkoutCardView
+                    android:id="@+id/nextWorkoutCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_12" />
             </LinearLayout>
         </LinearLayout>
     </ScrollView>
