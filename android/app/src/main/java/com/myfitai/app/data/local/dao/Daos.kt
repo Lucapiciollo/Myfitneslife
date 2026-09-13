@@ -35,13 +35,13 @@ interface UserProfileDao {
 
 @Dao
 interface BiaMeasurementDao {
-    @Query("SELECT * FROM bia_measurements WHERE profileId = :profileId ORDER BY measuredAtEpochMillis DESC")
+    @Query("SELECT * FROM bia_measurements WHERE profileId = :profileId ORDER BY measuredAtEpochMillis DESC, id DESC")
     fun observeAll(profileId: Long): Flow<List<BiaMeasurementEntity>>
 
-    @Query("SELECT * FROM bia_measurements WHERE profileId = :profileId ORDER BY measuredAtEpochMillis DESC LIMIT 1")
+    @Query("SELECT * FROM bia_measurements WHERE profileId = :profileId ORDER BY measuredAtEpochMillis DESC, id DESC LIMIT 1")
     fun observeLatest(profileId: Long): Flow<BiaMeasurementEntity?>
 
-    @Query("SELECT * FROM bia_measurements WHERE profileId = :profileId AND measuredAtEpochMillis BETWEEN :from AND :to ORDER BY measuredAtEpochMillis ASC")
+    @Query("SELECT * FROM bia_measurements WHERE profileId = :profileId AND measuredAtEpochMillis BETWEEN :from AND :to ORDER BY measuredAtEpochMillis ASC, id ASC")
     fun observeBetween(profileId: Long, from: Long, to: Long): Flow<List<BiaMeasurementEntity>>
 
     @Insert
@@ -56,13 +56,13 @@ interface BiaMeasurementDao {
 
 @Dao
 interface BodyMeasurementDao {
-    @Query("SELECT * FROM body_measurements WHERE profileId = :profileId ORDER BY measuredAtEpochMillis DESC")
+    @Query("SELECT * FROM body_measurements WHERE profileId = :profileId ORDER BY measuredAtEpochMillis DESC, id DESC")
     fun observeAll(profileId: Long): Flow<List<BodyMeasurementEntity>>
 
-    @Query("SELECT * FROM body_measurements WHERE profileId = :profileId ORDER BY measuredAtEpochMillis DESC LIMIT 1")
+    @Query("SELECT * FROM body_measurements WHERE profileId = :profileId ORDER BY measuredAtEpochMillis DESC, id DESC LIMIT 1")
     fun observeLatest(profileId: Long): Flow<BodyMeasurementEntity?>
 
-    @Query("SELECT * FROM body_measurements WHERE profileId = :profileId AND measuredAtEpochMillis BETWEEN :from AND :to ORDER BY measuredAtEpochMillis ASC")
+    @Query("SELECT * FROM body_measurements WHERE profileId = :profileId AND measuredAtEpochMillis BETWEEN :from AND :to ORDER BY measuredAtEpochMillis ASC, id ASC")
     fun observeBetween(profileId: Long, from: Long, to: Long): Flow<List<BodyMeasurementEntity>>
 
     @Insert
