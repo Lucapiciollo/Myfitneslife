@@ -8,6 +8,8 @@ import com.myfitai.app.data.local.entity.BodyMeasurementEntity
 import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.data.local.entity.WorkoutEntity
 import com.myfitai.app.data.repository.DayDraft
+import com.myfitai.app.data.repository.IngredientDraft
+import com.myfitai.app.data.repository.MealDraft
 import com.myfitai.app.data.repository.MealPlanRepository
 import com.myfitai.app.data.repository.PlanVersionDraft
 import kotlinx.coroutines.flow.first
@@ -84,7 +86,6 @@ class MyFitAiDatabaseTest {
         dao.insert(workout(profile1Id, 1000, "Lower"))
         dao.insert(workout(profile1Id, 2000, "Riposo", rest = true))
         dao.insert(workout(profile2Id, 4000, "Cardio"))
-
         assertEquals(listOf(3000L, 2000L, 1000L), dao.observeAll(profile1Id).first().map { it.startedAtEpochMillis })
         assertEquals(listOf(1000L, 2000L), dao.observeBetween(profile1Id, 1000, 2500).first().map { it.startedAtEpochMillis })
         assertEquals(listOf("Cardio"), dao.observeAll(profile2Id).first().map { it.title })
@@ -110,6 +111,58 @@ class MyFitAiDatabaseTest {
         assertEquals(2, versions.size)
         assertEquals(listOf(2, 1), versions.map { it.versionNumber })
         assertTrue(versions.any { it.reason == "ADAPTATION" })
+    }
+
+    @Test
+    fun mealPlan_latestSnapshot_containsDaysMealsAndIngredients() = runBlocking {
+        val profileId = db.userProfileDao().insert(profile("Piano completo"))
+        val repository = MealPlanRepository(db)
+        val weekStart = 21000L
+        val planId = repository.createPlan(profileId, weekStart, 1000)
+        repository.appendVersion(
+            planId = planId,
+            createdAtEpochMillis = 2000,
+            draft = PlanVersionDraft(
+                source = "TEST",
+                reason = null,
+                targetKcal = 2200,
+                targetProteinG = 160f,
+                targetCarbsG = 230f,
+                targetFatG = 70f,
+                days = listOf(
+                    DayDraft(
+                        dateEpochDay = weekStart,
+                        totalKcal = 2200,
+                        proteinG = 160f,
+                        carbsG = 230f,
+                        fatG = 70f,
+                        meals = listOf(
+                            MealDraft(
+                                type = "Pranzo",
+                                title = "Riso e pollo",
+                                timeMinutes = 780,
+                                kcal = 700,
+                                proteinG = 50f,
+                                carbsG = 80f,
+                                fatG = 18f,
+                                preparation = "Cuoci e componi",
+                                ingredients = listOf(
+                                    IngredientDraft("Riso", 80f, "g", "80 g", "DRY", "HIGH", "carbs"),
+                                    IngredientDraft("Pollo", 200f, "g", "200 g", "RAW", "HIGH", "protein"),
+                                ),
+                            )
+                        ),
+                    )
+                ),
+            ),
+        )
+
+        val snapshot = repository.loadLatestSnapshot(profileId, weekStart)!!
+        assertEquals(profileId, snapshot.profileId)
+        assertEquals(1, snapshot.version.versionNumber)
+        assertEquals(1, snapshot.version.days.size)
+        assertEquals("Riso e pollo", snapshot.version.days.single().meals.single().title)
+        assertEquals(listOf("Riso", "Pollo"), snapshot.version.days.single().meals.single().ingredients.map { it.name })
     }
 
     private fun profile(name: String): UserProfileEntity {
