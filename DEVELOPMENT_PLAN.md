@@ -300,6 +300,10 @@ La Home e il Profilo non sono ancora marcati come step 6 completato: restano da 
 - Semplificazione dichiarata: le icone ingrediente usano foto reali di categoria (`food-categories/*`: carbs/protein/vegetables/fats/condiments) non specifiche per singolo alimento; Carote riusa la stessa foto di Zucchine (nessun asset dedicato alla carota). Il testo del tab "Preparazione" è generico/inventato (nessun testo reale di ricetta fornito negli asset).
 - Verificato a runtime con flusso reale completo (Splash → Onboarding → Home → tab Alimentazione → riga Pranzo): foto e dati corretti, toggle Ingredienti/Preparazione funzionante, icone check/refresh renderizzate correttamente.
 
+- Lista spesa ricostruita da zero confrontando `99-screen-references/09_shopping_list_reference.png`: `SelectableSegmentView` per il toggle di vista Settimana/Categorie, secondo `SelectableSegmentView` per il filtro Tutte/Da comprare/Presi con icona di reset (`ic_refresh`) per azzerare le spunte, 3 sezioni (`SectionHeaderView`: Proteine, Cereali e derivati, Frutta e verdura) con nuovo componente riutilizzabile `ShoppingItemRowView` (checkbox verde + icona circolare foto reale categoria + nome + quantità) per 11 articoli, pulsante verde "Esporta lista" con icona download.
+- Semplificazione dichiarata: le etichette esatte della riga filtri erano illeggibili nel crop di riferimento a bassa risoluzione ("Tutte"/"Tutte"/checkbox/icona); interpretate come "Tutte"/"Da comprare"/"Presi" + reset, pattern UX comune per liste spesa. Le icone articolo riusano le foto di categoria già presenti (proteine/cereali/frutta-verdura/latticini), non foto per singolo alimento (es. Mele riusa la stessa foto di Banane, Carote riusa la stessa foto di Zucchine).
+- Verificato a runtime con flusso reale completo (Home → tab Alimentazione → icona carrello): checkbox Salmone/Uova pre-spuntate correttamente, icona reset azzera tutte le spunte, tutte le 11 righe e le 3 sezioni corrispondono ai dati del mock.
+
 ### Prossimo step
 Completare la verifica UI su device/emulatore per tutte le Activity, in portrait e landscape dove previsto, prima di passare allo step 7 Persistenza locale.
 

@@ -1,9 +1,95 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:background="@color/bg_primary"><ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp"><TextView android:id="@+id/backButton" android:layout_width="match_parent" android:layout_height="48dp" android:text="‹             Lista della spesa" android:textStyle="bold" android:textSize="20sp" android:gravity="center_vertical" android:textColor="@color/text_primary"/><TextView android:layout_width="match_parent" android:layout_height="42dp" android:gravity="center" android:background="@drawable/bg_positive" android:text="Settimana 14 – 20 Settembre 2026" android:textColor="@color/text_primary" android:textStyle="bold"/><TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="14dp" android:text="Proteine" android:textStyle="bold" android:textSize="17sp" android:textColor="@color/text_primary"/><TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="14dp" android:background="@drawable/bg_card" android:text="☑ Petto di pollo                                      1,4 kg
-☐ Salmone                                               600 g
-☑ Uova                                                   12 pz
-☐ Yogurt greco                                         1,8 kg" android:lineSpacingExtra="12dp" android:textColor="@color/text_primary"/><TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="Cereali e derivati" android:textStyle="bold" android:textSize="17sp" android:textColor="@color/text_primary"/><TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="14dp" android:background="@drawable/bg_card" android:text="☐ Riso basmati                                        1,2 kg
-☐ Pasta integrale                                      500 g
-☑ Avena                                                   700 g" android:lineSpacingExtra="12dp" android:textColor="@color/text_primary"/><TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="Frutta e verdura" android:textStyle="bold" android:textSize="17sp" android:textColor="@color/text_primary"/><TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="14dp" android:background="@drawable/bg_card" android:text="☐ Banane                                                   7 pz
-☐ Mele                                                        5 pz
-☐ Zucchine                                                1,5 kg
-☐ Carote                                                     1 kg" android:lineSpacingExtra="12dp" android:textColor="@color/text_primary"/><TextView android:layout_width="match_parent" android:layout_height="52dp" android:layout_marginTop="16dp" android:gravity="center" android:background="@drawable/bg_button_green" android:text="Esporta lista" android:textColor="@color/white" android:textStyle="bold"/></LinearLayout></ScrollView><include layout="@layout/view_bottom_navigation"/></LinearLayout>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg_primary">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="@dimen/space_16">
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical">
+                <TextView android:id="@+id/backButton" android:layout_width="40dp" android:layout_height="40dp" android:gravity="center" android:text="‹" android:textSize="30sp" android:textColor="@color/text_primary" />
+                <Space android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" />
+            </LinearLayout>
+
+            <com.myfitai.app.ui.widgets.SelectableSegmentView
+                android:id="@+id/viewModeSegment"
+                android:layout_width="match_parent"
+                android:layout_height="44dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_8"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <com.myfitai.app.ui.widgets.SelectableSegmentView
+                    android:id="@+id/filterSegment"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="36dp" />
+                <ImageView
+                    android:id="@+id/resetButton"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginStart="@dimen/space_8"
+                    android:padding="4dp"
+                    android:src="@drawable/ic_refresh"
+                    android:contentDescription="Azzera selezione" />
+            </LinearLayout>
+
+            <com.myfitai.app.ui.widgets.SectionHeaderView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_20"
+                android:text="Proteine" />
+            <com.myfitai.app.ui.widgets.ShoppingItemRowView android:id="@+id/itemChicken" android:layout_width="match_parent" android:layout_height="wrap_content" />
+            <com.myfitai.app.ui.widgets.ShoppingItemRowView android:id="@+id/itemSalmon" android:layout_width="match_parent" android:layout_height="wrap_content" />
+            <com.myfitai.app.ui.widgets.ShoppingItemRowView android:id="@+id/itemEggs" android:layout_width="match_parent" android:layout_height="wrap_content" />
+            <com.myfitai.app.ui.widgets.ShoppingItemRowView android:id="@+id/itemYogurt" android:layout_width="match_parent" android:layout_height="wrap_content" />
+
+            <com.myfitai.app.ui.widgets.SectionHeaderView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_20"
+                android:text="Cereali e derivati" />
+            <com.myfitai.app.ui.widgets.ShoppingItemRowView android:id="@+id/itemRice" android:layout_width="match_parent" android:layout_height="wrap_content" />
+            <com.myfitai.app.ui.widgets.ShoppingItemRowView android:id="@+id/itemPasta" android:layout_width="match_parent" android:layout_height="wrap_content" />
+            <com.myfitai.app.ui.widgets.ShoppingItemRowView android:id="@+id/itemOats" android:layout_width="match_parent" android:layout_height="wrap_content" />
+
+            <com.myfitai.app.ui.widgets.SectionHeaderView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_20"
+                android:text="Frutta e verdura" />
+            <com.myfitai.app.ui.widgets.ShoppingItemRowView android:id="@+id/itemBanana" android:layout_width="match_parent" android:layout_height="wrap_content" />
+            <com.myfitai.app.ui.widgets.ShoppingItemRowView android:id="@+id/itemApple" android:layout_width="match_parent" android:layout_height="wrap_content" />
+            <com.myfitai.app.ui.widgets.ShoppingItemRowView android:id="@+id/itemZucchini" android:layout_width="match_parent" android:layout_height="wrap_content" />
+            <com.myfitai.app.ui.widgets.ShoppingItemRowView android:id="@+id/itemCarrot" android:layout_width="match_parent" android:layout_height="wrap_content" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/exportButton"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginTop="@dimen/space_20"
+                android:text="Esporta lista"
+                android:textAllCaps="false"
+                android:textStyle="bold"
+                app:icon="@drawable/ic_setting_export"
+                app:iconTint="@color/white"
+                app:iconGravity="textStart"
+                app:cornerRadius="12dp"
+                app:backgroundTint="@color/accent_green" />
+        </LinearLayout>
+    </ScrollView>
+    <include layout="@layout/view_bottom_navigation" />
+</LinearLayout>
