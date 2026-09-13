@@ -19,8 +19,19 @@ class GeminiProvider(
             append("\n\n")
             append(request.userPrompt.trim())
         }
+        val parts = JSONArray().put(JSONObject().put("text", prompt))
+        request.image?.let { image ->
+            parts.put(
+                JSONObject().put(
+                    "inlineData",
+                    JSONObject()
+                        .put("mimeType", image.mimeType)
+                        .put("data", image.base64Data)
+                )
+            )
+        }
         val body = JSONObject()
-            .put("contents", JSONArray().put(JSONObject().put("role", "user").put("parts", JSONArray().put(JSONObject().put("text", prompt)))))
+            .put("contents", JSONArray().put(JSONObject().put("role", "user").put("parts", parts)))
             .put(
                 "generationConfig",
                 JSONObject()
