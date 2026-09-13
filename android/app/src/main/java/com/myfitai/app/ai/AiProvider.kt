@@ -1,9 +1,10 @@
 package com.myfitai.app.ai
 
 /**
- * Contract only. Network integration intentionally deferred.
- * All providers must return the same domain JSON contracts.
+ * Provider-neutral contract. Both Gemini and OpenAI receive the same canonical
+ * prompts/schema and must return only the structured JSON payload.
  */
 interface AiProvider {
     val type: AiProviderType
+    suspend fun generateStructured(request: AiStructuredRequest): AiRawResponse
 }
