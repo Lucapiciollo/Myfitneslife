@@ -25,10 +25,15 @@ class SelectableSegmentView @JvmOverloads constructor(
             val button = MaterialButton(context, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
                 id = android.view.View.generateViewId()
                 text = label
-                textSize = 14f
+                textSize = 12f
                 isAllCaps = false
+                maxLines = 1
                 cornerRadius = (10 * resources.displayMetrics.density).toInt()
                 strokeWidth = 0
+                setPadding(
+                    (4 * resources.displayMetrics.density).toInt(), 0,
+                    (4 * resources.displayMetrics.density).toInt(), 0,
+                )
                 layoutParams = LayoutParams(0, LayoutParams.MATCH_PARENT, 1f)
                 setTextColor(
                     android.content.res.ColorStateList(

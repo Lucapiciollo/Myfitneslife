@@ -32,6 +32,14 @@ class WeightTrendChartView @JvmOverloads constructor(
         chart.setDrawBorders(false)
     }
 
+    /** Mostra l'asse Y con i valori numerici (nascosto di default, usato in Home). */
+    fun showYAxisLabels() {
+        chart.axisLeft.isEnabled = true
+        chart.axisLeft.textColor = context.getColor(R.color.text_muted)
+        chart.axisLeft.isDrawGridLines = false
+        chart.axisLeft.isDrawAxisLine = false
+    }
+
     fun setData(values: List<Float>) {
         val entries = values.mapIndexed { index, value -> EntryFloat(index.toFloat(), value) }.toMutableList()
         val dataSet = LineDataSet<EntryFloat>(entries, "weight").apply {
