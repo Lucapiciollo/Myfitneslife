@@ -1,1 +1,72 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"><uses-permission android:name="android.permission.INTERNET"/><application android:allowBackup="false" android:fullBackupContent="false" android:label="MyFitAI" android:supportsRtl="true" android:theme="@style/Theme.MyFitAI"><provider android:name="androidx.core.content.FileProvider" android:authorities="${applicationId}.fileprovider" android:exported="false" android:grantUriPermissions="true"><meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths"/></provider><activity android:name=".ui.ProfileEditActivity"/><activity android:name=".ui.MealDetailActivity"/><activity android:name=".ui.WeeklyReviewActivity"/><activity android:name=".ui.ShoppingListActivity"/><activity android:name=".ui.NotificationsActivity"/><activity android:name=".ui.PhysicalEvolutionActivity"/><activity android:name=".ui.SettingsActivity"/><activity android:name=".ui.ExportActivity"/><activity android:name=".ui.AiAnalysisActivity"/><activity android:name=".ui.HistoryActivity"/><activity android:name=".ui.AdjustedPlanActivity"/><activity android:name=".ui.CheatEntryActivity"/><activity android:name=".ui.FoodPlanActivity"/><activity android:name=".ui.NewWorkoutActivity"/><activity android:name=".ui.WorkoutsActivity"/><activity android:name=".ui.NewBodyMeasurementActivity"/><activity android:name=".ui.BodyMeasuresActivity"/><activity android:name=".ui.BiaActivity"/><activity android:name=".ui.HomeActivity"/><activity android:name=".ui.ProfileActivity"/><activity android:name=".ui.OnboardingActivity" android:launchMode="singleTop"/><activity android:name=".ui.SplashActivity" android:exported="true" android:launchMode="singleTop" android:noHistory="true"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity></application></manifest>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <application
+        android:name=".MyFitAiApplication"
+        android:allowBackup="false"
+        android:fullBackupContent="false"
+        android:label="MyFitAI"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.MyFitAI">
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+        <receiver
+            android:name=".notifications.ReminderReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name=".notifications.ReminderRescheduleReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+            </intent-filter>
+        </receiver>
+
+        <activity android:name=".ui.ProfileEditActivity" />
+        <activity android:name=".ui.MealDetailActivity" />
+        <activity android:name=".ui.WeeklyReviewActivity" />
+        <activity android:name=".ui.ShoppingListActivity" />
+        <activity android:name=".ui.NotificationsActivity" />
+        <activity android:name=".ui.PhysicalEvolutionActivity" />
+        <activity android:name=".ui.SettingsActivity" />
+        <activity android:name=".ui.ExportActivity" />
+        <activity android:name=".ui.AiAnalysisActivity" />
+        <activity android:name=".ui.HistoryActivity" />
+        <activity android:name=".ui.AdjustedPlanActivity" />
+        <activity android:name=".ui.CheatEntryActivity" />
+        <activity android:name=".ui.FoodPlanActivity" />
+        <activity android:name=".ui.NewWorkoutActivity" />
+        <activity android:name=".ui.WorkoutsActivity" />
+        <activity android:name=".ui.NewBodyMeasurementActivity" />
+        <activity android:name=".ui.BodyMeasuresActivity" />
+        <activity android:name=".ui.BiaActivity" />
+        <activity android:name=".ui.HomeActivity" />
+        <activity android:name=".ui.ProfileActivity" />
+        <activity android:name=".ui.OnboardingActivity" android:launchMode="singleTop" />
+        <activity
+            android:name=".ui.SplashActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:noHistory="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
