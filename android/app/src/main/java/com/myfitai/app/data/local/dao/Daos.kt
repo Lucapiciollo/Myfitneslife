@@ -44,14 +44,9 @@ interface BiaMeasurementDao {
     @Query("SELECT * FROM bia_measurements WHERE profileId = :profileId AND measuredAtEpochMillis BETWEEN :from AND :to ORDER BY measuredAtEpochMillis ASC, id ASC")
     fun observeBetween(profileId: Long, from: Long, to: Long): Flow<List<BiaMeasurementEntity>>
 
-    @Insert
-    suspend fun insert(value: BiaMeasurementEntity): Long
-
-    @Update
-    suspend fun update(value: BiaMeasurementEntity)
-
-    @Delete
-    suspend fun delete(value: BiaMeasurementEntity)
+    @Insert suspend fun insert(value: BiaMeasurementEntity): Long
+    @Update suspend fun update(value: BiaMeasurementEntity)
+    @Delete suspend fun delete(value: BiaMeasurementEntity)
 }
 
 @Dao
@@ -65,14 +60,9 @@ interface BodyMeasurementDao {
     @Query("SELECT * FROM body_measurements WHERE profileId = :profileId AND measuredAtEpochMillis BETWEEN :from AND :to ORDER BY measuredAtEpochMillis ASC, id ASC")
     fun observeBetween(profileId: Long, from: Long, to: Long): Flow<List<BodyMeasurementEntity>>
 
-    @Insert
-    suspend fun insert(value: BodyMeasurementEntity): Long
-
-    @Update
-    suspend fun update(value: BodyMeasurementEntity)
-
-    @Delete
-    suspend fun delete(value: BodyMeasurementEntity)
+    @Insert suspend fun insert(value: BodyMeasurementEntity): Long
+    @Update suspend fun update(value: BodyMeasurementEntity)
+    @Delete suspend fun delete(value: BodyMeasurementEntity)
 }
 
 @Dao
@@ -83,14 +73,9 @@ interface WorkoutDao {
     @Query("SELECT * FROM workouts WHERE profileId = :profileId AND startedAtEpochMillis BETWEEN :from AND :to ORDER BY startedAtEpochMillis ASC, id ASC")
     fun observeBetween(profileId: Long, from: Long, to: Long): Flow<List<WorkoutEntity>>
 
-    @Insert
-    suspend fun insert(value: WorkoutEntity): Long
-
-    @Update
-    suspend fun update(value: WorkoutEntity)
-
-    @Delete
-    suspend fun delete(value: WorkoutEntity)
+    @Insert suspend fun insert(value: WorkoutEntity): Long
+    @Update suspend fun update(value: WorkoutEntity)
+    @Delete suspend fun delete(value: WorkoutEntity)
 }
 
 @Dao
@@ -119,35 +104,24 @@ interface MealPlanDao {
     @Query("SELECT * FROM meal_ingredients WHERE mealId = :mealId ORDER BY sortOrder ASC, id ASC")
     suspend fun getIngredients(mealId: Long): List<MealIngredientEntity>
 
-    @Insert
-    suspend fun insertPlan(value: MealPlanEntity): Long
-
-    @Insert
-    suspend fun insertVersion(value: MealPlanVersionEntity): Long
-
-    @Insert
-    suspend fun insertDays(values: List<MealPlanDayEntity>): List<Long>
-
-    @Insert
-    suspend fun insertMeals(values: List<MealEntity>): List<Long>
-
-    @Insert
-    suspend fun insertIngredients(values: List<MealIngredientEntity>): List<Long>
+    @Insert suspend fun insertPlan(value: MealPlanEntity): Long
+    @Insert suspend fun insertVersion(value: MealPlanVersionEntity): Long
+    @Insert suspend fun insertDays(values: List<MealPlanDayEntity>): List<Long>
+    @Insert suspend fun insertMeals(values: List<MealEntity>): List<Long>
+    @Insert suspend fun insertIngredients(values: List<MealIngredientEntity>): List<Long>
 }
 
 @Dao
 interface CheatEntryDao {
-    @Query("SELECT * FROM cheat_entries WHERE profileId = :profileId ORDER BY occurredAtEpochMillis DESC")
+    @Query("SELECT * FROM cheat_entries WHERE profileId = :profileId ORDER BY occurredAtEpochMillis DESC, id DESC")
     fun observeAll(profileId: Long): Flow<List<CheatEntryEntity>>
 
-    @Query("SELECT * FROM cheat_entries WHERE profileId = :profileId AND occurredAtEpochMillis BETWEEN :from AND :to ORDER BY occurredAtEpochMillis ASC")
+    @Query("SELECT * FROM cheat_entries WHERE profileId = :profileId AND occurredAtEpochMillis BETWEEN :from AND :to ORDER BY occurredAtEpochMillis ASC, id ASC")
     fun observeBetween(profileId: Long, from: Long, to: Long): Flow<List<CheatEntryEntity>>
 
-    @Insert
-    suspend fun insert(value: CheatEntryEntity): Long
-
-    @Delete
-    suspend fun delete(value: CheatEntryEntity)
+    @Insert suspend fun insert(value: CheatEntryEntity): Long
+    @Update suspend fun update(value: CheatEntryEntity)
+    @Delete suspend fun delete(value: CheatEntryEntity)
 }
 
 @Dao
