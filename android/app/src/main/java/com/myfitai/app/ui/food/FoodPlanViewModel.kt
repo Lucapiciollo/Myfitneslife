@@ -69,6 +69,13 @@ class FoodPlanViewModel(
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), State())
 
+    fun selectWeek(weekStartEpochDay: Long) {
+        if (generationState.value.running) return
+        selectedWeekStart.value = planWeekMonday(LocalDate.ofEpochDay(weekStartEpochDay))
+        selectedDayIndex.value = todayIndexInWeek(selectedWeekStart.value)
+        clearGenerationMessage()
+    }
+
     fun previousWeek() { if (!generationState.value.running) { selectedWeekStart.value = selectedWeekStart.value.minusWeeks(1); selectedDayIndex.value = 0; clearGenerationMessage() } }
     fun nextWeek() { if (!generationState.value.running) { selectedWeekStart.value = selectedWeekStart.value.plusWeeks(1); selectedDayIndex.value = 0; clearGenerationMessage() } }
     fun selectDay(index: Int) { selectedDayIndex.value = index.coerceIn(0, 6) }
