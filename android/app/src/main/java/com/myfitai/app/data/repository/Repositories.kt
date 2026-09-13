@@ -6,47 +6,51 @@ import com.myfitai.app.data.local.entity.*
 import kotlinx.coroutines.flow.Flow
 
 class UserProfileRepository(private val db: MyFitAiDatabase) {
-    val profile: Flow<UserProfileEntity?> = db.userProfileDao().observe()
-    suspend fun get() = db.userProfileDao().get()
-    suspend fun upsert(value: UserProfileEntity) = db.userProfileDao().upsert(value)
+    val profiles: Flow<List<UserProfileEntity>> = db.userProfileDao().observeAll()
+    fun profile(profileId: Long): Flow<UserProfileEntity?> = db.userProfileDao().observe(profileId)
+    suspend fun get(profileId: Long) = db.userProfileDao().get(profileId)
+    suspend fun getFirst() = db.userProfileDao().getFirst()
+    suspend fun create(value: UserProfileEntity): Long = db.userProfileDao().insert(value)
+    suspend fun update(value: UserProfileEntity) = db.userProfileDao().update(value)
+    suspend fun delete(value: UserProfileEntity) = db.userProfileDao().delete(value)
 }
 
 class BiaRepository(private val db: MyFitAiDatabase) {
-    val all: Flow<List<BiaMeasurementEntity>> = db.biaMeasurementDao().observeAll()
-    val latest: Flow<BiaMeasurementEntity?> = db.biaMeasurementDao().observeLatest()
-    fun between(from: Long, to: Long) = db.biaMeasurementDao().observeBetween(from, to)
+    fun all(profileId: Long): Flow<List<BiaMeasurementEntity>> = db.biaMeasurementDao().observeAll(profileId)
+    fun latest(profileId: Long): Flow<BiaMeasurementEntity?> = db.biaMeasurementDao().observeLatest(profileId)
+    fun between(profileId: Long, from: Long, to: Long) = db.biaMeasurementDao().observeBetween(profileId, from, to)
     suspend fun insert(value: BiaMeasurementEntity) = db.biaMeasurementDao().insert(value)
     suspend fun update(value: BiaMeasurementEntity) = db.biaMeasurementDao().update(value)
     suspend fun delete(value: BiaMeasurementEntity) = db.biaMeasurementDao().delete(value)
 }
 
 class BodyMeasurementRepository(private val db: MyFitAiDatabase) {
-    val all: Flow<List<BodyMeasurementEntity>> = db.bodyMeasurementDao().observeAll()
-    val latest: Flow<BodyMeasurementEntity?> = db.bodyMeasurementDao().observeLatest()
-    fun between(from: Long, to: Long) = db.bodyMeasurementDao().observeBetween(from, to)
+    fun all(profileId: Long): Flow<List<BodyMeasurementEntity>> = db.bodyMeasurementDao().observeAll(profileId)
+    fun latest(profileId: Long): Flow<BodyMeasurementEntity?> = db.bodyMeasurementDao().observeLatest(profileId)
+    fun between(profileId: Long, from: Long, to: Long) = db.bodyMeasurementDao().observeBetween(profileId, from, to)
     suspend fun insert(value: BodyMeasurementEntity) = db.bodyMeasurementDao().insert(value)
     suspend fun update(value: BodyMeasurementEntity) = db.bodyMeasurementDao().update(value)
     suspend fun delete(value: BodyMeasurementEntity) = db.bodyMeasurementDao().delete(value)
 }
 
 class WorkoutRepository(private val db: MyFitAiDatabase) {
-    val all: Flow<List<WorkoutEntity>> = db.workoutDao().observeAll()
-    fun between(from: Long, to: Long) = db.workoutDao().observeBetween(from, to)
+    fun all(profileId: Long): Flow<List<WorkoutEntity>> = db.workoutDao().observeAll(profileId)
+    fun between(profileId: Long, from: Long, to: Long) = db.workoutDao().observeBetween(profileId, from, to)
     suspend fun insert(value: WorkoutEntity) = db.workoutDao().insert(value)
     suspend fun update(value: WorkoutEntity) = db.workoutDao().update(value)
     suspend fun delete(value: WorkoutEntity) = db.workoutDao().delete(value)
 }
 
 class CheatEntryRepository(private val db: MyFitAiDatabase) {
-    val all: Flow<List<CheatEntryEntity>> = db.cheatEntryDao().observeAll()
-    fun between(from: Long, to: Long) = db.cheatEntryDao().observeBetween(from, to)
+    fun all(profileId: Long): Flow<List<CheatEntryEntity>> = db.cheatEntryDao().observeAll(profileId)
+    fun between(profileId: Long, from: Long, to: Long) = db.cheatEntryDao().observeBetween(profileId, from, to)
     suspend fun insert(value: CheatEntryEntity) = db.cheatEntryDao().insert(value)
     suspend fun delete(value: CheatEntryEntity) = db.cheatEntryDao().delete(value)
 }
 
 class WeeklyReviewRepository(private val db: MyFitAiDatabase) {
-    val all: Flow<List<WeeklyReviewEntity>> = db.weeklyReviewDao().observeAll()
-    suspend fun getForWeek(weekStartEpochDay: Long) = db.weeklyReviewDao().getForWeek(weekStartEpochDay)
+    fun all(profileId: Long): Flow<List<WeeklyReviewEntity>> = db.weeklyReviewDao().observeAll(profileId)
+    suspend fun getForWeek(profileId: Long, weekStartEpochDay: Long) = db.weeklyReviewDao().getForWeek(profileId, weekStartEpochDay)
     suspend fun upsert(value: WeeklyReviewEntity) = db.weeklyReviewDao().upsert(value)
 }
 
@@ -92,23 +96,21 @@ data class PlanVersionDraft(
 )
 
 class MealPlanRepository(private val db: MyFitAiDatabase) {
-    val plans: Flow<List<MealPlanEntity>> = db.mealPlanDao().observePlans()
-
+    fun plans(profileId: Long): Flow<List<MealPlanEntity>> = db.mealPlanDao().observePlans(profileId)
     fun versions(planId: Long): Flow<List<MealPlanVersionEntity>> = db.mealPlanDao().observeVersions(planId)
+    suspend fun getPlanForWeek(profileId: Long, weekStartEpochDay: Long) = db.mealPlanDao().getPlanForWeek(profileId, weekStartEpochDay)
 
-    suspend fun createPlan(weekStartEpochDay: Long, createdAtEpochMillis: Long): Long =
+    suspend fun createPlan(profileId: Long, weekStartEpochDay: Long, createdAtEpochMillis: Long): Long =
         db.mealPlanDao().insertPlan(
             MealPlanEntity(
+                profileId = profileId,
                 createdAtEpochMillis = createdAtEpochMillis,
                 weekStartEpochDay = weekStartEpochDay,
                 status = "ACTIVE",
             )
         )
 
-    /**
-     * Salva una versione immutabile completa. Non aggiorna versioni precedenti: lo sgarro/adattamento
-     * dovrà sempre passare da questo metodo creando versionNumber + 1.
-     */
+    /** Salva una versione immutabile completa: mai sovrascrivere una versione precedente. */
     suspend fun appendVersion(
         planId: Long,
         createdAtEpochMillis: Long,
@@ -131,53 +133,43 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
         )
 
         draft.days.forEach { day ->
-            val dayId = dao.insertDays(
-                listOf(
-                    MealPlanDayEntity(
-                        versionId = versionId,
-                        dateEpochDay = day.dateEpochDay,
-                        totalKcal = day.totalKcal,
-                        proteinG = day.proteinG,
-                        carbsG = day.carbsG,
-                        fatG = day.fatG,
-                    )
-                )
-            ).single()
+            val dayId = dao.insertDays(listOf(MealPlanDayEntity(
+                versionId = versionId,
+                dateEpochDay = day.dateEpochDay,
+                totalKcal = day.totalKcal,
+                proteinG = day.proteinG,
+                carbsG = day.carbsG,
+                fatG = day.fatG,
+            ))).single()
 
             day.meals.forEachIndexed { mealIndex, meal ->
-                val mealId = dao.insertMeals(
-                    listOf(
-                        MealEntity(
-                            dayId = dayId,
-                            sortOrder = mealIndex,
-                            type = meal.type,
-                            title = meal.title,
-                            timeMinutes = meal.timeMinutes,
-                            kcal = meal.kcal,
-                            proteinG = meal.proteinG,
-                            carbsG = meal.carbsG,
-                            fatG = meal.fatG,
-                            preparation = meal.preparation,
-                        )
-                    )
-                ).single()
+                val mealId = dao.insertMeals(listOf(MealEntity(
+                    dayId = dayId,
+                    sortOrder = mealIndex,
+                    type = meal.type,
+                    title = meal.title,
+                    timeMinutes = meal.timeMinutes,
+                    kcal = meal.kcal,
+                    proteinG = meal.proteinG,
+                    carbsG = meal.carbsG,
+                    fatG = meal.fatG,
+                    preparation = meal.preparation,
+                ))).single()
 
                 if (meal.ingredients.isNotEmpty()) {
-                    dao.insertIngredients(
-                        meal.ingredients.mapIndexed { ingredientIndex, ingredient ->
-                            MealIngredientEntity(
-                                mealId = mealId,
-                                name = ingredient.name,
-                                quantity = ingredient.quantity,
-                                unit = ingredient.unit,
-                                displayDose = ingredient.displayDose,
-                                weightState = ingredient.weightState,
-                                nutritionConfidence = ingredient.nutritionConfidence,
-                                category = ingredient.category,
-                                sortOrder = ingredientIndex,
-                            )
-                        }
-                    )
+                    dao.insertIngredients(meal.ingredients.mapIndexed { ingredientIndex, ingredient ->
+                        MealIngredientEntity(
+                            mealId = mealId,
+                            name = ingredient.name,
+                            quantity = ingredient.quantity,
+                            unit = ingredient.unit,
+                            displayDose = ingredient.displayDose,
+                            weightState = ingredient.weightState,
+                            nutritionConfidence = ingredient.nutritionConfidence,
+                            category = ingredient.category,
+                            sortOrder = ingredientIndex,
+                        )
+                    })
                 }
             }
         }
