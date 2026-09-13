@@ -62,7 +62,7 @@ class NutritionAdviceService(
             ),
             schemaName = NutritionAdviceContract.SCHEMA_NAME,
             schemaJson = NutritionAdviceContract.schemaJson,
-            maxOutputTokens = 900,
+            maxOutputTokens = 1_200,
         )
 
         var parsed: NutritionAdviceContract.Response? = null
@@ -118,7 +118,7 @@ class NutritionAdviceService(
         if (deviations.isEmpty()) appendLine("NONE") else deviations.forEach { item ->
             appendLine("${item.description}|${item.estimatedKcal}|P${item.estimatedProteinG}|C${item.estimatedCarbsG}|F${item.estimatedFatG}")
         }
-        appendLine("Answer compactly. Prefer 1-3 practical options that fit the plan. Do not modify the plan in this call.")
+        appendLine("Return exactly 5 compact practical options, already ordered from best fit to worst fit for the current plan. Do not modify the plan in this call.")
     }
 
     private fun isLocallyInScope(value: String): Boolean {
@@ -161,7 +161,10 @@ IN SCOPE:
 - Use only app context. Planned meals are not proof of consumption.
 - No diagnosis/treatment, invented conditions, punitive fasting or extreme restriction.
 - Be extremely concise: answer <=120 characters.
-- Return 1-3 suggestions when useful, never more than 3.
+- Return exactly 5 suggestions.
+- Order suggestions from BEST to WORST for the user's current nutrition plan.
+- Ranking priority: 1) fit with remaining kcal/macros and current plan, 2) nutritional balance/satiety, 3) lower unnecessary calorie impact, 4) practicality. Do not use moral labels such as good/bad food.
+- The first suggestion must be the option you consider the best fit; the fifth the least suitable of the five, while still being a reasonable option.
 - suggestion.title: <=45 characters; reason: <=70 characters.
 - assumptions: empty unless essential; if used <=80 characters.
 - Each suggestion must include kcal, protein, carbs and fat for the whole suggested food/meal.
