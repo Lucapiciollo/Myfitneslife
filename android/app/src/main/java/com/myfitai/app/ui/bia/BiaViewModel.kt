@@ -28,6 +28,9 @@ class BiaViewModel(
     private val _saved = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val saved = _saved.asSharedFlow()
 
+    private val _deleted = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val deleted = _deleted.asSharedFlow()
+
     private val _error = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val error = _error.asSharedFlow()
 
@@ -49,8 +52,25 @@ class BiaViewModel(
             _error.tryEmit("Nessun profilo attivo")
             return
         }
-        if (listOf(weightKg, bodyFatPercent, visceralFatLevel, muscleMassKg, skeletalMuscleKg, bodyWaterPercent, bmrKcal).all { it == null }) {
+        val values = listOf(weightKg, bodyFatPercent, visceralFatLevel, muscleMassKg, skeletalMuscleKg, bodyWaterPercent, bmrKcal)
+        if (values.all { it == null }) {
             _error.tryEmit("Inserisci almeno un valore BIA")
+            return
+        }
+        if (values.filterNotNull().any { !it.isFinite() || it <= 0f }) {
+            _error.tryEmit("I valori BIA devono essere maggiori di zero")
+            return
+        }
+        if (bodyFatPercent != null && bodyFatPercent > 100f) {
+            _error.tryEmit("La percentuale di grasso deve essere compresa tra 0 e 100")
+            return
+        }
+        if (bodyWaterPercent != null && bodyWaterPercent > 100f) {
+            _error.tryEmit("La percentuale di acqua deve essere compresa tra 0 e 100")
+            return
+        }
+        if (bmrKcal != null && bmrKcal > 10_000f) {
+            _error.tryEmit("Controlla il valore BMR")
             return
         }
 
@@ -78,9 +98,12 @@ class BiaViewModel(
         }
     }
 
-    suspend fun delete(measurement: BiaMeasurementEntity) {
-        runCatching { repository.delete(measurement) }
-            .onFailure { _error.tryEmit("Impossibile eliminare la misurazione") }
+    fun delete(measurement: BiaMeasurementEntity) {
+        viewModelScope.launch {
+            runCatching { repository.delete(measurement) }
+                .onSuccess { _deleted.tryEmit(Unit) }
+                .onFailure { _error.tryEmit("Impossibile eliminare la misurazione") }
+        }
     }
 
     class Factory(
