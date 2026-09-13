@@ -30,7 +30,7 @@ class MealDetailViewModel(
         }
         viewModelScope.launch {
             _state.value = State(loading = true)
-            runCatching { repository.loadMeal(mealId) }
+            runCatching { repository.getMealDetail(mealId) }
                 .onSuccess { meal ->
                     _state.value = if (meal != null) State(meal = meal) else State(error = "Pasto non trovato")
                 }
