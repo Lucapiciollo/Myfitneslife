@@ -1,2 +1,99 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:background="@color/bg_primary"><ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:fillViewport="true"><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp"><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:paddingBottom="12dp"><TextView android:id="@+id/backButton" android:layout_width="40dp" android:layout_height="40dp" android:gravity="center" android:text="‹" android:textSize="32sp" android:textColor="@color/text_primary"/><TextView android:id="@+id/title" style="@style/Text.MyFitAI.ScreenTitle" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Piano aggiornato"/><Space android:layout_width="40dp" android:layout_height="40dp"/></LinearLayout><TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Ho registrato il tuo gelato (≈ 350 kcal).
-Ecco il piano aggiornato per oggi:" android:textColor="@color/text_primary" android:textSize="15sp"/><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="14dp" android:orientation="vertical" android:padding="14dp" android:background="@drawable/bg_positive"><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Nessun problema!" android:textColor="@color/accent_green" android:textStyle="bold"/><TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:text="Lo sgarro non compromette il tuo percorso. Ho leggermente modificato i pasti restanti e bilanciato la giornata." android:textColor="@color/white"/></LinearLayout><TextView style="@style/Text.MyFitAI.Section" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:layout_marginBottom="8dp" android:text="Nuovi pasti consigliati"/><LinearLayout android:layout_width="match_parent" android:layout_height="86dp" android:layout_marginTop="8dp" android:padding="12dp" android:orientation="vertical" android:background="@drawable/bg_white_card"><TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Pranzo" android:textColor="#182229" android:textStyle="bold"/><TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="Insalata di pollo, verdure, quinoa" android:textColor="#394A53"/><TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="-100 kcal rispetto al piano iniziale" android:textColor="#2B86D6" android:textSize="12sp"/></LinearLayout><LinearLayout android:layout_width="match_parent" android:layout_height="86dp" android:layout_marginTop="8dp" android:padding="12dp" android:orientation="vertical" android:background="@drawable/bg_white_card"><TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Spuntino" android:textColor="#182229" android:textStyle="bold"/><TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="Yogurt greco, frutti di bosco" android:textColor="#394A53"/><TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="-50 kcal" android:textColor="#2B86D6" android:textSize="12sp"/></LinearLayout><LinearLayout android:layout_width="match_parent" android:layout_height="86dp" android:layout_marginTop="8dp" android:padding="12dp" android:orientation="vertical" android:background="@drawable/bg_white_card"><TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Cena" android:textColor="#182229" android:textStyle="bold"/><TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="Zuppa di verdure + tonno" android:textColor="#394A53"/><TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="-150 kcal" android:textColor="#2B86D6" android:textSize="12sp"/></LinearLayout><TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:padding="12dp" android:background="@drawable/bg_card" android:text="Manteniamo le proteine alte e il deficit settimanale sotto controllo." android:textColor="@color/text_primary"/><TextView android:id="@+id/okButton" android:layout_width="match_parent" android:layout_height="52dp" android:layout_marginTop="16dp" android:gravity="center" android:background="@drawable/bg_button_green" android:text="OK" android:textColor="@color/bg_primary" android:textStyle="bold" android:textSize="15sp"/></LinearLayout></ScrollView></LinearLayout>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg_primary">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="@dimen/space_16">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:gravity="center_vertical">
+                <TextView
+                    android:id="@+id/backButton"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:gravity="center"
+                    android:text="‹"
+                    android:textSize="30sp"
+                    android:textColor="@color/text_primary" />
+                <TextView
+                    android:id="@+id/resultTitle"
+                    style="@style/Text.MyFitAI.ScreenTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="Piano aggiornato" />
+                <Space
+                    android:layout_width="40dp"
+                    android:layout_height="1dp" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/resultDescription"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_12"
+                android:textColor="@color/text_primary"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/resultSummary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_12"
+                android:padding="@dimen/space_16"
+                android:background="@drawable/bg_positive"
+                android:textColor="@color/white"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/modifiedHeader"
+                style="@style/Text.MyFitAI.Section"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_20"
+                android:text="Pasti futuri aggiornati" />
+
+            <LinearLayout
+                android:id="@+id/modifiedMealsContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_16"
+                android:padding="@dimen/space_12"
+                android:background="@drawable/bg_card"
+                android:text="Le modifiche riguardano solo i pasti successivi allo sgarro nella stessa giornata. I pasti passati e i giorni successivi restano invariati; se il bilanciamento richiederebbe restrizioni eccessive, l'app registra lo sgarro senza compensarlo."
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/okButton"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginTop="@dimen/space_20"
+                android:gravity="center"
+                android:background="@drawable/bg_button_green"
+                android:text="Vedi piano"
+                android:textColor="@color/bg_primary"
+                android:textStyle="bold"
+                android:textSize="15sp" />
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>
