@@ -25,6 +25,7 @@ class ExportActivity : BaseShellActivity() {
         findViewById<View>(R.id.exportJsonRow).setOnClickListener { export(ProfileExportService.Format.JSON) }
         findViewById<View>(R.id.exportCsvRow).setOnClickListener { export(ProfileExportService.Format.CSV_ZIP) }
         findViewById<View>(R.id.exportPdfRow).setOnClickListener { export(ProfileExportService.Format.PDF) }
+        findViewById<View>(R.id.exportWeeklyPlanPdfRow).setOnClickListener { export(ProfileExportService.Format.WEEKLY_PLAN_PDF) }
     }
 
     private fun export(format: ProfileExportService.Format) {
@@ -47,6 +48,11 @@ class ExportActivity : BaseShellActivity() {
     private fun setBusy(busy: Boolean, message: String) {
         findViewById<View>(R.id.exportProgress).visibility = if (busy) View.VISIBLE else View.GONE
         findViewById<TextView>(R.id.exportStatus).apply { visibility = View.VISIBLE; text = message }
-        listOf(R.id.exportJsonRow, R.id.exportCsvRow, R.id.exportPdfRow).forEach { findViewById<View>(it).isEnabled = !busy }
+        listOf(
+            R.id.exportJsonRow,
+            R.id.exportCsvRow,
+            R.id.exportPdfRow,
+            R.id.exportWeeklyPlanPdfRow,
+        ).forEach { findViewById<View>(it).isEnabled = !busy }
     }
 }
