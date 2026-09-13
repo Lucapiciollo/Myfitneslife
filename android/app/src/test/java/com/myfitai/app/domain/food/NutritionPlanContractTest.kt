@@ -1,6 +1,7 @@
 package com.myfitai.app.domain.food
 
 import com.myfitai.app.domain.calculation.NutritionBusinessValidator
+import com.myfitai.app.data.local.entity.WorkoutEntity
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -42,6 +43,7 @@ class NutritionPlanContractTest {
 
     @Test
     fun normalMode_withoutWorkouts_rejectsCreatine() {
+        val mode = SportsNutritionClassifier.classify("sedentario", emptyList())
         val changed = withFirstDaySupplements(
             response(),
             listOf(creatine(kcal = 0, protein = 0f, carbs = 0f, fat = 0f)),
@@ -51,13 +53,20 @@ class NutritionPlanContractTest {
                 changed,
                 week,
                 targets,
-                SportsNutritionClassifier.Mode.NORMAL,
+                mode,
             ).isSuccess,
         )
     }
 
     @Test
     fun sportMode_withWorkouts_allowsCreatine() {
+        val mode = SportsNutritionClassifier.classify(
+            "moderatamente attivo",
+            listOf(
+                workout(1_000L, "PESI", "Upper"),
+                workout(2_000L, "PESI", "Lower"),
+            ),
+        )
         val base = responseWithMacroRoomForSupplement()
         val changed = withFirstDaySupplements(
             base,
@@ -68,7 +77,7 @@ class NutritionPlanContractTest {
                 changed,
                 week,
                 targets,
-                SportsNutritionClassifier.Mode.SPORT,
+                mode,
             ).isSuccess,
         )
     }
@@ -218,4 +227,15 @@ class NutritionPlanContractTest {
             fatG = fat,
             notes = "Post-workout o praticita",
         )
+
+    private fun workout(startedAt: Long, type: String, title: String) = WorkoutEntity(
+        id = 0,
+        profileId = 1,
+        startedAtEpochMillis = startedAt,
+        type = type,
+        title = title,
+        durationMinutes = 60,
+        isRestDay = false,
+        notes = null,
+    )
 }
