@@ -10,15 +10,29 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:fillViewport="true">
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="@dimen/space_16">
 
-            <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical">
-                <TextView android:id="@+id/backButton" android:layout_width="40dp" android:layout_height="40dp" android:gravity="center" android:text="‹" android:textSize="30sp" android:textColor="@color/text_primary" />
-                <Space android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:gravity="center_vertical">
+                <TextView
+                    android:id="@+id/backButton"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:gravity="center"
+                    android:text="‹"
+                    android:textSize="30sp"
+                    android:textColor="@color/text_primary" />
+                <Space
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1" />
             </LinearLayout>
 
             <com.myfitai.app.ui.widgets.SelectableSegmentView
@@ -41,7 +55,7 @@
                 app:chipSpacingHorizontal="@dimen/space_8"
                 app:chipSpacingVertical="@dimen/space_8">
                 <com.google.android.material.chip.Chip android:id="@+id/chipPizza" style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Pizza" android:checkable="true" app:chipBackgroundColor="@color/chip_background_selector" android:textColor="@color/chip_text_selector" app:checkedIconVisible="false" app:chipStrokeColor="@color/divider" app:chipStrokeWidth="1dp" />
-                <com.google.android.material.chip.Chip android:id="@+id/chipGelato" style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Gelato" android:checkable="true" android:checked="true" app:chipBackgroundColor="@color/chip_background_selector" android:textColor="@color/chip_text_selector" app:checkedIconVisible="false" app:chipStrokeColor="@color/divider" app:chipStrokeWidth="1dp" />
+                <com.google.android.material.chip.Chip android:id="@+id/chipGelato" style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Gelato" android:checkable="true" app:chipBackgroundColor="@color/chip_background_selector" android:textColor="@color/chip_text_selector" app:checkedIconVisible="false" app:chipStrokeColor="@color/divider" app:chipStrokeWidth="1dp" />
                 <com.google.android.material.chip.Chip android:id="@+id/chipSushi" style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Sushi" android:checkable="true" app:chipBackgroundColor="@color/chip_background_selector" android:textColor="@color/chip_text_selector" app:checkedIconVisible="false" app:chipStrokeColor="@color/divider" app:chipStrokeWidth="1dp" />
                 <com.google.android.material.chip.Chip android:id="@+id/chipDolci" style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Dolci" android:checkable="true" app:chipBackgroundColor="@color/chip_background_selector" android:textColor="@color/chip_text_selector" app:checkedIconVisible="false" app:chipStrokeColor="@color/divider" app:chipStrokeWidth="1dp" />
                 <com.google.android.material.chip.Chip android:id="@+id/chipFastFood" style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Fast food" android:checkable="true" app:chipBackgroundColor="@color/chip_background_selector" android:textColor="@color/chip_text_selector" app:checkedIconVisible="false" app:chipStrokeColor="@color/divider" app:chipStrokeWidth="1dp" />
@@ -55,7 +69,6 @@
                 android:layout_marginTop="@dimen/space_12"
                 android:padding="@dimen/space_12"
                 android:background="@drawable/bg_input"
-                android:text="Gelato medio al pistacchio"
                 android:textColor="@color/text_primary"
                 android:textColorHint="@color/text_muted"
                 android:hint="Descrivi cosa hai mangiato" />
@@ -73,12 +86,12 @@
                 android:orientation="horizontal">
                 <LinearLayout android:id="@+id/dateField" android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp" android:orientation="horizontal" android:gravity="center_vertical" android:background="@drawable/bg_input" android:padding="@dimen/space_12">
                     <ImageView android:layout_width="18dp" android:layout_height="18dp" android:src="@drawable/ic_calendar" android:importantForAccessibility="no" />
-                    <TextView android:id="@+id/dateValue" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="@dimen/space_8" android:text="14/09/2026" android:textColor="@color/text_primary" android:textSize="14sp" />
+                    <TextView android:id="@+id/dateValue" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="@dimen/space_8" android:textColor="@color/text_primary" android:textSize="14sp" />
                 </LinearLayout>
                 <Space android:layout_width="@dimen/space_12" android:layout_height="1dp" />
                 <LinearLayout android:id="@+id/timeField" android:layout_width="0dp" android:layout_weight="1" android:layout_height="48dp" android:orientation="horizontal" android:gravity="center_vertical" android:background="@drawable/bg_input" android:padding="@dimen/space_12">
                     <ImageView android:layout_width="18dp" android:layout_height="18dp" android:src="@drawable/ic_setting_clock" android:importantForAccessibility="no" />
-                    <TextView android:id="@+id/timeValue" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="@dimen/space_8" android:text="15:30" android:textColor="@color/text_primary" android:textSize="14sp" />
+                    <TextView android:id="@+id/timeValue" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="@dimen/space_8" android:textColor="@color/text_primary" android:textSize="14sp" />
                 </LinearLayout>
             </LinearLayout>
 
@@ -98,8 +111,7 @@
                     android:id="@+id/quantityInput"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="none"
-                    android:text="Medio (circa 300 kcal)" />
+                    android:inputType="none" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.myfitai.app.ui.widgets.SectionHeaderView
@@ -126,11 +138,29 @@
                 android:layout_width="match_parent"
                 android:layout_height="52dp"
                 android:layout_marginTop="@dimen/space_20"
-                android:text="Salva e adatta il piano"
+                android:text="Salva e valuta il piano"
                 android:textAllCaps="false"
                 android:textStyle="bold"
                 app:cornerRadius="12dp"
                 app:backgroundTint="@color/accent_green" />
+
+            <ProgressBar
+                android:id="@+id/progress"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="@dimen/space_12"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/statusText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_8"
+                android:gravity="center"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp"
+                android:visibility="gone" />
         </LinearLayout>
     </ScrollView>
 </LinearLayout>
