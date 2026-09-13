@@ -38,7 +38,7 @@ class ProfileEditViewModel(
     fun loadActiveProfile() {
         viewModelScope.launch {
             val id = activeProfileStore.currentIdOrNull()
-            _profile.value = id?.let(repository::get)
+            _profile.value = if (id != null) repository.get(id) else null
             if (_profile.value == null) _error.tryEmit("Nessun profilo attivo")
         }
     }
