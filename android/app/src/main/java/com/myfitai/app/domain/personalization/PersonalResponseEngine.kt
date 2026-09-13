@@ -1,0 +1,164 @@
+package com.myfitai.app.domain.personalization
+
+import com.myfitai.app.data.local.entity.BiaMeasurementEntity
+import com.myfitai.app.data.local.entity.BodyMeasurementEntity
+import com.myfitai.app.data.local.entity.CheatEntryEntity
+import com.myfitai.app.data.local.entity.WorkoutEntity
+import com.myfitai.app.domain.food.FoodPlanSnapshot
+import kotlin.math.roundToInt
+
+/**
+ * Deterministic, local-only synthesis of the user's recent history.
+ *
+ * This engine describes associations and recurrence only. It never infers causality and
+ * never changes authoritative nutritional targets. Its compact output is context for
+ * future AI plan generation, not a medical or physiological conclusion.
+ */
+object PersonalResponseEngine {
+
+    data class Input(
+        val plans: List<FoodPlanSnapshot>,
+        val cheats: List<CheatEntryEntity>,
+        val workouts: List<WorkoutEntity>,
+        val bia: List<BiaMeasurementEntity>,
+        val bodyMeasurements: List<BodyMeasurementEntity>,
+        val nowEpochMillis: Long,
+        val lookbackDays: Int = 56,
+    )
+
+    data class Pattern(
+        val code: String,
+        val evidenceCount: Int,
+        val text: String,
+    )
+
+    data class Summary(
+        val lookbackDays: Int,
+        val planWeeks: Int,
+        val planVersions: Int,
+        val cheatCount: Int,
+        val workoutCount: Int,
+        val restDayCount: Int,
+        val weightDeltaKg: Double?,
+        val bodyFatDeltaPoints: Double?,
+        val muscleMassDeltaKg: Double?,
+        val waistDeltaCm: Double?,
+        val patterns: List<Pattern>,
+    ) {
+        /** Compact, bounded context safe to place in a future nutrition prompt. */
+        fun toPromptContext(maxChars: Int = 2_400): String {
+            val text = buildString {
+                appendLine("Personal history summary (descriptive associations only; never causal):")
+                appendLine("lookbackDays=$lookbackDays; planWeeks=$planWeeks; observedPlanVersions=$planVersions; deviations=$cheatCount; workouts=$workoutCount; restDays=$restDayCount")
+                appendLine("weightDeltaKg=${weightDeltaKg.formatOrNA()}; bodyFatDeltaPoints=${bodyFatDeltaPoints.formatOrNA()}; muscleMassDeltaKg=${muscleMassDeltaKg.formatOrNA()}; waistDeltaCm=${waistDeltaCm.formatOrNA()}")
+                if (patterns.isEmpty()) {
+                    appendLine("No recurring pattern has enough evidence yet.")
+                } else {
+                    patterns.forEach { appendLine("- [${it.code}; n=${it.evidenceCount}] ${it.text}") }
+                }
+                append("Use this only to improve practicality, timing and variety. Do not alter local numerical targets because of these observations.")
+            }
+            return text.take(maxChars.coerceAtLeast(256))
+        }
+    }
+
+    fun analyze(input: Input): Summary {
+        require(input.lookbackDays in 7..365)
+        val from = input.nowEpochMillis - input.lookbackDays * DAY_MS
+
+        val recentCheats = input.cheats.filter { it.occurredAtEpochMillis in from..input.nowEpochMillis }
+        val recentWorkouts = input.workouts.filter { it.startedAtEpochMillis in from..input.nowEpochMillis }
+        val recentBia = input.bia.filter { it.measuredAtEpochMillis in from..input.nowEpochMillis }
+            .sortedWith(compareBy<BiaMeasurementEntity> { it.measuredAtEpochMillis }.thenBy { it.id })
+        val recentBody = input.bodyMeasurements.filter { it.measuredAtEpochMillis in from..input.nowEpochMillis }
+            .sortedWith(compareBy<BodyMeasurementEntity> { it.measuredAtEpochMillis }.thenBy { it.id })
+
+        val plans = input.plans.filter { snapshot ->
+            val weekMillisApprox = snapshot.weekStartEpochDay * DAY_MS
+            weekMillisApprox <= input.nowEpochMillis && weekMillisApprox + 7 * DAY_MS >= from
+        }
+
+        val patterns = buildList {
+            deviationPattern(recentCheats)?.let(::add)
+            workoutPattern(recentWorkouts)?.let(::add)
+            adaptationPattern(plans)?.let(::add)
+            simultaneousTrendPattern(recentBia, recentBody)?.let(::add)
+        }
+
+        return Summary(
+            lookbackDays = input.lookbackDays,
+            planWeeks = plans.map { it.weekStartEpochDay }.distinct().size,
+            // Snapshot exposes the latest version for each week. This is therefore a conservative
+            // observed count, not a claim about every historical version ever created.
+            planVersions = plans.size,
+            cheatCount = recentCheats.size,
+            workoutCount = recentWorkouts.count { !it.isRestDay },
+            restDayCount = recentWorkouts.count { it.isRestDay },
+            weightDeltaKg = delta(recentBia.mapNotNull { row -> row.weightKg?.toDouble() }),
+            bodyFatDeltaPoints = delta(recentBia.mapNotNull { row -> row.bodyFatPercent?.toDouble() }),
+            muscleMassDeltaKg = delta(recentBia.mapNotNull { row -> row.muscleMassKg?.toDouble() }),
+            waistDeltaCm = delta(recentBody.mapNotNull { row -> row.waistCm?.toDouble() }),
+            patterns = patterns,
+        )
+    }
+
+    private fun deviationPattern(cheats: List<CheatEntryEntity>): Pattern? {
+        if (cheats.size < 3) return null
+        val avgKcal = cheats.mapNotNull { it.estimatedKcal }.takeIf { it.size >= 2 }?.average()?.roundToInt()
+        val text = buildString {
+            append("Sono state registrate ${cheats.size} deviazioni nel periodo")
+            if (avgKcal != null) append(", con stima media disponibile di circa $avgKcal kcal")
+            append(". È una ricorrenza osservata, non una causa dei cambiamenti corporei.")
+        }
+        return Pattern("RECURRENT_DEVIATIONS", cheats.size, text)
+    }
+
+    private fun workoutPattern(workouts: List<WorkoutEntity>): Pattern? {
+        val sessions = workouts.filter { !it.isRestDay }
+        if (sessions.size < 3) return null
+        val byType = sessions.groupingBy { it.type.trim().ifBlank { "Altro" } }.eachCount()
+        val mostFrequent = byType.maxByOrNull { it.value }
+        val durationValues = sessions.mapNotNull { it.durationMinutes }.filter { it > 0 }
+        val averageDuration = durationValues.takeIf { it.size >= 2 }?.average()?.roundToInt()
+        val text = buildString {
+            append("Nel periodo risultano ${sessions.size} allenamenti")
+            mostFrequent?.let { append("; il tipo più frequente è ${it.key} (${it.value})") }
+            averageDuration?.let { append("; durata media registrata circa $it min") }
+            append(". Usare questo dato per timing e praticità, non per dedurre effetti causali.")
+        }
+        return Pattern("TRAINING_ROUTINE", sessions.size, text)
+    }
+
+    private fun adaptationPattern(plans: List<FoodPlanSnapshot>): Pattern? {
+        val adapted = plans.count { it.version.reason?.startsWith("CHEAT_ADAPTATION:") == true }
+        if (adapted < 2) return null
+        return Pattern(
+            "REPEATED_PLAN_ADAPTATION",
+            adapted,
+            "In $adapted settimane osservate la versione corrente del piano deriva da un adattamento dopo una deviazione. Preferire piani pratici e sostenibili senza compensazioni punitive.",
+        )
+    }
+
+    private fun simultaneousTrendPattern(
+        bia: List<BiaMeasurementEntity>,
+        body: List<BodyMeasurementEntity>,
+    ): Pattern? {
+        val weight = delta(bia.mapNotNull { it.weightKg?.toDouble() })
+        val fat = delta(bia.mapNotNull { it.bodyFatPercent?.toDouble() })
+        val muscle = delta(bia.mapNotNull { it.muscleMassKg?.toDouble() })
+        val waist = delta(body.mapNotNull { it.waistCm?.toDouble() })
+        val observed = listOf(weight, fat, muscle, waist).count { it != null }
+        if (observed < 2) return null
+        val evidence = maxOf(bia.size, body.size)
+        if (evidence < 2) return null
+        return Pattern(
+            "SIMULTANEOUS_BODY_TRENDS",
+            evidence,
+            "Nello stesso intervallo sono stati osservati più trend corporei (peso=${weight.formatOrNA()} kg, grasso=${fat.formatOrNA()} punti, massa muscolare=${muscle.formatOrNA()} kg, vita=${waist.formatOrNA()} cm). La co-occorrenza non dimostra causalità.",
+        )
+    }
+
+    private fun delta(values: List<Double>): Double? = if (values.size >= 2) values.last() - values.first() else null
+    private fun Double?.formatOrNA(): String = this?.let { String.format(java.util.Locale.US, "%.2f", it) } ?: "n/a"
+    private const val DAY_MS = 86_400_000L
+}
