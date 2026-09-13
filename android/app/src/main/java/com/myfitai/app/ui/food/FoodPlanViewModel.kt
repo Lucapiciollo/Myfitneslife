@@ -7,6 +7,7 @@ import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.repository.MealPlanRepository
 import com.myfitai.app.domain.food.FoodPlanDay
 import com.myfitai.app.domain.food.FoodPlanSnapshot
+import com.myfitai.app.domain.food.NutritionPlanGenerationService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -15,6 +16,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.temporal.TemporalAdjusters
@@ -32,7 +34,14 @@ private fun todayIndexInWeek(weekStart: LocalDate): Int {
 class FoodPlanViewModel(
     private val repository: MealPlanRepository,
     private val activeProfileStore: ActiveProfileStore,
+    private val generationService: NutritionPlanGenerationService,
 ) : ViewModel() {
+
+    data class GenerationState(
+        val running: Boolean = false,
+        val error: String? = null,
+        val successMessage: String? = null,
+    )
 
     data class State(
         val weekStart: LocalDate = planWeekMonday(LocalDate.now()),
@@ -40,10 +49,12 @@ class FoodPlanViewModel(
         val selectedDayIndex: Int = 0,
         val selectedDay: FoodPlanDay? = null,
         val hasPlan: Boolean = false,
+        val generation: GenerationState = GenerationState(),
     )
 
     private val selectedWeekStart = MutableStateFlow(planWeekMonday(LocalDate.now()))
     private val selectedDayIndex = MutableStateFlow(todayIndexInWeek(selectedWeekStart.value))
+    private val generationState = MutableStateFlow(GenerationState())
 
     private val source = activeProfileStore.activeProfileId.flatMapLatest { profileId ->
         if (profileId <= 0L) {
@@ -59,7 +70,7 @@ class FoodPlanViewModel(
         }
     }
 
-    val state: StateFlow<State> = combine(source, selectedDayIndex) { (weekStart, snapshot), dayIndex ->
+    val state: StateFlow<State> = combine(source, selectedDayIndex, generationState) { (weekStart, snapshot), dayIndex, generation ->
         val safeIndex = dayIndex.coerceIn(0, 6)
         State(
             weekStart = weekStart,
@@ -69,31 +80,63 @@ class FoodPlanViewModel(
                 it.dateEpochDay == weekStart.plusDays(safeIndex.toLong()).toEpochDay()
             },
             hasPlan = snapshot != null,
+            generation = generation,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), State())
 
     fun previousWeek() {
+        if (generationState.value.running) return
         selectedWeekStart.value = selectedWeekStart.value.minusWeeks(1)
         selectedDayIndex.value = 0
+        clearGenerationMessage()
     }
 
     fun nextWeek() {
+        if (generationState.value.running) return
         selectedWeekStart.value = selectedWeekStart.value.plusWeeks(1)
         selectedDayIndex.value = 0
+        clearGenerationMessage()
     }
 
     fun selectDay(index: Int) {
         selectedDayIndex.value = index.coerceIn(0, 6)
     }
 
+    fun generateCurrentWeek() {
+        if (generationState.value.running) return
+        val week = selectedWeekStart.value
+        generationState.value = GenerationState(running = true)
+        viewModelScope.launch {
+            runCatching { generationService.generateWeek(week) }
+                .onSuccess { result ->
+                    generationState.value = GenerationState(
+                        successMessage = "Piano generato con ${result.provider} · ${result.model}",
+                    )
+                }
+                .onFailure { error ->
+                    val message = when (error) {
+                        is NutritionPlanGenerationService.GenerationException.NeedsInput ->
+                            "Completa prima: ${error.fields.joinToString()}"
+                        else -> error.message ?: "Generazione non riuscita"
+                    }
+                    generationState.value = GenerationState(error = message)
+                }
+        }
+    }
+
+    fun clearGenerationMessage() {
+        if (!generationState.value.running) generationState.value = GenerationState()
+    }
+
     class Factory(
         private val repository: MealPlanRepository,
         private val activeProfileStore: ActiveProfileStore,
+        private val generationService: NutritionPlanGenerationService,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(FoodPlanViewModel::class.java))
-            return FoodPlanViewModel(repository, activeProfileStore) as T
+            return FoodPlanViewModel(repository, activeProfileStore, generationService) as T
         }
     }
 }
