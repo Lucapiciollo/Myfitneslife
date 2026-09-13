@@ -5,5 +5,13 @@ import com.myfitai.app.R
 import com.myfitai.app.navigation.BottomNavBinder
 
 class AiAnalysisActivity : BaseShellActivity() {
- override fun onCreate(savedInstanceState: Bundle?) { super.onCreate(savedInstanceState); setContentView(R.layout.activity_ai_analysis); bindBottom(BottomNavBinder.Tab.MORE); bindBack() }
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_ai_analysis)
+        bindBottom(BottomNavBinder.Tab.MORE)
+        bindBack()
+        findViewById<android.view.View>(R.id.deepenButton).setOnClickListener {
+            go(WeeklyReviewActivity::class.java)
+        }
+    }
 }
