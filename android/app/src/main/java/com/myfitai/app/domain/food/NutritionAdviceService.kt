@@ -122,7 +122,7 @@ class NutritionAdviceService(
         if (deviations.isEmpty()) appendLine("NONE") else deviations.forEach { item ->
             appendLine("${item.description}|${item.estimatedKcal}|P${item.estimatedProteinG}|C${item.estimatedCarbsG}|F${item.estimatedFatG}")
         }
-        appendLine("Return exactly 5 compact options suitable for WINDOW, ordered best to worst for the current plan. Avoid meal choices that are implausible for the current time unless the user explicitly asks for that food. Do not modify the plan in this call.")
+        appendLine("Return exactly 5 compact options. If the user explicitly names or desires a food, keep that food as the subject of the suggestions regardless of WINDOW; use time only to adjust portion, pairing and plan impact. If no specific food is requested, use WINDOW as a strong relevance constraint. Do not modify the plan in this call.")
     }
 
     private fun mealWindow(minuteOfDay: Int): String = when (minuteOfDay) {
@@ -175,11 +175,14 @@ IN SCOPE:
 - Be extremely concise: answer <=120 characters.
 - Return exactly 5 suggestions.
 - Order suggestions from BEST to WORST for the user's current nutrition plan.
-- Current time and meal window are mandatory ranking constraints, not decorative context.
-- Prefer foods naturally appropriate to the current meal window: morning foods in the morning, lunch foods around lunch, snack-sized choices in the afternoon, dinner foods at dinner, and light choices late at night.
-- Do NOT suggest implausible meal-scale foods for the current time (for example pizza as a generic 16:00 snack) unless the user explicitly asks for that specific food.
-- If the user explicitly asks for a specific food, you may include it, but rank portions/variants according to both current time and plan impact.
-- Ranking priority: 1) time-of-day appropriateness, 2) fit with remaining kcal/macros and current plan, 3) nutritional balance/satiety, 4) lower unnecessary calorie impact, 5) practicality. Do not use moral labels such as good/bad food.
+- Distinguish explicit food desire from generic hunger/request.
+- If the user explicitly names, wants or craves a specific food (for example "mi va un gelato", "voglio pizza", "vorrei sushi"), that explicit food preference has priority over normal time-of-day food conventions. Do not replace it with a different food only because of the current time.
+- For an explicit food request, keep all suggestions centered on that food or close variants/portions of it, and use current time only to optimize portion size, pairing, quantity and impact on the remaining plan.
+- If the user asks generically what to eat without naming a desired food, current time and meal window become strong ranking constraints.
+- When there is no explicit food preference, prefer foods naturally appropriate to the current meal window: morning foods in the morning, lunch foods around lunch, snack-sized choices in the afternoon, dinner foods at dinner, and light choices late at night.
+- Ranking priority for explicit food requests: 1) respect the requested food, 2) fit with remaining kcal/macros and current plan, 3) sensible portion for the time, 4) nutritional balance/satiety, 5) practicality.
+- Ranking priority for generic requests: 1) time-of-day appropriateness, 2) fit with remaining kcal/macros and current plan, 3) nutritional balance/satiety, 4) lower unnecessary calorie impact, 5) practicality.
+- Do not use moral labels such as good/bad food.
 - The first suggestion must be the option you consider the best fit; the fifth the least suitable of the five, while still being a reasonable option.
 - suggestion.title: <=45 characters; reason: <=70 characters.
 - assumptions: empty unless essential; if used <=80 characters.
