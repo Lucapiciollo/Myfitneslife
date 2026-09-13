@@ -1,21 +1,34 @@
 package com.myfitai.app.ui
 
 import android.os.Bundle
+import android.widget.TextView
+import androidx.activity.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.myfitai.app.R
+import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.navigation.BottomNavBinder
+import com.myfitai.app.ui.progress.PhysicalEvolutionState
+import com.myfitai.app.ui.progress.PhysicalEvolutionViewModel
+import com.myfitai.app.ui.progress.ProgressMetricState
 import com.myfitai.app.ui.widgets.SelectableSegmentView
 import com.myfitai.app.ui.widgets.TimeRangeSelectorView
 import com.myfitai.app.ui.widgets.WeightTrendChartView
+import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 class PhysicalEvolutionActivity : BaseShellActivity() {
-
-    private data class MetricData(val label: String, val value: String, val delta: String, val trend: List<Float>)
-
-    private val metrics = listOf(
-        MetricData("Peso", "78,4 kg", "-3,6 kg (-4,4%)", listOf(82f, 81.2f, 80.5f, 80.1f, 79.4f, 79f, 78.6f, 78.9f, 78.4f, 78.7f, 78.2f, 78.4f)),
-        MetricData("Grasso corporeo", "14,2 %", "-2,8 % (-16,5%)", listOf(17f, 16.6f, 16.2f, 15.8f, 15.5f, 15.1f, 14.8f, 14.9f, 14.6f, 14.4f, 14.3f, 14.2f)),
-        MetricData("Massa muscolare", "66,8 kg", "+0,6 kg (+0,9%)", listOf(66.2f, 66.3f, 66.1f, 66.4f, 66.5f, 66.3f, 66.6f, 66.5f, 66.7f, 66.6f, 66.8f, 66.8f)),
-    )
+    private val data by lazy { AppDataContainer.get(this) }
+    private val viewModel: PhysicalEvolutionViewModel by viewModels {
+        PhysicalEvolutionViewModel.Factory(data.biaRepository, data.activeProfileStore)
+    }
+    private var metricIndex = 0
+    private var rangeIndex = 1
+    private var latestState = PhysicalEvolutionState()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -23,26 +36,56 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         bindBack()
         bindBottom(BottomNavBinder.Tab.PROGRESS)
 
-        val chart = findViewById<WeightTrendChartView>(R.id.evolutionChart)
-        chart.showYAxisLabels()
-        val labelView = findViewById<android.widget.TextView>(R.id.metricLabel)
-        val valueView = findViewById<android.widget.TextView>(R.id.metricValue)
-        val deltaView = findViewById<android.widget.TextView>(R.id.metricDelta)
-
-        fun applyMetric(index: Int) {
-            val metric = metrics[index]
-            labelView.text = metric.label
-            valueView.text = metric.value
-            deltaView.text = metric.delta
-            chart.setData(metric.trend)
-        }
-        applyMetric(0)
-
+        findViewById<WeightTrendChartView>(R.id.evolutionChart).showYAxisLabels()
         findViewById<SelectableSegmentView>(R.id.metricSegment).apply {
-            setSegments(listOf("Peso", "Grasso", "Massa muscolare"), selectedIndex = 0)
-            setOnSegmentSelectedListener { index -> applyMetric(index) }
+            setSegments(listOf("Peso", "Grasso", "Massa muscolare"), 0)
+            setOnSegmentSelectedListener { metricIndex = it; render(latestState) }
+        }
+        findViewById<TimeRangeSelectorView>(R.id.timeRangeSelector).apply {
+            setRanges(listOf("1M", "3M", "6M", "1Y"), 1)
+            setOnRangeSelectedListener { rangeIndex = it; render(latestState) }
         }
 
-        findViewById<TimeRangeSelectorView>(R.id.timeRangeSelector).setRanges(listOf("1M", "3M", "6M", "1Y"), selectedIndex = 1)
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.state.collect { latestState = it; render(it) }
+            }
+        }
     }
+
+    private fun render(state: PhysicalEvolutionState) {
+        val selected = when (metricIndex) { 1 -> state.bodyFat; 2 -> state.muscle; else -> state.weight }
+        val filtered = viewModel.filtered(selected, rangeIndex)
+        val unit = if (metricIndex == 1) "%" else "kg"
+        findViewById<TextView>(R.id.metricLabel).text = listOf("Peso", "Grasso corporeo", "Massa muscolare")[metricIndex]
+        findViewById<TextView>(R.id.metricValue).text = filtered.value?.let { "${fmt(it)} $unit" } ?: "—"
+        findViewById<TextView>(R.id.metricDelta).text = filtered.delta?.let { "${signed(it)} $unit nel periodo" } ?: "Dati insufficienti"
+        findViewById<WeightTrendChartView>(R.id.evolutionChart).setData(filtered.series.map { it.value })
+        renderDateLabels(filtered)
+        renderSecondary(R.id.otherIndicatorFatValue, R.id.otherIndicatorFatDelta, state.bodyFat, "%")
+        renderSecondary(R.id.otherIndicatorMuscleValue, R.id.otherIndicatorMuscleDelta, state.muscle, "kg")
+        renderSecondary(R.id.otherIndicatorWaterValue, R.id.otherIndicatorWaterDelta, state.bodyWater, "%")
+        findViewById<android.view.View>(R.id.visualComparisonSection).visibility = android.view.View.GONE
+        findViewById<TextView>(R.id.progressSummaryTitle).text = if (filtered.series.size >= 2) "Trend basato sulle rilevazioni registrate" else "Servono più rilevazioni"
+        findViewById<TextView>(R.id.progressSummaryText).text = if (filtered.series.size >= 2) "I valori mostrati derivano esclusivamente dallo storico BIA reale del profilo attivo." else "Aggiungi almeno due rilevazioni comparabili per visualizzare un andamento affidabile."
+    }
+
+    private fun renderSecondary(valueId: Int, deltaId: Int, metric: ProgressMetricState, unit: String) {
+        findViewById<TextView>(valueId).text = metric.value?.let { "${fmt(it)} $unit" } ?: "—"
+        findViewById<TextView>(deltaId).text = metric.delta?.let { signed(it) } ?: "—"
+    }
+
+    private fun renderDateLabels(metric: ProgressMetricState) {
+        val ids = intArrayOf(R.id.dateLabel1, R.id.dateLabel2, R.id.dateLabel3, R.id.dateLabel4, R.id.dateLabel5)
+        val points = metric.series
+        ids.forEachIndexed { index, id ->
+            val point = if (points.isEmpty()) null else points[((points.lastIndex * index) / 4).coerceIn(0, points.lastIndex)]
+            findViewById<TextView>(id).text = point?.let {
+                Instant.ofEpochMilli(it.timestamp).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("dd/MM"))
+            } ?: "—"
+        }
+    }
+
+    private fun fmt(v: Float) = String.format(Locale.ITALIAN, "%.1f", v)
+    private fun signed(v: Float) = String.format(Locale.ITALIAN, "%+.1f", v)
 }
