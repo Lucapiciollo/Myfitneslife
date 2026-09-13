@@ -1,6 +1,7 @@
 package com.myfitai.app.ui
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.widget.ArrayAdapter
@@ -8,20 +9,29 @@ import android.widget.AutoCompleteTextView
 import android.widget.EditText
 import android.widget.ProgressBar
 import android.widget.TextView
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.core.content.FileProvider
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.chip.ChipGroup
 import com.google.android.material.datepicker.MaterialDatePicker
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.timepicker.MaterialTimePicker
 import com.google.android.material.timepicker.TimeFormat
 import com.myfitai.app.R
+import com.myfitai.app.ai.AiImageInput
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.domain.food.CheatAdjustmentService
+import com.myfitai.app.domain.food.LabelImageProcessor
 import com.myfitai.app.ui.food.CheatEntryViewModel
 import com.myfitai.app.ui.widgets.SelectableSegmentView
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -39,6 +49,20 @@ class CheatEntryActivity : BaseShellActivity() {
 
     private var selectedDate: LocalDate = LocalDate.now()
     private var selectedTime: LocalTime = LocalTime.now().withSecond(0).withNano(0)
+    private var labelImage: AiImageInput? = null
+    private var pendingCameraFile: File? = null
+    private var labelProcessing = false
+
+    private val galleryLauncher = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) prepareLabelFromUri(uri)
+    }
+
+    private val cameraLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+        val file = pendingCameraFile
+        pendingCameraFile = null
+        if (success && file != null) prepareLabelFromFile(file)
+        else file?.delete()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,6 +77,7 @@ class CheatEntryActivity : BaseShellActivity() {
         quantityInput.setAdapter(ArrayAdapter(this, android.R.layout.simple_list_item_1, quantities))
         quantityInput.setText("Medio", false)
 
+        bindLabelPhoto()
         renderDateTime()
         bindPickers()
         findViewById<View>(R.id.confirmButton).setOnClickListener { submit() }
@@ -62,6 +87,99 @@ class CheatEntryActivity : BaseShellActivity() {
                 viewModel.state.collect(::renderState)
             }
         }
+    }
+
+    private fun bindLabelPhoto() {
+        findViewById<View>(R.id.addLabelPhotoButton).setOnClickListener {
+            if (!labelProcessing) showLabelSourceDialog()
+        }
+        findViewById<View>(R.id.removeLabelPhotoButton).setOnClickListener {
+            labelImage = null
+            renderLabelState()
+        }
+        renderLabelState()
+    }
+
+    private fun showLabelSourceDialog() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Foto etichetta nutrizionale")
+            .setItems(arrayOf("Scatta foto", "Scegli dalla galleria")) { _, which ->
+                when (which) {
+                    0 -> launchLabelCamera()
+                    1 -> galleryLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                }
+            }
+            .show()
+    }
+
+    private fun launchLabelCamera() {
+        val dir = File(cacheDir, "cheat-labels").apply { mkdirs() }
+        val file = File.createTempFile("label-", ".jpg", dir)
+        pendingCameraFile = file
+        val uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", file)
+        cameraLauncher.launch(uri)
+    }
+
+    private fun prepareLabelFromUri(uri: Uri) {
+        setLabelProcessing(true)
+        lifecycleScope.launch {
+            runCatching {
+                withContext(Dispatchers.IO) { LabelImageProcessor.fromUri(this@CheatEntryActivity, uri) }
+            }.onSuccess {
+                labelImage = it
+                setLabelProcessing(false)
+            }.onFailure {
+                labelImage = null
+                setLabelProcessing(false, "Impossibile leggere la foto. Riprova con l'etichetta ben visibile.")
+            }
+        }
+    }
+
+    private fun prepareLabelFromFile(file: File) {
+        setLabelProcessing(true)
+        lifecycleScope.launch {
+            runCatching {
+                withContext(Dispatchers.IO) { LabelImageProcessor.fromFile(file) }
+            }.onSuccess {
+                labelImage = it
+                setLabelProcessing(false)
+            }.onFailure {
+                labelImage = null
+                setLabelProcessing(false, "Impossibile leggere la foto. Riprova con l'etichetta ben visibile.")
+            }
+            // La foto scattata è solo temporanea: viene eliminata appena trasformata nel payload in memoria.
+            withContext(Dispatchers.IO) { runCatching { file.delete() } }
+        }
+    }
+
+    private fun setLabelProcessing(processing: Boolean, error: String? = null) {
+        labelProcessing = processing
+        findViewById<View>(R.id.addLabelPhotoButton).isEnabled = !processing
+        if (processing) {
+            findViewById<View>(R.id.labelPhotoStatusRow).visibility = View.VISIBLE
+            findViewById<TextView>(R.id.labelPhotoStatus).apply {
+                text = "Preparazione etichetta…"
+                setTextColor(getColor(R.color.text_secondary))
+            }
+        } else if (error != null) {
+            findViewById<View>(R.id.labelPhotoStatusRow).visibility = View.VISIBLE
+            findViewById<TextView>(R.id.labelPhotoStatus).apply {
+                text = error
+                setTextColor(getColor(R.color.text_secondary))
+            }
+        } else {
+            renderLabelState()
+        }
+    }
+
+    private fun renderLabelState() {
+        val attached = labelImage != null
+        findViewById<View>(R.id.labelPhotoStatusRow).visibility = if (attached) View.VISIBLE else View.GONE
+        findViewById<TextView>(R.id.labelPhotoStatus).apply {
+            text = "Etichetta pronta ✓ · sarà eliminata dopo l'uso"
+            setTextColor(getColor(R.color.accent_green))
+        }
+        findViewById<View>(R.id.removeLabelPhotoButton).visibility = if (attached) View.VISIBLE else View.GONE
     }
 
     private fun bindPickers() {
@@ -93,6 +211,13 @@ class CheatEntryActivity : BaseShellActivity() {
     }
 
     private fun submit() {
+        if (labelProcessing) {
+            findViewById<TextView>(R.id.statusText).apply {
+                visibility = View.VISIBLE
+                text = "Attendi il completamento della foto dell'etichetta."
+            }
+            return
+        }
         val description = findViewById<EditText>(R.id.descriptionInput).text?.toString()?.trim().orEmpty()
         if (description.isBlank()) {
             findViewById<EditText>(R.id.descriptionInput).error = "Descrivi cosa hai mangiato"
@@ -112,6 +237,7 @@ class CheatEntryActivity : BaseShellActivity() {
                 quantityText = findViewById<AutoCompleteTextView>(R.id.quantityInput).text?.toString(),
                 notes = findViewById<EditText>(R.id.notesInput).text?.toString(),
                 occurredAtEpochMillis = occurredAt,
+                labelImage = labelImage,
             )
         )
     }
@@ -130,14 +256,21 @@ class CheatEntryActivity : BaseShellActivity() {
     }
 
     private fun renderState(state: CheatEntryViewModel.State) {
-        findViewById<View>(R.id.confirmButton).isEnabled = !state.running
+        findViewById<View>(R.id.confirmButton).isEnabled = !state.running && !labelProcessing
+        findViewById<View>(R.id.addLabelPhotoButton).isEnabled = !state.running && !labelProcessing
         findViewById<ProgressBar>(R.id.progress).visibility = if (state.running) View.VISIBLE else View.GONE
         findViewById<TextView>(R.id.statusText).apply {
             visibility = if (state.running || state.error != null) View.VISIBLE else View.GONE
-            text = when { state.running -> "Stima dello sgarro e verifica dei pasti futuri in corso…"; state.error != null -> state.error; else -> "" }
+            text = when {
+                state.running && labelImage != null -> "Lettura etichetta, stima dello sgarro e verifica dei pasti futuri in corso…"
+                state.running -> "Stima dello sgarro e verifica dei pasti futuri in corso…"
+                state.error != null -> state.error
+                else -> ""
+            }
         }
 
         val result = state.result ?: return
+        labelImage = null
         viewModel.consumeResult()
         startActivity(
             Intent(this, AdjustedPlanActivity::class.java)
@@ -148,5 +281,12 @@ class CheatEntryActivity : BaseShellActivity() {
                 .putStringArrayListExtra(AdjustedPlanActivity.EXTRA_MODIFIED_MEALS, ArrayList(result.modifiedMeals))
         )
         finish()
+    }
+
+    override fun onDestroy() {
+        pendingCameraFile?.let { runCatching { it.delete() } }
+        pendingCameraFile = null
+        labelImage = null
+        super.onDestroy()
     }
 }
