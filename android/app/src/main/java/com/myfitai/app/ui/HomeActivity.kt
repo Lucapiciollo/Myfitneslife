@@ -1,5 +1,6 @@
 package com.myfitai.app.ui
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.TextView
 import androidx.activity.viewModels
@@ -32,9 +33,12 @@ class HomeActivity : BaseShellActivity() {
             biaRepository = data.biaRepository,
             bodyRepository = data.bodyMeasurementRepository,
             workoutRepository = data.workoutRepository,
+            mealPlanRepository = data.mealPlanRepository,
             activeProfileStore = data.activeProfileStore,
         )
     }
+
+    private var currentNextMealId: Long? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,19 +46,16 @@ class HomeActivity : BaseShellActivity() {
         bindBottom(BottomNavBinder.Tab.HOME)
 
         findViewById<android.view.View>(R.id.profileButton).setOnClickListener { go(ProfileActivity::class.java) }
-        findViewById<android.view.View>(R.id.nextMealCard).setOnClickListener { go(MealDetailActivity::class.java) }
+        findViewById<android.view.View>(R.id.nextMealCard).setOnClickListener {
+            currentNextMealId?.let { mealId ->
+                startActivity(Intent(this, MealDetailActivity::class.java).putExtra(MealDetailActivity.EXTRA_MEAL_ID, mealId))
+            } ?: go(FoodPlanActivity::class.java)
+        }
         findViewById<android.view.View>(R.id.nextWorkoutCard).setOnClickListener { go(WorkoutsActivity::class.java) }
 
         findViewById<MetricCardView>(R.id.metricWeight).setLabel(getString(R.string.dashboard_metric_weight))
         findViewById<MetricCardView>(R.id.metricFat).setLabel(getString(R.string.dashboard_metric_fat))
         findViewById<MetricCardView>(R.id.metricMuscle).setLabel(getString(R.string.dashboard_metric_muscle))
-
-        findViewById<MealCardView>(R.id.nextMealCard).apply {
-            setTime("12:30")
-            setTitle("Riso basmati, pollo e verdure")
-            setKcal("520 kcal")
-            setImage(R.drawable.img_next_meal)
-        }
 
         findViewById<WeightTrendChartView>(R.id.weightTrendChart).showYAxisLabels()
         findViewById<TimeRangeSelectorView>(R.id.timeRangeSelector).apply {
@@ -83,7 +84,33 @@ class HomeActivity : BaseShellActivity() {
 
         findViewById<WeightTrendChartView>(R.id.weightTrendChart).setData(state.weightSeries)
         findViewById<TextView>(R.id.recompositionStateText).text = recompositionText(state.recompositionState)
+        renderNextMeal(state.nextMeal)
         renderNextWorkout(state.nextWorkout)
+    }
+
+    private fun renderNextMeal(next: HomeViewModel.NextMealState?) {
+        currentNextMealId = next?.mealId
+        findViewById<MealCardView>(R.id.nextMealCard).apply {
+            if (next == null) {
+                setTime("—")
+                setTitle("Nessun pasto pianificato")
+                setKcal("Apri il piano alimentare")
+                setImage(R.drawable.img_next_meal)
+                return@apply
+            }
+            val date = LocalDate.ofEpochDay(next.dateEpochDay)
+            val today = LocalDate.now()
+            val dayLabel = when (date) {
+                today -> "Oggi"
+                today.plusDays(1) -> "Domani"
+                else -> date.format(DateTimeFormatter.ofPattern("EEE d MMM", Locale.ITALIAN))
+            }
+            val time = next.timeMinutes?.let { String.format(Locale.ITALIAN, "%02d:%02d", it / 60, it % 60) }
+            setTime(listOfNotNull(dayLabel, time).joinToString(" "))
+            setTitle(next.title)
+            setKcal(next.kcal?.let { "$it kcal" } ?: next.type)
+            setImage(R.drawable.img_next_meal)
+        }
     }
 
     private fun renderNextWorkout(next: HomeViewModel.NextWorkoutState?) {
