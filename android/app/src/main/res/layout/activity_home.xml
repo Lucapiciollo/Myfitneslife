@@ -56,6 +56,7 @@
                 </LinearLayout>
 
                 <TextView
+                    android:id="@+id/greetingText"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_16"
@@ -89,6 +90,14 @@
                     <com.myfitai.app.ui.widgets.MetricCardView android:id="@+id/metricFat" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" />
                     <com.myfitai.app.ui.widgets.MetricCardView android:id="@+id/metricMuscle" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" />
                 </LinearLayout>
+
+                <TextView
+                    android:id="@+id/recompositionStateText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_12"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp" />
 
                 <com.myfitai.app.ui.widgets.WeightTrendChartView
                     android:id="@+id/weightTrendChart"
