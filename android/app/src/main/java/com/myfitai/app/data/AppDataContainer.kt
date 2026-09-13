@@ -10,6 +10,7 @@ import com.myfitai.app.domain.body.BodyProportionAnalysisService
 import com.myfitai.app.domain.calculation.ProfileCalculationService
 import com.myfitai.app.domain.export.ProfileExportService
 import com.myfitai.app.domain.food.CheatAdjustmentService
+import com.myfitai.app.domain.food.NutritionAdviceService
 import com.myfitai.app.domain.food.NutritionPlanGenerationService
 import com.myfitai.app.domain.personalization.PersonalResponseService
 import com.myfitai.app.domain.review.WeeklyReviewService
@@ -64,6 +65,14 @@ class AppDataContainer private constructor(context: Context) {
 
     val cheatAdjustmentService = CheatAdjustmentService(
         aiRuntime = aiRuntimeService,
+        plans = mealPlanRepository,
+        cheats = cheatEntryRepository,
+        activeProfileStore = activeProfileStore,
+    )
+
+    val nutritionAdviceService = NutritionAdviceService(
+        aiRuntime = aiRuntimeService,
+        profiles = userProfileRepository,
         plans = mealPlanRepository,
         cheats = cheatEntryRepository,
         activeProfileStore = activeProfileStore,
