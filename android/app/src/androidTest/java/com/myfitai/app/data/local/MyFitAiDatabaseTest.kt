@@ -6,6 +6,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.myfitai.app.data.local.entity.BiaMeasurementEntity
 import com.myfitai.app.data.local.entity.BodyMeasurementEntity
 import com.myfitai.app.data.local.entity.UserProfileEntity
+import com.myfitai.app.data.local.entity.WorkoutEntity
 import com.myfitai.app.data.repository.DayDraft
 import com.myfitai.app.data.repository.MealPlanRepository
 import com.myfitai.app.data.repository.PlanVersionDraft
@@ -37,21 +38,14 @@ class MyFitAiDatabaseTest {
     fun bodyMeasurements_areIsolatedByProfile_andRangeAscending() = runBlocking {
         val profile1Id = db.userProfileDao().insert(profile("Uno"))
         val profile2Id = db.userProfileDao().insert(profile("Due"))
-
         val dao = db.bodyMeasurementDao()
         dao.insert(measure(profile1Id, 1000, 90f))
         dao.insert(measure(profile1Id, 3000, 86f))
         dao.insert(measure(profile1Id, 2000, 88f))
         dao.insert(measure(profile2Id, 4000, 70f))
-
-        val all = dao.observeAll(profile1Id).first()
-        assertEquals(listOf(3000L, 2000L, 1000L), all.map { it.measuredAtEpochMillis })
-
-        val range = dao.observeBetween(profile1Id, 1000, 2500).first()
-        assertEquals(listOf(1000L, 2000L), range.map { it.measuredAtEpochMillis })
-
-        val otherProfile = dao.observeAll(profile2Id).first()
-        assertEquals(listOf(4000L), otherProfile.map { it.measuredAtEpochMillis })
+        assertEquals(listOf(3000L, 2000L, 1000L), dao.observeAll(profile1Id).first().map { it.measuredAtEpochMillis })
+        assertEquals(listOf(1000L, 2000L), dao.observeBetween(profile1Id, 1000, 2500).first().map { it.measuredAtEpochMillis })
+        assertEquals(listOf(4000L), dao.observeAll(profile2Id).first().map { it.measuredAtEpochMillis })
     }
 
     @Test
@@ -60,7 +54,6 @@ class MyFitAiDatabaseTest {
         val dao = db.bodyMeasurementDao()
         val firstId = dao.insert(measure(profileId, 5000, 90f))
         val secondId = dao.insert(measure(profileId, 5000, 89f))
-
         val all = dao.observeAll(profileId).first()
         assertEquals(listOf(secondId, firstId), all.map { it.id })
         assertEquals(listOf(89f, 90f), all.map { it.waistCm })
@@ -71,21 +64,30 @@ class MyFitAiDatabaseTest {
         val profile1Id = db.userProfileDao().insert(profile("BIA uno"))
         val profile2Id = db.userProfileDao().insert(profile("BIA due"))
         val dao = db.biaMeasurementDao()
-
         dao.insert(bia(profile1Id, 1000, 80f))
         dao.insert(bia(profile1Id, 3000, 78f))
         dao.insert(bia(profile1Id, 2000, null))
         dao.insert(bia(profile2Id, 4000, 70f))
-
         val all = dao.observeAll(profile1Id).first()
         assertEquals(listOf(3000L, 2000L, 1000L), all.map { it.measuredAtEpochMillis })
         assertEquals(listOf(78f, null, 80f), all.map { it.weightKg })
+        assertEquals(listOf(1000L, 2000L), dao.observeBetween(profile1Id, 1000, 2500).first().map { it.measuredAtEpochMillis })
+        assertEquals(listOf(70f), dao.observeAll(profile2Id).first().map { it.weightKg })
+    }
 
-        val range = dao.observeBetween(profile1Id, 1000, 2500).first()
-        assertEquals(listOf(1000L, 2000L), range.map { it.measuredAtEpochMillis })
+    @Test
+    fun workoutHistory_isIsolatedByProfile_andRangeAscending() = runBlocking {
+        val profile1Id = db.userProfileDao().insert(profile("Workout uno"))
+        val profile2Id = db.userProfileDao().insert(profile("Workout due"))
+        val dao = db.workoutDao()
+        dao.insert(workout(profile1Id, 3000, "Upper"))
+        dao.insert(workout(profile1Id, 1000, "Lower"))
+        dao.insert(workout(profile1Id, 2000, "Riposo", rest = true))
+        dao.insert(workout(profile2Id, 4000, "Cardio"))
 
-        val otherProfile = dao.observeAll(profile2Id).first()
-        assertEquals(listOf(70f), otherProfile.map { it.weightKg })
+        assertEquals(listOf(3000L, 2000L, 1000L), dao.observeAll(profile1Id).first().map { it.startedAtEpochMillis })
+        assertEquals(listOf(1000L, 2000L), dao.observeBetween(profile1Id, 1000, 2500).first().map { it.startedAtEpochMillis })
+        assertEquals(listOf("Cardio"), dao.observeAll(profile2Id).first().map { it.title })
     }
 
     @Test
@@ -102,10 +104,8 @@ class MyFitAiDatabaseTest {
             targetFatG = 70f,
             days = listOf(DayDraft(20000, 2200, 160f, 230f, 70f, emptyList())),
         )
-
         repository.appendVersion(planId, 2000, emptyDraft)
         repository.appendVersion(planId, 3000, emptyDraft.copy(reason = "ADAPTATION"))
-
         val versions = repository.versions(planId).first()
         assertEquals(2, versions.size)
         assertEquals(listOf(2, 1), versions.map { it.versionNumber })
@@ -114,51 +114,19 @@ class MyFitAiDatabaseTest {
 
     private fun profile(name: String): UserProfileEntity {
         val now = 1000L
-        return UserProfileEntity(
-            name = name,
-            birthDateEpochDay = null,
-            heightCm = null,
-            currentWeightKg = null,
-            goal = null,
-            activityLevel = null,
-            wakeTimeMinutes = null,
-            sleepTimeMinutes = null,
-            dietaryPreferencesJson = null,
-            photoPath = null,
-            createdAtEpochMillis = now,
-            updatedAtEpochMillis = now,
-        )
+        return UserProfileEntity(name = name, birthDateEpochDay = null, heightCm = null, currentWeightKg = null, goal = null, activityLevel = null, wakeTimeMinutes = null, sleepTimeMinutes = null, dietaryPreferencesJson = null, photoPath = null, createdAtEpochMillis = now, updatedAtEpochMillis = now)
     }
 
-    private fun measure(profileId: Long, at: Long, waist: Float) = BodyMeasurementEntity(
-        profileId = profileId,
-        measuredAtEpochMillis = at,
-        chestCm = null,
-        waistCm = waist,
-        abdomenCm = null,
-        shouldersCm = null,
-        glutesCm = null,
-        armLeftCm = null,
-        armRightCm = null,
-        thighLeftCm = null,
-        thighRightCm = null,
-        calfLeftCm = null,
-        calfRightCm = null,
-    )
+    private fun measure(profileId: Long, at: Long, waist: Float) = BodyMeasurementEntity(profileId = profileId, measuredAtEpochMillis = at, chestCm = null, waistCm = waist, abdomenCm = null, shouldersCm = null, glutesCm = null, armLeftCm = null, armRightCm = null, thighLeftCm = null, thighRightCm = null, calfLeftCm = null, calfRightCm = null)
 
-    private fun bia(profileId: Long, at: Long, weight: Float?) = BiaMeasurementEntity(
+    private fun bia(profileId: Long, at: Long, weight: Float?) = BiaMeasurementEntity(profileId = profileId, measuredAtEpochMillis = at, weightKg = weight, bodyFatPercent = null, visceralFatLevel = null, muscleMassKg = null, skeletalMuscleKg = null, bodyWaterPercent = null, bmrKcal = null, fasting = false, justWokeUp = false, afterBathroom = false, noRecentWorkout = false)
+
+    private fun workout(profileId: Long, at: Long, title: String, rest: Boolean = false) = WorkoutEntity(
         profileId = profileId,
-        measuredAtEpochMillis = at,
-        weightKg = weight,
-        bodyFatPercent = null,
-        visceralFatLevel = null,
-        muscleMassKg = null,
-        skeletalMuscleKg = null,
-        bodyWaterPercent = null,
-        bmrKcal = null,
-        fasting = false,
-        justWokeUp = false,
-        afterBathroom = false,
-        noRecentWorkout = false,
+        startedAtEpochMillis = at,
+        type = if (rest) "REST" else "PESI",
+        title = title,
+        durationMinutes = if (rest) null else 45,
+        isRestDay = rest,
     )
 }
