@@ -49,6 +49,8 @@ class NutritionAdviceService(
         val dayStart = today.atStartOfDay(zone).toInstant().toEpochMilli()
         val dayEnd = today.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1L
         val deviations = cheats.between(profileId, dayStart, dayEnd).first()
+        val now = LocalTime.now()
+        val minuteOfDay = now.hour * 60 + now.minute
 
         val request = AiStructuredRequest(
             systemPrompt = SYSTEM_PROMPT,
@@ -58,7 +60,8 @@ class NutritionAdviceService(
                 snapshot = snapshot,
                 todayPlan = todayPlan,
                 deviations = deviations,
-                minuteOfDay = LocalTime.now().hour * 60 + LocalTime.now().minute,
+                minuteOfDay = minuteOfDay,
+                mealWindow = mealWindow(minuteOfDay),
             ),
             schemaName = NutritionAdviceContract.SCHEMA_NAME,
             schemaJson = NutritionAdviceContract.schemaJson,
@@ -105,9 +108,10 @@ class NutritionAdviceService(
         todayPlan: FoodPlanDay?,
         deviations: List<com.myfitai.app.data.local.entity.CheatEntryEntity>,
         minuteOfDay: Int,
+        mealWindow: String,
     ): String = buildString {
         appendLine("Q:$question")
-        appendLine("NOW:$minuteOfDay")
+        appendLine("NOW:$minuteOfDay|WINDOW:$mealWindow")
         appendLine("PREF:${dietaryPreferencesJson.orEmpty()}")
         if (snapshot != null) appendLine("TARGET:${snapshot.version.targetKcal}kcal P${snapshot.version.targetProteinG} C${snapshot.version.targetCarbsG} F${snapshot.version.targetFatG}")
         appendLine("PLANNED_NOT_CONSUMED:")
@@ -118,7 +122,15 @@ class NutritionAdviceService(
         if (deviations.isEmpty()) appendLine("NONE") else deviations.forEach { item ->
             appendLine("${item.description}|${item.estimatedKcal}|P${item.estimatedProteinG}|C${item.estimatedCarbsG}|F${item.estimatedFatG}")
         }
-        appendLine("Return exactly 5 compact practical options, already ordered from best fit to worst fit for the current plan. Do not modify the plan in this call.")
+        appendLine("Return exactly 5 compact options suitable for WINDOW, ordered best to worst for the current plan. Avoid meal choices that are implausible for the current time unless the user explicitly asks for that food. Do not modify the plan in this call.")
+    }
+
+    private fun mealWindow(minuteOfDay: Int): String = when (minuteOfDay) {
+        in 300..659 -> "BREAKFAST_OR_MORNING_SNACK"
+        in 660..899 -> "LUNCH"
+        in 900..1079 -> "AFTERNOON_SNACK"
+        in 1080..1319 -> "DINNER"
+        else -> "LATE_NIGHT_LIGHT_SNACK"
     }
 
     private fun isLocallyInScope(value: String): Boolean {
@@ -163,7 +175,11 @@ IN SCOPE:
 - Be extremely concise: answer <=120 characters.
 - Return exactly 5 suggestions.
 - Order suggestions from BEST to WORST for the user's current nutrition plan.
-- Ranking priority: 1) fit with remaining kcal/macros and current plan, 2) nutritional balance/satiety, 3) lower unnecessary calorie impact, 4) practicality. Do not use moral labels such as good/bad food.
+- Current time and meal window are mandatory ranking constraints, not decorative context.
+- Prefer foods naturally appropriate to the current meal window: morning foods in the morning, lunch foods around lunch, snack-sized choices in the afternoon, dinner foods at dinner, and light choices late at night.
+- Do NOT suggest implausible meal-scale foods for the current time (for example pizza as a generic 16:00 snack) unless the user explicitly asks for that specific food.
+- If the user explicitly asks for a specific food, you may include it, but rank portions/variants according to both current time and plan impact.
+- Ranking priority: 1) time-of-day appropriateness, 2) fit with remaining kcal/macros and current plan, 3) nutritional balance/satiety, 4) lower unnecessary calorie impact, 5) practicality. Do not use moral labels such as good/bad food.
 - The first suggestion must be the option you consider the best fit; the fifth the least suitable of the five, while still being a reasonable option.
 - suggestion.title: <=45 characters; reason: <=70 characters.
 - assumptions: empty unless essential; if used <=80 characters.
