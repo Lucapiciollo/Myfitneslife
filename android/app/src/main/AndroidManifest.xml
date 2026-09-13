@@ -39,6 +39,7 @@
 
         <activity android:name=".ui.ProfileEditActivity" />
         <activity android:name=".ui.MealDetailActivity" />
+        <activity android:name=".ui.MealAlternativeActivity" />
         <activity android:name=".ui.WeeklyReviewActivity" />
         <activity android:name=".ui.ShoppingListActivity" />
         <activity android:name=".ui.NotificationsActivity" />
