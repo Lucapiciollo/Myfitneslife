@@ -7,6 +7,7 @@ import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.profile.ProfilePhotoStore
 import com.myfitai.app.data.repository.*
 import com.myfitai.app.domain.calculation.ProfileCalculationService
+import com.myfitai.app.domain.food.NutritionPlanGenerationService
 
 /**
  * Composition root del layer dati/app. Activity/ViewModel non devono conoscere i DAO.
@@ -34,6 +35,15 @@ class AppDataContainer private constructor(context: Context) {
     )
 
     val aiRuntimeService = AiRuntimeService(appContext)
+
+    val nutritionPlanGenerationService = NutritionPlanGenerationService(
+        aiRuntime = aiRuntimeService,
+        calculations = profileCalculationService,
+        profiles = userProfileRepository,
+        workouts = workoutRepository,
+        plans = mealPlanRepository,
+        activeProfileStore = activeProfileStore,
+    )
 
     companion object {
         @Volatile private var instance: AppDataContainer? = null
