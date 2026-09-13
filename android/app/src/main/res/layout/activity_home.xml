@@ -30,14 +30,12 @@
                     android:layout_height="wrap_content"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
-                    <TextView
+                    <ImageView
                         android:layout_width="24dp"
                         android:layout_height="24dp"
-                        android:gravity="center"
                         android:importantForAccessibility="no"
-                        android:text="‹"
-                        android:textColor="@color/white"
-                        android:textSize="24sp" />
+                        android:src="@drawable/ic_arrow_back_white"
+                        app:tint="@color/white" />
                     <Space
                         android:layout_width="0dp"
                         android:layout_height="1dp"
@@ -87,23 +85,9 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
 
-                    <com.myfitai.app.ui.widgets.MetricCardView
-                        android:id="@+id/metricWeight"
-                        android:layout_width="0dp"
-                        android:layout_weight="1"
-                        android:layout_height="wrap_content" />
-
-                    <com.myfitai.app.ui.widgets.MetricCardView
-                        android:id="@+id/metricFat"
-                        android:layout_width="0dp"
-                        android:layout_weight="1"
-                        android:layout_height="wrap_content" />
-
-                    <com.myfitai.app.ui.widgets.MetricCardView
-                        android:id="@+id/metricMuscle"
-                        android:layout_width="0dp"
-                        android:layout_weight="1"
-                        android:layout_height="wrap_content" />
+                    <com.myfitai.app.ui.widgets.MetricCardView android:id="@+id/metricWeight" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" />
+                    <com.myfitai.app.ui.widgets.MetricCardView android:id="@+id/metricFat" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" />
+                    <com.myfitai.app.ui.widgets.MetricCardView android:id="@+id/metricMuscle" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" />
                 </LinearLayout>
 
                 <com.myfitai.app.ui.widgets.WeightTrendChartView
@@ -118,27 +102,11 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12" />
 
-                <com.myfitai.app.ui.widgets.SectionHeaderView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_20"
-                    android:text="@string/dashboard_next_meal_title" />
-                <com.myfitai.app.ui.widgets.MealCardView
-                    android:id="@+id/nextMealCard"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_12" />
+                <com.myfitai.app.ui.widgets.SectionHeaderView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:text="@string/dashboard_next_meal_title" />
+                <com.myfitai.app.ui.widgets.MealCardView android:id="@+id/nextMealCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_12" />
 
-                <com.myfitai.app.ui.widgets.SectionHeaderView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_20"
-                    android:text="@string/dashboard_next_workout_title" />
-                <com.myfitai.app.ui.widgets.WorkoutCardView
-                    android:id="@+id/nextWorkoutCard"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_12" />
+                <com.myfitai.app.ui.widgets.SectionHeaderView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:text="@string/dashboard_next_workout_title" />
+                <com.myfitai.app.ui.widgets.WorkoutCardView android:id="@+id/nextWorkoutCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_12" />
             </LinearLayout>
         </LinearLayout>
     </ScrollView>
