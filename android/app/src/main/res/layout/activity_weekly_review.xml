@@ -17,12 +17,47 @@
             android:padding="@dimen/space_16">
 
             <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical">
-                <TextView android:id="@+id/backButton" android:layout_width="40dp" android:layout_height="40dp" android:gravity="center" android:text="‹" android:textSize="30sp" android:textColor="@color/text_primary" />
-                <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:gravity="center" android:text="7 – 13 Settembre 2026" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="15sp" />
-                <Space android:layout_width="40dp" android:layout_height="1dp" />
+                <androidx.appcompat.widget.AppCompatImageButton
+                    android:id="@+id/backButton"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="@android:color/transparent"
+                    android:padding="8dp"
+                    android:src="@drawable/ic_arrow_back"
+                    android:contentDescription="Indietro"
+                    app:tint="@color/text_primary" />
+                <androidx.appcompat.widget.AppCompatImageButton
+                    android:id="@+id/prevWeekButton"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:background="@android:color/transparent"
+                    android:padding="8dp"
+                    android:src="@drawable/ic_arrow_back"
+                    android:contentDescription="Settimana precedente"
+                    app:tint="@color/text_primary" />
+                <TextView
+                    android:id="@+id/weekLabel"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:textColor="@color/text_primary"
+                    android:textStyle="bold"
+                    android:textSize="15sp" />
+                <androidx.appcompat.widget.AppCompatImageButton
+                    android:id="@+id/nextWeekButton"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:background="@android:color/transparent"
+                    android:padding="8dp"
+                    android:rotation="180"
+                    android:src="@drawable/ic_arrow_back"
+                    android:contentDescription="Settimana successiva"
+                    app:tint="@color/text_primary" />
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/reviewStatusCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_16"
@@ -30,100 +65,80 @@
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
                 android:padding="@dimen/space_12">
-                <ImageView
-                    android:layout_width="22dp"
-                    android:layout_height="22dp"
-                    android:importantForAccessibility="no"
-                    android:src="@drawable/ic_check_circle" />
+                <ImageView android:layout_width="22dp" android:layout_height="22dp" android:importantForAccessibility="no" android:src="@drawable/ic_check_circle" />
                 <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="@dimen/space_12" android:orientation="vertical">
-                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Settimana positiva" android:textColor="@color/text_primary" android:textSize="14sp" android:textStyle="bold" />
-                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_2" android:text="Hai seguito il piano con costanza e i risultati sono nella direzione giusta." android:textColor="@color/text_secondary" android:textSize="13sp" />
+                    <TextView android:id="@+id/reviewTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Review settimanale" android:textColor="@color/text_primary" android:textSize="14sp" android:textStyle="bold" />
+                    <TextView android:id="@+id/reviewSummary" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_2" android:textColor="@color/text_secondary" android:textSize="13sp" />
                 </LinearLayout>
             </LinearLayout>
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_20"
-                android:orientation="horizontal">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:orientation="horizontal">
                 <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center">
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Aderenza" android:textColor="@color/text_secondary" android:textSize="12sp" />
-                    <TextView android:id="@+id/adherenceValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:text="87%" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="18sp" />
+                    <TextView android:id="@+id/adherenceValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:text="n/d" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="18sp" />
                 </LinearLayout>
                 <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center">
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Sgarri" android:textColor="@color/text_secondary" android:textSize="12sp" />
-                    <TextView android:id="@+id/cheatsValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:text="2" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="18sp" />
+                    <TextView android:id="@+id/cheatsValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:text="—" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="18sp" />
                 </LinearLayout>
                 <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center">
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Allenamenti" android:textColor="@color/text_secondary" android:textSize="12sp" />
-                    <TextView android:id="@+id/workoutsValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:text="6/6" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="18sp" />
+                    <TextView android:id="@+id/workoutsValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:text="—" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="18sp" />
                 </LinearLayout>
             </LinearLayout>
 
-            <com.myfitai.app.ui.widgets.SectionHeaderView
+            <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_20"
-                android:text="Calorie medie" />
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_4"
-                android:text="2.520 kcal"
-                android:textColor="@color/text_primary"
-                android:textStyle="bold"
-                android:textSize="20sp" />
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Target: 2.500"
-                android:textColor="@color/text_secondary"
-                android:textSize="13sp" />
+                android:layout_marginTop="@dimen/space_8"
+                android:text="L’aderenza non viene stimata finché l’app non registra i pasti realmente consumati."
+                android:textColor="@color/text_muted"
+                android:textSize="11sp"
+                android:gravity="center" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_20"
-                android:orientation="horizontal">
+            <com.myfitai.app.ui.widgets.SectionHeaderView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:text="Piano nutrizionale medio" />
+            <TextView android:id="@+id/avgKcalValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:text="—" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="20sp" />
+            <TextView android:id="@+id/targetKcalValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Target: —" android:textColor="@color/text_secondary" android:textSize="13sp" />
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:orientation="horizontal">
                 <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical">
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Proteine" android:textColor="@color/text_secondary" android:textSize="12sp" />
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:text="182 g" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="15sp" />
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Target: 180" android:textColor="@color/text_secondary" android:textSize="12sp" />
+                    <TextView android:id="@+id/avgProteinValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:text="—" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="15sp" />
+                    <TextView android:id="@+id/targetProteinValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Target: —" android:textColor="@color/text_secondary" android:textSize="12sp" />
                 </LinearLayout>
                 <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical">
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Carboidrati" android:textColor="@color/text_secondary" android:textSize="12sp" />
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:text="284 g" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="15sp" />
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Target: 280" android:textColor="@color/text_secondary" android:textSize="12sp" />
+                    <TextView android:id="@+id/avgCarbsValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:text="—" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="15sp" />
+                    <TextView android:id="@+id/targetCarbsValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Target: —" android:textColor="@color/text_secondary" android:textSize="12sp" />
                 </LinearLayout>
                 <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical">
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Grassi" android:textColor="@color/text_secondary" android:textSize="12sp" />
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:text="74 g" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="15sp" />
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Target: 75" android:textColor="@color/text_secondary" android:textSize="12sp" />
+                    <TextView android:id="@+id/avgFatValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:text="—" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="15sp" />
+                    <TextView android:id="@+id/targetFatValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Target: —" android:textColor="@color/text_secondary" android:textSize="12sp" />
                 </LinearLayout>
             </LinearLayout>
 
-            <LinearLayout
+            <com.myfitai.app.ui.widgets.SectionHeaderView android:id="@+id/bodyChangesHeader" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:text="Variazioni osservate" />
+            <TextView android:id="@+id/bodyChangesText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:padding="@dimen/space_12" android:background="@drawable/bg_card" android:textColor="@color/text_primary" android:textSize="13sp" />
+
+            <com.myfitai.app.ui.widgets.SectionHeaderView android:id="@+id/observationsHeader" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:text="Osservazioni" />
+            <LinearLayout android:id="@+id/observationsContainer" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" />
+
+            <com.myfitai.app.ui.widgets.SectionHeaderView android:id="@+id/guidanceHeader" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:text="Prossima settimana" />
+            <LinearLayout android:id="@+id/guidanceContainer" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" />
+
+            <TextView android:id="@+id/statusText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_16" android:gravity="center" android:textColor="@color/text_secondary" android:textSize="12sp" android:visibility="gone" />
+            <ProgressBar android:id="@+id/reviewProgress" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center_horizontal" android:layout_marginTop="@dimen/space_12" android:visibility="gone" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/generateReviewButton"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_20"
-                android:background="@drawable/bg_positive_soft"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:padding="@dimen/space_12">
-                <ImageView
-                    android:layout_width="22dp"
-                    android:layout_height="22dp"
-                    android:importantForAccessibility="no"
-                    android:src="@drawable/ic_check_circle" />
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_weight="1"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="@dimen/space_12"
-                    android:text="La tua risposta al piano è in linea con l'obiettivo di ricomposizione. Manteniamo questa strategia anche per la prossima settimana."
-                    android:textColor="@color/text_primary"
-                    android:textSize="13sp" />
-            </LinearLayout>
+                android:layout_height="52dp"
+                android:layout_marginTop="@dimen/space_16"
+                android:text="Genera review settimanale"
+                android:textAllCaps="false"
+                android:textStyle="bold"
+                app:cornerRadius="12dp"
+                app:backgroundTint="@color/accent_green" />
         </LinearLayout>
     </ScrollView>
     <include layout="@layout/view_bottom_navigation" />
