@@ -1,6 +1,83 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:background="@color/bg_primary"><ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:fillViewport="true"><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp"><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical"><TextView android:layout_width="40dp" android:layout_height="40dp" android:gravity="center" android:text="‹" android:textSize="30sp" android:textColor="@color/text_primary"/><TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Oggi, 12 dicembre" android:textColor="@color/text_primary" android:textStyle="bold"/><TextView android:layout_width="40dp" android:layout_height="40dp" android:gravity="center" android:text="›" android:textSize="30sp" android:textColor="@color/text_primary"/></LinearLayout><TextView android:layout_width="match_parent" android:layout_height="120dp" android:gravity="center" android:text="◔
-1.850
-kcal rimanenti" android:textColor="@color/accent_green" android:textSize="19sp" android:textStyle="bold"/><LinearLayout android:layout_width="match_parent" android:layout_height="64dp" android:orientation="horizontal"><TextView android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:text="142g
-Proteine" android:textColor="@color/text_primary"/><TextView android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:text="58g
-Grassi" android:textColor="@color/text_primary"/><TextView android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:gravity="center" android:text="180g
-Carbo" android:textColor="@color/text_primary"/></LinearLayout><LinearLayout android:layout_width="match_parent" android:layout_height="76dp" android:layout_marginTop="8dp" android:padding="12dp" android:orientation="vertical" android:background="@drawable/bg_card"><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal"><TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Colazione" android:textColor="@color/text_primary" android:textStyle="bold"/><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="450 kcal" android:textColor="@color/text_primary"/></LinearLayout><TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:text="Porridge con frutta e proteine" android:textColor="@color/text_secondary" android:textSize="13sp"/></LinearLayout><LinearLayout android:layout_width="match_parent" android:layout_height="76dp" android:layout_marginTop="8dp" android:padding="12dp" android:orientation="vertical" android:background="@drawable/bg_card"><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal"><TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Pranzo" android:textColor="@color/text_primary" android:textStyle="bold"/><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="580 kcal" android:textColor="@color/text_primary"/></LinearLayout><TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:text="Riso, pollo, verdure" android:textColor="@color/text_secondary" android:textSize="13sp"/></LinearLayout><LinearLayout android:layout_width="match_parent" android:layout_height="76dp" android:layout_marginTop="8dp" android:padding="12dp" android:orientation="vertical" android:background="@drawable/bg_card"><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal"><TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Spuntino" android:textColor="@color/text_primary" android:textStyle="bold"/><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="220 kcal" android:textColor="@color/text_primary"/></LinearLayout><TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:text="Yogurt greco e frutta" android:textColor="@color/text_secondary" android:textSize="13sp"/></LinearLayout><LinearLayout android:layout_width="match_parent" android:layout_height="76dp" android:layout_marginTop="8dp" android:padding="12dp" android:orientation="vertical" android:background="@drawable/bg_card"><LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal"><TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Cena" android:textColor="@color/text_primary" android:textStyle="bold"/><TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="600 kcal" android:textColor="@color/text_primary"/></LinearLayout><TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="5dp" android:text="Salmone, verdure, patate" android:textColor="@color/text_secondary" android:textSize="13sp"/></LinearLayout><TextView android:id="@+id/mealDetailButton" android:layout_width="match_parent" android:layout_height="50dp" android:layout_marginTop="12dp" android:gravity="center" android:background="@drawable/bg_card" android:text="Vedi dettaglio pasto" android:textColor="@color/text_primary" android:textStyle="bold"/><TextView android:id="@+id/shoppingButton" android:layout_width="match_parent" android:layout_height="52dp" android:layout_marginTop="16dp" android:gravity="center" android:background="@drawable/bg_button_green" android:text="Lista della spesa" android:textColor="@color/bg_primary" android:textStyle="bold" android:textSize="15sp"/><TextView android:id="@+id/cheatButton" android:layout_width="match_parent" android:layout_height="50dp" android:layout_marginTop="8dp" android:gravity="center" android:background="@drawable/bg_card" android:text="+ Registra sgarro" android:textColor="@color/text_primary" android:textStyle="bold"/></LinearLayout></ScrollView><include layout="@layout/view_bottom_navigation"/></LinearLayout>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg_primary">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="@dimen/space_16">
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:orientation="horizontal" android:gravity="center_vertical">
+                <TextView android:id="@+id/prevWeekButton" android:layout_width="40dp" android:layout_height="40dp" android:gravity="center" android:text="‹" android:textSize="30sp" android:textColor="@color/text_primary" />
+                <TextView android:id="@+id/weekRangeLabel" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="14 – 20 Settembre 2026" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="15sp" />
+                <TextView android:id="@+id/nextWeekButton" android:layout_width="40dp" android:layout_height="40dp" android:gravity="center" android:text="›" android:textSize="30sp" android:textColor="@color/text_primary" />
+                <ImageView android:id="@+id/shoppingButton" android:layout_width="32dp" android:layout_height="32dp" android:layout_marginStart="@dimen/space_4" android:padding="4dp" android:src="@drawable/ic_cart" android:contentDescription="Lista della spesa" />
+                <ImageView android:id="@+id/cheatButton" android:layout_width="32dp" android:layout_height="32dp" android:layout_marginStart="@dimen/space_4" android:padding="4dp" android:src="@drawable/ic_add_circle" android:contentDescription="Registra sgarro" />
+            </LinearLayout>
+
+            <com.myfitai.app.ui.widgets.WeekDaySelectorView
+                android:id="@+id/weekDaySelector"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_8" />
+
+            <com.myfitai.app.ui.widgets.MealPlanRowView
+                android:id="@+id/mealBreakfast"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_16" />
+
+            <com.myfitai.app.ui.widgets.MealPlanRowView
+                android:id="@+id/mealSnack"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_8" />
+
+            <com.myfitai.app.ui.widgets.MealPlanRowView
+                android:id="@+id/mealLunch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_8" />
+
+            <com.myfitai.app.ui.widgets.MealPlanRowView
+                android:id="@+id/mealPreworkout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_8" />
+
+            <com.myfitai.app.ui.widgets.MealPlanRowView
+                android:id="@+id/mealDinner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_8" />
+
+            <com.myfitai.app.ui.widgets.SectionHeaderView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_20"
+                android:text="Totale giornaliero" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_8"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <TextView android:id="@+id/totalKcal" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="2.400 kcal" android:textColor="@color/accent_green" android:textStyle="bold" android:textSize="15sp" />
+                <TextView android:id="@+id/totalProtein" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="@dimen/space_8" android:text="P 159g" android:textColor="@color/accent_orange" android:textStyle="bold" android:textSize="13sp" />
+                <TextView android:id="@+id/totalCarbs" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="@dimen/space_8" android:text="C 271g" android:textColor="@color/accent_blue" android:textStyle="bold" android:textSize="13sp" />
+                <TextView android:id="@+id/totalFat" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="@dimen/space_8" android:text="F 69g" android:textColor="@color/accent_purple" android:textStyle="bold" android:textSize="13sp" />
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+    <include layout="@layout/view_bottom_navigation" />
+</LinearLayout>
