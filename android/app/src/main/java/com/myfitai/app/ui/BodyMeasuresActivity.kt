@@ -116,7 +116,7 @@ class BodyMeasuresActivity : BaseShellActivity() {
                 }
                 launch {
                     viewModel.deleted.collect {
-                        Toast.makeText(this@BodyMeasuresActivity, "Misurazione eliminata", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@BodyMeasuresActivity, "Misurazione eliminata dallo storico", Toast.LENGTH_SHORT).show()
                     }
                 }
                 launch {
@@ -167,7 +167,7 @@ class BodyMeasuresActivity : BaseShellActivity() {
             allMetricPoints.last().second - allMetricPoints[allMetricPoints.lastIndex - 1].second
         } else null
         findViewById<TextView>(R.id.trendDeltaPrevious).text = previousDelta?.let {
-            "${formatSigned(it)} cm vs precedente"
+            "${formatSigned(it)} cm vs precedente disponibile"
         } ?: "Dati insufficienti"
 
         val anchorDate = measurements.firstOrNull()?.let(::entityDate) ?: LocalDate.now()
@@ -205,7 +205,6 @@ class BodyMeasuresActivity : BaseShellActivity() {
         }
 
         measurements.forEachIndexed { index, measurement ->
-            val older = measurements.getOrNull(index + 1)
             val card = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 setPadding(dp(16), dp(12), dp(16), dp(12))
@@ -234,10 +233,12 @@ class BodyMeasuresActivity : BaseShellActivity() {
                 setPadding(0, dp(5), 0, 0)
             })
 
-            val waistDelta = if (measurement.waistCm != null && older?.waistCm != null) measurement.waistCm - older.waistCm else null
+            val waistDelta = measurement.waistCm?.let { current ->
+                previousAvailableValue(index) { it.waistCm }?.let { current - it }
+            }
             if (waistDelta != null) {
                 card.addView(TextView(this).apply {
-                    text = "Vita ${formatSigned(waistDelta)} cm rispetto alla rilevazione precedente"
+                    text = "Vita ${formatSigned(waistDelta)} cm rispetto al valore precedente disponibile"
                     setTextColor(getColor(if (waistDelta <= 0f) R.color.semantic_positive else R.color.text_secondary))
                     textSize = 12f
                     setPadding(0, dp(6), 0, 0)
@@ -253,6 +254,11 @@ class BodyMeasuresActivity : BaseShellActivity() {
             container.addView(card)
         }
     }
+
+    private fun previousAvailableValue(
+        currentIndex: Int,
+        selector: (BodyMeasurementEntity) -> Float?,
+    ): Float? = measurements.drop(currentIndex + 1).firstNotNullOfOrNull(selector)
 
     private fun historyValues(value: BodyMeasurementEntity): String {
         val items = listOfNotNull(
