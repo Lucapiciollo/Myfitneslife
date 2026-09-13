@@ -13,4 +13,7 @@
 <style name="Widget.MyFitAI.Card" parent="Widget.Material3.CardView.Filled"><item name="cardBackgroundColor">@color/surface_primary</item><item name="cardCornerRadius">@dimen/radius_medium</item><item name="cardElevation">0dp</item></style>
 <style name="ShapeAppearance.MyFitAI.Thumbnail" parent="ShapeAppearance.Material3.Corner.Medium"><item name="cornerSize">@dimen/radius_medium</item></style>
 <style name="ShapeAppearance.MyFitAI.Avatar" parent="ShapeAppearance.Material3.Corner.Full"/>
+<style name="Widget.MyFitAI.BodyMarker" parent=""><item name="android:layout_width">wrap_content</item><item name="android:layout_height">wrap_content</item><item name="android:orientation">horizontal</item><item name="android:gravity">center_vertical</item></style>
+<style name="Widget.MyFitAI.BodyMarkerDot" parent=""><item name="android:layout_width">10dp</item><item name="android:layout_height">10dp</item><item name="android:background">@drawable/bg_body_marker</item></style>
+<style name="Widget.MyFitAI.BodyMarkerLabel" parent=""><item name="android:layout_width">wrap_content</item><item name="android:layout_height">wrap_content</item><item name="android:layout_marginStart">3dp</item><item name="android:textColor">@color/text_secondary</item><item name="android:textSize">10sp</item><item name="android:background">@color/bg_primary</item><item name="android:paddingHorizontal">2dp</item></style>
 </resources>
