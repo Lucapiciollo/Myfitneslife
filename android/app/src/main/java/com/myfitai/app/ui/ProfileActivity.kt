@@ -1,8 +1,8 @@
 package com.myfitai.app.ui
 
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.widget.EditText
 import android.widget.PopupMenu
 import android.widget.TextView
 import androidx.activity.result.PickVisualMediaRequest
@@ -44,7 +44,6 @@ class ProfileActivity : BaseShellActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_profile)
         bindBack()
-
         bindSettingsNavigation()
         bindProfileActions()
         ensureProfileSelection()
@@ -84,30 +83,19 @@ class ProfileActivity : BaseShellActivity() {
             val stored = storedId?.let { data.userProfileRepository.get(it) }
             if (stored != null) return@launch
 
-            val first = data.userProfileRepository.getFirst()
+            val defaultId = data.activeProfileStore.defaultIdOrNull()
+            val default = defaultId?.let { data.userProfileRepository.get(it) }
+            val first = default ?: data.userProfileRepository.getFirst()
             if (first != null) {
-                data.activeProfileStore.setActiveProfile(first.id)
+                data.activeProfileStore.selectProfile(first.id, makeDefault = true)
                 return@launch
             }
 
-            val now = System.currentTimeMillis()
-            val id = data.userProfileRepository.create(
-                UserProfileEntity(
-                    name = "Luca Piciollo",
-                    birthDateEpochDay = null,
-                    heightCm = null,
-                    currentWeightKg = null,
-                    goal = null,
-                    activityLevel = null,
-                    wakeTimeMinutes = null,
-                    sleepTimeMinutes = null,
-                    dietaryPreferencesJson = null,
-                    photoPath = null,
-                    createdAtEpochMillis = now,
-                    updatedAtEpochMillis = now,
-                )
-            )
-            data.activeProfileStore.setActiveProfile(id)
+            startActivity(Intent(this@ProfileActivity, ProfileEditActivity::class.java).apply {
+                putExtra(ProfileEditActivity.EXTRA_BOOTSTRAP, true)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            })
+            finish()
         }
     }
 
@@ -119,7 +107,7 @@ class ProfileActivity : BaseShellActivity() {
                     val activeId = data.activeProfileStore.currentIdOrNull()
                     currentProfile = values.firstOrNull { it.id == activeId } ?: values.firstOrNull()
                     currentProfile?.let {
-                        if (activeId != it.id) data.activeProfileStore.setActiveProfile(it.id)
+                        if (activeId != it.id) data.activeProfileStore.selectProfile(it.id, makeDefault = true)
                         renderProfile(it)
                     }
                 }
@@ -134,8 +122,7 @@ class ProfileActivity : BaseShellActivity() {
 
         val avatar = findViewById<ShapeableImageView>(R.id.profileAvatar)
         val file = profile.photoPath?.let(::File)
-        if (file?.exists() == true) avatar.setImageURI(Uri.fromFile(file))
-        else avatar.setImageResource(R.drawable.img_profile_avatar)
+        if (file?.exists() == true) avatar.setImageURI(Uri.fromFile(file)) else avatar.setImageResource(R.drawable.img_profile_avatar)
     }
 
     private fun buildStats(profile: UserProfileEntity): String {
@@ -144,6 +131,7 @@ class ProfileActivity : BaseShellActivity() {
             val birth = LocalDate.ofEpochDay(it)
             parts += "${Period.between(birth, LocalDate.now()).years} anni"
         }
+        profile.biologicalSex?.let { parts += it }
         profile.heightCm?.let { parts += "${formatNumber(it)} cm" }
         profile.currentWeightKg?.let { parts += "${formatNumber(it)} kg" }
         return parts.ifEmpty { listOf("Completa i dati del profilo") }.joinToString("  |  ")
@@ -158,12 +146,14 @@ class ProfileActivity : BaseShellActivity() {
         popup.menu.add(0, addId, profiles.size + 1, "+ Aggiungi profilo")
         popup.setOnMenuItemClickListener { item ->
             if (item.itemId == addId) {
-                showCreateProfileDialog()
+                startActivity(Intent(this, ProfileEditActivity::class.java).putExtra(ProfileEditActivity.EXTRA_CREATE, true))
             } else {
                 profiles.getOrNull(item.itemId - 1)?.let { profile ->
-                    data.activeProfileStore.setActiveProfile(profile.id)
-                    currentProfile = profile
-                    renderProfile(profile)
+                    data.activeProfileStore.selectProfile(profile.id, makeDefault = true)
+                    startActivity(Intent(this, HomeActivity::class.java).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                    })
+                    finish()
                 }
             }
             true
@@ -171,52 +161,10 @@ class ProfileActivity : BaseShellActivity() {
         popup.show()
     }
 
-    private fun showCreateProfileDialog() {
-        val input = EditText(this).apply {
-            hint = "Nome profilo"
-            setSingleLine(true)
-        }
-        MaterialAlertDialogBuilder(this)
-            .setTitle("Nuovo profilo")
-            .setView(input)
-            .setNegativeButton("Annulla", null)
-            .setPositiveButton("Crea") { _, _ ->
-                val name = input.text?.toString()?.trim().orEmpty()
-                if (name.isNotBlank()) createProfile(name)
-            }
-            .show()
-    }
-
-    private fun createProfile(name: String) {
-        lifecycleScope.launch {
-            val now = System.currentTimeMillis()
-            val id = data.userProfileRepository.create(
-                UserProfileEntity(
-                    name = name,
-                    birthDateEpochDay = null,
-                    heightCm = null,
-                    currentWeightKg = null,
-                    goal = null,
-                    activityLevel = null,
-                    wakeTimeMinutes = null,
-                    sleepTimeMinutes = null,
-                    dietaryPreferencesJson = null,
-                    photoPath = null,
-                    createdAtEpochMillis = now,
-                    updatedAtEpochMillis = now,
-                )
-            )
-            data.activeProfileStore.setActiveProfile(id)
-        }
-    }
-
     private fun showPhotoMenu() {
         val profile = currentProfile ?: return
-        val options = if (profile.photoPath.isNullOrBlank()) {
-            arrayOf("Scatta foto", "Scegli dalla galleria", "Annulla")
-        } else {
-            arrayOf("Scatta foto", "Scegli dalla galleria", "Rimuovi foto", "Annulla")
-        }
+        val options = if (profile.photoPath.isNullOrBlank()) arrayOf("Scatta foto", "Scegli dalla galleria", "Annulla")
+        else arrayOf("Scatta foto", "Scegli dalla galleria", "Rimuovi foto", "Annulla")
         MaterialAlertDialogBuilder(this)
             .setTitle("Foto profilo")
             .setItems(options) { dialog, which ->
@@ -267,6 +215,5 @@ class ProfileActivity : BaseShellActivity() {
         }
     }
 
-    private fun formatNumber(value: Float): String =
-        if (value % 1f == 0f) value.toInt().toString() else String.format(java.util.Locale.ITALIAN, "%.1f", value)
+    private fun formatNumber(value: Float): String = if (value % 1f == 0f) value.toInt().toString() else String.format(java.util.Locale.ITALIAN, "%.1f", value)
 }
