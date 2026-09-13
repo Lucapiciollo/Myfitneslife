@@ -7,7 +7,7 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "user_profile")
 data class UserProfileEntity(
-    @PrimaryKey val id: Long = SINGLE_PROFILE_ID,
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
     val birthDateEpochDay: Long?,
     val heightCm: Float?,
@@ -17,14 +17,19 @@ data class UserProfileEntity(
     val wakeTimeMinutes: Int?,
     val sleepTimeMinutes: Int?,
     val dietaryPreferencesJson: String?,
+    /** Percorso nello storage privato dell'app. Mai salvare bitmap/BLOB in Room. */
+    val photoPath: String? = null,
+    val createdAtEpochMillis: Long,
     val updatedAtEpochMillis: Long,
-) {
-    companion object { const val SINGLE_PROFILE_ID = 1L }
-}
+)
 
-@Entity(tableName = "bia_measurements", indices = [Index("measuredAtEpochMillis")])
+@Entity(
+    tableName = "bia_measurements",
+    indices = [Index("profileId"), Index("measuredAtEpochMillis"), Index(value = ["profileId", "measuredAtEpochMillis"])],
+)
 data class BiaMeasurementEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val profileId: Long,
     val measuredAtEpochMillis: Long,
     val weightKg: Float?,
     val bodyFatPercent: Float?,
@@ -40,9 +45,13 @@ data class BiaMeasurementEntity(
     val notes: String? = null,
 )
 
-@Entity(tableName = "body_measurements", indices = [Index("measuredAtEpochMillis")])
+@Entity(
+    tableName = "body_measurements",
+    indices = [Index("profileId"), Index("measuredAtEpochMillis"), Index(value = ["profileId", "measuredAtEpochMillis"])],
+)
 data class BodyMeasurementEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val profileId: Long,
     val measuredAtEpochMillis: Long,
     val chestCm: Float?,
     val waistCm: Float?,
@@ -58,9 +67,13 @@ data class BodyMeasurementEntity(
     val notes: String? = null,
 )
 
-@Entity(tableName = "workouts", indices = [Index("startedAtEpochMillis")])
+@Entity(
+    tableName = "workouts",
+    indices = [Index("profileId"), Index("startedAtEpochMillis"), Index(value = ["profileId", "startedAtEpochMillis"])],
+)
 data class WorkoutEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val profileId: Long,
     val startedAtEpochMillis: Long,
     val type: String,
     val title: String,
@@ -69,9 +82,13 @@ data class WorkoutEntity(
     val notes: String? = null,
 )
 
-@Entity(tableName = "meal_plans", indices = [Index("createdAtEpochMillis")])
+@Entity(
+    tableName = "meal_plans",
+    indices = [Index("profileId"), Index("createdAtEpochMillis"), Index(value = ["profileId", "weekStartEpochDay"], unique = true)],
+)
 data class MealPlanEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val profileId: Long,
     val createdAtEpochMillis: Long,
     val weekStartEpochDay: Long,
     val status: String,
@@ -175,10 +192,11 @@ data class MealIngredientEntity(
         childColumns = ["planVersionId"],
         onDelete = ForeignKey.SET_NULL,
     )],
-    indices = [Index("occurredAtEpochMillis"), Index("planVersionId")],
+    indices = [Index("profileId"), Index("occurredAtEpochMillis"), Index(value = ["profileId", "occurredAtEpochMillis"]), Index("planVersionId")],
 )
 data class CheatEntryEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val profileId: Long,
     val occurredAtEpochMillis: Long,
     val description: String,
     val quantityText: String?,
@@ -190,9 +208,13 @@ data class CheatEntryEntity(
     val notes: String? = null,
 )
 
-@Entity(tableName = "weekly_reviews", indices = [Index("weekStartEpochDay", unique = true)])
+@Entity(
+    tableName = "weekly_reviews",
+    indices = [Index("profileId"), Index(value = ["profileId", "weekStartEpochDay"], unique = true)],
+)
 data class WeeklyReviewEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val profileId: Long,
     val weekStartEpochDay: Long,
     val createdAtEpochMillis: Long,
     val adherencePercent: Float?,
