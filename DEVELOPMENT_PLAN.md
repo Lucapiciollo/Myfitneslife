@@ -128,18 +128,51 @@ Lo Step 6 viene considerato chiuso per poter passare alla navigazione reale e al
 - La verifica runtime completa, multi-device, landscape e regressione visuale finale confluisce nello Step 23 e non blocca l'avvio dello Step 7.
 
 ## STEP 7 — Persistenza locale
-Stato: **NON INIZIATO**.
-- [ ] Introdurre Room.
-- [ ] Entity/DAO/Database/Repository layer.
-- [ ] Profilo utente.
-- [ ] BIA.
-- [ ] Misure corporee.
-- [ ] Allenamenti.
-- [ ] Piano alimentare/versioni.
-- [ ] Sgarri/deviazioni.
-- [ ] Review settimanali.
-- [ ] Storico/export.
-- [ ] Migrazioni/versioning DB.
+Stato: **IMPLEMENTATO LATO CODICE — BUILD/DEVICE TEST PENDING**.
+
+### Infrastruttura Room
+- [x] Room runtime/ktx/compiler integrati con KAPT.
+- [x] `MyFitAiDatabase` versione 1.
+- [x] Schema export configurato in `android/app/schemas`.
+- [x] Registro centralizzato `DatabaseMigrations`.
+- [x] Nessun `fallbackToDestructiveMigration`.
+- [x] `AppDataContainer` come composition root del layer dati.
+- [x] Repository layer tra UI/ViewModel e DAO.
+
+### Modello dati persistente
+- [x] Profilo utente (`UserProfileEntity`).
+- [x] BIA (`BiaMeasurementEntity`).
+- [x] Misure corporee (`BodyMeasurementEntity`).
+- [x] Allenamenti e rest day (`WorkoutEntity`).
+- [x] Piano alimentare (`MealPlanEntity`).
+- [x] Versioni immutabili del piano (`MealPlanVersionEntity`).
+- [x] Giorni piano (`MealPlanDayEntity`).
+- [x] Pasti (`MealEntity`).
+- [x] Ingredienti con `quantity`, `unit`, `displayDose`, `weightState`, `nutritionConfidence` (`MealIngredientEntity`).
+- [x] Sgarri/deviazioni (`CheatEntryEntity`).
+- [x] Review settimanali (`WeeklyReviewEntity`).
+- [x] Storico modellato tramite timestamp/date indicizzate sulle entità; export effettivo resta Step 22.
+
+### DAO e query
+- [x] CRUD principali.
+- [x] Query `latest` dove necessarie.
+- [x] Storici cronologici.
+- [x] Query temporali `between(from,to)` per BIA, misure, allenamenti e sgarri.
+- [x] Query di piano/versioni/giorni/pasti/ingredienti.
+- [x] Foreign key e indici sulle relazioni principali.
+
+### Versioning piano
+- [x] `MealPlanRepository.appendVersion()` crea sempre `versionNumber + 1`.
+- [x] Le versioni precedenti non vengono aggiornate/sovrascritte.
+- [x] Scrittura di versione/giorni/pasti/ingredienti dentro una transazione Room.
+
+### Test predisposti
+- [x] Test Room in-memory per ordinamento/range misure corporee.
+- [x] Test per verificare che due adattamenti generino due versioni distinte del piano.
+- [ ] Build Gradle reale dopo introduzione Room/KAPT.
+- [ ] Esecuzione instrumented test su device/emulatore.
+
+Nota: lo Step 7 costruisce il layer dati. Le Activity non vengono ancora collegate direttamente a Room; il collegamento avviene negli Step 8–10 e successivi tramite ViewModel/Repository, evitando accesso DAO dalla UI.
 
 ## STEP 8 — Profilo reale
 - [ ] Collegare campi profilo alla persistenza.
