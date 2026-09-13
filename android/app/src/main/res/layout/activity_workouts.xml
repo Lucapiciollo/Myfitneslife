@@ -25,24 +25,45 @@
                     android:contentDescription="Indietro"
                     android:padding="10dp"
                     android:src="@drawable/ic_arrow_back" />
-                <TextView
-                    android:id="@+id/title"
-                    android:layout_width="0dp"
-                    android:layout_weight="1"
-                    android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:text="Allenamenti"
-                    android:textColor="@color/text_primary"
-                    android:textStyle="bold"
-                    android:textSize="17sp" />
+                <TextView android:id="@+id/title" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:gravity="center" android:text="Allenamenti" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="17sp" />
                 <Space android:layout_width="40dp" android:layout_height="1dp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_8"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/previousWeekButton"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="Prec."
+                    android:textAllCaps="false" />
+                <TextView
+                    android:id="@+id/weekLabel"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/nextWeekButton"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="48dp"
+                    android:text="Succ."
+                    android:textAllCaps="false" />
             </LinearLayout>
 
             <com.myfitai.app.ui.widgets.WeekDaySelectorView
                 android:id="@+id/weekDaySelector"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_8" />
+                android:layout_height="wrap_content" />
 
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/daySummary"
