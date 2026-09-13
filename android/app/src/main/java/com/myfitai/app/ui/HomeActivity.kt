@@ -17,6 +17,10 @@ import com.myfitai.app.ui.widgets.TimeRangeSelectorView
 import com.myfitai.app.ui.widgets.WeightTrendChartView
 import com.myfitai.app.ui.widgets.WorkoutCardView
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 class HomeActivity : BaseShellActivity() {
@@ -27,6 +31,7 @@ class HomeActivity : BaseShellActivity() {
             profiles = data.userProfileRepository,
             biaRepository = data.biaRepository,
             bodyRepository = data.bodyMeasurementRepository,
+            workoutRepository = data.workoutRepository,
             activeProfileStore = data.activeProfileStore,
         )
     }
@@ -44,17 +49,11 @@ class HomeActivity : BaseShellActivity() {
         findViewById<MetricCardView>(R.id.metricFat).setLabel(getString(R.string.dashboard_metric_fat))
         findViewById<MetricCardView>(R.id.metricMuscle).setLabel(getString(R.string.dashboard_metric_muscle))
 
-        // Queste due card verranno collegate ai dati reali nei rispettivi step Piano/Allenamenti.
         findViewById<MealCardView>(R.id.nextMealCard).apply {
             setTime("12:30")
             setTitle("Riso basmati, pollo e verdure")
             setKcal("520 kcal")
             setImage(R.drawable.img_next_meal)
-        }
-        findViewById<WorkoutCardView>(R.id.nextWorkoutCard).apply {
-            setTime("Oggi 18:30")
-            setTitle("Upper Body")
-            setImage(R.drawable.img_next_workout)
         }
 
         findViewById<WeightTrendChartView>(R.id.weightTrendChart).showYAxisLabels()
@@ -78,59 +77,48 @@ class HomeActivity : BaseShellActivity() {
         val firstName = state.profileName?.trim()?.substringBefore(' ')?.takeIf { it.isNotBlank() }
         findViewById<TextView>(R.id.greetingText).text = firstName?.let { "Ciao $it 👋" } ?: "Ciao 👋"
 
-        renderMetric(
-            view = findViewById(R.id.metricWeight),
-            value = state.weight.value,
-            delta = state.weight.deltaFromPrevious,
-            unit = "kg",
-            semantic = DeltaSemantic.NEUTRAL,
-        )
-        renderMetric(
-            view = findViewById(R.id.metricFat),
-            value = state.bodyFat.value,
-            delta = state.bodyFat.deltaFromPrevious,
-            unit = "%",
-            semantic = DeltaSemantic.DOWN_IS_POSITIVE,
-        )
-        renderMetric(
-            view = findViewById(R.id.metricMuscle),
-            value = state.muscleMass.value,
-            delta = state.muscleMass.deltaFromPrevious,
-            unit = "kg",
-            semantic = DeltaSemantic.UP_IS_POSITIVE,
-        )
+        renderMetric(findViewById(R.id.metricWeight), state.weight.value, state.weight.deltaFromPrevious, "kg", DeltaSemantic.NEUTRAL)
+        renderMetric(findViewById(R.id.metricFat), state.bodyFat.value, state.bodyFat.deltaFromPrevious, "%", DeltaSemantic.DOWN_IS_POSITIVE)
+        renderMetric(findViewById(R.id.metricMuscle), state.muscleMass.value, state.muscleMass.deltaFromPrevious, "kg", DeltaSemantic.UP_IS_POSITIVE)
 
         findViewById<WeightTrendChartView>(R.id.weightTrendChart).setData(state.weightSeries)
         findViewById<TextView>(R.id.recompositionStateText).text = recompositionText(state.recompositionState)
+        renderNextWorkout(state.nextWorkout)
+    }
+
+    private fun renderNextWorkout(next: HomeViewModel.NextWorkoutState?) {
+        findViewById<WorkoutCardView>(R.id.nextWorkoutCard).apply {
+            if (next == null) {
+                setTime("—")
+                setTitle("Nessun allenamento pianificato")
+                setImage(R.drawable.img_next_workout)
+                return@apply
+            }
+            val dateTime = Instant.ofEpochMilli(next.startedAtEpochMillis).atZone(ZoneId.systemDefault())
+            val today = LocalDate.now()
+            val dayLabel = when (dateTime.toLocalDate()) {
+                today -> "Oggi"
+                today.plusDays(1) -> "Domani"
+                else -> dateTime.format(DateTimeFormatter.ofPattern("EEE d MMM", Locale.ITALIAN))
+            }
+            setTime("$dayLabel ${dateTime.format(DateTimeFormatter.ofPattern("HH:mm", Locale.ITALIAN))}")
+            setTitle(next.title)
+            setImage(if (next.type.equals("Cardio", true)) R.drawable.img_workout_cardio else R.drawable.img_workout_weights)
+        }
     }
 
     private enum class DeltaSemantic { NEUTRAL, DOWN_IS_POSITIVE, UP_IS_POSITIVE }
 
-    private fun renderMetric(
-        view: MetricCardView,
-        value: Float?,
-        delta: Float?,
-        unit: String,
-        semantic: DeltaSemantic,
-    ) {
+    private fun renderMetric(view: MetricCardView, value: Float?, delta: Float?, unit: String, semantic: DeltaSemantic) {
         view.setValue(value?.let { "${formatNumber(it)} $unit" } ?: "—")
         if (delta == null) {
             view.setDelta("Dati insufficienti", MetricCardView.DeltaState.NEUTRAL)
             return
         }
-
         val state = when (semantic) {
             DeltaSemantic.NEUTRAL -> MetricCardView.DeltaState.NEUTRAL
-            DeltaSemantic.DOWN_IS_POSITIVE -> when {
-                delta < 0f -> MetricCardView.DeltaState.POSITIVE
-                delta > 0f -> MetricCardView.DeltaState.NEGATIVE
-                else -> MetricCardView.DeltaState.NEUTRAL
-            }
-            DeltaSemantic.UP_IS_POSITIVE -> when {
-                delta > 0f -> MetricCardView.DeltaState.POSITIVE
-                delta < 0f -> MetricCardView.DeltaState.NEGATIVE
-                else -> MetricCardView.DeltaState.NEUTRAL
-            }
+            DeltaSemantic.DOWN_IS_POSITIVE -> when { delta < 0f -> MetricCardView.DeltaState.POSITIVE; delta > 0f -> MetricCardView.DeltaState.NEGATIVE; else -> MetricCardView.DeltaState.NEUTRAL }
+            DeltaSemantic.UP_IS_POSITIVE -> when { delta > 0f -> MetricCardView.DeltaState.POSITIVE; delta < 0f -> MetricCardView.DeltaState.NEGATIVE; else -> MetricCardView.DeltaState.NEUTRAL }
         }
         view.setDelta("${formatSigned(delta)} $unit", state)
     }
@@ -144,8 +132,6 @@ class HomeActivity : BaseShellActivity() {
         LocalCalculationEngine.RecompositionState.NOT_ENOUGH_DATA -> "Aggiungi almeno due rilevazioni comparabili per vedere il trend corporeo."
     }
 
-    private fun formatNumber(value: Float): String =
-        if (value % 1f == 0f) value.toInt().toString() else String.format(Locale.ITALIAN, "%.1f", value)
-
+    private fun formatNumber(value: Float): String = if (value % 1f == 0f) value.toInt().toString() else String.format(Locale.ITALIAN, "%.1f", value)
     private fun formatSigned(value: Float): String = String.format(Locale.ITALIAN, "%+.1f", value)
 }
