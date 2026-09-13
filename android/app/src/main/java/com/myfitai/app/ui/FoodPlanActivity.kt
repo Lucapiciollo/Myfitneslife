@@ -32,6 +32,7 @@ class FoodPlanActivity : BaseShellActivity() {
             repository = data.mealPlanRepository,
             activeProfileStore = data.activeProfileStore,
             generationService = data.nutritionPlanGenerationService,
+            notificationScheduler = data.notificationScheduler,
         )
     }
 
