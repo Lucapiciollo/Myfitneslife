@@ -1,5 +1,6 @@
 package com.myfitai.app.ui
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -47,7 +48,11 @@ class WorkoutsActivity : BaseShellActivity() {
         bindWeekNavigation()
         bindWeek()
         findViewById<android.view.View>(R.id.addWorkoutButton).setOnClickListener {
-            go(NewWorkoutActivity::class.java)
+            val selectedDate = weekStart.plusDays(selectedDayIndex.toLong())
+            startActivity(
+                Intent(this, NewWorkoutActivity::class.java)
+                    .putExtra(NewWorkoutActivity.EXTRA_DATE_EPOCH_DAY, selectedDate.toEpochDay())
+            )
         }
         observeData()
     }
