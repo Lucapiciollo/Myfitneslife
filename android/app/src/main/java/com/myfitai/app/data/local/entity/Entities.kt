@@ -1,5 +1,6 @@
 package com.myfitai.app.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -19,7 +20,7 @@ data class UserProfileEntity(
     val dietaryPreferencesJson: String?,
     /** Percorso nello storage privato dell'app. Mai salvare bitmap/BLOB in Room. */
     val photoPath: String? = null,
-    val createdAtEpochMillis: Long,
+    @ColumnInfo(defaultValue = "0") val createdAtEpochMillis: Long,
     val updatedAtEpochMillis: Long,
 )
 
@@ -29,7 +30,7 @@ data class UserProfileEntity(
 )
 data class BiaMeasurementEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val profileId: Long,
+    @ColumnInfo(defaultValue = "1") val profileId: Long,
     val measuredAtEpochMillis: Long,
     val weightKg: Float?,
     val bodyFatPercent: Float?,
@@ -51,7 +52,7 @@ data class BiaMeasurementEntity(
 )
 data class BodyMeasurementEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val profileId: Long,
+    @ColumnInfo(defaultValue = "1") val profileId: Long,
     val measuredAtEpochMillis: Long,
     val chestCm: Float?,
     val waistCm: Float?,
@@ -73,7 +74,7 @@ data class BodyMeasurementEntity(
 )
 data class WorkoutEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val profileId: Long,
+    @ColumnInfo(defaultValue = "1") val profileId: Long,
     val startedAtEpochMillis: Long,
     val type: String,
     val title: String,
@@ -88,7 +89,7 @@ data class WorkoutEntity(
 )
 data class MealPlanEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val profileId: Long,
+    @ColumnInfo(defaultValue = "1") val profileId: Long,
     val createdAtEpochMillis: Long,
     val weekStartEpochDay: Long,
     val status: String,
@@ -196,7 +197,7 @@ data class MealIngredientEntity(
 )
 data class CheatEntryEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val profileId: Long,
+    @ColumnInfo(defaultValue = "1") val profileId: Long,
     val occurredAtEpochMillis: Long,
     val description: String,
     val quantityText: String?,
@@ -214,7 +215,7 @@ data class CheatEntryEntity(
 )
 data class WeeklyReviewEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val profileId: Long,
+    @ColumnInfo(defaultValue = "1") val profileId: Long,
     val weekStartEpochDay: Long,
     val createdAtEpochMillis: Long,
     val adherencePercent: Float?,
