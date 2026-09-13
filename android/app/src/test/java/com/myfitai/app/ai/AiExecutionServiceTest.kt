@@ -28,30 +28,34 @@ class AiExecutionServiceTest {
     }
 
     @Test
-    fun execute_retriesOnceAfterInvalidSchema() = runBlocking {
-        val provider = FakeProvider(
-            listOf(
-                "{\"status\":\"bad\"}",
-                "{\"status\":\"ok\",\"value\":2}"
+    fun execute_retriesOnceAfterInvalidSchema() {
+        runBlocking {
+            val provider = FakeProvider(
+                listOf(
+                    "{\"status\":\"bad\"}",
+                    "{\"status\":\"ok\",\"value\":2}"
+                )
             )
-        )
-        val service = AiExecutionService()
-        val result = service.execute(
-            provider = provider,
-            request = AiStructuredRequest("system", "user", "test_schema", schema),
-            maxSchemaRetries = 1,
-        )
-        assertEquals(2, provider.calls)
-        assertEquals("{\"status\":\"ok\",\"value\":2}", result.jsonText)
+            val service = AiExecutionService()
+            val result = service.execute(
+                provider = provider,
+                request = AiStructuredRequest("system", "user", "test_schema", schema),
+                maxSchemaRetries = 1,
+            )
+            assertEquals(2, provider.calls)
+            assertEquals("{\"status\":\"ok\",\"value\":2}", result.jsonText)
+        }
     }
 
     @Test(expected = AiExecutionService.Failure.BusinessRejected::class)
-    fun execute_doesNotBypassBusinessValidation() = runBlocking {
-        AiExecutionService().execute(
-            provider = FakeProvider(listOf("{\"status\":\"ok\",\"value\":2}")),
-            request = AiStructuredRequest("system", "user", "test_schema", schema),
-            businessValidator = { Result.failure(IllegalArgumentException("OUT_OF_TOLERANCE")) },
-        )
+    fun execute_doesNotBypassBusinessValidation() {
+        runBlocking {
+            AiExecutionService().execute(
+                provider = FakeProvider(listOf("{\"status\":\"ok\",\"value\":2}")),
+                request = AiStructuredRequest("system", "user", "test_schema", schema),
+                businessValidator = { Result.failure(IllegalArgumentException("OUT_OF_TOLERANCE")) },
+            )
+        }
     }
 
     private class FakeProvider(private val responses: List<String>) : AiProvider {
