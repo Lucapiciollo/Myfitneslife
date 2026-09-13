@@ -3,10 +3,10 @@ package com.myfitai.app.ui
 import android.os.Bundle
 import android.view.View
 import android.view.WindowManager
-import android.widget.EditText
-import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
+import com.google.android.material.materialswitch.MaterialSwitch
+import com.google.android.material.textfield.TextInputEditText
 import com.myfitai.app.R
 import com.myfitai.app.ai.AiRuntimeConfig
 import com.myfitai.app.navigation.BottomNavBinder
@@ -21,9 +21,9 @@ class SettingsActivity : BaseShellActivity() {
         bindBack()
 
         val secureKeyStore = SecureOpenAiKeyStore(this)
-        val useGeminiSwitch = findViewById<Switch>(R.id.useGeminiSwitch)
+        val useGeminiSwitch = findViewById<MaterialSwitch>(R.id.useGeminiSwitch)
         val openAiKeyContainer = findViewById<View>(R.id.openAiKeyContainer)
-        val openAiKeyInput = findViewById<EditText>(R.id.openAiApiKeyInput)
+        val openAiKeyInput = findViewById<TextInputEditText>(R.id.openAiApiKeyInput)
         val activeProviderText = findViewById<TextView>(R.id.activeProviderText)
         val saveKeyButton = findViewById<View>(R.id.saveOpenAiKeyButton)
         val deleteKeyButton = findViewById<View>(R.id.deleteOpenAiKeyButton)
@@ -52,6 +52,6 @@ class SettingsActivity : BaseShellActivity() {
         deleteKeyButton.setOnClickListener { secureKeyStore.delete(); openAiKeyInput.text?.clear(); Toast.makeText(this, "Chiave OpenAI rimossa", Toast.LENGTH_SHORT).show(); renderProviderState() }
         useGeminiSwitch.setOnCheckedChangeListener { _, _ -> renderProviderState() }
         renderProviderState()
-        findViewById<View>(R.id.title).setOnLongClickListener { go(ExportActivity::class.java); true }
+        findViewById<View>(R.id.rowExport).setOnClickListener { go(ExportActivity::class.java) }
     }
 }
