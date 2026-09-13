@@ -46,6 +46,7 @@
         <activity android:name=".ui.SettingsActivity" />
         <activity android:name=".ui.ExportActivity" />
         <activity android:name=".ui.AiAnalysisActivity" />
+        <activity android:name=".ui.NutritionAdviceActivity" />
         <activity android:name=".ui.HistoryActivity" />
         <activity android:name=".ui.AdjustedPlanActivity" />
         <activity android:name=".ui.CheatEntryActivity" />
