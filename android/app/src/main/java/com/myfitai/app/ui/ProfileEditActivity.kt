@@ -1,6 +1,8 @@
 package com.myfitai.app.ui
 
+import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
 import android.widget.TextView
@@ -29,13 +31,15 @@ import java.util.Locale
 
 class ProfileEditActivity : BaseShellActivity() {
 
+    private val isBootstrap by lazy { intent.getBooleanExtra(EXTRA_BOOTSTRAP, false) }
     private val data by lazy { AppDataContainer.get(this) }
     private val viewModel: ProfileEditViewModel by viewModels {
-        ProfileEditViewModel.Factory(data.userProfileRepository, data.activeProfileStore)
+        ProfileEditViewModel.Factory(data.userProfileRepository, data.activeProfileStore, allowCreate = isBootstrap)
     }
 
     private lateinit var nameInput: TextInputEditText
     private lateinit var birthDateInput: TextInputEditText
+    private lateinit var sexInput: AutoCompleteTextView
     private lateinit var heightInput: TextInputEditText
     private lateinit var weightInput: TextInputEditText
     private lateinit var goalInput: AutoCompleteTextView
@@ -53,7 +57,13 @@ class ProfileEditActivity : BaseShellActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_profile_edit)
-        bindBack()
+        if (isBootstrap) {
+            findViewById<View>(R.id.backButton).visibility = View.INVISIBLE
+            findViewById<TextView>(R.id.title).text = "Crea il tuo profilo"
+            findViewById<View>(R.id.bootstrapHint).visibility = View.VISIBLE
+        } else {
+            bindBack()
+        }
         bindViews()
         bindDropdowns()
         bindPickers()
@@ -64,6 +74,7 @@ class ProfileEditActivity : BaseShellActivity() {
     private fun bindViews() {
         nameInput = findViewById(R.id.nameInput)
         birthDateInput = findViewById(R.id.birthDateInput)
+        sexInput = findViewById(R.id.sexInput)
         heightInput = findViewById(R.id.heightInput)
         weightInput = findViewById(R.id.weightInput)
         goalInput = findViewById(R.id.goalInput)
@@ -75,19 +86,12 @@ class ProfileEditActivity : BaseShellActivity() {
     }
 
     private fun bindDropdowns() {
+        sexInput.setAdapter(ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, listOf("Maschio", "Femmina")))
         goalInput.setAdapter(
-            ArrayAdapter.createFromResource(
-                this,
-                R.array.profile_goals,
-                android.R.layout.simple_dropdown_item_1line,
-            )
+            ArrayAdapter.createFromResource(this, R.array.profile_goals, android.R.layout.simple_dropdown_item_1line)
         )
         activityInput.setAdapter(
-            ArrayAdapter.createFromResource(
-                this,
-                R.array.profile_activity_levels,
-                android.R.layout.simple_dropdown_item_1line,
-            )
+            ArrayAdapter.createFromResource(this, R.array.profile_activity_levels, android.R.layout.simple_dropdown_item_1line)
         )
     }
 
@@ -110,7 +114,6 @@ class ProfileEditActivity : BaseShellActivity() {
             wakeTimeMinutes = value
             wakeTimeInput.setText(formatMinutes(value))
         } }
-
         sleepTimeInput.setOnClickListener { showTimePicker("Ora di sonno", sleepTimeMinutes) { value ->
             sleepTimeMinutes = value
             sleepTimeInput.setText(formatMinutes(value))
@@ -118,12 +121,10 @@ class ProfileEditActivity : BaseShellActivity() {
     }
 
     private fun showTimePicker(title: String, current: Int?, onSelected: (Int) -> Unit) {
-        val hour = current?.div(60) ?: 7
-        val minute = current?.rem(60) ?: 0
         val picker = MaterialTimePicker.Builder()
             .setTimeFormat(TimeFormat.CLOCK_24H)
-            .setHour(hour)
-            .setMinute(minute)
+            .setHour(current?.div(60) ?: 7)
+            .setMinute(current?.rem(60) ?: 0)
             .setTitleText(title)
             .build()
         picker.addOnPositiveButtonClickListener { onSelected(picker.hour * 60 + picker.minute) }
@@ -134,21 +135,30 @@ class ProfileEditActivity : BaseShellActivity() {
         saveButton.setOnClickListener {
             clearErrors()
             val name = nameInput.text?.toString()?.trim().orEmpty()
+            val sex = sexInput.text?.toString()?.trim().orEmpty()
             val height = parseFloat(heightInput.text?.toString())
             val weight = parseFloat(weightInput.text?.toString())
+            val goal = goalInput.text?.toString()?.trim().orEmpty()
+            val activity = activityInput.text?.toString()?.trim().orEmpty()
 
             var valid = true
-            if (name.isBlank()) {
-                findViewById<TextInputLayout>(R.id.nameLayout).error = "Inserisci un nome"
+            fun fail(layoutId: Int, message: String) {
+                findViewById<TextInputLayout>(layoutId).error = message
                 valid = false
             }
-            if (height != null && height <= 0f) {
-                findViewById<TextInputLayout>(R.id.heightLayout).error = "Altezza non valida"
-                valid = false
-            }
-            if (weight != null && weight <= 0f) {
-                findViewById<TextInputLayout>(R.id.weightLayout).error = "Peso non valido"
-                valid = false
+
+            if (name.isBlank()) fail(R.id.nameLayout, "Inserisci un nome")
+            if (birthDateEpochDay != null && LocalDate.ofEpochDay(birthDateEpochDay!!).isAfter(LocalDate.now())) fail(R.id.birthDateLayout, "Data non valida")
+            if (height != null && (height < 80f || height > 250f)) fail(R.id.heightLayout, "Altezza non valida")
+            if (weight != null && (weight < 20f || weight > 400f)) fail(R.id.weightLayout, "Peso non valido")
+
+            if (isBootstrap) {
+                if (birthDateEpochDay == null) fail(R.id.birthDateLayout, "Inserisci la data di nascita")
+                if (sex !in setOf("Maschio", "Femmina")) fail(R.id.sexLayout, "Seleziona il sesso biologico")
+                if (height == null) fail(R.id.heightLayout, "Inserisci l'altezza")
+                if (weight == null) fail(R.id.weightLayout, "Inserisci il peso iniziale")
+                if (goal.isBlank()) fail(R.id.goalLayout, "Seleziona un obiettivo")
+                if (activity.isBlank()) fail(R.id.activityLayout, "Seleziona il livello di attività")
             }
             if (!valid) return@setOnClickListener
 
@@ -159,10 +169,11 @@ class ProfileEditActivity : BaseShellActivity() {
             viewModel.save(
                 name = name,
                 birthDateEpochDay = birthDateEpochDay,
+                biologicalSex = sex.takeIf { it.isNotBlank() },
                 heightCm = height,
                 currentWeightKg = weight,
-                goal = goalInput.text?.toString(),
-                activityLevel = activityInput.text?.toString(),
+                goal = goal,
+                activityLevel = activity,
                 wakeTimeMinutes = wakeTimeMinutes,
                 sleepTimeMinutes = sleepTimeMinutes,
                 dietaryPreferencesJson = preferencesJson,
@@ -184,31 +195,31 @@ class ProfileEditActivity : BaseShellActivity() {
                 launch {
                     viewModel.saving.collect { saving ->
                         saveButton.isEnabled = !saving
-                        saveButton.text = if (saving) "Salvataggio…" else "Salva profilo"
+                        saveButton.text = if (saving) "Salvataggio…" else if (isBootstrap) "Crea profilo e continua" else "Salva profilo"
                     }
                 }
                 launch {
                     viewModel.saved.collect {
-                        Toast.makeText(this@ProfileEditActivity, "Profilo salvato", Toast.LENGTH_SHORT).show()
-                        finish()
+                        Toast.makeText(this@ProfileEditActivity, if (isBootstrap) "Profilo creato" else "Profilo salvato", Toast.LENGTH_SHORT).show()
+                        if (isBootstrap) {
+                            startActivity(Intent(this@ProfileEditActivity, HomeActivity::class.java).apply {
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                            })
+                            finish()
+                        } else finish()
                     }
                 }
-                launch {
-                    viewModel.error.collect { message ->
-                        Toast.makeText(this@ProfileEditActivity, message, Toast.LENGTH_SHORT).show()
-                    }
-                }
+                launch { viewModel.error.collect { message -> Toast.makeText(this@ProfileEditActivity, message, Toast.LENGTH_SHORT).show() } }
             }
         }
     }
 
     private fun render(profile: UserProfileEntity) {
-        findViewById<TextView>(R.id.title).text = "Modifica ${profile.name}"
+        if (!isBootstrap) findViewById<TextView>(R.id.title).text = "Modifica ${profile.name}"
         nameInput.setText(profile.name)
         birthDateEpochDay = profile.birthDateEpochDay
-        birthDateInput.setText(profile.birthDateEpochDay?.let {
-            LocalDate.ofEpochDay(it).format(DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.ITALIAN))
-        }.orEmpty())
+        birthDateInput.setText(profile.birthDateEpochDay?.let { LocalDate.ofEpochDay(it).format(DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.ITALIAN)) }.orEmpty())
+        sexInput.setText(profile.biologicalSex.orEmpty(), false)
         heightInput.setText(profile.heightCm?.let(::formatNumber).orEmpty())
         weightInput.setText(profile.currentWeightKg?.let(::formatNumber).orEmpty())
         goalInput.setText(profile.goal.orEmpty(), false)
@@ -226,19 +237,15 @@ class ProfileEditActivity : BaseShellActivity() {
     }
 
     private fun clearErrors() {
-        findViewById<TextInputLayout>(R.id.nameLayout).error = null
-        findViewById<TextInputLayout>(R.id.heightLayout).error = null
-        findViewById<TextInputLayout>(R.id.weightLayout).error = null
+        listOf(R.id.nameLayout, R.id.birthDateLayout, R.id.sexLayout, R.id.heightLayout, R.id.weightLayout, R.id.goalLayout, R.id.activityLayout)
+            .forEach { findViewById<TextInputLayout>(it).error = null }
     }
 
-    private fun parseFloat(value: String?): Float? = value
-        ?.trim()
-        ?.replace(',', '.')
-        ?.takeIf { it.isNotEmpty() }
-        ?.toFloatOrNull()
-
+    private fun parseFloat(value: String?): Float? = value?.trim()?.replace(',', '.')?.takeIf { it.isNotEmpty() }?.toFloatOrNull()
     private fun formatMinutes(total: Int): String = String.format(Locale.ITALIAN, "%02d:%02d", total / 60, total % 60)
+    private fun formatNumber(value: Float): String = if (value % 1f == 0f) value.toInt().toString() else String.format(Locale.ITALIAN, "%.1f", value)
 
-    private fun formatNumber(value: Float): String =
-        if (value % 1f == 0f) value.toInt().toString() else String.format(Locale.ITALIAN, "%.1f", value)
+    companion object {
+        const val EXTRA_BOOTSTRAP = "profile_bootstrap"
+    }
 }
