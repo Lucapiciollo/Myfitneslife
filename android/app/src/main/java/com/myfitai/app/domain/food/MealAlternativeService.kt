@@ -8,9 +8,9 @@ import com.myfitai.app.data.repository.IngredientDraft
 import com.myfitai.app.data.repository.MealDraft
 import com.myfitai.app.data.repository.MealPlanRepository
 import com.myfitai.app.data.repository.PlanVersionDraft
+import com.myfitai.app.data.repository.SupplementDraft
 import com.myfitai.app.data.repository.UserProfileRepository
 import java.time.LocalDate
-import java.util.Locale
 
 /**
  * Ephemeral AI alternative generator for one planned meal.
@@ -36,11 +36,7 @@ class MealAlternativeService(
         val model: String,
     )
 
-    data class ApplyResult(
-        val versionId: Long,
-        val title: String,
-        val kcal: Int,
-    )
+    data class ApplyResult(val versionId: Long, val title: String, val kcal: Int)
 
     sealed class AlternativeException(message: String) : Exception(message) {
         class NeedsInput(val fields: List<String>) : AlternativeException("NEEDS_INPUT: ${fields.joinToString()}")
@@ -49,21 +45,12 @@ class MealAlternativeService(
         class InvalidAlternative : AlternativeException("L'alternativa non rispetta i vincoli del pasto.")
     }
 
-    suspend fun generate(
-        weekStartEpochDay: Long,
-        dayEpochDay: Long,
-        mealId: Long,
-    ): Alternatives {
-        val profileId = activeProfileStore.currentIdOrNull()
-            ?: throw AlternativeException.NeedsInput(listOf("profilo attivo"))
-        val profile = profiles.get(profileId)
-            ?: throw AlternativeException.NeedsInput(listOf("profilo"))
-        val snapshot = plans.loadLatestSnapshot(profileId, weekStartEpochDay)
-            ?: throw AlternativeException.NeedsInput(listOf("piano alimentare"))
-        val day = snapshot.version.days.firstOrNull { it.dateEpochDay == dayEpochDay }
-            ?: throw AlternativeException.NeedsInput(listOf("giorno del piano"))
-        val meal = day.meals.firstOrNull { it.id == mealId }
-            ?: throw AlternativeException.NeedsInput(listOf("pasto"))
+    suspend fun generate(weekStartEpochDay: Long, dayEpochDay: Long, mealId: Long): Alternatives {
+        val profileId = activeProfileStore.currentIdOrNull() ?: throw AlternativeException.NeedsInput(listOf("profilo attivo"))
+        val profile = profiles.get(profileId) ?: throw AlternativeException.NeedsInput(listOf("profilo"))
+        val snapshot = plans.loadLatestSnapshot(profileId, weekStartEpochDay) ?: throw AlternativeException.NeedsInput(listOf("piano alimentare"))
+        val day = snapshot.version.days.firstOrNull { it.dateEpochDay == dayEpochDay } ?: throw AlternativeException.NeedsInput(listOf("giorno del piano"))
+        val meal = day.meals.firstOrNull { it.id == mealId } ?: throw AlternativeException.NeedsInput(listOf("pasto"))
         val targetKcal = meal.kcal ?: throw AlternativeException.NeedsInput(listOf("calorie del pasto"))
         ensureNotPast(dayEpochDay, meal.timeMinutes)
 
@@ -88,42 +75,17 @@ class MealAlternativeService(
             MealAlternativeContract.validateBusiness(it, meal).getOrThrow()
         }
 
-        return Alternatives(
-            planId = snapshot.planId,
-            sourceVersionId = snapshot.version.id,
-            weekStartEpochDay = weekStartEpochDay,
-            dayEpochDay = dayEpochDay,
-            mealId = meal.id,
-            mealType = meal.type,
-            mealTimeMinutes = meal.timeMinutes,
-            targetKcal = targetKcal,
-            items = response.alternatives,
-            provider = validated.provider.name,
-            model = validated.model,
-        )
+        return Alternatives(snapshot.planId, snapshot.version.id, weekStartEpochDay, dayEpochDay, meal.id, meal.type, meal.timeMinutes, targetKcal, response.alternatives, validated.provider.name, validated.model)
     }
 
-    suspend fun apply(
-        generated: Alternatives,
-        alternative: MealAlternativeContract.Alternative,
-    ): ApplyResult {
-        if (alternative !in generated.items || alternative.kcal != generated.targetKcal) {
-            throw AlternativeException.InvalidAlternative()
-        }
-        val profileId = activeProfileStore.currentIdOrNull()
-            ?: throw AlternativeException.NeedsInput(listOf("profilo attivo"))
-        val latest = plans.loadLatestSnapshot(profileId, generated.weekStartEpochDay)
-            ?: throw AlternativeException.StalePlan()
-        if (latest.version.id != generated.sourceVersionId || latest.planId != generated.planId) {
-            throw AlternativeException.StalePlan()
-        }
-        val sourceDay = latest.version.days.firstOrNull { it.dateEpochDay == generated.dayEpochDay }
-            ?: throw AlternativeException.StalePlan()
-        val sourceMeal = sourceDay.meals.firstOrNull { it.id == generated.mealId }
-            ?: throw AlternativeException.StalePlan()
-        if (sourceMeal.kcal != generated.targetKcal || sourceMeal.type != generated.mealType || sourceMeal.timeMinutes != generated.mealTimeMinutes) {
-            throw AlternativeException.StalePlan()
-        }
+    suspend fun apply(generated: Alternatives, alternative: MealAlternativeContract.Alternative): ApplyResult {
+        if (alternative !in generated.items || alternative.kcal != generated.targetKcal) throw AlternativeException.InvalidAlternative()
+        val profileId = activeProfileStore.currentIdOrNull() ?: throw AlternativeException.NeedsInput(listOf("profilo attivo"))
+        val latest = plans.loadLatestSnapshot(profileId, generated.weekStartEpochDay) ?: throw AlternativeException.StalePlan()
+        if (latest.version.id != generated.sourceVersionId || latest.planId != generated.planId) throw AlternativeException.StalePlan()
+        val sourceDay = latest.version.days.firstOrNull { it.dateEpochDay == generated.dayEpochDay } ?: throw AlternativeException.StalePlan()
+        val sourceMeal = sourceDay.meals.firstOrNull { it.id == generated.mealId } ?: throw AlternativeException.StalePlan()
+        if (sourceMeal.kcal != generated.targetKcal || sourceMeal.type != generated.mealType || sourceMeal.timeMinutes != generated.mealTimeMinutes) throw AlternativeException.StalePlan()
         ensureNotPast(sourceDay.dateEpochDay, sourceMeal.timeMinutes)
 
         val replacement = MealDraft(
@@ -136,61 +98,41 @@ class MealAlternativeService(
             fatG = alternative.fatG,
             preparation = alternative.preparation,
             ingredients = alternative.ingredients.map { ingredient ->
-                IngredientDraft(
-                    name = ingredient.name,
-                    quantity = ingredient.quantity,
-                    unit = ingredient.unit,
-                    displayDose = ingredient.displayDose,
-                    weightState = ingredient.weightState,
-                    nutritionConfidence = ingredient.nutritionConfidence,
-                    category = ingredient.category,
-                )
+                IngredientDraft(ingredient.name, ingredient.quantity, ingredient.unit, ingredient.displayDose, ingredient.weightState, ingredient.nutritionConfidence, ingredient.category)
             },
         )
 
         val days = latest.version.days.map { day ->
-            val meals = day.meals.map { meal ->
-                if (meal.id == sourceMeal.id) replacement else meal.toDraft()
-            }
+            val meals = day.meals.map { meal -> if (meal.id == sourceMeal.id) replacement else meal.toDraft() }
+            val supplements = day.supplements.map { it.toDraft() }
             DayDraft(
                 dateEpochDay = day.dateEpochDay,
-                totalKcal = meals.mapNotNull { it.kcal }.takeIf { it.isNotEmpty() }?.sum(),
-                proteinG = sumOrNull(meals.map { it.proteinG }),
-                carbsG = sumOrNull(meals.map { it.carbsG }),
-                fatG = sumOrNull(meals.map { it.fatG }),
+                totalKcal = meals.mapNotNull { it.kcal }.sum() + supplements.sumOf { it.kcal },
+                proteinG = (sumOrZero(meals.map { it.proteinG }) + supplements.sumOf { it.proteinG.toDouble() }).toFloat(),
+                carbsG = (sumOrZero(meals.map { it.carbsG }) + supplements.sumOf { it.carbsG.toDouble() }).toFloat(),
+                fatG = (sumOrZero(meals.map { it.fatG }) + supplements.sumOf { it.fatG.toDouble() }).toFloat(),
                 meals = meals,
+                supplements = supplements,
+                hydrationNote = day.hydrationNote,
             )
         }
 
         val versionId = plans.appendVersion(
             planId = latest.planId,
             createdAtEpochMillis = System.currentTimeMillis(),
-            draft = PlanVersionDraft(
-                source = generated.provider,
-                reason = "AI_MEAL_SWAP:${sourceMeal.id}",
-                targetKcal = latest.version.targetKcal,
-                targetProteinG = latest.version.targetProteinG,
-                targetCarbsG = latest.version.targetCarbsG,
-                targetFatG = latest.version.targetFatG,
-                days = days,
-            ),
+            draft = PlanVersionDraft(generated.provider, "AI_MEAL_SWAP:${sourceMeal.id}", latest.version.targetKcal, latest.version.targetProteinG, latest.version.targetCarbsG, latest.version.targetFatG, days),
         )
-        return ApplyResult(versionId = versionId, title = alternative.title, kcal = generated.targetKcal)
+        return ApplyResult(versionId, alternative.title, generated.targetKcal)
     }
 
-    private fun buildPrompt(
-        dietaryPreferencesJson: String?,
-        day: FoodPlanDay,
-        meal: FoodMeal,
-        targetKcal: Int,
-    ): String = buildString {
+    private fun buildPrompt(dietaryPreferencesJson: String?, day: FoodPlanDay, meal: FoodMeal, targetKcal: Int): String = buildString {
         appendLine("MEAL_TYPE:${meal.type}")
         appendLine("MEAL_TIME_MINUTES:${meal.timeMinutes ?: "unknown"}")
         appendLine("DAY:${LocalDate.ofEpochDay(day.dateEpochDay)}")
         appendLine("CURRENT:${meal.title}|${meal.kcal}kcal|P${meal.proteinG}|C${meal.carbsG}|F${meal.fatG}")
         appendLine("TARGET_KCAL_EXACT:$targetKcal")
         appendLine("PREFERENCES:${dietaryPreferencesJson.orEmpty()}")
-        appendLine("Return exactly 5 alternatives appropriate for this exact meal type and scheduled time. Every alternative kcal MUST equal TARGET_KCAL_EXACT exactly. Keep macros as close as reasonably possible to the original meal without violating the exact kcal constraint. Use practical quantities and include all caloric ingredients/condiments.")
+        appendLine("Return exactly 5 alternatives for this meal. Every alternative kcal MUST equal TARGET_KCAL_EXACT exactly. Keep macros close and include caloric condiments.")
     }
 
     private fun ensureNotPast(dayEpochDay: Long, mealTimeMinutes: Int?) {
@@ -204,47 +146,14 @@ class MealAlternativeService(
     }
 
     private fun FoodMeal.toDraft() = MealDraft(
-        type = type,
-        title = title,
-        timeMinutes = timeMinutes,
-        kcal = kcal,
-        proteinG = proteinG,
-        carbsG = carbsG,
-        fatG = fatG,
-        preparation = preparation,
-        ingredients = ingredients.map { ingredient ->
-            IngredientDraft(
-                name = ingredient.name,
-                quantity = ingredient.quantity,
-                unit = ingredient.unit,
-                displayDose = ingredient.displayDose,
-                weightState = ingredient.weightState,
-                nutritionConfidence = ingredient.nutritionConfidence,
-                category = ingredient.category,
-            )
-        },
+        type, title, timeMinutes, kcal, proteinG, carbsG, fatG, preparation,
+        ingredients.map { IngredientDraft(it.name, it.quantity, it.unit, it.displayDose, it.weightState, it.nutritionConfidence, it.category) },
     )
 
-    private fun sumOrNull(values: List<Float?>): Float? {
-        val present = values.filterNotNull()
-        return present.takeIf { it.isNotEmpty() }?.sum()
-    }
+    private fun FoodSupplement.toDraft() = SupplementDraft(kind, name, dose, unit, timeMinutes, kcal, proteinG, carbsG, fatG, notes)
+    private fun sumOrZero(values: List<Float?>): Double = values.filterNotNull().sumOf { it.toDouble() }
 
     companion object {
-        private const val SYSTEM_PROMPT = """
-You are MyFitAI Meal Alternative Agent. Return only JSON matching the supplied schema.
-Generate alternatives ONLY for the supplied planned meal.
-HARD RULES:
-- Return exactly 5 distinct alternatives.
-- Every alternative kcal MUST be exactly equal to TARGET_KCAL_EXACT. This is a strict invariant, not a preference or tolerance.
-- Alternatives must be appropriate for the supplied MEAL_TYPE and MEAL_TIME_MINUTES. A breakfast stays breakfast-like; a snack stays snack-like; lunch/dinner stay appropriate to that meal. Do not propose a large lunch/dinner food at snack time unless the source meal itself is that category.
-- Keep the original meal time and meal type conceptually unchanged; the app preserves them locally.
-- Respect only dietary preferences supplied by the app. Never invent allergies, intolerances or medical conditions.
-- Prefer macros close to the original meal while prioritizing the exact calorie invariant.
-- Include all caloric ingredients, oils, sauces, dressings and drinks in ingredient quantities.
-- Use realistic, practical portions. No punitive restriction or compensatory behavior.
-- Keep reason concise and factual.
-agentValidation is advisory only; the app independently enforces the calorie invariant and stale-plan safety.
-"""
+        private const val SYSTEM_PROMPT = """You are MyFitAI Meal Alternative Agent. Nutrition only. Return only schema JSON. Return exactly 5 distinct alternatives. Every alternative kcal MUST equal TARGET_KCAL_EXACT exactly. Keep meal type/time appropriate, respect supplied preferences, keep macros close, include all caloric ingredients, and never use punitive compensation."""
     }
 }
