@@ -1,0 +1,191 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg_primary">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="@dimen/space_16">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:gravity="center_vertical">
+                <TextView
+                    android:id="@+id/backButton"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:gravity="center"
+                    android:text="‹"
+                    android:textSize="30sp"
+                    android:textColor="@color/text_primary" />
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Chiedi all'IA"
+                    android:textColor="@color/text_primary"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_8"
+                app:cardBackgroundColor="@color/surface_positive_soft"
+                app:cardCornerRadius="14dp"
+                app:strokeColor="@color/positive_soft_stroke"
+                app:strokeWidth="1dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="@dimen/space_16">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Consulente alimentare"
+                        android:textColor="@color/text_primary"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Chiedi cosa potresti mangiare senza stravolgere il piano. Questa chat non viene storicizzata e l'agente risponde esclusivamente a richieste alimentari e nutrizionali."
+                        android:textColor="@color/text_secondary"
+                        android:textSize="13sp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.myfitai.app.ui.widgets.SectionHeaderView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_20"
+                android:text="Cosa vuoi mangiare o sapere?" />
+
+            <EditText
+                android:id="@+id/questionInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_8"
+                android:minLines="4"
+                android:gravity="top"
+                android:padding="@dimen/space_12"
+                android:background="@drawable/bg_input"
+                android:hint="Es. Stasera vorrei una pizza: cosa mi consigli per restare vicino al piano?"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_muted" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/askButton"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginTop="@dimen/space_12"
+                android:text="Chiedi consiglio"
+                android:textAllCaps="false"
+                android:textStyle="bold"
+                app:cornerRadius="12dp"
+                app:backgroundTint="@color/accent_green" />
+
+            <LinearLayout
+                android:id="@+id/loadingRow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_12"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:visibility="gone">
+                <ProgressBar
+                    android:layout_width="26dp"
+                    android:layout_height="26dp" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/space_8"
+                    android:text="Sto valutando il piano e la tua richiesta…"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/answerCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_16"
+                android:visibility="gone"
+                app:cardBackgroundColor="@color/surface_primary"
+                app:cardCornerRadius="14dp"
+                app:strokeColor="@color/divider"
+                app:strokeWidth="1dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="@dimen/space_16">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Risposta IA"
+                        android:textColor="@color/text_primary"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:id="@+id/providerText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:textColor="@color/text_muted"
+                        android:textSize="11sp"
+                        android:visibility="gone" />
+                    <TextView
+                        android:id="@+id/answerText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_8"
+                        android:textColor="@color/text_primary"
+                        android:textSize="15sp" />
+                    <TextView
+                        android:id="@+id/assumptionsText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_8"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp"
+                        android:visibility="gone" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <LinearLayout
+                android:id="@+id/suggestionsContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_12"
+                android:orientation="vertical" />
+
+            <TextView
+                android:id="@+id/statusText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_12"
+                android:gravity="center"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp"
+                android:visibility="gone" />
+
+        </LinearLayout>
+    </ScrollView>
+
+    <include layout="@layout/view_bottom_navigation" />
+</LinearLayout>
