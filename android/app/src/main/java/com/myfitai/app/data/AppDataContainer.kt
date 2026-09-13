@@ -5,6 +5,7 @@ import com.myfitai.app.data.local.MyFitAiDatabase
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.profile.ProfilePhotoStore
 import com.myfitai.app.data.repository.*
+import com.myfitai.app.domain.calculation.ProfileCalculationService
 
 /**
  * Composition root del layer dati. Activity/ViewModel non devono conoscere i DAO.
@@ -23,6 +24,13 @@ class AppDataContainer private constructor(context: Context) {
     val mealPlanRepository = MealPlanRepository(db)
     val cheatEntryRepository = CheatEntryRepository(db)
     val weeklyReviewRepository = WeeklyReviewRepository(db)
+
+    val profileCalculationService = ProfileCalculationService(
+        profiles = userProfileRepository,
+        bia = biaRepository,
+        bodyMeasurements = bodyMeasurementRepository,
+        activeProfileStore = activeProfileStore,
+    )
 
     companion object {
         @Volatile private var instance: AppDataContainer? = null
