@@ -1,0 +1,17 @@
+<resources>
+    <string-array name="profile_goals">
+        <item>Ricomposizione</item>
+        <item>Dimagrimento</item>
+        <item>Mantenimento</item>
+        <item>Aumento massa muscolare</item>
+        <item>Performance</item>
+    </string-array>
+
+    <string-array name="profile_activity_levels">
+        <item>Sedentario</item>
+        <item>Leggermente attivo</item>
+        <item>Moderatamente attivo</item>
+        <item>Molto attivo</item>
+        <item>Estremamente attivo</item>
+    </string-array>
+</resources>
