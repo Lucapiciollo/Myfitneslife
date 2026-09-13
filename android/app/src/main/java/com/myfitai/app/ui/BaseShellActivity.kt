@@ -1,13 +1,119 @@
 package com.myfitai.app.ui
 
 import android.content.Intent
+import android.graphics.Typeface
+import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
+import android.widget.ArrayAdapter
+import android.widget.AutoCompleteTextView
+import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.myfitai.app.R
+import com.myfitai.app.data.AppDataContainer
+import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.navigation.BottomNavBinder
+import kotlinx.coroutines.launch
 
 abstract class BaseShellActivity : AppCompatActivity() {
+    private val shellData by lazy { AppDataContainer.get(this) }
+    private var shellProfiles: List<UserProfileEntity> = emptyList()
+    private var profileSwitcher: AutoCompleteTextView? = null
+    private var profileHeader: View? = null
+
+    override fun setContentView(layoutResID: Int) {
+        val content = layoutInflater.inflate(layoutResID, null, false)
+        val shell = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(getColor(R.color.bg_primary))
+        }
+        profileHeader = buildProfileHeader().also { header ->
+            shell.addView(header, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(54)))
+        }
+        shell.addView(content, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
+        super.setContentView(shell)
+        observeGlobalProfiles()
+    }
+
+    private fun buildProfileHeader(): View = LinearLayout(this).apply {
+        orientation = LinearLayout.HORIZONTAL
+        gravity = Gravity.CENTER_VERTICAL
+        setPadding(dp(16), dp(6), dp(16), dp(6))
+        setBackgroundColor(getColor(R.color.surface_primary))
+
+        addView(TextView(this@BaseShellActivity).apply {
+            text = "Profilo"
+            setTextColor(getColor(R.color.text_secondary))
+            textSize = 12f
+            setTypeface(typeface, Typeface.BOLD)
+        }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+            marginEnd = dp(10)
+        })
+
+        profileSwitcher = AutoCompleteTextView(this@BaseShellActivity).apply {
+            hint = "Seleziona profilo"
+            setTextColor(getColor(R.color.text_primary))
+            setHintTextColor(getColor(R.color.text_muted))
+            textSize = 15f
+            isSingleLine = true
+            inputType = 0
+            setPadding(dp(12), 0, dp(8), 0)
+            setOnClickListener { showDropDown() }
+            setOnItemClickListener { _, _, position, _ -> handleProfileSelection(position) }
+        }
+        addView(profileSwitcher, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f))
+    }
+
+    private fun observeGlobalProfiles() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    shellData.userProfileRepository.profiles.collect { profiles ->
+                        shellProfiles = profiles
+                        profileHeader?.visibility = if (profiles.isEmpty()) View.GONE else View.VISIBLE
+                        val labels = profiles.map { it.name } + "+ Nuovo profilo"
+                        profileSwitcher?.setAdapter(ArrayAdapter(this@BaseShellActivity, android.R.layout.simple_dropdown_item_1line, labels))
+                        renderActiveProfile()
+                    }
+                }
+                launch {
+                    shellData.activeProfileStore.activeProfileId.collect { renderActiveProfile() }
+                }
+            }
+        }
+    }
+
+    private fun renderActiveProfile() {
+        val activeId = shellData.activeProfileStore.currentIdOrNull()
+        val profile = shellProfiles.firstOrNull { it.id == activeId }
+        if (profile != null) profileSwitcher?.setText(profile.name, false)
+    }
+
+    private fun handleProfileSelection(position: Int) {
+        if (position == shellProfiles.size) {
+            startActivity(Intent(this, ProfileEditActivity::class.java).putExtra(ProfileEditActivity.EXTRA_CREATE, true))
+            renderActiveProfile()
+            return
+        }
+        val profile = shellProfiles.getOrNull(position) ?: return
+        if (profile.id == shellData.activeProfileStore.currentIdOrNull()) return
+        shellData.activeProfileStore.selectProfile(profile.id, makeDefault = true)
+
+        // Le schermate legate a entità del vecchio profilo non devono restare aperte.
+        // Si torna alla Home: i ViewModel profile-scoped ricostruiscono lo stato dal nuovo activeProfileId.
+        startActivity(Intent(this, HomeActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        })
+        if (this !is HomeActivity) finish()
+    }
+
     protected fun bindBack() { findViewById<View?>(R.id.backButton)?.setOnClickListener { finish() } }
     protected fun bindBottom(tab: BottomNavBinder.Tab) { BottomNavBinder.bind(this, tab) }
     protected fun go(target: Class<out AppCompatActivity>) { startActivity(Intent(this, target)) }
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 }
