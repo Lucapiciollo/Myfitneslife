@@ -47,7 +47,7 @@ class NotificationScheduler(
     private suspend fun scheduleMealReminders(profileId: Long, now: Long, tracked: MutableSet<Int>) {
         val zone = ZoneId.systemDefault()
         val today = Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
-        val horizon = today.plusDays(14)
+        val horizon = today.plusDays(60)
         val leadMillis = preferences.mealLeadMinutes * 60_000L
         val planRows = plans.plans(profileId).first()
 
@@ -92,7 +92,12 @@ class NotificationScheduler(
             Intent(appContext, ReminderReceiver::class.java).apply { action = ReminderReceiver.ACTION_WEEKLY_REVIEW },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
-        alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, trigger, intent)
+        alarmManager.setInexactRepeating(
+            AlarmManager.RTC_WAKEUP,
+            trigger,
+            AlarmManager.INTERVAL_DAY * 7,
+            intent,
+        )
         tracked += code
     }
 
