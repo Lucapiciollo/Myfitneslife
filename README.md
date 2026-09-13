@@ -4,82 +4,101 @@
 `assets/MOCK_APPROVATO_MYFITAI_V2_COMPLETO.png`
 
 ## Piano di sviluppo autorevole
-Lo stato reale del progetto e l'ordine vincolante delle attività sono definiti in:
-
-`DEVELOPMENT_PLAN.md`
-
-Quel file distingue esplicitamente **FATTO** e **DA FARE**. Quando cambia lo stato del progetto va aggiornato quel documento senza segnare come completato ciò che esiste solo come mock, specifica o scaffold.
+Lo stato reale del progetto e l'ordine delle attività sono definiti in `DEVELOPMENT_PLAN.md`.
 
 ## Stato attuale
-La base Android e la UI/mock navigabile sono presenti sul branch `develop`. Le Activity coprono il flusso approvato: Splash, Onboarding, Dashboard, Profilo, Misure corporee fronte/retro, BIA, Evoluzione fisica, Allenamenti, Piano alimentare, Dettaglio pasto, Lista spesa, Sgarro, Piano adattato, Notifiche, Storico, Review/Analisi IA, Export e Impostazioni.
+MyFitAI è un'app Android local-first per profilo corporeo, BIA, misure, allenamenti, piano alimentare, adattamento post-sgarro, lista spesa, notifiche, review ed export.
 
-La UI deve mantenere fedeltà visuale 100% al mock approvato. Prima di considerare chiusa una schermata è obbligatorio il confronto su device/emulatore.
+La UI/mock navigabile e gran parte della logica applicativa sono presenti su `develop`. Restano pendenti soprattutto build completa sull'HEAD corrente, test runtime/device e QA grafica/pixel su emulatore o dispositivo reale.
 
-## Architettura IA definita
-L'app è l'orchestratore. I calcoli affidabili restano locali/deterministici.
+## Architettura IA
+L'app è l'orchestratore. I calcoli affidabili restano locali e deterministici.
 
-Pipeline prevista:
+Pipeline:
 
 `App -> Local Calculation Engine -> AiProvider -> Agent -> JSON -> Schema Validator -> Business Validator -> Persistenza -> UI`
 
-Provider previsti:
+Provider supportati:
 - Gemini
 - OpenAI/GPT
 
-Gli agenti disponibili come specifiche sono:
-- NutritionAgent
-- PlanReviewAgent
-- ProgressAnalysisAgent
+Tutti gli agenti sono vincolati al solo dominio nutrizionale. Dati corporei, BIA, misure e allenamenti possono essere usati solo come contesto per decisioni nutrizionali, non per coaching generico, diagnosi mediche o altri domini.
 
-Gemini e OpenAI devono produrre lo stesso JSON canonico definito in `06-ai/schemas/`. Gli agenti possono restituire `agentValidation`, ma solo `appValidation` calcolato localmente è autorevole.
+`agentValidation` resta informativa; `appValidation` locale è autorevole.
 
-## Regole nutrizionali già definite
-- target nutrizionali dinamici calcolati dall'app;
-- tolleranza ufficiale ±3% su calorie e macro;
+## Nutrizione e piano alimentare
+Regole principali:
+- target kcal e macro calcolati localmente;
+- tolleranza ufficiale ±3%;
+- piani immutabili/versionati;
 - nessuna compensazione punitiva dopo uno sgarro;
 - modifica solo dei pasti futuri;
-- piani versionati e non sovrascritti;
-- valutazione prudente di sodio, fibre, grassi, volume e timing;
-- nessuna blacklist automatica di alimenti comuni;
-- condimenti e bevande caloriche sempre conteggiati;
-- `displayDose` pratica e coerente con la quantità numerica, per esempio `1 cucchiaino`, `1/2 cucchiaino`, `1 bustina da X g`, `1 bicchiere da X ml`;
-- vietate indicazioni vaghe come `q.b.` o `un filo` quando incidono sui valori nutrizionali;
-- preferenza per frutta, verdura e altri alimenti stagionali quando equivalenti e compatibili con target, timing, tolleranza e preferenze;
-- nessuna regola arbitraria come frutta solo al mattino o carboidrati vietati la sera.
+- condimenti e bevande caloriche conteggiati;
+- stagionalità come preferenza, non vincolo superiore ai target;
+- nessuna diagnosi, allergia o intolleranza inventata;
+- richieste alimentari esplicite dell'utente hanno priorità sull'adeguatezza tipica dell'orario; l'orario serve poi per porzione, timing e impatto sul piano;
+- per richieste generiche l'orario resta un criterio forte per ordinare i suggerimenti.
 
-Riferimenti condivisi:
-- `06-ai/providers/shared/CONDIMENTS_BEVERAGES_RULES.md`
-- `06-ai/providers/shared/SEASONALITY_TIMING_RULES.md`
-- `06-ai/providers/shared/PROVIDER_CONTRACT.md`
-- `06-ai/providers/shared/JSON_FORMAT_PARITY.md`
+## BIA, composizione corporea e nutrizione
+Il piano alimentare riceve anche contesto corporeo descrittivo:
+- peso;
+- body fat %;
+- massa muscolare;
+- massa muscolare scheletrica;
+- acqua corporea %;
+- circonferenza vita;
+- trend di peso, grasso, massa muscolare e vita;
+- stato di ricomposizione.
+
+Questi dati non autorizzano diagnosi. In particolare la BIA non deve essere interpretata come prova diretta di carenza proteica o disidratazione.
+
+## Nutrizione sportiva e integrazione
+La modalità sportiva non è un flag manuale: viene classificata localmente usando livello di attività e allenamenti della settimana.
+
+Modalità:
+- `NORMAL`
+- `SPORT`
+
+Regole:
+- proteine in polvere possono essere proposte anche in `NORMAL` se utili per raggiungere il target proteico o per praticità nutrizionale;
+- le proteine in polvere contribuiscono a kcal e macro e vengono conteggiate nei totali;
+- creatina consentita solo in `SPORT`;
+- creatina conteggiata a 0 kcal e 0 macro;
+- alimenti normali restano la prima scelta;
+- integrazione e idratazione sono rappresentate separatamente dai pasti;
+- l'idratazione può essere suggerita in modo prudente usando il contesto BIA, senza diagnosi.
+
+Il giorno alimentare canonico ora comprende:
+
+`meals[] + supplements[] + hydrationNote`
+
+## Consiglio IA rapido
+La funzione “Chiedi all'IA” è one-shot, non salva la conversazione e restituisce 5 suggerimenti compatti ordinati dal migliore al peggiore.
+
+Per richieste alimentari esplicite, ad esempio “mi va un gelato”, il cibo richiesto deve restare il centro della risposta anche se l'orario non è tipico. Per richieste generiche, ad esempio “ho fame, cosa mangio?”, l'orario guida maggiormente la classifica.
+
+## Cambio pasto con IA
+Ogni pasto futuro del piano può generare 5 alternative.
+
+Vincoli:
+- stesso tipo di pasto e stesso orario;
+- kcal esattamente uguali al pasto originale;
+- macro il più possibile vicini;
+- nessuna modifica fino ad accettazione esplicita;
+- nuova versione immutabile del piano;
+- protezione da piano stale;
+- integrazione e idratazione della giornata vengono preservate durante il cambio pasto.
 
 ## Sicurezza OpenAI BYOK
-La chiave OpenAI deve essere protetta tramite Android Keystore e AES-GCM. Non deve mai finire in chiaro in Room, SharedPreferences normali, file, log, crash report, backup, analytics, repository, BuildConfig, intent, navigation args o export.
+La chiave OpenAI è protetta tramite Android Keystore e AES-GCM. Non deve mai finire in chiaro in Room, SharedPreferences normali, file, log, crash report, backup, analytics, repository, BuildConfig, intent, navigation args o export.
 
-Vedi `06-ai/05-openai-key-security.md`.
+## Stato verifica tecnica
+Una precedente build/test unitari era verde su un commit precedente, ma le modifiche più recenti a nutrizione sportiva, BIA context, supplementi e documentazione non sono ancora state compilate/testate sull'HEAD corrente.
 
-## Cosa NON è ancora completato
-Sono ancora da implementare e verificare, nell'ordine definito in `DEVELOPMENT_PLAN.md`:
-- QA visuale reale su device/emulatore;
-- Room e persistenza reale;
-- profilo/BIA/misure reali;
-- motore locale di calcolo e target dinamici;
-- dashboard e trend reali;
-- allenamenti reali;
-- modello dati piano alimentare;
-- integrazione rete Gemini/OpenAI;
-- JSON Schema validation runtime e Business Validator;
-- generazione reale del piano;
-- adattamento reale post-sgarro con versionamento;
-- Personal Response Engine;
-- weekly review reale;
-- lista spesa deterministica;
-- notifiche Android locali;
-- export reale;
-- QA finale V1.
+CI non viene eseguita automaticamente sui push a `develop`; il workflow resta disponibile su pull request e avvio manuale.
 
 ## Branching
 - `develop`: sviluppo corrente.
 - `main`: stabile.
 
-Il passaggio su `main` va fatto solo dopo verifica della fase prevista dal piano.
+Il passaggio su `main` va fatto solo dopo build, test e QA previsti.
