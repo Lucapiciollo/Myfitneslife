@@ -1,5 +1,6 @@
 package com.myfitai.app.domain.food
 
+import com.myfitai.app.ai.AiImageInput
 import com.myfitai.app.ai.AiRuntimeService
 import com.myfitai.app.ai.AiStructuredRequest
 import com.myfitai.app.data.local.entity.CheatEntryEntity
@@ -15,7 +16,14 @@ class CheatAdjustmentService(
     private val cheats: CheatEntryRepository,
     private val activeProfileStore: ActiveProfileStore,
 ) {
-    data class Input(val description: String, val quantityText: String?, val notes: String?, val occurredAtEpochMillis: Long)
+    data class Input(
+        val description: String,
+        val quantityText: String?,
+        val notes: String?,
+        val occurredAtEpochMillis: Long,
+        val labelImage: AiImageInput? = null,
+    )
+
     data class Result(
         val cheatId: Long,
         val adapted: Boolean,
@@ -76,6 +84,7 @@ class CheatAdjustmentService(
                 schemaName = CheatAdjustmentContract.SCHEMA_NAME,
                 schemaJson = CheatAdjustmentContract.schemaJson,
                 maxOutputTokens = 8_000,
+                image = input.labelImage,
             )
             var parsed: CheatAdjustmentContract.Response? = null
             val validated = aiRuntime.execute(
@@ -188,6 +197,10 @@ class CheatAdjustmentService(
         appendLine("Deviation description: ${input.description.trim()}")
         appendLine("Quantity hint: ${input.quantityText?.trim().orEmpty()}")
         appendLine("User notes: ${input.notes?.trim().orEmpty()}")
+        appendLine("Nutrition-label image attached: ${input.labelImage != null}")
+        if (input.labelImage != null) {
+            appendLine("Use the attached nutrition-label photo as supporting evidence. Read only values that are actually visible. Prefer explicit label values over generic food estimates when the label clearly corresponds to the described product. Distinguish per-100g/per-100ml values from per-serving values. Use the user's quantity hint to scale the consumed amount. If the label is ambiguous or unreadable, lower confidence and fall back cautiously to the textual description instead of inventing numbers.")
+        }
         appendLine("Date epoch day: $dateEpochDay; occurred minute of day: $minuteOfDay")
         appendLine("Authoritative daily targets: kcal=${targets.kcal}, proteinG=${targets.proteinG}, carbsG=${targets.carbsG}, fatG=${targets.fatG}")
         appendLine("LOCKED meals at or before the event:")
@@ -211,6 +224,6 @@ class CheatAdjustmentService(
     private fun estimateText(e: CheatAdjustmentContract.Estimate) = "≈ ${e.kcal} kcal · P ${e.proteinG.toInt()}g · C ${e.carbsG.toInt()}g · F ${e.fatG.toInt()}g (${e.confidence})"
 
     companion object {
-        private const val SYSTEM_PROMPT = """You are MyFitAI Nutrition Deviation Agent. Return only JSON matching the supplied schema. Estimate the food event cautiously. You may modify only meals explicitly listed as future meals for the same day. Never modify past meals or later days, never move meal times, and never use punitive fasting or extreme restriction. If a valid daily balance within ±3% cannot be achieved with reasonable future meals of at least 100 kcal each, set adaptationPossible=false and return no replacements. The app is authoritative for validation."""
+        private const val SYSTEM_PROMPT = """You are MyFitAI Nutrition Deviation Agent. Return only JSON matching the supplied schema. Estimate the food event cautiously. If a nutrition-label image is attached, treat it as supporting evidence and use visible label values when reliable; never invent unreadable values. You may modify only meals explicitly listed as future meals for the same day. Never modify past meals or later days, never move meal times, and never use punitive fasting or extreme restriction. If a valid daily balance within ±3% cannot be achieved with reasonable future meals of at least 100 kcal each, set adaptationPossible=false and return no replacements. The app is authoritative for validation."""
     }
 }
