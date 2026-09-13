@@ -34,7 +34,7 @@ class CheatEntryActivity : BaseShellActivity() {
 
     private val data by lazy { AppDataContainer.get(this) }
     private val viewModel: CheatEntryViewModel by viewModels {
-        CheatEntryViewModel.Factory(data.cheatAdjustmentService)
+        CheatEntryViewModel.Factory(data.cheatAdjustmentService, data.notificationScheduler)
     }
 
     private var selectedDate: LocalDate = LocalDate.now()
@@ -99,17 +99,10 @@ class CheatEntryActivity : BaseShellActivity() {
             return
         }
         val category = selectedCategory()
-        val fullDescription = if (category == null || description.startsWith(category, ignoreCase = true)) {
-            description
-        } else {
-            "$category — $description"
-        }
+        val fullDescription = if (category == null || description.startsWith(category, ignoreCase = true)) description else "$category — $description"
         val occurredAt = selectedDate.atTime(selectedTime).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
         if (occurredAt > System.currentTimeMillis() + 60_000L) {
-            findViewById<TextView>(R.id.statusText).apply {
-                visibility = View.VISIBLE
-                text = "La data dello sgarro non può essere nel futuro."
-            }
+            findViewById<TextView>(R.id.statusText).apply { visibility = View.VISIBLE; text = "La data dello sgarro non può essere nel futuro." }
             return
         }
 
@@ -141,11 +134,7 @@ class CheatEntryActivity : BaseShellActivity() {
         findViewById<ProgressBar>(R.id.progress).visibility = if (state.running) View.VISIBLE else View.GONE
         findViewById<TextView>(R.id.statusText).apply {
             visibility = if (state.running || state.error != null) View.VISIBLE else View.GONE
-            text = when {
-                state.running -> "Stima dello sgarro e verifica dei pasti futuri in corso…"
-                state.error != null -> state.error
-                else -> ""
-            }
+            text = when { state.running -> "Stima dello sgarro e verifica dei pasti futuri in corso…"; state.error != null -> state.error; else -> "" }
         }
 
         val result = state.result ?: return
