@@ -16,7 +16,7 @@ object NutritionAdviceContract {
             "answer":{"type":"string"},
             "suggestions":{
               "type":"array",
-              "maxItems":3,
+              "maxItems":5,
               "items":{
                 "type":"object",
                 "additionalProperties":false,
@@ -98,7 +98,7 @@ object NutritionAdviceContract {
             return@runCatching
         }
         require(response.answer.isNotBlank() && response.answer.length <= 180) { "INVALID_COMPACT_ANSWER" }
-        require(response.suggestions.size <= 3) { "TOO_MANY_SUGGESTIONS" }
+        require(response.suggestions.size == 5) { "EXPECTED_FIVE_SUGGESTIONS" }
         require(response.assumptions.length <= 120) { "ASSUMPTIONS_TOO_LONG" }
         response.suggestions.forEach { suggestion ->
             require(suggestion.title.isNotBlank() && suggestion.title.length <= 70) { "INVALID_SUGGESTION_TITLE" }
