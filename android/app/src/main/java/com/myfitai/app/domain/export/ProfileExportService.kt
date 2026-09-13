@@ -13,7 +13,6 @@ import java.io.File
 import java.io.FileOutputStream
 import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
@@ -42,10 +41,17 @@ class ProfileExportService(
             put("schema", "myfitai_profile_export_v1")
             put("exportedAtEpochMillis", System.currentTimeMillis())
             put("profile", JSONObject().apply {
-                put("id", profile.id); put("name", profile.name); putNullable("birthDateEpochDay", profile.birthDateEpochDay)
-                putNullable("heightCm", profile.heightCm); putNullable("currentWeightKg", profile.currentWeightKg)
-                putNullable("goal", profile.goal); putNullable("activityLevel", profile.activityLevel)
-                putNullable("wakeTimeMinutes", profile.wakeTimeMinutes); putNullable("sleepTimeMinutes", profile.sleepTimeMinutes)
+                put("id", profile.id)
+                put("name", profile.name)
+                putNullable("birthDateEpochDay", profile.birthDateEpochDay)
+                putNullable("biologicalSex", profile.biologicalSex)
+                putNullable("heightCm", profile.heightCm)
+                putNullable("initialWeightKg", profile.initialWeightKg)
+                putNullable("currentWeightKg", profile.currentWeightKg)
+                putNullable("goal", profile.goal)
+                putNullable("activityLevel", profile.activityLevel)
+                putNullable("wakeTimeMinutes", profile.wakeTimeMinutes)
+                putNullable("sleepTimeMinutes", profile.sleepTimeMinutes)
                 putNullable("dietaryPreferencesJson", profile.dietaryPreferencesJson)
             })
             put("biaMeasurements", JSONArray().apply { bia.forEach { r -> put(JSONObject().apply {
@@ -115,7 +121,7 @@ class ProfileExportService(
         ZipOutputStream(FileOutputStream(file)).use { zip ->
             val tables = listOf("biaMeasurements", "bodyMeasurements", "workouts", "cheatEntries", "weeklyReviews")
             tables.forEach { key -> addCsv(zip, "$key.csv", root.getJSONArray(key)) }
-            val profile = JSONArray().put(root.getJSONObject("profile")); addCsv(zip, "profile.csv", profile)
+            addCsv(zip, "profile.csv", JSONArray().put(root.getJSONObject("profile")))
             zip.putNextEntry(ZipEntry("README.txt")); zip.write("MyFitAI CSV export. mealPlans are preserved completely in meal_plans.json because the hierarchy plan/version/day/meal/ingredient is not losslessly representable in one flat CSV.\n".toByteArray()); zip.closeEntry()
             zip.putNextEntry(ZipEntry("meal_plans.json")); zip.write(root.getJSONArray("mealPlans").toString(2).toByteArray()); zip.closeEntry()
         }
