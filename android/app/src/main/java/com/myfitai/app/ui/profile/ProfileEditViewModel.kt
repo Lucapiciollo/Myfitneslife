@@ -32,15 +32,17 @@ class ProfileEditViewModel(
     private val _error = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val error: SharedFlow<String> = _error.asSharedFlow()
 
-    init {
-        loadActiveProfile()
-    }
+    init { loadActiveProfile() }
 
     fun loadActiveProfile() {
         viewModelScope.launch {
+            if (allowCreate) {
+                _profile.value = null
+                return@launch
+            }
             val id = activeProfileStore.currentIdOrNull()
             _profile.value = if (id != null) repository.get(id) else null
-            if (_profile.value == null && !allowCreate) _error.tryEmit("Nessun profilo attivo")
+            if (_profile.value == null) _error.tryEmit("Nessun profilo attivo")
         }
     }
 
@@ -67,9 +69,7 @@ class ProfileEditViewModel(
                         UserProfileEntity(
                             name = name.trim(),
                             birthDateEpochDay = birthDateEpochDay,
-                            biologicalSex = biologicalSex,
                             heightCm = heightCm,
-                            initialWeightKg = currentWeightKg,
                             currentWeightKg = currentWeightKg,
                             goal = goal?.trim()?.takeIf(String::isNotEmpty),
                             activityLevel = activityLevel?.trim()?.takeIf(String::isNotEmpty),
@@ -79,6 +79,8 @@ class ProfileEditViewModel(
                             photoPath = null,
                             createdAtEpochMillis = now,
                             updatedAtEpochMillis = now,
+                            biologicalSex = biologicalSex,
+                            initialWeightKg = currentWeightKg,
                         )
                     )
                     activeProfileStore.selectProfile(id, makeDefault = true)
