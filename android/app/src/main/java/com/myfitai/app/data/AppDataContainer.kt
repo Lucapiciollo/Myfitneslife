@@ -9,6 +9,7 @@ import com.myfitai.app.data.repository.*
 import com.myfitai.app.domain.calculation.ProfileCalculationService
 import com.myfitai.app.domain.food.CheatAdjustmentService
 import com.myfitai.app.domain.food.NutritionPlanGenerationService
+import com.myfitai.app.domain.personalization.PersonalResponseService
 
 /**
  * Composition root del layer dati/app. Activity/ViewModel non devono conoscere i DAO.
@@ -35,6 +36,15 @@ class AppDataContainer private constructor(context: Context) {
         activeProfileStore = activeProfileStore,
     )
 
+    val personalResponseService = PersonalResponseService(
+        activeProfileStore = activeProfileStore,
+        plans = mealPlanRepository,
+        cheats = cheatEntryRepository,
+        workouts = workoutRepository,
+        bia = biaRepository,
+        bodyMeasurements = bodyMeasurementRepository,
+    )
+
     val aiRuntimeService = AiRuntimeService(appContext)
 
     val nutritionPlanGenerationService = NutritionPlanGenerationService(
@@ -44,6 +54,7 @@ class AppDataContainer private constructor(context: Context) {
         workouts = workoutRepository,
         plans = mealPlanRepository,
         activeProfileStore = activeProfileStore,
+        personalResponse = personalResponseService,
     )
 
     val cheatAdjustmentService = CheatAdjustmentService(
