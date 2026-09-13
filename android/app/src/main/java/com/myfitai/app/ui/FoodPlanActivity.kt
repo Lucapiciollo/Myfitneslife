@@ -44,7 +44,12 @@ class FoodPlanActivity : BaseShellActivity() {
 
         findViewById<View>(R.id.prevWeekButton).setOnClickListener { viewModel.previousWeek() }
         findViewById<View>(R.id.nextWeekButton).setOnClickListener { viewModel.nextWeek() }
-        findViewById<View>(R.id.shoppingButton).setOnClickListener { go(ShoppingListActivity::class.java) }
+        findViewById<View>(R.id.shoppingButton).setOnClickListener {
+            startActivity(
+                Intent(this, ShoppingListActivity::class.java)
+                    .putExtra(ShoppingListActivity.EXTRA_WEEK_START_EPOCH_DAY, viewModel.state.value.weekStart.toEpochDay())
+            )
+        }
         findViewById<View>(R.id.cheatButton).setOnClickListener { go(CheatEntryActivity::class.java) }
         findViewById<View>(R.id.generatePlanButton).setOnClickListener { viewModel.generateCurrentWeek() }
         weekDaySelector.setOnDaySelectedListener(viewModel::selectDay)
@@ -123,7 +128,7 @@ class FoodPlanActivity : BaseShellActivity() {
     private fun renderMeals(day: FoodPlanDay?) {
         val container = findViewById<LinearLayout>(R.id.mealsContainer)
         container.removeAllViews()
-        day?.meals?.sortedBy { it.sortOrder }?.forEachIndexed { index, meal ->
+        day?.meals?.sortedBy { it.sortOrder }?.forEach { meal ->
             val row = MealPlanRowView(this).apply {
                 setTitle(displayMealType(meal.type))
                 setKcal(meal.kcal?.let { "$it kcal" } ?: "—")
