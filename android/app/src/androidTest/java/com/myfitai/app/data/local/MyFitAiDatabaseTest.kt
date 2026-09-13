@@ -12,6 +12,7 @@ import com.myfitai.app.data.repository.IngredientDraft
 import com.myfitai.app.data.repository.MealDraft
 import com.myfitai.app.data.repository.MealPlanRepository
 import com.myfitai.app.data.repository.PlanVersionDraft
+import com.myfitai.app.data.repository.SupplementDraft
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -163,6 +164,159 @@ class MyFitAiDatabaseTest {
         assertEquals(1, snapshot.version.days.size)
         assertEquals("Riso e pollo", snapshot.version.days.single().meals.single().title)
         assertEquals(listOf("Riso", "Pollo"), snapshot.version.days.single().meals.single().ingredients.map { it.name })
+        assertTrue(snapshot.version.days.single().supplements.isEmpty())
+        assertEquals(null, snapshot.version.days.single().hydrationNote)
+    }
+
+    @Test
+    fun mealPlan_swapLikeNewVersion_preservesSupplementsAndHydration() = runBlocking {
+        val profileId = db.userProfileDao().insert(profile("Swap test"))
+        val repository = MealPlanRepository(db)
+        val weekStart = 22000L
+        val planId = repository.createPlan(profileId, weekStart, 1000)
+
+        val supplements = listOf(
+            SupplementDraft(
+                kind = "PROTEIN_POWDER",
+                name = "Whey",
+                dose = 30f,
+                unit = "g",
+                timeMinutes = 1110,
+                kcal = 120,
+                proteinG = 24f,
+                carbsG = 3f,
+                fatG = 2f,
+                notes = "Post-workout",
+            )
+        )
+
+        val originalMeals = listOf(
+            MealDraft(
+                type = "Pranzo",
+                title = "Riso e pollo",
+                timeMinutes = 780,
+                kcal = 700,
+                proteinG = 50f,
+                carbsG = 80f,
+                fatG = 18f,
+                preparation = "Cuoci e componi",
+                ingredients = listOf(
+                    IngredientDraft("Riso", 80f, "g", "80 g", "DRY", "HIGH", "carbs"),
+                    IngredientDraft("Pollo", 200f, "g", "200 g", "RAW", "HIGH", "protein"),
+                ),
+            ),
+            MealDraft(
+                type = "Cena",
+                title = "Salmone e patate",
+                timeMinutes = 1200,
+                kcal = 800,
+                proteinG = 45f,
+                carbsG = 75f,
+                fatG = 30f,
+                preparation = "Forno",
+                ingredients = listOf(
+                    IngredientDraft("Salmone", 180f, "g", "180 g", "RAW", "HIGH", "protein"),
+                    IngredientDraft("Patate", 300f, "g", "300 g", "RAW", "HIGH", "carbs"),
+                ),
+            ),
+        )
+
+        repository.appendVersion(
+            planId = planId,
+            createdAtEpochMillis = 2000,
+            draft = PlanVersionDraft(
+                source = "TEST",
+                reason = null,
+                targetKcal = 2200,
+                targetProteinG = 160f,
+                targetCarbsG = 230f,
+                targetFatG = 70f,
+                days = listOf(
+                    DayDraft(
+                        dateEpochDay = weekStart,
+                        totalKcal = 2200,
+                        proteinG = 160f,
+                        carbsG = 230f,
+                        fatG = 70f,
+                        meals = originalMeals,
+                        supplements = supplements,
+                        hydrationNote = "Distribuisci l'acqua nella giornata",
+                    )
+                ),
+            ),
+        )
+
+        val before = repository.loadLatestSnapshot(profileId, weekStart)!!
+        val sourceDay = before.version.days.single()
+        val mealToReplace = sourceDay.meals.first { it.type == "Pranzo" }
+
+        val replacedMeals = sourceDay.meals.map { meal ->
+            if (meal.id == mealToReplace.id) {
+                MealDraft(
+                    type = meal.type,
+                    title = "Pasta e tonno",
+                    timeMinutes = meal.timeMinutes,
+                    kcal = meal.kcal,
+                    proteinG = 48f,
+                    carbsG = 82f,
+                    fatG = 17f,
+                    preparation = "Componi",
+                    ingredients = listOf(
+                        IngredientDraft("Pasta", 90f, "g", "90 g", "DRY", "HIGH", "carbs"),
+                        IngredientDraft("Tonno", 120f, "g", "120 g", "DRAINED", "HIGH", "protein"),
+                    ),
+                )
+            } else {
+                MealDraft(
+                    type = meal.type,
+                    title = meal.title,
+                    timeMinutes = meal.timeMinutes,
+                    kcal = meal.kcal,
+                    proteinG = meal.proteinG,
+                    carbsG = meal.carbsG,
+                    fatG = meal.fatG,
+                    preparation = meal.preparation,
+                    ingredients = meal.ingredients.map { i ->
+                        IngredientDraft(i.name, i.quantity, i.unit, i.displayDose, i.weightState, i.nutritionConfidence, i.category)
+                    },
+                )
+            }
+        }
+
+        repository.appendVersion(
+            planId = planId,
+            createdAtEpochMillis = 3000,
+            draft = PlanVersionDraft(
+                source = "TEST",
+                reason = "AI_MEAL_SWAP:${mealToReplace.id}",
+                targetKcal = 2200,
+                targetProteinG = 160f,
+                targetCarbsG = 230f,
+                targetFatG = 70f,
+                days = listOf(
+                    DayDraft(
+                        dateEpochDay = sourceDay.dateEpochDay,
+                        totalKcal = 2200,
+                        proteinG = 160f,
+                        carbsG = 230f,
+                        fatG = 70f,
+                        meals = replacedMeals,
+                        supplements = sourceDay.supplements.map { s ->
+                            SupplementDraft(s.kind, s.name, s.dose, s.unit, s.timeMinutes, s.kcal, s.proteinG, s.carbsG, s.fatG, s.notes)
+                        },
+                        hydrationNote = sourceDay.hydrationNote,
+                    )
+                ),
+            ),
+        )
+
+        val after = repository.loadLatestSnapshot(profileId, weekStart)!!
+        val afterDay = after.version.days.single()
+        assertEquals(before.version.days.single().supplements, afterDay.supplements)
+        assertEquals(before.version.days.single().hydrationNote, afterDay.hydrationNote)
+        assertEquals(2, afterDay.meals.size)
+        assertEquals("Pasta e tonno", afterDay.meals.first { it.type == "Pranzo" }.title)
+        assertEquals("Salmone e patate", afterDay.meals.first { it.type == "Cena" }.title)
     }
 
     private fun profile(name: String): UserProfileEntity {

@@ -40,6 +40,89 @@ class NutritionPlanContractTest {
         assertFalse(NutritionPlanContract.validateBusiness(changed, week, targets).isSuccess)
     }
 
+    @Test
+    fun normalMode_withoutWorkouts_rejectsCreatine() {
+        val changed = withFirstDaySupplements(
+            response(),
+            listOf(creatine(kcal = 0, protein = 0f, carbs = 0f, fat = 0f)),
+        )
+        assertFalse(
+            NutritionPlanContract.validateBusiness(
+                changed,
+                week,
+                targets,
+                SportsNutritionClassifier.Mode.NORMAL,
+            ).isSuccess,
+        )
+    }
+
+    @Test
+    fun sportMode_withWorkouts_allowsCreatine() {
+        val base = responseWithMacroRoomForSupplement()
+        val changed = withFirstDaySupplements(
+            base,
+            listOf(creatine(kcal = 0, protein = 0f, carbs = 0f, fat = 0f)),
+        )
+        assertTrue(
+            NutritionPlanContract.validateBusiness(
+                changed,
+                week,
+                targets,
+                SportsNutritionClassifier.Mode.SPORT,
+            ).isSuccess,
+        )
+    }
+
+    @Test
+    fun proteinPowder_inNormalMode_isAllowedAndCountedInTotals() {
+        val base = responseWithMacroRoomForSupplement()
+        val changed = withFirstDaySupplements(
+            base,
+            listOf(proteinPowder(kcal = 120, protein = 24f, carbs = 3f, fat = 2f)),
+        )
+        assertTrue(
+            NutritionPlanContract.validateBusiness(
+                changed,
+                week,
+                targets,
+                SportsNutritionClassifier.Mode.NORMAL,
+            ).isSuccess,
+        )
+    }
+
+    @Test
+    fun creatineWithCalories_isRejected() {
+        val base = responseWithMacroRoomForSupplement()
+        val changed = withFirstDaySupplements(
+            base,
+            listOf(creatine(kcal = 20, protein = 0f, carbs = 0f, fat = 0f)),
+        )
+        assertFalse(
+            NutritionPlanContract.validateBusiness(
+                changed,
+                week,
+                targets,
+                SportsNutritionClassifier.Mode.SPORT,
+            ).isSuccess,
+        )
+    }
+
+    @Test
+    fun wheyNotCountedIntoDayTotals_isRejected() {
+        val changed = withFirstDaySupplements(
+            response(),
+            listOf(proteinPowder(kcal = 120, protein = 24f, carbs = 3f, fat = 2f)),
+        )
+        assertFalse(
+            NutritionPlanContract.validateBusiness(
+                changed,
+                week,
+                targets,
+                SportsNutritionClassifier.Mode.NORMAL,
+            ).isSuccess,
+        )
+    }
+
     private fun response(): NutritionPlanContract.Response {
         val meal = NutritionPlanContract.GeneratedMeal(
             type = "Pranzo",
@@ -69,4 +152,70 @@ class NutritionPlanContractTest {
             agentValidation = NutritionPlanContract.AgentValidation(false, "advisory only"),
         )
     }
+
+    private fun responseWithMacroRoomForSupplement(): NutritionPlanContract.Response {
+        val meal = NutritionPlanContract.GeneratedMeal(
+            type = "Pranzo",
+            title = "Pasto completo",
+            timeMinutes = 780,
+            kcal = 760,
+            proteinG = 45.333f,
+            carbsG = 92.333f,
+            fatG = 22.667f,
+            preparation = "Preparazione semplice",
+            ingredients = listOf(
+                NutritionPlanContract.GeneratedIngredient("Riso", 100f, "g", "100 g", "crudo", "high", "cereali"),
+            ),
+        )
+        return NutritionPlanContract.Response(
+            weekStartEpochDay = week.toEpochDay(),
+            days = (0L..6L).map { offset ->
+                NutritionPlanContract.GeneratedDay(
+                    dateEpochDay = week.plusDays(offset).toEpochDay(),
+                    totalKcal = 2400,
+                    proteinG = 160f,
+                    carbsG = 280f,
+                    fatG = 70f,
+                    meals = listOf(meal, meal.copy(type = "Cena"), meal.copy(type = "Colazione")),
+                )
+            },
+            agentValidation = NutritionPlanContract.AgentValidation(false, "advisory only"),
+        )
+    }
+
+    private fun withFirstDaySupplements(
+        source: NutritionPlanContract.Response,
+        supplements: List<NutritionPlanContract.GeneratedSupplement>,
+    ): NutritionPlanContract.Response {
+        val first = source.days.first().copy(supplements = supplements)
+        return source.copy(days = listOf(first) + source.days.drop(1))
+    }
+
+    private fun creatine(kcal: Int, protein: Float, carbs: Float, fat: Float) =
+        NutritionPlanContract.GeneratedSupplement(
+            kind = "CREATINE",
+            name = "Creatina monoidrato",
+            dose = 5f,
+            unit = "g",
+            timeMinutes = 1080,
+            kcal = kcal,
+            proteinG = protein,
+            carbsG = carbs,
+            fatG = fat,
+            notes = "Uso sportivo",
+        )
+
+    private fun proteinPowder(kcal: Int, protein: Float, carbs: Float, fat: Float) =
+        NutritionPlanContract.GeneratedSupplement(
+            kind = "PROTEIN_POWDER",
+            name = "Whey",
+            dose = 30f,
+            unit = "g",
+            timeMinutes = 1110,
+            kcal = kcal,
+            proteinG = protein,
+            carbsG = carbs,
+            fatG = fat,
+            notes = "Post-workout o praticita",
+        )
 }
