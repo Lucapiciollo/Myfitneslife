@@ -88,6 +88,8 @@ data class SupplementDraft(
     val timeMinutes: Int?,
     val kcal: Int,
     val proteinG: Float,
+    val carbsG: Float,
+    val fatG: Float,
     val notes: String?,
 )
 
@@ -302,6 +304,8 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
                 if (value.timeMinutes == null) put("timeMinutes", JSONObject.NULL) else put("timeMinutes", value.timeMinutes)
                 put("kcal", value.kcal)
                 put("proteinG", value.proteinG.toDouble())
+                put("carbsG", value.carbsG.toDouble())
+                put("fatG", value.fatG.toDouble())
                 put("notes", value.notes ?: "")
             })
         }
@@ -323,6 +327,8 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
                         timeMinutes = if (item.isNull("timeMinutes")) null else item.optInt("timeMinutes"),
                         kcal = item.optInt("kcal", 0),
                         proteinG = item.optDouble("proteinG", 0.0).toFloat(),
+                        carbsG = item.optDouble("carbsG", 0.0).toFloat(),
+                        fatG = item.optDouble("fatG", 0.0).toFloat(),
                         notes = item.optString("notes").takeIf { it.isNotBlank() },
                     ))
                 }
