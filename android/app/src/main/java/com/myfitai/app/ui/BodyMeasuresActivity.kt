@@ -14,19 +14,22 @@ class BodyMeasuresActivity : BaseShellActivity() {
 
     private data class MeasureSeries(
         val label: String,
-        val current: Float,
-        val previousDelta: Float,
-        val periodDelta: Float,
         val points: List<BodyMeasurementTrendView.Point>,
-    )
+    ) {
+        val current: Float get() = points.last().value
+        val previousDelta: Float get() = if (points.size > 1) points.last().value - points[points.lastIndex - 1].value else 0f
+    }
 
     private val series = listOf(
-        MeasureSeries("Vita", 84f, -1.2f, -3.4f, points(91f, 89.5f, 88f, 86.2f, 85.2f, 84f)),
-        MeasureSeries("Torace", 102f, 0.4f, 1.6f, points(100.4f, 100.8f, 101f, 101.4f, 101.6f, 102f)),
-        MeasureSeries("Addome", 88f, -0.8f, -2.7f, points(90.7f, 90f, 89.6f, 89f, 88.8f, 88f)),
-        MeasureSeries("Braccio", 35.5f, 0.3f, 0.9f, points(34.6f, 34.8f, 35f, 35.2f, 35.2f, 35.5f)),
-        MeasureSeries("Coscia", 57.5f, 0.2f, 0.7f, points(56.8f, 57f, 57.1f, 57.2f, 57.3f, 57.5f)),
+        MeasureSeries("Vita", points(93f, 92.2f, 91f, 89.5f, 88f, 86.8f, 86.2f, 85.2f, 84f)),
+        MeasureSeries("Torace", points(99.6f, 99.8f, 100.4f, 100.8f, 101f, 101.2f, 101.4f, 101.6f, 102f)),
+        MeasureSeries("Addome", points(92.4f, 91.8f, 90.7f, 90f, 89.6f, 89.2f, 89f, 88.8f, 88f)),
+        MeasureSeries("Braccio", points(34.1f, 34.3f, 34.6f, 34.8f, 35f, 35.1f, 35.2f, 35.2f, 35.5f)),
+        MeasureSeries("Coscia", points(56.4f, 56.5f, 56.8f, 57f, 57.1f, 57.1f, 57.2f, 57.3f, 57.5f)),
     )
+
+    private var selectedMetricIndex = 0
+    private var selectedRangeIndex = 2
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -67,24 +70,46 @@ class BodyMeasuresActivity : BaseShellActivity() {
         }
 
         val metricSegment = findViewById<SelectableSegmentView>(R.id.trendMetricSegment)
-        metricSegment.setSegments(series.map { it.label }, selectedIndex = 0)
-        metricSegment.setOnSegmentSelectedListener { renderTrend(it) }
+        metricSegment.setSegments(series.map { it.label }, selectedIndex = selectedMetricIndex)
+        metricSegment.setOnSegmentSelectedListener { index ->
+            selectedMetricIndex = index
+            renderTrend()
+        }
 
-        findViewById<SelectableSegmentView>(R.id.trendRangeSegment).setSegments(
-            listOf("1M", "3M", "6M", "1Y"),
-            selectedIndex = 2,
-        )
-        renderTrend(0)
+        val rangeSegment = findViewById<SelectableSegmentView>(R.id.trendRangeSegment)
+        rangeSegment.setSegments(listOf("1M", "3M", "6M", "1Y"), selectedIndex = selectedRangeIndex)
+        rangeSegment.setOnSegmentSelectedListener { index ->
+            selectedRangeIndex = index
+            renderTrend()
+        }
+
+        renderTrend()
         renderHistory()
     }
 
-    private fun renderTrend(index: Int) {
-        val item = series[index]
+    private fun renderTrend() {
+        val item = series[selectedMetricIndex]
+        val visiblePoints = filterPointsForRange(item.points, selectedRangeIndex)
+        val periodDelta = if (visiblePoints.size > 1) visiblePoints.last().value - visiblePoints.first().value else 0f
+
         findViewById<TextView>(R.id.trendMetricLabel).text = item.label
         findViewById<TextView>(R.id.trendCurrentValue).text = formatCm(item.current)
         findViewById<TextView>(R.id.trendDeltaPrevious).text = "${formatSigned(item.previousDelta)} cm vs precedente"
-        findViewById<TextView>(R.id.trendDeltaPeriod).text = "${formatSigned(item.periodDelta)} cm nel periodo"
-        findViewById<BodyMeasurementTrendView>(R.id.bodyMeasurementTrendChart).setPoints(item.points)
+        findViewById<TextView>(R.id.trendDeltaPeriod).text = "${formatSigned(periodDelta)} cm nel periodo"
+        findViewById<BodyMeasurementTrendView>(R.id.bodyMeasurementTrendChart).setPoints(visiblePoints)
+    }
+
+    private fun filterPointsForRange(
+        points: List<BodyMeasurementTrendView.Point>,
+        rangeIndex: Int,
+    ): List<BodyMeasurementTrendView.Point> {
+        val maxPoints = when (rangeIndex) {
+            0 -> 2   // circa 1 mese nel dataset mock
+            1 -> 4   // circa 3 mesi
+            2 -> 7   // circa 6 mesi
+            else -> points.size
+        }
+        return points.takeLast(maxPoints.coerceAtMost(points.size))
     }
 
     private fun renderHistory() {
@@ -128,7 +153,7 @@ class BodyMeasuresActivity : BaseShellActivity() {
     }
 
     private fun points(vararg values: Float): List<BodyMeasurementTrendView.Point> {
-        val labels = listOf("20 Lug", "3 Ago", "10 Ago", "24 Ago", "31 Ago", "14 Set")
+        val labels = listOf("Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set")
         return values.mapIndexed { index, value -> BodyMeasurementTrendView.Point(labels[index], value) }
     }
 
