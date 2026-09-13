@@ -21,6 +21,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -37,6 +38,10 @@ class NewWorkoutActivity : BaseShellActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        selectedDate = intent.takeIf { it.hasExtra(EXTRA_DATE_EPOCH_DAY) }
+            ?.getLongExtra(EXTRA_DATE_EPOCH_DAY, LocalDate.now().toEpochDay())
+            ?.let(LocalDate::ofEpochDay)
+            ?: LocalDate.now()
         setContentView(R.layout.activity_new_workout)
         bindBack()
         bindForm()
@@ -65,10 +70,10 @@ class NewWorkoutActivity : BaseShellActivity() {
         dateInput.setOnClickListener {
             val picker = MaterialDatePicker.Builder.datePicker()
                 .setTitleText("Data allenamento")
-                .setSelection(selectedDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli())
+                .setSelection(selectedDate.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli())
                 .build()
             picker.addOnPositiveButtonClickListener { millis ->
-                selectedDate = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate()
+                selectedDate = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
                 renderDateTime()
             }
             picker.show(supportFragmentManager, "workout_date_picker")
@@ -129,5 +134,9 @@ class NewWorkoutActivity : BaseShellActivity() {
                 }
             }
         }
+    }
+
+    companion object {
+        const val EXTRA_DATE_EPOCH_DAY = "date_epoch_day"
     }
 }
