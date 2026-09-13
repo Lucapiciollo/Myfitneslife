@@ -1,5 +1,5 @@
 <resources>
-    <color name="bg_primary">#F7F6F1</color><color name="bg_secondary">#F0F2ED</color>
+    <color name="bg_primary">#FFFFFF</color><color name="bg_secondary">#F0F2ED</color>
     <color name="surface_primary">#FFFFFF</color><color name="surface_secondary">#F3F5F1</color><color name="surface_soft">#E9EFE8</color>
     <color name="accent_green">#20B653</color><color name="accent_green_dark">#11853A</color><color name="accent_blue">#4A8FD8</color><color name="accent_purple">#8B6ACB</color><color name="accent_orange">#E78A43</color>
     <color name="text_primary">#18201C</color><color name="text_secondary">#59635D</color><color name="text_muted">#8B948E</color>
