@@ -49,8 +49,14 @@ object NutritionPlanContract {
     data class AgentValidation(val valid: Boolean, val notes: String)
     data class Response(val weekStartEpochDay: Long, val days: List<GeneratedDay>, val agentValidation: AgentValidation)
     data class GeneratedDay(
-        val dateEpochDay: Long, val totalKcal: Int, val proteinG: Float, val carbsG: Float, val fatG: Float,
-        val meals: List<GeneratedMeal>, val supplements: List<GeneratedSupplement>, val hydrationNote: String,
+        val dateEpochDay: Long,
+        val totalKcal: Int,
+        val proteinG: Float,
+        val carbsG: Float,
+        val fatG: Float,
+        val meals: List<GeneratedMeal>,
+        val supplements: List<GeneratedSupplement> = emptyList(),
+        val hydrationNote: String = "",
     )
     data class GeneratedSupplement(
         val kind: String, val name: String, val dose: Float, val unit: String, val timeMinutes: Int,
@@ -122,7 +128,7 @@ object NutritionPlanContract {
         response: Response,
         expectedWeekStart: LocalDate,
         targets: NutritionBusinessValidator.Targets,
-        sportsMode: SportsNutritionClassifier.Mode,
+        sportsMode: SportsNutritionClassifier.Mode = SportsNutritionClassifier.Mode.NORMAL,
     ): Result<Unit> = runCatching {
         require(response.weekStartEpochDay == expectedWeekStart.toEpochDay()) { "WEEK_START_MISMATCH" }
         require(response.days.size == 7) { "WEEK_MUST_HAVE_7_DAYS" }
