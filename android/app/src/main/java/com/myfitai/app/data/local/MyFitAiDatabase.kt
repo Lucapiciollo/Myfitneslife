@@ -23,7 +23,7 @@ import com.myfitai.app.data.local.entity.*
         CheatEntryEntity::class,
         WeeklyReviewEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 abstract class MyFitAiDatabase : RoomDatabase() {
@@ -54,10 +54,7 @@ abstract class MyFitAiDatabase : RoomDatabase() {
 }
 
 object DatabaseMigrations {
-    /**
-     * V1 era single-profile. V2 assegna tutti i record preesistenti al profilo storico id=1 e
-     * introduce lo scope profileId senza perdita dati. Non usare fallbackToDestructiveMigration.
-     */
+    /** V1 era single-profile; V2 introduce scope per profilo senza perdita dati. */
     val MIGRATION_1_2 = object : Migration(1, 2) {
         override fun migrate(db: SupportSQLiteDatabase) {
             db.execSQL("ALTER TABLE user_profile ADD COLUMN photoPath TEXT")
@@ -90,5 +87,14 @@ object DatabaseMigrations {
         }
     }
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2)
+    /** V3 completa il profilo con sesso biologico esplicito e peso iniziale. */
+    val MIGRATION_2_3 = object : Migration(2, 3) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE user_profile ADD COLUMN biologicalSex TEXT")
+            db.execSQL("ALTER TABLE user_profile ADD COLUMN initialWeightKg REAL")
+            db.execSQL("UPDATE user_profile SET initialWeightKg = currentWeightKg WHERE initialWeightKg IS NULL")
+        }
+    }
+
+    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3)
 }
