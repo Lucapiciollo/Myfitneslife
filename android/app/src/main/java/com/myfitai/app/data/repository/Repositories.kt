@@ -3,11 +3,6 @@ package com.myfitai.app.data.repository
 import androidx.room.withTransaction
 import com.myfitai.app.data.local.MyFitAiDatabase
 import com.myfitai.app.data.local.entity.*
-import com.myfitai.app.domain.food.FoodIngredient
-import com.myfitai.app.domain.food.FoodMeal
-import com.myfitai.app.domain.food.FoodPlanDay
-import com.myfitai.app.domain.food.FoodPlanSnapshot
-import com.myfitai.app.domain.food.FoodPlanVersion
 import kotlinx.coroutines.flow.Flow
 
 class UserProfileRepository(private val db: MyFitAiDatabase) {
@@ -50,6 +45,7 @@ class CheatEntryRepository(private val db: MyFitAiDatabase) {
     fun all(profileId: Long): Flow<List<CheatEntryEntity>> = db.cheatEntryDao().observeAll(profileId)
     fun between(profileId: Long, from: Long, to: Long) = db.cheatEntryDao().observeBetween(profileId, from, to)
     suspend fun insert(value: CheatEntryEntity) = db.cheatEntryDao().insert(value)
+    suspend fun update(value: CheatEntryEntity) = db.cheatEntryDao().update(value)
     suspend fun delete(value: CheatEntryEntity) = db.cheatEntryDao().delete(value)
 }
 
@@ -115,54 +111,11 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
             )
         )
 
-    /** Legge la versione più recente di una settimana come snapshot canonico completo e immutabile. */
-    suspend fun loadLatestSnapshot(profileId: Long, weekStartEpochDay: Long): FoodPlanSnapshot? = db.withTransaction {
-        val dao = db.mealPlanDao()
-        val plan = dao.getPlanForWeek(profileId, weekStartEpochDay) ?: return@withTransaction null
-        val version = dao.getLatestVersion(plan.id) ?: return@withTransaction null
-        val days = dao.getDays(version.id).map { day ->
-            FoodPlanDay(
-                id = day.id,
-                dateEpochDay = day.dateEpochDay,
-                totalKcal = day.totalKcal,
-                proteinG = day.proteinG,
-                carbsG = day.carbsG,
-                fatG = day.fatG,
-                meals = dao.getMeals(day.id).map { meal -> meal.toDomain(dao.getIngredients(meal.id)) },
-            )
-        }
-        FoodPlanSnapshot(
-            planId = plan.id,
-            profileId = plan.profileId,
-            weekStartEpochDay = plan.weekStartEpochDay,
-            version = FoodPlanVersion(
-                id = version.id,
-                versionNumber = version.versionNumber,
-                createdAtEpochMillis = version.createdAtEpochMillis,
-                source = version.source,
-                reason = version.reason,
-                targetKcal = version.targetKcal,
-                targetProteinG = version.targetProteinG,
-                targetCarbsG = version.targetCarbsG,
-                targetFatG = version.targetFatG,
-                days = days,
-            ),
-        )
-    }
-
-    suspend fun loadMeal(mealId: Long): FoodMeal? = db.withTransaction {
-        val dao = db.mealPlanDao()
-        val meal = dao.getMeal(mealId) ?: return@withTransaction null
-        meal.toDomain(dao.getIngredients(meal.id))
-    }
-
-    /** Salva una versione immutabile completa: mai sovrascrivere una versione precedente. */
     suspend fun appendVersion(
         planId: Long,
         createdAtEpochMillis: Long,
         draft: PlanVersionDraft,
     ): Long = db.withTransaction {
-        validateDraft(draft)
         val dao = db.mealPlanDao()
         val nextVersion = (dao.getLatestVersion(planId)?.versionNumber ?: 0) + 1
         val versionId = dao.insertVersion(
@@ -179,7 +132,7 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
             )
         )
 
-        draft.days.sortedBy { it.dateEpochDay }.forEach { day ->
+        draft.days.forEach { day ->
             val dayId = dao.insertDays(listOf(MealPlanDayEntity(
                 versionId = versionId,
                 dateEpochDay = day.dateEpochDay,
@@ -193,27 +146,27 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
                 val mealId = dao.insertMeals(listOf(MealEntity(
                     dayId = dayId,
                     sortOrder = mealIndex,
-                    type = meal.type.trim(),
-                    title = meal.title.trim(),
+                    type = meal.type,
+                    title = meal.title,
                     timeMinutes = meal.timeMinutes,
                     kcal = meal.kcal,
                     proteinG = meal.proteinG,
                     carbsG = meal.carbsG,
                     fatG = meal.fatG,
-                    preparation = meal.preparation?.trim()?.takeIf { it.isNotEmpty() },
+                    preparation = meal.preparation,
                 ))).single()
 
                 if (meal.ingredients.isNotEmpty()) {
                     dao.insertIngredients(meal.ingredients.mapIndexed { ingredientIndex, ingredient ->
                         MealIngredientEntity(
                             mealId = mealId,
-                            name = ingredient.name.trim(),
+                            name = ingredient.name,
                             quantity = ingredient.quantity,
-                            unit = ingredient.unit.trim(),
-                            displayDose = ingredient.displayDose?.trim()?.takeIf { it.isNotEmpty() },
-                            weightState = ingredient.weightState?.trim()?.takeIf { it.isNotEmpty() },
-                            nutritionConfidence = ingredient.nutritionConfidence?.trim()?.takeIf { it.isNotEmpty() },
-                            category = ingredient.category?.trim()?.takeIf { it.isNotEmpty() },
+                            unit = ingredient.unit,
+                            displayDose = ingredient.displayDose,
+                            weightState = ingredient.weightState,
+                            nutritionConfidence = ingredient.nutritionConfidence,
+                            category = ingredient.category,
                             sortOrder = ingredientIndex,
                         )
                     })
@@ -223,54 +176,97 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
         versionId
     }
 
-    private fun validateDraft(draft: PlanVersionDraft) {
-        require(draft.source.isNotBlank()) { "Plan source is required" }
-        require(draft.days.map { it.dateEpochDay }.distinct().size == draft.days.size) { "Duplicate plan days" }
-        require(draft.targetKcal == null || draft.targetKcal > 0) { "Invalid target kcal" }
-        require(listOf(draft.targetProteinG, draft.targetCarbsG, draft.targetFatG).filterNotNull().all { it >= 0f }) { "Invalid target macros" }
-        draft.days.forEach { day ->
-            require(day.totalKcal == null || day.totalKcal >= 0) { "Invalid day kcal" }
-            require(listOf(day.proteinG, day.carbsG, day.fatG).filterNotNull().all { it >= 0f }) { "Invalid day macros" }
-            day.meals.forEach { meal ->
-                require(meal.type.isNotBlank()) { "Meal type is required" }
-                require(meal.title.isNotBlank()) { "Meal title is required" }
-                require(meal.timeMinutes == null || meal.timeMinutes in 0..1439) { "Invalid meal time" }
-                require(meal.kcal == null || meal.kcal >= 0) { "Invalid meal kcal" }
-                require(listOf(meal.proteinG, meal.carbsG, meal.fatG).filterNotNull().all { it >= 0f }) { "Invalid meal macros" }
-                meal.ingredients.forEach { ingredient ->
-                    require(ingredient.name.isNotBlank()) { "Ingredient name is required" }
-                    require(ingredient.quantity >= 0f) { "Ingredient quantity cannot be negative" }
-                    require(ingredient.unit.isNotBlank()) { "Ingredient unit is required" }
-                }
-            }
+    suspend fun loadLatestSnapshot(profileId: Long, weekStartEpochDay: Long): com.myfitai.app.domain.food.FoodPlanSnapshot? = db.withTransaction {
+        val dao = db.mealPlanDao()
+        val plan = dao.getPlanForWeek(profileId, weekStartEpochDay) ?: return@withTransaction null
+        val version = dao.getLatestVersion(plan.id) ?: return@withTransaction null
+        val days = dao.getDays(version.id).map { day ->
+            com.myfitai.app.domain.food.FoodPlanDay(
+                id = day.id,
+                dateEpochDay = day.dateEpochDay,
+                totalKcal = day.totalKcal,
+                proteinG = day.proteinG,
+                carbsG = day.carbsG,
+                fatG = day.fatG,
+                meals = dao.getMeals(day.id).map { meal ->
+                    com.myfitai.app.domain.food.FoodMeal(
+                        id = meal.id,
+                        dayId = meal.dayId,
+                        sortOrder = meal.sortOrder,
+                        type = meal.type,
+                        title = meal.title,
+                        timeMinutes = meal.timeMinutes,
+                        kcal = meal.kcal,
+                        proteinG = meal.proteinG,
+                        carbsG = meal.carbsG,
+                        fatG = meal.fatG,
+                        preparation = meal.preparation,
+                        ingredients = dao.getIngredients(meal.id).map { ingredient ->
+                            com.myfitai.app.domain.food.FoodIngredient(
+                                id = ingredient.id,
+                                mealId = ingredient.mealId,
+                                name = ingredient.name,
+                                quantity = ingredient.quantity,
+                                unit = ingredient.unit,
+                                displayDose = ingredient.displayDose,
+                                weightState = ingredient.weightState,
+                                nutritionConfidence = ingredient.nutritionConfidence,
+                                category = ingredient.category,
+                                sortOrder = ingredient.sortOrder,
+                            )
+                        },
+                    )
+                },
+            )
         }
+        com.myfitai.app.domain.food.FoodPlanSnapshot(
+            planId = plan.id,
+            profileId = plan.profileId,
+            weekStartEpochDay = plan.weekStartEpochDay,
+            version = com.myfitai.app.domain.food.FoodPlanVersion(
+                id = version.id,
+                versionNumber = version.versionNumber,
+                createdAtEpochMillis = version.createdAtEpochMillis,
+                source = version.source,
+                reason = version.reason,
+                targetKcal = version.targetKcal,
+                targetProteinG = version.targetProteinG,
+                targetCarbsG = version.targetCarbsG,
+                targetFatG = version.targetFatG,
+                days = days,
+            ),
+        )
     }
 
-    private fun MealEntity.toDomain(ingredients: List<MealIngredientEntity>) = FoodMeal(
-        id = id,
-        dayId = dayId,
-        sortOrder = sortOrder,
-        type = type,
-        title = title,
-        timeMinutes = timeMinutes,
-        kcal = kcal,
-        proteinG = proteinG,
-        carbsG = carbsG,
-        fatG = fatG,
-        preparation = preparation,
-        ingredients = ingredients.map { ingredient ->
-            FoodIngredient(
-                id = ingredient.id,
-                mealId = ingredient.mealId,
-                name = ingredient.name,
-                quantity = ingredient.quantity,
-                unit = ingredient.unit,
-                displayDose = ingredient.displayDose,
-                weightState = ingredient.weightState,
-                nutritionConfidence = ingredient.nutritionConfidence,
-                category = ingredient.category,
-                sortOrder = ingredient.sortOrder,
-            )
-        },
-    )
+    suspend fun getMealDetail(mealId: Long): com.myfitai.app.domain.food.FoodMeal? = db.withTransaction {
+        val dao = db.mealPlanDao()
+        val meal = dao.getMeal(mealId) ?: return@withTransaction null
+        com.myfitai.app.domain.food.FoodMeal(
+            id = meal.id,
+            dayId = meal.dayId,
+            sortOrder = meal.sortOrder,
+            type = meal.type,
+            title = meal.title,
+            timeMinutes = meal.timeMinutes,
+            kcal = meal.kcal,
+            proteinG = meal.proteinG,
+            carbsG = meal.carbsG,
+            fatG = meal.fatG,
+            preparation = meal.preparation,
+            ingredients = dao.getIngredients(meal.id).map { ingredient ->
+                com.myfitai.app.domain.food.FoodIngredient(
+                    id = ingredient.id,
+                    mealId = ingredient.mealId,
+                    name = ingredient.name,
+                    quantity = ingredient.quantity,
+                    unit = ingredient.unit,
+                    displayDose = ingredient.displayDose,
+                    weightState = ingredient.weightState,
+                    nutritionConfidence = ingredient.nutritionConfidence,
+                    category = ingredient.category,
+                    sortOrder = ingredient.sortOrder,
+                )
+            },
+        )
+    }
 }
