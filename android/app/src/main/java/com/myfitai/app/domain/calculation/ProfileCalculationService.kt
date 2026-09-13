@@ -29,6 +29,12 @@ class ProfileCalculationService(
         val recompositionState: LocalCalculationEngine.RecompositionState,
         val latestBiaTimestamp: Long?,
         val latestBodyMeasurementTimestamp: Long?,
+        val latestWeightKg: Float?,
+        val latestBodyFatPercent: Float?,
+        val latestMuscleMassKg: Float?,
+        val latestSkeletalMuscleKg: Float?,
+        val latestBodyWaterPercent: Float?,
+        val latestWaistCm: Float?,
     )
 
     suspend fun activeProfileSnapshot(today: LocalDate = LocalDate.now()): Snapshot? {
@@ -79,6 +85,12 @@ class ProfileCalculationService(
             recompositionState = recomposition,
             latestBiaTimestamp = latestBia?.measuredAtEpochMillis,
             latestBodyMeasurementTimestamp = latestBody?.measuredAtEpochMillis,
+            latestWeightKg = latestBia?.weightKg ?: profile.currentWeightKg,
+            latestBodyFatPercent = latestBia?.bodyFatPercent,
+            latestMuscleMassKg = latestBia?.muscleMassKg,
+            latestSkeletalMuscleKg = latestBia?.skeletalMuscleKg,
+            latestBodyWaterPercent = latestBia?.bodyWaterPercent,
+            latestWaistCm = latestBody?.waistCm,
         )
     }
 
