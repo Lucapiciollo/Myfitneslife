@@ -5,7 +5,6 @@ import com.myfitai.app.data.AppDataContainer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
 class MyFitAiApplication : Application() {
@@ -19,11 +18,9 @@ class MyFitAiApplication : Application() {
             runCatching { data.notificationScheduler.refresh() }
         }
         appScope.launch {
-            data.activeProfileStore.activeProfileId
-                .distinctUntilChanged()
-                .collect {
-                    runCatching { data.notificationScheduler.refresh() }
-                }
+            data.activeProfileStore.activeProfileId.collect {
+                runCatching { data.notificationScheduler.refresh() }
+            }
         }
     }
 }
