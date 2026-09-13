@@ -9,7 +9,7 @@ import com.google.android.material.imageview.ShapeableImageView
 import com.google.android.material.shape.ShapeAppearanceModel
 import com.myfitai.app.R
 
-/** Riga pasto riutilizzabile per il Piano alimentare: foto, titolo+kcal, descrizione. */
+/** Riga pasto riutilizzabile per il Piano alimentare: foto, titolo+kcal, descrizione e cambio IA. */
 class MealPlanRowView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
@@ -19,6 +19,7 @@ class MealPlanRowView @JvmOverloads constructor(
     private val titleView: TextView
     private val kcalView: TextView
     private val descriptionView: TextView
+    private val changeButton: ImageView
 
     init {
         orientation = HORIZONTAL
@@ -26,7 +27,7 @@ class MealPlanRowView @JvmOverloads constructor(
         isClickable = true
         isFocusable = true
         val density = resources.displayMetrics.density
-        setPadding((12 * density).toInt(), (12 * density).toInt(), (12 * density).toInt(), (12 * density).toInt())
+        setPadding((12 * density).toInt(), (12 * density).toInt(), (8 * density).toInt(), (12 * density).toInt())
         background = context.getDrawable(R.drawable.bg_card)
 
         thumbnail = ShapeableImageView(context).apply {
@@ -69,6 +70,18 @@ class MealPlanRowView @JvmOverloads constructor(
         }
         textColumn.addView(descriptionView)
         addView(textColumn)
+
+        changeButton = ImageView(context).apply {
+            val size = (40 * density).toInt()
+            layoutParams = LayoutParams(size, size).apply { marginStart = (6 * density).toInt() }
+            setImageResource(R.drawable.ic_refresh)
+            setColorFilter(context.getColor(R.color.accent_green_dark))
+            setPadding((9 * density).toInt(), (9 * density).toInt(), (9 * density).toInt(), (9 * density).toInt())
+            contentDescription = "Cambia pasto con IA"
+            isClickable = true
+            isFocusable = true
+        }
+        addView(changeButton)
     }
 
     fun setTitle(title: String) {
@@ -85,5 +98,14 @@ class MealPlanRowView @JvmOverloads constructor(
 
     fun setImage(resId: Int) {
         thumbnail.setImageResource(resId)
+    }
+
+    fun setOnChangeClickListener(listener: (() -> Unit)?) {
+        changeButton.setOnClickListener { listener?.invoke() }
+    }
+
+    fun setChangeEnabled(enabled: Boolean) {
+        changeButton.isEnabled = enabled
+        changeButton.alpha = if (enabled) 1f else 0.35f
     }
 }
