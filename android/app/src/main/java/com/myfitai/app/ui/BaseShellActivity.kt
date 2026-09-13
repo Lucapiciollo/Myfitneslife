@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -42,7 +43,7 @@ abstract class BaseShellActivity : AppCompatActivity() {
     private fun buildProfileHeader(): View = LinearLayout(this).apply {
         orientation = LinearLayout.HORIZONTAL
         gravity = Gravity.CENTER_VERTICAL
-        setPadding(dp(16), dp(6), dp(16), dp(6))
+        setPadding(dp(16), dp(6), dp(12), dp(6))
         setBackgroundColor(getColor(R.color.surface_primary))
 
         addView(TextView(this@BaseShellActivity).apply {
@@ -66,6 +67,19 @@ abstract class BaseShellActivity : AppCompatActivity() {
             setOnItemClickListener { _, _, position, _ -> handleProfileSelection(position) }
         }
         addView(profileSwitcher, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f))
+
+        addView(ImageView(this@BaseShellActivity).apply {
+            setImageResource(R.drawable.ic_nutrition_ai)
+            contentDescription = "Chiedi un consiglio alimentare all'IA"
+            setPadding(dp(8), dp(8), dp(8), dp(8))
+            isClickable = true
+            isFocusable = true
+            setOnClickListener {
+                if (this@BaseShellActivity !is NutritionAdviceActivity) {
+                    startActivity(Intent(this@BaseShellActivity, NutritionAdviceActivity::class.java))
+                }
+            }
+        }, LinearLayout.LayoutParams(dp(40), dp(40)).apply { marginStart = dp(4) })
     }
 
     private fun observeGlobalProfiles() {
