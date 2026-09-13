@@ -33,17 +33,17 @@ class BodyMeasuresActivity : BaseShellActivity() {
         val label: String,
         val value: (BodyMeasurementEntity) -> Float?,
     ) {
-        WAIST("Vita") { it.waistCm },
-        CHEST("Torace") { it.chestCm },
-        ABDOMEN("Addome") { it.abdomenCm },
-        SHOULDERS("Spalle") { it.shouldersCm },
-        GLUTES("Glutei") { it.glutesCm },
-        ARM_LEFT("Braccio sx") { it.armLeftCm },
-        ARM_RIGHT("Braccio dx") { it.armRightCm },
-        THIGH_LEFT("Coscia sx") { it.thighLeftCm },
-        THIGH_RIGHT("Coscia dx") { it.thighRightCm },
-        CALF_LEFT("Polpaccio sx") { it.calfLeftCm },
-        CALF_RIGHT("Polpaccio dx") { it.calfRightCm },
+        WAIST("Vita", { it.waistCm }),
+        CHEST("Torace", { it.chestCm }),
+        ABDOMEN("Addome", { it.abdomenCm }),
+        SHOULDERS("Spalle", { it.shouldersCm }),
+        GLUTES("Glutei", { it.glutesCm }),
+        ARM_LEFT("Braccio sx", { it.armLeftCm }),
+        ARM_RIGHT("Braccio dx", { it.armRightCm }),
+        THIGH_LEFT("Coscia sx", { it.thighLeftCm }),
+        THIGH_RIGHT("Coscia dx", { it.thighRightCm }),
+        CALF_LEFT("Polpaccio sx", { it.calfLeftCm }),
+        CALF_RIGHT("Polpaccio dx", { it.calfRightCm }),
     }
 
     private val data by lazy { AppDataContainer.get(this) }
