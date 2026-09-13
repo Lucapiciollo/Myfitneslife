@@ -138,6 +138,8 @@ data class MealPlanDayEntity(
     val proteinG: Float?,
     val carbsG: Float?,
     val fatG: Float?,
+    val supplementsJson: String? = null,
+    val hydrationNote: String? = null,
 )
 
 @Entity(
