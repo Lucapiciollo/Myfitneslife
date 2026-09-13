@@ -4,11 +4,13 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.activity.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.google.android.material.button.MaterialButton
 import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.domain.food.FoodMeal
@@ -26,7 +28,11 @@ class FoodPlanActivity : BaseShellActivity() {
 
     private val data by lazy { AppDataContainer.get(this) }
     private val viewModel: FoodPlanViewModel by viewModels {
-        FoodPlanViewModel.Factory(data.mealPlanRepository, data.activeProfileStore)
+        FoodPlanViewModel.Factory(
+            repository = data.mealPlanRepository,
+            activeProfileStore = data.activeProfileStore,
+            generationService = data.nutritionPlanGenerationService,
+        )
     }
 
     private val weekDaySelector by lazy { findViewById<WeekDaySelectorView>(R.id.weekDaySelector) }
@@ -40,6 +46,7 @@ class FoodPlanActivity : BaseShellActivity() {
         findViewById<View>(R.id.nextWeekButton).setOnClickListener { viewModel.nextWeek() }
         findViewById<View>(R.id.shoppingButton).setOnClickListener { go(ShoppingListActivity::class.java) }
         findViewById<View>(R.id.cheatButton).setOnClickListener { go(CheatEntryActivity::class.java) }
+        findViewById<View>(R.id.generatePlanButton).setOnClickListener { viewModel.generateCurrentWeek() }
         weekDaySelector.setOnDaySelectedListener(viewModel::selectDay)
 
         lifecycleScope.launch {
@@ -83,8 +90,34 @@ class FoodPlanActivity : BaseShellActivity() {
             empty.text = "Nessun piano alimentare disponibile per questa settimana."
         }
 
+        renderGeneration(state)
         renderMeals(day)
         renderTotals(day)
+    }
+
+    private fun renderGeneration(state: FoodPlanViewModel.State) {
+        val button = findViewById<MaterialButton>(R.id.generatePlanButton)
+        val statusContainer = findViewById<View>(R.id.generationStatusContainer)
+        val progress = findViewById<ProgressBar>(R.id.generationProgress)
+        val status = findViewById<TextView>(R.id.generationStatusText)
+        val generation = state.generation
+
+        button.isEnabled = !generation.running
+        button.text = when {
+            generation.running -> "Generazione in corso…"
+            state.hasPlan -> "Rigenera piano con IA"
+            else -> "Genera piano con IA"
+        }
+
+        val message = when {
+            generation.running -> "Il piano viene generato e validato localmente prima del salvataggio."
+            generation.error != null -> generation.error
+            generation.successMessage != null -> generation.successMessage
+            else -> null
+        }
+        statusContainer.visibility = if (message != null) View.VISIBLE else View.GONE
+        progress.visibility = if (generation.running) View.VISIBLE else View.GONE
+        status.text = message.orEmpty()
     }
 
     private fun renderMeals(day: FoodPlanDay?) {
@@ -104,9 +137,7 @@ class FoodPlanActivity : BaseShellActivity() {
                 LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT,
-                ).apply {
-                    topMargin = if (index == 0) dp(8) else dp(8)
-                },
+                ).apply { topMargin = dp(8) },
             )
         }
     }
