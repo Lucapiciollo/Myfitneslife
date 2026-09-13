@@ -97,6 +97,39 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_24"
+                android:text="Altri indicatori" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_8"
+                android:background="@drawable/bg_card"
+                android:orientation="vertical"
+                android:paddingHorizontal="@dimen/space_16">
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:orientation="horizontal" android:gravity="center_vertical">
+                    <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Grasso corporeo" android:textColor="@color/text_secondary" android:textSize="14sp" />
+                    <TextView android:id="@+id/otherIndicatorFatValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="14,2 %" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="14sp" />
+                    <TextView android:id="@+id/otherIndicatorFatDelta" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="@dimen/space_8" android:text="-2,1%" android:textColor="@color/accent_green" android:textSize="13sp" />
+                </LinearLayout>
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:orientation="horizontal" android:gravity="center_vertical">
+                    <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Massa muscolare" android:textColor="@color/text_secondary" android:textSize="14sp" />
+                    <TextView android:id="@+id/otherIndicatorMuscleValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="66,8 kg" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="14sp" />
+                    <TextView android:id="@+id/otherIndicatorMuscleDelta" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="@dimen/space_8" android:text="+0,6%" android:textColor="@color/accent_green" android:textSize="13sp" />
+                </LinearLayout>
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:orientation="horizontal" android:gravity="center_vertical">
+                    <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Acqua corporea" android:textColor="@color/text_secondary" android:textSize="14sp" />
+                    <TextView android:id="@+id/otherIndicatorWaterValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="58,1 %" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="14sp" />
+                    <TextView android:id="@+id/otherIndicatorWaterDelta" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="@dimen/space_8" android:text="+1,2%" android:textColor="@color/accent_green" android:textSize="13sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <com.myfitai.app.ui.widgets.SectionHeaderView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_24"
                 android:text="Confronto visivo" />
 
             <LinearLayout
