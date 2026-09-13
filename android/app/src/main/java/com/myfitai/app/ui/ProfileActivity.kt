@@ -52,6 +52,11 @@ class ProfileActivity : BaseShellActivity() {
     }
 
     private fun bindSettingsNavigation() {
+        val openEditor = { go(ProfileEditActivity::class.java) }
+        findViewById<SettingRowView>(R.id.rowPersonalData).setOnClickListener { openEditor() }
+        findViewById<SettingRowView>(R.id.rowGoals).setOnClickListener { openEditor() }
+        findViewById<SettingRowView>(R.id.rowFoodPreferences).setOnClickListener { openEditor() }
+        findViewById<SettingRowView>(R.id.rowDaySchedule).setOnClickListener { openEditor() }
         findViewById<SettingRowView>(R.id.rowWorkouts).setOnClickListener { go(WorkoutsActivity::class.java) }
         findViewById<SettingRowView>(R.id.rowNotifications).setOnClickListener { go(NotificationsActivity::class.java) }
         findViewById<SettingRowView>(R.id.rowExport).setOnClickListener { go(ExportActivity::class.java) }
@@ -68,6 +73,8 @@ class ProfileActivity : BaseShellActivity() {
 
     private fun bindProfileActions() {
         findViewById<TextView>(R.id.profileName).setOnClickListener { showProfileMenu(it) }
+        findViewById<TextView>(R.id.profileStats).setOnClickListener { go(ProfileEditActivity::class.java) }
+        findViewById<TextView>(R.id.profileGoal).setOnClickListener { go(ProfileEditActivity::class.java) }
         findViewById<ShapeableImageView>(R.id.profileAvatar).setOnClickListener { showPhotoMenu() }
     }
 
