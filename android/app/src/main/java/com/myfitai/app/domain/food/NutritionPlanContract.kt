@@ -7,6 +7,7 @@ import java.time.LocalDate
 /** Canonical provider-neutral contract for weekly nutrition generation. */
 object NutritionPlanContract {
     const val SCHEMA_NAME = "myfitai_weekly_nutrition_plan_v2"
+    private val ALLOWED_SUPPLEMENT_KINDS = setOf("PROTEIN_POWDER", "CREATINE")
 
     val schemaJson: String = JSONObject(
         """
@@ -141,8 +142,9 @@ object NutritionPlanContract {
             require(appValidation.valid) { "TARGET_TOLERANCE_EXCEEDED" }
 
             day.supplements.forEach { supplement ->
-                require(supplement.kind in setOf("PROTEIN_POWDER", "CREATINE")) { "SUPPLEMENT_NOT_ALLOWED" }
-                require(supplement.dose > 0f && supplement.unit.isNotBlank() && supplement.timeMinutes in 0..1439) { "SUPPLEMENT_DOSE_INVALID" }
+                require(supplement.kind in ALLOWED_SUPPLEMENT_KINDS) { "SUPPLEMENT_NOT_ALLOWED" }
+                require(supplement.name.isNotBlank()) { "SUPPLEMENT_NAME_INVALID" }
+                require(supplement.dose.isFinite() && supplement.dose > 0f && supplement.unit.isNotBlank() && supplement.timeMinutes in 0..1439) { "SUPPLEMENT_DOSE_INVALID" }
                 require(supplement.kcal >= 0 && supplement.proteinG >= 0f && supplement.carbsG >= 0f && supplement.fatG >= 0f) { "SUPPLEMENT_MACROS_INVALID" }
                 if (supplement.kind == "CREATINE") {
                     require(sportsMode == SportsNutritionClassifier.Mode.SPORT) { "CREATINE_REQUIRES_SPORT_MODE" }

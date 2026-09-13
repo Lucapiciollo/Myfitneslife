@@ -111,9 +111,14 @@ class FoodPlanActivity : BaseShellActivity() {
         }
         day?.supplements?.takeIf { it.isNotEmpty() }?.let { supplements ->
             container.addView(infoRow("Integrazione", supplements.joinToString("\n") { s ->
-                val time = s.timeMinutes?.let { "%02d:%02d".format(it / 60, it % 60) } ?: ""
-                val macros = if (s.kcal > 0) " · ${s.kcal} kcal · P ${formatMacro(s.proteinG)}g" else ""
-                "$time ${s.name} ${formatMacro(s.dose)} ${s.unit}$macros".trim()
+                val timePrefix = s.timeMinutes?.let { "%02d:%02d · ".format(it / 60, it % 60) }.orEmpty()
+                val dosePart = "${s.name} ${formatMacro(s.dose)} ${s.unit}"
+                val energyPart = if (s.kcal > 0 || s.proteinG > 0f || s.carbsG > 0f || s.fatG > 0f) {
+                    " · ${s.kcal} kcal · P ${formatMacro(s.proteinG)} g · C ${formatMacro(s.carbsG)} g · F ${formatMacro(s.fatG)} g"
+                } else {
+                    ""
+                }
+                "$timePrefix$dosePart$energyPart"
             }))
         }
         day?.hydrationNote?.takeIf { it.isNotBlank() }?.let { container.addView(infoRow("Idratazione", it)) }
