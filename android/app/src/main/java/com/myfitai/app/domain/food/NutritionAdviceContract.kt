@@ -2,7 +2,7 @@ package com.myfitai.app.domain.food
 
 import org.json.JSONObject
 
-/** Canonical contract for the nutrition-only advice agent. */
+/** Canonical response contract for the strictly nutrition-scoped advice agent. */
 object NutritionAdviceContract {
     const val SCHEMA_NAME = "myfitai_nutrition_advice_v1"
 
@@ -23,10 +23,10 @@ object NutritionAdviceContract {
                 "properties":{
                   "title":{"type":"string"},
                   "reason":{"type":"string"},
-                  "estimatedKcal":{"type":["integer","null"]},
-                  "proteinG":{"type":["number","null"]},
-                  "carbsG":{"type":["number","null"]},
-                  "fatG":{"type":["number","null"]}
+                  "estimatedKcal":{"type":"integer"},
+                  "proteinG":{"type":"number"},
+                  "carbsG":{"type":"number"},
+                  "fatG":{"type":"number"}
                 },
                 "required":["title","reason","estimatedKcal","proteinG","carbsG","fatG"]
               }
@@ -47,10 +47,10 @@ object NutritionAdviceContract {
     data class Suggestion(
         val title: String,
         val reason: String,
-        val estimatedKcal: Int?,
-        val proteinG: Float?,
-        val carbsG: Float?,
-        val fatG: Float?,
+        val estimatedKcal: Int,
+        val proteinG: Float,
+        val carbsG: Float,
+        val fatG: Float,
     )
 
     data class Response(
@@ -71,10 +71,10 @@ object NutritionAdviceContract {
                     Suggestion(
                         title = item.getString("title").trim(),
                         reason = item.getString("reason").trim(),
-                        estimatedKcal = item.optIntOrNull("estimatedKcal"),
-                        proteinG = item.optDoubleOrNull("proteinG")?.toFloat(),
-                        carbsG = item.optDoubleOrNull("carbsG")?.toFloat(),
-                        fatG = item.optDoubleOrNull("fatG")?.toFloat(),
+                        estimatedKcal = item.getInt("estimatedKcal"),
+                        proteinG = item.getDouble("proteinG").toFloat(),
+                        carbsG = item.getDouble("carbsG").toFloat(),
+                        fatG = item.getDouble("fatG").toFloat(),
                     )
                 )
             }
@@ -101,11 +101,8 @@ object NutritionAdviceContract {
         require(response.suggestions.size <= 5) { "TOO_MANY_SUGGESTIONS" }
         response.suggestions.forEach { suggestion ->
             require(suggestion.title.isNotBlank() && suggestion.reason.isNotBlank()) { "INVALID_SUGGESTION" }
-            require(suggestion.estimatedKcal == null || suggestion.estimatedKcal > 0) { "INVALID_KCAL" }
-            require(listOf(suggestion.proteinG, suggestion.carbsG, suggestion.fatG).all { it == null || (it >= 0f && it.isFinite()) }) { "INVALID_MACROS" }
+            require(suggestion.estimatedKcal > 0) { "INVALID_KCAL" }
+            require(listOf(suggestion.proteinG, suggestion.carbsG, suggestion.fatG).all { it >= 0f && it.isFinite() }) { "INVALID_MACROS" }
         }
     }
-
-    private fun JSONObject.optIntOrNull(key: String): Int? = if (isNull(key)) null else getInt(key)
-    private fun JSONObject.optDoubleOrNull(key: String): Double? = if (isNull(key)) null else getDouble(key)
 }
