@@ -18,11 +18,20 @@
 
             <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:orientation="horizontal" android:gravity="center_vertical">
                 <ImageButton android:id="@+id/prevWeekButton" android:layout_width="40dp" android:layout_height="40dp" android:background="@android:color/transparent" android:padding="8dp" android:src="@drawable/ic_arrow_back_white" android:contentDescription="Settimana precedente" app:tint="@color/text_primary" />
-                <TextView android:id="@+id/weekRangeLabel" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="14 – 20 Settembre 2026" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="15sp" />
+                <TextView android:id="@+id/weekRangeLabel" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="15sp" />
                 <ImageButton android:id="@+id/nextWeekButton" android:layout_width="40dp" android:layout_height="40dp" android:background="@android:color/transparent" android:padding="8dp" android:rotation="180" android:src="@drawable/ic_arrow_back_white" android:contentDescription="Settimana successiva" app:tint="@color/text_primary" />
                 <ImageView android:id="@+id/shoppingButton" android:layout_width="32dp" android:layout_height="32dp" android:layout_marginStart="@dimen/space_4" android:padding="4dp" android:src="@drawable/ic_cart" android:contentDescription="Lista della spesa" />
                 <ImageView android:id="@+id/cheatButton" android:layout_width="32dp" android:layout_height="32dp" android:layout_marginStart="@dimen/space_4" android:padding="4dp" android:src="@drawable/ic_add_circle" android:contentDescription="Registra sgarro" />
             </LinearLayout>
+
+            <TextView
+                android:id="@+id/planVersionLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:textColor="@color/text_muted"
+                android:textSize="12sp"
+                android:visibility="gone" />
 
             <com.myfitai.app.ui.widgets.WeekDaySelectorView
                 android:id="@+id/weekDaySelector"
@@ -30,28 +39,43 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_8" />
 
-            <com.myfitai.app.ui.widgets.MealPlanRowView android:id="@+id/mealBreakfast" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_16" />
-            <com.myfitai.app.ui.widgets.MealPlanRowView android:id="@+id/mealSnack" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" />
-            <com.myfitai.app.ui.widgets.MealPlanRowView android:id="@+id/mealLunch" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" />
-            <com.myfitai.app.ui.widgets.MealPlanRowView android:id="@+id/mealPreworkout" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" />
-            <com.myfitai.app.ui.widgets.MealPlanRowView android:id="@+id/mealDinner" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" />
+            <TextView
+                android:id="@+id/emptyPlanText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_24"
+                android:gravity="center"
+                android:padding="@dimen/space_20"
+                android:text="Nessun piano alimentare disponibile per questa settimana."
+                android:textColor="@color/text_secondary"
+                android:textSize="14sp"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:id="@+id/mealsContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_8"
+                android:orientation="vertical" />
 
             <com.myfitai.app.ui.widgets.SectionHeaderView
+                android:id="@+id/dailyTotalHeader"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_20"
                 android:text="Totale giornaliero" />
 
             <LinearLayout
+                android:id="@+id/dailyTotalContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_8"
                 android:orientation="horizontal"
                 android:gravity="center_vertical">
-                <TextView android:id="@+id/totalKcal" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="2.400 kcal" android:textColor="@color/accent_green" android:textStyle="bold" android:textSize="15sp" />
-                <TextView android:id="@+id/totalProtein" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="@dimen/space_8" android:text="P 159g" android:textColor="@color/accent_orange" android:textStyle="bold" android:textSize="13sp" />
-                <TextView android:id="@+id/totalCarbs" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="@dimen/space_8" android:text="C 271g" android:textColor="@color/accent_blue" android:textStyle="bold" android:textSize="13sp" />
-                <TextView android:id="@+id/totalFat" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="@dimen/space_8" android:text="F 69g" android:textColor="@color/accent_purple" android:textStyle="bold" android:textSize="13sp" />
+                <TextView android:id="@+id/totalKcal" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textColor="@color/accent_green" android:textStyle="bold" android:textSize="15sp" />
+                <TextView android:id="@+id/totalProtein" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="@dimen/space_8" android:textColor="@color/accent_orange" android:textStyle="bold" android:textSize="13sp" />
+                <TextView android:id="@+id/totalCarbs" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="@dimen/space_8" android:textColor="@color/accent_blue" android:textStyle="bold" android:textSize="13sp" />
+                <TextView android:id="@+id/totalFat" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="@dimen/space_8" android:textColor="@color/accent_purple" android:textStyle="bold" android:textSize="13sp" />
             </LinearLayout>
         </LinearLayout>
     </ScrollView>
