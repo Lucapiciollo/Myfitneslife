@@ -5,6 +5,7 @@ import android.view.View
 import android.view.WindowManager
 import android.widget.TextView
 import android.widget.Toast
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.materialswitch.MaterialSwitch
 import com.google.android.material.textfield.TextInputEditText
 import com.myfitai.app.R
@@ -13,6 +14,7 @@ import com.myfitai.app.ai.AiSettingsStore
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.security.SecureGeminiKeyStore
 import com.myfitai.app.security.SecureOpenAiKeyStore
+import com.myfitai.app.ui.widgets.SettingRowView
 
 class SettingsActivity : BaseShellActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -87,7 +89,22 @@ class SettingsActivity : BaseShellActivity() {
             render()
         }
 
-        render()
+        findViewById<View>(R.id.rowProfile).setOnClickListener { go(ProfileActivity::class.java) }
+        findViewById<View>(R.id.rowFoodPreferences).setOnClickListener { go(ProfileEditActivity::class.java) }
+        findViewById<SettingRowView>(R.id.rowUnits).apply {
+            setTrailingBadge("Metrico", R.color.text_secondary)
+            isClickable = false
+            isFocusable = false
+        }
+        findViewById<View>(R.id.rowPrivacy).setOnClickListener {
+            MaterialAlertDialogBuilder(this)
+                .setTitle("Privacy e dati")
+                .setMessage("I dati del profilo restano nello storage locale dell'app. I backup Android sono disabilitati e le chiavi IA sono protette tramite Android Keystore. L'export viene condiviso solo quando lo richiedi esplicitamente.")
+                .setPositiveButton("OK", null)
+                .show()
+        }
         findViewById<View>(R.id.rowExport).setOnClickListener { go(ExportActivity::class.java) }
+
+        render()
     }
 }
