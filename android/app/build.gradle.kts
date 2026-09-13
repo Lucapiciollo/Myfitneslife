@@ -10,6 +10,10 @@ android {
     namespace = "com.myfitai.app"
     compileSdk = 36
 
+    sourceSets {
+        getByName("androidTest").assets.srcDir("$projectDir/schemas")
+    }
+
     defaultConfig {
         applicationId = "com.myfitai.app"
         minSdk = 26
@@ -48,6 +52,11 @@ configurations.configureEach {
         "org.jetbrains.kotlin:kotlin-stdlib:2.3.21",
         "org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.3.21",
         "org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.3.21",
+        "org.jetbrains.kotlinx:kotlinx-serialization-bom:1.8.1",
+        "org.jetbrains.kotlinx:kotlinx-serialization-core:1.8.1",
+        "org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:1.8.1",
+        "org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1",
+        "org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.8.1",
     )
 }
 
@@ -71,5 +80,6 @@ dependencies {
     androidTestImplementation("androidx.test:core:1.6.1")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test:rules:1.6.1")
     androidTestImplementation("androidx.room:room-testing:$roomVersion")
 }

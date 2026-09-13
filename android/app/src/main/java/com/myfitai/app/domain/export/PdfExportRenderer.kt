@@ -74,6 +74,8 @@ internal object PdfExportRenderer {
     fun writeProfileReport(file: File, input: ProfileReportInput) {
         val document = PdfDocument()
         var pageNumber = 1
+        val weightDelta = trendDelta(input.weightTrend)
+        val waistDelta = trendDelta(input.waistTrend)
 
         // 1. Riepilogo profilo
         run {
@@ -86,8 +88,6 @@ internal object PdfExportRenderer {
             text(canvas, "Aggiornato al ${formatDate(LocalDate.now())}", 58f, 208f, 9.5f, MUTED)
             text(canvas, input.profile.goal?.uppercase(Locale.ITALIAN) ?: "OBIETTIVO NON IMPOSTATO", 537f, 183f, 9.5f, ACCENT, true, alignRight = true)
 
-            val weightDelta = trendDelta(input.weightTrend)
-            val waistDelta = trendDelta(input.waistTrend)
             drawMetricCard(canvas, 40f, 248f, 247f, 90f, "PESO", formatKg(input.latestBia?.weightKg ?: input.profile.currentWeightKg), weightDelta?.let { "${formatSigned(it)} kg nel periodo" }, ACCENT)
             drawMetricCard(canvas, 308f, 248f, 247f, 90f, "MASSA GRASSA", formatPercent(input.latestBia?.bodyFatPercent), null, ACCENT)
             drawMetricCard(canvas, 40f, 358f, 247f, 90f, "MASSA MUSCOLARE", formatKg(input.latestBia?.muscleMassKg), null, ACCENT_2)

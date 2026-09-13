@@ -22,7 +22,7 @@ class BodyProportionAnalysisService(
             systemPrompt = SYSTEM_PROMPT,
             userPrompt = buildPrompt(report),
             schemaName = "myfitai_body_proportion_analysis_v1",
-            jsonSchema = SCHEMA,
+            schemaJson = SCHEMA,
         )
         val response = aiRuntime.execute(
             request = request,
