@@ -15,6 +15,7 @@ import com.myfitai.app.domain.calculation.ProfileCalculationService
 import kotlinx.coroutines.flow.first
 import java.time.LocalDate
 import java.time.ZoneId
+import java.util.Locale
 
 class NutritionPlanGenerationService(
     private val aiRuntime: AiRuntimeService,
@@ -26,6 +27,7 @@ class NutritionPlanGenerationService(
 ) {
     sealed class GenerationException(message: String) : Exception(message) {
         class NeedsInput(val fields: List<String>) : GenerationException("NEEDS_INPUT: ${fields.joinToString()}")
+        class PastWeek : GenerationException("PAST_WEEK_READ_ONLY")
         class InvalidAiOutput(message: String) : GenerationException(message)
     }
 
@@ -39,6 +41,8 @@ class NutritionPlanGenerationService(
 
     suspend fun generateWeek(weekStart: LocalDate): Result {
         val monday = weekStart.minusDays((weekStart.dayOfWeek.value - 1).toLong())
+        if (monday.plusDays(6).isBefore(LocalDate.now())) throw GenerationException.PastWeek()
+
         val profileId = activeProfileStore.currentIdOrNull() ?: throw GenerationException.NeedsInput(listOf("profilo attivo"))
         val profile = profiles.get(profileId) ?: throw GenerationException.NeedsInput(listOf("profilo"))
         val snapshot = calculations.activeProfileSnapshot() ?: throw GenerationException.NeedsInput(listOf("dati profilo"))
@@ -144,13 +148,13 @@ class NutritionPlanGenerationService(
     ): String = buildString {
         appendLine("Generate the nutrition plan for the week starting ${monday.toEpochDay()} ($monday).")
         appendLine("The app-calculated DAILY targets are authoritative and must be respected within ±3% for every day:")
-        appendLine("kcal=${targets.kcal.toInt()}, proteinG=${"%.1f".format(targets.proteinG)}, carbsG=${"%.1f".format(targets.carbsG)}, fatG=${"%.1f".format(targets.fatG)}")
+        appendLine("kcal=${targets.kcal.toInt()}, proteinG=${String.format(Locale.US, "%.1f", targets.proteinG)}, carbsG=${String.format(Locale.US, "%.1f", targets.carbsG)}, fatG=${String.format(Locale.US, "%.1f", targets.fatG)}")
         appendLine("Profile goal: ${profile.goal ?: "not specified"}")
         appendLine("Activity: ${profile.activityLevel ?: "not specified"}")
         appendLine("Wake minutes: ${profile.wakeTimeMinutes ?: "not specified"}; sleep minutes: ${profile.sleepTimeMinutes ?: "not specified"}")
         appendLine("Dietary preferences: ${profile.dietaryPreferencesJson ?: "none specified"}")
         appendLine("Planned workouts this week:")
-        if (workoutContext.isEmpty()) appendLine("none") else workoutContext.forEach(::appendLine)
+        if (workoutContext.isEmpty()) appendLine("none") else workoutContext.forEach { appendLine(it) }
         appendLine("Use practical foods and explicit quantities. Count oils, dressings and caloric drinks. displayDose must be understandable to a person while quantity+unit remain numeric/structured.")
         appendLine("Use weightState to clarify raw/cooked/drained state where relevant and nutritionConfidence to express estimate quality.")
         appendLine("Prefer seasonal variety when compatible with preferences and targets. Do not invent allergies, intolerances or medical diagnoses.")
