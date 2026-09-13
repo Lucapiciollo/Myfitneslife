@@ -23,7 +23,7 @@ import com.myfitai.app.data.local.entity.*
         CheatEntryEntity::class,
         WeeklyReviewEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 abstract class MyFitAiDatabase : RoomDatabase() {
@@ -96,5 +96,13 @@ object DatabaseMigrations {
         }
     }
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3)
+    /** V4 aggiunge integrazione nutrizionale e nota idratazione per ciascun giorno del piano. */
+    val MIGRATION_3_4 = object : Migration(3, 4) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE meal_plan_days ADD COLUMN supplementsJson TEXT")
+            db.execSQL("ALTER TABLE meal_plan_days ADD COLUMN hydrationNote TEXT")
+        }
+    }
+
+    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
 }
