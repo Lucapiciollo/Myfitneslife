@@ -36,6 +36,7 @@ class WorkoutsActivity : BaseShellActivity() {
     private var selectedDayIndex: Int = (LocalDate.now().dayOfWeek.value - 1).coerceIn(0, 6)
     private val zone: ZoneId = ZoneId.systemDefault()
     private val dayFormatter = DateTimeFormatter.ofPattern("EEE d MMM", Locale.ITALIAN)
+    private val weekFormatter = DateTimeFormatter.ofPattern("d MMM", Locale.ITALIAN)
     private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm", Locale.ITALIAN)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -43,6 +44,7 @@ class WorkoutsActivity : BaseShellActivity() {
         setContentView(R.layout.activity_workouts)
         bindBottom(BottomNavBinder.Tab.HOME)
         bindBack()
+        bindWeekNavigation()
         bindWeek()
         findViewById<android.view.View>(R.id.addWorkoutButton).setOnClickListener {
             go(NewWorkoutActivity::class.java)
@@ -50,7 +52,21 @@ class WorkoutsActivity : BaseShellActivity() {
         observeData()
     }
 
+    private fun bindWeekNavigation() {
+        findViewById<android.view.View>(R.id.previousWeekButton).setOnClickListener {
+            weekStart = weekStart.minusWeeks(1)
+            selectedDayIndex = 0
+            bindWeek()
+        }
+        findViewById<android.view.View>(R.id.nextWeekButton).setOnClickListener {
+            weekStart = weekStart.plusWeeks(1)
+            selectedDayIndex = 0
+            bindWeek()
+        }
+    }
+
     private fun bindWeek() {
+        findViewById<TextView>(R.id.weekLabel).text = "${weekStart.format(weekFormatter)} - ${weekStart.plusDays(6).format(weekFormatter)}"
         val days = (0..6).map { offset ->
             val date = weekStart.plusDays(offset.toLong())
             WeekDaySelectorView.Day(
@@ -123,9 +139,7 @@ class WorkoutsActivity : BaseShellActivity() {
             if (totalMinutes > 0) append(" · $totalMinutes min")
         }
 
-        dayItems.forEach { workout ->
-            container.addView(createWorkoutRow(workout))
-        }
+        dayItems.forEach { workout -> container.addView(createWorkoutRow(workout)) }
     }
 
     private fun createWorkoutRow(workout: WorkoutEntity): WorkoutRowView = WorkoutRowView(this).apply {
@@ -138,20 +152,8 @@ class WorkoutsActivity : BaseShellActivity() {
             workout.notes?.takeIf { it.isNotBlank() }?.let { add(it) }
         }.joinToString(" · ")
         setSubtitle(subtitle.ifBlank { if (workout.isRestDay) "Giornata di recupero" else "Allenamento" })
-        if (workout.isRestDay) {
-            setRestDay()
-        } else {
-            setPhoto(
-                when (workout.type.uppercase(Locale.ROOT)) {
-                    "CARDIO" -> R.drawable.img_workout_cardio
-                    else -> R.drawable.img_workout_weights
-                }
-            )
-        }
-        layoutParams = LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT,
-        ).apply { bottomMargin = dp(8) }
+        if (workout.isRestDay) setRestDay() else setPhoto(if (workout.type.equals("CARDIO", true)) R.drawable.img_workout_cardio else R.drawable.img_workout_weights)
+        layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(8) }
         isLongClickable = true
         setOnLongClickListener {
             confirmDelete(workout)
@@ -168,8 +170,7 @@ class WorkoutsActivity : BaseShellActivity() {
             .show()
     }
 
-    private fun workoutDate(value: WorkoutEntity): LocalDate =
-        Instant.ofEpochMilli(value.startedAtEpochMillis).atZone(zone).toLocalDate()
+    private fun workoutDate(value: WorkoutEntity): LocalDate = Instant.ofEpochMilli(value.startedAtEpochMillis).atZone(zone).toLocalDate()
 
     private fun typeLabel(type: String): String = when (type.uppercase(Locale.ROOT)) {
         "PESI" -> "Pesi"
