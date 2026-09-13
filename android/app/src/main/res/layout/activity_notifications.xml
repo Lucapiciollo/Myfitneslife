@@ -8,7 +8,7 @@
         android:layout_height="match_parent"
         android:scaleType="centerCrop"
         android:src="@drawable/img_notification_background"
-        android:contentDescription="Sfondo schermata di blocco" />
+        android:contentDescription="Sfondo promemoria" />
 
     <View
         android:layout_width="match_parent"
@@ -22,7 +22,15 @@
         android:padding="@dimen/space_20">
 
         <LinearLayout android:layout_width="match_parent" android:layout_height="40dp" android:gravity="center_vertical">
-            <TextView android:id="@+id/backButton" android:layout_width="40dp" android:layout_height="40dp" android:gravity="center" android:text="‹" android:textSize="28sp" android:textColor="@color/white" />
+            <ImageButton
+                android:id="@+id/backButton"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Indietro"
+                android:padding="8dp"
+                android:src="@drawable/ic_arrow_back"
+                app:tint="@color/white" />
         </LinearLayout>
 
         <ImageView
@@ -34,19 +42,21 @@
             android:importantForAccessibility="no" />
 
         <TextView
+            android:id="@+id/mainClock"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/space_8"
             android:gravity="center"
-            android:text="12:15"
+            android:text="--:--"
             android:textColor="@color/white"
             android:textSize="58sp" />
 
         <TextView
+            android:id="@+id/mainDate"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center"
-            android:text="Lun 14 Settembre"
+            android:text="—"
             android:textColor="@color/white"
             android:textSize="15sp" />
 
@@ -78,34 +88,37 @@
                     android:id="@+id/notificationTime"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="12:15"
+                    android:text="--:--"
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
             </LinearLayout>
 
             <TextView
+                android:id="@+id/reminderTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_8"
-                android:text="Tra 15 minuti: Pranzo"
+                android:text="Promemoria pasto"
                 android:textColor="@color/text_primary"
                 android:textStyle="bold"
                 android:textSize="14sp" />
             <TextView
+                android:id="@+id/reminderText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_2"
-                android:text="Riso basmati, pollo e verdure 💪"
+                android:text="Apri il piano per i dettagli"
                 android:textColor="@color/text_secondary"
                 android:textSize="13sp" />
 
             <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/mealImage"
                 android:layout_width="match_parent"
                 android:layout_height="170dp"
                 android:layout_marginTop="@dimen/space_12"
                 android:scaleType="centerCrop"
                 android:src="@drawable/img_meal_lunch"
-                android:contentDescription="Foto pasto"
+                android:contentDescription="Immagine pasto"
                 app:shapeAppearanceOverlay="@style/ShapeAppearance.MyFitAI.Thumbnail" />
         </LinearLayout>
 
