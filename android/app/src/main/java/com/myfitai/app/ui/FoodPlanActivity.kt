@@ -1,11 +1,13 @@
 package com.myfitai.app.ui
 
+import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -21,6 +23,7 @@ import com.myfitai.app.ui.widgets.MealPlanRowView
 import com.myfitai.app.ui.widgets.WeekDaySelectorView
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -34,6 +37,10 @@ class FoodPlanActivity : BaseShellActivity() {
             generationService = data.nutritionPlanGenerationService,
             notificationScheduler = data.notificationScheduler,
         )
+    }
+
+    private val mealAlternativeLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) recreate()
     }
 
     private val weekDaySelector by lazy { findViewById<WeekDaySelectorView>(R.id.weekDaySelector) }
@@ -101,7 +108,7 @@ class FoodPlanActivity : BaseShellActivity() {
         }
 
         renderGeneration(state)
-        renderMeals(day)
+        renderMeals(state.weekStart, day)
         renderTotals(day)
     }
 
@@ -130,16 +137,21 @@ class FoodPlanActivity : BaseShellActivity() {
         status.text = message.orEmpty()
     }
 
-    private fun renderMeals(day: FoodPlanDay?) {
+    private fun renderMeals(weekStart: LocalDate, day: FoodPlanDay?) {
         val container = findViewById<LinearLayout>(R.id.mealsContainer)
         container.removeAllViews()
         day?.meals?.sortedBy { it.sortOrder }?.forEach { meal ->
+            val changeEnabled = canChangeMeal(day.dateEpochDay, meal.timeMinutes) && meal.kcal != null
             val row = MealPlanRowView(this).apply {
                 setTitle(displayMealType(meal.type))
                 setKcal(meal.kcal?.let { "$it kcal" } ?: "—")
                 setDescription(meal.title)
                 setImage(imageFor(meal))
                 setOnClickListener { openMeal(meal.id) }
+                setChangeEnabled(changeEnabled)
+                if (changeEnabled) {
+                    setOnChangeClickListener { openMealAlternatives(weekStart, day, meal) }
+                }
                 contentDescription = "${displayMealType(meal.type)}: ${meal.title}"
             }
             container.addView(
@@ -176,6 +188,27 @@ class FoodPlanActivity : BaseShellActivity() {
 
     private fun openMeal(mealId: Long) {
         startActivity(Intent(this, MealDetailActivity::class.java).putExtra(MealDetailActivity.EXTRA_MEAL_ID, mealId))
+    }
+
+    private fun openMealAlternatives(weekStart: LocalDate, day: FoodPlanDay, meal: FoodMeal) {
+        mealAlternativeLauncher.launch(
+            Intent(this, MealAlternativeActivity::class.java)
+                .putExtra(MealAlternativeActivity.EXTRA_WEEK_START_EPOCH_DAY, weekStart.toEpochDay())
+                .putExtra(MealAlternativeActivity.EXTRA_DAY_EPOCH_DAY, day.dateEpochDay)
+                .putExtra(MealAlternativeActivity.EXTRA_MEAL_ID, meal.id)
+                .putExtra(MealAlternativeActivity.EXTRA_MEAL_TITLE, meal.title)
+                .putExtra(MealAlternativeActivity.EXTRA_MEAL_TYPE, displayMealType(meal.type))
+                .putExtra(MealAlternativeActivity.EXTRA_MEAL_KCAL, meal.kcal ?: -1)
+        )
+    }
+
+    private fun canChangeMeal(dayEpochDay: Long, timeMinutes: Int?): Boolean {
+        val date = LocalDate.ofEpochDay(dayEpochDay)
+        val today = LocalDate.now()
+        if (date.isBefore(today)) return false
+        if (date.isAfter(today) || timeMinutes == null) return true
+        val now = LocalTime.now().let { it.hour * 60 + it.minute }
+        return timeMinutes > now
     }
 
     private fun imageFor(meal: FoodMeal): Int = when (meal.type.trim().lowercase(Locale.ROOT)) {
