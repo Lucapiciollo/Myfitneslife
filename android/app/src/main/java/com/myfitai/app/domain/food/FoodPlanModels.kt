@@ -44,6 +44,8 @@ data class FoodSupplement(
     val timeMinutes: Int?,
     val kcal: Int,
     val proteinG: Float,
+    val carbsG: Float,
+    val fatG: Float,
     val notes: String?,
 )
 
