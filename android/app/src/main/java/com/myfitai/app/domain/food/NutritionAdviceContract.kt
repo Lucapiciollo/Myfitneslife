@@ -2,7 +2,7 @@ package com.myfitai.app.domain.food
 
 import org.json.JSONObject
 
-/** Canonical response contract for the strictly nutrition-scoped advice agent. */
+/** Canonical compact response contract for the strictly nutrition-scoped advice agent. */
 object NutritionAdviceContract {
     const val SCHEMA_NAME = "myfitai_nutrition_advice_v1"
 
@@ -16,7 +16,7 @@ object NutritionAdviceContract {
             "answer":{"type":"string"},
             "suggestions":{
               "type":"array",
-              "maxItems":5,
+              "maxItems":3,
               "items":{
                 "type":"object",
                 "additionalProperties":false,
@@ -97,10 +97,12 @@ object NutritionAdviceContract {
             require(response.suggestions.isEmpty()) { "OUT_OF_SCOPE_WITH_SUGGESTIONS" }
             return@runCatching
         }
-        require(response.answer.isNotBlank()) { "EMPTY_NUTRITION_ANSWER" }
-        require(response.suggestions.size <= 5) { "TOO_MANY_SUGGESTIONS" }
+        require(response.answer.isNotBlank() && response.answer.length <= 180) { "INVALID_COMPACT_ANSWER" }
+        require(response.suggestions.size <= 3) { "TOO_MANY_SUGGESTIONS" }
+        require(response.assumptions.length <= 120) { "ASSUMPTIONS_TOO_LONG" }
         response.suggestions.forEach { suggestion ->
-            require(suggestion.title.isNotBlank() && suggestion.reason.isNotBlank()) { "INVALID_SUGGESTION" }
+            require(suggestion.title.isNotBlank() && suggestion.title.length <= 70) { "INVALID_SUGGESTION_TITLE" }
+            require(suggestion.reason.isNotBlank() && suggestion.reason.length <= 120) { "INVALID_SUGGESTION_REASON" }
             require(suggestion.estimatedKcal > 0) { "INVALID_KCAL" }
             require(listOf(suggestion.proteinG, suggestion.carbsG, suggestion.fatG).all { it >= 0f && it.isFinite() }) { "INVALID_MACROS" }
         }
