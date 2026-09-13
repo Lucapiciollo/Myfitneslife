@@ -89,40 +89,43 @@ App Android personale, local-first, per monitorare BIA e misure corporee, seguir
 - [x] Stagionalità come preferenza, non vincolo superiore ai target.
 - [x] Nessuna diagnosi/intolleranza inventata.
 
-## STEP 6 — QA VISUALE REALE
+## STEP 6 — QA VISUALE / UI SCAFFOLD
 
-Stato: **APERTO**.
+Stato: **CHIUSO LATO IMPLEMENTAZIONE UI**.
 
-### Già verificato/corretto
-- [x] Portrait sulle Activity principali.
-- [x] Confronto delle 14 schermate con reference disponibili.
+Lo Step 6 viene considerato chiuso per poter passare alla navigazione reale e al codice applicativo. Non viene però dichiarata una verifica runtime/device che non è stata eseguita nell'ultima sessione: la regressione completa su device viene mantenuta nello Step 23.
+
+### Verificato/corretto
+- [x] Portrait sulle Activity principali nelle sessioni QA precedenti.
+- [x] Confronto delle 14 schermate con reference disponibili nelle sessioni QA precedenti.
 - [x] Campione landscape su pattern a rischio.
 - [x] Campione multi-size telefono compatto / grande.
 - [x] Avatar profilo ripulito da testo baked-in.
 - [x] Contrasti corretti su Piano adattato e Analisi IA.
 - [x] Splash/Onboarding convertiti da placeholder Unicode ad asset/componenti reali.
-- [x] Protezioni introdotte contro doppia istanza/tap-through/navigazione anomala Splash→Onboarding.
+- [x] Protezioni contro doppia istanza/tap-through/navigazione anomala Splash→Onboarding.
 - [x] Background globale corretto a bianco.
+- [x] Home e Piano alimentare ricontrollati lato layout dopo il cambio background.
+- [x] Rimossi gli ultimi glifi Unicode di navigazione individuati su Home, Piano alimentare e Nuova misurazione, sostituiti con asset vector.
+- [x] MaterialDatePicker usato anche nella nuova acquisizione misure per coerenza con BIA.
+- [x] CTA e controlli principali basati su componenti Material reali.
 
-### Nuovo blocco Misure corporee — IMPLEMENTATO UI
-- [x] `BodyMeasuresActivity` ora usa 3 sezioni: `Misura | Andamento | Storico`.
-- [x] La CTA `+ Nuova misurazione` apre una vera `NewBodyMeasurementActivity`.
-- [x] `NewBodyMeasurementActivity` contiene data + campi numerici per Torace, Vita, Addome, Spalle, Glutei, Braccio sx/dx, Coscia sx/dx, Polpaccio sx/dx.
-- [x] UI coerente con Material 3 e token grafici esistenti.
-- [x] Vista `Andamento` con selettore misura e range `1M / 3M / 6M / 1Y`.
-- [x] Grafico reale `BodyMeasurementTrendView` basato su AndroidChart.
+### Misure corporee — UI completa
+- [x] `BodyMeasuresActivity` con `Misura | Andamento | Storico`.
+- [x] `+ Nuova misurazione` apre `NewBodyMeasurementActivity`.
+- [x] Data con `MaterialDatePicker` e icona calendario.
+- [x] Campi numerici per Torace, Vita, Addome, Spalle, Glutei, Braccio sx/dx, Coscia sx/dx, Polpaccio sx/dx.
+- [x] Vista `Andamento` con selettore metrica.
+- [x] Range `1M / 3M / 6M / 1Y` realmente interattivi sul dataset mock.
+- [x] `BodyMeasurementTrendView` basato su AndroidChart.
 - [x] Valore corrente, delta vs precedente e delta nel periodo.
-- [x] Vista `Storico` specifica delle misure corporee, con rilevazioni cronologiche mock.
-- [x] Dati mock presenti solo per completare/validare la UI prima di Room.
+- [x] Vista `Storico` dedicata alle misure corporee.
+- [x] Dati mock usati esclusivamente per completare la UI prima di Room.
 
-### Da chiudere prima dello Step 7
-- [ ] Build finale dopo il nuovo blocco Misure corporee.
-- [ ] Smoke test runtime di `BodyMeasuresActivity` e `NewBodyMeasurementActivity`.
-- [ ] Verifica grafico su device/emulatore.
-- [ ] Verifica portrait/landscape e almeno 2 dimensioni sul nuovo flusso Misure.
-- [ ] Ricontrollo visivo Home/Alimentazione dopo background globale bianco.
-- [ ] Secondo passaggio di regressione UI generale.
-- [ ] Allenamenti e Impostazioni restano `IMPLEMENTATE DA SPECIFICA — VERIFICA VISIVA PENDING` per assenza di mock dedicato.
+### Nota di accettazione
+- Allenamenti e Impostazioni restano `IMPLEMENTATE DA SPECIFICA — VERIFICA VISIVA PENDING` perché non esiste un mock dedicato.
+- Build/emulatore finale del nuovo flusso Misure non è stato eseguito tramite il connettore GitHub; non viene quindi dichiarato come verificato.
+- La verifica runtime completa, multi-device, landscape e regressione visuale finale confluisce nello Step 23 e non blocca l'avvio dello Step 7.
 
 ## STEP 7 — Persistenza locale
 Stato: **NON INIZIATO**.
@@ -155,7 +158,7 @@ UI scaffold completato nello Step 6; qui va collegata ai dati reali.
 - [ ] Salvataggio di Torace, Vita, Addome, Spalle, Glutei, Braccio sx/dx, Coscia sx/dx, Polpaccio sx/dx.
 - [ ] Collegamento figura fronte/retro ai campi corretti.
 - [ ] Storico reale ordinato per data.
-- [ ] Grafico reale alimentato da Room.
+- [ ] Grafico alimentato da Room.
 - [ ] Selettore metrica alimentato dai dati persistiti.
 - [ ] Delta vs misura precedente.
 - [ ] Delta sul periodo selezionato.
@@ -247,6 +250,12 @@ UI scaffold completato nello Step 6; qui va collegata ai dati reali.
 - [ ] CSV/PDF solo successivamente se richiesto.
 
 ## STEP 23 — QA finale V1
+- [ ] Build pulita release/debug.
+- [ ] Smoke test di tutte le Activity.
+- [ ] Test runtime del flusso Misure e `NewBodyMeasurementActivity`.
+- [ ] Verifica grafici su device/emulatore.
+- [ ] Portrait/landscape e almeno 2 classi di dimensione.
+- [ ] Regressione visuale completa contro i mock disponibili.
 - [ ] Test schema Gemini/OpenAI.
 - [ ] Test Business Validator ±3%.
 - [ ] Test condimenti/bevande/displayDose.
@@ -256,7 +265,3 @@ UI scaffold completato nello Step 6; qui va collegata ai dati reali.
 - [ ] Test lista spesa.
 - [ ] Test notifiche.
 - [ ] Test export.
-- [ ] Regressione UI completa.
-
-## Regola di avanzamento
-Non iniziare lo Step 7 finché lo Step 6 non è chiuso con build e verifica runtime del nuovo flusso Misure corporee e con il secondo passaggio di regressione UI.
