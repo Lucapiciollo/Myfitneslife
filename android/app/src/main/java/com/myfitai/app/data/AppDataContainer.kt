@@ -11,6 +11,7 @@ import com.myfitai.app.domain.food.CheatAdjustmentService
 import com.myfitai.app.domain.food.NutritionPlanGenerationService
 import com.myfitai.app.domain.personalization.PersonalResponseService
 import com.myfitai.app.domain.review.WeeklyReviewService
+import com.myfitai.app.notifications.NotificationScheduler
 
 /**
  * Composition root del layer dati/app. Activity/ViewModel non devono conoscere i DAO.
@@ -74,6 +75,12 @@ class AppDataContainer private constructor(context: Context) {
         bia = biaRepository,
         bodyMeasurements = bodyMeasurementRepository,
         personalResponse = personalResponseService,
+        activeProfileStore = activeProfileStore,
+    )
+
+    val notificationScheduler = NotificationScheduler(
+        context = appContext,
+        plans = mealPlanRepository,
         activeProfileStore = activeProfileStore,
     )
 
