@@ -117,6 +117,8 @@ class FoodPlanViewModel(
                     val message = when (error) {
                         is NutritionPlanGenerationService.GenerationException.NeedsInput ->
                             "Completa prima: ${error.fields.joinToString()}"
+                        is NutritionPlanGenerationService.GenerationException.PastWeek ->
+                            "Le settimane concluse sono storico in sola lettura."
                         else -> error.message ?: "Generazione non riuscita"
                     }
                     generationState.value = GenerationState(error = message)
