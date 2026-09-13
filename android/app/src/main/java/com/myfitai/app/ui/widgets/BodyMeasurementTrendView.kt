@@ -48,9 +48,7 @@ class BodyMeasurementTrendView @JvmOverloads constructor(
         val dataSet = LineDataSet<EntryFloat>(entries, "measurement").apply {
             color = context.getColor(R.color.accent_green_dark)
             lineWidth = 2.4f
-            isDrawCircles = true
-            circleRadius = 3f
-            circleColor = context.getColor(R.color.accent_green)
+            isDrawCircles = false
             isDrawValues = false
             isHighlight = true
             lineMode = LineDataSet.Mode.CUBIC_BEZIER
