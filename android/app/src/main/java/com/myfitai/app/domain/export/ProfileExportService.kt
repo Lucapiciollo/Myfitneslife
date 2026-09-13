@@ -1,19 +1,31 @@
 package com.myfitai.app.domain.export
 
 import android.content.Context
-import android.graphics.Paint
-import android.graphics.pdf.PdfDocument
 import androidx.core.content.FileProvider
+import androidx.room.withTransaction
 import com.myfitai.app.data.local.MyFitAiDatabase
+import com.myfitai.app.data.local.entity.MealPlanEntity
 import com.myfitai.app.data.profile.ActiveProfileStore
+import com.myfitai.app.domain.body.BodyProportionEngine
+import com.myfitai.app.domain.calculation.LocalCalculationEngine
+import com.myfitai.app.domain.calculation.ProfileCalculationMapper
+import com.myfitai.app.domain.food.FoodIngredient
+import com.myfitai.app.domain.food.FoodMeal
+import com.myfitai.app.domain.food.FoodPlanDay
+import com.myfitai.app.domain.food.FoodPlanSnapshot
+import com.myfitai.app.domain.food.FoodPlanVersion
+import com.myfitai.app.domain.shopping.ShoppingListEngine
 import kotlinx.coroutines.flow.first
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
-import java.time.Instant
+import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.Period
 import java.time.format.DateTimeFormatter
+import java.time.temporal.TemporalAdjusters
+import java.util.Locale
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
@@ -22,7 +34,7 @@ class ProfileExportService(
     private val db: MyFitAiDatabase,
     private val activeProfileStore: ActiveProfileStore,
 ) {
-    enum class Format { JSON, CSV_ZIP, PDF }
+    enum class Format { JSON, CSV_ZIP, PDF, WEEKLY_PLAN_PDF }
     data class ExportedFile(val file: File, val mimeType: String)
 
     private val appContext = context.applicationContext
@@ -37,9 +49,90 @@ class ProfileExportService(
         val reviews = db.weeklyReviewDao().observeAll(profileId).first().sortedBy { it.weekStartEpochDay }
         val plans = db.mealPlanDao().observePlans(profileId).first().sortedBy { it.weekStartEpochDay }
 
+        if (format == Format.WEEKLY_PLAN_PDF) {
+            val currentWeekStart = LocalDate.now()
+                .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+                .toEpochDay()
+            val selectedPlan = plans.firstOrNull { it.weekStartEpochDay == currentWeekStart }
+                ?: plans.maxByOrNull { it.weekStartEpochDay }
+                ?: error("Nessun piano alimentare disponibile")
+            val snapshot = loadLatestSnapshot(selectedPlan) ?: error("Piano alimentare non disponibile")
+            val shopping = ShoppingListEngine.aggregate(snapshot)
+            val file = exportFile(profile.name, "dieta-settimanale", "pdf")
+            PdfExportRenderer.writeWeeklyPlanReport(file, profile.name, snapshot, shopping)
+            return ExportedFile(file, "application/pdf")
+        }
+
+        val root = buildCanonicalRoot(profileId, profile, bia, body, workouts, cheats, reviews, plans)
+
+        return when (format) {
+            Format.JSON -> writeJson(profile.name, root)
+            Format.CSV_ZIP -> writeCsvZip(profile.name, root)
+            Format.PDF -> {
+                val latestPlan = plans.maxByOrNull { it.weekStartEpochDay }?.let { loadLatestSnapshot(it) }
+                val latestBia = bia.lastOrNull()
+                val latestBody = body.lastOrNull()
+                val ageYears = profile.birthDateEpochDay?.let { epochDay ->
+                    val birth = LocalDate.ofEpochDay(epochDay)
+                    if (birth.isAfter(LocalDate.now())) null else Period.between(birth, LocalDate.now()).years
+                }
+                val calculation = LocalCalculationEngine.calculate(
+                    LocalCalculationEngine.Input(
+                        weightKg = (latestBia?.weightKg ?: profile.currentWeightKg)?.toDouble(),
+                        heightCm = profile.heightCm?.toDouble(),
+                        ageYears = ageYears,
+                        biologicalSex = biologicalSex(profile.biologicalSex),
+                        bodyFatPercent = latestBia?.bodyFatPercent?.toDouble(),
+                        activityLevel = ProfileCalculationMapper.activity(profile.activityLevel),
+                        goal = ProfileCalculationMapper.goal(profile.goal),
+                        waistCm = latestBody?.waistCm?.toDouble(),
+                    )
+                )
+                val file = exportFile(profile.name, "report-profilo", "pdf")
+                PdfExportRenderer.writeProfileReport(
+                    file,
+                    PdfExportRenderer.ProfileReportInput(
+                        profile = profile,
+                        latestBia = latestBia,
+                        latestBody = latestBody,
+                        calculation = calculation,
+                        proportions = BodyProportionEngine.analyze(latestBody, profile.heightCm),
+                        weightTrend = bia.mapNotNull { row -> row.weightKg?.let { row.measuredAtEpochMillis to it } },
+                        waistTrend = body.mapNotNull { row -> row.waistCm?.let { row.measuredAtEpochMillis to it } },
+                        biaCount = bia.size,
+                        bodyCount = body.size,
+                        workoutCount = workouts.size,
+                        cheatCount = cheats.size,
+                        reviewCount = reviews.size,
+                        planCount = plans.size,
+                        latestPlanTargetKcal = latestPlan?.version?.targetKcal,
+                        latestPlanTargetProteinG = latestPlan?.version?.targetProteinG,
+                        latestPlanTargetCarbsG = latestPlan?.version?.targetCarbsG,
+                        latestPlanTargetFatG = latestPlan?.version?.targetFatG,
+                    )
+                )
+                ExportedFile(file, "application/pdf")
+            }
+            Format.WEEKLY_PLAN_PDF -> error("Gestito prima del root export")
+        }
+    }
+
+    fun contentUri(file: File) = FileProvider.getUriForFile(appContext, "${appContext.packageName}.fileprovider", file)
+
+    private suspend fun buildCanonicalRoot(
+        profileId: Long,
+        profile: com.myfitai.app.data.local.entity.UserProfileEntity,
+        bia: List<com.myfitai.app.data.local.entity.BiaMeasurementEntity>,
+        body: List<com.myfitai.app.data.local.entity.BodyMeasurementEntity>,
+        workouts: List<com.myfitai.app.data.local.entity.WorkoutEntity>,
+        cheats: List<com.myfitai.app.data.local.entity.CheatEntryEntity>,
+        reviews: List<com.myfitai.app.data.local.entity.WeeklyReviewEntity>,
+        plans: List<MealPlanEntity>,
+    ): JSONObject {
         val root = JSONObject().apply {
             put("schema", "myfitai_profile_export_v1")
             put("exportedAtEpochMillis", System.currentTimeMillis())
+            put("profileId", profileId)
             put("profile", JSONObject().apply {
                 put("id", profile.id)
                 put("name", profile.name)
@@ -100,37 +193,98 @@ class ProfileExportService(
             planJson.put(JSONObject().apply { put("id", plan.id); put("weekStartEpochDay", plan.weekStartEpochDay); put("createdAtEpochMillis", plan.createdAtEpochMillis); put("status", plan.status); put("versions", versionsJson) })
         }
         root.put("mealPlans", planJson)
-
-        return when (format) {
-            Format.JSON -> writeJson(profile.name, root)
-            Format.CSV_ZIP -> writeCsvZip(profile.name, root)
-            Format.PDF -> writePdf(profile.name, bia.size, body.size, workouts.size, cheats.size, reviews.size, plans.size)
-        }
+        return root
     }
 
-    fun contentUri(file: File) = FileProvider.getUriForFile(appContext, "${appContext.packageName}.fileprovider", file)
+    private suspend fun loadLatestSnapshot(plan: MealPlanEntity): FoodPlanSnapshot? = db.withTransaction {
+        val dao = db.mealPlanDao()
+        val version = dao.getLatestVersion(plan.id) ?: return@withTransaction null
+        val days = dao.getDays(version.id).map { day ->
+            FoodPlanDay(
+                id = day.id,
+                dateEpochDay = day.dateEpochDay,
+                totalKcal = day.totalKcal,
+                proteinG = day.proteinG,
+                carbsG = day.carbsG,
+                fatG = day.fatG,
+                meals = dao.getMeals(day.id).map { meal ->
+                    FoodMeal(
+                        id = meal.id,
+                        dayId = meal.dayId,
+                        sortOrder = meal.sortOrder,
+                        type = meal.type,
+                        title = meal.title,
+                        timeMinutes = meal.timeMinutes,
+                        kcal = meal.kcal,
+                        proteinG = meal.proteinG,
+                        carbsG = meal.carbsG,
+                        fatG = meal.fatG,
+                        preparation = meal.preparation,
+                        ingredients = dao.getIngredients(meal.id).map { ingredient ->
+                            FoodIngredient(
+                                id = ingredient.id,
+                                mealId = ingredient.mealId,
+                                name = ingredient.name,
+                                quantity = ingredient.quantity,
+                                unit = ingredient.unit,
+                                displayDose = ingredient.displayDose,
+                                weightState = ingredient.weightState,
+                                nutritionConfidence = ingredient.nutritionConfidence,
+                                category = ingredient.category,
+                                sortOrder = ingredient.sortOrder,
+                            )
+                        },
+                    )
+                },
+            )
+        }
+        FoodPlanSnapshot(
+            planId = plan.id,
+            profileId = plan.profileId,
+            weekStartEpochDay = plan.weekStartEpochDay,
+            version = FoodPlanVersion(
+                id = version.id,
+                versionNumber = version.versionNumber,
+                createdAtEpochMillis = version.createdAtEpochMillis,
+                source = version.source,
+                reason = version.reason,
+                targetKcal = version.targetKcal,
+                targetProteinG = version.targetProteinG,
+                targetCarbsG = version.targetCarbsG,
+                targetFatG = version.targetFatG,
+                days = days,
+            ),
+        )
+    }
 
     private fun writeJson(name: String, root: JSONObject): ExportedFile {
-        val file = exportFile(name, "json")
+        val file = exportFile(name, "profilo", "json")
         file.writeText(root.toString(2))
         return ExportedFile(file, "application/json")
     }
 
     private fun writeCsvZip(name: String, root: JSONObject): ExportedFile {
-        val file = exportFile(name, "zip")
+        val file = exportFile(name, "dati", "zip")
         ZipOutputStream(FileOutputStream(file)).use { zip ->
             val tables = listOf("biaMeasurements", "bodyMeasurements", "workouts", "cheatEntries", "weeklyReviews")
             tables.forEach { key -> addCsv(zip, "$key.csv", root.getJSONArray(key)) }
             addCsv(zip, "profile.csv", JSONArray().put(root.getJSONObject("profile")))
-            zip.putNextEntry(ZipEntry("README.txt")); zip.write("MyFitAI CSV export. mealPlans are preserved completely in meal_plans.json because the hierarchy plan/version/day/meal/ingredient is not losslessly representable in one flat CSV.\n".toByteArray()); zip.closeEntry()
-            zip.putNextEntry(ZipEntry("meal_plans.json")); zip.write(root.getJSONArray("mealPlans").toString(2).toByteArray()); zip.closeEntry()
+            zip.putNextEntry(ZipEntry("README.txt"))
+            zip.write("MyFitAI CSV export. mealPlans are preserved completely in meal_plans.json because the hierarchy plan/version/day/meal/ingredient is not losslessly representable in one flat CSV.\n".toByteArray())
+            zip.closeEntry()
+            zip.putNextEntry(ZipEntry("meal_plans.json"))
+            zip.write(root.getJSONArray("mealPlans").toString(2).toByteArray())
+            zip.closeEntry()
         }
         return ExportedFile(file, "application/zip")
     }
 
     private fun addCsv(zip: ZipOutputStream, name: String, rows: JSONArray) {
         zip.putNextEntry(ZipEntry(name))
-        if (rows.length() == 0) { zip.closeEntry(); return }
+        if (rows.length() == 0) {
+            zip.closeEntry()
+            return
+        }
         val keys = rows.getJSONObject(0).keys().asSequence().toList()
         zip.write((keys.joinToString(",") + "\n").toByteArray())
         repeat(rows.length()) { index ->
@@ -140,20 +294,16 @@ class ProfileExportService(
         zip.closeEntry()
     }
 
-    private fun writePdf(name: String, bia: Int, body: Int, workouts: Int, cheats: Int, reviews: Int, plans: Int): ExportedFile {
-        val file = exportFile(name, "pdf")
-        val document = PdfDocument(); val page = document.startPage(PdfDocument.PageInfo.Builder(595, 842, 1).create())
-        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { textSize = 20f }; var y = 60f
-        page.canvas.drawText("MyFitAI — Riepilogo export", 40f, y, paint); y += 42f; paint.textSize = 13f
-        listOf("Profilo: $name", "Generato: ${Instant.now()}", "Rilevazioni BIA: $bia", "Misure corporee: $body", "Allenamenti/riposi: $workouts", "Sgarri registrati: $cheats", "Review settimanali: $reviews", "Settimane con piano: $plans", "", "Per analisi complete e ChatGPT usa l'export JSON, che conserva tutte le versioni dei piani.").forEach { line -> page.canvas.drawText(line, 40f, y, paint); y += 26f }
-        document.finishPage(page); FileOutputStream(file).use(document::writeTo); document.close()
-        return ExportedFile(file, "application/pdf")
+    private fun biologicalSex(value: String?): LocalCalculationEngine.BiologicalSex? = when (value?.trim()?.lowercase(Locale.ROOT)) {
+        "male", "m", "uomo", "maschio" -> LocalCalculationEngine.BiologicalSex.MALE
+        "female", "f", "donna", "femmina" -> LocalCalculationEngine.BiologicalSex.FEMALE
+        else -> null
     }
 
-    private fun exportFile(name: String, ext: String): File {
+    private fun exportFile(name: String, suffix: String, ext: String): File {
         val dir = File(appContext.cacheDir, "exports").apply { mkdirs() }
-        val safe = name.lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-').ifBlank { "profile" }
-        return File(dir, "myfitai-$safe-${DateTimeFormatter.BASIC_ISO_DATE.format(LocalDate.now())}.$ext")
+        val safe = name.lowercase(Locale.ROOT).replace(Regex("[^a-z0-9]+"), "-").trim('-').ifBlank { "profile" }
+        return File(dir, "myfitai-$safe-$suffix-${DateTimeFormatter.BASIC_ISO_DATE.format(LocalDate.now())}.$ext")
     }
 
     private fun csv(value: String) = "\"${value.replace("\"", "\"\"").replace("\r", " ").replace("\n", " ")}\""
