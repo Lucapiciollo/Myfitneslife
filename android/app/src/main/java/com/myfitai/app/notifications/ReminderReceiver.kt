@@ -14,7 +14,6 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.myfitai.app.R
 import com.myfitai.app.ui.MealDetailActivity
-import com.myfitai.app.ui.NotificationsActivity
 import com.myfitai.app.ui.WeeklyReviewActivity
 
 class ReminderReceiver : BroadcastReceiver() {
@@ -35,38 +34,25 @@ class ReminderReceiver : BroadcastReceiver() {
         val title = source.getStringExtra(EXTRA_MEAL_TITLE).orEmpty().ifBlank { "Apri il piano per i dettagli" }
         val profileId = source.getLongExtra(EXTRA_PROFILE_ID, -1L)
 
-        val openIntent = Intent(context, MealDetailActivity::class.java)
-            .putExtra(MealDetailActivity.EXTRA_MEAL_ID, mealId)
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         val openPending = PendingIntent.getActivity(
             context,
             stableCode("open:$mealId"),
-            openIntent,
+            Intent(context, MealDetailActivity::class.java)
+                .putExtra(MealDetailActivity.EXTRA_MEAL_ID, mealId)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
-        val fullIntent = Intent(context, NotificationsActivity::class.java).apply {
-            putExtra(EXTRA_MEAL_ID, mealId)
-            putExtra(EXTRA_MEAL_TYPE, type)
-            putExtra(EXTRA_MEAL_TITLE, title)
-            putExtra(EXTRA_PROFILE_ID, profileId)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-        }
-        val fullPending = PendingIntent.getActivity(
-            context,
-            stableCode("notification-screen:$mealId"),
-            fullIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
-
-        val snoozeIntent = Intent(context, ReminderReceiver::class.java).apply {
-            action = ACTION_SNOOZE
-            putExtras(source.extras ?: android.os.Bundle())
-        }
         val snoozePending = PendingIntent.getBroadcast(
             context,
             stableCode("snooze-action:$mealId"),
-            snoozeIntent,
+            Intent(context, ReminderReceiver::class.java).apply {
+                action = ACTION_SNOOZE
+                putExtra(EXTRA_MEAL_ID, mealId)
+                putExtra(EXTRA_MEAL_TYPE, type)
+                putExtra(EXTRA_MEAL_TITLE, title)
+                putExtra(EXTRA_PROFILE_ID, profileId)
+            },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
@@ -83,7 +69,6 @@ class ReminderReceiver : BroadcastReceiver() {
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .addAction(0, "Apri pasto", openPending)
             .addAction(0, "Posticipa 10 min", snoozePending)
-            .setDeleteIntent(fullPending)
             .build()
 
         NotificationManagerCompat.from(context).notify(stableCode("meal-notification:$mealId"), notification)
@@ -92,8 +77,7 @@ class ReminderReceiver : BroadcastReceiver() {
     private fun snooze(context: Context, source: Intent) {
         val mealId = source.getLongExtra(EXTRA_MEAL_ID, -1L)
         if (mealId <= 0L) return
-        val data = com.myfitai.app.data.AppDataContainer.get(context)
-        data.notificationScheduler.snoozeMeal(
+        com.myfitai.app.data.AppDataContainer.get(context).notificationScheduler.snoozeMeal(
             mealId = mealId,
             mealType = source.getStringExtra(EXTRA_MEAL_TYPE).orEmpty(),
             mealTitle = source.getStringExtra(EXTRA_MEAL_TITLE).orEmpty(),
