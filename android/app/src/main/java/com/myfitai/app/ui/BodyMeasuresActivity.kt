@@ -11,10 +11,13 @@ import androidx.activity.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.card.MaterialCardView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.data.local.entity.BodyMeasurementEntity
+import com.myfitai.app.domain.body.BodyProportionEngine
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.ui.body.BodyMeasurementsViewModel
 import com.myfitai.app.ui.widgets.BodyMeasurementTrendView
@@ -54,6 +57,8 @@ class BodyMeasuresActivity : BaseShellActivity() {
     private var measurements: List<BodyMeasurementEntity> = emptyList()
     private var selectedMetric: Metric = Metric.WAIST
     private var selectedRangeIndex = 2
+    private var profileHeightCm: Float? = null
+    private var latestProportionReport: BodyProportionEngine.Report? = null
     private val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.ITALIAN)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -66,7 +71,17 @@ class BodyMeasuresActivity : BaseShellActivity() {
         bindTabs()
         bindMetricSelector()
         bindRangeSelector()
+        ensureProportionCard()
+        loadProfileHeight()
         observeData()
+    }
+
+    private fun loadProfileHeight() {
+        lifecycleScope.launch {
+            val id = data.activeProfileStore.currentIdOrNull() ?: return@launch
+            profileHeightCm = data.userProfileRepository.get(id)?.heightCm
+            renderProportions()
+        }
     }
 
     private fun bindTabs() {
@@ -112,6 +127,7 @@ class BodyMeasuresActivity : BaseShellActivity() {
                         renderCurrent()
                         renderTrend()
                         renderHistory()
+                        renderProportions()
                     }
                 }
                 launch {
@@ -150,6 +166,126 @@ class BodyMeasuresActivity : BaseShellActivity() {
                 setLabel(label)
                 setValue(value?.let(::formatCm) ?: "—")
             }
+        }
+    }
+
+    private fun ensureProportionCard() {
+        val container = findViewById<LinearLayout>(R.id.measureContent)
+        if (container.findViewWithTag<View>(PROPORTION_CARD_TAG) != null) return
+
+        val card = MaterialCardView(this).apply {
+            tag = PROPORTION_CARD_TAG
+            radius = dp(16).toFloat()
+            cardElevation = 0f
+            setCardBackgroundColor(getColor(R.color.surface_primary))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { topMargin = dp(16) }
+        }
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16), dp(16), dp(16), dp(16))
+        }
+        content.addView(TextView(this).apply {
+            text = "Proporzioni corporee"
+            setTextColor(getColor(R.color.text_primary))
+            textSize = 17f
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+        })
+        content.addView(TextView(this).apply {
+            id = View.generateViewId().also { proportionStatusId = it }
+            setTextColor(getColor(R.color.text_primary))
+            textSize = 15f
+            setPadding(0, dp(10), 0, 0)
+        })
+        content.addView(TextView(this).apply {
+            id = View.generateViewId().also { proportionDetailsId = it }
+            setTextColor(getColor(R.color.text_secondary))
+            textSize = 13f
+            setPadding(0, dp(8), 0, 0)
+        })
+        content.addView(TextView(this).apply {
+            id = View.generateViewId().also { proportionNoteId = it }
+            setTextColor(getColor(R.color.text_muted))
+            textSize = 11f
+            setPadding(0, dp(8), 0, 0)
+        })
+        content.addView(MaterialButton(this).apply {
+            id = View.generateViewId().also { proportionAiButtonId = it }
+            text = "Interpreta con IA"
+            isAllCaps = false
+            setOnClickListener { analyzeProportionsWithAi(this) }
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dp(48),
+            ).apply { topMargin = dp(12) }
+        })
+        card.addView(content)
+        container.addView(card)
+    }
+
+    private fun renderProportions() {
+        if (proportionStatusId == View.NO_ID) return
+        val report = BodyProportionEngine.analyze(measurements.firstOrNull(), profileHeightCm)
+        latestProportionReport = report
+
+        findViewById<TextView>(proportionStatusId).text = when (report.status) {
+            BodyProportionEngine.BalanceStatus.BALANCED -> "Equilibrio destra/sinistra: buono"
+            BodyProportionEngine.BalanceStatus.MILD_IMBALANCE -> "Lieve differenza destra/sinistra"
+            BodyProportionEngine.BalanceStatus.NOTICEABLE_IMBALANCE -> "Differenza destra/sinistra da monitorare"
+            BodyProportionEngine.BalanceStatus.INSUFFICIENT_DATA -> "Dati insufficienti per valutare l'equilibrio"
+        }
+
+        val details = buildList {
+            report.asymmetries.forEach { a ->
+                add("${a.label}: ${formatPercent(a.percent)}${a.largerSide?.let { " · lato $it maggiore" } ?: ""}")
+            }
+            report.ratios.forEach { r -> add("${r.label}: ${String.format(Locale.ITALIAN, "%.2f", r.value)}") }
+        }
+        findViewById<TextView>(proportionDetailsId).text = if (details.isEmpty()) {
+            "Inserisci misure bilaterali e circonferenze per ottenere rapporti più completi."
+        } else details.joinToString("\n")
+        findViewById<TextView>(proportionNoteId).text = report.note
+        findViewById<MaterialButton>(proportionAiButtonId).isEnabled = report.availableMeasurements > 0
+    }
+
+    private fun analyzeProportionsWithAi(button: MaterialButton) {
+        val report = latestProportionReport ?: return
+        if (report.availableMeasurements <= 0) return
+        button.isEnabled = false
+        button.text = "Analisi in corso…"
+        lifecycleScope.launch {
+            runCatching { data.bodyProportionAnalysisService.analyze(report) }
+                .onSuccess { result ->
+                    val message = buildString {
+                        appendLine(result.summary)
+                        if (result.observations.isNotEmpty()) {
+                            appendLine()
+                            appendLine("Osservazioni")
+                            result.observations.forEach { appendLine("• $it") }
+                        }
+                        if (result.monitorNext.isNotEmpty()) {
+                            appendLine()
+                            appendLine("Da monitorare")
+                            result.monitorNext.forEach { appendLine("• $it") }
+                        }
+                    }.trim()
+                    MaterialAlertDialogBuilder(this@BodyMeasuresActivity)
+                        .setTitle("Analisi proporzioni")
+                        .setMessage(message)
+                        .setPositiveButton("Chiudi", null)
+                        .show()
+                }
+                .onFailure {
+                    Toast.makeText(
+                        this@BodyMeasuresActivity,
+                        "Analisi IA non disponibile. I calcoli locali restano validi.",
+                        Toast.LENGTH_LONG,
+                    ).show()
+                }
+            button.isEnabled = true
+            button.text = "Interpreta con IA"
         }
     }
 
@@ -301,5 +437,15 @@ class BodyMeasuresActivity : BaseShellActivity() {
         value,
     )
 
+    private fun formatPercent(value: Float): String = String.format(Locale.ITALIAN, "%.1f%%", value)
+
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+
+    companion object {
+        private const val PROPORTION_CARD_TAG = "body_proportion_card"
+        private var proportionStatusId: Int = View.NO_ID
+        private var proportionDetailsId: Int = View.NO_ID
+        private var proportionNoteId: Int = View.NO_ID
+        private var proportionAiButtonId: Int = View.NO_ID
+    }
 }
