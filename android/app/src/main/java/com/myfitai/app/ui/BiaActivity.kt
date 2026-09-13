@@ -201,8 +201,13 @@ class BiaActivity : BaseShellActivity() {
                 }
                 launch {
                     viewModel.saved.collect {
-                        Toast.makeText(this@BiaActivity, "Misurazione BIA salvata", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@BiaActivity, "Misurazione BIA aggiunta allo storico", Toast.LENGTH_SHORT).show()
                         resetForm()
+                    }
+                }
+                launch {
+                    viewModel.deleted.collect {
+                        Toast.makeText(this@BiaActivity, "Misurazione BIA eliminata dallo storico", Toast.LENGTH_SHORT).show()
                     }
                 }
                 launch {
@@ -222,8 +227,7 @@ class BiaActivity : BaseShellActivity() {
         }
 
         val latest = history.first()
-        val previous = history.getOrNull(1)
-        historySummary.text = buildSummary(history, latest, previous)
+        historySummary.text = buildSummary(history, latest)
 
         history.forEach { item ->
             val card = LinearLayout(this).apply {
@@ -231,11 +235,11 @@ class BiaActivity : BaseShellActivity() {
                 setBackgroundResource(R.drawable.bg_card)
                 val p = (16 * resources.displayMetrics.density).toInt()
                 setPadding(p, p, p, p)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ).apply { bottomMargin = (10 * resources.displayMetrics.density).toInt() }
             }
-            val params = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
-                bottomMargin = (10 * resources.displayMetrics.density).toInt()
-            }
-            card.layoutParams = params
 
             card.addView(TextView(this).apply {
                 text = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.ITALIAN).format(Date(item.measuredAtEpochMillis))
@@ -249,6 +253,20 @@ class BiaActivity : BaseShellActivity() {
                 textSize = 13f
                 setPadding(0, (6 * resources.displayMetrics.density).toInt(), 0, 0)
             })
+            buildConditionLine(item)?.let { conditions ->
+                card.addView(TextView(this).apply {
+                    text = conditions
+                    setTextColor(getColor(R.color.text_muted))
+                    textSize = 11f
+                    setPadding(0, (6 * resources.displayMetrics.density).toInt(), 0, 0)
+                })
+            }
+            card.addView(TextView(this).apply {
+                text = "Tieni premuto per eliminare"
+                setTextColor(getColor(R.color.text_muted))
+                textSize = 10f
+                setPadding(0, (6 * resources.displayMetrics.density).toInt(), 0, 0)
+            })
             card.setOnLongClickListener {
                 confirmDelete(item)
                 true
@@ -257,37 +275,64 @@ class BiaActivity : BaseShellActivity() {
         }
     }
 
-    private fun buildSummary(history: List<BiaMeasurementEntity>, latest: BiaMeasurementEntity, previous: BiaMeasurementEntity?): String {
+    private fun buildSummary(history: List<BiaMeasurementEntity>, latest: BiaMeasurementEntity): String {
         val lines = mutableListOf("${history.size} misurazioni salvate")
         latest.weightKg?.let { current ->
-            val delta = previous?.weightKg?.let { current - it }
-            lines += "Peso attuale ${formatValue(current, "kg")}${delta?.let { "  (${formatSigned(it)} kg vs precedente)" }.orEmpty()}"
+            val previous = previousValue(history, latest) { it.weightKg }
+            val delta = previous?.let { current - it }
+            lines += "Peso attuale ${formatValue(current, "kg")}${delta?.let { "  (${formatSigned(it)} kg vs precedente disponibile)" }.orEmpty()}"
         }
         latest.bodyFatPercent?.let { current ->
-            val delta = previous?.bodyFatPercent?.let { current - it }
-            lines += "Grasso ${formatValue(current, "%")}${delta?.let { "  (${formatSigned(it)} pp)" }.orEmpty()}"
+            val previous = previousValue(history, latest) { it.bodyFatPercent }
+            val delta = previous?.let { current - it }
+            lines += "Grasso ${formatValue(current, "%")}${delta?.let { "  (${formatSigned(it)} pp vs precedente disponibile)" }.orEmpty()}"
+        }
+        latest.muscleMassKg?.let { current ->
+            val previous = previousValue(history, latest) { it.muscleMassKg }
+            val delta = previous?.let { current - it }
+            lines += "Massa muscolare ${formatValue(current, "kg")}${delta?.let { "  (${formatSigned(it)} kg)" }.orEmpty()}"
         }
         val avgWeight = history.mapNotNull { it.weightKg }.takeIf { it.isNotEmpty() }?.average()
-        if (avgWeight != null) lines += "Media peso ${String.format(Locale.ITALIAN, "%.1f kg", avgWeight)}"
+        if (avgWeight != null) lines += "Media peso storico ${String.format(Locale.ITALIAN, "%.1f kg", avgWeight)}"
         return lines.joinToString("\n")
+    }
+
+    private fun previousValue(
+        history: List<BiaMeasurementEntity>,
+        current: BiaMeasurementEntity,
+        selector: (BiaMeasurementEntity) -> Float?,
+    ): Float? {
+        val index = history.indexOfFirst { it.id == current.id }
+        if (index < 0) return null
+        return history.drop(index + 1).firstNotNullOfOrNull(selector)
     }
 
     private fun buildMeasurementLine(item: BiaMeasurementEntity): String = listOfNotNull(
         item.weightKg?.let { "Peso ${formatValue(it, "kg")}" },
         item.bodyFatPercent?.let { "Grasso ${formatValue(it, "%")}" },
-        item.muscleMassKg?.let { "Muscoli ${formatValue(it, "kg")}" },
+        item.visceralFatLevel?.let { "Viscerale ${formatValue(it, "")}" },
+        item.muscleMassKg?.let { "Massa muscolare ${formatValue(it, "kg")}" },
+        item.skeletalMuscleKg?.let { "Scheletrico ${formatValue(it, "kg")}" },
         item.bodyWaterPercent?.let { "Acqua ${formatValue(it, "%")}" },
         item.bmrKcal?.let { "BMR ${formatValue(it, "kcal")}" },
     ).joinToString(" · ").ifBlank { "Valori parziali" }
 
+    private fun buildConditionLine(item: BiaMeasurementEntity): String? {
+        val conditions = listOfNotNull(
+            "a digiuno".takeIf { item.fasting },
+            "appena sveglio".takeIf { item.justWokeUp },
+            "dopo bagno".takeIf { item.afterBathroom },
+            "nessun allenamento recente".takeIf { item.noRecentWorkout },
+        )
+        return conditions.takeIf { it.isNotEmpty() }?.joinToString(" · ", prefix = "Condizioni: ")
+    }
+
     private fun confirmDelete(item: BiaMeasurementEntity) {
         MaterialAlertDialogBuilder(this)
             .setTitle("Elimina misurazione")
-            .setMessage("Vuoi eliminare questa misurazione BIA?")
+            .setMessage("Vuoi eliminare questa misurazione BIA dallo storico? L'operazione non è reversibile.")
             .setNegativeButton("Annulla", null)
-            .setPositiveButton("Elimina") { _, _ ->
-                lifecycleScope.launch { viewModel.delete(item) }
-            }
+            .setPositiveButton("Elimina") { _, _ -> viewModel.delete(item) }
             .show()
     }
 
@@ -298,6 +343,10 @@ class BiaActivity : BaseShellActivity() {
         val now = Calendar.getInstance()
         selectedHour = now.get(Calendar.HOUR_OF_DAY)
         selectedMinute = now.get(Calendar.MINUTE)
+        findViewById<MaterialCheckBox>(R.id.checkFasting).isChecked = false
+        findViewById<MaterialCheckBox>(R.id.checkJustWoken).isChecked = false
+        findViewById<MaterialCheckBox>(R.id.checkAfterShower).isChecked = false
+        findViewById<MaterialCheckBox>(R.id.checkNoWorkout).isChecked = false
         renderDateTime()
     }
 
