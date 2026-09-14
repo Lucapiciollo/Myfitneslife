@@ -10,6 +10,7 @@ import androidx.test.uiautomator.Until
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.File
 
 @RunWith(AndroidJUnit4::class)
 class QaSeederDeviceTest {
@@ -36,6 +37,12 @@ class QaSeederDeviceTest {
         assertTrue(device.hasObject(By.res("${context.packageName}:id/navProgress")))
         assertTrue(device.hasObject(By.res("${context.packageName}:id/navFood")))
         assertTrue(device.hasObject(By.res("${context.packageName}:id/navMore")))
+        saveScreenshot("qa_home")
+    }
+
+    private fun saveScreenshot(name: String) {
+        val dir = File(context.getExternalFilesDir(null), "qa-artifacts").apply { mkdirs() }
+        device.takeScreenshot(File(dir, "$name.png"))
     }
 
     private fun waitForSeedResult(timeoutMs: Long): Boolean {
