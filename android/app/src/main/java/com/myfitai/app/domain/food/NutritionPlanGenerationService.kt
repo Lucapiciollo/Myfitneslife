@@ -18,7 +18,6 @@ import com.myfitai.app.domain.time.SystemTimeProvider
 import com.myfitai.app.domain.time.TimeProvider
 import kotlinx.coroutines.flow.first
 import java.time.LocalDate
-import java.time.ZoneId
 import java.util.Locale
 
 class NutritionPlanGenerationService(
@@ -83,16 +82,16 @@ class NutritionPlanGenerationService(
                 targets = targets,
                 workoutContext = weekWorkouts.map { w ->
                     val dt = java.time.Instant.ofEpochMilli(w.startedAtEpochMillis).atZone(zone)
-                    "${dt.toLocalDate()} ${dt.toLocalTime()} | ${w.type} | ${w.title} | ${w.durationMinutes ?: 0} min | rest=${w.isRestDay}"
+                    "${dt.toLocalDate()}@${dt.toLocalTime()}@${w.type}@${w.title}@${w.durationMinutes ?: 0}@${if (w.isRestDay) 1 else 0}"
                 },
                 personalContext = personalContext,
                 snapshot = snapshot,
                 sportsMode = sportsMode,
             ),
-            schemaName = NutritionPlanContract.SCHEMA_NAME,
-            schemaJson = NutritionPlanContract.schemaJson,
-            maxOutputTokens = 16_000,
-            allowSchemaFallback = true,
+            schemaName = NutritionPlanCompactContract.SCHEMA_NAME,
+            schemaJson = NutritionPlanCompactContract.schemaJson,
+            maxOutputTokens = 6_000,
+            thinkingBudget = 0,
         )
 
         var parsed: NutritionPlanContract.Response? = null
@@ -101,14 +100,14 @@ class NutritionPlanGenerationService(
             maxSchemaRetries = 1,
             businessValidator = { json ->
                 runCatching {
-                    val response = NutritionPlanContract.parse(json)
+                    val response = NutritionPlanCompactContract.parseEnvelope(json)
                     NutritionPlanContract.validateBusiness(response, monday, targets, sportsMode).getOrThrow()
                     parsed = response
                 }
             },
         )
-        val response = parsed ?: runCatching { NutritionPlanContract.parse(validated.jsonText) }
-            .getOrElse { throw GenerationException.InvalidAiOutput("INVALID_SCHEMA") }
+        val response = parsed ?: runCatching { NutritionPlanCompactContract.parseEnvelope(validated.jsonText) }
+            .getOrElse { throw GenerationException.InvalidAiOutput("INVALID_COMPACT_PROTOCOL") }
 
         val draft = PlanVersionDraft(
             source = validated.provider.name,
@@ -181,21 +180,33 @@ class NutritionPlanGenerationService(
         snapshot: ProfileCalculationService.Snapshot,
         sportsMode: SportsNutritionClassifier.Mode,
     ): String = buildString {
-        appendLine("Generate the nutrition plan for the week starting ${monday.toEpochDay()} ($monday).")
-        appendLine("DAILY_TARGETS_AUTHORITATIVE:kcal=${targets.kcal.toInt()}|P=${String.format(Locale.US, "%.1f", targets.proteinG)}|C=${String.format(Locale.US, "%.1f", targets.carbsG)}|F=${String.format(Locale.US, "%.1f", targets.fatG)}|tolerance=3%")
-        appendLine("SPORT_MODE:${sportsMode.name}")
-        appendLine("PROFILE_GOAL:${profile.goal ?: "unknown"}|ACTIVITY:${profile.activityLevel ?: "unknown"}")
-        appendLine("WAKE:${profile.wakeTimeMinutes ?: "unknown"}|SLEEP:${profile.sleepTimeMinutes ?: "unknown"}")
-        appendLine("PREFERENCES:${profile.dietaryPreferencesJson ?: "none"}")
-        appendLine("BIA_CONTEXT:weightKg=${snapshot.latestWeightKg ?: "unknown"}|bodyFatPct=${snapshot.latestBodyFatPercent ?: "unknown"}|muscleKg=${snapshot.latestMuscleMassKg ?: "unknown"}|skeletalMuscleKg=${snapshot.latestSkeletalMuscleKg ?: "unknown"}|bodyWaterPct=${snapshot.latestBodyWaterPercent ?: "unknown"}|waistCm=${snapshot.latestWaistCm ?: "unknown"}")
-        appendLine("TRENDS:weightDelta=${snapshot.weightTrend.delta ?: "unknown"}|bodyFatDelta=${snapshot.bodyFatTrend.delta ?: "unknown"}|muscleDelta=${snapshot.muscleMassTrend.delta ?: "unknown"}|waistDelta=${snapshot.waistTrend.delta ?: "unknown"}|recomposition=${snapshot.recompositionState}")
-        appendLine("PLANNED_WORKOUTS:")
-        if (workoutContext.isEmpty()) appendLine("none") else workoutContext.forEach(::appendLine)
-        if (personalContext.isNotBlank()) appendLine(personalContext)
-        appendLine("RULES: BIA is context, not diagnosis. Do not claim BIA proves protein deficiency or dehydration. Protein powder may be used even in NORMAL mode only when useful to meet the authoritative protein target or for practical meal composition. Creatine may be suggested only in SPORT mode. Creatine contributes 0 kcal/macros. Protein powder calories/macros count toward daily totals. hydrationNote may prudently encourage hydration when BIA/context supports attention, without diagnosing dehydration. Prefer ordinary foods first; supplements are optional tools, not mandatory. Count oils, dressings, caloric drinks and every caloric supplement. No punitive compensation.")
+        appendLine("W:${monday.toEpochDay()}")
+        appendLine("T:${targets.kcal.toInt()}|${fmt(targets.proteinG)}|${fmt(targets.carbsG)}|${fmt(targets.fatG)}|3")
+        appendLine("SM:${sportsMode.name}")
+        appendLine("P:${compact(profile.goal)}|${compact(profile.activityLevel)}|${profile.wakeTimeMinutes ?: "?"}|${profile.sleepTimeMinutes ?: "?"}")
+        appendLine("DP:${compact(profile.dietaryPreferencesJson)}")
+        appendLine("B:${fmtOrUnknown(snapshot.latestWeightKg)}|${fmtOrUnknown(snapshot.latestBodyFatPercent)}|${fmtOrUnknown(snapshot.latestMuscleMassKg)}|${fmtOrUnknown(snapshot.latestSkeletalMuscleKg)}|${fmtOrUnknown(snapshot.latestBodyWaterPercent)}|${fmtOrUnknown(snapshot.latestWaistCm)}")
+        appendLine("TR:${fmtOrUnknown(snapshot.weightTrend.delta)}|${fmtOrUnknown(snapshot.bodyFatTrend.delta)}|${fmtOrUnknown(snapshot.muscleMassTrend.delta)}|${fmtOrUnknown(snapshot.waistTrend.delta)}|${compact(snapshot.recompositionState.toString())}")
+        workoutContext.forEach { appendLine("WO:${compact(it)}") }
+        if (personalContext.isNotBlank()) appendLine("PC:${compact(personalContext)}")
     }
 
+    private fun compact(value: String?): String = value.orEmpty()
+        .replace('|', '/')
+        .replace('\n', ' ')
+        .replace('\r', ' ')
+        .trim()
+        .ifBlank { "?" }
+
+    private fun fmt(value: Double): String = String.format(Locale.US, "%.1f", value)
+    private fun fmtOrUnknown(value: Double?): String = value?.let(::fmt) ?: "?"
+    private fun fmtOrUnknown(value: Float?): String = value?.let { String.format(Locale.US, "%.1f", it) } ?: "?"
+
     companion object {
-        private const val SYSTEM_PROMPT = """You are MyFitAI Nutrition Agent. Return only schema JSON. Work exclusively at nutritional level. Build a complete 7-day plan within ±3% of the app's authoritative kcal and macro targets. Use BIA/body measurements only as descriptive context: never diagnose protein deficiency, dehydration or disease from BIA. Protein powder is permitted when it helps meet protein targets or practical meal timing, including non-sport profiles; its full kcal/macros must be counted. Creatine is permitted only when SPORT_MODE=SPORT and must be represented separately with zero kcal/macros. Prefer ordinary foods first. Keep supplements separate from meals. Hydration guidance must be cautious and factual. The app independently validates totals and supplement rules."""
+        private val SYSTEM_PROMPT = """
+MyFitAI nutrition planner. Output ONLY JSON matching the supplied envelope schema. `data` must contain exactly the MFP1 pipe protocol below, no markdown and no text outside records.
+${NutritionPlanCompactContract.PROTOCOL}
+Rules: exactly 7 days; records ordered W, then each D with its M/I and optional S/H, then V. Never use `|` or line breaks inside a text field. All kcal/macros are numeric. Daily totals include meals plus caloric supplements and must be within ±3% of authoritative targets. Count oils, dressings and caloric drinks. Ordinary foods first. Protein powder is optional and its kcal/macros count. Creatine only when SM=SPORT and always 0 kcal/P/C/F. BIA is descriptive context only: no diagnosis of protein deficiency, dehydration or disease. H may give cautious hydration guidance. No punitive compensation. V notes <= 8 words.
+""".trimIndent()
     }
 }
