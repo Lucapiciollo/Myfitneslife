@@ -221,6 +221,7 @@ class CheatAdjustmentService(
         }
 
         val versionId = plans.appendVersion(
+            profileId = profileId,
             planId = snapshot.planId,
             createdAtEpochMillis = time.nowEpochMillis(),
             draft = PlanVersionDraft(

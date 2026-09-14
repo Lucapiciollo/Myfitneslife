@@ -116,7 +116,7 @@ data class PlanVersionDraft(
 
 class MealPlanRepository(private val db: MyFitAiDatabase) {
     fun plans(profileId: Long): Flow<List<MealPlanEntity>> = db.mealPlanDao().observePlans(profileId)
-    fun versions(planId: Long): Flow<List<MealPlanVersionEntity>> = db.mealPlanDao().observeVersions(planId)
+    fun versions(profileId: Long, planId: Long): Flow<List<MealPlanVersionEntity>> = db.mealPlanDao().observeVersions(profileId, planId)
     suspend fun getPlanForWeek(profileId: Long, weekStartEpochDay: Long) = db.mealPlanDao().getPlanForWeek(profileId, weekStartEpochDay)
 
     suspend fun createPlan(profileId: Long, weekStartEpochDay: Long, createdAtEpochMillis: Long): Long =
@@ -130,12 +130,14 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
         )
 
     suspend fun appendVersion(
+        profileId: Long,
         planId: Long,
         createdAtEpochMillis: Long,
         draft: PlanVersionDraft,
     ): Long = db.withTransaction {
         val dao = db.mealPlanDao()
-        val nextVersion = (dao.getLatestVersion(planId)?.versionNumber ?: 0) + 1
+        val plan = dao.getPlan(profileId, planId) ?: error("PLAN_NOT_FOUND_FOR_PROFILE")
+        val nextVersion = (dao.getLatestVersion(profileId, plan.id)?.versionNumber ?: 0) + 1
         val versionId = dao.insertVersion(
             MealPlanVersionEntity(
                 planId = planId,
@@ -199,8 +201,8 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
     suspend fun loadLatestSnapshot(profileId: Long, weekStartEpochDay: Long): com.myfitai.app.domain.food.FoodPlanSnapshot? = db.withTransaction {
         val dao = db.mealPlanDao()
         val plan = dao.getPlanForWeek(profileId, weekStartEpochDay) ?: return@withTransaction null
-        val version = dao.getLatestVersion(plan.id) ?: return@withTransaction null
-        val days = dao.getDays(version.id).map { day ->
+        val version = dao.getLatestVersion(profileId, plan.id) ?: return@withTransaction null
+        val days = dao.getDays(profileId, version.id).map { day ->
             com.myfitai.app.domain.food.FoodPlanDay(
                 id = day.id,
                 dateEpochDay = day.dateEpochDay,
@@ -208,7 +210,7 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
                 proteinG = day.proteinG,
                 carbsG = day.carbsG,
                 fatG = day.fatG,
-                meals = dao.getMeals(day.id).map { meal ->
+                meals = dao.getMeals(profileId, day.id).map { meal ->
                     com.myfitai.app.domain.food.FoodMeal(
                         id = meal.id,
                         dayId = meal.dayId,
@@ -221,7 +223,7 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
                         carbsG = meal.carbsG,
                         fatG = meal.fatG,
                         preparation = meal.preparation,
-                        ingredients = dao.getIngredients(meal.id).map { ingredient ->
+                        ingredients = dao.getIngredients(profileId, meal.id).map { ingredient ->
                             com.myfitai.app.domain.food.FoodIngredient(
                                 id = ingredient.id,
                                 mealId = ingredient.mealId,
@@ -260,9 +262,9 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
         )
     }
 
-    suspend fun getMealDetail(mealId: Long): com.myfitai.app.domain.food.FoodMeal? = db.withTransaction {
+    suspend fun getMealDetail(profileId: Long, mealId: Long): com.myfitai.app.domain.food.FoodMeal? = db.withTransaction {
         val dao = db.mealPlanDao()
-        val meal = dao.getMeal(mealId) ?: return@withTransaction null
+        val meal = dao.getMeal(profileId, mealId) ?: return@withTransaction null
         com.myfitai.app.domain.food.FoodMeal(
             id = meal.id,
             dayId = meal.dayId,
@@ -275,7 +277,7 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
             carbsG = meal.carbsG,
             fatG = meal.fatG,
             preparation = meal.preparation,
-            ingredients = dao.getIngredients(meal.id).map { ingredient ->
+            ingredients = dao.getIngredients(profileId, meal.id).map { ingredient ->
                 com.myfitai.app.domain.food.FoodIngredient(
                     id = ingredient.id,
                     mealId = ingredient.mealId,

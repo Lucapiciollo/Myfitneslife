@@ -86,23 +86,26 @@ interface MealPlanDao {
     @Query("SELECT * FROM meal_plans WHERE profileId = :profileId AND weekStartEpochDay = :weekStart LIMIT 1")
     suspend fun getPlanForWeek(profileId: Long, weekStart: Long): MealPlanEntity?
 
-    @Query("SELECT * FROM meal_plan_versions WHERE planId = :planId ORDER BY versionNumber DESC, id DESC")
-    fun observeVersions(planId: Long): Flow<List<MealPlanVersionEntity>>
+    @Query("SELECT * FROM meal_plans WHERE profileId = :profileId AND id = :planId LIMIT 1")
+    suspend fun getPlan(profileId: Long, planId: Long): MealPlanEntity?
 
-    @Query("SELECT * FROM meal_plan_versions WHERE planId = :planId ORDER BY versionNumber DESC, id DESC LIMIT 1")
-    suspend fun getLatestVersion(planId: Long): MealPlanVersionEntity?
+    @Query("SELECT v.* FROM meal_plan_versions v INNER JOIN meal_plans p ON p.id = v.planId WHERE p.id = :planId AND p.profileId = :profileId ORDER BY v.versionNumber DESC, v.id DESC")
+    fun observeVersions(profileId: Long, planId: Long): Flow<List<MealPlanVersionEntity>>
 
-    @Query("SELECT * FROM meal_plan_days WHERE versionId = :versionId ORDER BY dateEpochDay ASC, id ASC")
-    suspend fun getDays(versionId: Long): List<MealPlanDayEntity>
+    @Query("SELECT v.* FROM meal_plan_versions v INNER JOIN meal_plans p ON p.id = v.planId WHERE p.id = :planId AND p.profileId = :profileId ORDER BY v.versionNumber DESC, v.id DESC LIMIT 1")
+    suspend fun getLatestVersion(profileId: Long, planId: Long): MealPlanVersionEntity?
 
-    @Query("SELECT * FROM meals WHERE dayId = :dayId ORDER BY sortOrder ASC, id ASC")
-    suspend fun getMeals(dayId: Long): List<MealEntity>
+    @Query("SELECT d.* FROM meal_plan_days d INNER JOIN meal_plan_versions v ON v.id = d.versionId INNER JOIN meal_plans p ON p.id = v.planId WHERE d.versionId = :versionId AND p.profileId = :profileId ORDER BY d.dateEpochDay ASC, d.id ASC")
+    suspend fun getDays(profileId: Long, versionId: Long): List<MealPlanDayEntity>
 
-    @Query("SELECT * FROM meals WHERE id = :mealId LIMIT 1")
-    suspend fun getMeal(mealId: Long): MealEntity?
+    @Query("SELECT m.* FROM meals m INNER JOIN meal_plan_days d ON d.id = m.dayId INNER JOIN meal_plan_versions v ON v.id = d.versionId INNER JOIN meal_plans p ON p.id = v.planId WHERE m.dayId = :dayId AND p.profileId = :profileId ORDER BY m.sortOrder ASC, m.id ASC")
+    suspend fun getMeals(profileId: Long, dayId: Long): List<MealEntity>
 
-    @Query("SELECT * FROM meal_ingredients WHERE mealId = :mealId ORDER BY sortOrder ASC, id ASC")
-    suspend fun getIngredients(mealId: Long): List<MealIngredientEntity>
+    @Query("SELECT m.* FROM meals m INNER JOIN meal_plan_days d ON d.id = m.dayId INNER JOIN meal_plan_versions v ON v.id = d.versionId INNER JOIN meal_plans p ON p.id = v.planId WHERE m.id = :mealId AND p.profileId = :profileId LIMIT 1")
+    suspend fun getMeal(profileId: Long, mealId: Long): MealEntity?
+
+    @Query("SELECT i.* FROM meal_ingredients i INNER JOIN meals m ON m.id = i.mealId INNER JOIN meal_plan_days d ON d.id = m.dayId INNER JOIN meal_plan_versions v ON v.id = d.versionId INNER JOIN meal_plans p ON p.id = v.planId WHERE i.mealId = :mealId AND p.profileId = :profileId ORDER BY i.sortOrder ASC, i.id ASC")
+    suspend fun getIngredients(profileId: Long, mealId: Long): List<MealIngredientEntity>
 
     @Insert suspend fun insertPlan(value: MealPlanEntity): Long
     @Insert suspend fun insertVersion(value: MealPlanVersionEntity): Long

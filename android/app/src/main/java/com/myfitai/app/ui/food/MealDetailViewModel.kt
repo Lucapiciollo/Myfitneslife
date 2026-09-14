@@ -23,14 +23,14 @@ class MealDetailViewModel(
     private val _state = MutableStateFlow(State())
     val state: StateFlow<State> = _state.asStateFlow()
 
-    fun load(mealId: Long) {
+    fun load(profileId: Long, mealId: Long) {
         if (mealId <= 0L) {
             _state.value = State(error = "Pasto non valido")
             return
         }
         viewModelScope.launch {
             _state.value = State(loading = true)
-            runCatching { repository.getMealDetail(mealId) }
+            runCatching { repository.getMealDetail(profileId, mealId) }
                 .onSuccess { meal ->
                     _state.value = if (meal != null) State(meal = meal) else State(error = "Pasto non trovato")
                 }

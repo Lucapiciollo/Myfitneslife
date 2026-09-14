@@ -35,7 +35,7 @@ class PersonalResponseService(
             plans.loadLatestSnapshot(profileId, row.weekStartEpochDay)
         }
         val versionReasons = planRows.flatMap { row ->
-            plans.versions(row.id).first().map { it.reason }
+            plans.versions(profileId, row.id).first().map { it.reason }
         }
 
         return PersonalResponseEngine.analyze(

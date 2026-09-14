@@ -40,7 +40,7 @@ class MealDetailActivity : BaseShellActivity() {
                 viewModel.state.collect(::render)
             }
         }
-        viewModel.load(mealId)
+        viewModel.load(data.activeProfileStore.currentIdOrNull() ?: -1L, mealId)
     }
 
     private fun bindTabs() {

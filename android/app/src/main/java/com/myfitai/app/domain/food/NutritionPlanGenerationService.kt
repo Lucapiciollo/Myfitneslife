@@ -167,7 +167,7 @@ class NutritionPlanGenerationService(
 
         val existing = plans.getPlanForWeek(profileId, monday.toEpochDay())
         val planId = existing?.id ?: plans.createPlan(profileId, monday.toEpochDay(), time.nowEpochMillis())
-        val versionId = plans.appendVersion(planId, time.nowEpochMillis(), draft)
+        val versionId = plans.appendVersion(profileId, planId, time.nowEpochMillis(), draft)
         return Result(planId, versionId, validated.provider.name, validated.model, response.agentValidation)
     }
 

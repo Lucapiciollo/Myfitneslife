@@ -121,6 +121,7 @@ class MealAlternativeService(
         }
 
         val versionId = plans.appendVersion(
+            profileId = profileId,
             planId = latest.planId,
             createdAtEpochMillis = time.nowEpochMillis(),
             draft = PlanVersionDraft(generated.provider, "AI_MEAL_SWAP:${sourceMeal.id}", latest.version.targetKcal, latest.version.targetProteinG, latest.version.targetCarbsG, latest.version.targetFatG, days),

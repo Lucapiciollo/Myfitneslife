@@ -175,15 +175,15 @@ class ProfileExportService(
 
         val planJson = JSONArray()
         plans.forEach { plan ->
-            val versions = db.mealPlanDao().observeVersions(plan.id).first().sortedBy { it.versionNumber }
+            val versions = db.mealPlanDao().observeVersions(profileId, plan.id).first().sortedBy { it.versionNumber }
             val versionsJson = JSONArray()
             versions.forEach { version ->
                 val daysJson = JSONArray()
-                db.mealPlanDao().getDays(version.id).forEach { day ->
+                db.mealPlanDao().getDays(profileId, version.id).forEach { day ->
                     val mealsJson = JSONArray()
-                    db.mealPlanDao().getMeals(day.id).forEach { meal ->
+                    db.mealPlanDao().getMeals(profileId, day.id).forEach { meal ->
                         val ingredients = JSONArray()
-                        db.mealPlanDao().getIngredients(meal.id).forEach { ing -> ingredients.put(JSONObject().apply {
+                        db.mealPlanDao().getIngredients(profileId, meal.id).forEach { ing -> ingredients.put(JSONObject().apply {
                             put("id", ing.id); put("name", ing.name); put("quantity", ing.quantity); put("unit", ing.unit); putNullable("displayDose", ing.displayDose); putNullable("weightState", ing.weightState); putNullable("nutritionConfidence", ing.nutritionConfidence); putNullable("category", ing.category); put("sortOrder", ing.sortOrder)
                         }) }
                         mealsJson.put(JSONObject().apply {
@@ -227,8 +227,8 @@ class ProfileExportService(
 
     private suspend fun loadLatestSnapshot(plan: MealPlanEntity): FoodPlanSnapshot? = db.withTransaction {
         val dao = db.mealPlanDao()
-        val version = dao.getLatestVersion(plan.id) ?: return@withTransaction null
-        val days = dao.getDays(version.id).map { day ->
+        val version = dao.getLatestVersion(plan.profileId, plan.id) ?: return@withTransaction null
+        val days = dao.getDays(plan.profileId, version.id).map { day ->
             FoodPlanDay(
                 id = day.id,
                 dateEpochDay = day.dateEpochDay,
@@ -236,7 +236,7 @@ class ProfileExportService(
                 proteinG = day.proteinG,
                 carbsG = day.carbsG,
                 fatG = day.fatG,
-                meals = dao.getMeals(day.id).map { meal ->
+                meals = dao.getMeals(plan.profileId, day.id).map { meal ->
                     FoodMeal(
                         id = meal.id,
                         dayId = meal.dayId,
@@ -249,7 +249,7 @@ class ProfileExportService(
                         carbsG = meal.carbsG,
                         fatG = meal.fatG,
                         preparation = meal.preparation,
-                        ingredients = dao.getIngredients(meal.id).map { ingredient ->
+                        ingredients = dao.getIngredients(plan.profileId, meal.id).map { ingredient ->
                             FoodIngredient(
                                 id = ingredient.id,
                                 mealId = ingredient.mealId,
