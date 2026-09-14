@@ -18,7 +18,7 @@ Status values are `PASS`, `STATIC REVIEW ONLY`, `NOT RUN`, and `FAIL`. `PASS` me
 | Meal swap | PASS | PASS | PASS (fake runtime) | NOT RUN | PASS | PASS | PASS |
 | Chiedi all'IA | PASS | PASS (fake runtime) | PASS (fake runtime) | NOT RUN | PASS | NOT RUN | NOT RUN |
 | Text cheat two-phase flow | PASS (contract) | PASS (fake runtime) | PASS (fake runtime) | NOT RUN | PASS | PASS (entity) | PASS |
-| Photo cheat flow | NOT RUN | NOT RUN | NOT RUN | NOT RUN | STATIC REVIEW ONLY | STATIC REVIEW ONLY | STATIC REVIEW ONLY |
+| Photo cheat flow | PASS (processor) | PASS (temp lifecycle) | NOT RUN (OS camera/gallery) | NOT RUN | PASS (unreadable image) | PASS (no image persistence) | PASS (no image export) |
 | Future-only adaptation | PASS (contract only) | PASS (fake runtime no-adaptation path) | PASS (fake runtime) | NOT RUN | PASS | PASS | PASS |
 | Plan versioning | PASS | PASS | NOT RUN | NOT RUN | PASS | PASS | PASS |
 | Shopping list | PASS | STATIC REVIEW ONLY | NOT RUN | NOT RUN | STATIC REVIEW ONLY | PASS | PASS |
