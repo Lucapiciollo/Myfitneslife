@@ -15,7 +15,7 @@
 |---|---|---|
 | `:app:assembleDebug` | PASS | Debug APK assembled locally |
 | `:app:testDebugUnitTest` | PASS | 44 tests, 0 failures, 0 skipped |
-| `:app:connectedDebugAndroidTest` | PASS | 29 tests, 0 failures, 0 skipped on `SM-A546B - 16` |
+| `:app:connectedDebugAndroidTest` | PASS | 32 tests, 0 failures, 0 skipped on `SM-A546B - 16` |
 | Manual bottom-tab smoke | PASS | Root reuse, active-tab no-op, rapid taps, Back to launcher, no crash/ANR |
 
 ## Added Test Count
@@ -23,7 +23,7 @@
 - 18 new executable test methods in this work:
   - 8 JVM tests: six-month fixture/regression and progress-series edge cases.
   - 10 Android tests: historical Room persistence/reopen, export formats, multi-profile isolation, and deterministic AI workflows.
-- Existing executable coverage remains active; totals after the run are 44 JVM tests and 29 Android tests.
+- Existing executable coverage remains active; totals after the run are 44 JVM tests and 32 Android tests.
 
 ## PASS
 
@@ -43,6 +43,7 @@
 - Nested plan/version/meal reads are profile-scoped; cross-profile access is rejected by the Android integration test.
 - Deterministic notification scheduling covers lead time, future/past filtering, 60-day horizon, weekly review rollover, cancellation, profile switch and snooze clamping.
 - Label-photo processing covers valid JPEG conversion to in-memory payload, unreadable image rejection, temporary camera-file deletion and no external-file deletion.
+- UIAutomator E2E covers seeded launch, bottom-tab root switching, active-tab no-op and Back returning to launcher.
 - Bottom-tab manual smoke flow, including non-cyclic Back behavior.
 
 ## FAIL

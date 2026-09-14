@@ -28,7 +28,7 @@ Status values are `PASS`, `STATIC REVIEW ONLY`, `NOT RUN`, and `FAIL`. `PASS` me
 | Multi-profile isolation | PASS | PASS | PASS | NOT RUN | PASS | PASS | PASS |
 | DB migrations | NOT RUN | PASS (`3 -> 4`) | NOT RUN | NOT RUN | STATIC REVIEW ONLY | PASS | STATIC REVIEW ONLY |
 | Restart/persistence | STATIC REVIEW ONLY | PASS | NOT RUN | NOT RUN | NOT RUN | PASS | PASS |
-| Bottom tab navigation | NOT RUN | NOT RUN | PASS (manual device smoke) | PASS (manual device smoke) | PASS (manual Back smoke) | STATIC REVIEW ONLY | NOT RUN |
+| Bottom tab navigation | NOT RUN | NOT RUN | PASS (UIAutomator device E2E) | PASS (UIAutomator device E2E) | PASS (Back E2E) | STATIC REVIEW ONLY | NOT RUN |
 | Performance/stress | NOT RUN | NOT RUN | NOT RUN | NOT RUN | NOT RUN | NOT RUN | NOT RUN |
 
 ## Known Traceability Holes
