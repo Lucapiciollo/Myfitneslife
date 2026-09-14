@@ -40,4 +40,4 @@ Status values are `PASS`, `STATIC REVIEW ONLY`, `NOT RUN`, and `FAIL`. `PASS` me
 - No screenshot/golden/pixel comparison.
 - No 1Y physical chart rendering test or landscape/small/large-screen visual test.
 - No post-run memory profile; two independent large-dataset timing runs are covered.
-- Only migration `3 -> 4` has schema assets and executable coverage; older migrations are not claimed as covered.
+- Only migration `3 -> 4` has schema assets and executable coverage; v1/v2 schema artifacts are absent and older migrations are not claimed as covered.

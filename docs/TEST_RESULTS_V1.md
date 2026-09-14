@@ -73,7 +73,7 @@
 - Camera/gallery OS picker delivery and blurred-label capture remain untested; processor and temporary-file lifecycle are covered.
 - Reboot rescheduling, Doze/OEM delivery, notification tap routing, permission denial behavior on a controlled permission state, and stale notification delivery tests.
 - Full UI E2E for profile/BIA/measurements/workouts/diet/cheat/review/export screens.
-- v1 -> current and v2 -> current migrations; schema assets for those versions are not present.
+- v1 -> current and v2 -> current migrations; only `schemas/3.json` and `schemas/4.json` exist, so older canonical databases cannot be reconstructed without inventing historical contracts.
 
 ## Residual Risks
 

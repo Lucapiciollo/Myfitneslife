@@ -137,6 +137,7 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 - [x] Correggere le regressioni di compilazione/migrazione introdotte da DB v4 e nuovo contratto nutrizionale.
 - [x] Test runtime Room di supplementi, hydration note, compatibilità legacy e cambio versione del pasto.
 - [x] Verifica migrazione DB 3 -> 4.
+- [ ] Recuperare gli schema asset canonici v1/v2 prima di testare le migrazioni storiche; non ricostruire schemi mancanti per supposizione.
 - [x] Framework test storico deterministico di sei mesi e test export/multiprofilo.
 - [x] Seam `AiRuntimeGateway` e test integration deterministici per generation, meal swap, advice, sgarro e weekly review.
 - [ ] QA grafica/pixel su device/emulatore.
