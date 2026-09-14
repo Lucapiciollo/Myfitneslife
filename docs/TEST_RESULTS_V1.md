@@ -44,7 +44,7 @@
 - Deterministic notification scheduling covers lead time, future/past filtering, 60-day horizon, weekly review rollover, cancellation, profile switch and snooze clamping.
 - Label-photo processing covers valid JPEG conversion to in-memory payload, unreadable image rejection, temporary camera-file deletion and no external-file deletion.
 - UIAutomator E2E covers seeded launch, bottom-tab root switching, active-tab no-op and Back returning to launcher.
-- Stress dataset executed on device: 5 profiles, 240 BIA, 240 body measurements, 1000 workouts, 520 plan roots, 936 plan versions and 200 cheats. Observed timings for one profile: BIA history 34 ms, body history 10 ms, workouts 16 ms, plan roots 11 ms, latest snapshot 32 ms, shopping list 46 ms, JSON export 14832 ms, CSV ZIP export 15488 ms, profile PDF export 8391 ms, weekly PDF export 327 ms.
+- Stress dataset executed twice on device: 5 profiles, 240 BIA, 240 body measurements, 1000 workouts, 520 plan roots, 936 plan versions and 200 cheats. Run 1 timings: BIA 34 ms, body 10 ms, workouts 16 ms, plan roots 11 ms, snapshot 32 ms, shopping 46 ms, JSON 14832 ms, CSV ZIP 15488 ms, profile PDF 8391 ms, weekly PDF 327 ms. Run 2: BIA 36 ms, body 22 ms, workouts 21 ms, plan roots 19 ms, snapshot 14 ms, shopping 40 ms, JSON 21783 ms, CSV ZIP 20348 ms, profile PDF 4811 ms, weekly PDF 162 ms.
 - Bottom-tab manual smoke flow, including non-cyclic Back behavior.
 
 ## FAIL
@@ -63,7 +63,7 @@
 - Real AlarmManager delivery, notification permission, reboot rescheduling and notification tap delivery remain untested; scheduling logic is covered through a fake alarm gateway.
 - Full Activity forms, OS camera/gallery picker flow, notification tap routing, share chooser, and visual/pixel fidelity.
 - 1Y chart rendering, landscape, small/large screens, and screenshot/golden comparison.
-- Memory profiling and repeated/warm-cache stress runs.
+- Memory profiling; post-run `dumpsys meminfo` was unavailable because connected tests stop/uninstall the app process at completion.
 
 ## NOT RUN
 

@@ -29,7 +29,7 @@ Status values are `PASS`, `STATIC REVIEW ONLY`, `NOT RUN`, and `FAIL`. `PASS` me
 | DB migrations | NOT RUN | PASS (`3 -> 4`) | NOT RUN | NOT RUN | STATIC REVIEW ONLY | PASS | STATIC REVIEW ONLY |
 | Restart/persistence | STATIC REVIEW ONLY | PASS | NOT RUN | NOT RUN | NOT RUN | PASS | PASS |
 | Bottom tab navigation | NOT RUN | NOT RUN | PASS (UIAutomator device E2E) | PASS (UIAutomator device E2E) | PASS (Back E2E) | STATIC REVIEW ONLY | NOT RUN |
-| Performance/stress | PASS (device timings) | PASS (stress fixture) | NOT RUN | NOT RUN | STATIC REVIEW ONLY | PASS | PASS (export timings) |
+| Performance/stress | PASS (two device timing runs) | PASS (stress fixture) | NOT RUN | NOT RUN | STATIC REVIEW ONLY | PASS | PASS (two export timing runs) |
 
 ## Known Traceability Holes
 
@@ -39,5 +39,5 @@ Status values are `PASS`, `STATIC REVIEW ONLY`, `NOT RUN`, and `FAIL`. `PASS` me
 - No Android alarm delivery/notification tap test.
 - No screenshot/golden/pixel comparison.
 - No 1Y physical chart rendering test or landscape/small/large-screen visual test.
-- No memory profile or repeated/warm-cache stress run; the required one-pass large dataset timing run is covered.
+- No post-run memory profile; two independent large-dataset timing runs are covered.
 - Only migration `3 -> 4` has schema assets and executable coverage; older migrations are not claimed as covered.
