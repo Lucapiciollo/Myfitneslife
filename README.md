@@ -9,7 +9,7 @@ Lo stato reale del progetto e l'ordine delle attività sono definiti in `DEVELOP
 ## Stato attuale
 MyFitAI è un'app Android local-first per profilo corporeo, BIA, misure, allenamenti, piano alimentare, adattamento post-sgarro, lista spesa, notifiche, review ed export.
 
-La UI/mock navigabile e gran parte della logica applicativa sono presenti su `develop`. Restano pendenti soprattutto build completa sull'HEAD corrente, test runtime/device e QA grafica/pixel su emulatore o dispositivo reale.
+La UI/mock navigabile e gran parte della logica applicativa sono presenti su `develop`. Il framework di collaudo V1 usa `SixMonthHistoryFixture` con seed `20260914`, clock testabile, regression test sui trend/calcoli e integration test Room/export.
 
 ## Architettura IA
 L'app è l'orchestratore. I calcoli affidabili restano locali e deterministici.
@@ -93,11 +93,11 @@ Vincoli:
 La chiave OpenAI è protetta tramite Android Keystore e AES-GCM. Non deve mai finire in chiaro in Room, SharedPreferences normali, file, log, crash report, backup, analytics, repository, BuildConfig, intent, navigation args o export.
 
 ## Stato verifica tecnica
-L'HEAD corrente è stato compilato con `:app:assembleDebug` usando Java 17, Gradle 9.6.0 e Android SDK locale. `:app:testDebugUnitTest` è verde con 36 test. La suite `:app:connectedDebugAndroidTest` è verde su `SM-A546B - 16` e `Medium_Phone(AVD) - 17`, con 11 test per device, inclusi migration Room 3 -> 4, piani legacy senza supplementi e conservazione di supplementi/hydration note nel cambio pasto.
+L'HEAD corrente è stato compilato con `:app:assembleDebug` usando Java 17, Gradle 9.6.0 e Android SDK locale. `:app:testDebugUnitTest` è verde con 44 test. La suite `:app:connectedDebugAndroidTest` è verde su `SM-A546B - 16` con 16 test, inclusi migration Room 3 -> 4, storico deterministico di sei mesi, riapertura del database, export JSON/CSV ZIP/PDF, multiprofilo e conservazione di supplementi/hydration note.
 
 La bottom bar usa una transizione root-tab senza animazioni e senza stack duplicati; il dispositivo fisico ha verificato tab attivo no-op, rapid tap, Back non ciclico e inset corretti rispetto alla navigation bar di sistema.
 
-Restano pendenti la QA grafica/pixel completa e la verifica runtime manuale delle Activity e degli export più recenti.
+La V1 non è ancora certificata integralmente: restano pendenti provider reali, QA grafica/pixel, E2E UI completo, camera/foto sgarro, delivery notifiche e stress performance. Stato dettagliato in `docs/TEST_RESULTS_V1.md` e `docs/TEST_TRACEABILITY_V1.md`.
 
 CI non viene eseguita automaticamente sui push a `develop`; il workflow resta disponibile su pull request e avvio manuale.
 

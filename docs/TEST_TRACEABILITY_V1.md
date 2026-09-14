@@ -1,0 +1,43 @@
+# V1 Test Traceability
+
+Status values are `PASS`, `STATIC REVIEW ONLY`, `NOT RUN`, and `FAIL`. `PASS` means an executable test or recorded device run exists for the specific behavior, not merely for a related contract.
+
+| Feature | Unit | Integration | E2E | UI | Error | Persistence | Export |
+|---|---|---|---|---|---|---|---|
+| Profile and calculations | PASS | PASS | NOT RUN | STATIC REVIEW ONLY | PASS | PASS | PASS |
+| BIA history | PASS | PASS | NOT RUN | NOT RUN | STATIC REVIEW ONLY | PASS | PASS |
+| Body measurements | PASS | PASS | NOT RUN | NOT RUN | STATIC REVIEW ONLY | PASS | PASS |
+| Graph ranges/trends | PASS | STATIC REVIEW ONLY | NOT RUN | NOT RUN | PASS | STATIC REVIEW ONLY | STATIC REVIEW ONLY |
+| NORMAL/SPORT classifier | PASS | PASS | NOT RUN | NOT RUN | PASS | PASS | STATIC REVIEW ONLY |
+| Workouts | PASS | PASS | NOT RUN | NOT RUN | STATIC REVIEW ONLY | PASS | PASS |
+| Nutrition targets | PASS | STATIC REVIEW ONLY | NOT RUN | NOT RUN | PASS | PASS | PASS |
+| Weekly diet structure | PASS | PASS | NOT RUN | NOT RUN | PASS | PASS | PASS |
+| Whey/protein powder | PASS | PASS | NOT RUN | NOT RUN | PASS | PASS | PASS |
+| Creatine | PASS | PASS | NOT RUN | NOT RUN | PASS | PASS | PASS |
+| Hydration note | PASS | PASS | NOT RUN | NOT RUN | PASS | PASS | PASS |
+| Meal swap | PASS | PASS | NOT RUN | NOT RUN | PASS | PASS | PASS |
+| Chiedi all'IA | PASS (contract only) | NOT RUN | NOT RUN | NOT RUN | PASS (scope contract) | NOT RUN | NOT RUN |
+| Text cheat two-phase flow | PASS (contract only) | STATIC REVIEW ONLY | NOT RUN | NOT RUN | PASS (contract) | PASS (entity) | PASS |
+| Photo cheat flow | NOT RUN | NOT RUN | NOT RUN | NOT RUN | STATIC REVIEW ONLY | STATIC REVIEW ONLY | STATIC REVIEW ONLY |
+| Future-only adaptation | PASS (contract only) | STATIC REVIEW ONLY | NOT RUN | NOT RUN | PASS | PASS | PASS |
+| Plan versioning | PASS | PASS | NOT RUN | NOT RUN | PASS | PASS | PASS |
+| Shopping list | PASS | STATIC REVIEW ONLY | NOT RUN | NOT RUN | STATIC REVIEW ONLY | PASS | PASS |
+| Notifications | STATIC REVIEW ONLY | NOT RUN | NOT RUN | NOT RUN | STATIC REVIEW ONLY | STATIC REVIEW ONLY | NOT RUN |
+| Weekly review | PASS (contract only) | STATIC REVIEW ONLY | NOT RUN | NOT RUN | PASS | PASS | PASS |
+| JSON/CSV/PDF export | STATIC REVIEW ONLY | PASS | NOT RUN | NOT RUN | STATIC REVIEW ONLY | PASS | PASS |
+| Multi-profile isolation | PASS | PASS | NOT RUN | NOT RUN | PASS | PASS | PASS |
+| DB migrations | NOT RUN | PASS (`3 -> 4`) | NOT RUN | NOT RUN | STATIC REVIEW ONLY | PASS | STATIC REVIEW ONLY |
+| Restart/persistence | STATIC REVIEW ONLY | PASS | NOT RUN | NOT RUN | NOT RUN | PASS | PASS |
+| Bottom tab navigation | NOT RUN | NOT RUN | PASS (manual device smoke) | PASS (manual device smoke) | PASS (manual Back smoke) | STATIC REVIEW ONLY | NOT RUN |
+| Performance/stress | NOT RUN | NOT RUN | NOT RUN | NOT RUN | NOT RUN | NOT RUN | NOT RUN |
+
+## Known Traceability Holes
+
+- No real Gemini/OpenAI provider run with a configured credential.
+- No executable Activity/UI test suite; bottom tabs have manual device evidence only.
+- No camera/gallery/photo-label runtime test.
+- No Android alarm delivery/notification tap test.
+- No screenshot/golden/pixel comparison.
+- No 1Y physical chart rendering test or landscape/small/large-screen visual test.
+- No 1Y/2Y stress dataset timing run.
+- Only migration `3 -> 4` has schema assets and executable coverage; older migrations are not claimed as covered.
