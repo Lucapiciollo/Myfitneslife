@@ -14,9 +14,15 @@ La UI/mock navigabile e gran parte della logica applicativa sono presenti su `de
 ## Architettura IA
 L'app è l'orchestratore. I calcoli affidabili restano locali e deterministici.
 
-Pipeline:
+Pipeline runtime:
 
-`App -> Local Calculation Engine -> AiProvider -> Agent -> JSON -> Schema Validator -> Business Validator -> Persistenza -> UI`
+`App -> Local Calculation Engine -> AiProvider -> Agent -> tiny JSON envelope -> MyFitAI Pipe Protocol -> parser locale -> Business Validator -> Persistenza -> UI`
+
+Il JSON verboso non è più il formato di trasporto dei payload degli agenti. Per mantenere lo structured output dei provider senza ripetere centinaia di chiavi, ogni agente restituisce soltanto un envelope JSON minimo con una proprietà `data`; il contenuto di `data` usa un protocollo pipe posizionale versionato e specifico della funzione. Esempi di versioni: `MFP1` piano settimanale, `CU1/CA1` sgarro, `MA1` alternative pasto, `NA1` consiglio nutrizionale, `WR1` review, `BIA1` import BIA e `BP1` interpretazione proporzioni.
+
+Il parser locale ricostruisce gli stessi oggetti dominio usati dall'app e i Business Validator restano autorevoli. I parser rifiutano record sconosciuti, numero di campi errato e strutture incomplete. Nei campi testuali del protocollo il carattere `|` e i newline sono vietati.
+
+La policy token è centralizzata: gli agenti compact usano thinking disabilitato, limiti di output specifici per workload e istruzioni/prompt sintetici. JSON completo resta valido per persistenza/export o compatibilità interna quando utile, ma non viene richiesto al modello per i payload runtime ad alto volume.
 
 Provider supportati:
 - Gemini Developer API via BYOK
@@ -102,11 +108,11 @@ Vincoli:
 Le chiavi Gemini e OpenAI sono protette tramite Android Keystore e AES-GCM. Non devono mai finire in chiaro in Room, SharedPreferences normali, file, log, crash report, backup, analytics, repository, BuildConfig, intent, navigation args o export.
 
 ## Stato verifica tecnica
-L'HEAD corrente è stato compilato con `:app:assembleDebug` usando Java 17, Gradle 9.6.0 e Android SDK locale. `:app:testDebugUnitTest` è verde con 44 test. La suite `:app:connectedDebugAndroidTest` è verde su `SM-A546B - 16` con 41 test, inclusi seeder QA debug sul vero Room dell'app, grafici Progress reali con screenshot 1M/3M/6M/1Y, migration Room 3 -> 4, storico deterministico di sei mesi, riapertura del database, export JSON/CSV ZIP/PDF, export JSON dalla UI, multiprofilo, isolamento dei record annidati di piano, workflow AI con fake runtime provider-neutral, scheduler e receiver notifiche deterministici, lifecycle foto etichetta, UIAutomator E2E bottom-tab, Settings/privacy/provider status, stress dataset e conservazione di supplementi/hydration note.
+L'HEAD precedente a questa ottimizzazione è stato compilato con `:app:assembleDebug` usando Java 17, Gradle 9.6.0 e Android SDK locale. `:app:testDebugUnitTest` risultava verde con 44 test e `:app:connectedDebugAndroidTest` verde su `SM-A546B - 16` con 41 test. Le modifiche al protocollo compact aggiunte successivamente richiedono una nuova esecuzione prima di estendere tale risultato all'HEAD corrente.
 
 La bottom bar usa una transizione root-tab senza animazioni e senza stack duplicati; il dispositivo fisico ha verificato tab attivo no-op, rapid tap, Back non ciclico e inset corretti rispetto alla navigation bar di sistema.
 
-La V1 non è ancora certificata integralmente: restano pendenti provider reali, inclusa la configurazione Firebase Gemini, QA grafica/pixel, E2E UI completo, camera/foto sgarro, delivery notifiche e stress performance. Stato dettagliato in `docs/TEST_RESULTS_V1.md` e `docs/TEST_TRACEABILITY_V1.md`.
+La V1 non è ancora certificata integralmente: restano pendenti provider reali, QA grafica/pixel, E2E UI completo, camera/foto sgarro, delivery notifiche e stress performance. Stato dettagliato in `docs/TEST_RESULTS_V1.md` e `docs/TEST_TRACEABILITY_V1.md`.
 
 CI non viene eseguita automaticamente sui push a `develop`; il workflow resta disponibile su pull request e avvio manuale.
 
