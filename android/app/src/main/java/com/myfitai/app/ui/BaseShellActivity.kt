@@ -28,25 +28,34 @@ abstract class BaseShellActivity : AppCompatActivity() {
     private var shellProfiles: List<UserProfileEntity> = emptyList()
     private var profileSwitcher: AutoCompleteTextView? = null
     private var profileHeader: View? = null
+    private var isTabRoot = false
 
     private val tabRootBackCallback = object : OnBackPressedCallback(true) {
         override fun handleOnBackPressed() {
-            if (intent.getBooleanExtra(BottomNavBinder.EXTRA_TAB_ROOT, false)) {
-                finishAndRemoveTask()
-            } else {
-                finish()
-            }
+            handleBackNavigation()
         }
     }
 
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         super.onCreate(savedInstanceState)
+        isTabRoot = isRootTabIntent(intent)
         onBackPressedDispatcher.addCallback(this, tabRootBackCallback)
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        isTabRoot = isRootTabIntent(intent)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        isTabRoot = isRootTabIntent(intent)
+    }
+
+    @Deprecated("Use OnBackPressedDispatcher for in-app back handling")
+    override fun onBackPressed() {
+        handleBackNavigation()
     }
 
     override fun setContentView(layoutResID: Int) {
@@ -149,14 +158,34 @@ abstract class BaseShellActivity : AppCompatActivity() {
         // Le schermate legate a entità del vecchio profilo non devono restare aperte.
         // Si torna alla Home: i ViewModel profile-scoped ricostruiscono lo stato dal nuovo activeProfileId.
         startActivity(Intent(this, HomeActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            putExtra(BottomNavBinder.EXTRA_TAB_ROOT, true)
+            addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or Intent.FLAG_ACTIVITY_NO_ANIMATION)
         })
         if (this !is HomeActivity) finish()
     }
 
     protected fun bindBack() { findViewById<View?>(R.id.backButton)?.setOnClickListener { finish() } }
     protected fun bindBottom(tab: BottomNavBinder.Tab) { BottomNavBinder.bind(this, tab) }
-    protected fun go(target: Class<out AppCompatActivity>) { startActivity(Intent(this, target)) }
+    protected fun go(target: Class<out AppCompatActivity>) {
+        val intent = Intent(this, target)
+        if (target == HomeActivity::class.java ||
+            target == FoodPlanActivity::class.java ||
+            target == PhysicalEvolutionActivity::class.java ||
+            target == SettingsActivity::class.java
+        ) {
+            intent.putExtra(BottomNavBinder.EXTRA_INTERNAL_NAV, true)
+            intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or Intent.FLAG_ACTIVITY_NO_ANIMATION)
+        }
+        startActivity(intent)
+    }
+
+    private fun isRootTabIntent(value: Intent): Boolean =
+        value.getBooleanExtra(BottomNavBinder.EXTRA_TAB_ROOT, false) &&
+            !value.getBooleanExtra(BottomNavBinder.EXTRA_INTERNAL_NAV, false)
+
+    private fun handleBackNavigation() {
+        if (isTabRoot) finishAffinity() else finish()
+    }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 }

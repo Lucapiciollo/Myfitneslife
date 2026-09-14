@@ -230,15 +230,15 @@ Each case contains ID, prerequisites, input, steps, expected result, severity an
 
 | ID | Steps | Expected Result | Severity | Result | Notes |
 |---|---|---|---|---|---|
-| TAB-001 | Home -> Food | Reuses Food root; no visible Activity animation/flicker | High | PASS | Physical device smoke test; task size remained 1 |
-| TAB-002 | Food -> Progress | Progress root selected without duplicate stack | High | PASS | Physical device smoke test; task size remained 1 |
+| TAB-001 | Home -> Food | Reuses Food root; no visible Activity animation/flicker | High | PASS | Physical device smoke test; root Activity reused and final four-tab task contained no duplicate root |
+| TAB-002 | Food -> Progress | Progress root selected without duplicate stack | High | PASS | Physical device smoke test; root Activity reused and task contained one instance per visited root |
 | TAB-003 | Tap active tab | No new Activity or refresh | High | PASS | Focused Activity and task unchanged |
-| TAB-004 | Home -> Food -> Home | Original Home root reused | Blocker | PASS | Home task root reused; task size remained 1 |
+| TAB-004 | Home -> Food -> Home | Original Home root reused | Blocker | PASS | Home Activity was reused; no new Home instance was created |
 | TAB-005 | Back after tab changes | Does not cycle previous tabs | Blocker | PASS | Back returned to launcher, not previous tab |
 | TAB-006 | Switch profile | Current root/tab remains coherent | High | NOT RUN | |
 | TAB-007 | Rotate | Selected tab remains correct | High | NOT RUN | |
 | TAB-008 | Background/foreground | No duplicate root Activity | High | NOT RUN | |
-| TAB-009 | Rapid tab taps | No race or duplicate stack | Blocker | PASS | Physical device smoke test; final task size remained 1 |
+| TAB-009 | Rapid tab taps | No race or duplicate stack | Blocker | PASS | Physical device smoke test; final task size remained 4, one instance per root tab, with no crash or ANR |
 | TAB-010 | Open meal detail from Food and back | Detail uses normal stack and returns to Food | High | NOT RUN | Requires plan; Food -> Cheat internal back was verified |
 
 ## Automated Commands
