@@ -1,8 +1,9 @@
 package com.myfitai.app.ai
 
 /**
- * Provider-neutral contract. Both Gemini and OpenAI receive the same canonical
- * prompts/schema and must return only the structured JSON payload.
+ * Provider-neutral contract. Gemini and OpenAI receive the same semantic request.
+ * Runtime agents normally use a tiny structured JSON envelope whose `data` field contains
+ * the versioned MyFitAI pipe payload; local parsers and business validators remain authoritative.
  */
 interface AiProvider {
     val type: AiProviderType
