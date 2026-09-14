@@ -26,6 +26,7 @@ import com.myfitai.app.ai.AiImageInput
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.domain.food.CheatAdjustmentService
 import com.myfitai.app.domain.food.LabelImageProcessor
+import com.myfitai.app.domain.food.LabelImageTempStore
 import com.myfitai.app.ui.food.CheatEntryViewModel
 import com.myfitai.app.ui.widgets.SelectableSegmentView
 import kotlinx.coroutines.Dispatchers
@@ -52,6 +53,7 @@ class CheatEntryActivity : BaseShellActivity() {
     private var labelImage: AiImageInput? = null
     private var pendingCameraFile: File? = null
     private var labelProcessing = false
+    private val labelTempStore by lazy { LabelImageTempStore(this) }
 
     private val galleryLauncher = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) prepareLabelFromUri(uri)
@@ -60,7 +62,7 @@ class CheatEntryActivity : BaseShellActivity() {
     private val cameraLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
         val file = pendingCameraFile
         pendingCameraFile = null
-        if (success && file != null) prepareLabelFromFile(file) else file?.delete()
+        if (success && file != null) prepareLabelFromFile(file) else labelTempStore.delete(file)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -114,8 +116,7 @@ class CheatEntryActivity : BaseShellActivity() {
     }
 
     private fun launchLabelCamera() {
-        val dir = File(cacheDir, "cheat-labels").apply { mkdirs() }
-        val file = File.createTempFile("label-", ".jpg", dir)
+        val file = labelTempStore.create()
         pendingCameraFile = file
         cameraLauncher.launch(FileProvider.getUriForFile(this, "$packageName.fileprovider", file))
     }
@@ -152,7 +153,7 @@ class CheatEntryActivity : BaseShellActivity() {
                     setLabelProcessing(false, "Impossibile leggere la foto. Riprova con l'etichetta ben visibile.")
                 }
             // Il file della fotocamera non sopravvive alla preparazione del payload in memoria.
-            withContext(Dispatchers.IO) { runCatching { file.delete() } }
+            withContext(Dispatchers.IO) { runCatching { labelTempStore.delete(file) } }
         }
     }
 
@@ -322,7 +323,7 @@ class CheatEntryActivity : BaseShellActivity() {
     }
 
     override fun onDestroy() {
-        pendingCameraFile?.let { runCatching { it.delete() } }
+        pendingCameraFile?.let { runCatching { labelTempStore.delete(it) } }
         pendingCameraFile = null
         labelImage = null
         super.onDestroy()
