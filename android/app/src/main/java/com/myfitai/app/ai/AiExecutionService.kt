@@ -1,9 +1,6 @@
 package com.myfitai.app.ai
 
-/**
- * Provider -> JSON -> local schema validator -> authoritative app business validator.
- * Provider output is never normalized silently: invalid output is rejected.
- */
+/** Provider -> structured envelope -> local validators -> authoritative app business validator. */
 class AiExecutionService {
     data class ValidatedResponse(
         val provider: AiProviderType,
@@ -23,6 +20,7 @@ class AiExecutionService {
         businessValidator: (String) -> Result<Unit> = { Result.success(Unit) },
     ): ValidatedResponse {
         require(maxSchemaRetries in 0..2)
+        val compact = request.schemaName.contains("_pipe_")
         var attempt = 0
         var currentRequest = request
         while (true) {
@@ -32,15 +30,26 @@ class AiExecutionService {
                 if (attempt >= maxSchemaRetries) throw Failure.InvalidSchema(schemaResult.errors)
                 attempt++
                 currentRequest = request.copy(
-                    userPrompt = request.userPrompt +
-                        "\n\nPrevious output was INVALID_SCHEMA. Return ONLY JSON matching the supplied schema exactly; do not add fields or markdown."
+                    userPrompt = request.userPrompt + if (compact) {
+                        "\nFIX: invalid envelope. Return exact schema + pipe protocol only."
+                    } else {
+                        "\nPrevious output was INVALID_SCHEMA. Return ONLY JSON matching the supplied schema exactly; do not add fields or markdown."
+                    }
                 )
                 continue
             }
 
             val business = businessValidator(raw.jsonText)
             if (business.isFailure) {
-                throw Failure.BusinessRejected(business.exceptionOrNull()?.message ?: "BUSINESS_VALIDATION_FAILED")
+                val reason = business.exceptionOrNull()?.message ?: "BUSINESS_VALIDATION_FAILED"
+                if (compact && attempt < maxSchemaRetries) {
+                    attempt++
+                    currentRequest = request.copy(
+                        userPrompt = request.userPrompt + "\nFIX:${reason.take(80)}. Regenerate exact pipe records only."
+                    )
+                    continue
+                }
+                throw Failure.BusinessRejected(reason)
             }
             return ValidatedResponse(raw.provider, raw.model, raw.jsonText)
         }
