@@ -43,21 +43,21 @@
         <activity android:name=".ui.WeeklyReviewActivity" />
         <activity android:name=".ui.ShoppingListActivity" />
         <activity android:name=".ui.NotificationsActivity" />
-        <activity android:name=".ui.PhysicalEvolutionActivity" />
-        <activity android:name=".ui.SettingsActivity" />
+        <activity android:name=".ui.PhysicalEvolutionActivity" android:launchMode="singleTask" />
+        <activity android:name=".ui.SettingsActivity" android:launchMode="singleTask" />
         <activity android:name=".ui.ExportActivity" />
         <activity android:name=".ui.AiAnalysisActivity" />
         <activity android:name=".ui.NutritionAdviceActivity" />
         <activity android:name=".ui.HistoryActivity" />
         <activity android:name=".ui.AdjustedPlanActivity" />
         <activity android:name=".ui.CheatEntryActivity" />
-        <activity android:name=".ui.FoodPlanActivity" />
+        <activity android:name=".ui.FoodPlanActivity" android:launchMode="singleTask" />
         <activity android:name=".ui.NewWorkoutActivity" />
         <activity android:name=".ui.WorkoutsActivity" />
         <activity android:name=".ui.NewBodyMeasurementActivity" />
         <activity android:name=".ui.BodyMeasuresActivity" />
         <activity android:name=".ui.BiaActivity" />
-        <activity android:name=".ui.HomeActivity" />
+        <activity android:name=".ui.HomeActivity" android:launchMode="singleTask" />
         <activity android:name=".ui.ProfileActivity" />
         <activity android:name=".ui.OnboardingActivity" android:launchMode="singleTop" />
         <activity

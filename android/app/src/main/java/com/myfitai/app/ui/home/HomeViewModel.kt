@@ -102,6 +102,7 @@ class HomeViewModel(
 
     private fun buildState(source: Source, rangeIndex: Int, nextMeal: NextMealState?): DashboardState {
         val weightValues = metricValues(source.bia) { it.weightKg }
+            .ifEmpty { source.profile?.currentWeightKg?.let { listOf(System.currentTimeMillis() to it) }.orEmpty() }
         val fatValues = metricValues(source.bia) { it.bodyFatPercent }
         val muscleValues = metricValues(source.bia) { it.muscleMassKg }
         val fatTrend = LocalCalculationEngine.trend(fatValues.map { LocalCalculationEngine.TimedValue(it.first, it.second.toDouble()) })

@@ -9,6 +9,7 @@ import com.myfitai.app.ui.*
 
 object BottomNavBinder {
     enum class Tab { HOME, FOOD, PROGRESS, MORE }
+    const val EXTRA_TAB_ROOT = "myfitai_tab_root"
 
     fun bind(activity: Activity, selected: Tab) {
         val mapping = listOf(
@@ -27,7 +28,15 @@ object BottomNavBinder {
                 background = if (tab == selected) activity.getDrawable(R.drawable.bg_nav_selected) else null
                 setOnClickListener {
                     if (tab != selected) {
-                        activity.startActivity(Intent(activity, target).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
+                        activity.startActivity(
+                            Intent(activity, target)
+                                .putExtra(EXTRA_TAB_ROOT, true)
+                                .addFlags(
+                                    Intent.FLAG_ACTIVITY_NEW_TASK or
+                                        Intent.FLAG_ACTIVITY_CLEAR_TASK or
+                                        Intent.FLAG_ACTIVITY_NO_ANIMATION,
+                                )
+                        )
                     }
                 }
             }

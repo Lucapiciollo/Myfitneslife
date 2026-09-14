@@ -11,6 +11,9 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.OnBackPressedCallback
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -26,6 +29,26 @@ abstract class BaseShellActivity : AppCompatActivity() {
     private var profileSwitcher: AutoCompleteTextView? = null
     private var profileHeader: View? = null
 
+    private val tabRootBackCallback = object : OnBackPressedCallback(true) {
+        override fun handleOnBackPressed() {
+            if (intent.getBooleanExtra(BottomNavBinder.EXTRA_TAB_ROOT, false)) {
+                finishAndRemoveTask()
+            } else {
+                finish()
+            }
+        }
+    }
+
+    override fun onCreate(savedInstanceState: android.os.Bundle?) {
+        super.onCreate(savedInstanceState)
+        onBackPressedDispatcher.addCallback(this, tabRootBackCallback)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+    }
+
     override fun setContentView(layoutResID: Int) {
         val content = layoutInflater.inflate(layoutResID, null, false)
         val shell = LinearLayout(this).apply {
@@ -37,6 +60,12 @@ abstract class BaseShellActivity : AppCompatActivity() {
         }
         shell.addView(content, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
         super.setContentView(shell)
+        ViewCompat.setOnApplyWindowInsetsListener(shell) { view, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            insets
+        }
+        ViewCompat.requestApplyInsets(shell)
         observeGlobalProfiles()
     }
 
