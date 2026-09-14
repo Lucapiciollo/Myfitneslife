@@ -15,7 +15,7 @@
 |---|---|---|
 | `:app:assembleDebug` | PASS | Debug APK assembled locally |
 | `:app:testDebugUnitTest` | PASS | 44 tests, 0 failures, 0 skipped |
-| `:app:connectedDebugAndroidTest` | PASS | 32 tests, 0 failures, 0 skipped on `SM-A546B - 16` |
+| `:app:connectedDebugAndroidTest` | PASS | 33 tests, 0 failures, 0 skipped on `SM-A546B - 16` |
 | Manual bottom-tab smoke | PASS | Root reuse, active-tab no-op, rapid taps, Back to launcher, no crash/ANR |
 
 ## Added Test Count
@@ -23,7 +23,7 @@
 - 18 new executable test methods in this work:
   - 8 JVM tests: six-month fixture/regression and progress-series edge cases.
   - 10 Android tests: historical Room persistence/reopen, export formats, multi-profile isolation, and deterministic AI workflows.
-- Existing executable coverage remains active; totals after the run are 44 JVM tests and 32 Android tests.
+- Existing executable coverage remains active; totals after the run are 44 JVM tests and 33 Android tests.
 
 ## PASS
 
@@ -44,6 +44,7 @@
 - Deterministic notification scheduling covers lead time, future/past filtering, 60-day horizon, weekly review rollover, cancellation, profile switch and snooze clamping.
 - Label-photo processing covers valid JPEG conversion to in-memory payload, unreadable image rejection, temporary camera-file deletion and no external-file deletion.
 - UIAutomator E2E covers seeded launch, bottom-tab root switching, active-tab no-op and Back returning to launcher.
+- Stress dataset executed on device: 5 profiles, 240 BIA, 240 body measurements, 1000 workouts, 520 plan roots, 936 plan versions and 200 cheats. Observed timings for one profile: BIA history 34 ms, body history 10 ms, workouts 16 ms, plan roots 11 ms, latest snapshot 32 ms, shopping list 46 ms, JSON export 14832 ms, CSV ZIP export 15488 ms, profile PDF export 8391 ms, weekly PDF export 327 ms.
 - Bottom-tab manual smoke flow, including non-cyclic Back behavior.
 
 ## FAIL
@@ -62,7 +63,7 @@
 - Real AlarmManager delivery, notification permission, reboot rescheduling and notification tap delivery remain untested; scheduling logic is covered through a fake alarm gateway.
 - Full Activity forms, OS camera/gallery picker flow, notification tap routing, share chooser, and visual/pixel fidelity.
 - 1Y chart rendering, landscape, small/large screens, and screenshot/golden comparison.
-- Large stress dataset timings and memory profile.
+- Memory profiling and repeated/warm-cache stress runs.
 
 ## NOT RUN
 
@@ -71,7 +72,6 @@
 - Notification delivery, reboot rescheduling, permission denial, and stale notification delivery tests.
 - Full UI E2E for profile/BIA/measurements/workouts/diet/cheat/review/export screens.
 - v1 -> current and v2 -> current migrations; schema assets for those versions are not present.
-- 5-profile/2-year/1000-workout/104-week/300-version/200-cheat performance run.
 
 ## Residual Risks
 
@@ -80,4 +80,3 @@
 - Notification timing remains subject to Android alarm and OEM scheduling behavior.
 - No pixel-level comparison has been executed.
 - V1 is not certified as fully complete; the traceability holes above remain open.
-- The profile-scoped nested-plan changes compile in the Android test source set, but the final connected instrumentation rerun was `NOT RUN` because no device was connected when the command was issued.
