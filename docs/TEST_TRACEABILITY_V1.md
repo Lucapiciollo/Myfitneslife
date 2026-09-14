@@ -24,7 +24,7 @@ Status values are `PASS`, `STATIC REVIEW ONLY`, `NOT RUN`, and `FAIL`. `PASS` me
 | Shopping list | PASS | STATIC REVIEW ONLY | NOT RUN | NOT RUN | STATIC REVIEW ONLY | PASS | PASS |
 | Notifications | PASS (scheduler rules) | PASS (fake alarm gateway) | NOT RUN (OS delivery) | NOT RUN | STATIC REVIEW ONLY | PASS (settings/request codes) | NOT RUN |
 | Weekly review | PASS (contract) | PASS (fake runtime) | PASS (fake runtime) | NOT RUN | PASS | PASS | PASS |
-| JSON/CSV/PDF export | STATIC REVIEW ONLY | PASS | NOT RUN | NOT RUN | STATIC REVIEW ONLY | PASS | PASS |
+| JSON/CSV/PDF export | STATIC REVIEW ONLY | PASS | PASS (JSON UI export) | PASS (export screen) | STATIC REVIEW ONLY | PASS | PASS |
 | Multi-profile isolation | PASS | PASS | PASS | NOT RUN | PASS | PASS | PASS |
 | DB migrations | NOT RUN | PASS (`3 -> 4`) | NOT RUN | NOT RUN | STATIC REVIEW ONLY | PASS | STATIC REVIEW ONLY |
 | Restart/persistence | STATIC REVIEW ONLY | PASS | NOT RUN | NOT RUN | NOT RUN | PASS | PASS |
