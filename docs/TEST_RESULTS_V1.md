@@ -15,7 +15,7 @@
 |---|---|---|
 | `:app:assembleDebug` | PASS | Debug APK assembled locally |
 | `:app:testDebugUnitTest` | PASS | 44 tests, 0 failures, 0 skipped |
-| `:app:connectedDebugAndroidTest` | PASS | 39 tests, 0 failures, 0 skipped on `SM-A546B - 16` |
+| `:app:connectedDebugAndroidTest` | PASS | 40 tests, 0 failures, 0 skipped on `SM-A546B - 16` |
 | Manual bottom-tab smoke | PASS | Root reuse, active-tab no-op, rapid taps, Back to launcher, no crash/ANR |
 
 ## Added Test Count
@@ -23,7 +23,7 @@
 - 18 new executable test methods in this work:
   - 8 JVM tests: six-month fixture/regression and progress-series edge cases.
   - 10 Android tests: historical Room persistence/reopen, export formats, multi-profile isolation, and deterministic AI workflows.
-- Existing executable coverage remains active; totals after the run are 44 JVM tests and 39 Android tests.
+- Existing executable coverage remains active; totals after the run are 44 JVM tests and 40 Android tests.
 
 ## PASS
 
@@ -47,6 +47,7 @@
 - UIAutomator E2E reaches export from Altro, verifies all export format rows and confirms JSON export file creation from the real screen.
 - Notification receiver tests verify meal/review channels and meal notification creation when Android notification permission allows it.
 - Settings UI E2E verifies provider/key status without secrets and the privacy dialog; `FLAG_SECURE` remains statically verified because device dumps do not expose a stable textual flag format.
+- Debug-only `QaSeederActivity` writes the real app Room database, reports `profile=2 bia=13 body=13 workouts=104 plans=26 cheats=20`, and the normal app is reopened afterward.
 - Stress dataset executed twice on device: 5 profiles, 240 BIA, 240 body measurements, 1000 workouts, 520 plan roots, 936 plan versions and 200 cheats. Run 1 timings: BIA 34 ms, body 10 ms, workouts 16 ms, plan roots 11 ms, snapshot 32 ms, shopping 46 ms, JSON 14832 ms, CSV ZIP 15488 ms, profile PDF 8391 ms, weekly PDF 327 ms. Run 2: BIA 36 ms, body 22 ms, workouts 21 ms, plan roots 19 ms, snapshot 14 ms, shopping 40 ms, JSON 21783 ms, CSV ZIP 20348 ms, profile PDF 4811 ms, weekly PDF 162 ms.
 - Bottom-tab manual smoke flow, including non-cyclic Back behavior.
 

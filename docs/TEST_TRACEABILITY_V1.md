@@ -4,14 +4,14 @@ Status values are `PASS`, `STATIC REVIEW ONLY`, `NOT RUN`, and `FAIL`. `PASS` me
 
 | Feature | Unit | Integration | E2E | UI | Error | Persistence | Export |
 |---|---|---|---|---|---|---|---|
-| Profile and calculations | PASS | PASS | NOT RUN | STATIC REVIEW ONLY | PASS | PASS | PASS |
-| BIA history | PASS | PASS | NOT RUN | NOT RUN | STATIC REVIEW ONLY | PASS | PASS |
-| Body measurements | PASS | PASS | NOT RUN | NOT RUN | STATIC REVIEW ONLY | PASS | PASS |
+| Profile and calculations | PASS | PASS | PASS (QA seeded device) | STATIC REVIEW ONLY | PASS | PASS | PASS |
+| BIA history | PASS | PASS | PASS (QA seeded device) | NOT RUN | STATIC REVIEW ONLY | PASS | PASS |
+| Body measurements | PASS | PASS | PASS (QA seeded device) | NOT RUN | STATIC REVIEW ONLY | PASS | PASS |
 | Graph ranges/trends | PASS | STATIC REVIEW ONLY | NOT RUN | NOT RUN | PASS | STATIC REVIEW ONLY | STATIC REVIEW ONLY |
 | NORMAL/SPORT classifier | PASS | PASS | NOT RUN | NOT RUN | PASS | PASS | STATIC REVIEW ONLY |
-| Workouts | PASS | PASS | NOT RUN | NOT RUN | STATIC REVIEW ONLY | PASS | PASS |
+| Workouts | PASS | PASS | PASS (QA seeded device) | NOT RUN | STATIC REVIEW ONLY | PASS | PASS |
 | Nutrition targets | PASS | STATIC REVIEW ONLY | NOT RUN | NOT RUN | PASS | PASS | PASS |
-| Weekly diet structure | PASS | PASS | PASS (fake runtime) | NOT RUN | PASS | PASS | PASS |
+| Weekly diet structure | PASS | PASS | PASS (QA seeded device/fake runtime) | NOT RUN | PASS | PASS | PASS |
 | Whey/protein powder | PASS | PASS | NOT RUN | NOT RUN | PASS | PASS | PASS |
 | Creatine | PASS | PASS | NOT RUN | NOT RUN | PASS | PASS | PASS |
 | Hydration note | PASS | PASS | NOT RUN | NOT RUN | PASS | PASS | PASS |
@@ -28,7 +28,7 @@ Status values are `PASS`, `STATIC REVIEW ONLY`, `NOT RUN`, and `FAIL`. `PASS` me
 | JSON/CSV/PDF export | STATIC REVIEW ONLY | PASS | PASS (JSON UI export) | PASS (export screen) | STATIC REVIEW ONLY | PASS | PASS |
 | Multi-profile isolation | PASS | PASS | PASS | NOT RUN | PASS | PASS | PASS |
 | DB migrations | NOT RUN | PASS (`3 -> 4`) | NOT RUN | NOT RUN | STATIC REVIEW ONLY | PASS | STATIC REVIEW ONLY |
-| Restart/persistence | STATIC REVIEW ONLY | PASS | NOT RUN | NOT RUN | NOT RUN | PASS | PASS |
+| Restart/persistence | STATIC REVIEW ONLY | PASS | PASS (QA seed/background reopen) | NOT RUN | NOT RUN | PASS | PASS |
 | Bottom tab navigation | NOT RUN | NOT RUN | PASS (UIAutomator device E2E) | PASS (UIAutomator device E2E) | PASS (Back E2E) | STATIC REVIEW ONLY | NOT RUN |
 | Performance/stress | PASS (two device timing runs) | PASS (stress fixture) | NOT RUN | NOT RUN | STATIC REVIEW ONLY | PASS | PASS (two export timing runs) |
 
