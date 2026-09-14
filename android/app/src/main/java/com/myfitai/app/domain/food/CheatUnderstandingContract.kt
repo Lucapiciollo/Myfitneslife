@@ -1,38 +1,12 @@
 package com.myfitai.app.domain.food
 
+import com.myfitai.app.ai.AiCompactEnvelope
 import org.json.JSONObject
 
-/**
- * Provider-neutral preview used before a deviation is persisted.
- * The user must see and confirm this interpretation before the app saves/adapts anything.
- */
+/** Preview used before a deviation is persisted. Runtime transport is compact; legacy JSON parsing stays test-compatible. */
 object CheatUnderstandingContract {
-    const val SCHEMA_NAME = "myfitai_cheat_understanding_v1"
-
-    val schemaJson: String = JSONObject(
-        """
-        {
-          "type":"object",
-          "additionalProperties":false,
-          "properties":{
-            "understoodFood":{"type":"string"},
-            "estimate":{
-              "type":"object","additionalProperties":false,
-              "properties":{
-                "kcal":{"type":"integer"},
-                "proteinG":{"type":"number"},
-                "carbsG":{"type":"number"},
-                "fatG":{"type":"number"},
-                "confidence":{"type":"string"},
-                "notes":{"type":"string"}
-              },
-              "required":["kcal","proteinG","carbsG","fatG","confidence","notes"]
-            }
-          },
-          "required":["understoodFood","estimate"]
-        }
-        """.trimIndent()
-    ).toString()
+    const val SCHEMA_NAME = "myfitai_cheat_understanding_pipe_v1"
+    val schemaJson: String = AiCompactEnvelope.schemaJson(CheatUnderstandingCompactContract.PROTOCOL)
 
     data class Preview(
         val understoodFood: String,
@@ -41,6 +15,7 @@ object CheatUnderstandingContract {
 
     fun parse(jsonText: String): Preview {
         val root = JSONObject(jsonText)
+        if (root.has("data")) return CheatUnderstandingCompactContract.parse(jsonText)
         val estimate = root.getJSONObject("estimate")
         return Preview(
             understoodFood = root.getString("understoodFood").trim(),
