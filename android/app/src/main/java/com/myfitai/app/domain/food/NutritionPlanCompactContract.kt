@@ -198,8 +198,8 @@ V|1_or_0|notes"""
         )
     }
 
-    private fun String.requiredText(error: String): String = trim().also { require(it.isNotEmpty()) { error } }
-    private fun String.toIntStrict(error: String): Int = toIntOrNull() ?: error(error)
-    private fun String.toLongStrict(error: String): Long = toLongOrNull() ?: error(error)
-    private fun String.toFloatStrict(error: String): Float = toFloatOrNull()?.takeIf { it.isFinite() } ?: error(error)
+    private fun String.requiredText(code: String): String = trim().also { require(it.isNotEmpty()) { code } }
+    private fun String.toIntStrict(code: String): Int = toIntOrNull() ?: kotlin.error(code)
+    private fun String.toLongStrict(code: String): Long = toLongOrNull() ?: kotlin.error(code)
+    private fun String.toFloatStrict(code: String): Float = toFloatOrNull()?.takeIf { it.isFinite() } ?: kotlin.error(code)
 }
