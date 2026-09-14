@@ -1,48 +1,12 @@
 package com.myfitai.app.domain.food
 
+import com.myfitai.app.ai.AiCompactEnvelope
 import org.json.JSONObject
 
 /** Canonical compact response contract for the strictly nutrition-scoped advice agent. */
 object NutritionAdviceContract {
-    const val SCHEMA_NAME = "myfitai_nutrition_advice_v1"
-
-    val schemaJson: String = JSONObject(
-        """
-        {
-          "type":"object",
-          "additionalProperties":false,
-          "properties":{
-            "inScope":{"type":"boolean"},
-            "answer":{"type":"string"},
-            "suggestions":{
-              "type":"array",
-              "maxItems":5,
-              "items":{
-                "type":"object",
-                "additionalProperties":false,
-                "properties":{
-                  "title":{"type":"string"},
-                  "reason":{"type":"string"},
-                  "estimatedKcal":{"type":"integer"},
-                  "proteinG":{"type":"number"},
-                  "carbsG":{"type":"number"},
-                  "fatG":{"type":"number"}
-                },
-                "required":["title","reason","estimatedKcal","proteinG","carbsG","fatG"]
-              }
-            },
-            "assumptions":{"type":"string"},
-            "agentValidation":{
-              "type":"object",
-              "additionalProperties":false,
-              "properties":{"valid":{"type":"boolean"},"notes":{"type":"string"}},
-              "required":["valid","notes"]
-            }
-          },
-          "required":["inScope","answer","suggestions","assumptions","agentValidation"]
-        }
-        """.trimIndent()
-    ).toString()
+    const val SCHEMA_NAME = "myfitai_nutrition_advice_pipe_v1"
+    val schemaJson: String = AiCompactEnvelope.schemaJson(NutritionAdviceCompactContract.PROTOCOL)
 
     data class Suggestion(
         val title: String,
@@ -63,33 +27,16 @@ object NutritionAdviceContract {
 
     fun parse(jsonText: String): Response {
         val root = JSONObject(jsonText)
+        if (root.has("data")) return NutritionAdviceCompactContract.parse(jsonText)
         val suggestionsJson = root.getJSONArray("suggestions")
         val suggestions = buildList {
             for (i in 0 until suggestionsJson.length()) {
                 val item = suggestionsJson.getJSONObject(i)
-                add(
-                    Suggestion(
-                        title = item.getString("title").trim(),
-                        reason = item.getString("reason").trim(),
-                        estimatedKcal = item.getInt("estimatedKcal"),
-                        proteinG = item.getDouble("proteinG").toFloat(),
-                        carbsG = item.getDouble("carbsG").toFloat(),
-                        fatG = item.getDouble("fatG").toFloat(),
-                    )
-                )
+                add(Suggestion(item.getString("title").trim(), item.getString("reason").trim(), item.getInt("estimatedKcal"), item.getDouble("proteinG").toFloat(), item.getDouble("carbsG").toFloat(), item.getDouble("fatG").toFloat()))
             }
         }
         val agent = root.getJSONObject("agentValidation")
-        return Response(
-            inScope = root.getBoolean("inScope"),
-            answer = root.getString("answer").trim(),
-            suggestions = suggestions,
-            assumptions = root.getString("assumptions").trim(),
-            agentValidation = NutritionPlanContract.AgentValidation(
-                valid = agent.getBoolean("valid"),
-                notes = agent.getString("notes").trim(),
-            ),
-        )
+        return Response(root.getBoolean("inScope"), root.getString("answer").trim(), suggestions, root.getString("assumptions").trim(), NutritionPlanContract.AgentValidation(agent.getBoolean("valid"), agent.getString("notes").trim()))
     }
 
     fun validateBusiness(response: Response): Result<Unit> = runCatching {
