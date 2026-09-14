@@ -11,19 +11,19 @@ Status values are `PASS`, `STATIC REVIEW ONLY`, `NOT RUN`, and `FAIL`. `PASS` me
 | NORMAL/SPORT classifier | PASS | PASS | NOT RUN | NOT RUN | PASS | PASS | STATIC REVIEW ONLY |
 | Workouts | PASS | PASS | NOT RUN | NOT RUN | STATIC REVIEW ONLY | PASS | PASS |
 | Nutrition targets | PASS | STATIC REVIEW ONLY | NOT RUN | NOT RUN | PASS | PASS | PASS |
-| Weekly diet structure | PASS | PASS | NOT RUN | NOT RUN | PASS | PASS | PASS |
+| Weekly diet structure | PASS | PASS | PASS (fake runtime) | NOT RUN | PASS | PASS | PASS |
 | Whey/protein powder | PASS | PASS | NOT RUN | NOT RUN | PASS | PASS | PASS |
 | Creatine | PASS | PASS | NOT RUN | NOT RUN | PASS | PASS | PASS |
 | Hydration note | PASS | PASS | NOT RUN | NOT RUN | PASS | PASS | PASS |
-| Meal swap | PASS | PASS | NOT RUN | NOT RUN | PASS | PASS | PASS |
-| Chiedi all'IA | PASS (contract only) | NOT RUN | NOT RUN | NOT RUN | PASS (scope contract) | NOT RUN | NOT RUN |
-| Text cheat two-phase flow | PASS (contract only) | STATIC REVIEW ONLY | NOT RUN | NOT RUN | PASS (contract) | PASS (entity) | PASS |
+| Meal swap | PASS | PASS | PASS (fake runtime) | NOT RUN | PASS | PASS | PASS |
+| Chiedi all'IA | PASS | PASS (fake runtime) | PASS (fake runtime) | NOT RUN | PASS | NOT RUN | NOT RUN |
+| Text cheat two-phase flow | PASS (contract) | PASS (fake runtime) | PASS (fake runtime) | NOT RUN | PASS | PASS (entity) | PASS |
 | Photo cheat flow | NOT RUN | NOT RUN | NOT RUN | NOT RUN | STATIC REVIEW ONLY | STATIC REVIEW ONLY | STATIC REVIEW ONLY |
-| Future-only adaptation | PASS (contract only) | STATIC REVIEW ONLY | NOT RUN | NOT RUN | PASS | PASS | PASS |
+| Future-only adaptation | PASS (contract only) | PASS (fake runtime no-adaptation path) | PASS (fake runtime) | NOT RUN | PASS | PASS | PASS |
 | Plan versioning | PASS | PASS | NOT RUN | NOT RUN | PASS | PASS | PASS |
 | Shopping list | PASS | STATIC REVIEW ONLY | NOT RUN | NOT RUN | STATIC REVIEW ONLY | PASS | PASS |
 | Notifications | STATIC REVIEW ONLY | NOT RUN | NOT RUN | NOT RUN | STATIC REVIEW ONLY | STATIC REVIEW ONLY | NOT RUN |
-| Weekly review | PASS (contract only) | STATIC REVIEW ONLY | NOT RUN | NOT RUN | PASS | PASS | PASS |
+| Weekly review | PASS (contract) | PASS (fake runtime) | PASS (fake runtime) | NOT RUN | PASS | PASS | PASS |
 | JSON/CSV/PDF export | STATIC REVIEW ONLY | PASS | NOT RUN | NOT RUN | STATIC REVIEW ONLY | PASS | PASS |
 | Multi-profile isolation | PASS | PASS | NOT RUN | NOT RUN | PASS | PASS | PASS |
 | DB migrations | NOT RUN | PASS (`3 -> 4`) | NOT RUN | NOT RUN | STATIC REVIEW ONLY | PASS | STATIC REVIEW ONLY |
@@ -33,7 +33,7 @@ Status values are `PASS`, `STATIC REVIEW ONLY`, `NOT RUN`, and `FAIL`. `PASS` me
 
 ## Known Traceability Holes
 
-- No real Gemini/OpenAI provider run with a configured credential.
+- No real Gemini/OpenAI provider run with a configured credential; service integration uses a provider-neutral fake runtime and canonical JSON contracts.
 - No executable Activity/UI test suite; bottom tabs have manual device evidence only.
 - No camera/gallery/photo-label runtime test.
 - No Android alarm delivery/notification tap test.

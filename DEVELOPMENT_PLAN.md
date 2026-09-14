@@ -124,9 +124,9 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 ### Ultimo stato noto
 - `:app:assembleDebug` verde sull'HEAD verificato con Gradle 9.6.0, Java 17 e Android SDK locale.
 - `:app:testDebugUnitTest` verde: 44 test eseguiti.
-- `:app:connectedDebugAndroidTest` verde: 16 test eseguiti su `SM-A546B - 16`.
+- `:app:connectedDebugAndroidTest` verde: 21 test eseguiti su `SM-A546B - 16`.
 - Il framework storico `SixMonthHistoryFixture` usa seed `20260914`, copre circa 6 mesi, 26 settimane, BIA, misure, workout, versioni, sgarri, review, supplementi, hydration e multiprofilo.
-- La suite instrumented copre persistenza Room, riapertura di un database persistente temporaneo, piani legacy senza supplementi, migration 3 -> 4, export JSON/CSV ZIP/PDF, isolamento multiprofilo e conservazione di supplementi/hydration note.
+- La suite instrumented copre persistenza Room, riapertura di un database persistente temporaneo, piani legacy senza supplementi, migration 3 -> 4, export JSON/CSV ZIP/PDF, isolamento multiprofilo, workflow AI deterministici con fake runtime provider-neutral e conservazione di supplementi/hydration note.
 - Bottom tab smoke test fisico completato: root tab riusati senza stack duplicati, tap sul tab attivo no-op, cambio tab senza animazione Activity e Back senza ciclo tra tab.
 - Inset fisici verificati su `SM-A546B`: shell app tra status bar e navigation bar, bottom navigation non sovrapposta ai comandi di sistema.
 - La CI non parte sui push a `develop`; resta disponibile via pull request o `workflow_dispatch`.
@@ -138,6 +138,7 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 - [x] Test runtime Room di supplementi, hydration note, compatibilità legacy e cambio versione del pasto.
 - [x] Verifica migrazione DB 3 -> 4.
 - [x] Framework test storico deterministico di sei mesi e test export/multiprofilo.
+- [x] Seam `AiRuntimeGateway` e test integration deterministici per generation, meal swap, advice, sgarro e weekly review.
 - [ ] QA grafica/pixel su device/emulatore.
 - [ ] Smoke test delle Activity principali.
 - [ ] E2E UI completo di profilo, dieta, sgarro, review, export e foto.

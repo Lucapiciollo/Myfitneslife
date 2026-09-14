@@ -15,15 +15,15 @@
 |---|---|---|
 | `:app:assembleDebug` | PASS | Debug APK assembled locally |
 | `:app:testDebugUnitTest` | PASS | 44 tests, 0 failures, 0 skipped |
-| `:app:connectedDebugAndroidTest` | PASS | 16 tests, 0 failures, 0 skipped on `SM-A546B - 16` |
+| `:app:connectedDebugAndroidTest` | PASS | 21 tests, 0 failures, 0 skipped on `SM-A546B - 16` |
 | Manual bottom-tab smoke | PASS | Root reuse, active-tab no-op, rapid taps, Back to launcher, no crash/ANR |
 
 ## Added Test Count
 
-- 13 new executable test methods in this work:
+- 18 new executable test methods in this work:
   - 8 JVM tests: six-month fixture/regression and progress-series edge cases.
-  - 5 Android tests: historical Room persistence/reopen, export formats, and multi-profile isolation.
-- Existing executable coverage remains active; totals after the run are 44 JVM tests and 16 Android tests.
+  - 10 Android tests: historical Room persistence/reopen, export formats, multi-profile isolation, and deterministic AI workflows.
+- Existing executable coverage remains active; totals after the run are 44 JVM tests and 21 Android tests.
 
 ## PASS
 
@@ -38,6 +38,8 @@
 - CSV ZIP entry structure.
 - Profile PDF and weekly plan PDF file generation on Android.
 - Multi-profile export isolation for populated, normal-empty, and new-empty profiles.
+- Provider-neutral service integration for plan generation, meal swap, nutrition advice, cheat analyze/confirm, and weekly review.
+- AI schema/business validation remains in the execution path; tests do not bypass canonical contracts.
 - Bottom-tab manual smoke flow, including non-cyclic Back behavior.
 
 ## FAIL
@@ -46,14 +48,14 @@
 
 ## Bug Corrected
 
-`CheatAdjustmentService` previously rebuilt adapted `DayDraft` objects without carrying `supplements` and `hydrationNote`. The service now preserves both fields and includes supplement values in rebuilt daily totals. This was identified during static service review; a full provider-backed service integration flow remains pending because `AiRuntimeService` is concrete and no credentialed provider test was run.
+`CheatAdjustmentService` previously rebuilt adapted `DayDraft` objects without carrying `supplements` and `hydrationNote`. The service now preserves both fields and includes supplement values in rebuilt daily totals. The service boundary is now testable through `AiRuntimeGateway`; real provider transport remains untested.
 
 `ProfileExportService` also now preserves `supplements` and `hydrationNote` in the weekly-PDF snapshot path and includes them in canonical JSON day exports.
 
 ## STATIC REVIEW ONLY
 
 - Provider-specific Gemini/OpenAI HTTP behavior, authentication, timeout, network loss, and JSON parity.
-- Full service orchestration for plan generation, meal swap, advice, cheat analysis/adaptation, and weekly review with a fake runtime at the service boundary.
+- Real Gemini/OpenAI HTTP behavior, authentication, timeout, network loss, and provider parity.
 - Notification scheduler internals were inspected and time-injected, but AlarmManager delivery/cancellation was not executed as a deterministic fake-system test.
 - Full Activity forms, camera/gallery flow, notification tap routing, share chooser, and visual/pixel fidelity.
 - 1Y chart rendering, landscape, small/large screens, and screenshot/golden comparison.
@@ -70,7 +72,7 @@
 
 ## Residual Risks
 
-- Several service classes still depend on concrete `AiRuntimeService`, repositories, and Android system services, limiting JVM service integration coverage.
+- Service integrations use `AiRuntimeGateway`; repositories and Android system services remain concrete in several flows.
 - Nested meal reads are ID-based rather than profile-aware at the DAO boundary.
 - Notification timing remains subject to Android alarm and OEM scheduling behavior.
 - No pixel-level comparison has been executed.
