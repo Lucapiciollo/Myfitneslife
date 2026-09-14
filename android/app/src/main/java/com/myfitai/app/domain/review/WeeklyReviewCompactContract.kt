@@ -19,18 +19,24 @@ V|1_or_0|notes"""
         var summary: String? = null
         val observations = mutableListOf<String>()
         val guidance = mutableListOf<String>()
-        var validation = WeeklyReviewContract.AgentValidation(false, "")
+        var validation: WeeklyReviewContract.AgentValidation? = null
         lines.drop(1).forEach { line ->
             val p = line.split('|')
             when (p.firstOrNull()) {
-                "W" -> { require(p.size == 2 && week == null); week = p[1].toLongOrNull() ?: error("WR_WEEK_INVALID") }
-                "S" -> { require(p.size == 2 && summary == null); summary = p[1].trim() }
-                "O" -> { require(p.size == 2); observations += p[1].trim() }
-                "G" -> { require(p.size == 2); guidance += p[1].trim() }
-                "V" -> { require(p.size == 3 && p[1] in setOf("0", "1")); validation = WeeklyReviewContract.AgentValidation(p[1] == "1", p[2].trim()) }
+                "W" -> { require(p.size == 2 && week == null && validation == null); week = p[1].toLongOrNull() ?: error("WR_WEEK_INVALID") }
+                "S" -> { require(p.size == 2 && summary == null && validation == null); summary = p[1].trim() }
+                "O" -> { require(p.size == 2 && validation == null); observations += p[1].trim() }
+                "G" -> { require(p.size == 2 && validation == null); guidance += p[1].trim() }
+                "V" -> { require(p.size == 3 && validation == null && p[1] in setOf("0", "1")); validation = WeeklyReviewContract.AgentValidation(p[1] == "1", p[2].trim()) }
                 else -> error("WR_RECORD_INVALID")
             }
         }
-        return WeeklyReviewContract.Response(requireNotNull(week) { "WR_WEEK_MISSING" }, requireNotNull(summary) { "WR_SUMMARY_MISSING" }, observations, guidance, validation)
+        return WeeklyReviewContract.Response(
+            requireNotNull(week) { "WR_WEEK_MISSING" },
+            requireNotNull(summary) { "WR_SUMMARY_MISSING" },
+            observations,
+            guidance,
+            requireNotNull(validation) { "WR_VALIDATION_MISSING" },
+        )
     }
 }
