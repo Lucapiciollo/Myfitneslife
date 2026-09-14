@@ -4,34 +4,8 @@ import org.json.JSONObject
 
 /** Provider-neutral structured contract for a weekly review. */
 object WeeklyReviewContract {
-    const val SCHEMA_NAME = "myfitai_weekly_review_v1"
-
-    val schemaJson: String = JSONObject(
-        """
-        {
-          "type":"object",
-          "additionalProperties":false,
-          "properties":{
-            "weekStartEpochDay":{"type":"integer"},
-            "summary":{"type":"string"},
-            "observations":{
-              "type":"array","minItems":1,"maxItems":6,
-              "items":{"type":"string"}
-            },
-            "nextWeekGuidance":{
-              "type":"array","minItems":1,"maxItems":5,
-              "items":{"type":"string"}
-            },
-            "agentValidation":{
-              "type":"object","additionalProperties":false,
-              "properties":{"valid":{"type":"boolean"},"notes":{"type":"string"}},
-              "required":["valid","notes"]
-            }
-          },
-          "required":["weekStartEpochDay","summary","observations","nextWeekGuidance","agentValidation"]
-        }
-        """.trimIndent()
-    ).toString()
+    const val SCHEMA_NAME = WeeklyReviewCompactContract.SCHEMA_NAME
+    val schemaJson: String get() = WeeklyReviewCompactContract.schemaJson
 
     data class AgentValidation(val valid: Boolean, val notes: String)
     data class Response(
@@ -44,11 +18,10 @@ object WeeklyReviewContract {
 
     fun parse(jsonText: String): Response {
         val root = JSONObject(jsonText)
+        if (root.has("data")) return WeeklyReviewCompactContract.parse(jsonText)
         fun strings(name: String): List<String> {
             val array = root.getJSONArray(name)
-            return buildList {
-                for (i in 0 until array.length()) add(array.getString(i).trim())
-            }
+            return buildList { for (i in 0 until array.length()) add(array.getString(i).trim()) }
         }
         val validation = root.getJSONObject("agentValidation")
         return Response(
