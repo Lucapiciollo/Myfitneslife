@@ -1,6 +1,6 @@
 package com.myfitai.app.domain.review
 
-import com.myfitai.app.ai.AiRuntimeService
+import com.myfitai.app.ai.AiRuntimeGateway
 import com.myfitai.app.ai.AiStructuredRequest
 import com.myfitai.app.data.local.entity.WeeklyReviewEntity
 import com.myfitai.app.data.profile.ActiveProfileStore
@@ -21,7 +21,7 @@ import java.time.ZoneId
 import kotlin.math.roundToInt
 
 class WeeklyReviewService(
-    private val aiRuntime: AiRuntimeService,
+    private val aiRuntime: AiRuntimeGateway,
     private val reviews: WeeklyReviewRepository,
     private val plans: MealPlanRepository,
     private val workouts: WorkoutRepository,

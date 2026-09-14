@@ -1,6 +1,6 @@
 package com.myfitai.app.domain.food
 
-import com.myfitai.app.ai.AiRuntimeService
+import com.myfitai.app.ai.AiRuntimeGateway
 import com.myfitai.app.ai.AiStructuredRequest
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.repository.CheatEntryRepository
@@ -19,7 +19,7 @@ import java.util.Locale
  * Responses are deliberately compact to minimize token usage.
  */
 class NutritionAdviceService(
-    private val aiRuntime: AiRuntimeService,
+    private val aiRuntime: AiRuntimeGateway,
     private val profiles: UserProfileRepository,
     private val plans: MealPlanRepository,
     private val cheats: CheatEntryRepository,

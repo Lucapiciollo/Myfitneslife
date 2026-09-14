@@ -1,6 +1,6 @@
 package com.myfitai.app.domain.food
 
-import com.myfitai.app.ai.AiRuntimeService
+import com.myfitai.app.ai.AiRuntimeGateway
 import com.myfitai.app.ai.AiStructuredRequest
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.repository.DayDraft
@@ -22,7 +22,7 @@ import java.time.ZoneId
 import java.util.Locale
 
 class NutritionPlanGenerationService(
-    private val aiRuntime: AiRuntimeService,
+    private val aiRuntime: AiRuntimeGateway,
     private val calculations: ProfileCalculationService,
     private val profiles: UserProfileRepository,
     private val workouts: WorkoutRepository,

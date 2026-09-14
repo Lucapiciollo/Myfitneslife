@@ -1,7 +1,7 @@
 package com.myfitai.app.domain.food
 
 import com.myfitai.app.ai.AiImageInput
-import com.myfitai.app.ai.AiRuntimeService
+import com.myfitai.app.ai.AiRuntimeGateway
 import com.myfitai.app.ai.AiStructuredRequest
 import com.myfitai.app.data.local.entity.CheatEntryEntity
 import com.myfitai.app.data.profile.ActiveProfileStore
@@ -14,7 +14,7 @@ import java.time.ZoneId
 import kotlin.math.abs
 
 class CheatAdjustmentService(
-    private val aiRuntime: AiRuntimeService,
+    private val aiRuntime: AiRuntimeGateway,
     private val plans: MealPlanRepository,
     private val cheats: CheatEntryRepository,
     private val activeProfileStore: ActiveProfileStore,

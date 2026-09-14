@@ -5,7 +5,7 @@ import com.myfitai.app.security.SecureGeminiKeyStore
 import com.myfitai.app.security.SecureOpenAiKeyStore
 
 /** Composition boundary used by agents: resolves provider without exposing credentials. */
-class AiRuntimeService(context: Context) {
+class AiRuntimeService(context: Context) : AiRuntimeGateway {
     private val appContext = context.applicationContext
     private val settings = AiSettingsStore(appContext)
     private val geminiStore = SecureGeminiKeyStore(appContext)
@@ -20,10 +20,10 @@ class AiRuntimeService(context: Context) {
 
     fun selectedProviderType(): AiProviderType = config().selectedProvider()
 
-    suspend fun execute(
+    override suspend fun execute(
         request: AiStructuredRequest,
-        maxSchemaRetries: Int = 1,
-        businessValidator: (String) -> Result<Unit> = { Result.success(Unit) },
+        maxSchemaRetries: Int,
+        businessValidator: (String) -> Result<Unit>,
     ): AiExecutionService.ValidatedResponse {
         val provider = AiProviderSelector.create(appContext, config())
             ?: throw AiTransportException.NotConfigured(AiProviderType.NOT_CONFIGURED)
