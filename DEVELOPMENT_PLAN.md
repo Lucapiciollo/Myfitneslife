@@ -126,6 +126,8 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 - `:app:testDebugUnitTest` verde: 34 test eseguiti.
 - `:app:connectedDebugAndroidTest` verde: 11 test eseguiti su `SM-A546B - 16` e 11 su `Medium_Phone(AVD) - 17`.
 - La suite instrumented copre persistenza Room, piani legacy senza supplementi, migration 3 -> 4 e conservazione di supplementi/hydration note nel cambio versione del pasto.
+- Bottom tab smoke test fisico completato: root tab riusati senza stack duplicati, tap sul tab attivo no-op, cambio tab senza animazione Activity e Back senza ciclo tra tab.
+- Inset fisici verificati su `SM-A546B`: shell app tra status bar e navigation bar, bottom navigation non sovrapposta ai comandi di sistema.
 - La CI non parte sui push a `develop`; resta disponibile via pull request o `workflow_dispatch`.
 
 ### Prossimi step obbligatori
