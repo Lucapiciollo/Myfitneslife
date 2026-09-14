@@ -22,7 +22,7 @@ Status values are `PASS`, `STATIC REVIEW ONLY`, `NOT RUN`, and `FAIL`. `PASS` me
 | Future-only adaptation | PASS (contract only) | PASS (fake runtime no-adaptation path) | PASS (fake runtime) | NOT RUN | PASS | PASS | PASS |
 | Plan versioning | PASS | PASS | NOT RUN | NOT RUN | PASS | PASS | PASS |
 | Shopping list | PASS | STATIC REVIEW ONLY | NOT RUN | NOT RUN | STATIC REVIEW ONLY | PASS | PASS |
-| Notifications | STATIC REVIEW ONLY | NOT RUN | NOT RUN | NOT RUN | STATIC REVIEW ONLY | STATIC REVIEW ONLY | NOT RUN |
+| Notifications | PASS (scheduler rules) | PASS (fake alarm gateway) | NOT RUN (OS delivery) | NOT RUN | STATIC REVIEW ONLY | PASS (settings/request codes) | NOT RUN |
 | Weekly review | PASS (contract) | PASS (fake runtime) | PASS (fake runtime) | NOT RUN | PASS | PASS | PASS |
 | JSON/CSV/PDF export | STATIC REVIEW ONLY | PASS | NOT RUN | NOT RUN | STATIC REVIEW ONLY | PASS | PASS |
 | Multi-profile isolation | PASS | PASS | PASS | NOT RUN | PASS | PASS | PASS |

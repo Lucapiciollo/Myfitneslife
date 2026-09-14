@@ -93,7 +93,7 @@ Vincoli:
 La chiave OpenAI è protetta tramite Android Keystore e AES-GCM. Non deve mai finire in chiaro in Room, SharedPreferences normali, file, log, crash report, backup, analytics, repository, BuildConfig, intent, navigation args o export.
 
 ## Stato verifica tecnica
-L'HEAD corrente è stato compilato con `:app:assembleDebug` usando Java 17, Gradle 9.6.0 e Android SDK locale. `:app:testDebugUnitTest` è verde con 44 test. La suite `:app:connectedDebugAndroidTest` è verde su `SM-A546B - 16` con 22 test, inclusi migration Room 3 -> 4, storico deterministico di sei mesi, riapertura del database, export JSON/CSV ZIP/PDF, multiprofilo, isolamento dei record annidati di piano, workflow AI con fake runtime provider-neutral e conservazione di supplementi/hydration note.
+L'HEAD corrente è stato compilato con `:app:assembleDebug` usando Java 17, Gradle 9.6.0 e Android SDK locale. `:app:testDebugUnitTest` è verde con 44 test. La suite `:app:connectedDebugAndroidTest` è verde su `SM-A546B - 16` con 26 test, inclusi migration Room 3 -> 4, storico deterministico di sei mesi, riapertura del database, export JSON/CSV ZIP/PDF, multiprofilo, isolamento dei record annidati di piano, workflow AI con fake runtime provider-neutral, scheduler notifiche deterministico e conservazione di supplementi/hydration note.
 
 La bottom bar usa una transizione root-tab senza animazioni e senza stack duplicati; il dispositivo fisico ha verificato tab attivo no-op, rapid tap, Back non ciclico e inset corretti rispetto alla navigation bar di sistema.
 

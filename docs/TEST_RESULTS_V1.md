@@ -15,7 +15,7 @@
 |---|---|---|
 | `:app:assembleDebug` | PASS | Debug APK assembled locally |
 | `:app:testDebugUnitTest` | PASS | 44 tests, 0 failures, 0 skipped |
-| `:app:connectedDebugAndroidTest` | PASS | 22 tests, 0 failures, 0 skipped on `SM-A546B - 16` |
+| `:app:connectedDebugAndroidTest` | PASS | 26 tests, 0 failures, 0 skipped on `SM-A546B - 16` |
 | Manual bottom-tab smoke | PASS | Root reuse, active-tab no-op, rapid taps, Back to launcher, no crash/ANR |
 
 ## Added Test Count
@@ -23,7 +23,7 @@
 - 18 new executable test methods in this work:
   - 8 JVM tests: six-month fixture/regression and progress-series edge cases.
   - 10 Android tests: historical Room persistence/reopen, export formats, multi-profile isolation, and deterministic AI workflows.
-- Existing executable coverage remains active; totals after the run are 44 JVM tests and 22 Android tests.
+- Existing executable coverage remains active; totals after the run are 44 JVM tests and 26 Android tests.
 
 ## PASS
 
@@ -41,6 +41,7 @@
 - Provider-neutral service integration for plan generation, meal swap, nutrition advice, cheat analyze/confirm, and weekly review.
 - AI schema/business validation remains in the execution path; tests do not bypass canonical contracts.
 - Nested plan/version/meal reads are profile-scoped; cross-profile access is rejected by the Android integration test.
+- Deterministic notification scheduling covers lead time, future/past filtering, 60-day horizon, weekly review rollover, cancellation, profile switch and snooze clamping.
 - Bottom-tab manual smoke flow, including non-cyclic Back behavior.
 
 ## FAIL
@@ -56,7 +57,7 @@
 ## STATIC REVIEW ONLY
 
 - Real Gemini/OpenAI HTTP behavior, authentication, timeout, network loss, and provider parity.
-- Notification scheduler internals were inspected and time-injected, but AlarmManager delivery/cancellation was not executed as a deterministic fake-system test.
+- Real AlarmManager delivery, notification permission, reboot rescheduling and notification tap delivery remain untested; scheduling logic is covered through a fake alarm gateway.
 - Full Activity forms, camera/gallery flow, notification tap routing, share chooser, and visual/pixel fidelity.
 - 1Y chart rendering, landscape, small/large screens, and screenshot/golden comparison.
 - Large stress dataset timings and memory profile.
@@ -65,7 +66,7 @@
 
 - Real provider calls with Gemini or OpenAI credentials.
 - Camera, gallery, blurred-label image, and temporary-file lifecycle runtime tests.
-- Notification delivery, reboot rescheduling, permission denial, snooze, and stale notification tests.
+- Notification delivery, reboot rescheduling, permission denial, and stale notification delivery tests.
 - Full UI E2E for profile/BIA/measurements/workouts/diet/cheat/review/export screens.
 - v1 -> current and v2 -> current migrations; schema assets for those versions are not present.
 - 5-profile/2-year/1000-workout/104-week/300-version/200-cheat performance run.
