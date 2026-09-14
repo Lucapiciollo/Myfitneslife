@@ -7,7 +7,7 @@ Status values are `PASS`, `STATIC REVIEW ONLY`, `NOT RUN`, and `FAIL`. `PASS` me
 | Profile and calculations | PASS | PASS | PASS (QA seeded device) | STATIC REVIEW ONLY | PASS | PASS | PASS |
 | BIA history | PASS | PASS | PASS (QA seeded device) | NOT RUN | STATIC REVIEW ONLY | PASS | PASS |
 | Body measurements | PASS | PASS | PASS (QA seeded device) | NOT RUN | STATIC REVIEW ONLY | PASS | PASS |
-| Graph ranges/trends | PASS | STATIC REVIEW ONLY | NOT RUN | NOT RUN | PASS | STATIC REVIEW ONLY | STATIC REVIEW ONLY |
+| Graph ranges/trends | PASS | STATIC REVIEW ONLY | PASS (device screenshots 1M/3M/6M/1Y) | PASS (device) | PASS | STATIC REVIEW ONLY | STATIC REVIEW ONLY |
 | NORMAL/SPORT classifier | PASS | PASS | NOT RUN | NOT RUN | PASS | PASS | STATIC REVIEW ONLY |
 | Workouts | PASS | PASS | PASS (QA seeded device) | NOT RUN | STATIC REVIEW ONLY | PASS | PASS |
 | Nutrition targets | PASS | STATIC REVIEW ONLY | NOT RUN | NOT RUN | PASS | PASS | PASS |
