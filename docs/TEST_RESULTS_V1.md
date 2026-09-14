@@ -15,7 +15,7 @@
 |---|---|---|
 | `:app:assembleDebug` | PASS | Debug APK assembled locally |
 | `:app:testDebugUnitTest` | PASS | 44 tests, 0 failures, 0 skipped |
-| `:app:connectedDebugAndroidTest` | PASS | 35 tests, 0 failures, 0 skipped on `SM-A546B - 16` |
+| `:app:connectedDebugAndroidTest` | PASS | 37 tests, 0 failures, 0 skipped on `SM-A546B - 16` |
 | Manual bottom-tab smoke | PASS | Root reuse, active-tab no-op, rapid taps, Back to launcher, no crash/ANR |
 
 ## Added Test Count
@@ -23,7 +23,7 @@
 - 18 new executable test methods in this work:
   - 8 JVM tests: six-month fixture/regression and progress-series edge cases.
   - 10 Android tests: historical Room persistence/reopen, export formats, multi-profile isolation, and deterministic AI workflows.
-- Existing executable coverage remains active; totals after the run are 44 JVM tests and 35 Android tests.
+- Existing executable coverage remains active; totals after the run are 44 JVM tests and 37 Android tests.
 
 ## PASS
 
@@ -45,6 +45,7 @@
 - Label-photo processing covers valid JPEG conversion to in-memory payload, unreadable image rejection, temporary camera-file deletion and no external-file deletion.
 - UIAutomator E2E covers seeded launch, bottom-tab root switching, active-tab no-op and Back returning to launcher.
 - UIAutomator E2E reaches export from Altro, verifies all export format rows and confirms JSON export file creation from the real screen.
+- Notification receiver tests verify meal/review channels and meal notification creation when Android notification permission allows it.
 - Stress dataset executed twice on device: 5 profiles, 240 BIA, 240 body measurements, 1000 workouts, 520 plan roots, 936 plan versions and 200 cheats. Run 1 timings: BIA 34 ms, body 10 ms, workouts 16 ms, plan roots 11 ms, snapshot 32 ms, shopping 46 ms, JSON 14832 ms, CSV ZIP 15488 ms, profile PDF 8391 ms, weekly PDF 327 ms. Run 2: BIA 36 ms, body 22 ms, workouts 21 ms, plan roots 19 ms, snapshot 14 ms, shopping 40 ms, JSON 21783 ms, CSV ZIP 20348 ms, profile PDF 4811 ms, weekly PDF 162 ms.
 - Bottom-tab manual smoke flow, including non-cyclic Back behavior.
 
@@ -61,7 +62,7 @@
 ## STATIC REVIEW ONLY
 
 - Real Gemini/OpenAI HTTP behavior, authentication, timeout, network loss, and provider parity.
-- Real AlarmManager delivery, notification permission, reboot rescheduling and notification tap delivery remain untested; scheduling logic is covered through a fake alarm gateway.
+- Real AlarmManager delivery, reboot rescheduling, Doze/OEM timing and notification tap routing remain untested; receiver/channel construction and permission-aware behavior are covered.
 - Full Activity forms, OS camera/gallery picker flow, notification tap routing, share chooser, and visual/pixel fidelity.
 - 1Y chart rendering, landscape, small/large screens, and screenshot/golden comparison.
 - Memory profiling; post-run `dumpsys meminfo` was unavailable because connected tests stop/uninstall the app process at completion.
@@ -70,7 +71,7 @@
 
 - Real provider calls with Gemini or OpenAI credentials.
 - Camera/gallery OS picker delivery and blurred-label capture remain untested; processor and temporary-file lifecycle are covered.
-- Notification delivery, reboot rescheduling, permission denial, and stale notification delivery tests.
+- Reboot rescheduling, Doze/OEM delivery, notification tap routing, permission denial behavior on a controlled permission state, and stale notification delivery tests.
 - Full UI E2E for profile/BIA/measurements/workouts/diet/cheat/review/export screens.
 - v1 -> current and v2 -> current migrations; schema assets for those versions are not present.
 
