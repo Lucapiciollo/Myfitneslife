@@ -91,12 +91,12 @@ class AiWorkflowIntegrationTest {
 
         assertEquals(5, alternatives.items.size)
         assertEquals(before.version.id, alternatives.sourceVersionId)
-        assertEquals(1, repository.versions(before.planId).first().size)
+        assertEquals(1, repository.versions(store.currentIdOrNull()!!, before.planId).first().size)
 
         val applied = services().mealAlternative.apply(alternatives, alternatives.items.first())
         val after = repository.loadLatestSnapshot(store.currentIdOrNull()!!, week.toEpochDay())!!
         assertEquals(applied.versionId, after.version.id)
-        assertEquals(2, repository.versions(before.planId).first().size)
+        assertEquals(2, repository.versions(store.currentIdOrNull()!!, before.planId).first().size)
         assertEquals(before.version.days.first().supplements, after.version.days.first().supplements)
         assertEquals(before.version.days.first().hydrationNote, after.version.days.first().hydrationNote)
         assertFalse(before.version.days.first().meals.last().title == after.version.days.first().meals.last().title)
@@ -179,7 +179,7 @@ class AiWorkflowIntegrationTest {
         val plans = MealPlanRepository(db)
         fixture.plans.filter { it.weekStart.isBefore(SixMonthHistoryFixture.TODAY.minusDays(7)) }.forEach { plan ->
             val planId = plans.createPlan(profileId, plan.weekStart.toEpochDay(), plan.createdAtEpochMillis)
-            plan.versions.forEach { version -> plans.appendVersion(planId, plan.createdAtEpochMillis, version) }
+            plan.versions.forEach { version -> plans.appendVersion(profileId, planId, plan.createdAtEpochMillis, version) }
         }
     }
 

@@ -67,7 +67,7 @@ class SixMonthHistoryExportTest {
         assertEquals(18, db.cheatEntryDao().observeAll(profileId).first().size)
         assertEquals(26, db.mealPlanDao().observePlans(profileId).first().size)
         assertEquals(26, db.weeklyReviewDao().observeAll(profileId).first().size)
-        assertTrue(db.mealPlanDao().observeVersions(db.mealPlanDao().observePlans(profileId).first().first().id).first().size >= 1)
+        assertTrue(db.mealPlanDao().observeVersions(profileId, db.mealPlanDao().observePlans(profileId).first().first().id).first().size >= 1)
     }
 
     @Test
@@ -166,7 +166,7 @@ class SixMonthHistoryExportTest {
         val plans = MealPlanRepository(db)
         fixture.plans.forEach { plan ->
             val planId = plans.createPlan(profileId, plan.weekStart.toEpochDay(), plan.createdAtEpochMillis)
-            plan.versions.forEach { version -> plans.appendVersion(planId, plan.createdAtEpochMillis, version) }
+            plan.versions.forEach { version -> plans.appendVersion(profileId, planId, plan.createdAtEpochMillis, version) }
         }
     }
 

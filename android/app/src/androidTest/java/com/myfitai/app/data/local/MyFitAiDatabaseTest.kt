@@ -106,9 +106,9 @@ class MyFitAiDatabaseTest {
             targetFatG = 70f,
             days = listOf(DayDraft(20000, 2200, 160f, 230f, 70f, emptyList())),
         )
-        repository.appendVersion(planId, 2000, emptyDraft)
-        repository.appendVersion(planId, 3000, emptyDraft.copy(reason = "ADAPTATION"))
-        val versions = repository.versions(planId).first()
+        repository.appendVersion(profileId, planId, 2000, emptyDraft)
+        repository.appendVersion(profileId, planId, 3000, emptyDraft.copy(reason = "ADAPTATION"))
+        val versions = repository.versions(profileId, planId).first()
         assertEquals(2, versions.size)
         assertEquals(listOf(2, 1), versions.map { it.versionNumber })
         assertTrue(versions.any { it.reason == "ADAPTATION" })
@@ -121,6 +121,7 @@ class MyFitAiDatabaseTest {
         val weekStart = 21000L
         val planId = repository.createPlan(profileId, weekStart, 1000)
         repository.appendVersion(
+            profileId = profileId,
             planId = planId,
             createdAtEpochMillis = 2000,
             draft = PlanVersionDraft(
@@ -222,6 +223,7 @@ class MyFitAiDatabaseTest {
         )
 
         repository.appendVersion(
+            profileId = profileId,
             planId = planId,
             createdAtEpochMillis = 2000,
             draft = PlanVersionDraft(
@@ -284,6 +286,7 @@ class MyFitAiDatabaseTest {
         }
 
         repository.appendVersion(
+            profileId = profileId,
             planId = planId,
             createdAtEpochMillis = 3000,
             draft = PlanVersionDraft(
@@ -317,6 +320,52 @@ class MyFitAiDatabaseTest {
         assertEquals(2, afterDay.meals.size)
         assertEquals("Pasta e tonno", afterDay.meals.first { it.type == "Pranzo" }.title)
         assertEquals("Salmone e patate", afterDay.meals.first { it.type == "Cena" }.title)
+    }
+
+    @Test
+    fun mealPlan_nestedReads_areProfileScoped() = runBlocking {
+        val ownerId = db.userProfileDao().insert(profile("Owner"))
+        val otherId = db.userProfileDao().insert(profile("Other"))
+        val repository = MealPlanRepository(db)
+        val planId = repository.createPlan(ownerId, 23000L, 1000L)
+        repository.appendVersion(
+            profileId = ownerId,
+            planId = planId,
+            createdAtEpochMillis = 2000L,
+            draft = PlanVersionDraft(
+                source = "TEST",
+                reason = null,
+                targetKcal = 2200,
+                targetProteinG = 160f,
+                targetCarbsG = 230f,
+                targetFatG = 70f,
+                days = listOf(DayDraft(
+                    dateEpochDay = 23000L,
+                    totalKcal = 2200,
+                    proteinG = 160f,
+                    carbsG = 230f,
+                    fatG = 70f,
+                    meals = listOf(MealDraft(
+                        type = "Pranzo",
+                        title = "Owner meal",
+                        timeMinutes = 780,
+                        kcal = 700,
+                        proteinG = 50f,
+                        carbsG = 80f,
+                        fatG = 18f,
+                        preparation = "Fixture",
+                        ingredients = listOf(IngredientDraft("Riso", 80f, "g", "80 g", "DRY", "HIGH", "carbs")),
+                    )),
+                )),
+            ),
+        )
+        val ownerSnapshot = repository.loadLatestSnapshot(ownerId, 23000L)!!
+        val mealId = ownerSnapshot.version.days.single().meals.single().id
+
+        assertTrue(repository.versions(otherId, planId).first().isEmpty())
+        assertEquals(null, repository.loadLatestSnapshot(otherId, 23000L))
+        assertEquals(null, repository.getMealDetail(otherId, mealId))
+        assertEquals("Owner meal", repository.getMealDetail(ownerId, mealId)?.title)
     }
 
     private fun profile(name: String): UserProfileEntity {

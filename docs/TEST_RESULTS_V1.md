@@ -15,7 +15,7 @@
 |---|---|---|
 | `:app:assembleDebug` | PASS | Debug APK assembled locally |
 | `:app:testDebugUnitTest` | PASS | 44 tests, 0 failures, 0 skipped |
-| `:app:connectedDebugAndroidTest` | PASS | 21 tests, 0 failures, 0 skipped on `SM-A546B - 16` |
+| `:app:connectedDebugAndroidTest` | PASS | 22 tests, 0 failures, 0 skipped on `SM-A546B - 16` |
 | Manual bottom-tab smoke | PASS | Root reuse, active-tab no-op, rapid taps, Back to launcher, no crash/ANR |
 
 ## Added Test Count
@@ -23,7 +23,7 @@
 - 18 new executable test methods in this work:
   - 8 JVM tests: six-month fixture/regression and progress-series edge cases.
   - 10 Android tests: historical Room persistence/reopen, export formats, multi-profile isolation, and deterministic AI workflows.
-- Existing executable coverage remains active; totals after the run are 44 JVM tests and 21 Android tests.
+- Existing executable coverage remains active; totals after the run are 44 JVM tests and 22 Android tests.
 
 ## PASS
 
@@ -40,6 +40,7 @@
 - Multi-profile export isolation for populated, normal-empty, and new-empty profiles.
 - Provider-neutral service integration for plan generation, meal swap, nutrition advice, cheat analyze/confirm, and weekly review.
 - AI schema/business validation remains in the execution path; tests do not bypass canonical contracts.
+- Nested plan/version/meal reads are profile-scoped; cross-profile access is rejected by the Android integration test.
 - Bottom-tab manual smoke flow, including non-cyclic Back behavior.
 
 ## FAIL
@@ -54,7 +55,6 @@
 
 ## STATIC REVIEW ONLY
 
-- Provider-specific Gemini/OpenAI HTTP behavior, authentication, timeout, network loss, and JSON parity.
 - Real Gemini/OpenAI HTTP behavior, authentication, timeout, network loss, and provider parity.
 - Notification scheduler internals were inspected and time-injected, but AlarmManager delivery/cancellation was not executed as a deterministic fake-system test.
 - Full Activity forms, camera/gallery flow, notification tap routing, share chooser, and visual/pixel fidelity.
@@ -73,7 +73,8 @@
 ## Residual Risks
 
 - Service integrations use `AiRuntimeGateway`; repositories and Android system services remain concrete in several flows.
-- Nested meal reads are ID-based rather than profile-aware at the DAO boundary.
+- Nested plan/version/meal reads now require the owning `profileId` at the DAO/repository boundary.
 - Notification timing remains subject to Android alarm and OEM scheduling behavior.
 - No pixel-level comparison has been executed.
 - V1 is not certified as fully complete; the traceability holes above remain open.
+- The profile-scoped nested-plan changes compile in the Android test source set, but the final connected instrumentation rerun was `NOT RUN` because no device was connected when the command was issued.
