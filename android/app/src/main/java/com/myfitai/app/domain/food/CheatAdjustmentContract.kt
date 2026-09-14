@@ -1,76 +1,13 @@
 package com.myfitai.app.domain.food
 
+import com.myfitai.app.ai.AiCompactEnvelope
 import com.myfitai.app.domain.calculation.NutritionBusinessValidator
 import org.json.JSONObject
 
 /** Provider-neutral contract used to estimate a deviation and adapt only future meals of that day. */
 object CheatAdjustmentContract {
-    const val SCHEMA_NAME = "myfitai_cheat_adjustment_v1"
-
-    val schemaJson: String = JSONObject(
-        """
-        {
-          "type":"object",
-          "additionalProperties":false,
-          "properties":{
-            "estimate":{
-              "type":"object","additionalProperties":false,
-              "properties":{
-                "kcal":{"type":"integer"},
-                "proteinG":{"type":"number"},
-                "carbsG":{"type":"number"},
-                "fatG":{"type":"number"},
-                "confidence":{"type":"string"},
-                "notes":{"type":"string"}
-              },
-              "required":["kcal","proteinG","carbsG","fatG","confidence","notes"]
-            },
-            "adaptationPossible":{"type":"boolean"},
-            "adaptationReason":{"type":"string"},
-            "replacementMeals":{
-              "type":"array",
-              "items":{
-                "type":"object","additionalProperties":false,
-                "properties":{
-                  "sortOrder":{"type":"integer"},
-                  "type":{"type":"string"},
-                  "title":{"type":"string"},
-                  "timeMinutes":{"type":"integer"},
-                  "kcal":{"type":"integer"},
-                  "proteinG":{"type":"number"},
-                  "carbsG":{"type":"number"},
-                  "fatG":{"type":"number"},
-                  "preparation":{"type":"string"},
-                  "ingredients":{
-                    "type":"array","minItems":1,
-                    "items":{
-                      "type":"object","additionalProperties":false,
-                      "properties":{
-                        "name":{"type":"string"},
-                        "quantity":{"type":"number"},
-                        "unit":{"type":"string"},
-                        "displayDose":{"type":"string"},
-                        "weightState":{"type":"string"},
-                        "nutritionConfidence":{"type":"string"},
-                        "category":{"type":"string"}
-                      },
-                      "required":["name","quantity","unit","displayDose","weightState","nutritionConfidence","category"]
-                    }
-                  }
-                },
-                "required":["sortOrder","type","title","timeMinutes","kcal","proteinG","carbsG","fatG","preparation","ingredients"]
-              }
-            },
-            "agentValidation":{
-              "type":"object","additionalProperties":false,
-              "properties":{"valid":{"type":"boolean"},"notes":{"type":"string"}},
-              "required":["valid","notes"]
-            }
-          },
-          "required":["estimate","adaptationPossible","adaptationReason","replacementMeals","agentValidation"]
-        }
-        """.trimIndent()
-    ).toString()
+    const val SCHEMA_NAME = "myfitai_cheat_adjustment_pipe_v1"
+    val schemaJson: String = AiCompactEnvelope.schemaJson(CheatAdjustmentCompactContract.PROTOCOL)
 
     data class Estimate(
         val kcal: Int,
@@ -104,6 +41,7 @@ object CheatAdjustmentContract {
 
     fun parse(jsonText: String): Response {
         val root = JSONObject(jsonText)
+        if (root.has("data")) return CheatAdjustmentCompactContract.parse(jsonText)
         val estimateJson = root.getJSONObject("estimate")
         val replacementsJson = root.getJSONArray("replacementMeals")
         val replacements = buildList {
@@ -155,10 +93,6 @@ object CheatAdjustmentContract {
         )
     }
 
-    /**
-     * Validates the only permissible mutation: replacement of meals strictly after the deviation time.
-     * Locked meals are never supplied by the model and are copied byte-for-byte by the app.
-     */
     fun validateBusiness(
         response: Response,
         lockedMeals: List<FoodMeal>,
