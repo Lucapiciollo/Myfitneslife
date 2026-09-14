@@ -114,7 +114,7 @@ Non imporre regole arbitrarie tipo frutta solo al mattino o carboidrati vietati 
 Solo asset originali o con licenza documentata. Material Symbols/Lucide per icone; fotografie solo da fonti con licenza certa. Mai immagini prese casualmente dal web. Registrare fonti/licenze in `assets/ASSET_SOURCES.md`.
 
 ## IMPERATIVE — OpenAI credential security
-The OpenAI API key is security-sensitive and MUST NOT be stored in plaintext anywhere. Use `SecureOpenAiKeyStore` and Android Keystore as the root of trust. Persist only AES-GCM ciphertext + IV. Never put the API key in Room, ordinary settings, logs, exports, backups, crash reports, analytics, source code, BuildConfig, intents or navigation arguments. Do not weaken `android:allowBackup="false"`. Settings credential UI must remain protected against screenshots. This rule is non-negotiable.
+AI API keys are security-sensitive and MUST NOT be stored in plaintext anywhere. Use `SecureAiCredentialStore` and Android Keystore as the root of trust for Gemini and OpenAI. Persist only AES-GCM ciphertext + IV. Never put an API key in Room, ordinary settings, logs, exports, backups, crash reports, analytics, source code, BuildConfig, intents or navigation arguments. Do not weaken `android:allowBackup="false"`. Settings credential UI must remain protected against screenshots. This rule is non-negotiable.
 
 ## Regola operativa finale
 Completare gli step nell'ordine di `DEVELOPMENT_PLAN.md`. Quando uno step viene realmente completato e verificato, aggiornare quel file. Non dichiarare completato nulla solo perché documentato o predisposto.

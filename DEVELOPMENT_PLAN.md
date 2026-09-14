@@ -52,6 +52,10 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 - [x] Waist/height ratio.
 - [x] Classificazione ricomposizione.
 - [x] Business Validator locale ±3%.
+- [x] Import BIA da foto con JSON strutturato, preview modificabile e conferma prima del salvataggio.
+- [x] Import BIA mantiene immagini temporanee solo in memoria/cache privata e riusa lo storico Room esistente.
+- [x] Agent import BIA strict: immagini non-BIA vengono rifiutate senza valori, preview o persistenza.
+- [ ] Verifica reale Gemini/OpenAI dell'agent di import BIA con immagine autorizzata.
 
 ### Generazione piano alimentare
 - [x] Target calcolati localmente prima dell'IA.
@@ -119,12 +123,25 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 - [x] Nessuna API key in chiaro in Room, SharedPreferences normali, file, log, crash report, backup, analytics, repository, BuildConfig, intent o export.
 - [x] Backup disabilitato.
 
+### Provider Gemini BYOK via Gemini Developer API
+- [x] Gemini usa una API key personale cifrata con Android Keystore + AES-GCM.
+- [x] Provider Gemini diretto con structured output, schema canonico e immagini in memoria.
+- [x] Firebase AI Logic non è usato nel runtime Gemini; Firebase generico resta configurabile.
+- [x] OpenAI e Gemini condividono il credential store cifrato e la stessa interfaccia `AiProvider`.
+- [ ] Verifica runtime provider Gemini e parità reale Gemini/OpenAI.
+- [x] Settings supporta entrambe le chiavi cifrate contemporaneamente, con un solo provider attivo tramite switch.
+- [x] Chiavi salvate nascoste in UI; disponibili solo `Sostituisci` ed `Elimina`.
+- [x] Navigazione Alimentazione bloccata con dialog e link Settings quando il provider attivo non è configurato.
+
 ## QA E VERIFICA
 
 ### Ultimo stato noto
 - `:app:assembleDebug` verde sull'HEAD verificato con Gradle 9.6.0, Java 17 e Android SDK locale.
-- `:app:testDebugUnitTest` verde: 44 test eseguiti.
-- `:app:connectedDebugAndroidTest` verde: 41 test eseguiti su `SM-A546B - 16`.
+- `:app:testDebugUnitTest` verde dopo l'integrazione Firebase: 44 test, incluso il test aggiornato di selezione provider.
+- `:app:connectedDebugAndroidTest` verde dopo l'integrazione Firebase: 41 test su `SM-A546B - 16`.
+- `:app:assembleRelease` verde; il source set debug-only non entra nella build release.
+- Settings device test dopo il refactor BYOK: 2/2 PASS su `SM-A546B - 16`.
+- Le prove precedenti Firebase sono storiche e non rappresentano il provider finale: il runtime attuale è Gemini BYOK diretto.
 - Il framework storico `SixMonthHistoryFixture` usa seed `20260914`, copre circa 6 mesi, 26 settimane, BIA, misure, workout, versioni, sgarri, review, supplementi, hydration e multiprofilo.
 - La suite instrumented copre seeder QA debug sul vero Room dell'app e riapertura normale, grafici Progress reali con screenshot 1M/3M/6M/1Y, persistenza Room, piani legacy senza supplementi, migration 3 -> 4, export JSON/CSV ZIP/PDF inclusa apertura export dalla UI e creazione JSON, isolamento multiprofilo inclusi record annidati di piano, workflow AI deterministici con fake runtime provider-neutral, scheduler e receiver notifiche deterministici, lifecycle foto etichetta, UIAutomator E2E bottom-tab, Settings/privacy/provider status, stress dataset con tempi osservati e conservazione di supplementi/hydration note.
 - Bottom tab smoke test fisico completato: root tab riusati senza stack duplicati, tap sul tab attivo no-op, cambio tab senza animazione Activity e Back senza ciclo tra tab.
@@ -144,6 +161,8 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 - [ ] Smoke test delle Activity principali.
 - [ ] E2E UI completo di profilo, dieta, sgarro, review, export e foto.
 - [ ] Test runtime provider Gemini/OpenAI, notifiche Android e stress performance.
+- [ ] Rieseguire la suite connected completa dopo il gate Alimentazione e la nuova UI delle credenziali; i test Settings isolati sono verdi.
+- [ ] Testare Gemini BYOK reale su device con API key personale fornita dall'utente; non dichiarare PASS senza risposta strutturata e persistenza verificate.
 
 ## Branching
 - `develop`: sviluppo corrente.

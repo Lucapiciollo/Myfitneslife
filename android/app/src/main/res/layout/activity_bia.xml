@@ -107,12 +107,20 @@
                     android:textSize="12sp" />
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/saveButton"
+                     android:id="@+id/saveButton"
                     style="@style/Widget.MyFitAI.Button.Primary"
                     android:layout_width="match_parent"
                     android:layout_height="52dp"
-                    android:layout_marginTop="@dimen/space_16"
-                    android:text="Salva misurazione" />
+                     android:layout_marginTop="@dimen/space_16"
+                     android:text="Salva misurazione" />
+                 <com.google.android.material.button.MaterialButton
+                     android:id="@+id/importPhotoButton"
+                     style="@style/Widget.Material3.Button.OutlinedButton"
+                     android:layout_width="match_parent"
+                     android:layout_height="52dp"
+                     android:layout_marginTop="@dimen/space_8"
+                     android:text="Importa BIA da foto"
+                     android:textAllCaps="false" />
             </LinearLayout>
 
             <LinearLayout

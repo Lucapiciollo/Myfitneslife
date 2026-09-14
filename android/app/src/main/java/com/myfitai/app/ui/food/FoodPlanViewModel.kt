@@ -9,6 +9,8 @@ import com.myfitai.app.domain.food.FoodPlanDay
 import com.myfitai.app.domain.food.FoodPlanSnapshot
 import com.myfitai.app.domain.food.NutritionPlanGenerationService
 import com.myfitai.app.notifications.NotificationScheduler
+import com.myfitai.app.ai.AiTransportException
+import com.myfitai.app.ai.AiTransportFailureKind
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -89,11 +91,12 @@ class FoodPlanViewModel(
                 .onSuccess { result ->
                     runCatching { notificationScheduler.refresh() }
                     generationState.value = GenerationState(successMessage = "Piano generato con ${result.provider} · ${result.model}")
-                }
-                .onFailure { error ->
+                    }
+                    .onFailure { error ->
                     val message = when (error) {
                         is NutritionPlanGenerationService.GenerationException.NeedsInput -> "Completa prima: ${error.fields.joinToString()}"
                         is NutritionPlanGenerationService.GenerationException.PastWeek -> "Le settimane concluse sono storico in sola lettura."
+                        is AiTransportException.Http -> providerLimitMessage(error)
                         else -> error.message ?: "Generazione non riuscita"
                     }
                     generationState.value = GenerationState(error = message)
@@ -102,6 +105,27 @@ class FoodPlanViewModel(
     }
 
     fun clearGenerationMessage() { if (!generationState.value.running) generationState.value = GenerationState() }
+
+    private fun providerLimitMessage(error: AiTransportException.Http): String = when (error.failureKind) {
+        AiTransportFailureKind.QUOTA_EXHAUSTED -> {
+            val limit = error.quotaLimit?.let { " Limite rilevato: $it richieste/giorno." }.orEmpty()
+            "Quota ${error.provider.name} esaurita: 0 richieste disponibili.$limit Attendi il reset della quota o configura un piano con billing."
+        }
+        AiTransportFailureKind.RATE_LIMITED -> {
+            val seconds = error.retryAfterSeconds
+            if (seconds == null) {
+                "Troppe richieste ravvicinate a ${error.provider.name}. Riprova più tardi."
+            } else {
+                "Limite temporaneo ${error.provider.name}: riprova tra ${formatRetryDelay(seconds)}."
+            }
+        }
+        else -> "Errore HTTP provider: ${error.statusCode}"
+    }
+
+    private fun formatRetryDelay(seconds: Long): String = when {
+        seconds < 60 -> "$seconds secondi"
+        else -> "circa ${((seconds + 59) / 60)} minuti"
+    }
 
     class Factory(
         private val repository: MealPlanRepository,

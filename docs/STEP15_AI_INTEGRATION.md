@@ -7,13 +7,12 @@ Stato: IMPLEMENTATO LATO CODICE — build/device/network test finale pending.
 
 ## Provider
 - OpenAI: Responses API, Structured Outputs con JSON Schema, `store=false`.
-- Gemini: GenerateContent con output JSON strutturato e lo stesso schema canonico.
+- Gemini: Gemini Developer API REST diretta con output JSON strutturato e lo stesso schema canonico.
 - Nessuna trasformazione semantica provider-specific dell'output.
 
 ## Credenziali
-- OpenAI e Gemini sono BYOK.
-- Le chiavi sono cifrate AES-GCM con chiavi AES non esportabili in Android Keystore.
-- La chiave OpenAI viene letta just-in-time dentro `OpenAiProvider.generateStructured()` e non viene mantenuta come proprietà del provider.
+- OpenAI e Gemini sono BYOK. Le chiavi sono cifrate AES-GCM con chiave AES non esportabile in Android Keystore.
+- Le chiavi vengono lette just-in-time dentro il provider e non vengono mantenute come proprietà del provider.
 - Le chiavi non vengono loggate, esportate o incluse nel body di errori applicativi.
 - La preferenza provider è separata dalle credenziali e contiene solo un booleano non segreto.
 
@@ -28,6 +27,6 @@ Stato: IMPLEMENTATO LATO CODICE — build/device/network test finale pending.
 - build debug/release;
 - unit test;
 - chiamata reale OpenAI con chiave BYOK;
-- chiamata reale Gemini con chiave BYOK;
+- chiamata reale Gemini Developer API con key BYOK;
 - gestione 401/403/429/5xx e timeout su device;
 - verifica rete assente e rotazione processo/activity.

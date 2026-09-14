@@ -20,10 +20,10 @@ The plan does not consider V1 certified only because the app starts. Certificati
 
 | Layer | Location | Purpose | Current status |
 |---|---|---|---|
-| Unit | `android/app/src/test` | Pure engines, contracts, fixture history, trend filtering | Executed |
-| Room integration | `android/app/src/androidTest` | Persistence, versioning, profile isolation, migration | Executed |
+| Unit | `android/app/src/test` | Pure engines, contracts, fixture history, trend filtering, provider selection | Executed: 44 |
+| Room integration | `android/app/src/androidTest` | Persistence, versioning, profile isolation, migration, device QA | Executed: 41 on SM-A546B / Android 16 |
 | Export integration | `android/app/src/androidTest/e2e` | JSON, ZIP, profile PDF, weekly PDF on Android | Executed |
-| Provider integration | Runtime Gemini/OpenAI | Real transport, credentials, timeout, parity | Not run |
+| Provider integration | Runtime Gemini/OpenAI | Real direct transports, BYOK credentials, timeout, parity | Not run: user credentials unavailable |
 | UI/E2E | Device/manual | Activities, visual fidelity, bottom tabs, forms | Partial/manual |
 | System integration | Android alarms/camera/share | Notifications, camera/gallery, chooser | Not run or partial |
 | Performance | Device/profiling | Large dataset timings and memory | Not run |
@@ -61,4 +61,5 @@ No GitHub Actions workflow is started by this plan.
 - `STATIC REVIEW ONLY`: implementation was inspected but no executable test proves the behavior.
 - `NOT RUN`: required runtime capability, provider, fixture, or device flow was unavailable.
 - Real Gemini/OpenAI calls are never replaced by fake-provider tests in the results.
+- Gemini BYOK requires a personal Gemini API key entered only through Settings. Firebase project/App Check configuration is not required and Firebase AI Logic is not used.
 - Screenshot/golden tests are not considered executed unless an image comparison was actually run.

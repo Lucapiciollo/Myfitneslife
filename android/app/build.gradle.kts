@@ -62,6 +62,10 @@ configurations.configureEach {
     )
 }
 
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 dependencies {
     val roomVersion = "2.8.5"
 

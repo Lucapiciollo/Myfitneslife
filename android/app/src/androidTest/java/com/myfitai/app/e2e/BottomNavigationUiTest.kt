@@ -66,7 +66,10 @@ class BottomNavigationUiTest {
     @Test
     fun tabSwitching_reachesEachRootAndActiveTabTapIsNoOp() {
         assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/navHome")), 5_000))
-        clickAndWait("navFood", "com.myfitai.app/.ui.FoodPlanActivity")
+        // The food tab is intentionally gated until a real BYOK provider is configured.
+        device.findObject(By.res("com.myfitai.app:id/navFood")).click()
+        assertTrue(device.wait(Until.hasObject(By.textContains("Nessun provider IA configurato")), 2_000))
+        device.findObject(By.text("Annulla")).click()
         clickAndWait("navProgress", "com.myfitai.app/.ui.PhysicalEvolutionActivity")
         clickAndWait("navMore", "com.myfitai.app/.ui.SettingsActivity")
         val before = focusedActivity()
@@ -78,13 +81,16 @@ class BottomNavigationUiTest {
     @Test
     fun backAfterTabChanges_returnsToLauncherInsteadOfPreviousTab() {
         assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/navHome")), 5_000))
-        clickAndWait("navFood", "com.myfitai.app/.ui.FoodPlanActivity")
+        device.findObject(By.res("com.myfitai.app:id/navFood")).click()
+        assertTrue(device.wait(Until.hasObject(By.textContains("Nessun provider IA configurato")), 2_000))
+        device.findObject(By.text("Annulla")).click()
         clickAndWait("navProgress", "com.myfitai.app/.ui.PhysicalEvolutionActivity")
         device.pressBack()
         assertTrue(device.wait(Until.hasObject(By.pkg("com.sec.android.app.launcher")), 3_000))
     }
 
     private fun clickAndWait(id: String, activity: String) {
+        assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/$id")), 2_000))
         device.findObject(By.res("com.myfitai.app:id/$id")).click()
         assertTrue(device.wait(Until.hasObject(By.pkg("com.myfitai.app")), 2_000))
         assertTrue(focusedActivity().contains(activity.substringAfter("/")))

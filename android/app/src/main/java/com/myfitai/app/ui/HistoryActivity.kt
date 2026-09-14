@@ -92,10 +92,7 @@ class HistoryActivity : BaseShellActivity() {
                     title = "${formatWeekDate(start)} – ${formatWeekDate(end)}",
                     subtitle = "Piano v${snapshot.version.versionNumber} · ${snapshot.version.source}",
                     onClick = {
-                        startActivity(
-                            Intent(this, FoodPlanActivity::class.java)
-                                .putExtra(FoodPlanActivity.EXTRA_WEEK_START_EPOCH_DAY, snapshot.weekStartEpochDay)
-                        )
+                        openFoodPlan(snapshot.weekStartEpochDay)
                     },
                 )
             }

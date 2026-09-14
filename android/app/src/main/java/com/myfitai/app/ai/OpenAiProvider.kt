@@ -1,6 +1,7 @@
 package com.myfitai.app.ai
 
-import com.myfitai.app.security.SecureOpenAiKeyStore
+import com.myfitai.app.security.AiCredentialProvider
+import com.myfitai.app.security.SecureAiCredentialStore
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -9,14 +10,29 @@ import org.json.JSONObject
  * of generateStructured() and is never stored on this provider or logged.
  */
 class OpenAiProvider(
-    private val keyStore: SecureOpenAiKeyStore,
-    private val model: String = DEFAULT_MODEL,
+    private val credentialStore: SecureAiCredentialStore,
+    private val model: String = AiModelConfig.OPENAI,
 ) : AiProvider {
     override val type: AiProviderType = AiProviderType.OPENAI
 
     override suspend fun generateStructured(request: AiStructuredRequest): AiRawResponse {
-        val apiKey = keyStore.load()?.takeIf { it.isNotBlank() }
+        val apiKey = credentialStore.read(AiCredentialProvider.OPENAI)?.takeIf { it.isNotBlank() }
             ?: throw AiTransportException.NotConfigured(type)
+        return generateWithKey(apiKey, request)
+    }
+
+    suspend fun verifyApiKey(apiKey: String): AiRawResponse {
+        return generateWithKey(apiKey.trim(), AiStructuredRequest(
+            systemPrompt = "Return only the string ok.",
+            userPrompt = "Reply with ok.",
+            schemaName = "myfitai_provider_verification",
+            schemaJson = "{\"type\":\"object\",\"properties\":{\"status\":{\"type\":\"string\",\"enum\":[\"ok\"]}},\"required\":[\"status\"],\"additionalProperties\":false}",
+            maxOutputTokens = 64,
+        ))
+    }
+
+    private suspend fun generateWithKey(apiKey: String, request: AiStructuredRequest): AiRawResponse {
+        require(apiKey.isNotBlank()) { "OpenAI API key must not be blank" }
 
         val schema = JSONObject(request.schemaJson)
         val body = JSONObject()
@@ -38,6 +54,7 @@ class OpenAiProvider(
             )
 
         val raw = HttpJsonClient.post(
+            provider = type,
             url = ENDPOINT,
             headers = mapOf("Authorization" to "Bearer $apiKey"),
             body = body.toString(),
@@ -79,6 +96,5 @@ class OpenAiProvider(
 
     companion object {
         private const val ENDPOINT = "https://api.openai.com/v1/responses"
-        const val DEFAULT_MODEL = "gpt-5.6-luna"
     }
 }

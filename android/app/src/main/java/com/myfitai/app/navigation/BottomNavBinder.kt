@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.res.ColorStateList
 import android.widget.TextView
 import com.myfitai.app.R
+import com.myfitai.app.ai.AiProviderAccess
 import com.myfitai.app.ui.*
 
 object BottomNavBinder {
@@ -29,6 +30,7 @@ object BottomNavBinder {
                 background = if (tab == selected) activity.getDrawable(R.drawable.bg_nav_selected) else null
                 setOnClickListener {
                     if (tab != selected) {
+                        if (tab == Tab.FOOD && !AiProviderAccess.requireConfigured(activity)) return@setOnClickListener
                         activity.startActivity(
                             Intent(activity, target)
                                 .putExtra(EXTRA_TAB_ROOT, true)

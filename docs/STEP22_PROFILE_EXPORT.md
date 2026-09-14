@@ -39,7 +39,7 @@ La lista della spesa è calcolata dal `ShoppingListEngine`: non viene generata d
 
 ## Privacy e sicurezza
 
-Le API key OpenAI/Gemini non vengono mai esportate. Non vengono esportati ciphertext del credential store, log o dati di altre identità/profili. Il file viene creato nella cache privata dell'app e condiviso tramite `FileProvider` con permesso di sola lettura temporaneo.
+Le API key Gemini/OpenAI non vengono mai esportate. Non vengono esportati ciphertext del credential store, log o dati di altre identità/profili. Il file viene creato nella cache privata dell'app e condiviso tramite `FileProvider` con permesso di sola lettura temporaneo.
 
 La foto profilo non viene incorporata nell'export strutturato: il suo percorso locale non è portabile e non viene divulgato.
 

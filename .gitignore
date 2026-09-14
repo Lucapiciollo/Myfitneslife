@@ -3,6 +3,7 @@ android/.kotlin/
 android/build/
 android/app/build/
 android/*/build/
+android/app/google-services.json
 local.properties
 .idea/
 *.iml

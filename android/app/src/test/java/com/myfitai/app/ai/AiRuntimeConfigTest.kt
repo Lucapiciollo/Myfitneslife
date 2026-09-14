@@ -8,7 +8,7 @@ class AiRuntimeConfigTest {
     fun selectedProvider_requiresConfiguredCredentialForSelectedProvider() {
         assertEquals(
             AiProviderType.NOT_CONFIGURED,
-            AiRuntimeConfig(useGemini = false, openAiConfigured = false).selectedProvider(),
+            AiRuntimeConfig(useGemini = true, geminiConfigured = false).selectedProvider(),
         )
         assertEquals(
             AiProviderType.OPENAI,

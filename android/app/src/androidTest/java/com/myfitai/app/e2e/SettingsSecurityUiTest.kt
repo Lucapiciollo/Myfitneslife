@@ -5,6 +5,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.UiSelector
+import androidx.test.uiautomator.UiScrollable
 import androidx.test.uiautomator.Until
 import com.myfitai.app.data.local.MyFitAiDatabase
 import com.myfitai.app.data.local.entity.UserProfileEntity
@@ -47,14 +49,16 @@ class SettingsSecurityUiTest {
         instrumentation.startActivitySync(Intent(context, SettingsActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
         })
-        assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/rowPrivacy")), 4_000))
+        assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/activeProviderText")), 4_000))
     }
 
     @Test
     fun settings_showsUnconfiguredProviderAndProtectedKeyStatus() {
         assertTrue(device.hasObject(By.res("com.myfitai.app:id/activeProviderText")))
-        assertTrue(device.hasObject(By.textContains("Provider")))
-        assertTrue(hasGeminiSecurityStatus() || hasOpenAiSecurityStatus())
+        assertTrue(device.hasObject(By.textContains("Provider")) || device.hasObject(By.textContains("Gemini")))
+        assertTrue(device.hasObject(By.textContains("Gemini selezionato ma non configurato")) ||
+            device.hasObject(By.textContains("Chiave Gemini non configurata")) ||
+            device.hasObject(By.textContains("Gemini configurato")) || hasOpenAiSecurityStatus())
         val providerSwitch = device.findObject(By.res("com.myfitai.app:id/useGeminiSwitch"))
         if (providerSwitch.isChecked) providerSwitch.click()
         assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/openAiApiKeyInput")), 2_000))
@@ -62,6 +66,7 @@ class SettingsSecurityUiTest {
 
     @Test
     fun privacyDialog_explainsLocalStorageBackupAndKeystore() {
+        UiScrollable(UiSelector().scrollable(true)).scrollIntoView(UiSelector().resourceId("com.myfitai.app:id/rowPrivacy"))
         device.findObject(By.res("com.myfitai.app:id/rowPrivacy")).click()
         assertTrue(device.wait(Until.hasObject(By.text("Privacy e dati")), 2_000))
         assertTrue(device.hasObject(By.textContains("storage locale")))
@@ -69,11 +74,7 @@ class SettingsSecurityUiTest {
         device.findObject(By.text("OK")).click()
     }
 
-    private fun hasGeminiSecurityStatus(): Boolean =
-        device.hasObject(By.textContains("Nessuna chiave Gemini salvata")) ||
-            device.hasObject(By.textContains("Chiave Gemini protetta con Android Keystore"))
-
     private fun hasOpenAiSecurityStatus(): Boolean =
-        device.hasObject(By.textContains("Nessuna chiave OpenAI salvata")) ||
-            device.hasObject(By.textContains("Chiave OpenAI protetta con Android Keystore"))
+        device.hasObject(By.textContains("Chiave OpenAI non configurata")) ||
+            device.hasObject(By.textContains("OpenAI configurato"))
 }

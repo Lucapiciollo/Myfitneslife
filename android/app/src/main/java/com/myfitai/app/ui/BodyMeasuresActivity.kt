@@ -74,6 +74,9 @@ class BodyMeasuresActivity : BaseShellActivity() {
         ensureProportionCard()
         loadProfileHeight()
         observeData()
+        if (intent.getBooleanExtra(EXTRA_OPEN_HISTORY, false)) {
+            findViewById<SelectableSegmentView>(R.id.measureSegment).getChildAt(2)?.performClick()
+        }
     }
 
     private fun loadProfileHeight() {
@@ -442,6 +445,7 @@ class BodyMeasuresActivity : BaseShellActivity() {
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     companion object {
+        const val EXTRA_OPEN_HISTORY = "open_body_history"
         private const val PROPORTION_CARD_TAG = "body_proportion_card"
         private var proportionStatusId: Int = View.NO_ID
         private var proportionDetailsId: Int = View.NO_ID

@@ -1,21 +1,20 @@
 package com.myfitai.app.ai
 
 import android.content.Context
-import com.myfitai.app.security.SecureGeminiKeyStore
-import com.myfitai.app.security.SecureOpenAiKeyStore
+import com.myfitai.app.security.AiCredentialProvider
+import com.myfitai.app.security.SecureAiCredentialStore
 
 /** Composition boundary used by agents: resolves provider without exposing credentials. */
 class AiRuntimeService(context: Context) : AiRuntimeGateway {
     private val appContext = context.applicationContext
     private val settings = AiSettingsStore(appContext)
-    private val geminiStore = SecureGeminiKeyStore(appContext)
-    private val openAiStore = SecureOpenAiKeyStore(appContext)
+    private val credentialStore = SecureAiCredentialStore(appContext)
     private val execution = AiExecutionService()
 
     fun config(): AiRuntimeConfig = AiRuntimeConfig(
         useGemini = settings.useGemini,
-        geminiConfigured = geminiStore.hasKey(),
-        openAiConfigured = openAiStore.hasKey(),
+        geminiConfigured = credentialStore.exists(AiCredentialProvider.GEMINI),
+        openAiConfigured = credentialStore.exists(AiCredentialProvider.OPENAI),
     )
 
     fun selectedProviderType(): AiProviderType = config().selectedProvider()
@@ -26,7 +25,7 @@ class AiRuntimeService(context: Context) : AiRuntimeGateway {
         businessValidator: (String) -> Result<Unit>,
     ): AiExecutionService.ValidatedResponse {
         val provider = AiProviderSelector.create(appContext, config())
-            ?: throw AiTransportException.NotConfigured(AiProviderType.NOT_CONFIGURED)
+            ?: throw AiTransportException.NotConfigured(config().selectedProvider())
 
         // Global non-bypassable application policy: every AI workflow is nutrition-scoped.
         // Domain-specific agents may consume body composition, workouts or profile data only as

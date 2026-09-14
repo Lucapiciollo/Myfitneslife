@@ -19,8 +19,17 @@ Pipeline:
 `App -> Local Calculation Engine -> AiProvider -> Agent -> JSON -> Schema Validator -> Business Validator -> Persistenza -> UI`
 
 Provider supportati:
-- Gemini
+- Gemini Developer API via BYOK
 - OpenAI/GPT
+
+Gemini usa la API key personale dell'utente, cifrata localmente con Android Keystore/AES-GCM,
+e chiama direttamente la Gemini Developer API. Firebase resta configurabile per altri servizi,
+ma Firebase AI Logic è disabilitato e non viene usato come gateway Gemini. OpenAI usa lo stesso
+credential store cifrato.
+
+Le due chiavi possono essere configurate contemporaneamente. Lo switch seleziona il provider attivo;
+una chiave salvata non viene più mostrata e può solo essere sostituita o eliminata. La sezione
+Alimentazione è bloccata finché il provider attivo non è configurato e porta direttamente alle Impostazioni.
 
 Tutti gli agenti sono vincolati al solo dominio nutrizionale. Dati corporei, BIA, misure e allenamenti possono essere usati solo come contesto per decisioni nutrizionali, non per coaching generico, diagnosi mediche o altri domini.
 
@@ -89,15 +98,15 @@ Vincoli:
 - protezione da piano stale;
 - integrazione e idratazione della giornata vengono preservate durante il cambio pasto.
 
-## Sicurezza OpenAI BYOK
-La chiave OpenAI è protetta tramite Android Keystore e AES-GCM. Non deve mai finire in chiaro in Room, SharedPreferences normali, file, log, crash report, backup, analytics, repository, BuildConfig, intent, navigation args o export.
+## Sicurezza AI BYOK
+Le chiavi Gemini e OpenAI sono protette tramite Android Keystore e AES-GCM. Non devono mai finire in chiaro in Room, SharedPreferences normali, file, log, crash report, backup, analytics, repository, BuildConfig, intent, navigation args o export.
 
 ## Stato verifica tecnica
 L'HEAD corrente è stato compilato con `:app:assembleDebug` usando Java 17, Gradle 9.6.0 e Android SDK locale. `:app:testDebugUnitTest` è verde con 44 test. La suite `:app:connectedDebugAndroidTest` è verde su `SM-A546B - 16` con 41 test, inclusi seeder QA debug sul vero Room dell'app, grafici Progress reali con screenshot 1M/3M/6M/1Y, migration Room 3 -> 4, storico deterministico di sei mesi, riapertura del database, export JSON/CSV ZIP/PDF, export JSON dalla UI, multiprofilo, isolamento dei record annidati di piano, workflow AI con fake runtime provider-neutral, scheduler e receiver notifiche deterministici, lifecycle foto etichetta, UIAutomator E2E bottom-tab, Settings/privacy/provider status, stress dataset e conservazione di supplementi/hydration note.
 
 La bottom bar usa una transizione root-tab senza animazioni e senza stack duplicati; il dispositivo fisico ha verificato tab attivo no-op, rapid tap, Back non ciclico e inset corretti rispetto alla navigation bar di sistema.
 
-La V1 non è ancora certificata integralmente: restano pendenti provider reali, QA grafica/pixel, E2E UI completo, camera/foto sgarro, delivery notifiche e stress performance. Stato dettagliato in `docs/TEST_RESULTS_V1.md` e `docs/TEST_TRACEABILITY_V1.md`.
+La V1 non è ancora certificata integralmente: restano pendenti provider reali, inclusa la configurazione Firebase Gemini, QA grafica/pixel, E2E UI completo, camera/foto sgarro, delivery notifiche e stress performance. Stato dettagliato in `docs/TEST_RESULTS_V1.md` e `docs/TEST_TRACEABILITY_V1.md`.
 
 CI non viene eseguita automaticamente sui push a `develop`; il workflow resta disponibile su pull request e avvio manuale.
 

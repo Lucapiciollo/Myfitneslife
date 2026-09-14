@@ -8,10 +8,12 @@ L'app sceglie a runtime il provider AI senza modificare agenti, Activity o model
 - `OPENAI`
 
 ## Regola di selezione
-1. Se `useGemini == true`, il runtime usa `GeminiProvider`.
-2. Se `useGemini == false`, è richiesta una `openAiApiKey` valida e il runtime usa `OpenAiProvider`.
-3. Se OpenAI è selezionato ma la chiave non è disponibile, l'AI è in stato `NOT_CONFIGURED`.
+1. Se `useGemini == true`, è richiesta una Gemini API key cifrata e il runtime usa `GeminiByokProvider` con chiamata diretta alla Gemini Developer API.
+2. Se `useGemini == false`, è richiesta una OpenAI API key cifrata e il runtime usa `OpenAiProvider`.
+3. Se il provider selezionato non ha una chiave disponibile, l'AI è in stato `NOT_CONFIGURED`.
 4. La selezione provider non cambia target nutrizionali, dati, validazioni o schema JSON.
+
+Firebase resta disponibile per servizi futuri; Firebase AI Logic è esplicitamente disabilitato e non è coinvolto nel runtime Gemini.
 
 ## Confine di responsabilità
 L'app calcola i target dinamici. Gli agenti ricevono i target correnti e non possono sostituirli arbitrariamente.

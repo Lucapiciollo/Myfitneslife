@@ -5,6 +5,8 @@ import com.myfitai.app.data.local.MyFitAiDatabase
 import com.myfitai.app.data.local.entity.*
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.repository.*
+import com.myfitai.app.domain.calculation.LocalCalculationEngine
+import com.myfitai.app.domain.calculation.ProfileCalculationService
 import kotlinx.coroutines.flow.first
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -57,6 +59,86 @@ class SixMonthQaDataSeeder(context: Context) {
         return counts(profileId)
     }
 
+    suspend fun seedDemo12Months(): String {
+        val existing = profiles.profiles.first().firstOrNull { it.name == DEMO_NAME }
+        val profileId = existing?.id ?: profiles.create(profile(DEMO_NAME, "Moderatamente attivo", 88f, 96f))
+        active.selectProfile(profileId)
+
+        val existingBia = db.biaMeasurementDao().observeAll(profileId).first()
+        val existingBody = db.bodyMeasurementDao().observeAll(profileId).first()
+        if (existingBia.size >= DEMO_MEASUREMENT_COUNT && existingBody.size >= DEMO_MEASUREMENT_COUNT) {
+            return calculationSummary(profileId)
+        }
+
+        val start = today.minusMonths(12)
+        repeat(DEMO_MEASUREMENT_COUNT) { index ->
+            val date = start.plusDays(index * 15L)
+            val progress = index / 24f
+            val oscillation = listOf(0f, .25f, -.15f, .1f, -.2f)[index % 5]
+            db.biaMeasurementDao().insert(BiaMeasurementEntity(
+                profileId = profileId,
+                measuredAtEpochMillis = epoch(date),
+                weightKg = 96f - progress * 8f + oscillation,
+                bodyFatPercent = 24f - progress * 6f + oscillation * .15f,
+                visceralFatLevel = 12f - progress * 2f,
+                muscleMassKg = 67.5f + progress * 2.7f,
+                skeletalMuscleKg = 33.5f + progress * 1.2f,
+                bodyWaterPercent = 53.5f + progress * 4.5f,
+                bmrKcal = null,
+                fasting = true,
+                justWokeUp = true,
+                afterBathroom = true,
+                noRecentWorkout = true,
+                notes = "Profilo demo 12 mesi",
+            ))
+            db.bodyMeasurementDao().insert(BodyMeasurementEntity(
+                profileId = profileId,
+                measuredAtEpochMillis = epoch(date),
+                chestCm = 106f - progress * 2f,
+                waistCm = 101f - progress * 14f + oscillation,
+                abdomenCm = 104f - progress * 13f,
+                shouldersCm = 50f,
+                glutesCm = 105f - progress * 3f,
+                armLeftCm = 34f + progress * .8f,
+                armRightCm = 34f + progress * .8f,
+                thighLeftCm = 61f - progress * 1.5f,
+                thighRightCm = 61f - progress * 1.5f,
+                calfLeftCm = 39f,
+                calfRightCm = 39f,
+            ))
+        }
+        repeat(52) { index ->
+            db.workoutDao().insert(WorkoutEntity(
+                profileId = profileId,
+                startedAtEpochMillis = epoch(start.plusDays(index * 7L + 2L), 18),
+                type = "PESI",
+                title = "Demo workout $index",
+                durationMinutes = 50,
+                isRestDay = false,
+            ))
+        }
+
+        return calculationSummary(profileId)
+    }
+
+    private suspend fun calculationSummary(profileId: Long): String {
+        val biaCount = db.biaMeasurementDao().observeAll(profileId).first().size
+        val bodyCount = db.bodyMeasurementDao().observeAll(profileId).first().size
+        val workoutCount = db.workoutDao().observeAll(profileId).first().size
+        val calculation = ProfileCalculationService(
+            profiles,
+            BiaRepository(db),
+            BodyMeasurementRepository(db),
+            active,
+        ).activeProfileSnapshot(today)!!
+        val result = calculation.calculation
+        return "demo=$profileId bia=$biaCount body=$bodyCount workouts=$workoutCount " +
+            "bmi=${fmt(result.bmi)} bmr=${fmt(result.bmrKcal)} tdee=${fmt(result.tdeeKcal)} " +
+            "target=${fmt(result.targetKcal)} protein=${fmt(result.proteinG)} carbs=${fmt(result.carbsG)} fat=${fmt(result.fatG)} " +
+            "weightDelta=${fmt(calculation.weightTrend.delta)} waistDelta=${fmt(calculation.waistTrend.delta)} " +
+            "recomposition=${calculation.recompositionState}"
+    }
+
     suspend fun seedStress(): String {
         reset()
         repeat(5) { index ->
@@ -85,4 +167,11 @@ class SixMonthQaDataSeeder(context: Context) {
     private fun meal(type: String, kcal: Int, time: Int) = MealDraft(type, "QA $type", time, kcal, 50f, 70f, 18f, "Preparazione QA", listOf(IngredientDraft("Riso", 100f, "g", "100 g", "RAW", "HIGH", "cereali")))
     private fun epoch(date: LocalDate, hour: Int = 7) = date.atTime(hour, 0).toInstant(ZoneOffset.UTC).toEpochMilli()
     private fun oscillation(index: Int) = listOf(0f, .3f, -.2f, .15f, -.25f)[index % 5]
+
+    private fun fmt(value: Double?): String = value?.let { "%.1f".format(java.util.Locale.US, it) } ?: "null"
+
+    private companion object {
+        const val DEMO_NAME = "Demo 12 mesi"
+        const val DEMO_MEASUREMENT_COUNT = 25
+    }
 }

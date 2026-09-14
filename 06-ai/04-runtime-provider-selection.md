@@ -9,11 +9,12 @@ In `Impostazioni > Intelligenza artificiale`:
 - Azione futura `Verifica configurazione`
 
 ## V1
-La UI e le classi di configurazione sono predisposte, ma le chiamate di rete NON sono ancora collegate.
+Gemini e OpenAI sono BYOK. Entrambe le chiavi sono protette da Android Keystore/AES-GCM. Gemini chiama direttamente Gemini Developer API; Firebase AI Logic non è usato.
 
 ## Stato runtime
 ```text
-useGemini = true  -> GEMINI
+useGemini = true + Gemini key presente -> GEMINI
+useGemini = true + Gemini key assente -> NOT_CONFIGURED
 useGemini = false + key presente -> OPENAI
 useGemini = false + key assente -> NOT_CONFIGURED
 ```
@@ -21,4 +22,4 @@ useGemini = false + key assente -> NOT_CONFIGURED
 ## Sicurezza
 - Non salvare chiavi in chiaro in file di progetto.
 - Non includere chiavi in log, crash report o export.
-- Prima dell'integrazione reale, usare Android Keystore o un proxy backend secondo la strategia scelta.
+- Firebase e `google-services.json` restano disponibili per eventuali servizi futuri, ma non sono prerequisiti per Gemini BYOK.

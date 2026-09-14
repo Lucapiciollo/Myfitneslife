@@ -8,12 +8,15 @@
 - Reference date: `2026-09-14`.
 - No GitHub Actions or CI workflow was started.
 - OpenAI/Gemini credentials were not used.
+- Firebase `google-services.json` remains local/configured for generic Firebase use; Firebase AI Logic is not used by the final runtime.
+- No real Gemini BYOK or OpenAI BYOK credential was used in this run.
 
 ## Executed Results
 
 | Command | Result | Evidence |
 |---|---|---|
 | `:app:assembleDebug` | PASS | Debug APK assembled locally |
+| `:app:assembleRelease` | PASS | Release APK assembled locally; debug-only QA/App Check sources excluded |
 | `:app:testDebugUnitTest` | PASS | 44 tests, 0 failures, 0 skipped |
 | `:app:connectedDebugAndroidTest` | PASS | 41 tests, 0 failures, 0 skipped on `SM-A546B - 16` |
 | Manual bottom-tab smoke | PASS | Root reuse, active-tab no-op, rapid taps, Back to launcher, no crash/ANR |
@@ -47,6 +50,8 @@
 - UIAutomator E2E reaches export from Altro, verifies all export format rows and confirms JSON export file creation from the real screen.
 - Notification receiver tests verify meal/review channels and meal notification creation when Android notification permission allows it.
 - Settings UI E2E verifies provider/key status without secrets and the privacy dialog; `FLAG_SECURE` remains statically verified because device dumps do not expose a stable textual flag format.
+- Gemini BYOK provider compiles with direct Developer API structured-output schema conversion and in-memory image parts. This is build evidence, not a real Gemini PASS.
+- Previous Firebase-runtime device evidence remains historical only; it is not evidence for the current Gemini BYOK transport.
 - Debug-only `QaSeederActivity` writes the real app Room database, reports `profile=2 bia=13 body=13 workouts=104 plans=26 cheats=20`, and the normal app is reopened afterward.
 - `ProgressRangeDeviceTest` opens real Progress UI after QA seeding, exercises `1M`, `3M`, `6M`, `1Y`, and saves device screenshots under the app QA artifacts directory.
 - Stress dataset executed twice on device: 5 profiles, 240 BIA, 240 body measurements, 1000 workouts, 520 plan roots, 936 plan versions and 200 cheats. Run 1 timings: BIA 34 ms, body 10 ms, workouts 16 ms, plan roots 11 ms, snapshot 32 ms, shopping 46 ms, JSON 14832 ms, CSV ZIP 15488 ms, profile PDF 8391 ms, weekly PDF 327 ms. Run 2: BIA 36 ms, body 22 ms, workouts 21 ms, plan roots 19 ms, snapshot 14 ms, shopping 40 ms, JSON 21783 ms, CSV ZIP 20348 ms, profile PDF 4811 ms, weekly PDF 162 ms.
@@ -73,6 +78,8 @@
 ## NOT RUN
 
 - Real provider calls with Gemini or OpenAI credentials.
+- Firebase Gemini runtime calls are configured and reached from the device, but the tested model returned temporary high-demand responses; retry is still required for a valid structured response.
+- Diet generation with real Gemini and cheat preview/confirmation/adaptation with real Gemini: blocked by the same missing Firebase configuration; the UI-to-provider error path is verified on device.
 - Camera/gallery OS picker delivery and blurred-label capture remain untested; processor and temporary-file lifecycle are covered.
 - Reboot rescheduling, Doze/OEM delivery, notification tap routing, permission denial behavior on a controlled permission state, and stale notification delivery tests.
 - Full UI E2E for profile/BIA/measurements/workouts/diet/cheat/review/export screens.

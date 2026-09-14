@@ -92,6 +92,7 @@ class NutritionPlanGenerationService(
             schemaName = NutritionPlanContract.SCHEMA_NAME,
             schemaJson = NutritionPlanContract.schemaJson,
             maxOutputTokens = 16_000,
+            allowSchemaFallback = true,
         )
 
         var parsed: NutritionPlanContract.Response? = null

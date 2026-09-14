@@ -1,6 +1,8 @@
 package com.myfitai.app.ui
 
 import android.graphics.Typeface
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.text.InputType
 import android.view.View
@@ -8,6 +10,9 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.FileProvider
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -20,6 +25,9 @@ import com.google.android.material.timepicker.TimeFormat
 import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.data.local.entity.BiaMeasurementEntity
+import com.myfitai.app.domain.body.AiImageProcessor
+import com.myfitai.app.domain.body.AiImageTempStore
+import com.myfitai.app.domain.body.BiaImportContract
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.ui.bia.BiaViewModel
 import com.myfitai.app.ui.widgets.MeasurementRowView
@@ -29,6 +37,9 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import java.io.File
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class BiaActivity : BaseShellActivity() {
 
@@ -57,6 +68,18 @@ class BiaActivity : BaseShellActivity() {
     private var selectedDateMillis: Long = System.currentTimeMillis()
     private var selectedHour: Int = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
     private var selectedMinute: Int = Calendar.getInstance().get(Calendar.MINUTE)
+    private var pendingImportFile: File? = null
+    private val imageTempStore by lazy { AiImageTempStore(this) }
+
+    private val galleryLauncher = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) processImportUri(uri)
+    }
+
+    private val cameraLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+        val file = pendingImportFile
+        pendingImportFile = null
+        if (success && file != null) processImportFile(file) else imageTempStore.delete(file)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -68,8 +91,12 @@ class BiaActivity : BaseShellActivity() {
         bindDateTime()
         bindMeasurementRows()
         bindSave()
+        bindPhotoImport()
         observeState()
         renderDateTime()
+        if (intent.getBooleanExtra(EXTRA_OPEN_HISTORY, false)) {
+            findViewById<SelectableSegmentView>(R.id.biaSegment).getChildAt(1)?.performClick()
+        }
     }
 
     private fun bindViews() {
@@ -189,6 +216,104 @@ class BiaActivity : BaseShellActivity() {
                 noRecentWorkout = findViewById<MaterialCheckBox>(R.id.checkNoWorkout).isChecked,
             )
         }
+    }
+
+    private fun bindPhotoImport() {
+        findViewById<View>(R.id.importPhotoButton).setOnClickListener {
+            MaterialAlertDialogBuilder(this)
+                .setTitle("Importa BIA da foto")
+                .setItems(arrayOf("Scatta foto", "Scegli dalla galleria")) { _, which ->
+                    if (which == 0) {
+                        val file = imageTempStore.create()
+                        pendingImportFile = file
+                        cameraLauncher.launch(FileProvider.getUriForFile(this, "$packageName.fileprovider", file))
+                    } else {
+                        galleryLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                    }
+                }
+                .show()
+        }
+    }
+
+    private fun processImportUri(uri: Uri) {
+        lifecycleScope.launch {
+            runCatching { withContext(Dispatchers.IO) { AiImageProcessor.fromUri(this@BiaActivity, uri) } }
+                .onSuccess { importImage(it) }
+                .onFailure { Toast.makeText(this@BiaActivity, "Impossibile leggere la foto", Toast.LENGTH_LONG).show() }
+        }
+    }
+
+    private fun processImportFile(file: File) {
+        lifecycleScope.launch {
+            runCatching { withContext(Dispatchers.IO) { AiImageProcessor.fromFile(file) } }
+                .onSuccess { importImage(it) }
+                .onFailure { Toast.makeText(this@BiaActivity, "Impossibile leggere la foto", Toast.LENGTH_LONG).show() }
+                .also { withContext(Dispatchers.IO) { imageTempStore.delete(file) } }
+        }
+    }
+
+    private fun importImage(image: com.myfitai.app.ai.AiImageInput) {
+        Toast.makeText(this, "Lettura BIA in corso…", Toast.LENGTH_SHORT).show()
+        lifecycleScope.launch {
+            runCatching { data.biaImportService.import(image) }
+                .onSuccess { showImportPreview(it.preview, it.provider, it.model) }
+                .onFailure {
+                    val message = if (it is com.myfitai.app.domain.body.BiaImportService.NotBiaImage) {
+                        "Importazione rifiutata: ${it.message} Seleziona una foto di una rilevazione BIA."
+                    } else it.message ?: "Importazione BIA non riuscita"
+                    Toast.makeText(this@BiaActivity, message, Toast.LENGTH_LONG).show()
+                }
+        }
+    }
+
+    private fun showImportPreview(preview: BiaImportContract.Preview, provider: String, model: String) {
+        val fields = linkedMapOf(
+            "Peso (kg)" to preview.weightKg,
+            "Grasso corporeo (%)" to preview.bodyFatPercent,
+            "Grasso viscerale" to preview.visceralFatLevel,
+            "Massa muscolare (kg)" to preview.muscleMassKg,
+            "Muscolo scheletrico (kg)" to preview.skeletalMuscleKg,
+            "Acqua corporea (%)" to preview.bodyWaterPercent,
+            "BMR (kcal)" to preview.bmrKcal,
+        )
+        val inputs = fields.mapValues { (_, value) -> TextInputEditText(this).apply {
+            inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
+            value?.let { setText(formatNumber(it)) }
+            hint = "Lascia vuoto se non leggibile"
+        } }
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            val padding = (20 * resources.displayMetrics.density).toInt()
+            setPadding(padding, 0, padding, 0)
+            addView(TextView(this@BiaActivity).apply { text = "Provider $provider · $model\nConfidenza: ${preview.confidence}\n${preview.notes}"; textSize = 12f })
+            inputs.forEach { (label, input) ->
+                addView(TextView(this@BiaActivity).apply { text = label; textSize = 12f; setPadding(0, padding / 2, 0, 0) })
+                addView(input)
+            }
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Controlla importazione BIA")
+            .setMessage("I valori sono una lettura della foto. Correggili prima di salvarli nello storico.")
+            .setView(container)
+            .setNegativeButton("Annulla", null)
+            .setPositiveButton("Usa valori") { _, _ ->
+                values[KEY_WEIGHT] = parseFloat(inputs.getValue("Peso (kg)").text?.toString())
+                values[KEY_BODY_FAT] = parseFloat(inputs.getValue("Grasso corporeo (%)").text?.toString())
+                values[KEY_VISCERAL_FAT] = parseFloat(inputs.getValue("Grasso viscerale").text?.toString())
+                values[KEY_MUSCLE_MASS] = parseFloat(inputs.getValue("Massa muscolare (kg)").text?.toString())
+                values[KEY_SKELETAL_MUSCLE] = parseFloat(inputs.getValue("Muscolo scheletrico (kg)").text?.toString())
+                values[KEY_BODY_WATER] = parseFloat(inputs.getValue("Acqua corporea (%)").text?.toString())
+                values[KEY_BMR] = parseFloat(inputs.getValue("BMR (kcal)").text?.toString())
+                bindMeasurementRows()
+                preview.measuredAtEpochMillis?.let { timestamp ->
+                    selectedDateMillis = timestamp
+                    val calendar = Calendar.getInstance().apply { timeInMillis = timestamp }
+                    selectedHour = calendar.get(Calendar.HOUR_OF_DAY)
+                    selectedMinute = calendar.get(Calendar.MINUTE)
+                }
+                renderDateTime()
+            }
+            .show()
     }
 
     private fun observeState() {
@@ -387,6 +512,7 @@ class BiaActivity : BaseShellActivity() {
     private fun formatSigned(value: Float): String = String.format(Locale.ITALIAN, "%+.1f", value)
 
     companion object {
+        const val EXTRA_OPEN_HISTORY = "open_bia_history"
         private const val KEY_WEIGHT = "weight"
         private const val KEY_BODY_FAT = "bodyFat"
         private const val KEY_VISCERAL_FAT = "visceralFat"

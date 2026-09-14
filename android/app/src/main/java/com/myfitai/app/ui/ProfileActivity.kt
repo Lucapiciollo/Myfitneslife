@@ -15,7 +15,8 @@ import com.google.android.material.imageview.ShapeableImageView
 import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.data.local.entity.UserProfileEntity
-import com.myfitai.app.security.SecureOpenAiKeyStore
+import com.myfitai.app.security.AiCredentialProvider
+import com.myfitai.app.security.SecureAiCredentialStore
 import com.myfitai.app.ui.widgets.SettingRowView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -63,7 +64,7 @@ class ProfileActivity : BaseShellActivity() {
 
         val openAiRow = findViewById<SettingRowView>(R.id.rowOpenAiKey)
         openAiRow.setOnClickListener { go(SettingsActivity::class.java) }
-        val hasKey = SecureOpenAiKeyStore(this).hasKey()
+        val hasKey = SecureAiCredentialStore(this).exists(AiCredentialProvider.OPENAI)
         openAiRow.setTrailingBadge(
             getString(if (hasKey) R.string.profile_openai_configured else R.string.profile_openai_not_configured),
             if (hasKey) R.color.accent_green else R.color.text_muted,

@@ -48,7 +48,7 @@
                         android:layout_weight="1"
                         android:orientation="vertical">
                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Usa Gemini" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="15sp" />
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Se disattivato verrà usato OpenAI" android:textColor="@color/text_secondary" android:textSize="12sp" />
+                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Gemini Developer API diretta · se disattivato verrà usato OpenAI" android:textColor="@color/text_secondary" android:textSize="12sp" />
                     </LinearLayout>
                     <com.google.android.material.materialswitch.MaterialSwitch
                         android:id="@+id/useGeminiSwitch"
@@ -58,8 +58,7 @@
                         app:trackTint="@color/accent_green" />
                 </LinearLayout>
 
-                <TextView
-                    android:id="@+id/activeProviderText"
+                 <TextView android:id="@+id/activeProviderText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12"
@@ -67,56 +66,51 @@
                     android:textColor="@color/text_secondary"
                     android:textSize="13sp" />
 
-                <LinearLayout
+                 <LinearLayout
                     android:id="@+id/geminiKeyContainer"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:layout_marginTop="@dimen/space_12">
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:hint="Gemini API key"
-                        app:endIconMode="password_toggle">
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/geminiApiKeyInput"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:inputType="textPassword"
-                            android:singleLine="true" />
-                    </com.google.android.material.textfield.TextInputLayout>
-                    <TextView
+                     android:orientation="vertical"
+                     android:layout_marginTop="@dimen/space_12">
+                     <com.google.android.material.textfield.TextInputLayout
+                         android:id="@+id/geminiInputLayout"
+                         android:layout_width="match_parent"
+                         android:layout_height="wrap_content"
+                         android:hint="Gemini API key"
+                         app:endIconMode="password_toggle">
+                         <com.google.android.material.textfield.TextInputEditText
+                             android:id="@+id/geminiApiKeyInput"
+                             android:layout_width="match_parent"
+                              android:layout_height="wrap_content"
+                              android:inputType="textPassword"
+                              android:singleLine="true"
+                              android:importantForAccessibility="no" />
+                     </com.google.android.material.textfield.TextInputLayout>
+                 <TextView
                         android:id="@+id/geminiKeyStatusText"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/space_6"
-                        android:text="Nessuna chiave Gemini salvata"
+                         android:text="Chiave Gemini non configurata"
                         android:textColor="@color/text_secondary"
-                        android:textSize="11sp" />
-                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="@dimen/space_10">
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/saveGeminiKeyButton"
-                            android:layout_width="0dp" android:layout_weight="1" android:layout_height="44dp"
-                            android:layout_marginEnd="@dimen/space_6" android:text="Salva chiave" android:textAllCaps="false"
-                            app:cornerRadius="10dp" app:backgroundTint="@color/accent_green" />
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/deleteGeminiKeyButton"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
-                            android:layout_width="0dp" android:layout_weight="1" android:layout_height="44dp"
-                            android:layout_marginStart="@dimen/space_6" android:text="Rimuovi" android:textAllCaps="false"
-                            android:textColor="@color/text_primary" app:cornerRadius="10dp" app:strokeColor="@color/divider" />
-                    </LinearLayout>
+                         android:textSize="11sp" />
+                      <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="@dimen/space_10">
+                          <com.google.android.material.button.MaterialButton android:id="@+id/pasteGeminiKeyButton" style="@style/Widget.Material3.Button.OutlinedButton" android:layout_width="0dp" android:layout_weight="1" android:layout_height="44dp" android:layout_marginEnd="@dimen/space_6" android:text="Incolla" android:textAllCaps="false" />
+                          <com.google.android.material.button.MaterialButton android:id="@+id/saveGeminiKeyButton" android:layout_width="0dp" android:layout_weight="1" android:layout_height="44dp" android:layout_marginEnd="@dimen/space_6" android:text="Verifica e salva" android:textAllCaps="false" app:backgroundTint="@color/accent_green" />
+                         <com.google.android.material.button.MaterialButton android:id="@+id/replaceGeminiKeyButton" style="@style/Widget.Material3.Button.OutlinedButton" android:layout_width="0dp" android:layout_weight="1" android:layout_height="44dp" android:layout_marginStart="@dimen/space_6" android:text="Sostituisci" android:textAllCaps="false" />
+                         <com.google.android.material.button.MaterialButton android:id="@+id/deleteGeminiKeyButton" style="@style/Widget.Material3.Button.OutlinedButton" android:layout_width="0dp" android:layout_weight="1" android:layout_height="44dp" android:layout_marginStart="@dimen/space_6" android:text="Elimina" android:textAllCaps="false" />
+                     </LinearLayout>
                 </LinearLayout>
 
-                <LinearLayout
-                    android:id="@+id/openAiKeyContainer"
+                 <LinearLayout
+                     android:id="@+id/openAiKeyContainer"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:visibility="gone"
-                    android:layout_marginTop="@dimen/space_12">
+                     android:orientation="vertical"
+                     android:layout_marginTop="@dimen/space_12">
 
-                    <com.google.android.material.textfield.TextInputLayout
+                     <com.google.android.material.textfield.TextInputLayout
+                         android:id="@+id/openAiInputLayout"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="OpenAI API key"
@@ -126,9 +120,10 @@
                             android:id="@+id/openAiApiKeyInput"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:inputType="textPassword"
-                            android:singleLine="true"
-                            android:hint="sk-…" />
+                             android:inputType="textPassword"
+                             android:singleLine="true"
+                             android:hint="sk-…"
+                             android:importantForAccessibility="no" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <TextView
@@ -143,20 +138,38 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:layout_marginTop="@dimen/space_10">
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/saveOpenAiKeyButton"
+                         android:orientation="horizontal"
+                         android:layout_marginTop="@dimen/space_10">
+                         <com.google.android.material.button.MaterialButton
+                             android:id="@+id/pasteOpenAiKeyButton"
+                             style="@style/Widget.Material3.Button.OutlinedButton"
+                             android:layout_width="0dp"
+                             android:layout_weight="1"
+                             android:layout_height="44dp"
+                             android:layout_marginEnd="@dimen/space_6"
+                             android:text="Incolla"
+                             android:textAllCaps="false" />
+                         <com.google.android.material.button.MaterialButton
+                             android:id="@+id/saveOpenAiKeyButton"
                             android:layout_width="0dp"
                             android:layout_weight="1"
                             android:layout_height="44dp"
                             android:layout_marginEnd="@dimen/space_6"
-                            android:text="Salva chiave"
+                             android:text="Verifica e salva"
                             android:textAllCaps="false"
                             android:textStyle="bold"
                             android:textSize="13sp"
                             app:cornerRadius="10dp"
-                            app:backgroundTint="@color/accent_green" />
+                             app:backgroundTint="@color/accent_green" />
+                         <com.google.android.material.button.MaterialButton
+                             android:id="@+id/replaceOpenAiKeyButton"
+                             style="@style/Widget.Material3.Button.OutlinedButton"
+                             android:layout_width="0dp"
+                             android:layout_weight="1"
+                             android:layout_height="44dp"
+                             android:layout_marginStart="@dimen/space_6"
+                             android:text="Sostituisci"
+                             android:textAllCaps="false" />
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/deleteOpenAiKeyButton"
                             style="@style/Widget.Material3.Button.OutlinedButton"
@@ -178,7 +191,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_8"
-                    android:text="Le chiavi non vengono mai salvate in chiaro, esportate, inserite nei log o incluse nei backup."
+                         android:text="Le chiavi non vengono mai salvate in chiaro, esportate, inserite nei log o incluse nei backup. Firebase AI Logic non viene usato per Gemini."
                     android:textColor="@color/text_secondary"
                     android:textSize="11sp" />
             </LinearLayout>

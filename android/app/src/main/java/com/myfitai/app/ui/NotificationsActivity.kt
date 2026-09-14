@@ -30,7 +30,7 @@ class NotificationsActivity : BaseShellActivity() {
             if (mealId > 0L) {
                 startActivity(Intent(this, MealDetailActivity::class.java).putExtra(MealDetailActivity.EXTRA_MEAL_ID, mealId))
             } else {
-                go(FoodPlanActivity::class.java)
+                openFoodPlan()
             }
         }
         findViewById<android.view.View>(R.id.snoozeButton).setOnClickListener {

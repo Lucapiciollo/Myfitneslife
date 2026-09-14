@@ -11,13 +11,13 @@ Status values are `PASS`, `STATIC REVIEW ONLY`, `NOT RUN`, and `FAIL`. `PASS` me
 | NORMAL/SPORT classifier | PASS | PASS | NOT RUN | NOT RUN | PASS | PASS | STATIC REVIEW ONLY |
 | Workouts | PASS | PASS | PASS (QA seeded device) | NOT RUN | STATIC REVIEW ONLY | PASS | PASS |
 | Nutrition targets | PASS | STATIC REVIEW ONLY | NOT RUN | NOT RUN | PASS | PASS | PASS |
-| Weekly diet structure | PASS | PASS | PASS (QA seeded device/fake runtime) | NOT RUN | PASS | PASS | PASS |
+| Weekly diet structure | PASS | PASS | PASS (QA seeded device/fake runtime) | NOT RUN (Gemini BYOK key absent) | PASS (missing-key block) | PASS | PASS |
 | Whey/protein powder | PASS | PASS | NOT RUN | NOT RUN | PASS | PASS | PASS |
 | Creatine | PASS | PASS | NOT RUN | NOT RUN | PASS | PASS | PASS |
 | Hydration note | PASS | PASS | NOT RUN | NOT RUN | PASS | PASS | PASS |
 | Meal swap | PASS | PASS | PASS (fake runtime) | NOT RUN | PASS | PASS | PASS |
 | Chiedi all'IA | PASS | PASS (fake runtime) | PASS (fake runtime) | NOT RUN | PASS | NOT RUN | NOT RUN |
-| Text cheat two-phase flow | PASS (contract) | PASS (fake runtime) | PASS (fake runtime) | NOT RUN | PASS | PASS (entity) | PASS |
+| Text cheat two-phase flow | PASS (contract) | PASS (fake runtime) | PASS (fake runtime) | NOT RUN (Gemini BYOK key absent) | PASS (missing-key block) | PASS (entity) | PASS |
 | Photo cheat flow | PASS (processor) | PASS (temp lifecycle) | NOT RUN (OS camera/gallery) | NOT RUN | PASS (unreadable image) | PASS (no image persistence) | PASS (no image export) |
 | Future-only adaptation | PASS (contract only) | PASS (fake runtime no-adaptation path) | PASS (fake runtime) | NOT RUN | PASS | PASS | PASS |
 | Plan versioning | PASS | PASS | NOT RUN | NOT RUN | PASS | PASS | PASS |
@@ -34,7 +34,8 @@ Status values are `PASS`, `STATIC REVIEW ONLY`, `NOT RUN`, and `FAIL`. `PASS` me
 
 ## Known Traceability Holes
 
-- No real Gemini/OpenAI provider run with a configured credential; service integration uses a provider-neutral fake runtime and canonical JSON contracts.
+- OpenAI real provider remains untested. Firebase Gemini is configured and reachable on the device, but both diet and cheat requests returned temporary `high demand` responses before a structured payload was received.
+- Real device UI-to-provider error path for diet generation and cheat analysis is verified; real Gemini response, cheat preview, confirmation, and future-meal adaptation remain unverified.
 - No executable Activity/UI test suite; bottom tabs have manual device evidence only.
 - No OS camera/gallery picker runtime test; label-photo processor and temp-file lifecycle are covered.
 - No Android alarm delivery/notification tap test.

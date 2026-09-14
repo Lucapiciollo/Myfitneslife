@@ -1,9 +1,9 @@
-# OpenAI API key security — IMPERATIVE
+# AI provider API key security — IMPERATIVE
 
 This requirement is non-negotiable for MyFitAI.
 
 ## Storage
-- Never persist the OpenAI API key in plaintext.
+- Never persist Gemini or OpenAI API keys in plaintext.
 - Android Keystore is the root of trust.
 - Use a non-exportable AES-256 key generated in `AndroidKeyStore`.
 - Persist only AES-GCM ciphertext and its IV in app-private storage.
@@ -27,7 +27,7 @@ This requirement is non-negotiable for MyFitAI.
 - If ciphertext cannot be decrypted, treat the provider as not configured; never expose crypto details or the credential.
 
 ## Current implementation
-`android/app/src/main/java/com/myfitai/app/security/SecureOpenAiKeyStore.kt`
-implements AES/GCM using a non-exportable Android Keystore AES key.
+`android/app/src/main/java/com/myfitai/app/security/SecureAiCredentialStore.kt`
+implements AES/GCM using a non-exportable Android Keystore AES key for both providers.
 
 Any agent or developer changing credential handling MUST preserve these guarantees.

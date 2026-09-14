@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application>
-        <activity android:name=".qa.QaSeederActivity" android:exported="true" />
+        <activity android:name=".qa.GeminiSchemaProbeActivity" android:exported="true" />
     </application>
 </manifest>

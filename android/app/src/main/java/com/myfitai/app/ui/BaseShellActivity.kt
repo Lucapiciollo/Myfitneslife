@@ -18,6 +18,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.myfitai.app.R
+import com.myfitai.app.ai.AiProviderAccess
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.navigation.BottomNavBinder
@@ -29,6 +30,14 @@ abstract class BaseShellActivity : AppCompatActivity() {
     private var profileSwitcher: AutoCompleteTextView? = null
     private var profileHeader: View? = null
     private var isTabRoot = false
+
+    protected fun openFoodPlan(weekStartEpochDay: Long? = null): Boolean {
+        if (!AiProviderAccess.requireConfigured(this)) return false
+        val intent = Intent(this, FoodPlanActivity::class.java)
+        weekStartEpochDay?.let { intent.putExtra(FoodPlanActivity.EXTRA_WEEK_START_EPOCH_DAY, it) }
+        startActivity(intent)
+        return true
+    }
 
     private val tabRootBackCallback = object : OnBackPressedCallback(true) {
         override fun handleOnBackPressed() {

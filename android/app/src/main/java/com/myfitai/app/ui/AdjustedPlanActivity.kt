@@ -44,7 +44,7 @@ class AdjustedPlanActivity : BaseShellActivity() {
         }
 
         findViewById<View>(R.id.okButton).setOnClickListener {
-            go(FoodPlanActivity::class.java)
+            openFoodPlan()
             finish()
         }
     }
