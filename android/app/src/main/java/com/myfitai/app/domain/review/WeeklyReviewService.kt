@@ -11,6 +11,8 @@ import com.myfitai.app.data.repository.MealPlanRepository
 import com.myfitai.app.data.repository.WeeklyReviewRepository
 import com.myfitai.app.data.repository.WorkoutRepository
 import com.myfitai.app.domain.personalization.PersonalResponseService
+import com.myfitai.app.domain.time.SystemTimeProvider
+import com.myfitai.app.domain.time.TimeProvider
 import kotlinx.coroutines.flow.first
 import org.json.JSONArray
 import org.json.JSONObject
@@ -28,6 +30,7 @@ class WeeklyReviewService(
     private val bodyMeasurements: BodyMeasurementRepository,
     private val personalResponse: PersonalResponseService,
     private val activeProfileStore: ActiveProfileStore,
+    private val time: TimeProvider = SystemTimeProvider,
 ) {
     data class LocalMetrics(
         val weekStart: LocalDate,
@@ -72,10 +75,10 @@ class WeeklyReviewService(
     suspend fun buildLocalMetrics(weekStart: LocalDate): LocalMetrics {
         val monday = monday(weekStart)
         val sunday = monday.plusDays(6)
-        if (!sunday.isBefore(LocalDate.now())) throw ReviewException.WeekNotCompleted()
+        if (!sunday.isBefore(time.today())) throw ReviewException.WeekNotCompleted()
         val profileId = activeProfileStore.currentIdOrNull()
             ?: throw ReviewException.NeedsInput(listOf("profilo attivo"))
-        val zone = ZoneId.systemDefault()
+        val zone = time.zoneId
         val from = monday.atStartOfDay(zone).toInstant().toEpochMilli()
         val to = monday.plusDays(7).atStartOfDay(zone).toInstant().toEpochMilli() - 1
 
@@ -166,7 +169,7 @@ class WeeklyReviewService(
         val entity = WeeklyReviewEntity(
             profileId = profileId,
             weekStartEpochDay = monday.toEpochDay(),
-            createdAtEpochMillis = System.currentTimeMillis(),
+            createdAtEpochMillis = time.nowEpochMillis(),
             adherencePercent = null,
             summary = response.summary,
             structuredJson = structured,

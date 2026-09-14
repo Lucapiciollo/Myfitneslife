@@ -6,6 +6,8 @@ import android.content.Context
 import android.content.Intent
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.repository.MealPlanRepository
+import com.myfitai.app.domain.time.SystemTimeProvider
+import com.myfitai.app.domain.time.TimeProvider
 import kotlinx.coroutines.flow.first
 import java.time.DayOfWeek
 import java.time.Instant
@@ -17,12 +19,13 @@ class NotificationScheduler(
     context: Context,
     private val plans: MealPlanRepository,
     private val activeProfileStore: ActiveProfileStore,
+    private val time: TimeProvider = SystemTimeProvider,
 ) {
     private val appContext = context.applicationContext
     private val alarmManager = appContext.getSystemService(Context.ALARM_SERVICE) as AlarmManager
     private val preferences = NotificationPreferences(appContext)
 
-    suspend fun refresh(nowEpochMillis: Long = System.currentTimeMillis()) {
+    suspend fun refresh(nowEpochMillis: Long = time.nowEpochMillis()) {
         cancelAllTracked()
         val newCodes = mutableSetOf<Int>()
         val profileId = activeProfileStore.currentIdOrNull() ?: run {
@@ -36,16 +39,16 @@ class NotificationScheduler(
     }
 
     fun snoozeMeal(mealId: Long, mealType: String, mealTitle: String, profileId: Long, delayMinutes: Int = 10) {
-        val requestCode = stableCode("snooze:$profileId:$mealId:${System.currentTimeMillis() / 60_000}")
+        val requestCode = stableCode("snooze:$profileId:$mealId:${time.nowEpochMillis() / 60_000}")
         alarmManager.setAndAllowWhileIdle(
             AlarmManager.RTC_WAKEUP,
-            System.currentTimeMillis() + delayMinutes.coerceIn(1, 120) * 60_000L,
+            time.nowEpochMillis() + delayMinutes.coerceIn(1, 120) * 60_000L,
             mealIntent(requestCode, mealId, mealType, mealTitle, profileId),
         )
     }
 
     private suspend fun scheduleMealReminders(profileId: Long, now: Long, tracked: MutableSet<Int>) {
-        val zone = ZoneId.systemDefault()
+        val zone = time.zoneId
         val today = Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
         val horizon = today.plusDays(60)
         val leadMillis = preferences.mealLeadMinutes * 60_000L
@@ -77,7 +80,7 @@ class NotificationScheduler(
     }
 
     private fun scheduleWeeklyReview(now: Long, tracked: MutableSet<Int>) {
-        val zone = ZoneId.systemDefault()
+        val zone = time.zoneId
         val nowDateTime = Instant.ofEpochMilli(now).atZone(zone)
         var monday = nowDateTime.toLocalDate().with(TemporalAdjusters.nextOrSame(DayOfWeek.MONDAY))
         var trigger = monday.atTime(9, 0).atZone(zone).toInstant().toEpochMilli()

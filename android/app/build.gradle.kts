@@ -11,7 +11,9 @@ android {
     compileSdk = 36
 
     sourceSets {
+        getByName("test").java.srcDir("$projectDir/src/testFixturesShared/java")
         getByName("androidTest").assets.srcDir("$projectDir/schemas")
+        getByName("androidTest").java.srcDir("$projectDir/src/testFixturesShared/java")
     }
 
     defaultConfig {

@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.repository.BiaRepository
+import com.myfitai.app.domain.progress.ProgressSeriesEngine
+import com.myfitai.app.domain.progress.ProgressSeriesPoint
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flatMapLatest
@@ -50,22 +52,16 @@ class PhysicalEvolutionViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PhysicalEvolutionState())
 
     fun filtered(metric: ProgressMetricState, rangeIndex: Int): ProgressMetricState {
-        if (metric.series.isEmpty()) return metric
-        val latest = metric.series.last().timestamp
         val zone = ZoneId.systemDefault()
-        val latestDate = Instant.ofEpochMilli(latest).atZone(zone).toLocalDate()
-        val fromDate = when (rangeIndex) {
-            0 -> latestDate.minusMonths(1)
-            1 -> latestDate.minusMonths(3)
-            2 -> latestDate.minusMonths(6)
-            else -> latestDate.minusYears(1)
-        }
-        val from = fromDate.atStartOfDay(zone).toInstant().toEpochMilli()
-        val points = metric.series.filter { it.timestamp >= from }
+        val result = ProgressSeriesEngine.filter(
+            metric.series.map { ProgressSeriesPoint(it.timestamp, it.value) },
+            rangeIndex,
+            zone,
+        )
         return metric.copy(
-            value = points.lastOrNull()?.value,
-            delta = if (points.size >= 2) points.last().value - points.first().value else null,
-            series = points,
+            value = result.value,
+            delta = result.delta,
+            series = result.points.map { ProgressPoint(it.timestamp, it.value) },
         )
     }
 

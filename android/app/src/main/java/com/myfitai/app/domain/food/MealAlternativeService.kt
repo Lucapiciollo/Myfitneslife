@@ -10,6 +10,8 @@ import com.myfitai.app.data.repository.MealPlanRepository
 import com.myfitai.app.data.repository.PlanVersionDraft
 import com.myfitai.app.data.repository.SupplementDraft
 import com.myfitai.app.data.repository.UserProfileRepository
+import com.myfitai.app.domain.time.SystemTimeProvider
+import com.myfitai.app.domain.time.TimeProvider
 import java.time.LocalDate
 
 /**
@@ -21,6 +23,7 @@ class MealAlternativeService(
     private val profiles: UserProfileRepository,
     private val plans: MealPlanRepository,
     private val activeProfileStore: ActiveProfileStore,
+    private val time: TimeProvider = SystemTimeProvider,
 ) {
     data class Alternatives(
         val planId: Long,
@@ -119,7 +122,7 @@ class MealAlternativeService(
 
         val versionId = plans.appendVersion(
             planId = latest.planId,
-            createdAtEpochMillis = System.currentTimeMillis(),
+            createdAtEpochMillis = time.nowEpochMillis(),
             draft = PlanVersionDraft(generated.provider, "AI_MEAL_SWAP:${sourceMeal.id}", latest.version.targetKcal, latest.version.targetProteinG, latest.version.targetCarbsG, latest.version.targetFatG, days),
         )
         return ApplyResult(versionId, alternative.title, generated.targetKcal)
@@ -137,10 +140,10 @@ class MealAlternativeService(
 
     private fun ensureNotPast(dayEpochDay: Long, mealTimeMinutes: Int?) {
         val date = LocalDate.ofEpochDay(dayEpochDay)
-        val today = LocalDate.now()
+        val today = time.today()
         if (date.isBefore(today)) throw AlternativeException.PastMeal()
         if (date == today && mealTimeMinutes != null) {
-            val now = java.time.LocalTime.now().let { it.hour * 60 + it.minute }
+            val now = time.currentTime().let { it.hour * 60 + it.minute }
             if (mealTimeMinutes <= now) throw AlternativeException.PastMeal()
         }
     }

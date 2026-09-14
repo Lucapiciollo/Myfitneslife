@@ -6,6 +6,8 @@ import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.repository.CheatEntryRepository
 import com.myfitai.app.data.repository.MealPlanRepository
 import com.myfitai.app.data.repository.UserProfileRepository
+import com.myfitai.app.domain.time.SystemTimeProvider
+import com.myfitai.app.domain.time.TimeProvider
 import kotlinx.coroutines.flow.first
 import java.time.LocalDate
 import java.time.LocalTime
@@ -22,6 +24,7 @@ class NutritionAdviceService(
     private val plans: MealPlanRepository,
     private val cheats: CheatEntryRepository,
     private val activeProfileStore: ActiveProfileStore,
+    private val time: TimeProvider = SystemTimeProvider,
 ) {
     data class Result(
         val accepted: Boolean,
@@ -40,16 +43,16 @@ class NutritionAdviceService(
         val profile = profiles.get(profileId)
             ?: return Result(false, "Profilo non disponibile.", emptyList(), "", null)
 
-        val today = LocalDate.now()
+        val today = time.today()
         val monday = today.minusDays((today.dayOfWeek.value - 1).toLong())
         val snapshot = plans.loadLatestSnapshot(profileId, monday.toEpochDay())
         val todayPlan = snapshot?.version?.days?.firstOrNull { it.dateEpochDay == today.toEpochDay() }
 
-        val zone = ZoneId.systemDefault()
+        val zone = time.zoneId
         val dayStart = today.atStartOfDay(zone).toInstant().toEpochMilli()
         val dayEnd = today.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1L
         val deviations = cheats.between(profileId, dayStart, dayEnd).first()
-        val now = LocalTime.now()
+        val now = time.currentTime()
         val minuteOfDay = now.hour * 60 + now.minute
 
         val request = AiStructuredRequest(

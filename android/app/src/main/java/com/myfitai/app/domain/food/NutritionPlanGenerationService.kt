@@ -14,6 +14,8 @@ import com.myfitai.app.data.repository.WorkoutRepository
 import com.myfitai.app.domain.calculation.NutritionBusinessValidator
 import com.myfitai.app.domain.calculation.ProfileCalculationService
 import com.myfitai.app.domain.personalization.PersonalResponseService
+import com.myfitai.app.domain.time.SystemTimeProvider
+import com.myfitai.app.domain.time.TimeProvider
 import kotlinx.coroutines.flow.first
 import java.time.LocalDate
 import java.time.ZoneId
@@ -27,6 +29,7 @@ class NutritionPlanGenerationService(
     private val plans: MealPlanRepository,
     private val activeProfileStore: ActiveProfileStore,
     private val personalResponse: PersonalResponseService,
+    private val time: TimeProvider = SystemTimeProvider,
 ) {
     sealed class GenerationException(message: String) : Exception(message) {
         class NeedsInput(val fields: List<String>) : GenerationException("NEEDS_INPUT: ${fields.joinToString()}")
@@ -44,11 +47,11 @@ class NutritionPlanGenerationService(
 
     suspend fun generateWeek(weekStart: LocalDate): Result {
         val monday = weekStart.minusDays((weekStart.dayOfWeek.value - 1).toLong())
-        if (monday.plusDays(6).isBefore(LocalDate.now())) throw GenerationException.PastWeek()
+        if (monday.plusDays(6).isBefore(time.today())) throw GenerationException.PastWeek()
 
         val profileId = activeProfileStore.currentIdOrNull() ?: throw GenerationException.NeedsInput(listOf("profilo attivo"))
         val profile = profiles.get(profileId) ?: throw GenerationException.NeedsInput(listOf("profilo"))
-        val snapshot = calculations.activeProfileSnapshot() ?: throw GenerationException.NeedsInput(listOf("dati profilo"))
+        val snapshot = calculations.activeProfileSnapshot(time.today()) ?: throw GenerationException.NeedsInput(listOf("dati profilo"))
         val calc = snapshot.calculation
         val missing = buildList {
             if (calc.targetKcal == null) add("target calorie")
@@ -65,12 +68,12 @@ class NutritionPlanGenerationService(
             fatG = calc.fatG!!,
         )
 
-        val zone = ZoneId.systemDefault()
+        val zone = time.zoneId
         val from = monday.atStartOfDay(zone).toInstant().toEpochMilli()
         val to = monday.plusDays(7).atStartOfDay(zone).toInstant().toEpochMilli() - 1
         val weekWorkouts = workouts.between(profileId, from, to).first()
         val sportsMode = SportsNutritionClassifier.classify(profile.activityLevel, weekWorkouts)
-        val personalContext = personalResponse.promptContext()
+        val personalContext = personalResponse.promptContext(nowEpochMillis = time.nowEpochMillis())
 
         val request = AiStructuredRequest(
             systemPrompt = SYSTEM_PROMPT,
@@ -163,8 +166,8 @@ class NutritionPlanGenerationService(
         )
 
         val existing = plans.getPlanForWeek(profileId, monday.toEpochDay())
-        val planId = existing?.id ?: plans.createPlan(profileId, monday.toEpochDay(), System.currentTimeMillis())
-        val versionId = plans.appendVersion(planId, System.currentTimeMillis(), draft)
+        val planId = existing?.id ?: plans.createPlan(profileId, monday.toEpochDay(), time.nowEpochMillis())
+        val versionId = plans.appendVersion(planId, time.nowEpochMillis(), draft)
         return Result(planId, versionId, validated.provider.name, validated.model, response.agentValidation)
     }
 

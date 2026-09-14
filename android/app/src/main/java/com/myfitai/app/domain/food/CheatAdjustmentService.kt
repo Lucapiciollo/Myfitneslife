@@ -7,6 +7,8 @@ import com.myfitai.app.data.local.entity.CheatEntryEntity
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.repository.*
 import com.myfitai.app.domain.calculation.NutritionBusinessValidator
+import com.myfitai.app.domain.time.SystemTimeProvider
+import com.myfitai.app.domain.time.TimeProvider
 import java.time.Instant
 import java.time.ZoneId
 import kotlin.math.abs
@@ -16,6 +18,7 @@ class CheatAdjustmentService(
     private val plans: MealPlanRepository,
     private val cheats: CheatEntryRepository,
     private val activeProfileStore: ActiveProfileStore,
+    private val time: TimeProvider = SystemTimeProvider,
 ) {
     data class Input(
         val description: String,
@@ -99,7 +102,7 @@ class CheatAdjustmentService(
         val description = input.description.trim()
         val profileId = activeProfileStore.currentIdOrNull()
             ?: throw AdjustmentException.NeedsInput(listOf("profilo attivo"))
-        val zone = ZoneId.systemDefault()
+        val zone = time.zoneId
         val occurred = Instant.ofEpochMilli(input.occurredAtEpochMillis).atZone(zone)
         val date = occurred.toLocalDate()
         val monday = date.minusDays((date.dayOfWeek.value - 1).toLong())
@@ -206,18 +209,20 @@ class CheatAdjustmentService(
                 }
                 DayDraft(
                     dateEpochDay = sourceDay.dateEpochDay,
-                    totalKcal = adjustedMeals.mapNotNull { it.kcal }.takeIf { it.isNotEmpty() }?.sum(),
-                    proteinG = sumOrNull(adjustedMeals.map { it.proteinG }),
-                    carbsG = sumOrNull(adjustedMeals.map { it.carbsG }),
-                    fatG = sumOrNull(adjustedMeals.map { it.fatG }),
+                    totalKcal = adjustedMeals.mapNotNull { it.kcal }.takeIf { it.isNotEmpty() }?.sum()?.plus(sourceDay.supplements.sumOf { it.kcal }),
+                    proteinG = sumOrNull(adjustedMeals.map { it.proteinG })?.plus(sourceDay.supplements.sumOf { it.proteinG.toDouble() }.toFloat()),
+                    carbsG = sumOrNull(adjustedMeals.map { it.carbsG })?.plus(sourceDay.supplements.sumOf { it.carbsG.toDouble() }.toFloat()),
+                    fatG = sumOrNull(adjustedMeals.map { it.fatG })?.plus(sourceDay.supplements.sumOf { it.fatG.toDouble() }.toFloat()),
                     meals = adjustedMeals,
+                    supplements = sourceDay.supplements.map { it.toDraft() },
+                    hydrationNote = sourceDay.hydrationNote,
                 )
             }
         }
 
         val versionId = plans.appendVersion(
             planId = snapshot.planId,
-            createdAtEpochMillis = System.currentTimeMillis(),
+            createdAtEpochMillis = time.nowEpochMillis(),
             draft = PlanVersionDraft(
                 source = validated.provider.name,
                 reason = "CHEAT_ADAPTATION:$cheatId",
@@ -309,11 +314,21 @@ class CheatAdjustmentService(
 
     private fun mealLine(meal: FoodMeal) = "sortOrder=${meal.sortOrder}; time=${meal.timeMinutes}; type=${meal.type}; title=${meal.title}; kcal=${meal.kcal}; P=${meal.proteinG}; C=${meal.carbsG}; F=${meal.fatG}"
 
-    private fun toDraft(day: FoodPlanDay) = DayDraft(day.dateEpochDay, day.totalKcal, day.proteinG, day.carbsG, day.fatG, day.meals.map(::toDraft))
+    private fun toDraft(day: FoodPlanDay) = DayDraft(
+        dateEpochDay = day.dateEpochDay,
+        totalKcal = day.totalKcal,
+        proteinG = day.proteinG,
+        carbsG = day.carbsG,
+        fatG = day.fatG,
+        meals = day.meals.map(::toDraft),
+        supplements = day.supplements.map { it.toDraft() },
+        hydrationNote = day.hydrationNote,
+    )
     private fun toDraft(meal: FoodMeal) = MealDraft(
         meal.type, meal.title, meal.timeMinutes, meal.kcal, meal.proteinG, meal.carbsG, meal.fatG, meal.preparation,
         meal.ingredients.map { IngredientDraft(it.name, it.quantity, it.unit, it.displayDose, it.weightState, it.nutritionConfidence, it.category) },
     )
+    private fun FoodSupplement.toDraft() = SupplementDraft(kind, name, dose, unit, timeMinutes, kcal, proteinG, carbsG, fatG, notes)
     private fun sumOrNull(values: List<Float?>): Float? = values.filterNotNull().takeIf { it.isNotEmpty() }?.sum()
 
     companion object {

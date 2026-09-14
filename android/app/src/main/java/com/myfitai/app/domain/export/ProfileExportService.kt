@@ -14,7 +14,10 @@ import com.myfitai.app.domain.food.FoodMeal
 import com.myfitai.app.domain.food.FoodPlanDay
 import com.myfitai.app.domain.food.FoodPlanSnapshot
 import com.myfitai.app.domain.food.FoodPlanVersion
+import com.myfitai.app.domain.food.FoodSupplement
 import com.myfitai.app.domain.shopping.ShoppingListEngine
+import com.myfitai.app.domain.time.SystemTimeProvider
+import com.myfitai.app.domain.time.TimeProvider
 import kotlinx.coroutines.flow.first
 import org.json.JSONArray
 import org.json.JSONObject
@@ -33,6 +36,7 @@ class ProfileExportService(
     context: Context,
     private val db: MyFitAiDatabase,
     private val activeProfileStore: ActiveProfileStore,
+    private val time: TimeProvider = SystemTimeProvider,
 ) {
     enum class Format { JSON, CSV_ZIP, PDF, WEEKLY_PLAN_PDF }
     data class ExportedFile(val file: File, val mimeType: String)
@@ -50,7 +54,7 @@ class ProfileExportService(
         val plans = db.mealPlanDao().observePlans(profileId).first().sortedBy { it.weekStartEpochDay }
 
         if (format == Format.WEEKLY_PLAN_PDF) {
-            val currentWeekStart = LocalDate.now()
+            val currentWeekStart = time.today()
                 .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
                 .toEpochDay()
             val selectedPlan = plans.firstOrNull { it.weekStartEpochDay == currentWeekStart }
@@ -74,7 +78,7 @@ class ProfileExportService(
                 val latestBody = body.lastOrNull()
                 val ageYears = profile.birthDateEpochDay?.let { epochDay ->
                     val birth = LocalDate.ofEpochDay(epochDay)
-                    if (birth.isAfter(LocalDate.now())) null else Period.between(birth, LocalDate.now()).years
+                    if (birth.isAfter(time.today())) null else Period.between(birth, time.today()).years
                 }
                 val calculation = LocalCalculationEngine.calculate(
                     LocalCalculationEngine.Input(
@@ -131,7 +135,7 @@ class ProfileExportService(
     ): JSONObject {
         val root = JSONObject().apply {
             put("schema", "myfitai_profile_export_v1")
-            put("exportedAtEpochMillis", System.currentTimeMillis())
+            put("exportedAtEpochMillis", time.nowEpochMillis())
             put("profileId", profileId)
             put("profile", JSONObject().apply {
                 put("id", profile.id)
@@ -186,7 +190,32 @@ class ProfileExportService(
                             put("id", meal.id); put("sortOrder", meal.sortOrder); put("type", meal.type); put("title", meal.title); putNullable("timeMinutes", meal.timeMinutes); putNullable("kcal", meal.kcal); putNullable("proteinG", meal.proteinG); putNullable("carbsG", meal.carbsG); putNullable("fatG", meal.fatG); putNullable("preparation", meal.preparation); put("ingredients", ingredients)
                         })
                     }
-                    daysJson.put(JSONObject().apply { put("id", day.id); put("dateEpochDay", day.dateEpochDay); putNullable("totalKcal", day.totalKcal); putNullable("proteinG", day.proteinG); putNullable("carbsG", day.carbsG); putNullable("fatG", day.fatG); put("meals", mealsJson) })
+                    val supplementsJson = JSONArray()
+                    parseSupplements(day.supplementsJson).forEach { supplement ->
+                        supplementsJson.put(JSONObject().apply {
+                            put("kind", supplement.kind)
+                            put("name", supplement.name)
+                            put("dose", supplement.dose)
+                            put("unit", supplement.unit)
+                            putNullable("timeMinutes", supplement.timeMinutes)
+                            put("kcal", supplement.kcal)
+                            put("proteinG", supplement.proteinG)
+                            put("carbsG", supplement.carbsG)
+                            put("fatG", supplement.fatG)
+                            putNullable("notes", supplement.notes)
+                        })
+                    }
+                    daysJson.put(JSONObject().apply {
+                        put("id", day.id)
+                        put("dateEpochDay", day.dateEpochDay)
+                        putNullable("totalKcal", day.totalKcal)
+                        putNullable("proteinG", day.proteinG)
+                        putNullable("carbsG", day.carbsG)
+                        putNullable("fatG", day.fatG)
+                        putNullable("hydrationNote", day.hydrationNote)
+                        put("supplements", supplementsJson)
+                        put("meals", mealsJson)
+                    })
                 }
                 versionsJson.put(JSONObject().apply { put("id", version.id); put("versionNumber", version.versionNumber); put("createdAtEpochMillis", version.createdAtEpochMillis); put("source", version.source); putNullable("reason", version.reason); putNullable("targetKcal", version.targetKcal); putNullable("targetProteinG", version.targetProteinG); putNullable("targetCarbsG", version.targetCarbsG); putNullable("targetFatG", version.targetFatG); put("days", daysJson) })
             }
@@ -236,6 +265,8 @@ class ProfileExportService(
                         },
                     )
                 },
+                supplements = parseSupplements(day.supplementsJson),
+                hydrationNote = day.hydrationNote,
             )
         }
         FoodPlanSnapshot(
@@ -255,6 +286,30 @@ class ProfileExportService(
                 days = days,
             ),
         )
+    }
+
+    private fun parseSupplements(json: String?): List<FoodSupplement> {
+        if (json.isNullOrBlank()) return emptyList()
+        return runCatching {
+            val array = JSONArray(json)
+            buildList {
+                for (index in 0 until array.length()) {
+                    val item = array.getJSONObject(index)
+                    add(FoodSupplement(
+                        kind = item.optString("kind"),
+                        name = item.optString("name"),
+                        dose = item.optDouble("dose", 0.0).toFloat(),
+                        unit = item.optString("unit"),
+                        timeMinutes = if (item.isNull("timeMinutes")) null else item.optInt("timeMinutes"),
+                        kcal = item.optInt("kcal", 0),
+                        proteinG = item.optDouble("proteinG", 0.0).toFloat(),
+                        carbsG = item.optDouble("carbsG", 0.0).toFloat(),
+                        fatG = item.optDouble("fatG", 0.0).toFloat(),
+                        notes = item.optString("notes").takeIf { it.isNotBlank() },
+                    ))
+                }
+            }
+        }.getOrDefault(emptyList())
     }
 
     private fun writeJson(name: String, root: JSONObject): ExportedFile {
@@ -303,7 +358,7 @@ class ProfileExportService(
     private fun exportFile(name: String, suffix: String, ext: String): File {
         val dir = File(appContext.cacheDir, "exports").apply { mkdirs() }
         val safe = name.lowercase(Locale.ROOT).replace(Regex("[^a-z0-9]+"), "-").trim('-').ifBlank { "profile" }
-        return File(dir, "myfitai-$safe-$suffix-${DateTimeFormatter.BASIC_ISO_DATE.format(LocalDate.now())}.$ext")
+        return File(dir, "myfitai-$safe-$suffix-${DateTimeFormatter.BASIC_ISO_DATE.format(time.today())}.$ext")
     }
 
     private fun csv(value: String) = "\"${value.replace("\"", "\"\"").replace("\r", " ").replace("\n", " ")}\""
