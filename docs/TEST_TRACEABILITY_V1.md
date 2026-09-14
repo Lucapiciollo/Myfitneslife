@@ -23,6 +23,7 @@ Status values are `PASS`, `STATIC REVIEW ONLY`, `NOT RUN`, and `FAIL`. `PASS` me
 | Plan versioning | PASS | PASS | NOT RUN | NOT RUN | PASS | PASS | PASS |
 | Shopping list | PASS | STATIC REVIEW ONLY | NOT RUN | NOT RUN | STATIC REVIEW ONLY | PASS | PASS |
 | Notifications | PASS (scheduler/receiver) | PASS (fake alarm + receiver) | NOT RUN (OS delivery/tap) | NOT RUN | PASS (permission guard) | PASS (settings/request codes) | NOT RUN |
+| Settings/security | PASS (config) | PASS (device UI) | PASS (device UI) | PASS (device UI) | PASS (provider absent) | STATIC REVIEW ONLY | STATIC REVIEW ONLY |
 | Weekly review | PASS (contract) | PASS (fake runtime) | PASS (fake runtime) | NOT RUN | PASS | PASS | PASS |
 | JSON/CSV/PDF export | STATIC REVIEW ONLY | PASS | PASS (JSON UI export) | PASS (export screen) | STATIC REVIEW ONLY | PASS | PASS |
 | Multi-profile isolation | PASS | PASS | PASS | NOT RUN | PASS | PASS | PASS |
