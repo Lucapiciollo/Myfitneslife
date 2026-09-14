@@ -35,7 +35,7 @@ Status values are `PASS`, `STATIC REVIEW ONLY`, `NOT RUN`, and `FAIL`. `PASS` me
 
 - No real Gemini/OpenAI provider run with a configured credential; service integration uses a provider-neutral fake runtime and canonical JSON contracts.
 - No executable Activity/UI test suite; bottom tabs have manual device evidence only.
-- No camera/gallery/photo-label runtime test.
+- No OS camera/gallery picker runtime test; label-photo processor and temp-file lifecycle are covered.
 - No Android alarm delivery/notification tap test.
 - No screenshot/golden/pixel comparison.
 - No 1Y physical chart rendering test or landscape/small/large-screen visual test.

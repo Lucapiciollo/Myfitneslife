@@ -59,7 +59,7 @@
 
 - Real Gemini/OpenAI HTTP behavior, authentication, timeout, network loss, and provider parity.
 - Real AlarmManager delivery, notification permission, reboot rescheduling and notification tap delivery remain untested; scheduling logic is covered through a fake alarm gateway.
-- Full Activity forms, camera/gallery flow, notification tap routing, share chooser, and visual/pixel fidelity.
+- Full Activity forms, OS camera/gallery picker flow, notification tap routing, share chooser, and visual/pixel fidelity.
 - 1Y chart rendering, landscape, small/large screens, and screenshot/golden comparison.
 - Large stress dataset timings and memory profile.
 
