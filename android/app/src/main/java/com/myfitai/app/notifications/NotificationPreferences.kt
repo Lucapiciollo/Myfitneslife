@@ -2,18 +2,18 @@ package com.myfitai.app.notifications
 
 import android.content.Context
 
-class NotificationPreferences(context: Context) {
+class NotificationPreferences(context: Context) : NotificationSettings {
     private val prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
-    var mealRemindersEnabled: Boolean
+    override var mealRemindersEnabled: Boolean
         get() = prefs.getBoolean(KEY_MEALS_ENABLED, true)
         set(value) = prefs.edit().putBoolean(KEY_MEALS_ENABLED, value).apply()
 
-    var weeklyReviewEnabled: Boolean
+    override var weeklyReviewEnabled: Boolean
         get() = prefs.getBoolean(KEY_REVIEW_ENABLED, true)
         set(value) = prefs.edit().putBoolean(KEY_REVIEW_ENABLED, value).apply()
 
-    var mealLeadMinutes: Int
+    override var mealLeadMinutes: Int
         get() = prefs.getInt(KEY_MEAL_LEAD, 15).coerceIn(0, 120)
         set(value) = prefs.edit().putInt(KEY_MEAL_LEAD, value.coerceIn(0, 120)).apply()
 
@@ -21,10 +21,10 @@ class NotificationPreferences(context: Context) {
         get() = prefs.getBoolean(KEY_PERMISSION_PROMPTED, false)
         set(value) = prefs.edit().putBoolean(KEY_PERMISSION_PROMPTED, value).apply()
 
-    fun scheduledRequestCodes(): Set<Int> =
+    override fun scheduledRequestCodes(): Set<Int> =
         prefs.getStringSet(KEY_REQUEST_CODES, emptySet()).orEmpty().mapNotNull(String::toIntOrNull).toSet()
 
-    fun replaceScheduledRequestCodes(values: Set<Int>) {
+    override fun replaceScheduledRequestCodes(values: Set<Int>) {
         prefs.edit().putStringSet(KEY_REQUEST_CODES, values.map(Int::toString).toSet()).apply()
     }
 
