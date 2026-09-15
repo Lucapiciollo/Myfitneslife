@@ -59,9 +59,10 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
                 "Altri indicatori",
                 "Qui trovi valori aggiuntivi letti dalle rilevazioni BIA del profilo attivo. " +
                     "L'acqua corporea, il grasso e la massa muscolare mostrano lo storico registrato: " +
-                    "non sono una diagnosi e possono variare anche per motivi temporanei.",
+                "non sono una diagnosi e possono variare anche per motivi temporanei.",
             )
         }
+        bindWeeklyReviewCard()
 
         findViewById<WeightTrendChartView>(R.id.evolutionChart).showYAxisLabels()
         findViewById<SelectableSegmentView>(R.id.metricSegment).apply {
@@ -172,6 +173,52 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
             topMargin = dp(8)
         })
         renderProgressAnalysisStatus()
+    }
+
+    private fun bindWeeklyReviewCard() {
+        val summaryCard = findViewById<View>(R.id.progressSummaryTitle).parent as View
+        val root = summaryCard.parent as LinearLayout
+        val insertIndex = root.indexOfChild(summaryCard)
+
+        val header = TextView(this).apply {
+            text = "Review settimanale"
+            textSize = 15f
+            setTextColor(getColor(R.color.text_primary))
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+        }
+        root.addView(header, insertIndex, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+            topMargin = dp(24)
+        })
+
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundResource(R.drawable.bg_card)
+            setPadding(dp(16), dp(14), dp(16), dp(14))
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { startActivity(Intent(this@PhysicalEvolutionActivity, WeeklyReviewActivity::class.java)) }
+        }
+        card.addView(TextView(this).apply {
+            text = "Gli ultimi 7 giorni, in un unico punto"
+            textSize = 14f
+            setTextColor(getColor(R.color.text_primary))
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+        })
+        card.addView(TextView(this).apply {
+            text = "Controlla alimentazione, allenamenti, variazioni corporee e sintesi IA della settimana."
+            textSize = 13f
+            setTextColor(getColor(R.color.text_secondary))
+        }, marginTopParams(6))
+        card.addView(MaterialButton(this).apply {
+            text = "Apri review"
+            isAllCaps = false
+            setOnClickListener { startActivity(Intent(this@PhysicalEvolutionActivity, WeeklyReviewActivity::class.java)) }
+        }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(48)).apply {
+            topMargin = dp(12)
+        })
+        root.addView(card, insertIndex + 1, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+            topMargin = dp(8)
+        })
     }
 
     private fun confirmManualProgressAnalysis() {
