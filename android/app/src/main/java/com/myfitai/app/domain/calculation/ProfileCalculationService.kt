@@ -73,6 +73,11 @@ class ProfileCalculationService(
 
     suspend fun activeProfileSnapshot(today: LocalDate = LocalDate.now()): Snapshot? {
         val profileId = activeProfileStore.currentIdOrNull() ?: return null
+        return profileSnapshot(profileId, today)
+    }
+
+    /** Used by background work so analysis remains bound to the profile that was scheduled. */
+    suspend fun profileSnapshot(profileId: Long, today: LocalDate = LocalDate.now()): Snapshot? {
         val profile = profiles.get(profileId) ?: return null
         val biaHistory = bia.all(profileId).first().sortedBy { it.measuredAtEpochMillis }
         val bodyHistory = bodyMeasurements.all(profileId).first().sortedBy { it.measuredAtEpochMillis }
