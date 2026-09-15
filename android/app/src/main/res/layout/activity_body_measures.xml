@@ -100,6 +100,16 @@
                 <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="260dp" android:layout_marginTop="@dimen/space_12" app:cardCornerRadius="@dimen/radius_medium" app:cardElevation="0dp" app:cardBackgroundColor="@color/surface_primary">
                     <com.myfitai.app.ui.widgets.BodyMeasurementTrendView android:id="@+id/bodyMeasurementTrendChart" android:layout_width="match_parent" android:layout_height="match_parent" android:layout_margin="@dimen/space_8" />
                 </com.google.android.material.card.MaterialCardView>
+                <TextView
+                    android:id="@+id/bodyTrendNote"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_10"
+                    android:background="@drawable/bg_card_soft"
+                    android:padding="@dimen/space_12"
+                    android:text="Dati insufficienti\nServono almeno due rilevazioni nel periodo per descrivere un andamento affidabile."
+                    android:textColor="@color/text_secondary"
+                    android:textSize="13sp" />
                 <com.myfitai.app.ui.widgets.SelectableSegmentView android:id="@+id/trendRangeSegment" android:layout_width="match_parent" android:layout_height="40dp" android:layout_marginTop="@dimen/space_12" />
             </LinearLayout>
 
