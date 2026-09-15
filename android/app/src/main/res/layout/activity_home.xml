@@ -108,6 +108,14 @@
                     android:layout_height="@dimen/dashboard_chart_height"
                     android:layout_marginTop="@dimen/space_16" />
 
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_4"
+                    android:text="Andamento rispetto alla prima rilevazione del periodo"
+                    android:textColor="@color/text_muted"
+                    android:textSize="11sp" />
+
                 <com.myfitai.app.ui.widgets.TimeRangeSelectorView
                     android:id="@+id/timeRangeSelector"
                     android:layout_width="wrap_content"

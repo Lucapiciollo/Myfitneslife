@@ -103,7 +103,9 @@ class HomeActivity : BaseShellActivity() {
         renderMetric(findViewById(R.id.metricFat), state.bodyFat.value, state.bodyFat.deltaFromPrevious, "%", DeltaSemantic.DOWN_IS_POSITIVE)
         renderMetric(findViewById(R.id.metricMuscle), state.muscleMass.value, state.muscleMass.deltaFromPrevious, "kg", DeltaSemantic.UP_IS_POSITIVE)
 
-        findViewById<WeightTrendChartView>(R.id.weightTrendChart).setData(state.weightSeries)
+        findViewById<WeightTrendChartView>(R.id.weightTrendChart).setSeries(
+            state.trendSeries.map { it.label to it.values },
+        )
         findViewById<TextView>(R.id.recompositionStateText).text = recompositionText(state.recompositionState)
         renderNextMeal(state.nextMeal)
         renderNextWorkout(state.nextWorkout)

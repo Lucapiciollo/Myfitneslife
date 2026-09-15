@@ -40,6 +40,7 @@ class HomeViewModel(
 ) : ViewModel() {
 
     data class MetricState(val value: Float?, val deltaFromPrevious: Float?)
+    data class TrendSeries(val label: String, val values: List<Float>)
     data class NextWorkoutState(val startedAtEpochMillis: Long, val title: String, val type: String)
     data class NextMealState(
         val mealId: Long,
@@ -56,7 +57,7 @@ class HomeViewModel(
         val weight: MetricState = MetricState(null, null),
         val bodyFat: MetricState = MetricState(null, null),
         val muscleMass: MetricState = MetricState(null, null),
-        val weightSeries: List<Float> = emptyList(),
+        val trendSeries: List<TrendSeries> = emptyList(),
         val recompositionState: LocalCalculationEngine.RecompositionState = LocalCalculationEngine.RecompositionState.NOT_ENOUGH_DATA,
         val nextWorkout: NextWorkoutState? = null,
         val nextMeal: NextMealState? = null,
@@ -107,6 +108,9 @@ class HomeViewModel(
         val muscleValues = metricValues(source.bia) { it.muscleMassKg }
         val fatTrend = LocalCalculationEngine.trend(fatValues.map { LocalCalculationEngine.TimedValue(it.first, it.second.toDouble()) })
         val muscleTrend = LocalCalculationEngine.trend(muscleValues.map { LocalCalculationEngine.TimedValue(it.first, it.second.toDouble()) })
+        val weightSeries = filterRange(weightValues, rangeIndex).map { it.second }
+        val fatSeries = filterRange(fatValues, rangeIndex).map { it.second }
+        val muscleSeries = filterRange(muscleValues, rangeIndex).map { it.second }
         val now = System.currentTimeMillis()
         val nextWorkout = source.workouts
             .asSequence()
@@ -120,7 +124,11 @@ class HomeViewModel(
             weight = metricState(weightValues),
             bodyFat = metricState(fatValues),
             muscleMass = metricState(muscleValues),
-            weightSeries = filterRange(weightValues, rangeIndex).map { it.second },
+            trendSeries = listOf(
+                TrendSeries("Peso", weightSeries),
+                TrendSeries("Grasso corporeo", fatSeries),
+                TrendSeries("Massa muscolare", muscleSeries),
+            ),
             recompositionState = LocalCalculationEngine.classifyRecomposition(fatTrend.delta, muscleTrend.delta),
             nextWorkout = nextWorkout,
             nextMeal = nextMeal,

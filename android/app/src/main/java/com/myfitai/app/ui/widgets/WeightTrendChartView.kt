@@ -9,8 +9,9 @@ import info.appdev.charting.charts.LineChart
 import info.appdev.charting.data.EntryFloat
 import info.appdev.charting.data.LineData
 import info.appdev.charting.data.LineDataSet
+import info.appdev.charting.interfaces.datasets.ILineDataSet
 
-/** Grafico a linea dati-driven (MPAndroidChart/AppDevNext) per l'andamento peso in Dashboard. */
+/** Grafico comparativo per peso, grasso corporeo e massa muscolare nella Dashboard. */
 class WeightTrendChartView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
@@ -21,7 +22,9 @@ class WeightTrendChartView @JvmOverloads constructor(
     init {
         addView(chart, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
         chart.description.isEnabled = false
-        chart.legend.isEnabled = false
+        chart.legend.isEnabled = true
+        chart.legend.textColor = context.getColor(R.color.text_secondary)
+        chart.legend.textSize = 11f
         chart.axisRight.isEnabled = false
         chart.axisLeft.isEnabled = false
         chart.xAxis.isEnabled = false
@@ -40,20 +43,31 @@ class WeightTrendChartView @JvmOverloads constructor(
         chart.axisLeft.isDrawAxisLine = false
     }
 
-    fun setData(values: List<Float>) {
-        val entries = values.mapIndexed { index, value -> EntryFloat(index.toFloat(), value) }.toMutableList()
-        val dataSet = LineDataSet<EntryFloat>(entries, "weight").apply {
-            color = context.getColor(R.color.accent_green_dark)
-            lineWidth = 2f
-            isDrawCircles = false
-            isDrawValues = false
-            isHighlight = false
-            lineMode = LineDataSet.Mode.CUBIC_BEZIER
-            isDrawFilled = true
-            fillColor = context.getColor(R.color.accent_green)
-            fillAlpha = 60
+    fun setData(values: List<Float>) = setSeries(listOf("Peso" to values))
+
+    fun setSeries(series: List<Pair<String, List<Float>>>) {
+        val colors = listOf(
+            R.color.accent_green_dark,
+            R.color.accent_orange,
+            R.color.accent_blue,
+        )
+        val dataSets = series.mapIndexedNotNull { index, (label, values) ->
+            if (values.isEmpty()) return@mapIndexedNotNull null
+            val baseline = values.firstOrNull()?.takeIf { it != 0f } ?: return@mapIndexedNotNull null
+            val entries = values.mapIndexed { pointIndex, value ->
+                EntryFloat(pointIndex.toFloat(), ((value / baseline) - 1f) * 100f)
+            }.toMutableList()
+            LineDataSet<EntryFloat>(entries, label).apply {
+                color = context.getColor(colors[index % colors.size])
+                lineWidth = 2f
+                isDrawCircles = false
+                isDrawValues = false
+                isHighlight = false
+                lineMode = LineDataSet.Mode.CUBIC_BEZIER
+                isDrawFilled = false
+            }
         }
-        chart.data = LineData(dataSet)
+        chart.data = LineData(dataSets.toMutableList() as MutableList<ILineDataSet<EntryFloat>>)
         chart.invalidate()
     }
 }
