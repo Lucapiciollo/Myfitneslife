@@ -76,7 +76,7 @@ class BiaSegmentView @JvmOverloads constructor(
         observerStarted = true
         val data = AppDataContainer.get(activity)
         activity.lifecycleScope.launch {
-            activity.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            activity.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 data.activeProfileStore.activeProfileId
                     .flatMapLatest(data.biaRepository::all)
                     .collect { trendBinder?.update(it) }
