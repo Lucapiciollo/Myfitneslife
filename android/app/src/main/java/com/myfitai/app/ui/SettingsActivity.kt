@@ -168,6 +168,7 @@ class SettingsActivity : BaseShellActivity() {
 
         bindDataDeletion()
         bindProgressAnalysisFrequency()
+        GeminiCostSettingsBinder.bind(this, findViewById(R.id.aiSectionCard), settings)
         render()
     }
 
