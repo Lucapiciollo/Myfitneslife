@@ -130,6 +130,7 @@ object NutritionPlanContract {
         expectedWeekStart: LocalDate,
         targets: NutritionBusinessValidator.Targets,
         sportsMode: SportsNutritionClassifier.Mode = SportsNutritionClassifier.Mode.NORMAL,
+        enforceWeeklyVariety: Boolean = false,
     ): Result<Unit> = runCatching {
         require(response.weekStartEpochDay == expectedWeekStart.toEpochDay()) { "WEEK_START_MISMATCH" }
         require(response.days.size == 7) { "WEEK_MUST_HAVE_7_DAYS" }
@@ -168,6 +169,29 @@ object NutritionPlanContract {
                 meal.ingredients.forEach { ingredient ->
                     require(ingredient.name.isNotBlank() && ingredient.quantity > 0f && ingredient.quantity.isFinite()) { "INGREDIENT_INVALID" }
                     require(ingredient.unit.isNotBlank() && ingredient.displayDose.isNotBlank()) { "INGREDIENT_DOSE_MISSING" }
+                }
+            }
+        }
+        if (enforceWeeklyVariety) validateWeeklyVariety(response)
+    }
+
+    /** Rejects identical recipes repeated on different days while allowing recurring staples. */
+    private fun validateWeeklyVariety(response: Response) {
+        val fingerprints = mutableMapOf<String, Long>()
+        response.days.forEach { day ->
+            day.meals.forEach { meal ->
+                val fingerprint = buildString {
+                    append(meal.type.trim().lowercase()).append('|')
+                    append(meal.title.trim().lowercase()).append('|')
+                    meal.ingredients.map { it.name.trim().lowercase() }
+                        .filter { it.isNotBlank() }
+                        .sorted()
+                        .forEach { append(it).append(',') }
+                }
+                if (fingerprint.isBlank()) return@forEach
+                val previousDay = fingerprints.putIfAbsent(fingerprint, day.dateEpochDay)
+                require(previousDay == null || previousDay == day.dateEpochDay) {
+                    "WEEKLY_VARIETY_DUPLICATE_RECIPE"
                 }
             }
         }

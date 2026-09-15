@@ -46,21 +46,23 @@ class MealAlternativeActivity : BaseShellActivity() {
             return
         }
 
-        lifecycleScope.launch {
-            runCatching { data.mealAlternativeService.generate(weekStart, day, mealId) }
-                .onSuccess { result ->
-                    generated = result
-                    findViewById<View>(R.id.loadingRow).visibility = View.GONE
-                    findViewById<TextView>(R.id.providerText).apply {
-                        text = "${result.provider} · ${result.model}"
-                        visibility = View.VISIBLE
+        confirmAiRequest("La generazione delle alternative per questo pasto") {
+            lifecycleScope.launch {
+                runCatching { data.mealAlternativeService.generate(weekStart, day, mealId) }
+                    .onSuccess { result ->
+                        generated = result
+                        findViewById<View>(R.id.loadingRow).visibility = View.GONE
+                        findViewById<TextView>(R.id.providerText).apply {
+                            text = "${result.provider} · ${result.model}"
+                            visibility = View.VISIBLE
+                        }
+                        renderAlternatives(result.items)
                     }
-                    renderAlternatives(result.items)
-                }
-                .onFailure { error ->
-                    findViewById<View>(R.id.loadingRow).visibility = View.GONE
-                    showError(error.message ?: "Impossibile generare alternative.")
-                }
+                    .onFailure { error ->
+                        findViewById<View>(R.id.loadingRow).visibility = View.GONE
+                        showError(error.message ?: "Impossibile generare alternative.")
+                    }
+            }
         }
     }
 

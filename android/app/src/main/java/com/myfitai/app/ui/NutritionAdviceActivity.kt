@@ -40,7 +40,10 @@ class NutritionAdviceActivity : BaseShellActivity() {
         bindBottom(BottomNavBinder.Tab.FOOD)
 
         findViewById<View>(R.id.askButton).setOnClickListener {
-            viewModel.ask(findViewById<EditText>(R.id.questionInput).text?.toString().orEmpty())
+            val question = findViewById<EditText>(R.id.questionInput).text?.toString().orEmpty()
+            confirmAiRequest("La richiesta di un consiglio nutrizionale") {
+                viewModel.ask(question)
+            }
         }
 
         lifecycleScope.launch {
@@ -137,7 +140,11 @@ class NutritionAdviceActivity : BaseShellActivity() {
                 text = "Accetta"
                 isAllCaps = false
                 isEnabled = enabled
-                setOnClickListener { viewModel.acceptSuggestion(suggestion) }
+                setOnClickListener {
+                    confirmAiRequest("L'applicazione del suggerimento e il ricalcolo dei pasti futuri") {
+                        viewModel.acceptSuggestion(suggestion)
+                    }
+                }
             }, LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 dp(42),

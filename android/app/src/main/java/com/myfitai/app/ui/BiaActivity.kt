@@ -253,16 +253,18 @@ class BiaActivity : BaseShellActivity() {
     }
 
     private fun importImage(image: com.myfitai.app.ai.AiImageInput) {
-        Toast.makeText(this, "Lettura BIA in corso…", Toast.LENGTH_SHORT).show()
-        lifecycleScope.launch {
-            runCatching { data.biaImportService.import(image) }
-                .onSuccess { showImportPreview(it.preview, it.provider, it.model) }
-                .onFailure {
-                    val message = if (it is com.myfitai.app.domain.body.BiaImportService.NotBiaImage) {
-                        "Importazione rifiutata: ${it.message} Seleziona una foto di una rilevazione BIA."
-                    } else it.message ?: "Importazione BIA non riuscita"
-                    Toast.makeText(this@BiaActivity, message, Toast.LENGTH_LONG).show()
-                }
+        confirmAiRequest("La lettura IA dei valori BIA dalla foto") {
+            Toast.makeText(this, "Lettura BIA in corso…", Toast.LENGTH_SHORT).show()
+            lifecycleScope.launch {
+                runCatching { data.biaImportService.import(image) }
+                    .onSuccess { showImportPreview(it.preview, it.provider, it.model) }
+                    .onFailure {
+                        val message = if (it is com.myfitai.app.domain.body.BiaImportService.NotBiaImage) {
+                            "Importazione rifiutata: ${it.message} Seleziona una foto di una rilevazione BIA."
+                        } else it.message ?: "Importazione BIA non riuscita"
+                        Toast.makeText(this@BiaActivity, message, Toast.LENGTH_LONG).show()
+                    }
+            }
         }
     }
 

@@ -12,6 +12,7 @@ object BottomNavBinder {
     enum class Tab { HOME, FOOD, PROGRESS, MORE }
     const val EXTRA_TAB_ROOT = "myfitai_tab_root"
     const val EXTRA_INTERNAL_NAV = "myfitai_internal_nav"
+    const val EXTRA_EMBEDDED_TAB = "myfitai_embedded_tab"
 
     fun bind(activity: Activity, selected: Tab) {
         val mapping = listOf(
@@ -31,11 +32,17 @@ object BottomNavBinder {
                 setOnClickListener {
                     if (tab != selected) {
                         if (tab == Tab.FOOD && !AiProviderAccess.requireConfigured(activity)) return@setOnClickListener
+                        val host = (activity as? TabHostActivity) ?: (activity.parent as? TabHostActivity)
+                        if (host != null) {
+                            host.selectTab(tab)
+                            return@setOnClickListener
+                        }
                         activity.startActivity(
                             Intent(activity, target)
                                 .putExtra(EXTRA_TAB_ROOT, true)
                                 .addFlags(
-                                    Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or
+                                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                                        Intent.FLAG_ACTIVITY_SINGLE_TOP or
                                         Intent.FLAG_ACTIVITY_NO_ANIMATION,
                                 )
                         )

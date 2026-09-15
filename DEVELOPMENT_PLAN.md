@@ -129,6 +129,9 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 - [x] Firebase AI Logic non è usato nel runtime Gemini; Firebase generico resta configurabile.
 - [x] OpenAI e Gemini condividono il credential store cifrato e la stessa interfaccia `AiProvider`.
 - [ ] Verifica runtime provider Gemini e parità reale Gemini/OpenAI.
+- [ ] Generazione piano settimanale Gemini: Auth Key verificata sul device e JSON-only raggiunge HTTP 200, ma l'output restituito non è parsabile come oggetto JSON (`$ is not a JSON object`); nessun piano/token usage/persistenza certificati.
+- [x] Diagnostica schema weekly-plan: probe A-E reale sul device PASS; schema completo F bloccato da quota Gemini gratuita esaurita (`429 RESOURCE_EXHAUSTED`).
+- [x] Fallback weekly-plan Gemini a `responseMimeType=application/json` senza schema remoto; validazione canonica locale e business validation restano obbligatorie.
 - [x] Settings supporta entrambe le chiavi cifrate contemporaneamente, con un solo provider attivo tramite switch.
 - [x] Chiavi salvate nascoste in UI; disponibili solo `Sostituisci` ed `Elimina`.
 - [x] Navigazione Alimentazione bloccata con dialog e link Settings quando il provider attivo non è configurato.
@@ -163,6 +166,8 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 - [ ] Test runtime provider Gemini/OpenAI, notifiche Android e stress performance.
 - [ ] Rieseguire la suite connected completa dopo il gate Alimentazione e la nuova UI delle credenziali; i test Settings isolati sono verdi.
 - [ ] Testare Gemini BYOK reale su device con API key personale fornita dall'utente; non dichiarare PASS senza risposta strutturata e persistenza verificate.
+- [ ] Risolvere output non parsabile del weekly-plan Gemini in JSON-only; dopo risposta valida registrare `usageMetadata` (input/output/totale token). Il costo monetario effettivo resta verificabile solo tramite Google Cloud Billing.
+- [x] Diagnosi parser weekly-plan completata sul device: output troncato (`JSONException: End of input`, categoria `TRUNCATED_JSON`), `finishReason=MAX_TOKENS`; nessun repair automatico e nessuna persistenza di output invalido.
 
 ## Branching
 - `develop`: sviluppo corrente.

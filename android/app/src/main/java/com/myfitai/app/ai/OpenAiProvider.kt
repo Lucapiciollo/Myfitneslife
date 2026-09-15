@@ -61,7 +61,15 @@ class OpenAiProvider(
         )
         val jsonText = extractOutputText(JSONObject(raw))
             ?: throw AiTransportException.InvalidResponse()
-        return AiRawResponse(type, model, jsonText)
+        val response = JSONObject(raw)
+        val usage = response.optJSONObject("usage")?.let { value ->
+            AiUsageMetadata(
+                inputTokens = value.optLong("input_tokens").takeIf { value.has("input_tokens") },
+                outputTokens = value.optLong("output_tokens").takeIf { value.has("output_tokens") },
+                totalTokens = value.optLong("total_tokens").takeIf { value.has("total_tokens") },
+            )
+        }
+        return AiRawResponse(type, model, jsonText, usage)
     }
 
     private fun buildInput(request: AiStructuredRequest): Any {

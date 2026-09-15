@@ -1,6 +1,7 @@
 package com.myfitai.app.ai
 
 import org.json.JSONArray
+import org.json.JSONException
 import org.json.JSONObject
 
 /**
@@ -11,7 +12,9 @@ object CanonicalJsonSchemaValidator {
     data class Result(val valid: Boolean, val errors: List<String>)
 
     fun validate(jsonText: String, schemaJson: String): Result {
-        val value = runCatching { JSONObject(jsonText) }.getOrElse {
+        val value = try {
+            JSONObject(jsonText)
+        } catch (error: JSONException) {
             return Result(false, listOf("$ is not a JSON object"))
         }
         val schema = runCatching { JSONObject(schemaJson) }.getOrElse {

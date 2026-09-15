@@ -34,7 +34,11 @@ class WeeklyReviewActivity : BaseShellActivity() {
 
         findViewById<View>(R.id.prevWeekButton).setOnClickListener { viewModel.previousWeek() }
         findViewById<View>(R.id.nextWeekButton).setOnClickListener { viewModel.nextWeek() }
-        findViewById<View>(R.id.generateReviewButton).setOnClickListener { viewModel.generate() }
+        findViewById<View>(R.id.generateReviewButton).setOnClickListener {
+            confirmAiRequest("La generazione della review nutrizionale settimanale") {
+                viewModel.generate()
+            }
+        }
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {

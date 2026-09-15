@@ -35,7 +35,9 @@ class ShoppingListViewModel(
         val profileId: Long? = null,
         val weekStartEpochDay: Long = defaultMonday().toEpochDay(),
         val versionNumber: Int? = null,
+        val versionId: Long? = null,
         val rows: List<Row> = emptyList(),
+        val requiresFirstOpenConfirmation: Boolean = false,
         val viewMode: ViewMode = ViewMode.WEEK,
         val filter: Filter = Filter.ALL,
         val error: String? = null,
@@ -95,6 +97,14 @@ class ShoppingListViewModel(
         _state.value = current.copy(rows = current.rows.map { it.copy(status = ShoppingListStateStore.Status.TO_BUY) })
     }
 
+    fun confirmListStored() {
+        val current = _state.value
+        val profileId = current.profileId ?: return
+        val versionId = current.versionId ?: return
+        stateStore.markListStored(profileId, current.weekStartEpochDay, versionId)
+        _state.value = current.copy(requiresFirstOpenConfirmation = false)
+    }
+
     fun reload() {
         viewModelScope.launch {
             _state.value = _state.value.copy(loading = true, error = null)
@@ -110,7 +120,9 @@ class ShoppingListViewModel(
                     loading = false,
                     profileId = profileId,
                     versionNumber = null,
+                    versionId = null,
                     rows = emptyList(),
+                    requiresFirstOpenConfirmation = false,
                     error = null,
                 )
                 return@launch
@@ -120,9 +132,11 @@ class ShoppingListViewModel(
                 loading = false,
                 profileId = profileId,
                 versionNumber = snapshot.version.versionNumber,
+                versionId = snapshot.version.id,
                 rows = items.map { item ->
                     Row(item, stateStore.status(profileId, week, item.key))
                 },
+                requiresFirstOpenConfirmation = !stateStore.isListStored(profileId, week, snapshot.version.id),
                 error = null,
             )
         }

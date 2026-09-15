@@ -2,6 +2,7 @@ package com.myfitai.app.domain.food
 
 import com.myfitai.app.ai.AiRuntimeGateway
 import com.myfitai.app.ai.AiStructuredRequest
+import com.myfitai.app.ai.AiUsageMetadata
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.repository.DayDraft
 import com.myfitai.app.data.repository.IngredientDraft
@@ -42,6 +43,7 @@ class NutritionPlanGenerationService(
         val provider: String,
         val model: String,
         val agentValidation: NutritionPlanContract.AgentValidation,
+        val usage: AiUsageMetadata? = null,
     )
 
     suspend fun generateWeek(weekStart: LocalDate): Result {
@@ -51,6 +53,11 @@ class NutritionPlanGenerationService(
         val profileId = activeProfileStore.currentIdOrNull() ?: throw GenerationException.NeedsInput(listOf("profilo attivo"))
         val profile = profiles.get(profileId) ?: throw GenerationException.NeedsInput(listOf("profilo"))
         val snapshot = calculations.activeProfileSnapshot(time.today()) ?: throw GenerationException.NeedsInput(listOf("dati profilo"))
+        val missingBodyData = buildList {
+            if (snapshot.latestBiaTimestamp == null) add("una rilevazione BIA")
+            if (snapshot.latestBodyMeasurementTimestamp == null) add("una rilevazione di misure corporee")
+        }
+        if (missingBodyData.isNotEmpty()) throw GenerationException.NeedsInput(missingBodyData)
         val calc = snapshot.calculation
         val missing = buildList {
             if (calc.targetKcal == null) add("target calorie")
@@ -101,7 +108,7 @@ class NutritionPlanGenerationService(
             businessValidator = { json ->
                 runCatching {
                     val response = NutritionPlanCompactContract.parseEnvelope(json)
-                    NutritionPlanContract.validateBusiness(response, monday, targets, sportsMode).getOrThrow()
+                    NutritionPlanContract.validateBusiness(response, monday, targets, sportsMode, enforceWeeklyVariety = true).getOrThrow()
                     parsed = response
                 }
             },
@@ -168,7 +175,7 @@ class NutritionPlanGenerationService(
         val existing = plans.getPlanForWeek(profileId, monday.toEpochDay())
         val planId = existing?.id ?: plans.createPlan(profileId, monday.toEpochDay(), time.nowEpochMillis())
         val versionId = plans.appendVersion(profileId, planId, time.nowEpochMillis(), draft)
-        return Result(planId, versionId, validated.provider.name, validated.model, response.agentValidation)
+        return Result(planId, versionId, validated.provider.name, validated.model, response.agentValidation, validated.usage)
     }
 
     private fun buildUserPrompt(
@@ -188,7 +195,6 @@ class NutritionPlanGenerationService(
         appendLine("B:${fmtOrUnknown(snapshot.latestWeightKg)}|${fmtOrUnknown(snapshot.latestBodyFatPercent)}|${fmtOrUnknown(snapshot.latestMuscleMassKg)}|${fmtOrUnknown(snapshot.latestSkeletalMuscleKg)}|${fmtOrUnknown(snapshot.latestBodyWaterPercent)}|${fmtOrUnknown(snapshot.latestWaistCm)}")
         appendLine("TR:${fmtOrUnknown(snapshot.weightTrend.delta)}|${fmtOrUnknown(snapshot.bodyFatTrend.delta)}|${fmtOrUnknown(snapshot.muscleMassTrend.delta)}|${fmtOrUnknown(snapshot.waistTrend.delta)}|${compact(snapshot.recompositionState.toString())}")
         workoutContext.forEach { appendLine("WO:${compact(it)}") }
-        if (personalContext.isNotBlank()) appendLine("PC:${compact(personalContext)}")
     }
 
     private fun compact(value: String?): String = value.orEmpty()
@@ -204,9 +210,10 @@ class NutritionPlanGenerationService(
 
     companion object {
         private val SYSTEM_PROMPT = """
-MyFitAI nutrition planner. Output ONLY JSON matching the supplied envelope schema. `data` must contain exactly the MFP1 pipe protocol below, no markdown and no text outside records.
+MyFitAI nutrition planner. Output ONLY JSON matching the supplied envelope schema. The `data` string must begin with the exact line `MFP1`, followed by the pipe records below. Do not omit `MFP1`, do not replace it with another header, do not use markdown, and do not add text outside records.
 ${NutritionPlanCompactContract.PROTOCOL}
 Rules: exactly 7 days; records ordered W, then each D with its M/I and optional S/H, then V. Never use `|` or line breaks inside a text field. All kcal/macros are numeric. Daily totals include meals plus caloric supplements and must be within ±3% of authoritative targets. Count oils, dressings and caloric drinks. Ordinary foods first. Protein powder is optional and its kcal/macros count. Creatine only when SM=SPORT and always 0 kcal/P/C/F. BIA is descriptive context only: no diagnosis of protein deficiency, dehydration or disease. H may give cautious hydration guidance. No punitive compensation. V notes <= 8 words.
+VARIETY: make every meal recipe different across the seven days. Rotate protein sources, vegetables, fruit, grains and preparation methods. Do not repeat the same meal title with the same ingredient set on another day. Recurring staples such as oil, salt, spices or water are allowed; the complete recipe must not be duplicated.
 """.trimIndent()
     }
 }

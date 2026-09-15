@@ -36,7 +36,12 @@ class FoodPlanViewModel(
     private val generationService: NutritionPlanGenerationService,
     private val notificationScheduler: NotificationScheduler,
 ) : ViewModel() {
-    data class GenerationState(val running: Boolean = false, val error: String? = null, val successMessage: String? = null)
+    data class GenerationState(
+        val running: Boolean = false,
+        val error: String? = null,
+        val successMessage: String? = null,
+        val usageMessage: String? = null,
+    )
     data class State(
         val weekStart: LocalDate = planWeekMonday(LocalDate.now()),
         val snapshot: FoodPlanSnapshot? = null,
@@ -90,7 +95,10 @@ class FoodPlanViewModel(
             runCatching { generationService.generateWeek(week) }
                 .onSuccess { result ->
                     runCatching { notificationScheduler.refresh() }
-                    generationState.value = GenerationState(successMessage = "Piano generato con ${result.provider} · ${result.model}")
+                    generationState.value = GenerationState(
+                        successMessage = "Piano generato con ${result.provider} · ${result.model}",
+                        usageMessage = "Costo effettivo: verifica il billing del provider IA",
+                    )
                     }
                     .onFailure { error ->
                     val message = when (error) {

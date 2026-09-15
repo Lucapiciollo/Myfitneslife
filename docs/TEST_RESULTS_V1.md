@@ -7,6 +7,11 @@
 - Reference device: `SM-A546B`, Android 16.
 - Reference date: `2026-09-14`.
 - No GitHub Actions or CI workflow was started.
+- Real Gemini Auth Key device verification: PASS for authentication and HTTP 200 minimal request; weekly-plan generation remains NOT PASS.
+- Weekly-plan device diagnosis: native schema returned HTTP 400 `INVALID_ARGUMENT`; JSON-only fallback returned HTTP 200 but canonical validation rejected the response because `$ is not a JSON object`; no plan was persisted.
+- Gemini schema probe A-E: PASS on `SM-A546B - 16`; full-schema probe was blocked by HTTP 429 `RESOURCE_EXHAUSTED` free-tier quota (`20` requests/day for `gemini-3.5-flash`).
+- Weekly-plan attempts did not expose valid `usageMetadata`; no monetary cost was calculated. Billing must be checked in Google Cloud Billing.
+- Parser diagnosis on device: JSON-only returned HTTP 200, then local parsing failed with `End of input`; safe diagnostics classified `TRUNCATED_JSON`, `startsWithObjectBrace=true`, `endsWithObjectBrace=false`, no markdown fence/control byte. Gemini response metadata reported `finishReason=MAX_TOKENS`, `promptTokenCount=1118/1168`, `candidatesTokenCount=1694/306`, `totalTokenCount=9293/9339`. Output was rejected and not persisted.
 - OpenAI/Gemini credentials were not used.
 - Firebase `google-services.json` remains local/configured for generic Firebase use; Firebase AI Logic is not used by the final runtime.
 - No real Gemini BYOK or OpenAI BYOK credential was used in this run.
@@ -59,7 +64,7 @@
 
 ## FAIL
 
-- No remaining failure in the final executed run.
+- Weekly Gemini generation remains blocked by non-parsable JSON output after the JSON-only transport fallback.
 
 ## Bug Corrected
 
@@ -77,7 +82,7 @@
 
 ## NOT RUN
 
-- Real provider calls with Gemini or OpenAI credentials.
+- Real Gemini Auth Key verification was executed; real weekly-plan Gemini generation, canonical validation and persistence remain NOT PASS.
 - Firebase Gemini runtime calls are configured and reached from the device, but the tested model returned temporary high-demand responses; retry is still required for a valid structured response.
 - Diet generation with real Gemini and cheat preview/confirmation/adaptation with real Gemini: blocked by the same missing Firebase configuration; the UI-to-provider error path is verified on device.
 - Camera/gallery OS picker delivery and blurred-label capture remain untested; processor and temporary-file lifecycle are covered.

@@ -17,6 +17,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.myfitai.app.R
 import com.myfitai.app.ai.AiProviderAccess
 import com.myfitai.app.data.AppDataContainer
@@ -33,7 +34,13 @@ abstract class BaseShellActivity : AppCompatActivity() {
 
     protected fun openFoodPlan(weekStartEpochDay: Long? = null): Boolean {
         if (!AiProviderAccess.requireConfigured(this)) return false
+        (parent as? TabHostActivity)?.let {
+            it.selectTab(BottomNavBinder.Tab.FOOD)
+            return true
+        }
         val intent = Intent(this, FoodPlanActivity::class.java)
+            .putExtra(BottomNavBinder.EXTRA_TAB_ROOT, true)
+            .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NO_ANIMATION)
         weekStartEpochDay?.let { intent.putExtra(FoodPlanActivity.EXTRA_WEEK_START_EPOCH_DAY, it) }
         startActivity(intent)
         return true
@@ -164,26 +171,59 @@ abstract class BaseShellActivity : AppCompatActivity() {
         if (profile.id == shellData.activeProfileStore.currentIdOrNull()) return
         shellData.activeProfileStore.selectProfile(profile.id, makeDefault = true)
 
+        (parent as? TabHostActivity)?.let {
+            it.selectTab(BottomNavBinder.Tab.HOME)
+            return
+        }
+
         // Le schermate legate a entità del vecchio profilo non devono restare aperte.
         // Si torna alla Home: i ViewModel profile-scoped ricostruiscono lo stato dal nuovo activeProfileId.
         startActivity(Intent(this, HomeActivity::class.java).apply {
             putExtra(BottomNavBinder.EXTRA_TAB_ROOT, true)
-            addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or Intent.FLAG_ACTIVITY_NO_ANIMATION)
+            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NO_ANIMATION)
         })
         if (this !is HomeActivity) finish()
     }
 
     protected fun bindBack() { findViewById<View?>(R.id.backButton)?.setOnClickListener { finish() } }
     protected fun bindBottom(tab: BottomNavBinder.Tab) { BottomNavBinder.bind(this, tab) }
+    protected fun confirmAiRequest(action: String, onConfirmed: () -> Unit) {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Confermare richiesta IA?")
+            .setMessage(
+                "$action invia una richiesta al provider IA e consuma la quota disponibile. " +
+                    "Il costo effettivo dipende dal provider, dal modello e dal tuo piano di billing.",
+            )
+            .setNegativeButton("Annulla", null)
+            .setPositiveButton("Conferma") { _, _ -> onConfirmed() }
+            .show()
+    }
+
     protected fun go(target: Class<out AppCompatActivity>) {
+        if (target == HomeActivity::class.java ||
+            target == FoodPlanActivity::class.java ||
+            target == PhysicalEvolutionActivity::class.java ||
+            target == SettingsActivity::class.java
+        ) {
+            val tab = when (target) {
+                HomeActivity::class.java -> BottomNavBinder.Tab.HOME
+                FoodPlanActivity::class.java -> BottomNavBinder.Tab.FOOD
+                PhysicalEvolutionActivity::class.java -> BottomNavBinder.Tab.PROGRESS
+                else -> BottomNavBinder.Tab.MORE
+            }
+            (parent as? TabHostActivity)?.let {
+                it.selectTab(tab)
+                return
+            }
+        }
         val intent = Intent(this, target)
         if (target == HomeActivity::class.java ||
             target == FoodPlanActivity::class.java ||
             target == PhysicalEvolutionActivity::class.java ||
             target == SettingsActivity::class.java
         ) {
-            intent.putExtra(BottomNavBinder.EXTRA_INTERNAL_NAV, true)
-            intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or Intent.FLAG_ACTIVITY_NO_ANIMATION)
+            intent.putExtra(BottomNavBinder.EXTRA_TAB_ROOT, true)
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NO_ANIMATION)
         }
         startActivity(intent)
     }
@@ -193,7 +233,20 @@ abstract class BaseShellActivity : AppCompatActivity() {
             !value.getBooleanExtra(BottomNavBinder.EXTRA_INTERNAL_NAV, false)
 
     private fun handleBackNavigation() {
-        if (isTabRoot) finishAffinity() else finish()
+        if (intent.getBooleanExtra(BottomNavBinder.EXTRA_EMBEDDED_TAB, false)) {
+            (parent as? TabHostActivity)?.showExitConfirmation()
+            return
+        }
+        if (!isTabRoot) {
+            finish()
+            return
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Uscire da MyFitAI?")
+            .setMessage("Vuoi chiudere l'app?")
+            .setNegativeButton("Annulla", null)
+            .setPositiveButton("Esci") { _, _ -> finishAffinity() }
+            .show()
     }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()

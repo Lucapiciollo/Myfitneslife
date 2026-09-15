@@ -37,6 +37,7 @@ class ShoppingListActivity : BaseShellActivity() {
                 .takeUnless { it == Long.MIN_VALUE },
         )
     }
+    private var confirmationShownFor: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -70,6 +71,13 @@ class ShoppingListActivity : BaseShellActivity() {
             visibility = if (state.versionNumber != null) View.VISIBLE else View.GONE
             text = state.versionNumber?.let { "Lista dal piano v$it" }.orEmpty()
         }
+        if (state.requiresFirstOpenConfirmation && state.versionId != null) {
+            val confirmationKey = "${state.profileId}:${state.weekStartEpochDay}:${state.versionId}"
+            if (confirmationShownFor != confirmationKey) {
+                confirmationShownFor = confirmationKey
+                showFirstOpenConfirmation(state.versionNumber)
+            }
+        }
         findViewById<ProgressBar>(R.id.loadingProgress).visibility = if (state.loading) View.VISIBLE else View.GONE
 
         val toBuy = state.rows.count { it.status == ShoppingListStateStore.Status.TO_BUY }
@@ -100,6 +108,19 @@ class ShoppingListActivity : BaseShellActivity() {
             addHeader(container, "Lista settimanale")
             visible.sortedBy { it.item.name.lowercase(Locale.ROOT) }.forEach { addRow(container, it) }
         }
+    }
+
+    private fun showFirstOpenConfirmation(versionNumber: Int?) {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Salvare la lista della spesa?")
+            .setMessage(
+                "Questa lista viene aggregata localmente dal piano alimentare e non effettua chiamate IA: " +
+                    "non consuma quota IA e non genera costi IA. Verrà memorizzata per il piano v${versionNumber ?: "corrente"}. " +
+                    "Se il piano verrà rigenerato, la lista verrà aggiornata e ti verrà chiesta una nuova conferma."
+            )
+            .setNegativeButton("Annulla", null)
+            .setPositiveButton("Conferma", { _, _ -> viewModel.confirmListStored() })
+            .show()
     }
 
     private fun addHeader(container: LinearLayout, title: String) {

@@ -42,6 +42,7 @@ object PersonalResponseEngine {
                 append("PD:").append(weightDeltaKg.formatOrNA()).append(';').append(bodyFatDeltaPoints.formatOrNA())
                     .append(';').append(muscleMassDeltaKg.formatOrNA()).append(';').append(waistDeltaCm.formatOrNA())
                 patterns.forEach { append("\nPP:").append(it.code).append(';').append(it.evidenceCount).append(';').append(it.text.replace('\n', ' ').take(140)) }
+                append("\nSAFE:never causal;Do not alter local numerical targets")
             }
             return text.take(maxChars.coerceAtLeast(256))
         }

@@ -12,6 +12,8 @@ data class AiStructuredRequest(
     val userPrompt: String,
     val schemaName: String,
     val schemaJson: String,
+    /** Optional provider-only schema; schemaJson remains the local canonical authority. */
+    val remoteSchemaJson: String? = null,
     val maxOutputTokens: Int = 8_000,
     val image: AiImageInput? = null,
     /** Optional Gemini thinking budget in tokens (0 disables thinking). Ignored by providers without thinking. */
@@ -26,7 +28,23 @@ data class AiRawResponse(
     val provider: AiProviderType,
     val model: String,
     val jsonText: String,
+    val usage: AiUsageMetadata? = null,
+    val finishReason: String? = null,
 )
+
+data class AiUsageMetadata(
+    val inputTokens: Long? = null,
+    val outputTokens: Long? = null,
+    val totalTokens: Long? = null,
+    val thoughtsTokens: Long? = null,
+) {
+    fun display(): String {
+        val input = inputTokens?.toString() ?: "?"
+        val output = outputTokens?.toString() ?: "?"
+        val total = totalTokens?.toString() ?: "?"
+        return "Token: input $input · output $output · totale $total"
+    }
+}
 
 enum class AiTransportFailureKind {
     INVALID_API_KEY,

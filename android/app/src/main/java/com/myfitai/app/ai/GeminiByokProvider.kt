@@ -52,13 +52,12 @@ class GeminiByokProvider(
     private suspend fun generateWithModel(apiKey: String, model: String, request: AiStructuredRequest): AiRawResponse {
         val generationConfig = JSONObject()
             .put("responseMimeType", "application/json")
-            // Gemini Flash rejects requests above its supported output budget before generation.
-            // Keep the canonical request unchanged; cap only the provider transport value.
-            .put("maxOutputTokens", request.maxOutputTokens.coerceAtMost(MAX_OUTPUT_TOKENS))
         if (request.useNativeSchema) {
-            val mapped = GeminiSchemaMapper.map(request.schemaJson)
-            logSchemaDiagnostics(request.schemaName, mapped)
+            val mapped = GeminiSchemaMapper.map(request.remoteSchemaJson ?: request.schemaJson)
+            logSchemaDiagnostics(request.schemaName, mapped, "NATIVE")
             generationConfig.put("responseSchema", mapped.schema)
+        } else if (credentialStore.isDebuggable()) {
+            android.util.Log.d("MyFitAiGeminiSchema", "schemaName=${request.schemaName} schemaMode=JSON_ONLY")
         }
         request.thinkingBudget?.let { budget ->
             generationConfig.put("thinkingConfig", JSONObject().put("thinkingBudget", budget))
@@ -73,14 +72,39 @@ class GeminiByokProvider(
             headers = mapOf("x-goog-api-key" to apiKey),
             body = body.toString(),
         )
-        return AiRawResponse(type, model, extractText(JSONObject(raw)) ?: throw AiTransportException.InvalidResponse())
+        val response = JSONObject(raw)
+        return AiRawResponse(
+            provider = type,
+            model = model,
+            jsonText = extractText(response) ?: throw AiTransportException.InvalidResponse(),
+            usage = response.optJSONObject("usageMetadata")?.let { usage ->
+                AiUsageMetadata(
+                    inputTokens = usage.optLong("promptTokenCount").takeIf { usage.has("promptTokenCount") },
+                    outputTokens = usage.optLong("candidatesTokenCount").takeIf { usage.has("candidatesTokenCount") },
+                    totalTokens = usage.optLong("totalTokenCount").takeIf { usage.has("totalTokenCount") },
+                    thoughtsTokens = usage.optLong("thoughtsTokenCount").takeIf { usage.has("thoughtsTokenCount") },
+                )
+            },
+            finishReason = response.optJSONArray("candidates")?.optJSONObject(0)?.optString("finishReason")?.takeIf { it.isNotBlank() },
+        )
+            .also { result ->
+                if (credentialStore.isDebuggable()) {
+                    android.util.Log.d(
+                        "MyFitAiGeminiResponse",
+                        "model=$model finishReason=${result.finishReason ?: "-"} " +
+                            "promptTokenCount=${result.usage?.inputTokens ?: "-"} " +
+                            "candidatesTokenCount=${result.usage?.outputTokens ?: "-"} " +
+                            "totalTokenCount=${result.usage?.totalTokens ?: "-"}",
+                    )
+                }
+            }
     }
 
-    private fun logSchemaDiagnostics(schemaName: String, mapped: GeminiSchemaMapper.Result) {
+    private fun logSchemaDiagnostics(schemaName: String, mapped: GeminiSchemaMapper.Result, schemaMode: String) {
         if (!credentialStore.isDebuggable()) return
         android.util.Log.d(
             "MyFitAiGeminiSchema",
-            "schemaName=$schemaName canonicalSchemaLength=${mapped.canonicalLength} mappedSchemaLength=${mapped.mappedLength} " +
+            "schemaName=$schemaName schemaMode=$schemaMode canonicalSchemaLength=${mapped.canonicalLength} mappedSchemaLength=${mapped.mappedLength} " +
                 "maxDepth=${mapped.maxDepth} propertyCount=${mapped.propertyCount} arrayCount=${mapped.arrayCount}",
         )
     }
@@ -102,7 +126,4 @@ class GeminiByokProvider(
         return null
     }
 
-    private companion object {
-        const val MAX_OUTPUT_TOKENS = 8_192
-    }
 }

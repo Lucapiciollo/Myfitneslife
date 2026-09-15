@@ -58,6 +58,7 @@
         <activity android:name=".ui.BodyMeasuresActivity" />
         <activity android:name=".ui.BiaActivity" />
         <activity android:name=".ui.HomeActivity" android:launchMode="singleTop" />
+        <activity android:name=".ui.TabHostActivity" android:launchMode="singleTop" />
         <activity android:name=".ui.ProfileActivity" />
         <activity android:name=".ui.OnboardingActivity" android:launchMode="singleTop" />
         <activity

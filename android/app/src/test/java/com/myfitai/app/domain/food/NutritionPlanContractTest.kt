@@ -42,6 +42,34 @@ class NutritionPlanContractTest {
     }
 
     @Test
+    fun identicalRecipeOnDifferentDays_isRejected() {
+        val varied = response()
+        val duplicate = varied.copy(days = varied.days.map { day ->
+            day.copy(meals = day.meals.map { meal ->
+                meal.copy(
+                    title = "Same recipe",
+                    ingredients = listOf(meal.ingredients.first().copy(name = "Same ingredient")),
+                )
+            })
+        })
+        assertFalse(NutritionPlanContract.validateBusiness(duplicate, week, targets, enforceWeeklyVariety = true).isSuccess)
+    }
+
+    @Test
+    fun recurringStapleWithDifferentRecipe_isAllowed() {
+        val base = response()
+        val varied = base.copy(days = base.days.mapIndexed { index, day ->
+            day.copy(meals = day.meals.map { meal ->
+                meal.copy(
+                    title = "${meal.title} $index",
+                    ingredients = meal.ingredients.map { ingredient -> ingredient.copy(name = "${ingredient.name} $index") },
+                )
+            })
+        })
+        assertTrue(NutritionPlanContract.validateBusiness(varied, week, targets, enforceWeeklyVariety = true).isSuccess)
+    }
+
+    @Test
     fun normalMode_withoutWorkouts_rejectsCreatine() {
         val mode = SportsNutritionClassifier.classify("sedentario", emptyList())
         val changed = withFirstDaySupplements(
@@ -155,7 +183,11 @@ class NutritionPlanContractTest {
                     proteinG = 160f,
                     carbsG = 280f,
                     fatG = 70f,
-                    meals = listOf(meal, meal.copy(type = "Cena"), meal.copy(type = "Colazione")),
+                    meals = listOf(
+                        meal.copy(title = "Pasto completo $offset", ingredients = meal.ingredients.map { it.copy(name = "Riso $offset") }),
+                        meal.copy(type = "Cena", title = "Cena completa $offset", ingredients = meal.ingredients.map { it.copy(name = "Patate $offset") }),
+                        meal.copy(type = "Colazione", title = "Colazione completa $offset", ingredients = meal.ingredients.map { it.copy(name = "Avena $offset") }),
+                    ),
                 )
             },
             agentValidation = NutritionPlanContract.AgentValidation(false, "advisory only"),
@@ -192,9 +224,17 @@ class NutritionPlanContractTest {
                     carbsG = 280f,
                     fatG = 70f,
                     meals = if (index == 0) {
-                        listOf(meal, meal.copy(type = "Cena"), meal.copy(type = "Colazione"))
+                        listOf(
+                            meal.copy(title = "Pasto completo 0", ingredients = meal.ingredients.map { it.copy(name = "Riso 0") }),
+                            meal.copy(type = "Cena", title = "Cena completa 0", ingredients = meal.ingredients.map { it.copy(name = "Patate 0") }),
+                            meal.copy(type = "Colazione", title = "Colazione completa 0", ingredients = meal.ingredients.map { it.copy(name = "Avena 0") }),
+                        )
                     } else {
-                        listOf(validDayMeal, validDayMeal.copy(type = "Cena"), validDayMeal.copy(type = "Colazione"))
+                        listOf(
+                            validDayMeal.copy(title = "Pasto completo $index", ingredients = validDayMeal.ingredients.map { it.copy(name = "Riso $index") }),
+                            validDayMeal.copy(type = "Cena", title = "Cena completa $index", ingredients = validDayMeal.ingredients.map { it.copy(name = "Patate $index") }),
+                            validDayMeal.copy(type = "Colazione", title = "Colazione completa $index", ingredients = validDayMeal.ingredients.map { it.copy(name = "Avena $index") }),
+                        )
                     },
                 )
             },

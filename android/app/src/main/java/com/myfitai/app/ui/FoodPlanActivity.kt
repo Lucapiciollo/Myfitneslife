@@ -13,6 +13,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.domain.food.FoodMeal
@@ -50,9 +51,22 @@ class FoodPlanActivity : BaseShellActivity() {
             startActivity(Intent(this, ShoppingListActivity::class.java).putExtra(ShoppingListActivity.EXTRA_WEEK_START_EPOCH_DAY, viewModel.state.value.weekStart.toEpochDay()))
         }
         findViewById<View>(R.id.cheatButton).setOnClickListener { go(CheatEntryActivity::class.java) }
-        findViewById<View>(R.id.generatePlanButton).setOnClickListener { viewModel.generateCurrentWeek() }
+        findViewById<View>(R.id.generatePlanButton).setOnClickListener { confirmPlanGeneration() }
         weekDaySelector.setOnDaySelectedListener(viewModel::selectDay)
         lifecycleScope.launch { repeatOnLifecycle(Lifecycle.State.STARTED) { viewModel.state.collect(::render) } }
+    }
+
+    private fun confirmPlanGeneration() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Generare il piano con IA?")
+            .setMessage(
+                "La generazione invia una richiesta al provider IA e consuma la quota disponibile. " +
+                    "Il costo effettivo dipende dal provider, dal modello e dal tuo piano di billing. " +
+                    "La richiesta partirà solo dopo la tua conferma."
+            )
+            .setNegativeButton("Annulla", null)
+            .setPositiveButton("Conferma e genera") { _, _ -> viewModel.generateCurrentWeek() }
+            .show()
     }
 
     private fun render(state: FoodPlanViewModel.State) {
@@ -90,7 +104,12 @@ class FoodPlanActivity : BaseShellActivity() {
         val generation = state.generation
         button.isEnabled = !generation.running
         button.text = when { generation.running -> "Generazione in corso…"; state.hasPlan -> "Rigenera piano con IA"; else -> "Genera piano con IA" }
-        val message = when { generation.running -> "Il piano viene generato e validato localmente prima del salvataggio."; generation.error != null -> generation.error; generation.successMessage != null -> generation.successMessage; else -> null }
+        val message = when {
+            generation.running -> "Il piano viene generato e validato localmente prima del salvataggio."
+            generation.error != null -> generation.error
+            generation.successMessage != null -> listOfNotNull(generation.successMessage, generation.usageMessage).joinToString("\n")
+            else -> null
+        }
         statusContainer.visibility = if (message != null) View.VISIBLE else View.GONE
         progress.visibility = if (generation.running) View.VISIBLE else View.GONE
         status.text = message.orEmpty()

@@ -256,39 +256,41 @@ class BodyMeasuresActivity : BaseShellActivity() {
     private fun analyzeProportionsWithAi(button: MaterialButton) {
         val report = latestProportionReport ?: return
         if (report.availableMeasurements <= 0) return
-        button.isEnabled = false
-        button.text = "Analisi in corso…"
-        lifecycleScope.launch {
-            runCatching { data.bodyProportionAnalysisService.analyze(report) }
-                .onSuccess { result ->
-                    val message = buildString {
-                        appendLine(result.summary)
-                        if (result.observations.isNotEmpty()) {
-                            appendLine()
-                            appendLine("Osservazioni")
-                            result.observations.forEach { appendLine("• $it") }
-                        }
-                        if (result.monitorNext.isNotEmpty()) {
-                            appendLine()
-                            appendLine("Da monitorare")
-                            result.monitorNext.forEach { appendLine("• $it") }
-                        }
-                    }.trim()
-                    MaterialAlertDialogBuilder(this@BodyMeasuresActivity)
-                        .setTitle("Analisi proporzioni")
-                        .setMessage(message)
-                        .setPositiveButton("Chiudi", null)
-                        .show()
-                }
-                .onFailure {
-                    Toast.makeText(
-                        this@BodyMeasuresActivity,
-                        "Analisi IA non disponibile. I calcoli locali restano validi.",
-                        Toast.LENGTH_LONG,
-                    ).show()
-                }
-            button.isEnabled = true
-            button.text = "Interpreta con IA"
+        confirmAiRequest("L'interpretazione IA delle proporzioni corporee") {
+            button.isEnabled = false
+            button.text = "Analisi in corso…"
+            lifecycleScope.launch {
+                runCatching { data.bodyProportionAnalysisService.analyze(report) }
+                    .onSuccess { result ->
+                        val message = buildString {
+                            appendLine(result.summary)
+                            if (result.observations.isNotEmpty()) {
+                                appendLine()
+                                appendLine("Osservazioni")
+                                result.observations.forEach { appendLine("• $it") }
+                            }
+                            if (result.monitorNext.isNotEmpty()) {
+                                appendLine()
+                                appendLine("Da monitorare")
+                                result.monitorNext.forEach { appendLine("• $it") }
+                            }
+                        }.trim()
+                        MaterialAlertDialogBuilder(this@BodyMeasuresActivity)
+                            .setTitle("Analisi proporzioni")
+                            .setMessage(message)
+                            .setPositiveButton("Chiudi", null)
+                            .show()
+                    }
+                    .onFailure {
+                        Toast.makeText(
+                            this@BodyMeasuresActivity,
+                            "Analisi IA non disponibile. I calcoli locali restano validi.",
+                            Toast.LENGTH_LONG,
+                        ).show()
+                    }
+                button.isEnabled = true
+                button.text = "Interpreta con IA"
+            }
         }
     }
 

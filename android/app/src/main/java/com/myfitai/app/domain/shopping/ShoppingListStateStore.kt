@@ -28,8 +28,18 @@ class ShoppingListStateStore(context: Context) {
         }.apply()
     }
 
+    fun isListStored(profileId: Long, weekStartEpochDay: Long, versionId: Long): Boolean =
+        prefs.getBoolean(listKey(profileId, weekStartEpochDay, versionId), false)
+
+    fun markListStored(profileId: Long, weekStartEpochDay: Long, versionId: Long) {
+        prefs.edit().putBoolean(listKey(profileId, weekStartEpochDay, versionId), true).apply()
+    }
+
     private fun key(profileId: Long, weekStartEpochDay: Long, itemKey: String): String =
         "p${profileId}_w${weekStartEpochDay}_${itemKey}"
+
+    private fun listKey(profileId: Long, weekStartEpochDay: Long, versionId: Long): String =
+        "list_p${profileId}_w${weekStartEpochDay}_v${versionId}"
 
     private companion object {
         const val PREFS = "shopping_list_state_v1"

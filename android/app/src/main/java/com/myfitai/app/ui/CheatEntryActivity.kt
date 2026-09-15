@@ -217,12 +217,16 @@ class CheatEntryActivity : BaseShellActivity() {
 
     private fun analyze() {
         val input = buildInput() ?: return
-        viewModel.analyze(input)
+        confirmAiRequest("La valutazione dello sgarro") {
+            viewModel.analyze(input)
+        }
     }
 
     private fun confirm() {
         val input = buildInput() ?: return
-        viewModel.confirm(input.copy(labelImage = null))
+        confirmAiRequest("La conferma dello sgarro e l'adattamento dei pasti futuri") {
+            viewModel.confirm(input.copy(labelImage = null))
+        }
     }
 
     private fun buildInput(): CheatAdjustmentService.Input? {
