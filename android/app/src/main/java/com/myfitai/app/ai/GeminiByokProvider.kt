@@ -83,6 +83,7 @@ class GeminiByokProvider(
                     outputTokens = usage.optLong("candidatesTokenCount").takeIf { usage.has("candidatesTokenCount") },
                     totalTokens = usage.optLong("totalTokenCount").takeIf { usage.has("totalTokenCount") },
                     thoughtsTokens = usage.optLong("thoughtsTokenCount").takeIf { usage.has("thoughtsTokenCount") },
+                    cachedTokens = usage.optLong("cachedContentTokenCount").takeIf { usage.has("cachedContentTokenCount") },
                 )
             },
             finishReason = response.optJSONArray("candidates")?.optJSONObject(0)?.optString("finishReason")?.takeIf { it.isNotBlank() },
@@ -94,6 +95,7 @@ class GeminiByokProvider(
                         "model=$model finishReason=${result.finishReason ?: "-"} " +
                             "promptTokenCount=${result.usage?.inputTokens ?: "-"} " +
                             "candidatesTokenCount=${result.usage?.outputTokens ?: "-"} " +
+                            "cachedContentTokenCount=${result.usage?.cachedTokens ?: "-"} " +
                             "totalTokenCount=${result.usage?.totalTokens ?: "-"}",
                     )
                 }
