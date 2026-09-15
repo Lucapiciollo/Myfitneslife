@@ -35,13 +35,11 @@ class GeminiByokProvider(
         return try {
             generateWithModel(apiKey, primaryModel, request)
         } catch (error: AiTransportException.Http) {
-            if (error.provider == type && error.failureKind == AiTransportFailureKind.MODEL_UNAVAILABLE) {
+            if (error.provider == type && error.failureKind == AiTransportFailureKind.MODEL_UNAVAILABLE && primaryModel != fallbackModel) {
                 generateWithModel(apiKey, fallbackModel, request)
             } else if (error.provider == type && error.failureKind == AiTransportFailureKind.SCHEMA &&
                 request.useNativeSchema && request.allowSchemaFallback
             ) {
-                // Gemini can reject a complex native responseSchema even when the canonical
-                // schema is valid. Keep JSON mode and enforce the same schema locally.
                 generateWithModel(apiKey, primaryModel, request.copy(useNativeSchema = false))
             } else {
                 throw error
@@ -50,8 +48,7 @@ class GeminiByokProvider(
     }
 
     private suspend fun generateWithModel(apiKey: String, model: String, request: AiStructuredRequest): AiRawResponse {
-        val generationConfig = JSONObject()
-            .put("responseMimeType", "application/json")
+        val generationConfig = JSONObject().put("responseMimeType", "application/json")
         if (request.useNativeSchema) {
             val mapped = GeminiSchemaMapper.map(request.remoteSchemaJson ?: request.schemaJson)
             logSchemaDiagnostics(request.schemaName, mapped, "NATIVE")
@@ -87,19 +84,18 @@ class GeminiByokProvider(
                 )
             },
             finishReason = response.optJSONArray("candidates")?.optJSONObject(0)?.optString("finishReason")?.takeIf { it.isNotBlank() },
-        )
-            .also { result ->
-                if (credentialStore.isDebuggable()) {
-                    android.util.Log.d(
-                        "MyFitAiGeminiResponse",
-                        "model=$model finishReason=${result.finishReason ?: "-"} " +
-                            "promptTokenCount=${result.usage?.inputTokens ?: "-"} " +
-                            "candidatesTokenCount=${result.usage?.outputTokens ?: "-"} " +
-                            "cachedContentTokenCount=${result.usage?.cachedTokens ?: "-"} " +
-                            "totalTokenCount=${result.usage?.totalTokens ?: "-"}",
-                    )
-                }
+        ).also { result ->
+            if (credentialStore.isDebuggable()) {
+                android.util.Log.d(
+                    "MyFitAiGeminiResponse",
+                    "model=$model finishReason=${result.finishReason ?: "-"} " +
+                        "promptTokenCount=${result.usage?.inputTokens ?: "-"} " +
+                        "candidatesTokenCount=${result.usage?.outputTokens ?: "-"} " +
+                        "cachedContentTokenCount=${result.usage?.cachedTokens ?: "-"} " +
+                        "totalTokenCount=${result.usage?.totalTokens ?: "-"}",
+                )
             }
+        }
     }
 
     private fun logSchemaDiagnostics(schemaName: String, mapped: GeminiSchemaMapper.Result, schemaMode: String) {
@@ -127,5 +123,4 @@ class GeminiByokProvider(
         }
         return null
     }
-
 }
