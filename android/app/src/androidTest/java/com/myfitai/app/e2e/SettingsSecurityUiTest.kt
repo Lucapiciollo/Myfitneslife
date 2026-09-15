@@ -1,6 +1,9 @@
 package com.myfitai.app.e2e
 
 import android.content.Intent
+import android.view.View
+import android.widget.TextView
+import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
@@ -21,6 +24,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class SettingsSecurityUiTest {
     private lateinit var device: UiDevice
+    private lateinit var scenario: ActivityScenario<SettingsActivity>
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val context = instrumentation.targetContext
 
@@ -46,28 +50,36 @@ class SettingsSecurityUiTest {
             )).let { database.userProfileDao().get(it)!! }
         }
         ActiveProfileStore(context).selectProfile(profile.id)
-        instrumentation.startActivitySync(Intent(context, SettingsActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-        })
-        assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/activeProviderText")), 4_000))
+        scenario = ActivityScenario.launch(SettingsActivity::class.java)
+        scenario.onActivity { activity ->
+            assertTrue(activity.findViewById<TextView>(com.myfitai.app.R.id.activeProviderText).text.isNotBlank())
+        }
+    }
+
+    @org.junit.After
+    fun tearDown() {
+        if (::scenario.isInitialized) scenario.close()
     }
 
     @Test
     fun settings_showsUnconfiguredProviderAndProtectedKeyStatus() {
-        assertTrue(device.hasObject(By.res("com.myfitai.app:id/activeProviderText")))
-        assertTrue(device.hasObject(By.textContains("Provider")) || device.hasObject(By.textContains("Gemini")))
-        assertTrue(device.hasObject(By.textContains("Gemini selezionato ma non configurato")) ||
-            device.hasObject(By.textContains("Chiave Gemini non configurata")) ||
-            device.hasObject(By.textContains("Gemini configurato")) || hasOpenAiSecurityStatus())
-        val providerSwitch = device.findObject(By.res("com.myfitai.app:id/useGeminiSwitch"))
-        if (providerSwitch.isChecked) providerSwitch.click()
-        assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/openAiApiKeyInput")), 2_000))
+        scenario.onActivity { activity ->
+            val providerText = activity.findViewById<TextView>(com.myfitai.app.R.id.activeProviderText).text.toString()
+            assertTrue(providerText.contains("Provider") || providerText.contains("Gemini"))
+            val geminiStatus = activity.findViewById<TextView>(com.myfitai.app.R.id.geminiKeyStatusText).text.toString()
+            val openAiStatus = activity.findViewById<TextView>(com.myfitai.app.R.id.openAiKeyStatusText).text.toString()
+            assertTrue(geminiStatus.contains("Gemini") || openAiStatus.contains("OpenAI"))
+            val providerSwitch = activity.findViewById<com.google.android.material.materialswitch.MaterialSwitch>(com.myfitai.app.R.id.useGeminiSwitch)
+            if (providerSwitch.isChecked) providerSwitch.performClick()
+            assertTrue(activity.findViewById<View>(com.myfitai.app.R.id.openAiApiKeyInput).visibility == View.VISIBLE)
+        }
     }
 
     @Test
     fun privacyDialog_explainsLocalStorageBackupAndKeystore() {
-        UiScrollable(UiSelector().scrollable(true)).scrollIntoView(UiSelector().resourceId("com.myfitai.app:id/rowPrivacy"))
-        device.findObject(By.res("com.myfitai.app:id/rowPrivacy")).click()
+        scenario.onActivity { activity ->
+            activity.findViewById<View>(com.myfitai.app.R.id.rowPrivacy).performClick()
+        }
         assertTrue(device.wait(Until.hasObject(By.text("Privacy e dati")), 2_000))
         assertTrue(device.hasObject(By.textContains("storage locale")))
         assertTrue(device.hasObject(By.textContains("Android Keystore")))

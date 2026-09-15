@@ -52,9 +52,14 @@ class WeeklyReviewActivity : BaseShellActivity() {
         findViewById<View>(R.id.nextWeekButton).isEnabled = state.weekStart.plusWeeks(1).isBefore(currentMonday())
 
         val metrics = state.metrics
-        findViewById<TextView>(R.id.adherenceValue).text = "n/d"
+        findViewById<TextView>(R.id.adherenceValue).text = metrics?.adherencePercent?.let { "$it%" } ?: "n/d"
         findViewById<TextView>(R.id.cheatsValue).text = metrics?.cheatCount?.toString() ?: "—"
         findViewById<TextView>(R.id.workoutsValue).text = metrics?.let { "${it.workoutCount}" } ?: "—"
+        findViewById<TextView>(R.id.trackingCoverageText).text = when {
+            metrics == null -> "La copertura mostra quanti elementi della settimana sono stati registrati."
+            metrics.trackingCoveragePercent == null -> "Nessun consumo registrato: l'aderenza resta n/d."
+            else -> "Copertura tracking: ${metrics.trackingCoveragePercent}% · ${metrics.consumedMealCount} pasti consumati · ${metrics.skippedMealCount} saltati."
+        }
 
         renderNutrition(metrics)
         renderBodyChanges(metrics)

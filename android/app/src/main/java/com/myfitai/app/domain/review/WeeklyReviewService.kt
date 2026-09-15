@@ -8,6 +8,7 @@ import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.repository.BiaRepository
 import com.myfitai.app.data.repository.BodyMeasurementRepository
 import com.myfitai.app.data.repository.CheatEntryRepository
+import com.myfitai.app.data.repository.FoodConsumptionRepository
 import com.myfitai.app.data.repository.MealPlanRepository
 import com.myfitai.app.data.repository.WeeklyReviewRepository
 import com.myfitai.app.data.repository.WorkoutRepository
@@ -31,6 +32,7 @@ class WeeklyReviewService(
     private val personalResponse: PersonalResponseService,
     private val activeProfileStore: ActiveProfileStore,
     private val time: TimeProvider = SystemTimeProvider,
+    private val foodConsumptions: FoodConsumptionRepository? = null,
 ) {
     data class LocalMetrics(
         val weekStart: LocalDate, val weekEnd: LocalDate,
@@ -40,6 +42,12 @@ class WeeklyReviewService(
         val plannedAverageFatG: Float?, val targetFatG: Float?,
         val cheatCount: Int, val workoutCount: Int, val restDayCount: Int,
         val weightDeltaKg: Float?, val bodyFatDeltaPoints: Float?, val muscleMassDeltaKg: Float?, val waistDeltaCm: Float?,
+        val plannedMealCount: Int,
+        val consumedMealCount: Int,
+        val skippedMealCount: Int,
+        val trackingCoveragePercent: Int?,
+        val adherencePercent: Int?,
+        val consumedKcal: Int?,
         val hasPlan: Boolean,
     )
 
@@ -70,6 +78,14 @@ class WeeklyReviewService(
         val weekBia = bia.between(profileId, from, to).first()
         val weekBody = bodyMeasurements.between(profileId, from, to).first()
         val days = plan?.version?.days.orEmpty()
+        val plannedItems = days.sumOf { it.meals.size + it.supplements.size }
+        val plannedMeals = days.sumOf { it.meals.size }
+        val consumptionRecords = if (plan != null && foodConsumptions != null) {
+            foodConsumptions.all(profileId).first().filter {
+                it.planVersionId == plan.version.id && it.plannedDateEpochDay in monday.toEpochDay()..sunday.toEpochDay()
+            }
+        } else emptyList()
+        val consumption = WeeklyConsumptionMetrics.calculate(plannedMeals, plannedItems, consumptionRecords)
         return LocalMetrics(
             monday, sunday,
             days.mapNotNull { it.totalKcal }.takeIf { it.isNotEmpty() }?.average()?.roundToInt(), plan?.version?.targetKcal,
@@ -78,6 +94,12 @@ class WeeklyReviewService(
             averageOrNull(days.mapNotNull { it.fatG }), plan?.version?.targetFatG,
             weekCheats.size, weekWorkouts.count { !it.isRestDay }, weekWorkouts.count { it.isRestDay },
             delta(weekBia.mapNotNull { it.weightKg }), delta(weekBia.mapNotNull { it.bodyFatPercent }), delta(weekBia.mapNotNull { it.muscleMassKg }), delta(weekBody.mapNotNull { it.waistCm }),
+            consumption.plannedMealCount,
+            consumption.consumedMealCount,
+            consumption.skippedMealCount,
+            consumption.trackingCoveragePercent,
+            consumption.adherencePercent,
+            consumption.consumedKcal,
             plan != null,
         )
     }
@@ -119,10 +141,13 @@ class WeeklyReviewService(
                 .put("plannedAverageFatG", metrics.plannedAverageFatG).put("targetFatG", metrics.targetFatG)
                 .put("cheatCount", metrics.cheatCount).put("workoutCount", metrics.workoutCount).put("restDayCount", metrics.restDayCount)
                 .put("weightDeltaKg", metrics.weightDeltaKg).put("bodyFatDeltaPoints", metrics.bodyFatDeltaPoints)
-                .put("muscleMassDeltaKg", metrics.muscleMassDeltaKg).put("waistDeltaCm", metrics.waistDeltaCm))
+                .put("muscleMassDeltaKg", metrics.muscleMassDeltaKg).put("waistDeltaCm", metrics.waistDeltaCm)
+                .put("plannedMealCount", metrics.plannedMealCount).put("consumedMealCount", metrics.consumedMealCount)
+                .put("skippedMealCount", metrics.skippedMealCount).put("trackingCoveragePercent", metrics.trackingCoveragePercent)
+                .put("adherencePercent", metrics.adherencePercent).put("consumedKcal", metrics.consumedKcal))
             .toString()
 
-        val entity = WeeklyReviewEntity(profileId = profileId, weekStartEpochDay = monday.toEpochDay(), createdAtEpochMillis = time.nowEpochMillis(), adherencePercent = null, summary = response.summary, structuredJson = structured)
+        val entity = WeeklyReviewEntity(profileId = profileId, weekStartEpochDay = monday.toEpochDay(), createdAtEpochMillis = time.nowEpochMillis(), adherencePercent = metrics.adherencePercent?.toFloat(), summary = response.summary, structuredJson = structured)
         reviews.upsert(entity)
         val stored = reviews.getForWeek(profileId, monday.toEpochDay()) ?: entity
         return Result(stored, response, metrics, validated.provider.name, validated.model)
@@ -133,12 +158,13 @@ class WeeklyReviewService(
         appendLine("P:${m.plannedAverageKcal ?: "?"};${m.plannedAverageProteinG ?: "?"};${m.plannedAverageCarbsG ?: "?"};${m.plannedAverageFatG ?: "?"}")
         appendLine("T:${m.targetKcal ?: "?"};${m.targetProteinG ?: "?"};${m.targetCarbsG ?: "?"};${m.targetFatG ?: "?"}")
         appendLine("E:${m.cheatCount};${m.workoutCount};${m.restDayCount}")
+        appendLine("C:${m.plannedMealCount};${m.consumedMealCount};${m.skippedMealCount};${m.trackingCoveragePercent ?: "?"};${m.adherencePercent ?: "?"};${m.consumedKcal ?: "?"}")
         appendLine("D:${m.weightDeltaKg ?: "?"};${m.bodyFatDeltaPoints ?: "?"};${m.muscleMassDeltaKg ?: "?"};${m.waistDeltaCm ?: "?"}")
         if (historyContext.isNotBlank()) appendLine("H:${AiCompactEnvelope.clean(historyContext)}")
     }
 
     companion object {
-        private const val SYSTEM_PROMPT = """Weekly nutrition review from recorded facts only. P=planned averages, T=authoritative targets, E=deviations/workouts/rest, D=observed body deltas. Actual adherence/consumption is NOT recorded: never invent it. Body changes are associative observations, never causes. No diagnosis/treatment. Next-week guidance practical, nutrition-only, never overrides T. Summary <=25 words; each O/G <=18 words; O 1..6; G 1..5."""
+        private const val SYSTEM_PROMPT = """Weekly nutrition review from recorded facts only. P=planned averages, T=authoritative targets, E=deviations/workouts/rest, C=locally calculated meal tracking and consumption, D=observed body deltas. Never infer unrecorded consumption or adherence. Body changes are associative observations, never causes. No diagnosis/treatment. Next-week guidance practical, nutrition-only, never overrides T. Summary <=25 words; each O/G <=18 words; O 1..6; G 1..5."""
     }
 
     private fun monday(date: LocalDate): LocalDate = date.minusDays((date.dayOfWeek.value - 1).toLong())

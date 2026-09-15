@@ -78,9 +78,11 @@
                      android:text="Le eliminazioni riguardano solo il profilo attivo. Profilo e chiavi IA non vengono cancellati."
                      android:textColor="@color/text_secondary"
                      android:textSize="12sp" />
-                 <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeletePlans" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="Elimina alimentazioni" />
-                 <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
-                 <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteBia" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_gear" app:srLabel="Elimina misure BIA" />
+                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeletePlans" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="Elimina alimentazioni" />
+                  <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteConsumptions" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="Elimina consumi registrati" />
+                  <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteBia" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_gear" app:srLabel="Elimina misure BIA" />
                  <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteBody" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_person" app:srLabel="Elimina misure corporee" />
                  <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />

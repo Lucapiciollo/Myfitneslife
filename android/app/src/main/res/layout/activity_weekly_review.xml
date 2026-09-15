@@ -75,7 +75,7 @@
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:orientation="horizontal">
                 <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center">
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Aderenza" android:textColor="@color/text_secondary" android:textSize="12sp" />
-                    <TextView android:id="@+id/adherenceValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:text="n/d" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="18sp" />
+                     <TextView android:id="@+id/adherenceValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:text="n/d" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="18sp" />
                 </LinearLayout>
                 <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center">
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Sgarri" android:textColor="@color/text_secondary" android:textSize="12sp" />
@@ -91,7 +91,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_8"
-                android:text="L’aderenza non viene stimata finché l’app non registra i pasti realmente consumati."
+                 android:id="@+id/trackingCoverageText"
+                 android:text="La copertura mostra quanti elementi della settimana sono stati registrati."
                 android:textColor="@color/text_muted"
                 android:textSize="11sp"
                 android:gravity="center" />

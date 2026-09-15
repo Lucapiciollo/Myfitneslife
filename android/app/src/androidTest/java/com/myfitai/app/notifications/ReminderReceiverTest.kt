@@ -40,7 +40,13 @@ class ReminderReceiverTest {
 
         assertNotNull(manager.getNotificationChannel(ReminderReceiver.CHANNEL_MEALS))
         if (Build.VERSION.SDK_INT < 33 || ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
-            assertTrue(manager.activeNotifications.any { it.id == ReminderReceiver.stableCode("meal-notification:9001") })
+            val deadline = System.currentTimeMillis() + 2_000L
+            var posted = false
+            while (System.currentTimeMillis() < deadline && !posted) {
+                posted = manager.activeNotifications.any { it.id == ReminderReceiver.stableCode("meal-notification:9001") }
+                if (!posted) Thread.sleep(50L)
+            }
+            assertTrue(posted)
         }
     }
 

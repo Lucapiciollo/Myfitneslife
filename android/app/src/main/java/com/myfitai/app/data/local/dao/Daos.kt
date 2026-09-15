@@ -110,6 +110,9 @@ interface MealPlanDao {
     @Query("SELECT m.* FROM meals m INNER JOIN meal_plan_days d ON d.id = m.dayId INNER JOIN meal_plan_versions v ON v.id = d.versionId INNER JOIN meal_plans p ON p.id = v.planId WHERE m.id = :mealId AND p.profileId = :profileId LIMIT 1")
     suspend fun getMeal(profileId: Long, mealId: Long): MealEntity?
 
+    @Query("SELECT p.id AS planId, v.id AS planVersionId, d.id AS dayId, d.dateEpochDay AS dateEpochDay, m.id AS mealId, m.dayId AS mealDayId, m.sortOrder AS mealSortOrder, m.type AS mealType, m.title AS mealTitle, m.timeMinutes AS mealTimeMinutes, m.kcal AS mealKcal, m.proteinG AS mealProteinG, m.carbsG AS mealCarbsG, m.fatG AS mealFatG, m.preparation AS mealPreparation FROM meals m INNER JOIN meal_plan_days d ON d.id = m.dayId INNER JOIN meal_plan_versions v ON v.id = d.versionId INNER JOIN meal_plans p ON p.id = v.planId WHERE m.id = :mealId AND p.profileId = :profileId LIMIT 1")
+    suspend fun getMealContext(profileId: Long, mealId: Long): MealContextRow?
+
     @Query("SELECT i.* FROM meal_ingredients i INNER JOIN meals m ON m.id = i.mealId INNER JOIN meal_plan_days d ON d.id = m.dayId INNER JOIN meal_plan_versions v ON v.id = d.versionId INNER JOIN meal_plans p ON p.id = v.planId WHERE i.mealId = :mealId AND p.profileId = :profileId ORDER BY i.sortOrder ASC, i.id ASC")
     suspend fun getIngredients(profileId: Long, mealId: Long): List<MealIngredientEntity>
 
@@ -134,6 +137,51 @@ interface CheatEntryDao {
     @Update suspend fun update(value: CheatEntryEntity)
     @Delete suspend fun delete(value: CheatEntryEntity)
     @Query("DELETE FROM cheat_entries WHERE profileId = :profileId")
+    suspend fun deleteByProfile(profileId: Long)
+}
+
+data class MealContextRow(
+    val planId: Long,
+    val planVersionId: Long,
+    val dayId: Long,
+    val dateEpochDay: Long,
+    val mealId: Long,
+    val mealDayId: Long,
+    val mealSortOrder: Int,
+    val mealType: String,
+    val mealTitle: String,
+    val mealTimeMinutes: Int?,
+    val mealKcal: Int?,
+    val mealProteinG: Float?,
+    val mealCarbsG: Float?,
+    val mealFatG: Float?,
+    val mealPreparation: String?,
+)
+
+@Dao
+interface FoodConsumptionDao {
+    @Query("SELECT * FROM food_consumptions WHERE profileId = :profileId ORDER BY plannedDateEpochDay DESC, updatedAtEpochMillis DESC, id DESC")
+    fun observeAll(profileId: Long): Flow<List<FoodConsumptionEntity>>
+
+    @Query("SELECT * FROM food_consumptions WHERE profileId = :profileId AND plannedDateEpochDay = :dateEpochDay ORDER BY updatedAtEpochMillis DESC, id DESC")
+    fun observeForDay(profileId: Long, dateEpochDay: Long): Flow<List<FoodConsumptionEntity>>
+
+    @Query("SELECT * FROM food_consumptions WHERE profileId = :profileId AND planVersionId = :planVersionId AND plannedDateEpochDay = :dateEpochDay ORDER BY updatedAtEpochMillis DESC, id DESC")
+    fun observeForVersionDay(profileId: Long, planVersionId: Long, dateEpochDay: Long): Flow<List<FoodConsumptionEntity>>
+
+    @Query("SELECT * FROM food_consumptions WHERE profileId = :profileId AND planVersionId = :planVersionId AND itemKey = :itemKey LIMIT 1")
+    suspend fun getForItem(profileId: Long, planVersionId: Long, itemKey: String): FoodConsumptionEntity?
+
+    @Query("SELECT * FROM food_consumptions WHERE profileId = :profileId AND planVersionId = :planVersionId AND itemKey = :itemKey LIMIT 1")
+    fun observeForItem(profileId: Long, planVersionId: Long, itemKey: String): Flow<FoodConsumptionEntity?>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(value: FoodConsumptionEntity): Long
+
+    @Query("DELETE FROM food_consumptions WHERE profileId = :profileId AND planVersionId = :planVersionId AND itemKey = :itemKey")
+    suspend fun deleteForItem(profileId: Long, planVersionId: Long, itemKey: String)
+
+    @Query("DELETE FROM food_consumptions WHERE profileId = :profileId")
     suspend fun deleteByProfile(profileId: Long)
 }
 

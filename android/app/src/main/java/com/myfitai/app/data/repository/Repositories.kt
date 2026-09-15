@@ -52,6 +52,17 @@ class CheatEntryRepository(private val db: MyFitAiDatabase) {
     suspend fun delete(value: CheatEntryEntity) = db.cheatEntryDao().delete(value)
 }
 
+class FoodConsumptionRepository(private val db: MyFitAiDatabase) {
+    fun all(profileId: Long): Flow<List<FoodConsumptionEntity>> = db.foodConsumptionDao().observeAll(profileId)
+    fun forDay(profileId: Long, dateEpochDay: Long): Flow<List<FoodConsumptionEntity>> = db.foodConsumptionDao().observeForDay(profileId, dateEpochDay)
+    fun forVersionDay(profileId: Long, planVersionId: Long, dateEpochDay: Long): Flow<List<FoodConsumptionEntity>> = db.foodConsumptionDao().observeForVersionDay(profileId, planVersionId, dateEpochDay)
+    suspend fun getForItem(profileId: Long, planVersionId: Long, itemKey: String) = db.foodConsumptionDao().getForItem(profileId, planVersionId, itemKey)
+    fun observeForItem(profileId: Long, planVersionId: Long, itemKey: String): Flow<FoodConsumptionEntity?> = db.foodConsumptionDao().observeForItem(profileId, planVersionId, itemKey)
+    suspend fun upsert(value: FoodConsumptionEntity): Long = db.foodConsumptionDao().upsert(value)
+    suspend fun deleteForItem(profileId: Long, planVersionId: Long, itemKey: String) = db.foodConsumptionDao().deleteForItem(profileId, planVersionId, itemKey)
+    suspend fun deleteByProfile(profileId: Long) = db.foodConsumptionDao().deleteByProfile(profileId)
+}
+
 class WeeklyReviewRepository(private val db: MyFitAiDatabase) {
     fun all(profileId: Long): Flow<List<WeeklyReviewEntity>> = db.weeklyReviewDao().observeAll(profileId)
     suspend fun getForWeek(profileId: Long, weekStartEpochDay: Long) = db.weeklyReviewDao().getForWeek(profileId, weekStartEpochDay)
@@ -115,6 +126,13 @@ data class PlanVersionDraft(
 )
 
 class MealPlanRepository(private val db: MyFitAiDatabase) {
+    data class MealDetailContext(
+        val planId: Long,
+        val planVersionId: Long,
+        val dayId: Long,
+        val dateEpochDay: Long,
+        val meal: com.myfitai.app.domain.food.FoodMeal,
+    )
     fun plans(profileId: Long): Flow<List<MealPlanEntity>> = db.mealPlanDao().observePlans(profileId)
     fun versions(profileId: Long, planId: Long): Flow<List<MealPlanVersionEntity>> = db.mealPlanDao().observeVersions(profileId, planId)
     suspend fun getPlanForWeek(profileId: Long, weekStartEpochDay: Long) = db.mealPlanDao().getPlanForWeek(profileId, weekStartEpochDay)
@@ -291,6 +309,45 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
                     sortOrder = ingredient.sortOrder,
                 )
             },
+        )
+    }
+
+    suspend fun getMealContext(profileId: Long, mealId: Long): MealDetailContext? = db.withTransaction {
+        val dao = db.mealPlanDao()
+        val row = dao.getMealContext(profileId, mealId) ?: return@withTransaction null
+        val ingredients = dao.getIngredients(profileId, mealId).map { ingredient ->
+            com.myfitai.app.domain.food.FoodIngredient(
+                id = ingredient.id,
+                mealId = ingredient.mealId,
+                name = ingredient.name,
+                quantity = ingredient.quantity,
+                unit = ingredient.unit,
+                displayDose = ingredient.displayDose,
+                weightState = ingredient.weightState,
+                nutritionConfidence = ingredient.nutritionConfidence,
+                category = ingredient.category,
+                sortOrder = ingredient.sortOrder,
+            )
+        }
+        MealDetailContext(
+            planId = row.planId,
+            planVersionId = row.planVersionId,
+            dayId = row.dayId,
+            dateEpochDay = row.dateEpochDay,
+            meal = com.myfitai.app.domain.food.FoodMeal(
+                id = row.mealId,
+                dayId = row.mealDayId,
+                sortOrder = row.mealSortOrder,
+                type = row.mealType,
+                title = row.mealTitle,
+                timeMinutes = row.mealTimeMinutes,
+                kcal = row.mealKcal,
+                proteinG = row.mealProteinG,
+                carbsG = row.mealCarbsG,
+                fatG = row.mealFatG,
+                preparation = row.mealPreparation,
+                ingredients = ingredients,
+            ),
         )
     }
 

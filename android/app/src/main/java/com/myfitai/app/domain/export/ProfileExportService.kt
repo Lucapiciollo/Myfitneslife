@@ -51,6 +51,7 @@ class ProfileExportService(
         val workouts = db.workoutDao().observeAll(profileId).first().sortedBy { it.startedAtEpochMillis }
         val cheats = db.cheatEntryDao().observeAll(profileId).first().sortedBy { it.occurredAtEpochMillis }
         val reviews = db.weeklyReviewDao().observeAll(profileId).first().sortedBy { it.weekStartEpochDay }
+        val foodConsumptions = db.foodConsumptionDao().observeAll(profileId).first().sortedWith(compareBy({ it.plannedDateEpochDay }, { it.updatedAtEpochMillis }, { it.id }))
         val plans = db.mealPlanDao().observePlans(profileId).first().sortedBy { it.weekStartEpochDay }
 
         if (format == Format.WEEKLY_PLAN_PDF) {
@@ -67,7 +68,7 @@ class ProfileExportService(
             return ExportedFile(file, "application/pdf")
         }
 
-        val root = buildCanonicalRoot(profileId, profile, bia, body, workouts, cheats, reviews, plans)
+        val root = buildCanonicalRoot(profileId, profile, bia, body, workouts, cheats, reviews, foodConsumptions, plans)
 
         return when (format) {
             Format.JSON -> writeJson(profile.name, root)
@@ -131,6 +132,7 @@ class ProfileExportService(
         workouts: List<com.myfitai.app.data.local.entity.WorkoutEntity>,
         cheats: List<com.myfitai.app.data.local.entity.CheatEntryEntity>,
         reviews: List<com.myfitai.app.data.local.entity.WeeklyReviewEntity>,
+        foodConsumptions: List<com.myfitai.app.data.local.entity.FoodConsumptionEntity>,
         plans: List<MealPlanEntity>,
     ): JSONObject {
         val root = JSONObject().apply {
@@ -170,6 +172,14 @@ class ProfileExportService(
             }) } })
             put("weeklyReviews", JSONArray().apply { reviews.forEach { r -> put(JSONObject().apply {
                 put("id", r.id); put("weekStartEpochDay", r.weekStartEpochDay); put("createdAtEpochMillis", r.createdAtEpochMillis); putNullable("adherencePercent", r.adherencePercent); put("summary", r.summary); putNullable("structuredJson", r.structuredJson)
+            }) } })
+            put("foodConsumptions", JSONArray().apply { foodConsumptions.forEach { r -> put(JSONObject().apply {
+                put("id", r.id); put("planId", r.planId); put("planVersionId", r.planVersionId); put("dayId", r.dayId)
+                put("plannedDateEpochDay", r.plannedDateEpochDay); put("itemType", r.itemType); put("itemKey", r.itemKey)
+                putNullable("mealId", r.mealId); putNullable("supplementKey", r.supplementKey); put("status", r.status)
+                put("recordedAtEpochMillis", r.recordedAtEpochMillis); put("updatedAtEpochMillis", r.updatedAtEpochMillis)
+                put("quantityFactor", r.quantityFactor); putNullable("kcal", r.kcal); putNullable("proteinG", r.proteinG)
+                putNullable("carbsG", r.carbsG); putNullable("fatG", r.fatG); putNullable("note", r.note)
             }) } })
         }
 
@@ -321,11 +331,11 @@ class ProfileExportService(
     private fun writeCsvZip(name: String, root: JSONObject): ExportedFile {
         val file = exportFile(name, "dati", "zip")
         ZipOutputStream(FileOutputStream(file)).use { zip ->
-            val tables = listOf("biaMeasurements", "bodyMeasurements", "workouts", "cheatEntries", "weeklyReviews")
+            val tables = listOf("biaMeasurements", "bodyMeasurements", "workouts", "cheatEntries", "weeklyReviews", "foodConsumptions")
             tables.forEach { key -> addCsv(zip, "$key.csv", root.getJSONArray(key)) }
             addCsv(zip, "profile.csv", JSONArray().put(root.getJSONObject("profile")))
             zip.putNextEntry(ZipEntry("README.txt"))
-            zip.write("MyFitAI CSV export. mealPlans are preserved completely in meal_plans.json because the hierarchy plan/version/day/meal/ingredient is not losslessly representable in one flat CSV.\n".toByteArray())
+            zip.write("MyFitAI CSV export. mealPlans are preserved completely in meal_plans.json because the hierarchy plan/version/day/meal/ingredient is not losslessly representable in one flat CSV. foodConsumptions.csv contains explicit consumption events and nutritional snapshots.\n".toByteArray())
             zip.closeEntry()
             zip.putNextEntry(ZipEntry("meal_plans.json"))
             zip.write(root.getJSONArray("mealPlans").toString(2).toByteArray())

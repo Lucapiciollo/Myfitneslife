@@ -21,9 +21,10 @@ import com.myfitai.app.data.local.entity.*
         MealEntity::class,
         MealIngredientEntity::class,
         CheatEntryEntity::class,
+        FoodConsumptionEntity::class,
         WeeklyReviewEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
 )
 abstract class MyFitAiDatabase : RoomDatabase() {
@@ -33,6 +34,7 @@ abstract class MyFitAiDatabase : RoomDatabase() {
     abstract fun workoutDao(): WorkoutDao
     abstract fun mealPlanDao(): MealPlanDao
     abstract fun cheatEntryDao(): CheatEntryDao
+    abstract fun foodConsumptionDao(): FoodConsumptionDao
     abstract fun weeklyReviewDao(): WeeklyReviewDao
 
     companion object {
@@ -104,5 +106,38 @@ object DatabaseMigrations {
         }
     }
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+    /** V5 adds immutable nutritional snapshots for explicitly recorded consumption. */
+    val MIGRATION_4_5 = object : Migration(4, 5) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """CREATE TABLE IF NOT EXISTS food_consumptions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    profileId INTEGER NOT NULL DEFAULT 1,
+                    planId INTEGER NOT NULL,
+                    planVersionId INTEGER NOT NULL,
+                    dayId INTEGER NOT NULL,
+                    plannedDateEpochDay INTEGER NOT NULL,
+                    itemType TEXT NOT NULL,
+                    itemKey TEXT NOT NULL,
+                    mealId INTEGER,
+                    supplementKey TEXT,
+                    status TEXT NOT NULL,
+                    recordedAtEpochMillis INTEGER NOT NULL,
+                    updatedAtEpochMillis INTEGER NOT NULL,
+                    quantityFactor REAL NOT NULL,
+                    kcal INTEGER,
+                    proteinG REAL,
+                    carbsG REAL,
+                    fatG REAL,
+                    note TEXT
+                )""".trimIndent(),
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_food_consumptions_profileId ON food_consumptions(profileId)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_food_consumptions_planVersionId ON food_consumptions(planVersionId)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_food_consumptions_plannedDateEpochDay ON food_consumptions(plannedDateEpochDay)")
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_food_consumptions_profileId_planVersionId_itemKey ON food_consumptions(profileId, planVersionId, itemKey)")
+        }
+    }
+
+    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
 }

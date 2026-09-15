@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.repository.MealPlanRepository
+import com.myfitai.app.data.repository.FoodConsumptionRepository
+import com.myfitai.app.data.local.entity.FoodConsumptionEntity
 import com.myfitai.app.domain.food.FoodPlanDay
 import com.myfitai.app.domain.food.FoodPlanSnapshot
 import com.myfitai.app.domain.food.NutritionPlanGenerationService
@@ -35,6 +37,7 @@ class FoodPlanViewModel(
     private val activeProfileStore: ActiveProfileStore,
     private val generationService: NutritionPlanGenerationService,
     private val notificationScheduler: NotificationScheduler,
+    private val consumptionRepository: FoodConsumptionRepository,
 ) : ViewModel() {
     data class GenerationState(
         val running: Boolean = false,
@@ -49,6 +52,7 @@ class FoodPlanViewModel(
         val selectedDay: FoodPlanDay? = null,
         val hasPlan: Boolean = false,
         val generation: GenerationState = GenerationState(),
+        val consumptionRecords: List<FoodConsumptionEntity> = emptyList(),
     )
 
     private val selectedWeekStart = MutableStateFlow(planWeekMonday(LocalDate.now()))
@@ -56,15 +60,15 @@ class FoodPlanViewModel(
     private val generationState = MutableStateFlow(GenerationState())
 
     private val source = activeProfileStore.activeProfileId.flatMapLatest { profileId ->
-        if (profileId <= 0L) flowOf<Pair<LocalDate, FoodPlanSnapshot?>>(selectedWeekStart.value to null)
+        if (profileId <= 0L) flowOf<Triple<LocalDate, FoodPlanSnapshot?, List<FoodConsumptionEntity>>>(Triple(selectedWeekStart.value, null, emptyList()))
         else selectedWeekStart.flatMapLatest { weekStart ->
-            repository.plans(profileId).flatMapLatest {
-                flow { emit(weekStart to repository.loadLatestSnapshot(profileId, weekStart.toEpochDay())) }
+            combine(repository.plans(profileId), consumptionRepository.all(profileId)) { _, records ->
+                Triple(weekStart, repository.loadLatestSnapshot(profileId, weekStart.toEpochDay()), records)
             }
         }
     }
 
-    val state: StateFlow<State> = combine(source, selectedDayIndex, generationState) { (weekStart, snapshot), dayIndex, generation ->
+    val state: StateFlow<State> = combine(source, selectedDayIndex, generationState) { (weekStart, snapshot, records), dayIndex, generation ->
         val safeIndex = dayIndex.coerceIn(0, 6)
         State(
             weekStart = weekStart,
@@ -73,6 +77,7 @@ class FoodPlanViewModel(
             selectedDay = snapshot?.version?.days?.firstOrNull { it.dateEpochDay == weekStart.plusDays(safeIndex.toLong()).toEpochDay() },
             hasPlan = snapshot != null,
             generation = generation,
+            consumptionRecords = records,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), State())
 
@@ -140,11 +145,12 @@ class FoodPlanViewModel(
         private val activeProfileStore: ActiveProfileStore,
         private val generationService: NutritionPlanGenerationService,
         private val notificationScheduler: NotificationScheduler,
+        private val consumptionRepository: FoodConsumptionRepository,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(FoodPlanViewModel::class.java))
-            return FoodPlanViewModel(repository, activeProfileStore, generationService, notificationScheduler) as T
+            return FoodPlanViewModel(repository, activeProfileStore, generationService, notificationScheduler, consumptionRepository) as T
         }
     }
 }

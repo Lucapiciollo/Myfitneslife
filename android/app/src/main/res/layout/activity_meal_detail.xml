@@ -115,6 +115,16 @@
                     app:cornerRadius="12dp"
                     app:backgroundTint="@color/accent_green" />
 
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/skippedButton"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="@dimen/space_8"
+                    android:text="Segna come saltato"
+                    android:textAllCaps="false"
+                    android:visibility="gone" />
+
                 <LinearLayout
                     android:id="@+id/rescheduleButton"
                     android:layout_width="wrap_content"

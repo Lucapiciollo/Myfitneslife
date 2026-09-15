@@ -2,6 +2,7 @@ package com.myfitai.app.ui
 
 import android.app.Activity
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.os.Bundle
 import android.view.View
 import android.widget.LinearLayout
@@ -20,6 +21,7 @@ import com.myfitai.app.domain.food.FoodMeal
 import com.myfitai.app.domain.food.FoodPlanDay
 import com.myfitai.app.domain.food.FoodPlanMetrics
 import com.myfitai.app.domain.food.FoodPlanVersion
+import com.myfitai.app.domain.food.FoodConsumptionMetrics
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.ui.food.FoodPlanViewModel
 import com.myfitai.app.ui.widgets.MealPlanRowView
@@ -34,7 +36,7 @@ class FoodPlanActivity : BaseShellActivity() {
 
     private val data by lazy { AppDataContainer.get(this) }
     private val viewModel: FoodPlanViewModel by viewModels {
-        FoodPlanViewModel.Factory(data.mealPlanRepository, data.activeProfileStore, data.nutritionPlanGenerationService, data.notificationScheduler)
+         FoodPlanViewModel.Factory(data.mealPlanRepository, data.activeProfileStore, data.nutritionPlanGenerationService, data.notificationScheduler, data.foodConsumptionRepository)
     }
 
     private val mealAlternativeLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -97,11 +99,11 @@ class FoodPlanActivity : BaseShellActivity() {
         val day = state.selectedDay
         empty.visibility = if (!state.hasPlan) View.VISIBLE else View.GONE
         if (state.hasPlan && day == null) { empty.visibility = View.VISIBLE; empty.text = "Nessun dato alimentare per il giorno selezionato." }
-        else if (!state.hasPlan) empty.text = "Nessun piano alimentare disponibile per questa settimana."
+        else if (!state.hasPlan) empty.text = "Nessun piano per questa settimana. Genera un piano per vedere pasti, quantità e valori nutrizionali."
 
         renderGeneration(state)
         renderMeals(state.weekStart, day)
-        renderTotals(state.weekStart, day, state.snapshot?.version)
+        renderTotals(day, state.snapshot?.version, state.consumptionRecords)
     }
 
     private fun renderGeneration(state: FoodPlanViewModel.State) {
@@ -112,6 +114,16 @@ class FoodPlanActivity : BaseShellActivity() {
         val generation = state.generation
         button.isEnabled = !generation.running
         button.text = when { generation.running -> "Generazione in corso…"; state.hasPlan -> "Rigenera piano con IA"; else -> "Genera piano con IA" }
+        if (state.hasPlan && !generation.running) {
+            button.backgroundTintList = ColorStateList.valueOf(getColor(R.color.surface_primary))
+            button.setTextColor(getColor(R.color.accent_green_dark))
+            button.strokeWidth = dp(1)
+            button.strokeColor = ColorStateList.valueOf(getColor(R.color.accent_green))
+        } else {
+            button.backgroundTintList = ColorStateList.valueOf(getColor(R.color.accent_green))
+            button.setTextColor(getColor(R.color.white))
+            button.strokeWidth = 0
+        }
         val message = when {
             generation.running -> "Il piano viene generato e validato localmente prima del salvataggio."
             generation.error != null -> generation.error
@@ -158,29 +170,43 @@ class FoodPlanActivity : BaseShellActivity() {
         contentDescription = "$title: $body"
     }
 
-    private fun renderTotals(weekStart: LocalDate, day: FoodPlanDay?, version: FoodPlanVersion?) {
+    private fun renderTotals(day: FoodPlanDay?, version: FoodPlanVersion?, records: List<com.myfitai.app.data.local.entity.FoodConsumptionEntity>) {
         val totalContainer = findViewById<View>(R.id.dailyTotalContainer); val totalHeader = findViewById<View>(R.id.dailyTotalHeader)
         if (day == null) { totalContainer.visibility = View.GONE; totalHeader.visibility = View.GONE; return }
         val totals = FoodPlanMetrics.dayTotals(day)
+        val dayRecords = records.filter { it.planVersionId == version?.id && it.plannedDateEpochDay == day.dateEpochDay }
+        val consumed = FoodConsumptionMetrics.dayTotals(dayRecords)
         totalContainer.visibility = View.VISIBLE; totalHeader.visibility = View.VISIBLE
         val selectedDate = LocalDate.ofEpochDay(day.dateEpochDay)
         val dayLabel = selectedDate.format(DateTimeFormatter.ofPattern("EEE d MMM", Locale.ITALIAN))
             .replaceFirstChar { it.uppercase() }
         findViewById<TextView>(R.id.dailyTotalHeader).text = "Totale giornaliero · $dayLabel"
-        findViewById<TextView>(R.id.dailyTotalLegend).text = "Obiettivo / dieta"
-        findViewById<TextView>(R.id.totalKcalPlanned).text = formatValue(version?.targetKcal, "kcal")
-        findViewById<TextView>(R.id.totalKcalActual).text = formatValue(totals.kcal, "kcal")
-        findViewById<TextView>(R.id.totalProteinPlanned).text = formatValue(version?.targetProteinG, "g")
-        findViewById<TextView>(R.id.totalProteinActual).text = formatValue(totals.proteinG, "g")
-        findViewById<TextView>(R.id.totalCarbsPlanned).text = formatValue(version?.targetCarbsG, "g")
-        findViewById<TextView>(R.id.totalCarbsActual).text = formatValue(totals.carbsG, "g")
-        findViewById<TextView>(R.id.totalFatPlanned).text = formatValue(version?.targetFatG, "g")
-        findViewById<TextView>(R.id.totalFatActual).text = formatValue(totals.fatG, "g")
+        findViewById<TextView>(R.id.dailyTotalLegend).text = "Target / piano / consumo registrato"
+        findViewById<TextView>(R.id.totalKcalTarget).text = formatValue(version?.targetKcal, "kcal")
+        findViewById<TextView>(R.id.totalKcalPlanned).text = formatValue(totals.kcal, "kcal")
+        findViewById<TextView>(R.id.totalKcalConsumed).text = formatConsumed(consumed.kcal, dayRecords.isNotEmpty(), "kcal")
+        findViewById<TextView>(R.id.totalProteinTarget).text = formatValue(version?.targetProteinG, "g")
+        findViewById<TextView>(R.id.totalProteinPlanned).text = formatValue(totals.proteinG, "g")
+        findViewById<TextView>(R.id.totalProteinConsumed).text = formatConsumed(consumed.proteinG, dayRecords.isNotEmpty(), "g")
+        findViewById<TextView>(R.id.totalCarbsTarget).text = formatValue(version?.targetCarbsG, "g")
+        findViewById<TextView>(R.id.totalCarbsPlanned).text = formatValue(totals.carbsG, "g")
+        findViewById<TextView>(R.id.totalCarbsConsumed).text = formatConsumed(consumed.carbsG, dayRecords.isNotEmpty(), "g")
+        findViewById<TextView>(R.id.totalFatTarget).text = formatValue(version?.targetFatG, "g")
+        findViewById<TextView>(R.id.totalFatPlanned).text = formatValue(totals.fatG, "g")
+        findViewById<TextView>(R.id.totalFatConsumed).text = formatConsumed(consumed.fatG, dayRecords.isNotEmpty(), "g")
+        val expected = day.meals.size + day.supplements.size
+        findViewById<TextView>(R.id.consumptionCoverage).text = if (dayRecords.isEmpty()) {
+            "Consumo: nessuna registrazione"
+        } else {
+            "Registrati: ${consumed.recordedCount} di $expected elementi · consumati ${consumed.consumedCount}"
+        }
     }
 
     private fun formatValue(value: Number?, unit: String): String = value?.let {
         if (unit == "kcal") "${it.toInt()} $unit" else "${formatMacro(it.toDouble())} $unit"
     } ?: "—"
+
+    private fun formatConsumed(value: Double, hasRecords: Boolean, unit: String): String = if (!hasRecords) "—" else formatValue(value, unit)
 
     private fun openMeal(mealId: Long) = startActivity(Intent(this, MealDetailActivity::class.java).putExtra(MealDetailActivity.EXTRA_MEAL_ID, mealId))
     private fun openMealAlternatives(weekStart: LocalDate, day: FoodPlanDay, meal: FoodMeal) {

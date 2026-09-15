@@ -15,6 +15,8 @@ class DataDeletionService(
 ) {
     suspend fun deleteMealPlans() = withProfile { db.mealPlanDao().deleteByProfile(it) }
 
+    suspend fun deleteFoodConsumptions() = withProfile { db.foodConsumptionDao().deleteByProfile(it) }
+
     suspend fun deleteBiaMeasurements() = withProfile { profileId ->
         db.biaMeasurementDao().deleteByProfile(profileId)
         invalidateProgressAnalysis(profileId)
@@ -40,6 +42,7 @@ class DataDeletionService(
     suspend fun deleteRecordedData() = withProfile { profileId ->
         db.withTransaction {
             db.mealPlanDao().deleteByProfile(profileId)
+            db.foodConsumptionDao().deleteByProfile(profileId)
             db.biaMeasurementDao().deleteByProfile(profileId)
             db.bodyMeasurementDao().deleteByProfile(profileId)
             db.workoutDao().deleteByProfile(profileId)

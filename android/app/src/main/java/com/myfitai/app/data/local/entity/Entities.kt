@@ -213,6 +213,38 @@ data class CheatEntryEntity(
     val notes: String? = null,
 )
 
+/** Historical consumption snapshot; never infer consumption from a planned meal. */
+@Entity(
+    tableName = "food_consumptions",
+    indices = [
+        Index("profileId"),
+        Index("planVersionId"),
+        Index("plannedDateEpochDay"),
+        Index(value = ["profileId", "planVersionId", "itemKey"], unique = true),
+    ],
+)
+data class FoodConsumptionEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @ColumnInfo(defaultValue = "1") val profileId: Long,
+    val planId: Long,
+    val planVersionId: Long,
+    val dayId: Long,
+    val plannedDateEpochDay: Long,
+    val itemType: String,
+    val itemKey: String,
+    val mealId: Long?,
+    val supplementKey: String?,
+    val status: String,
+    val recordedAtEpochMillis: Long,
+    val updatedAtEpochMillis: Long,
+    val quantityFactor: Float,
+    val kcal: Int?,
+    val proteinG: Float?,
+    val carbsG: Float?,
+    val fatG: Float?,
+    val note: String? = null,
+)
+
 @Entity(
     tableName = "weekly_reviews",
     indices = [Index("profileId"), Index(value = ["profileId", "weekStartEpochDay"], unique = true)],

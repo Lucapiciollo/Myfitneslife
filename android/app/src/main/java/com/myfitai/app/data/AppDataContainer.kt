@@ -12,6 +12,7 @@ import com.myfitai.app.domain.body.BiaImportService
 import com.myfitai.app.domain.calculation.ProfileCalculationService
 import com.myfitai.app.domain.export.ProfileExportService
 import com.myfitai.app.domain.food.CheatAdjustmentService
+import com.myfitai.app.domain.food.FoodConsumptionService
 import com.myfitai.app.domain.food.MealAlternativeService
 import com.myfitai.app.domain.food.NutritionAdviceService
 import com.myfitai.app.domain.food.NutritionPlanGenerationService
@@ -42,6 +43,8 @@ class AppDataContainer private constructor(context: Context) {
     val workoutRepository = WorkoutRepository(db)
     val mealPlanRepository = MealPlanRepository(db)
     val cheatEntryRepository = CheatEntryRepository(db)
+    val foodConsumptionRepository = FoodConsumptionRepository(db)
+    val foodConsumptionService = FoodConsumptionService(foodConsumptionRepository, activeProfileStore)
     val weeklyReviewRepository = WeeklyReviewRepository(db)
 
     val profileCalculationService = ProfileCalculationService(
@@ -126,6 +129,7 @@ class AppDataContainer private constructor(context: Context) {
         bodyMeasurements = bodyMeasurementRepository,
         personalResponse = personalResponseService,
         activeProfileStore = activeProfileStore,
+        foodConsumptions = foodConsumptionRepository,
     )
 
     val notificationScheduler = NotificationScheduler(

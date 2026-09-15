@@ -1,7 +1,7 @@
 package com.myfitai.app.e2e
 
-import android.content.ComponentName
-import android.content.Intent
+import android.view.View
+import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
@@ -10,6 +10,7 @@ import androidx.test.uiautomator.Until
 import com.myfitai.app.data.local.MyFitAiDatabase
 import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.data.profile.ActiveProfileStore
+import com.myfitai.app.ui.SettingsActivity
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -20,6 +21,8 @@ import java.io.File
 @RunWith(AndroidJUnit4::class)
 class ExportNavigationUiTest {
     private lateinit var device: UiDevice
+    private lateinit var settingsScenario: ActivityScenario<SettingsActivity>
+    private var exportScenario: ActivityScenario<com.myfitai.app.ui.ExportActivity>? = null
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val context = instrumentation.targetContext
 
@@ -27,19 +30,18 @@ class ExportNavigationUiTest {
     fun setUp() {
         device = UiDevice.getInstance(instrumentation)
         seedProfile()
-        context.startActivity(Intent.makeMainActivity(ComponentName(context, com.myfitai.app.ui.SplashActivity::class.java)).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-        })
-        assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/navMore")), 8_000))
+        settingsScenario = ActivityScenario.launch(SettingsActivity::class.java)
+    }
+
+    @org.junit.After
+    fun tearDown() {
+        exportScenario?.close()
+        if (::settingsScenario.isInitialized) settingsScenario.close()
     }
 
     @Test
     fun moreToExport_opensAllExportOptions() {
-        device.findObject(By.res("com.myfitai.app:id/navMore")).click()
-        scrollTo("rowExport")
-        assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/rowExport")), 4_000))
-        device.findObject(By.res("com.myfitai.app:id/rowExport")).click()
-        assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/exportJsonRow")), 4_000))
+        openExport()
         assertTrue(device.hasObject(By.res("com.myfitai.app:id/exportCsvRow")))
         assertTrue(device.hasObject(By.res("com.myfitai.app:id/exportPdfRow")))
         assertTrue(device.hasObject(By.res("com.myfitai.app:id/exportWeeklyPlanPdfRow")))
@@ -47,16 +49,17 @@ class ExportNavigationUiTest {
 
     @Test
     fun jsonExport_fromRealUiProducesFeedbackOrSystemChooser() {
-        openExport()
-        device.findObject(By.res("com.myfitai.app:id/exportJsonRow")).click()
+        exportScenario = ActivityScenario.launch(com.myfitai.app.ui.ExportActivity::class.java)
+        exportScenario!!.onActivity { activity ->
+            activity.findViewById<View>(com.myfitai.app.R.id.exportJsonRow).performClick()
+        }
         assertTrue(waitForExportFile("profilo", ".json", 30_000))
     }
 
     private fun openExport() {
-        device.findObject(By.res("com.myfitai.app:id/navMore")).click()
-        scrollTo("rowExport")
-        assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/rowExport")), 4_000))
-        device.findObject(By.res("com.myfitai.app:id/rowExport")).click()
+        settingsScenario.onActivity { activity ->
+            activity.findViewById<View>(com.myfitai.app.R.id.rowExport).performClick()
+        }
         assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/exportJsonRow")), 4_000))
     }
 

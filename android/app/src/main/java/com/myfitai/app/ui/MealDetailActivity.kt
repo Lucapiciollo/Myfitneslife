@@ -11,6 +11,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
+import com.myfitai.app.domain.food.FoodConsumptionStatus
 import com.myfitai.app.domain.food.FoodIngredient
 import com.myfitai.app.domain.food.FoodMeal
 import com.myfitai.app.navigation.BottomNavBinder
@@ -24,7 +25,7 @@ class MealDetailActivity : BaseShellActivity() {
 
     private val data by lazy { AppDataContainer.get(this) }
     private val viewModel: MealDetailViewModel by viewModels {
-        MealDetailViewModel.Factory(data.mealPlanRepository)
+        MealDetailViewModel.Factory(data.mealPlanRepository, data.foodConsumptionRepository, data.foodConsumptionService)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -33,6 +34,15 @@ class MealDetailActivity : BaseShellActivity() {
         bindBack()
         bindBottom(BottomNavBinder.Tab.FOOD)
         bindTabs()
+        findViewById<View>(R.id.consumedButton).setOnClickListener {
+            if (viewModel.state.value.consumption == null) viewModel.setStatus(FoodConsumptionStatus.CONSUMED)
+            else if (viewModel.state.value.consumption?.status == FoodConsumptionStatus.CONSUMED.name) viewModel.clearStatus()
+            else viewModel.setStatus(FoodConsumptionStatus.CONSUMED)
+        }
+        findViewById<View>(R.id.skippedButton).setOnClickListener {
+            if (viewModel.state.value.consumption?.status == FoodConsumptionStatus.SKIPPED.name) viewModel.clearStatus()
+            else viewModel.setStatus(FoodConsumptionStatus.SKIPPED)
+        }
 
         val mealId = intent.getLongExtra(EXTRA_MEAL_ID, -1L)
         lifecycleScope.launch {
@@ -69,6 +79,7 @@ class MealDetailActivity : BaseShellActivity() {
             return
         }
         errorView.visibility = View.GONE
+        renderConsumption(state)
 
         findViewById<TextView>(R.id.mealTitle).text = meal.title
         findViewById<TextView>(R.id.mealSubtitle).text = listOfNotNull(
@@ -102,6 +113,28 @@ class MealDetailActivity : BaseShellActivity() {
 
         findViewById<TextView>(R.id.preparationContainer).text =
             meal.preparation?.takeIf { it.isNotBlank() } ?: "Preparazione non disponibile."
+    }
+
+    private fun renderConsumption(state: MealDetailViewModel.State) {
+        val consumedButton = findViewById<com.google.android.material.button.MaterialButton>(R.id.consumedButton)
+        val skippedButton = findViewById<com.google.android.material.button.MaterialButton>(R.id.skippedButton)
+        val status = state.consumption?.status
+        consumedButton.visibility = View.VISIBLE
+        skippedButton.visibility = View.VISIBLE
+        when (status) {
+            FoodConsumptionStatus.CONSUMED.name -> {
+                consumedButton.text = "Annulla consumo"
+                skippedButton.text = "Segna come saltato"
+            }
+            FoodConsumptionStatus.SKIPPED.name -> {
+                consumedButton.text = "Segna come consumato"
+                skippedButton.text = "Annulla pasto saltato"
+            }
+            else -> {
+                consumedButton.text = "Segna come consumato"
+                skippedButton.text = "Segna come saltato"
+            }
+        }
     }
 
     private fun displayQuantity(ingredient: FoodIngredient): String {

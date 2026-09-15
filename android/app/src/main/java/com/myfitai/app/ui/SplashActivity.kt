@@ -37,7 +37,7 @@ class SplashActivity : AppCompatActivity() {
             })
         } else {
             data.activeProfileStore.selectProfile(fallbackProfile.id, makeDefault = true)
-            startActivity(Intent(this, TabHostActivity::class.java).apply {
+            startActivity(Intent(this, HomeActivity::class.java).apply {
                 putExtra(com.myfitai.app.navigation.BottomNavBinder.EXTRA_TAB_ROOT, true)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
             })

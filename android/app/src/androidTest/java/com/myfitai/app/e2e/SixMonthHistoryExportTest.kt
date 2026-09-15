@@ -8,6 +8,7 @@ import com.myfitai.app.data.local.MyFitAiDatabase
 import com.myfitai.app.data.local.entity.BiaMeasurementEntity
 import com.myfitai.app.data.local.entity.BodyMeasurementEntity
 import com.myfitai.app.data.local.entity.CheatEntryEntity
+import com.myfitai.app.data.local.entity.FoodConsumptionEntity
 import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.data.local.entity.WeeklyReviewEntity
 import com.myfitai.app.data.local.entity.WorkoutEntity
@@ -67,6 +68,7 @@ class SixMonthHistoryExportTest {
         assertEquals(18, db.cheatEntryDao().observeAll(profileId).first().size)
         assertEquals(26, db.mealPlanDao().observePlans(profileId).first().size)
         assertEquals(26, db.weeklyReviewDao().observeAll(profileId).first().size)
+        assertTrue(db.foodConsumptionDao().observeAll(profileId).first().isEmpty())
         assertTrue(db.mealPlanDao().observeVersions(profileId, db.mealPlanDao().observePlans(profileId).first().first().id).first().size >= 1)
     }
 
@@ -87,6 +89,32 @@ class SixMonthHistoryExportTest {
 
     @Test
     fun exportJson_containsProfileHistoryVersionsSupplementsAndHydration() = runBlocking {
+        val profileId = store.currentIdOrNull()!!
+        val plan = db.mealPlanDao().observePlans(profileId).first().first()
+        val version = db.mealPlanDao().observeVersions(profileId, plan.id).first().first()
+        val day = db.mealPlanDao().getDays(profileId, version.id).first()
+        val meal = db.mealPlanDao().getMeals(profileId, day.id).first()
+        db.foodConsumptionDao().upsert(
+            FoodConsumptionEntity(
+                profileId = profileId,
+                planId = plan.id,
+                planVersionId = version.id,
+                dayId = day.id,
+                plannedDateEpochDay = day.dateEpochDay,
+                itemType = "MEAL",
+                itemKey = "MEAL:${meal.id}",
+                mealId = meal.id,
+                supplementKey = null,
+                status = "CONSUMED",
+                recordedAtEpochMillis = 1234L,
+                updatedAtEpochMillis = 1234L,
+                quantityFactor = 1f,
+                kcal = 700,
+                proteinG = 50f,
+                carbsG = 80f,
+                fatG = 18f,
+            ),
+        )
         val service = exportService()
         val exported = service.export(ProfileExportService.Format.JSON)
         val root = JSONObject(exported.file.readText())
@@ -98,6 +126,9 @@ class SixMonthHistoryExportTest {
         assertTrue(root.getJSONArray("workouts").length() > 70)
         assertEquals(18, root.getJSONArray("cheatEntries").length())
         assertEquals(26, root.getJSONArray("weeklyReviews").length())
+        assertEquals(1, root.getJSONArray("foodConsumptions").length())
+        assertEquals("CONSUMED", root.getJSONArray("foodConsumptions").getJSONObject(0).getString("status"))
+        assertEquals(700, root.getJSONArray("foodConsumptions").getJSONObject(0).getInt("kcal"))
         assertEquals(26, root.getJSONArray("mealPlans").length())
         assertTrue(root.getJSONArray("mealPlans").toString().contains("supplements"))
         assertTrue(root.getJSONArray("mealPlans").toString().contains("hydrationNote"))
@@ -118,6 +149,7 @@ class SixMonthHistoryExportTest {
         assertTrue(entries.contains("meal_plans.json"))
         assertTrue(entries.contains("README.txt"))
         assertTrue(entries.contains("biaMeasurements.csv"))
+        assertTrue(entries.contains("foodConsumptions.csv"))
 
         val profilePdf = service.export(ProfileExportService.Format.PDF).file
         val weeklyPdf = service.export(ProfileExportService.Format.WEEKLY_PLAN_PDF).file

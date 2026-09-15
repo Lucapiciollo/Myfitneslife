@@ -240,6 +240,7 @@ class SettingsActivity : BaseShellActivity() {
     private fun bindDataDeletion() {
         val actions = listOf(
             R.id.rowDeletePlans to DeletionAction("alimentazioni", data.dataDeletionService::deleteMealPlans),
+            R.id.rowDeleteConsumptions to DeletionAction("consumi registrati", data.dataDeletionService::deleteFoodConsumptions),
             R.id.rowDeleteBia to DeletionAction("misure BIA", data.dataDeletionService::deleteBiaMeasurements),
             R.id.rowDeleteBody to DeletionAction("misure corporee", data.dataDeletionService::deleteBodyMeasurements),
             R.id.rowDeleteWorkouts to DeletionAction("allenamenti", data.dataDeletionService::deleteWorkouts),

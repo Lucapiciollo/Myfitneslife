@@ -50,4 +50,21 @@ class DatabaseMigrationTest {
             }
         }
     }
+
+    @Test
+    fun migration4To5_createsEmptyFoodConsumptionHistory() {
+        helper.createDatabase(MyFitAiDatabase.DATABASE_NAME, 4).close()
+
+        helper.runMigrationsAndValidate(
+            MyFitAiDatabase.DATABASE_NAME,
+            5,
+            true,
+            DatabaseMigrations.MIGRATION_4_5,
+        ).use { db ->
+            db.query("SELECT COUNT(*) FROM food_consumptions").use { cursor ->
+                check(cursor.moveToFirst())
+                assertEquals(0, cursor.getInt(0))
+            }
+        }
+    }
 }

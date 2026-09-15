@@ -29,7 +29,8 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 - [x] Componenti grafici reali per trend.
 - [x] Hub Rilevazioni separato per inserimento e gestione di BIA e misure corporee.
 - [x] Home dashboard aggiornata con giorno corrente, azioni rapide e stati vuoti contestuali.
-- [ ] QA pixel/runtime completo su device/emulatore dopo le ultime modifiche.
+- [x] Root tab operative in modalita standalone: Home, Progresso e Altro restano navigabili senza provider IA; Alimentazione resta protetta dal gate provider.
+- [x] QA pixel/runtime delle tab principali e del tracking consumi verificato su device; smoke lifecycle delle Activity locali eseguito su device.
 
 ### Persistenza e profilo
 - [x] Room con migrazioni esplicite e senza destructive fallback.
@@ -42,6 +43,7 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 - [x] Sgarri e review persistenti.
 - [x] DB v4: ogni giorno del piano supporta `supplementsJson` e `hydrationNote`.
 - [x] Migration test reale 3 -> 4 su database storico.
+- [x] DB v5: consumi alimentari persistenti con snapshot nutrizionale, stato consumato/saltato e isolamento per profilo, piano e giorno.
 
 ### Motore locale
 - [x] BMI.
@@ -114,9 +116,11 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 ### Personal Response / Weekly Review / Shopping / Notifiche / Export
 - [x] Personal Response Engine.
 - [x] Weekly Review.
+- [x] Tracking consumi deterministico con copertura e aderenza nella Weekly Review.
 - [x] Lista spesa deterministica.
 - [x] Notifiche locali con refresh su cambio piano.
 - [x] Export JSON / CSV ZIP / PDF profilo / PDF piano settimanale.
+- [x] Consumi inclusi negli export JSON e CSV ZIP.
 - [ ] QA runtime completo degli export più recenti.
 
 ### Sicurezza OpenAI BYOK
@@ -143,13 +147,13 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 ### Ultimo stato noto
 - `:app:assembleDebug` verde sull'HEAD verificato con Gradle 9.6.0, Java 17 e Android SDK locale.
 - `:app:testDebugUnitTest` verde dopo l'integrazione Firebase: 44 test, incluso il test aggiornato di selezione provider.
-- `:app:connectedDebugAndroidTest` verde dopo l'integrazione Firebase: 41 test su `SM-A546B - 16`.
+- `:app:connectedDebugAndroidTest` verde: 46/46 test su `SM-A546B - 16`, inclusi smoke Activity, bottom navigation, QaSeeder, Progress, Settings, Export e notifiche.
 - `:app:assembleRelease` verde; il source set debug-only non entra nella build release.
 - Settings device test dopo il refactor BYOK: 2/2 PASS su `SM-A546B - 16`.
 - Le prove precedenti Firebase sono storiche e non rappresentano il provider finale: il runtime attuale è Gemini BYOK diretto.
 - Il framework storico `SixMonthHistoryFixture` usa seed `20260914`, copre circa 6 mesi, 26 settimane, BIA, misure, workout, versioni, sgarri, review, supplementi, hydration e multiprofilo.
 - La suite instrumented copre seeder QA debug sul vero Room dell'app e riapertura normale, grafici Progress reali con screenshot 1M/3M/6M/1Y, persistenza Room, piani legacy senza supplementi, migration 3 -> 4, export JSON/CSV ZIP/PDF inclusa apertura export dalla UI e creazione JSON, isolamento multiprofilo inclusi record annidati di piano, workflow AI deterministici con fake runtime provider-neutral, scheduler e receiver notifiche deterministici, lifecycle foto etichetta, UIAutomator E2E bottom-tab, Settings/privacy/provider status, stress dataset con tempi osservati e conservazione di supplementi/hydration note.
-- Bottom tab smoke test fisico completato: root tab riusati senza stack duplicati, tap sul tab attivo no-op, cambio tab senza animazione Activity e Back senza ciclo tra tab.
+- Bottom tab smoke test fisico verificato: Home, Progresso e Altro sono navigabili senza provider IA, Alimentazione mostra il gate provider, il tap sul tab attivo e il back sono verificati in `BottomNavigationUiTest` 3/3; eliminato il ciclo di accessibilità prodotto dal precedente embedding dei `DecorView`.
 - Inset fisici verificati su `SM-A546B`: shell app tra status bar e navigation bar, bottom navigation non sovrapposta ai comandi di sistema.
 - La CI non parte sui push a `develop`; resta disponibile via pull request o `workflow_dispatch`.
 
@@ -163,10 +167,11 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 - [x] Framework test storico deterministico di sei mesi e test export/multiprofilo.
 - [x] Seam `AiRuntimeGateway` e test integration deterministici per generation, meal swap, advice, sgarro e weekly review.
 - [x] QA grafica/pixel su device/emulatore per la tabella giornaliera Previsto/Reale nella schermata Alimentazione.
-- [ ] Smoke test delle Activity principali.
+- [x] QA device del tracking consumi: test Room isolato verde, workflow Weekly Review consumi 6/6 verde nel run selettivo e UI delle tab principali verificata su device.
+- [x] Smoke test lifecycle delle Activity principali locali: 17 schermate raggiungono almeno `STARTED` e dispongono di content view senza crash; restano aperti gli E2E funzionali completi.
 - [ ] E2E UI completo di profilo, dieta, sgarro, review, export e foto.
 - [ ] Test runtime provider Gemini/OpenAI, notifiche Android e stress performance.
-- [ ] Rieseguire la suite connected completa dopo il gate Alimentazione e la nuova UI delle credenziali; i test Settings isolati sono verdi.
+- [x] Rieseguire la suite connected completa dopo il gate Alimentazione e la nuova UI delle credenziali: 46/46 PASS su `SM-A546B - 16`.
 - [ ] Testare Gemini BYOK reale su device con API key personale fornita dall'utente; non dichiarare PASS senza risposta strutturata e persistenza verificate.
 - [ ] Risolvere output non parsabile del weekly-plan Gemini in JSON-only; dopo risposta valida registrare `usageMetadata` (input/output/totale token). Il costo monetario effettivo resta verificabile solo tramite Google Cloud Billing.
 - [x] Diagnosi parser weekly-plan completata sul device: output troncato (`JSONException: End of input`, categoria `TRUNCATED_JSON`), `finishReason=MAX_TOKENS`; nessun repair automatico e nessuna persistenza di output invalido.

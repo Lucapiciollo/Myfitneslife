@@ -7,6 +7,12 @@ import com.myfitai.app.data.local.entity.BiaMeasurementEntity
 import com.myfitai.app.data.local.entity.BodyMeasurementEntity
 import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.data.local.entity.WorkoutEntity
+import com.myfitai.app.data.local.entity.FoodConsumptionEntity
+import com.myfitai.app.data.profile.ActiveProfileStore
+import com.myfitai.app.domain.food.FoodConsumptionService
+import com.myfitai.app.domain.food.FoodConsumptionStatus
+import com.myfitai.app.domain.food.FoodMeal
+import com.myfitai.app.domain.time.TimeProvider
 import com.myfitai.app.data.repository.DayDraft
 import com.myfitai.app.data.repository.IngredientDraft
 import com.myfitai.app.data.repository.MealDraft
@@ -366,6 +372,68 @@ class MyFitAiDatabaseTest {
         assertEquals(null, repository.loadLatestSnapshot(otherId, 23000L))
         assertEquals(null, repository.getMealDetail(otherId, mealId))
         assertEquals("Owner meal", repository.getMealDetail(ownerId, mealId)?.title)
+        assertEquals(null, repository.getMealContext(otherId, mealId))
+        assertEquals(planId, repository.getMealContext(ownerId, mealId)?.planId)
+        assertEquals("Owner meal", repository.getMealContext(ownerId, mealId)?.meal?.title)
+    }
+
+    @Test
+    fun foodConsumption_isProfileScoped_andKeepsSnapshot() = runBlocking {
+        val profile1Id = db.userProfileDao().insert(profile("Consumo uno"))
+        val profile2Id = db.userProfileDao().insert(profile("Consumo due"))
+        val repository = com.myfitai.app.data.repository.FoodConsumptionRepository(db)
+        val value = FoodConsumptionEntity(
+            profileId = profile1Id,
+            planId = 10L,
+            planVersionId = 20L,
+            dayId = 30L,
+            plannedDateEpochDay = 23000L,
+            itemType = "MEAL",
+            itemKey = "MEAL:40",
+            mealId = 40L,
+            supplementKey = null,
+            status = "CONSUMED",
+            recordedAtEpochMillis = 1000L,
+            updatedAtEpochMillis = 1000L,
+            quantityFactor = 1f,
+            kcal = 700,
+            proteinG = 50f,
+            carbsG = 80f,
+            fatG = 18f,
+            note = "Pasto completo",
+        )
+        repository.upsert(value)
+
+        assertEquals(1, repository.all(profile1Id).first().size)
+        assertEquals(0, repository.all(profile2Id).first().size)
+        assertEquals(value.copy(id = 1L), repository.getForItem(profile1Id, 20L, "MEAL:40"))
+    }
+
+    @Test
+    fun foodConsumptionService_scalesSnapshot_updatesStatus_andClears() = runBlocking {
+        val profileId = db.userProfileDao().insert(profile("Servizio consumo"))
+        val store = ActiveProfileStore(ApplicationProvider.getApplicationContext())
+        store.setActiveProfile(profileId)
+        val service = FoodConsumptionService(
+            repository = com.myfitai.app.data.repository.FoodConsumptionRepository(db),
+            activeProfileStore = store,
+            time = object : TimeProvider {
+                override val zoneId = java.time.ZoneId.of("UTC")
+                override fun nowEpochMillis(): Long = 2000L
+            },
+        )
+        val meal = FoodMeal(40L, 30L, 0, "Pranzo", "Riso e pollo", 780, 700, 50f, 80f, 18f, null, emptyList())
+
+        val consumed = service.setMealStatus(10L, 20L, 30L, 23000L, meal, FoodConsumptionStatus.CONSUMED, quantityFactor = 0.5f)
+        assertEquals(350, consumed.kcal)
+        assertEquals(25f, consumed.proteinG)
+        assertEquals(2000L, consumed.recordedAtEpochMillis)
+
+        val skipped = service.setMealStatus(10L, 20L, 30L, 23000L, meal, FoodConsumptionStatus.SKIPPED)
+        assertEquals(consumed.id, skipped.id)
+        assertEquals(FoodConsumptionStatus.SKIPPED.name, skipped.status)
+        service.clear(20L, "MEAL:40")
+        assertEquals(null, db.foodConsumptionDao().getForItem(profileId, 20L, "MEAL:40"))
     }
 
     private fun profile(name: String): UserProfileEntity {
