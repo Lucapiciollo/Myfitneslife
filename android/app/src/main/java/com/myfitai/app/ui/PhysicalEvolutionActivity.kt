@@ -38,9 +38,12 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
     private var metricIndex = 0
     private var rangeIndex = 1
     private var latestState = PhysicalEvolutionState()
+    private var analysisDetailsExpanded = false
     private lateinit var analysisLastText: TextView
     private lateinit var analysisNextText: TextView
     private lateinit var analysisResultText: TextView
+    private lateinit var analysisDetailsButton: MaterialButton
+    private lateinit var analysisDetailsContainer: LinearLayout
     private lateinit var analysisProgress: ProgressBar
     private lateinit var analysisButton: MaterialButton
 
@@ -111,6 +114,19 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         analysisLastText = bodyText()
         analysisNextText = bodyText()
         analysisResultText = bodyText().apply { visibility = View.GONE }
+        analysisDetailsButton = MaterialButton(this).apply {
+            text = "Mostra dettagli analisi"
+            isAllCaps = false
+            visibility = View.GONE
+            setOnClickListener {
+                analysisDetailsExpanded = !analysisDetailsExpanded
+                renderDetailsVisibility()
+            }
+        }
+        analysisDetailsContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            visibility = View.GONE
+        }
         analysisProgress = ProgressBar(this).apply { visibility = View.GONE }
         analysisButton = MaterialButton(this).apply {
             text = "Esegui analisi ora"
@@ -120,6 +136,8 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         card.addView(analysisLastText)
         card.addView(analysisNextText, marginTopParams(4))
         card.addView(analysisResultText, marginTopParams(10))
+        card.addView(analysisDetailsButton, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(44)).apply { topMargin = dp(8) })
+        card.addView(analysisDetailsContainer, marginTopParams(6))
         card.addView(analysisProgress, LinearLayout.LayoutParams(dp(32), dp(32)).apply { topMargin = dp(10) })
         card.addView(analysisButton, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(48)).apply { topMargin = dp(12) })
         root.addView(card, insertIndex + 1, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
@@ -147,11 +165,15 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         analysisProgress.visibility = View.VISIBLE
         analysisResultText.visibility = View.VISIBLE
         analysisResultText.text = "Analisi dei trend corporei e dello storico registrato…"
+        analysisDetailsButton.visibility = View.GONE
+        analysisDetailsContainer.visibility = View.GONE
+        analysisDetailsExpanded = false
         lifecycleScope.launch {
             runCatching { data.progressAnalysisService.analyzeActive() }
                 .onSuccess { result ->
                     data.activeProfileStore.currentIdOrNull()?.let(data.progressAnalysisScheduler::reschedule)
                     analysisResultText.text = "${classificationLabel(result.response.classification)} · confidenza ${confidenceLabel(result.response.confidence)}\n${result.response.summary}"
+                    renderAnalysisDetails(result.response.patterns)
                 }
                 .onFailure { error ->
                     analysisResultText.text = when (error) {
@@ -161,6 +183,8 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
                         is com.myfitai.app.ai.AiTransportException.Network -> "Problema di rete o timeout durante l'analisi."
                         else -> "Analisi non riuscita. I dati precedenti restano invariati."
                     }
+                    analysisDetailsButton.visibility = View.GONE
+                    analysisDetailsContainer.visibility = View.GONE
                 }
             analysisProgress.visibility = View.GONE
             analysisButton.isEnabled = true
@@ -175,6 +199,8 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
             analysisLastText.text = "Ultima esecuzione: profilo non disponibile"
             analysisNextText.text = "Esecuzione automatica: non pianificata"
             analysisButton.isEnabled = false
+            analysisDetailsButton.visibility = View.GONE
+            analysisDetailsContainer.visibility = View.GONE
             return
         }
         val prefs = data.progressAnalysisPreferences
@@ -198,10 +224,61 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
             if (summary != null) {
                 analysisResultText.visibility = View.VISIBLE
                 analysisResultText.text = listOfNotNull(classification, confidence?.let { "confidenza $it" }).joinToString(" · ") + "\n" + summary
+                renderAnalysisDetails(prefs.lastPatterns(profileId))
             } else {
                 analysisResultText.visibility = View.GONE
+                analysisDetailsButton.visibility = View.GONE
+                analysisDetailsContainer.visibility = View.GONE
             }
         }
+    }
+
+    private fun renderAnalysisDetails(patterns: List<ProgressAnalysisCompactContract.Pattern>) {
+        analysisDetailsContainer.removeAllViews()
+        if (patterns.isEmpty()) {
+            analysisDetailsButton.visibility = View.GONE
+            analysisDetailsContainer.visibility = View.GONE
+            return
+        }
+        analysisDetailsButton.visibility = View.VISIBLE
+        patterns.forEach { pattern ->
+            analysisDetailsContainer.addView(TextView(this).apply {
+                text = "${directionSymbol(pattern.direction)} ${patternLabel(pattern.code)} · ${directionLabel(pattern.direction)} · confidenza ${confidenceLabel(pattern.confidence)}"
+                textSize = 13f
+                setTextColor(getColor(R.color.text_secondary))
+                setPadding(0, dp(5), 0, dp(5))
+            })
+        }
+        renderDetailsVisibility()
+    }
+
+    private fun renderDetailsVisibility() {
+        analysisDetailsContainer.visibility = if (analysisDetailsExpanded && analysisDetailsContainer.childCount > 0) View.VISIBLE else View.GONE
+        analysisDetailsButton.text = if (analysisDetailsExpanded) "Nascondi dettagli analisi" else "Mostra dettagli analisi"
+    }
+
+    private fun patternLabel(code: ProgressAnalysisCompactContract.PatternCode): String = when (code) {
+        ProgressAnalysisCompactContract.PatternCode.WEIGHT -> "Peso"
+        ProgressAnalysisCompactContract.PatternCode.BODY_FAT -> "Grasso corporeo"
+        ProgressAnalysisCompactContract.PatternCode.MUSCLE -> "Massa muscolare"
+        ProgressAnalysisCompactContract.PatternCode.WAIST -> "Circonferenza vita"
+        ProgressAnalysisCompactContract.PatternCode.ABDOMEN -> "Circonferenza addome"
+        ProgressAnalysisCompactContract.PatternCode.LIMBS -> "Circonferenze arti"
+        ProgressAnalysisCompactContract.PatternCode.TRAINING -> "Allenamento"
+        ProgressAnalysisCompactContract.PatternCode.DEVIATIONS -> "Aderenza e deviazioni"
+        ProgressAnalysisCompactContract.PatternCode.BODY_COHERENCE -> "Coerenza complessiva dei dati corporei"
+    }
+
+    private fun directionLabel(direction: ProgressAnalysisCompactContract.Direction): String = when (direction) {
+        ProgressAnalysisCompactContract.Direction.FAVORABLE -> "trend favorevole"
+        ProgressAnalysisCompactContract.Direction.UNFAVORABLE -> "da monitorare"
+        ProgressAnalysisCompactContract.Direction.UNCERTAIN -> "trend non conclusivo"
+    }
+
+    private fun directionSymbol(direction: ProgressAnalysisCompactContract.Direction): String = when (direction) {
+        ProgressAnalysisCompactContract.Direction.FAVORABLE -> "✓"
+        ProgressAnalysisCompactContract.Direction.UNFAVORABLE -> "!"
+        ProgressAnalysisCompactContract.Direction.UNCERTAIN -> "•"
     }
 
     private fun render(state: PhysicalEvolutionState) {
