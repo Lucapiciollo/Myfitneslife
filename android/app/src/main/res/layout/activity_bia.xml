@@ -28,7 +28,7 @@
                 <Space android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" />
             </LinearLayout>
 
-            <com.myfitai.app.ui.widgets.SelectableSegmentView
+            <com.myfitai.app.ui.widgets.BiaSegmentView
                 android:id="@+id/biaSegment"
                 android:layout_width="match_parent"
                 android:layout_height="44dp" />
