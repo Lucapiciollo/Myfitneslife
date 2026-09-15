@@ -3,8 +3,8 @@ package com.myfitai.app.ui
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.myfitai.app.R
 import com.myfitai.app.data.local.entity.BiaMeasurementEntity
 import com.myfitai.app.domain.body.BiaMeasurementQualityEngine
@@ -18,9 +18,8 @@ import java.util.Locale
 
 class BiaTrendBinder(
     private val activity: BiaActivity,
-    private val segment: SelectableSegmentView,
-    private val newMeasurementContainer: View,
-    private val historyContainer: View,
+    parent: LinearLayout,
+    insertIndex: Int,
 ) {
     private enum class Metric(
         val label: String,
@@ -39,11 +38,13 @@ class BiaTrendBinder(
     private var history: List<BiaMeasurementEntity> = emptyList()
     private var selectedMetric = Metric.WEIGHT
     private var selectedRangeIndex = 2
-    private val trendContainer = LinearLayout(activity).apply {
+
+    val view = LinearLayout(activity).apply {
         orientation = LinearLayout.VERTICAL
         visibility = View.GONE
         setPadding(0, dp(16), 0, 0)
     }
+
     private val metricButton = MaterialButton(activity).apply { isAllCaps = false }
     private val currentText = text(15f, true)
     private val previousText = text(13f, false)
@@ -53,45 +54,35 @@ class BiaTrendBinder(
     private val chart = BodyMeasurementTrendView(activity)
 
     init {
-        val parent = historyContainer.parent as LinearLayout
-        val index = parent.indexOfChild(historyContainer)
-        parent.addView(trendContainer, index + 1, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT,
-        ))
-
+        parent.addView(
+            view,
+            insertIndex,
+            LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT),
+        )
         metricButton.setOnClickListener { showMetricChooser() }
-        trendContainer.addView(metricButton, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            dp(48),
-        ))
-        trendContainer.addView(currentText, marginTop(14))
-        trendContainer.addView(previousText, marginTop(6))
-        trendContainer.addView(periodText, marginTop(4))
-        trendContainer.addView(qualityText, marginTop(10))
-        trendContainer.addView(rangeSelector, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            dp(44),
-        ).apply { topMargin = dp(14) })
-        trendContainer.addView(chart, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            dp(240),
-        ).apply { topMargin = dp(12) })
+        view.addView(metricButton, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(48)))
+        view.addView(currentText, marginTop(14))
+        view.addView(previousText, marginTop(6))
+        view.addView(periodText, marginTop(4))
+        view.addView(qualityText, marginTop(10))
+        view.addView(rangeSelector, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(44)).apply { topMargin = dp(14) })
+        view.addView(chart, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(240)).apply { topMargin = dp(12) })
 
         rangeSelector.setSegments(listOf("1M", "3M", "6M", "1Y"), selectedRangeIndex)
         rangeSelector.setOnSegmentSelectedListener {
             selectedRangeIndex = it
             render()
         }
-
-        segment.setSegments(listOf("Nuova misurazione", "Andamento", "Storico"), 0)
-        segment.setOnSegmentSelectedListener { index ->
-            newMeasurementContainer.visibility = if (index == 0) View.VISIBLE else View.GONE
-            trendContainer.visibility = if (index == 1) View.VISIBLE else View.GONE
-            historyContainer.visibility = if (index == 2) View.VISIBLE else View.GONE
-            if (index == 1) render()
-        }
         render()
+    }
+
+    fun show() {
+        view.visibility = View.VISIBLE
+        render()
+    }
+
+    fun hide() {
+        view.visibility = View.GONE
     }
 
     fun update(values: List<BiaMeasurementEntity>) {
@@ -102,8 +93,7 @@ class BiaTrendBinder(
     private fun showMetricChooser() {
         val metrics = Metric.entries
         val labels = metrics.map { metric ->
-            val mark = if (metric == selectedMetric) " ✓" else ""
-            "${metric.label}$mark"
+            "${metric.label}${if (metric == selectedMetric) " ✓" else ""}"
         }.toTypedArray()
         MaterialAlertDialogBuilder(activity)
             .setTitle("Metrica BIA")
@@ -120,11 +110,7 @@ class BiaTrendBinder(
         metricButton.text = "Metrica: ${selectedMetric.label}"
         val points = history.asReversed().mapNotNull { item -> selectedMetric.value(item)?.let { item to it } }
         val current = points.lastOrNull()
-        currentText.text = if (current == null) {
-            "Valore attuale: —"
-        } else {
-            "Valore attuale: ${format(current.second, selectedMetric.unit)}"
-        }
+        currentText.text = current?.let { "Valore attuale: ${format(it.second, selectedMetric.unit)}" } ?: "Valore attuale: —"
 
         val previousDelta = if (points.size >= 2) points.last().second - points[points.lastIndex - 1].second else null
         previousText.text = previousDelta?.let {
@@ -144,15 +130,14 @@ class BiaTrendBinder(
             "${signed(it)} ${selectedMetric.unit} nel periodo selezionato"
         } ?: "Trend periodo: dati insufficienti"
 
-        val chartPoints = periodPoints.map { (item, value) ->
+        chart.setPoints(periodPoints.map { (item, value) ->
             BodyMeasurementTrendView.Point(
                 Instant.ofEpochMilli(item.measuredAtEpochMillis)
                     .atZone(ZoneId.systemDefault())
                     .format(DateTimeFormatter.ofPattern("dd/MM", Locale.ITALIAN)),
                 value,
             )
-        }
-        chart.setPoints(chartPoints)
+        })
 
         val latest = history.firstOrNull()
         val previous = history.drop(1).firstOrNull()
