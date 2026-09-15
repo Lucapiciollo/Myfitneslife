@@ -67,4 +67,21 @@ class DatabaseMigrationTest {
             }
         }
     }
+
+    @Test
+    fun migration5To6_createsEmptyAiUsageHistory() {
+        helper.createDatabase(MyFitAiDatabase.DATABASE_NAME, 5).close()
+
+        helper.runMigrationsAndValidate(
+            MyFitAiDatabase.DATABASE_NAME,
+            6,
+            true,
+            DatabaseMigrations.MIGRATION_5_6,
+        ).use { db ->
+            db.query("SELECT COUNT(*) FROM ai_usage_records").use { cursor ->
+                check(cursor.moveToFirst())
+                assertEquals(0, cursor.getInt(0))
+            }
+        }
+    }
 }
