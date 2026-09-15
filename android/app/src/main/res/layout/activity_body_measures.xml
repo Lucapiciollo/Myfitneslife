@@ -100,7 +100,7 @@
                 <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="260dp" android:layout_marginTop="@dimen/space_12" app:cardCornerRadius="@dimen/radius_medium" app:cardElevation="0dp" app:cardBackgroundColor="@color/surface_primary">
                     <com.myfitai.app.ui.widgets.BodyMeasurementTrendView android:id="@+id/bodyMeasurementTrendChart" android:layout_width="match_parent" android:layout_height="match_parent" android:layout_margin="@dimen/space_8" />
                 </com.google.android.material.card.MaterialCardView>
-                <TextView
+                <com.myfitai.app.ui.widgets.BodyMeasurementTrendSummaryView
                     android:id="@+id/bodyTrendNote"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
