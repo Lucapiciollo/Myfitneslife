@@ -17,6 +17,9 @@ import com.myfitai.app.domain.food.NutritionAdviceService
 import com.myfitai.app.domain.food.NutritionPlanGenerationService
 import com.myfitai.app.domain.food.PlanReviewService
 import com.myfitai.app.domain.personalization.PersonalResponseService
+import com.myfitai.app.domain.progress.ProgressAnalysisPreferences
+import com.myfitai.app.domain.progress.ProgressAnalysisScheduler
+import com.myfitai.app.domain.progress.ProgressAnalysisService
 import com.myfitai.app.domain.review.WeeklyReviewService
 import com.myfitai.app.domain.data.DataDeletionService
 import com.myfitai.app.notifications.NotificationScheduler
@@ -31,6 +34,7 @@ class AppDataContainer private constructor(context: Context) {
     val activeProfileStore = ActiveProfileStore(appContext)
     val mealCountPreferences = MealCountPreferences(appContext)
     val profilePhotoStore = ProfilePhotoStore(appContext)
+    val progressAnalysisPreferences = ProgressAnalysisPreferences(appContext)
 
     val userProfileRepository = UserProfileRepository(db)
     val biaRepository = BiaRepository(db)
@@ -61,6 +65,17 @@ class AppDataContainer private constructor(context: Context) {
     val bodyProportionAnalysisService = BodyProportionAnalysisService(aiRuntimeService)
     val biaImportService = BiaImportService(aiRuntimeService)
     val planReviewService = PlanReviewService(aiRuntimeService)
+
+    val progressAnalysisService = ProgressAnalysisService(
+        aiRuntime = aiRuntimeService,
+        calculations = profileCalculationService,
+        profiles = userProfileRepository,
+        workouts = workoutRepository,
+        cheats = cheatEntryRepository,
+        activeProfileStore = activeProfileStore,
+        preferences = progressAnalysisPreferences,
+    )
+    val progressAnalysisScheduler = ProgressAnalysisScheduler(appContext, progressAnalysisPreferences)
 
     val nutritionPlanGenerationService = NutritionPlanGenerationService(
         aiRuntime = aiRuntimeService,
