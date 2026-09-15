@@ -3,11 +3,6 @@ package com.myfitai.app.ai
 import android.content.Context
 import java.math.BigDecimal
 
-/**
- * Non-secret local pricing configuration. Google does not expose a zero-setup public pricing
- * endpoint suitable for a distributed BYOK Android client, so defaults are versioned in-app and
- * can be overridden per model by the user.
- */
 class GeminiPricingStore(context: Context) {
     private val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
@@ -44,21 +39,17 @@ class GeminiPricingStore(context: Context) {
         prefs.getString(key(model, field), null)?.toBigDecimalOrNull()?.takeIf { it.signum() >= 0 } ?: fallback
 
     private fun defaultPricing(model: String): GeminiPricing = when (model) {
-        AiModelConfig.GEMINI_36_FLASH -> pricing(model, "0.75", "3.75", "0.075", "2026-09-15 promo through 2026-12-31")
-        AiModelConfig.GEMINI_PRIMARY -> pricing(model, "1.50", "9.00", "0.15", "2026-09-15")
-        AiModelConfig.GEMINI_35_FLASH_LITE -> pricing(model, "0.30", "2.50", "0.03", "2026-09-15")
-        AiModelConfig.GEMINI_FALLBACK -> pricing(model, "0.25", "1.50", "0.025", "2026-09-15")
-        AiModelConfig.GEMINI_25_FLASH_LITE -> pricing(model, "0.10", "0.40", "0.01", "2026-09-15")
+        AiModelConfig.GEMINI_25_FLASH_LITE -> p(model, "0.10", "0.40", "0.01", "2026-09-15")
+        AiModelConfig.GEMINI_31_FLASH_LITE -> p(model, "0.25", "1.50", "0.025", "2026-09-15")
+        AiModelConfig.GEMINI_25_FLASH -> p(model, "0.30", "2.50", "0.03", "2026-09-15")
+        AiModelConfig.GEMINI_37_FLASH -> p(model, "0.75", "3.75", "0.075", "valid through 2026-12-31")
+        AiModelConfig.GEMINI_36_FLASH -> p(model, "0.75", "3.75", "0.075", "valid through 2026-12-31")
+        AiModelConfig.GEMINI_35_FLASH -> p(model, "1.50", "9.00", "0.15", "2026-09-15")
         else -> GeminiPricing(model, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, SOURCE_UNKNOWN, "2026-09-15")
     }
 
-    private fun pricing(model: String, input: String, output: String, cache: String, effectiveDate: String) = GeminiPricing(
-        model = model,
-        inputUsdPerMillion = BigDecimal(input),
-        outputUsdPerMillion = BigDecimal(output),
-        cachedInputUsdPerMillion = BigDecimal(cache),
-        source = SOURCE_BUNDLED,
-        effectiveDate = effectiveDate,
+    private fun p(model: String, input: String, output: String, cache: String, date: String) = GeminiPricing(
+        model, BigDecimal(input), BigDecimal(output), BigDecimal(cache), SOURCE_BUNDLED, date,
     )
 
     private fun key(model: String, field: String): String = "${model.replace(Regex("[^A-Za-z0-9_.-]"), "_")}.$field"
