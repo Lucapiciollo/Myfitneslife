@@ -37,6 +37,7 @@ data class AiUsageMetadata(
     val outputTokens: Long? = null,
     val totalTokens: Long? = null,
     val thoughtsTokens: Long? = null,
+    val cachedTokens: Long? = null,
 ) {
     fun display(): String {
         val input = inputTokens?.toString() ?: "?"
