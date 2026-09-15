@@ -18,6 +18,12 @@ class ProgressAnalysisPreferences(context: Context) {
     fun lastProvider(profileId: Long): String? = prefs.getString(key(profileId, "provider"), null)
     fun lastModel(profileId: Long): String? = prefs.getString(key(profileId, "model"), null)
 
+    fun lastPatterns(profileId: Long): List<ProgressAnalysisCompactContract.Pattern> =
+        prefs.getString(key(profileId, "patterns"), null)
+            ?.split(';')
+            ?.mapNotNull(::decodePattern)
+            .orEmpty()
+
     fun recordSuccess(
         profileId: Long,
         atEpochMillis: Long,
@@ -30,6 +36,9 @@ class ProgressAnalysisPreferences(context: Context) {
             .putString(key(profileId, "classification"), response.classification.name)
             .putString(key(profileId, "confidence"), response.confidence.name)
             .putString(key(profileId, "summary"), response.summary)
+            .putString(key(profileId, "patterns"), response.patterns.joinToString(";") { pattern ->
+                "${pattern.code.name},${pattern.direction.name},${pattern.confidence.name}"
+            })
             .putString(key(profileId, "provider"), provider)
             .putString(key(profileId, "model"), model)
             .apply()
@@ -42,9 +51,21 @@ class ProgressAnalysisPreferences(context: Context) {
 
     fun clearProfile(profileId: Long) {
         prefs.edit().apply {
-            listOf("last_success", "classification", "confidence", "summary", "provider", "model")
+            listOf("last_success", "classification", "confidence", "summary", "patterns", "provider", "model")
                 .forEach { remove(key(profileId, it)) }
         }.apply()
+    }
+
+    private fun decodePattern(raw: String): ProgressAnalysisCompactContract.Pattern? {
+        val parts = raw.split(',')
+        if (parts.size != 3) return null
+        return runCatching {
+            ProgressAnalysisCompactContract.Pattern(
+                code = ProgressAnalysisCompactContract.PatternCode.valueOf(parts[0]),
+                direction = ProgressAnalysisCompactContract.Direction.valueOf(parts[1]),
+                confidence = ProgressAnalysisCompactContract.Confidence.valueOf(parts[2]),
+            )
+        }.getOrNull()
     }
 
     private fun intervalMillis(): Long = TimeUnit.DAYS.toMillis(intervalWeeks.toLong() * 7L)
