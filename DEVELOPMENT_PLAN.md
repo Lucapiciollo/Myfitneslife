@@ -160,7 +160,7 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 - [ ] Recuperare gli schema asset canonici v1/v2 prima di testare le migrazioni storiche; non ricostruire schemi mancanti per supposizione.
 - [x] Framework test storico deterministico di sei mesi e test export/multiprofilo.
 - [x] Seam `AiRuntimeGateway` e test integration deterministici per generation, meal swap, advice, sgarro e weekly review.
-- [ ] QA grafica/pixel su device/emulatore.
+- [x] QA grafica/pixel su device/emulatore per la tabella giornaliera Previsto/Reale nella schermata Alimentazione.
 - [ ] Smoke test delle Activity principali.
 - [ ] E2E UI completo di profilo, dieta, sgarro, review, export e foto.
 - [ ] Test runtime provider Gemini/OpenAI, notifiche Android e stress performance.

@@ -6,6 +6,7 @@ import android.view.View
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
+import android.widget.ImageButton
 import androidx.activity.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -53,6 +54,14 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         bindBack()
         bindBottom(BottomNavBinder.Tab.PROGRESS)
         bindProgressAnalysisCard()
+        findViewById<ImageButton>(R.id.otherIndicatorsHelpButton).setOnClickListener {
+            showHelp(
+                "Altri indicatori",
+                "Qui trovi valori aggiuntivi letti dalle rilevazioni BIA del profilo attivo. " +
+                    "L'acqua corporea, il grasso e la massa muscolare mostrano lo storico registrato: " +
+                    "non sono una diagnosi e possono variare anche per motivi temporanei.",
+            )
+        }
 
         findViewById<WeightTrendChartView>(R.id.evolutionChart).showYAxisLabels()
         findViewById<SelectableSegmentView>(R.id.metricSegment).apply {
@@ -96,11 +105,30 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         val root = summaryCard.parent as LinearLayout
         val insertIndex = root.indexOfChild(summaryCard)
 
-        val header = TextView(this).apply {
-            text = "Analisi progressi IA"
-            textSize = 15f
-            setTextColor(getColor(R.color.text_primary))
-            setTypeface(typeface, android.graphics.Typeface.BOLD)
+        val header = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            val title = TextView(this@PhysicalEvolutionActivity).apply {
+                text = "Analisi progressi IA"
+                textSize = 15f
+                setTextColor(getColor(R.color.text_primary))
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+            }
+            addView(title, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            addView(ImageButton(this@PhysicalEvolutionActivity).apply {
+                setImageResource(R.drawable.ic_help_outline)
+                background = null
+                contentDescription = "Spiega analisi progressi IA"
+                setOnClickListener {
+                    showHelp(
+                        "Analisi progressi IA",
+                        "L'analisi IA interpreta i dati registrati nel tempo, come peso, grasso corporeo, " +
+                            "massa muscolare, misure, allenamenti e sgarri. " +
+                            "I valori mostrati nella pagina restano disponibili anche senza analisi IA: " +
+                            "la scritta 'Ultima esecuzione: mai' significa solo che questa interpretazione non è ancora stata eseguita.",
+                    )
+                }
+            }, LinearLayout.LayoutParams(dp(40), dp(40)))
         }
         root.addView(header, insertIndex, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
             topMargin = dp(24)
@@ -231,6 +259,14 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
                 analysisDetailsContainer.visibility = View.GONE
             }
         }
+    }
+
+    private fun showHelp(title: String, message: String) {
+        MaterialAlertDialogBuilder(this)
+            .setTitle(title)
+            .setMessage(message)
+            .setPositiveButton("Ho capito", null)
+            .show()
     }
 
     private fun renderAnalysisDetails(patterns: List<ProgressAnalysisCompactContract.Pattern>) {

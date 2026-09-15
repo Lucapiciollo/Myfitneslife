@@ -19,6 +19,7 @@ import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.domain.food.FoodMeal
 import com.myfitai.app.domain.food.FoodPlanDay
 import com.myfitai.app.domain.food.FoodPlanMetrics
+import com.myfitai.app.domain.food.FoodPlanVersion
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.ui.food.FoodPlanViewModel
 import com.myfitai.app.ui.widgets.MealPlanRowView
@@ -100,7 +101,7 @@ class FoodPlanActivity : BaseShellActivity() {
 
         renderGeneration(state)
         renderMeals(state.weekStart, day)
-        renderTotals(day)
+        renderTotals(state.weekStart, day, state.snapshot?.version)
     }
 
     private fun renderGeneration(state: FoodPlanViewModel.State) {
@@ -157,16 +158,29 @@ class FoodPlanActivity : BaseShellActivity() {
         contentDescription = "$title: $body"
     }
 
-    private fun renderTotals(day: FoodPlanDay?) {
+    private fun renderTotals(weekStart: LocalDate, day: FoodPlanDay?, version: FoodPlanVersion?) {
         val totalContainer = findViewById<View>(R.id.dailyTotalContainer); val totalHeader = findViewById<View>(R.id.dailyTotalHeader)
         if (day == null) { totalContainer.visibility = View.GONE; totalHeader.visibility = View.GONE; return }
         val totals = FoodPlanMetrics.dayTotals(day)
         totalContainer.visibility = View.VISIBLE; totalHeader.visibility = View.VISIBLE
-        findViewById<TextView>(R.id.totalKcal).text = totals.kcal?.let { "${it.toInt()} kcal" } ?: "— kcal"
-        findViewById<TextView>(R.id.totalProtein).text = totals.proteinG?.let { "Proteine: ${formatMacro(it)} g" } ?: "Proteine: —"
-        findViewById<TextView>(R.id.totalCarbs).text = totals.carbsG?.let { "Carboidrati: ${formatMacro(it)} g" } ?: "Carboidrati: —"
-        findViewById<TextView>(R.id.totalFat).text = totals.fatG?.let { "Grassi: ${formatMacro(it)} g" } ?: "Grassi: —"
+        val selectedDate = LocalDate.ofEpochDay(day.dateEpochDay)
+        val dayLabel = selectedDate.format(DateTimeFormatter.ofPattern("EEE d MMM", Locale.ITALIAN))
+            .replaceFirstChar { it.uppercase() }
+        findViewById<TextView>(R.id.dailyTotalHeader).text = "Totale giornaliero · $dayLabel"
+        findViewById<TextView>(R.id.dailyTotalLegend).text = "Obiettivo / dieta"
+        findViewById<TextView>(R.id.totalKcalPlanned).text = formatValue(version?.targetKcal, "kcal")
+        findViewById<TextView>(R.id.totalKcalActual).text = formatValue(totals.kcal, "kcal")
+        findViewById<TextView>(R.id.totalProteinPlanned).text = formatValue(version?.targetProteinG, "g")
+        findViewById<TextView>(R.id.totalProteinActual).text = formatValue(totals.proteinG, "g")
+        findViewById<TextView>(R.id.totalCarbsPlanned).text = formatValue(version?.targetCarbsG, "g")
+        findViewById<TextView>(R.id.totalCarbsActual).text = formatValue(totals.carbsG, "g")
+        findViewById<TextView>(R.id.totalFatPlanned).text = formatValue(version?.targetFatG, "g")
+        findViewById<TextView>(R.id.totalFatActual).text = formatValue(totals.fatG, "g")
     }
+
+    private fun formatValue(value: Number?, unit: String): String = value?.let {
+        if (unit == "kcal") "${it.toInt()} $unit" else "${formatMacro(it.toDouble())} $unit"
+    } ?: "—"
 
     private fun openMeal(mealId: Long) = startActivity(Intent(this, MealDetailActivity::class.java).putExtra(MealDetailActivity.EXTRA_MEAL_ID, mealId))
     private fun openMealAlternatives(weekStart: LocalDate, day: FoodPlanDay, meal: FoodMeal) {

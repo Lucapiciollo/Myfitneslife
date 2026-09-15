@@ -110,17 +110,48 @@
                 android:layout_marginTop="@dimen/space_20"
                 android:text="Totale giornaliero" />
 
-            <LinearLayout
-                android:id="@+id/dailyTotalContainer"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_8"
-                android:orientation="vertical">
-                <TextView android:id="@+id/totalKcal" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="@color/accent_green" android:textStyle="bold" android:textSize="15sp" />
-                <TextView android:id="@+id/totalProtein" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:textColor="@color/accent_orange" android:textSize="13sp" />
-                <TextView android:id="@+id/totalCarbs" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:textColor="@color/accent_blue" android:textSize="13sp" />
-                <TextView android:id="@+id/totalFat" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:textColor="@color/accent_purple" android:textSize="13sp" />
-            </LinearLayout>
+             <LinearLayout
+                 android:id="@+id/dailyTotalContainer"
+                 android:layout_width="match_parent"
+                 android:layout_height="wrap_content"
+                 android:layout_marginTop="@dimen/space_8"
+                 android:orientation="vertical">
+                 <TextView android:id="@+id/dailyTotalLegend" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Obiettivo / dieta" android:textColor="@color/text_muted" android:textSize="11sp" />
+                 <LinearLayout
+                     android:layout_width="match_parent"
+                     android:layout_height="wrap_content"
+                     android:layout_marginTop="@dimen/space_8"
+                     android:orientation="horizontal">
+                     <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Valore" android:textColor="@color/text_muted" android:textSize="11sp" />
+                     <TextView android:id="@+id/totalPlannedHeader" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="end" android:text="Previsto" android:textColor="@color/text_muted" android:textSize="11sp" />
+                     <TextView android:id="@+id/totalActualHeader" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="end" android:text="Reale" android:textColor="@color/text_muted" android:textSize="11sp" />
+                 </LinearLayout>
+                 <LinearLayout
+                     android:layout_width="match_parent"
+                     android:layout_height="wrap_content"
+                     android:orientation="vertical">
+                     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingVertical="@dimen/space_4">
+                         <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Calorie" android:textColor="@color/text_primary" />
+                         <TextView android:id="@+id/totalKcalPlanned" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="end" android:textColor="@color/text_primary" />
+                         <TextView android:id="@+id/totalKcalActual" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="end" android:textColor="@color/text_primary" />
+                     </LinearLayout>
+                     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingVertical="@dimen/space_4">
+                         <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Proteine" android:textColor="@color/text_primary" />
+                         <TextView android:id="@+id/totalProteinPlanned" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="end" android:textColor="@color/text_primary" />
+                         <TextView android:id="@+id/totalProteinActual" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="end" android:textColor="@color/accent_orange" />
+                     </LinearLayout>
+                     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingVertical="@dimen/space_4">
+                         <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Carboidrati" android:textColor="@color/text_primary" />
+                         <TextView android:id="@+id/totalCarbsPlanned" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="end" android:textColor="@color/text_primary" />
+                         <TextView android:id="@+id/totalCarbsActual" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="end" android:textColor="@color/accent_blue" />
+                     </LinearLayout>
+                     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingVertical="@dimen/space_4">
+                         <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Grassi" android:textColor="@color/text_primary" />
+                         <TextView android:id="@+id/totalFatPlanned" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="end" android:textColor="@color/text_primary" />
+                         <TextView android:id="@+id/totalFatActual" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="end" android:textColor="@color/accent_purple" />
+                     </LinearLayout>
+                 </LinearLayout>
+             </LinearLayout>
         </LinearLayout>
     </ScrollView>
     <include layout="@layout/view_bottom_navigation" />
