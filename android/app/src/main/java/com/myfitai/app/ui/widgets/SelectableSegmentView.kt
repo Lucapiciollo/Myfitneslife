@@ -7,7 +7,7 @@ import com.google.android.material.button.MaterialButtonToggleGroup
 import com.myfitai.app.R
 
 /** Segmented control riutilizzabile a selezione singola (es. Misura/Storico, Peso/Grasso/Massa). */
-class SelectableSegmentView @JvmOverloads constructor(
+open class SelectableSegmentView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
 ) : MaterialButtonToggleGroup(context, attrs) {
@@ -19,7 +19,7 @@ class SelectableSegmentView @JvmOverloads constructor(
         isSelectionRequired = true
     }
 
-    fun setSegments(labels: List<String>, selectedIndex: Int = 0) {
+    open fun setSegments(labels: List<String>, selectedIndex: Int = 0) {
         removeAllViews()
         labels.forEachIndexed { index, label ->
             val button = MaterialButton(context, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
@@ -57,7 +57,7 @@ class SelectableSegmentView @JvmOverloads constructor(
         }
     }
 
-    fun setOnSegmentSelectedListener(listener: (Int) -> Unit) {
+    open fun setOnSegmentSelectedListener(listener: (Int) -> Unit) {
         onSegmentSelected = listener
     }
 }
