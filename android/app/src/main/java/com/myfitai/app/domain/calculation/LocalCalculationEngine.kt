@@ -4,7 +4,7 @@ import kotlin.math.abs
 import kotlin.math.max
 
 /**
- * Motore locale deterministico. Nessun valore viene delegato all'LLM.
+ * Motore locale deterministico. Nessun valore numerico viene delegato all'LLM.
  * Se i dati minimi non sono sufficienti, il risultato resta null invece di inventare stime.
  */
 object LocalCalculationEngine {
@@ -61,6 +61,12 @@ object LocalCalculationEngine {
         val bmrMethod: String?,
     )
 
+    data class MacroTargets(
+        val proteinG: Double,
+        val fatG: Double,
+        val carbsG: Double,
+    )
+
     data class TimedValue(
         val timestamp: Long,
         val value: Double,
@@ -86,10 +92,10 @@ object LocalCalculationEngine {
         val bmrWithMethod = calculateBmr(input, weight, height)
         val bmr = bmrWithMethod?.first
         val tdee = if (bmr != null && input.activityLevel != null) bmr * input.activityLevel.multiplier else null
-        val targetKcal = if (tdee != null && input.goal != null) applyGoalAdjustment(tdee, input.goal) else null
+        val targetKcal = if (tdee != null && input.goal != null) tdee * goalEnergyFactor(input.goal) else null
 
         val macros = if (targetKcal != null && weight != null && input.goal != null) {
-            calculateMacros(targetKcal, weight, input.goal)
+            calculateMacrosForTarget(targetKcal, weight, input.goal)
         } else null
 
         val waistHeightRatio = if (input.waistCm.validPositive() != null && height != null) {
@@ -129,17 +135,23 @@ object LocalCalculationEngine {
         return (base + sexAdjustment) to "MIFFLIN_ST_JEOR"
     }
 
-    private fun applyGoalAdjustment(tdee: Double, goal: Goal): Double = when (goal) {
-        Goal.RECOMPOSITION -> tdee * 0.95
-        Goal.WEIGHT_LOSS -> tdee * 0.85
-        Goal.MAINTENANCE -> tdee
-        Goal.MUSCLE_GAIN -> tdee * 1.10
-        Goal.PERFORMANCE -> tdee
+    /** Fattore iniziale deterministico rispetto al TDEE. */
+    fun goalEnergyFactor(goal: Goal): Double = when (goal) {
+        Goal.RECOMPOSITION -> 0.95
+        Goal.WEIGHT_LOSS -> 0.85
+        Goal.MAINTENANCE -> 1.0
+        Goal.MUSCLE_GAIN -> 1.10
+        Goal.PERFORMANCE -> 1.0
     }
 
-    private data class Macros(val proteinG: Double, val fatG: Double, val carbsG: Double)
+    /**
+     * Ricalcola i macro a partire da un target calorico già deciso localmente.
+     * Serve anche quando l'AdaptiveNutritionTargetEngine applica una piccola correzione al target.
+     */
+    fun calculateMacrosForTarget(targetKcal: Double, weightKg: Double, goal: Goal): MacroTargets {
+        require(targetKcal.isFinite() && targetKcal > 0.0) { "TARGET_KCAL_INVALID" }
+        require(weightKg.isFinite() && weightKg > 0.0) { "WEIGHT_INVALID" }
 
-    private fun calculateMacros(targetKcal: Double, weightKg: Double, goal: Goal): Macros {
         val proteinPerKg = when (goal) {
             Goal.WEIGHT_LOSS, Goal.RECOMPOSITION, Goal.MUSCLE_GAIN -> 2.0
             Goal.MAINTENANCE, Goal.PERFORMANCE -> 1.8
@@ -153,7 +165,7 @@ object LocalCalculationEngine {
         val fatG = weightKg * fatPerKg
         val committedKcal = proteinG * 4.0 + fatG * 9.0
         val carbsG = max(0.0, (targetKcal - committedKcal) / 4.0)
-        return Macros(proteinG, fatG, carbsG)
+        return MacroTargets(proteinG, fatG, carbsG)
     }
 
     fun trend(values: List<TimedValue>, stableThreshold: Double = 0.05): TrendStats {
