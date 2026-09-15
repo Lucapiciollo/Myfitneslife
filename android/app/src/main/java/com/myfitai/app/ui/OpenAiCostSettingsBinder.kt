@@ -89,9 +89,9 @@ object OpenAiCostSettingsBinder {
                     append("Totale: ${money(summary.totalUsd)}\n")
                     append("Richieste registrate: ${summary.requestCount}\n\n")
                 }
-                append("Input: $${pricing.inputUsdPerMillion.stripTrailingZeros().toPlainString()} / 1M token\n")
-                append("Output: $${pricing.outputUsdPerMillion.stripTrailingZeros().toPlainString()} / 1M token\n")
-                append("Cache input: $${pricing.cachedInputUsdPerMillion.stripTrailingZeros().toPlainString()} / 1M token\n")
+                append("Input: \$${pricing.inputUsdPerMillion.stripTrailingZeros().toPlainString()} / 1M token\n")
+                append("Output: \$${pricing.outputUsdPerMillion.stripTrailingZeros().toPlainString()} / 1M token\n")
+                append("Cache input: \$${pricing.cachedInputUsdPerMillion.stripTrailingZeros().toPlainString()} / 1M token\n")
                 append("Fonte: ${if (pricingStore.isManual(model)) "manuale" else "listino incluso nell'app"}\n")
                 append("Riferimento listino: ${pricing.effectiveDate}\n\n")
                 append("La spesa comprende solo le chiamate OpenAI effettuate da MyFitAI da quando il tracciamento è attivo; non è il saldo ufficiale OpenAI.")
