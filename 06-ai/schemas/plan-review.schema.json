@@ -1,15 +1,14 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "PlanReviewResponse",
+  "title": "PlanReviewCompactEnvelope",
   "type": "object",
-  "required": ["status", "checks", "violations"],
-  "properties": {
-    "status": {"enum": ["APPROVED", "REJECTED", "NEEDS_INPUT"]},
-    "checks": {"type": "object", "required": ["complete", "targetsCoherent", "timingPresent", "ingredientsComplete", "varietyAdequate", "foodConstraintsRespected", "noPunitiveCompensation"], "properties": {"complete": {"type": "boolean"}, "targetsCoherent": {"type": "boolean"}, "timingPresent": {"type": "boolean"}, "ingredientsComplete": {"type": "boolean"}, "varietyAdequate": {"type": "boolean"}, "foodConstraintsRespected": {"type": "boolean"}, "noPunitiveCompensation": {"type": "boolean"}}, "additionalProperties": false},
-    "violations": {"type": "array", "items": {"type": "string"}},
-    "requiredCorrections": {"type": "array", "items": {"type": "string"}},
-    "tolerancePercent": {"type": "number", "const": 3}
-  },
   "additionalProperties": false,
-  "description": "Revisione AI informativa del piano. La decisione finale appartiene a appValidation calcolata dal Business Validator locale."
+  "properties": {
+    "data": {
+      "type": "string",
+      "description": "PR1 pipe protocol: S|A_R_N|score_0_100 followed by zero or more I|issueCode|I_W_M_C|dayOffset_or_-|mealType_or_- records"
+    }
+  },
+  "required": ["data"],
+  "description": "Token-efficient transport for qualitative plan review. Numeric and structural authority remains the local Business Validator."
 }
