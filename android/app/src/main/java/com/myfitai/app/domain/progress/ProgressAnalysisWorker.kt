@@ -3,6 +3,8 @@ package com.myfitai.app.domain.progress
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.myfitai.app.ai.AiTransportException
+import com.myfitai.app.ai.AiTransportFailureKind
 import com.myfitai.app.data.AppDataContainer
 
 class ProgressAnalysisWorker(
@@ -22,7 +24,13 @@ class ProgressAnalysisWorker(
             onFailure = { error ->
                 when (error) {
                     is ProgressAnalysisService.AnalysisException.NeedsInput -> Result.retry()
-                    else -> Result.retry()
+                    is AiTransportException.NotConfigured -> Result.retry()
+                    is AiTransportException.Network -> Result.retry()
+                    is AiTransportException.Http -> if (
+                        error.failureKind == AiTransportFailureKind.RATE_LIMITED ||
+                        error.failureKind == AiTransportFailureKind.PROVIDER_UNAVAILABLE
+                    ) Result.retry() else Result.failure()
+                    else -> Result.failure()
                 }
             },
         )
