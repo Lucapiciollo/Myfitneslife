@@ -21,6 +21,7 @@ import java.math.RoundingMode
 /** Programmatic Settings row so the existing approved settings XML does not need a visual rewrite. */
 object GeminiCostSettingsBinder {
     fun bind(activity: SettingsActivity, card: LinearLayout, settings: AiSettingsStore) {
+        OpenAiCostSettingsBinder.bind(activity, card)
         val tracker = GeminiUsageTracker(activity)
         val pricingStore = GeminiPricingStore(activity)
         val row = LinearLayout(activity).apply {
