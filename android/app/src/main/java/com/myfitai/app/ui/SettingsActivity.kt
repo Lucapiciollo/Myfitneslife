@@ -16,6 +16,7 @@ import com.myfitai.app.ai.AiModelConfig
 import com.myfitai.app.ai.AiSettingsStore
 import com.myfitai.app.ai.GeminiByokProvider
 import com.myfitai.app.data.AppDataContainer
+import com.myfitai.app.data.profile.MealCountPreferences
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.security.AiCredentialProvider
 import com.myfitai.app.security.SecureAiCredentialStore
@@ -147,6 +148,7 @@ class SettingsActivity : BaseShellActivity() {
 
         findViewById<View>(R.id.rowProfile).setOnClickListener { go(ProfileActivity::class.java) }
         findViewById<View>(R.id.rowFoodPreferences).setOnClickListener { go(ProfileEditActivity::class.java) }
+        findViewById<View>(R.id.rowMealCount).setOnClickListener { showMealCountDialog() }
         findViewById<SettingRowView>(R.id.rowUnits).apply {
             setTrailingBadge("Metrico", R.color.text_secondary)
             isClickable = false
@@ -164,6 +166,22 @@ class SettingsActivity : BaseShellActivity() {
         bindDataDeletion()
 
         render()
+    }
+
+    private fun showMealCountDialog() {
+        val profileId = data.activeProfileStore.currentIdOrNull() ?: return
+        val current = data.mealCountPreferences.get(profileId)
+        val labels = arrayOf("4 pasti", "5 pasti", "6 pasti")
+        val values = intArrayOf(4, 5, 6)
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Pasti al giorno")
+            .setSingleChoiceItems(labels, values.indexOf(current)) { dialog, which ->
+                data.mealCountPreferences.set(profileId, values[which])
+                findViewById<TextView>(R.id.mealCountValue).text = "${values[which]} pasti al giorno"
+                dialog.dismiss()
+            }
+            .setNegativeButton("Annulla", null)
+            .show()
     }
 
 

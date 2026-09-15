@@ -40,7 +40,7 @@ Ogni giorno deve contenere:
 - data/giorno;
 - trainingDay;
 - target dinamici ricevuti;
-- esattamente cinque pasti con orario: colazione, spuntino mattutino, pranzo, spuntino pomeridiano e cena, oppure cinque slot equivalenti coerenti con gli orari dell'utente;
+- esattamente il numero di pasti richiesto dall'app, tra 4, 5 o 6, con slot e orari coerenti con l'utente;
 - ingredienti;
 - quantità numeriche;
 - kcal e macro;

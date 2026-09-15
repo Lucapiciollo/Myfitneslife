@@ -53,8 +53,14 @@ class FoodPlanActivity : BaseShellActivity() {
         }
         findViewById<View>(R.id.cheatButton).setOnClickListener { go(CheatEntryActivity::class.java) }
         findViewById<View>(R.id.generatePlanButton).setOnClickListener { confirmPlanGeneration() }
+        renderMealCountPreference()
         weekDaySelector.setOnDaySelectedListener(viewModel::selectDay)
         lifecycleScope.launch { repeatOnLifecycle(Lifecycle.State.STARTED) { viewModel.state.collect(::render) } }
+    }
+
+    private fun renderMealCountPreference() {
+        val profileId = data.activeProfileStore.currentIdOrNull() ?: return
+        findViewById<TextView>(R.id.mealCountHint).text = "${data.mealCountPreferences.get(profileId)} pasti al giorno"
     }
 
     private fun confirmPlanGeneration() {

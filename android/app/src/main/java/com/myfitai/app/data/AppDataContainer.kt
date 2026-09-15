@@ -4,6 +4,7 @@ import android.content.Context
 import com.myfitai.app.ai.AiRuntimeService
 import com.myfitai.app.data.local.MyFitAiDatabase
 import com.myfitai.app.data.profile.ActiveProfileStore
+import com.myfitai.app.data.profile.MealCountPreferences
 import com.myfitai.app.data.profile.ProfilePhotoStore
 import com.myfitai.app.data.repository.*
 import com.myfitai.app.domain.body.BodyProportionAnalysisService
@@ -27,6 +28,7 @@ class AppDataContainer private constructor(context: Context) {
     private val db = MyFitAiDatabase.getInstance(appContext)
 
     val activeProfileStore = ActiveProfileStore(appContext)
+    val mealCountPreferences = MealCountPreferences(appContext)
     val profilePhotoStore = ProfilePhotoStore(appContext)
 
     val userProfileRepository = UserProfileRepository(db)
@@ -66,6 +68,7 @@ class AppDataContainer private constructor(context: Context) {
         plans = mealPlanRepository,
         activeProfileStore = activeProfileStore,
         personalResponse = personalResponseService,
+        mealCountPreferences = mealCountPreferences,
     )
 
     val cheatAdjustmentService = CheatAdjustmentService(

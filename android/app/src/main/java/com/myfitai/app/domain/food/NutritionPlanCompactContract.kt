@@ -32,12 +32,12 @@ S|kind|name|dose|unit|timeMinutes|kcal|proteinG|carbsG|fatG|notes
 H|hydrationNote
 V|1_or_0|notes"""
 
-    fun parseEnvelope(jsonText: String): NutritionPlanContract.Response {
+    fun parseEnvelope(jsonText: String, mealsPerDay: Int = NutritionPlanContract.REQUIRED_MEALS_PER_DAY): NutritionPlanContract.Response {
         val root = JSONObject(jsonText)
-        return parsePayload(root.getString("data"))
+        return parsePayload(root.getString("data"), mealsPerDay)
     }
 
-    fun parsePayload(payload: String): NutritionPlanContract.Response {
+    fun parsePayload(payload: String, mealsPerDay: Int = NutritionPlanContract.REQUIRED_MEALS_PER_DAY): NutritionPlanContract.Response {
         var weekStart: Long? = null
         var validation: NutritionPlanContract.AgentValidation? = null
         val days = mutableListOf<NutritionPlanContract.GeneratedDay>()
@@ -54,7 +54,7 @@ V|1_or_0|notes"""
         fun flushDay() {
             flushMeal()
             val day = currentDay ?: return
-            require(day.meals.size == NutritionPlanContract.REQUIRED_MEALS_PER_DAY) { "PIPE_DAY_MUST_HAVE_5_MEALS" }
+            require(day.meals.size == mealsPerDay) { "PIPE_DAY_MUST_HAVE_${mealsPerDay}_MEALS" }
             days += day.build()
             currentDay = null
         }

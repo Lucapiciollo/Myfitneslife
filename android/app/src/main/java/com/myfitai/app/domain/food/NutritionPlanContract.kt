@@ -29,7 +29,7 @@ object NutritionPlanContract {
                   },
                   "required":["kind","name","dose","unit","timeMinutes","kcal","proteinG","carbsG","fatG","notes"]
                 }},
-                "meals":{"type":"array","minItems":5,"maxItems":5,"items":{
+                "meals":{"type":"array","minItems":4,"maxItems":6,"items":{
                   "type":"object","additionalProperties":false,
                   "properties":{
                     "type":{"type":"string"},"title":{"type":"string"},"timeMinutes":{"type":"integer"},"kcal":{"type":"integer"},"proteinG":{"type":"number"},"carbsG":{"type":"number"},"fatG":{"type":"number"},"preparation":{"type":"string"},
@@ -131,6 +131,7 @@ object NutritionPlanContract {
         targets: NutritionBusinessValidator.Targets,
         sportsMode: SportsNutritionClassifier.Mode = SportsNutritionClassifier.Mode.NORMAL,
         enforceWeeklyVariety: Boolean = false,
+        mealsPerDay: Int = REQUIRED_MEALS_PER_DAY,
     ): Result<Unit> = runCatching {
         require(response.weekStartEpochDay == expectedWeekStart.toEpochDay()) { "WEEK_START_MISMATCH" }
         require(response.days.size == 7) { "WEEK_MUST_HAVE_7_DAYS" }
@@ -138,7 +139,8 @@ object NutritionPlanContract {
         require(response.days.map { it.dateEpochDay }.toSet() == expectedDates) { "WEEK_DATES_INVALID" }
 
         response.days.forEach { day ->
-            require(day.meals.size == REQUIRED_MEALS_PER_DAY) { "DAY_MUST_HAVE_5_MEALS" }
+            require(mealsPerDay in SUPPORTED_MEALS_PER_DAY) { "MEAL_COUNT_NOT_SUPPORTED" }
+            require(day.meals.size == mealsPerDay) { "DAY_MUST_HAVE_${mealsPerDay}_MEALS" }
             val appValidation = NutritionBusinessValidator.validate(targets, NutritionBusinessValidator.Actuals(day.totalKcal.toDouble(), day.proteinG.toDouble(), day.carbsG.toDouble(), day.fatG.toDouble()))
             require(appValidation.valid) { "TARGET_TOLERANCE_EXCEEDED" }
 
@@ -176,6 +178,7 @@ object NutritionPlanContract {
     }
 
     const val REQUIRED_MEALS_PER_DAY = 5
+    val SUPPORTED_MEALS_PER_DAY = setOf(4, 5, 6)
 
     /** Rejects identical recipes repeated on different days while allowing recurring staples. */
     private fun validateWeeklyVariety(response: Response) {

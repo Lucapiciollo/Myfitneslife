@@ -45,7 +45,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_8"
                 android:gravity="center"
-                android:text="5 pasti al giorno"
+                android:text="Pasti al giorno"
                 android:textColor="@color/text_secondary"
                 android:textSize="12sp" />
 

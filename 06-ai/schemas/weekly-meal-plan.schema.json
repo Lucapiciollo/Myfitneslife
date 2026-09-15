@@ -11,7 +11,7 @@
     "evidenceIds": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
     "days": {"type": "array", "minItems": 0, "maxItems": 7, "items": {"type": "object", "required": ["date", "trainingDay", "meals", "totals"], "properties": {
       "date": {"type": "string", "format": "date"}, "trainingDay": {"type": "boolean"},
-      "meals": {"type": "array", "minItems": 5, "maxItems": 5, "items": {"type": "object", "required": ["mealType", "time", "title", "ingredients", "kcal", "proteinG", "carbsG", "fatG"], "properties": {
+      "meals": {"type": "array", "minItems": 4, "maxItems": 6, "items": {"type": "object", "required": ["mealType", "time", "title", "ingredients", "kcal", "proteinG", "carbsG", "fatG"], "properties": {
         "mealType": {"enum": ["BREAKFAST", "SNACK", "LUNCH", "PRE_WORKOUT", "POST_WORKOUT", "DINNER", "OTHER"]},
         "time": {"type": "string", "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"}, "title": {"type": "string", "minLength": 1},
         "ingredients": {"type": "array", "minItems": 1, "items": {"type": "object", "required": ["name", "quantity", "unit", "displayDose", "weightState", "nutritionConfidence"], "properties": {"name": {"type": "string"}, "quantity": {"type": "number", "exclusiveMinimum": 0}, "unit": {"enum": ["g", "ml", "piece", "portion"]}, "displayDose": {"type": "string", "minLength": 1, "description": "Descrizione pratica per l'utente, coerente con quantity+unit; es. 1 cucchiaino, 1/2 cucchiaino, 1 bustina da 5 g, 1 bicchiere da 200 ml."}, "weightState": {"enum": ["RAW", "COOKED", "NOT_APPLICABLE"]}, "nutritionConfidence": {"enum": ["STANDARD", "ESTIMATED"]}}, "additionalProperties": false}},
