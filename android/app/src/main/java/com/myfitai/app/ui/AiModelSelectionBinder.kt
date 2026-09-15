@@ -24,7 +24,7 @@ object AiModelSelectionBinder {
             current = { settings.selectedGeminiModel },
             priceLabel = { model ->
                 val p = geminiPricing.pricingFor(model)
-                "input $${p.inputUsdPerMillion.stripTrailingZeros().toPlainString()} · cache $${p.cachedInputUsdPerMillion.stripTrailingZeros().toPlainString()} · output $${p.outputUsdPerMillion.stripTrailingZeros().toPlainString()} / 1M"
+                "input \$${p.inputUsdPerMillion.stripTrailingZeros().toPlainString()} · cache \$${p.cachedInputUsdPerMillion.stripTrailingZeros().toPlainString()} · output \$${p.outputUsdPerMillion.stripTrailingZeros().toPlainString()} / 1M"
             },
             select = { settings.selectedGeminiModel = it },
         )
@@ -37,7 +37,7 @@ object AiModelSelectionBinder {
             current = { settings.selectedOpenAiModel },
             priceLabel = { model ->
                 val p = openAiPricing.pricingFor(model)
-                "input $${p.inputUsdPerMillion.stripTrailingZeros().toPlainString()} · cache $${p.cachedInputUsdPerMillion.stripTrailingZeros().toPlainString()} · output $${p.outputUsdPerMillion.stripTrailingZeros().toPlainString()} / 1M"
+                "input \$${p.inputUsdPerMillion.stripTrailingZeros().toPlainString()} · cache \$${p.cachedInputUsdPerMillion.stripTrailingZeros().toPlainString()} · output \$${p.outputUsdPerMillion.stripTrailingZeros().toPlainString()} / 1M"
             },
             select = { settings.selectedOpenAiModel = it },
         )
