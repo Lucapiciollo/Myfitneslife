@@ -44,11 +44,10 @@ class OpenAiPricingStore(context: Context) {
         prefs.getString(key(model, field), null)?.toBigDecimalOrNull()?.takeIf { it.signum() >= 0 } ?: fallback
 
     private fun defaultPricing(model: String): OpenAiPricing = when (model) {
-        AiModelConfig.OPENAI_GPT_56_SOL -> p(model, "4.00", "20.00", "0.40", "2026-09-15")
-        AiModelConfig.OPENAI_GPT_56_TERRA -> p(model, "2.00", "12.00", "0.20", "2026-09-15")
-        AiModelConfig.OPENAI_GPT_56_LUNA -> p(model, "0.20", "1.20", "0.02", "2026-09-15")
+        AiModelConfig.OPENAI_GPT_5_NANO -> p(model, "0.05", "0.40", "0.005", "2026-09-15")
+        AiModelConfig.OPENAI_GPT_4O_MINI -> p(model, "0.15", "0.60", "0.075", "2026-09-15")
         AiModelConfig.OPENAI_GPT_5_MINI -> p(model, "0.25", "2.00", "0.025", "2026-09-15")
-        AiModelConfig.OPENAI -> p(model, "0.15", "0.60", "0.075", "2026-09-15")
+        AiModelConfig.OPENAI_GPT_5 -> p(model, "1.25", "10.00", "0.125", "2026-09-15")
         else -> OpenAiPricing(model, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, SOURCE_UNKNOWN, "2026-09-15")
     }
 
