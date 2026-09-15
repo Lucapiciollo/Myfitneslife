@@ -15,7 +15,7 @@ class ProgressAnalysisCompactContractTest {
         assertTrue(result.valid)
     }
 
-    @Test(expected = IllegalArgumentException::class)
+    @Test(expected = IllegalStateException::class)
     fun rejectsUnknownClassificationCode() {
         ProgressAnalysisCompactContract.parse("""{"data":"PA1\nC|ZZ|H\nS|Sintesi valida\nV|1|ok"}""")
     }
