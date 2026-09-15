@@ -5,6 +5,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.view.View
 import android.view.WindowManager
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
@@ -17,6 +18,7 @@ import com.myfitai.app.ai.AiSettingsStore
 import com.myfitai.app.ai.GeminiByokProvider
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.data.profile.MealCountPreferences
+import com.myfitai.app.domain.progress.ProgressAnalysisPreferences
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.security.AiCredentialProvider
 import com.myfitai.app.security.SecureAiCredentialStore
@@ -164,8 +166,58 @@ class SettingsActivity : BaseShellActivity() {
         findViewById<View>(R.id.rowExport).setOnClickListener { go(ExportActivity::class.java) }
 
         bindDataDeletion()
-
+        bindProgressAnalysisFrequency()
         render()
+    }
+
+    private fun bindProgressAnalysisFrequency() {
+        val card = findViewById<LinearLayout>(R.id.aiSectionCard)
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            isClickable = true
+            isFocusable = true
+            setPadding(0, dp(4), 0, dp(12))
+        }
+        val title = TextView(this).apply {
+            text = "Analisi progressi automatica"
+            textSize = 15f
+            setTextColor(getColor(R.color.text_primary))
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+        }
+        val value = TextView(this).apply {
+            textSize = 12f
+            setTextColor(getColor(R.color.text_secondary))
+        }
+        fun renderValue() {
+            val weeks = data.progressAnalysisPreferences.intervalWeeks
+            value.text = "Ogni $weeks ${if (weeks == 1) "settimana" else "settimane"} · usa quota del provider IA"
+        }
+        renderValue()
+        row.addView(title)
+        row.addView(value, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(3) })
+        row.setOnClickListener {
+            val values = ProgressAnalysisPreferences.SUGGESTED_INTERVALS
+            val labels = values.map { weeks ->
+                "Ogni $weeks ${if (weeks == 1) "settimana" else "settimane"}${if (weeks == data.progressAnalysisPreferences.intervalWeeks) " ✓" else ""}"
+            }.toTypedArray()
+            MaterialAlertDialogBuilder(this)
+                .setTitle("Frequenza analisi progressi")
+                .setItems(labels) { _, which ->
+                    val selected = values[which]
+                    data.progressAnalysisPreferences.intervalWeeks = selected
+                    data.activeProfileStore.currentIdOrNull()?.let { profileId ->
+                        if (data.progressAnalysisPreferences.lastSuccessEpochMillis(profileId) != null) {
+                            data.progressAnalysisScheduler.reschedule(profileId)
+                        }
+                    }
+                    renderValue()
+                    Toast.makeText(this, "Frequenza aggiornata. Le analisi automatiche consumano quota IA.", Toast.LENGTH_LONG).show()
+                }
+                .setNegativeButton("Annulla", null)
+                .show()
+        }
+        card.addView(row, 0)
+        card.addView(View(this).apply { setBackgroundColor(getColor(R.color.divider)) }, 1, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1).apply { bottomMargin = dp(12) })
     }
 
     private fun showMealCountDialog() {
@@ -183,7 +235,6 @@ class SettingsActivity : BaseShellActivity() {
             .setNegativeButton("Annulla", null)
             .show()
     }
-
 
     private fun bindDataDeletion() {
         val actions = listOf(
@@ -264,6 +315,8 @@ class SettingsActivity : BaseShellActivity() {
     private fun clearClipboard() {
         (getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).clearPrimaryClip()
     }
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     /**
      * Sanitized verification telemetry: records ONLY provider + HTTP status + failure category.
