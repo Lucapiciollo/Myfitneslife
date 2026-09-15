@@ -18,39 +18,33 @@ class ProgressAnalysisScheduler(
     context: Context,
     private val preferences: ProgressAnalysisPreferences,
 ) {
-    private val appContext = context.applicationContext
-    private val workManager = WorkManager.getInstance(appContext)
+    private val workManager = WorkManager.getInstance(context.applicationContext)
 
     fun reschedule(profileId: Long, nowEpochMillis: Long = System.currentTimeMillis()) {
         cancel(profileId)
-        val due = preferences.nextDueEpochMillis(profileId) ?: return
-        val delay = (due - nowEpochMillis).coerceAtLeast(0L)
-        val request = OneTimeWorkRequestBuilder<ProgressAnalysisWorker>()
-            .setInputData(workDataOf(ProgressAnalysisWorker.KEY_PROFILE_ID to profileId))
-            .setInitialDelay(delay, TimeUnit.MILLISECONDS)
-            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
-            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 6, TimeUnit.HOURS)
-            .addTag(tag(profileId))
-            .build()
-        workManager.enqueueUniqueWork(uniqueName(profileId, due), ExistingWorkPolicy.KEEP, request)
+        enqueue(profileId, nowEpochMillis)
     }
 
     /** Called by a completed worker; current work is not cancelled while the next one is enqueued. */
     fun scheduleNextAfterAutomaticSuccess(profileId: Long, nowEpochMillis: Long = System.currentTimeMillis()) {
+        enqueue(profileId, nowEpochMillis)
+    }
+
+    fun cancel(profileId: Long) {
+        workManager.cancelAllWorkByTag(tag(profileId))
+    }
+
+    private fun enqueue(profileId: Long, nowEpochMillis: Long) {
         val due = preferences.nextDueEpochMillis(profileId) ?: return
         val delay = (due - nowEpochMillis).coerceAtLeast(0L)
         val request = OneTimeWorkRequestBuilder<ProgressAnalysisWorker>()
             .setInputData(workDataOf(ProgressAnalysisWorker.KEY_PROFILE_ID to profileId))
             .setInitialDelay(delay, TimeUnit.MILLISECONDS)
             .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
-            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 6, TimeUnit.HOURS)
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 5, TimeUnit.HOURS)
             .addTag(tag(profileId))
             .build()
         workManager.enqueueUniqueWork(uniqueName(profileId, due), ExistingWorkPolicy.KEEP, request)
-    }
-
-    fun cancel(profileId: Long) {
-        workManager.cancelAllWorkByTag(tag(profileId))
     }
 
     private fun tag(profileId: Long) = "progress_analysis_profile_$profileId"
