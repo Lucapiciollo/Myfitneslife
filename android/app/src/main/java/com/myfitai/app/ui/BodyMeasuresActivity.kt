@@ -64,7 +64,7 @@ class BodyMeasuresActivity : BaseShellActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_body_measures)
-        bindBottom(BottomNavBinder.Tab.PROGRESS)
+        bindBottom(BottomNavBinder.Tab.MORE)
         bindBack()
 
         findViewById<View>(R.id.saveButton).setOnClickListener { go(NewBodyMeasurementActivity::class.java) }

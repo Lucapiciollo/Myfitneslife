@@ -41,7 +41,7 @@ class HistoryActivity : BaseShellActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_history)
-        bindBottom(BottomNavBinder.Tab.PROGRESS)
+        bindBottom(BottomNavBinder.Tab.MORE)
         bindBack()
 
         findViewById<SelectableSegmentView>(R.id.categorySegment).apply {

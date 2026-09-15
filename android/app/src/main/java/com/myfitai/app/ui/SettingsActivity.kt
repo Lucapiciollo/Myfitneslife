@@ -149,6 +149,7 @@ class SettingsActivity : BaseShellActivity() {
         }
 
         findViewById<View>(R.id.rowProfile).setOnClickListener { go(ProfileActivity::class.java) }
+        findViewById<View>(R.id.rowMeasurements).setOnClickListener { go(MeasurementsActivity::class.java) }
         findViewById<View>(R.id.rowFoodPreferences).setOnClickListener { go(ProfileEditActivity::class.java) }
         findViewById<View>(R.id.rowMealCount).setOnClickListener { showMealCountDialog() }
         findViewById<SettingRowView>(R.id.rowUnits).apply {

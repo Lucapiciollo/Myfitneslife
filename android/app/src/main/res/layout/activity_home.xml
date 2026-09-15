@@ -33,12 +33,6 @@
                     android:layout_height="wrap_content"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:importantForAccessibility="no"
-                        android:src="@drawable/ic_arrow_back_white"
-                        app:tint="@color/white" />
                     <Space
                         android:layout_width="0dp"
                         android:layout_height="1dp"
@@ -67,6 +61,13 @@
                     android:textColor="@color/white"
                     android:textSize="24sp"
                     android:textStyle="bold" />
+                <TextView
+                    android:id="@+id/todayLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_4"
+                    android:textColor="@color/surface_soft"
+                    android:textSize="13sp" />
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -127,6 +128,20 @@
 
                 <com.myfitai.app.ui.widgets.SectionHeaderView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:text="@string/dashboard_next_workout_title" />
                 <com.myfitai.app.ui.widgets.WorkoutCardView android:id="@+id/nextWorkoutCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_12" />
+
+                <com.myfitai.app.ui.widgets.SectionHeaderView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_20"
+                    android:text="Azioni rapide" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/measurementsButton"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="@dimen/space_12"
+                    android:text="Aggiungi rilevazione"
+                    android:textAllCaps="false" />
             </LinearLayout>
         </LinearLayout>
     </ScrollView>

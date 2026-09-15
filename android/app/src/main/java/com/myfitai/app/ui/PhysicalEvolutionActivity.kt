@@ -73,22 +73,6 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
             setRanges(listOf("1M", "3M", "6M", "1Y"), 1)
             setOnRangeSelectedListener { rangeIndex = it; render(latestState) }
         }
-        findViewById<View>(R.id.addBiaButton).setOnClickListener {
-            startActivity(Intent(this, BiaActivity::class.java))
-        }
-        findViewById<View>(R.id.addBodyMeasurementButton).setOnClickListener {
-            startActivity(Intent(this, BodyMeasuresActivity::class.java))
-        }
-        findViewById<View>(R.id.historyBiaButton).setOnClickListener {
-            startActivity(Intent(this, BiaActivity::class.java).putExtra(BiaActivity.EXTRA_OPEN_HISTORY, true))
-        }
-        findViewById<View>(R.id.historyBodyButton).setOnClickListener {
-            startActivity(Intent(this, BodyMeasuresActivity::class.java).putExtra(BodyMeasuresActivity.EXTRA_OPEN_HISTORY, true))
-        }
-        findViewById<View>(R.id.historyAllButton).setOnClickListener {
-            startActivity(Intent(this, HistoryActivity::class.java))
-        }
-
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.state.collect { latestState = it; render(it) }

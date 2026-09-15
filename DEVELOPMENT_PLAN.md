@@ -27,6 +27,8 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 - [x] Bottom navigation condivisa.
 - [x] Splash, Onboarding, Home, Profilo, BIA, Misure, Progressi, Allenamenti, Piano alimentare, Dettaglio pasto, Lista spesa, Sgarro, Piano adattato, Notifiche, Storico, Review, Export, Impostazioni.
 - [x] Componenti grafici reali per trend.
+- [x] Hub Rilevazioni separato per inserimento e gestione di BIA e misure corporee.
+- [x] Home dashboard aggiornata con giorno corrente, azioni rapide e stati vuoti contestuali.
 - [ ] QA pixel/runtime completo su device/emulatore dopo le ultime modifiche.
 
 ### Persistenza e profilo

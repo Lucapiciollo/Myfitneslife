@@ -1,0 +1,136 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg_primary">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="@dimen/space_16">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:gravity="center_vertical">
+                <TextView
+                    android:id="@+id/backButton"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:gravity="center"
+                    android:text="‹"
+                    android:textColor="@color/text_primary"
+                    android:textSize="30sp" />
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="Rilevazioni"
+                    android:textColor="@color/text_primary"
+                    android:textSize="17sp"
+                    android:textStyle="bold" />
+                <View android:layout_width="40dp" android:layout_height="1dp" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_12"
+                android:text="Registra e gestisci i dati corporei che alimentano i tuoi progressi."
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp" />
+
+            <com.myfitai.app.ui.widgets.SectionHeaderView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_24"
+                android:text="BIA" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_8"
+                android:background="@drawable/bg_card"
+                android:orientation="vertical"
+                android:padding="@dimen/space_16">
+                <TextView
+                    android:id="@+id/biaLatestText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Nessuna rilevazione BIA disponibile"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="13sp" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/newBiaButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="@dimen/space_12"
+                    android:text="Inserisci BIA"
+                    android:textAllCaps="false"
+                    app:backgroundTint="@color/accent_green" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/biaHistoryButton"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:layout_marginTop="@dimen/space_8"
+                    android:text="Apri storico BIA"
+                    android:textAllCaps="false" />
+            </LinearLayout>
+
+            <com.myfitai.app.ui.widgets.SectionHeaderView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_24"
+                android:text="Misure corporee" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_8"
+                android:background="@drawable/bg_card"
+                android:orientation="vertical"
+                android:padding="@dimen/space_16">
+                <TextView
+                    android:id="@+id/bodyLatestText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Nessuna misura corporea disponibile"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="13sp" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/newBodyButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="@dimen/space_12"
+                    android:text="Inserisci misure corporee"
+                    android:textAllCaps="false"
+                    app:backgroundTint="@color/accent_green" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/bodyHistoryButton"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:layout_marginTop="@dimen/space_8"
+                    android:text="Apri storico misure"
+                    android:textAllCaps="false" />
+            </LinearLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/allHistoryButton"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="@dimen/space_24"
+                android:text="Apri storico completo"
+                android:textAllCaps="false" />
+        </LinearLayout>
+    </ScrollView>
+    <include layout="@layout/view_bottom_navigation" />
+</LinearLayout>

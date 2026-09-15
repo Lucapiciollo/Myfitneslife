@@ -64,6 +64,8 @@ class HomeActivity : BaseShellActivity() {
             } ?: openFoodPlan()
         }
         findViewById<android.view.View>(R.id.nextWorkoutCard).setOnClickListener { go(WorkoutsActivity::class.java) }
+        findViewById<android.view.View>(R.id.measurementsButton).setOnClickListener { go(MeasurementsActivity::class.java) }
+        findViewById<TextView>(R.id.todayLabel).text = todayLabel()
 
         findViewById<MetricCardView>(R.id.metricWeight).setLabel(getString(R.string.dashboard_metric_weight))
         findViewById<MetricCardView>(R.id.metricFat).setLabel(getString(R.string.dashboard_metric_fat))
@@ -119,6 +121,7 @@ class HomeActivity : BaseShellActivity() {
                 setTitle("Nessun pasto pianificato")
                 setKcal("Apri il piano alimentare")
                 setImage(R.drawable.img_next_meal)
+                contentDescription = "Nessun pasto pianificato. Apri il piano alimentare"
                 return@apply
             }
             val date = LocalDate.ofEpochDay(next.dateEpochDay)
@@ -133,6 +136,7 @@ class HomeActivity : BaseShellActivity() {
             setTitle(next.title)
             setKcal(next.kcal?.let { "$it kcal" } ?: next.type)
             setImage(R.drawable.img_next_meal)
+            contentDescription = "Prossimo pasto: ${next.title}"
         }
     }
 
@@ -142,6 +146,7 @@ class HomeActivity : BaseShellActivity() {
                 setTime("—")
                 setTitle("Nessun allenamento pianificato")
                 setImage(R.drawable.img_next_workout)
+                contentDescription = "Nessun allenamento pianificato. Apri Allenamenti"
                 return@apply
             }
             val dateTime = Instant.ofEpochMilli(next.startedAtEpochMillis).atZone(ZoneId.systemDefault())
@@ -154,8 +159,13 @@ class HomeActivity : BaseShellActivity() {
             setTime("$dayLabel ${dateTime.format(DateTimeFormatter.ofPattern("HH:mm", Locale.ITALIAN))}")
             setTitle(next.title)
             setImage(if (next.type.equals("Cardio", true)) R.drawable.img_workout_cardio else R.drawable.img_workout_weights)
+            contentDescription = "Prossimo allenamento: ${next.title}"
         }
     }
+
+    private fun todayLabel(): String = LocalDate.now()
+        .format(DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.ITALIAN))
+        .replaceFirstChar { it.uppercase(Locale.ITALIAN) }
 
     private enum class DeltaSemantic { NEUTRAL, DOWN_IS_POSITIVE, UP_IS_POSITIVE }
 

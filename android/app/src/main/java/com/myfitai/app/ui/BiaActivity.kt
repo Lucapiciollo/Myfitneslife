@@ -84,7 +84,7 @@ class BiaActivity : BaseShellActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_bia)
-        bindBottom(BottomNavBinder.Tab.PROGRESS)
+        bindBottom(BottomNavBinder.Tab.MORE)
         bindBack()
         bindViews()
         bindSegments()
