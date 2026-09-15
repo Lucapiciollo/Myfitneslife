@@ -23,8 +23,9 @@ import com.myfitai.app.data.local.entity.*
         CheatEntryEntity::class,
         FoodConsumptionEntity::class,
         WeeklyReviewEntity::class,
+        AiUsageRecordEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = true,
 )
 abstract class MyFitAiDatabase : RoomDatabase() {
@@ -36,6 +37,7 @@ abstract class MyFitAiDatabase : RoomDatabase() {
     abstract fun cheatEntryDao(): CheatEntryDao
     abstract fun foodConsumptionDao(): FoodConsumptionDao
     abstract fun weeklyReviewDao(): WeeklyReviewDao
+    abstract fun aiUsageDao(): AiUsageDao
 
     companion object {
         const val DATABASE_NAME = "myfitai.db"
@@ -139,5 +141,33 @@ object DatabaseMigrations {
         }
     }
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+    /** V6 persists immutable Gemini usage/pricing snapshots for local cost tracking. */
+    val MIGRATION_5_6 = object : Migration(5, 6) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """CREATE TABLE IF NOT EXISTS ai_usage_records (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    timestampEpochMillis INTEGER NOT NULL,
+                    provider TEXT NOT NULL,
+                    model TEXT NOT NULL,
+                    inputTokens INTEGER NOT NULL,
+                    outputTokens INTEGER NOT NULL,
+                    thoughtsTokens INTEGER NOT NULL,
+                    cachedTokens INTEGER NOT NULL,
+                    totalTokens INTEGER,
+                    inputUsdPerMillion TEXT NOT NULL,
+                    outputUsdPerMillion TEXT NOT NULL,
+                    cachedInputUsdPerMillion TEXT NOT NULL,
+                    costUsdNanos INTEGER NOT NULL,
+                    pricingSource TEXT NOT NULL,
+                    pricingEffectiveDate TEXT NOT NULL
+                )""".trimIndent(),
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_ai_usage_records_provider ON ai_usage_records(provider)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_ai_usage_records_model ON ai_usage_records(model)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_ai_usage_records_timestampEpochMillis ON ai_usage_records(timestampEpochMillis)")
+        }
+    }
+
+    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
 }
