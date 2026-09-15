@@ -18,9 +18,29 @@ class AiSettingsStore(context: Context) {
             }.apply()
         }
 
+    var selectedGeminiModel: String
+        get() = prefs.getString(KEY_SELECTED_GEMINI_MODEL, AiModelConfig.GEMINI_PRIMARY)
+            ?.takeIf { it in AiModelConfig.GEMINI_SELECTABLE }
+            ?: AiModelConfig.GEMINI_PRIMARY
+        set(value) {
+            require(value in AiModelConfig.GEMINI_SELECTABLE)
+            prefs.edit().putString(KEY_SELECTED_GEMINI_MODEL, value).apply()
+        }
+
+    var selectedOpenAiModel: String
+        get() = prefs.getString(KEY_SELECTED_OPENAI_MODEL, AiModelConfig.OPENAI)
+            ?.takeIf { it in AiModelConfig.OPENAI_SELECTABLE }
+            ?: AiModelConfig.OPENAI
+        set(value) {
+            require(value in AiModelConfig.OPENAI_SELECTABLE)
+            prefs.edit().putString(KEY_SELECTED_OPENAI_MODEL, value).apply()
+        }
+
     private companion object {
         const val PREFS_NAME = "ai_settings"
         const val KEY_USE_GEMINI = "use_gemini"
         const val KEY_GEMINI_VERIFIED_MODEL = "gemini_verified_model"
+        const val KEY_SELECTED_GEMINI_MODEL = "selected_gemini_model"
+        const val KEY_SELECTED_OPENAI_MODEL = "selected_openai_model"
     }
 }
