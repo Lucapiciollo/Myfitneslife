@@ -43,7 +43,6 @@ class AppDataContainer private constructor(context: Context) {
     val mealPlanRepository = MealPlanRepository(db)
     val cheatEntryRepository = CheatEntryRepository(db)
     val weeklyReviewRepository = WeeklyReviewRepository(db)
-    val dataDeletionService = DataDeletionService(db, activeProfileStore)
 
     val profileCalculationService = ProfileCalculationService(
         profiles = userProfileRepository,
@@ -76,6 +75,12 @@ class AppDataContainer private constructor(context: Context) {
         preferences = progressAnalysisPreferences,
     )
     val progressAnalysisScheduler = ProgressAnalysisScheduler(appContext, progressAnalysisPreferences)
+    val dataDeletionService = DataDeletionService(
+        db = db,
+        activeProfileStore = activeProfileStore,
+        progressAnalysisPreferences = progressAnalysisPreferences,
+        progressAnalysisScheduler = progressAnalysisScheduler,
+    )
 
     val nutritionPlanGenerationService = NutritionPlanGenerationService(
         aiRuntime = aiRuntimeService,
