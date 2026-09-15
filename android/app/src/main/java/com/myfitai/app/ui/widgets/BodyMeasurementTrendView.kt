@@ -19,6 +19,8 @@ class BodyMeasurementTrendView @JvmOverloads constructor(
     data class Point(val label: String, val value: Float)
 
     private val chart = LineChart(context)
+    private var points: List<Point> = emptyList()
+    private var onPointsChanged: ((List<Point>) -> Unit)? = null
 
     init {
         addView(chart, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
@@ -38,10 +40,17 @@ class BodyMeasurementTrendView @JvmOverloads constructor(
         chart.setDrawBorders(false)
     }
 
+    fun setOnPointsChangedListener(listener: (List<Point>) -> Unit) {
+        onPointsChanged = listener
+        listener(points)
+    }
+
     fun setPoints(points: List<Point>) {
+        this.points = points
         if (points.isEmpty()) {
             chart.clear()
             chart.invalidate()
+            onPointsChanged?.invoke(points)
             return
         }
         val entries = points.mapIndexed { index, point -> EntryFloat(index.toFloat(), point.value) }.toMutableList()
@@ -58,5 +67,6 @@ class BodyMeasurementTrendView @JvmOverloads constructor(
         }
         chart.data = LineData(dataSet)
         chart.invalidate()
+        onPointsChanged?.invoke(points)
     }
 }
