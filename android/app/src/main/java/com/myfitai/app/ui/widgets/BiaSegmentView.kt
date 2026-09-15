@@ -28,7 +28,9 @@ class BiaSegmentView @JvmOverloads constructor(
     private var observerStarted = false
 
     override fun setSegments(labels: List<String>, selectedIndex: Int) {
-        super.setSegments(listOf("Nuova misurazione", "Andamento", "Storico"), selectedIndex.coerceIn(0, 2))
+        // Keep Storico as the second item because BiaActivity already opens getChildAt(1)
+        // when reached from the "Apri storico BIA" shortcut.
+        super.setSegments(listOf("Nuova misurazione", "Storico", "Andamento"), selectedIndex.coerceIn(0, 2))
         ensureTrendBinder()
     }
 
@@ -43,13 +45,13 @@ class BiaSegmentView @JvmOverloads constructor(
                     listener(0)
                 }
                 1 -> {
+                    trendBinder?.hide()
+                    listener(1)
+                }
+                2 -> {
                     newContainer.visibility = View.GONE
                     historyContainer.visibility = View.GONE
                     trendBinder?.show()
-                }
-                2 -> {
-                    trendBinder?.hide()
-                    listener(1)
                 }
             }
         }
