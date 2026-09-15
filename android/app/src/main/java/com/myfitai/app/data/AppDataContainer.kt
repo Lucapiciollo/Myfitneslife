@@ -15,6 +15,7 @@ import com.myfitai.app.domain.food.CheatAdjustmentService
 import com.myfitai.app.domain.food.MealAlternativeService
 import com.myfitai.app.domain.food.NutritionAdviceService
 import com.myfitai.app.domain.food.NutritionPlanGenerationService
+import com.myfitai.app.domain.food.PlanReviewService
 import com.myfitai.app.domain.personalization.PersonalResponseService
 import com.myfitai.app.domain.review.WeeklyReviewService
 import com.myfitai.app.domain.data.DataDeletionService
@@ -59,6 +60,7 @@ class AppDataContainer private constructor(context: Context) {
     val aiRuntimeService = AiRuntimeService(appContext)
     val bodyProportionAnalysisService = BodyProportionAnalysisService(aiRuntimeService)
     val biaImportService = BiaImportService(aiRuntimeService)
+    val planReviewService = PlanReviewService(aiRuntimeService)
 
     val nutritionPlanGenerationService = NutritionPlanGenerationService(
         aiRuntime = aiRuntimeService,
@@ -69,6 +71,7 @@ class AppDataContainer private constructor(context: Context) {
         activeProfileStore = activeProfileStore,
         personalResponse = personalResponseService,
         mealCountPreferences = mealCountPreferences,
+        planReview = planReviewService,
     )
 
     val cheatAdjustmentService = CheatAdjustmentService(
