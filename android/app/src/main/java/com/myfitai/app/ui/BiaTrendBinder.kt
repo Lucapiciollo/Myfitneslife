@@ -8,6 +8,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.myfitai.app.R
 import com.myfitai.app.data.local.entity.BiaMeasurementEntity
 import com.myfitai.app.domain.body.BiaMeasurementQualityEngine
+import com.myfitai.app.domain.body.MeasurementTrendInterpreter
 import com.myfitai.app.ui.widgets.BodyMeasurementTrendView
 import com.myfitai.app.ui.widgets.SelectableSegmentView
 import java.time.Instant
@@ -24,15 +25,17 @@ class BiaTrendBinder(
     private enum class Metric(
         val label: String,
         val unit: String,
+        val favorableDirection: MeasurementTrendInterpreter.Direction?,
+        val stableThreshold: Float,
         val value: (BiaMeasurementEntity) -> Float?,
     ) {
-        WEIGHT("Peso", "kg", { it.weightKg }),
-        BODY_FAT("Grasso corporeo", "%", { it.bodyFatPercent }),
-        MUSCLE("Massa muscolare", "kg", { it.muscleMassKg }),
-        SKELETAL("Muscolo scheletrico", "kg", { it.skeletalMuscleKg }),
-        WATER("Acqua corporea", "%", { it.bodyWaterPercent }),
-        VISCERAL("Grasso viscerale", "", { it.visceralFatLevel }),
-        BMR("BMR", "kcal", { it.bmrKcal }),
+        WEIGHT("Peso", "kg", null, 0.2f, { it.weightKg }),
+        BODY_FAT("Grasso corporeo", "%", MeasurementTrendInterpreter.Direction.DOWN, 0.2f, { it.bodyFatPercent }),
+        MUSCLE("Massa muscolare", "kg", MeasurementTrendInterpreter.Direction.UP, 0.2f, { it.muscleMassKg }),
+        SKELETAL("Muscolo scheletrico", "kg", MeasurementTrendInterpreter.Direction.UP, 0.2f, { it.skeletalMuscleKg }),
+        WATER("Acqua corporea", "%", null, 0.3f, { it.bodyWaterPercent }),
+        VISCERAL("Grasso viscerale", "", MeasurementTrendInterpreter.Direction.DOWN, 0.2f, { it.visceralFatLevel }),
+        BMR("BMR", "kcal", null, 20f, { it.bmrKcal }),
     }
 
     private var history: List<BiaMeasurementEntity> = emptyList()
@@ -52,6 +55,12 @@ class BiaTrendBinder(
     private val qualityText = text(12f, false)
     private val rangeSelector = SelectableSegmentView(activity)
     private val chart = BodyMeasurementTrendView(activity)
+    private val trendNote = TextView(activity).apply {
+        textSize = 13f
+        setTextColor(activity.getColor(R.color.text_secondary))
+        setBackgroundResource(R.drawable.bg_card_soft)
+        setPadding(dp(14), dp(12), dp(14), dp(12))
+    }
 
     init {
         parent.addView(
@@ -67,6 +76,7 @@ class BiaTrendBinder(
         view.addView(qualityText, marginTop(10))
         view.addView(rangeSelector, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(44)).apply { topMargin = dp(14) })
         view.addView(chart, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(240)).apply { topMargin = dp(12) })
+        view.addView(trendNote, marginTop(10))
 
         rangeSelector.setSegments(listOf("1M", "3M", "6M", "1Y"), selectedRangeIndex)
         rangeSelector.setOnSegmentSelectedListener {
@@ -146,6 +156,16 @@ class BiaTrendBinder(
             "Qualità confronto: ${BiaMeasurementQualityEngine.label(it.level)} (${it.score}/100)\n" +
                 it.reasons.take(3).joinToString(" · ")
         } ?: "Qualità confronto: non valutabile"
+
+        val interpretation = MeasurementTrendInterpreter.interpret(
+            label = selectedMetric.label,
+            delta = periodDelta,
+            pointCount = periodPoints.size,
+            favorableDirection = selectedMetric.favorableDirection,
+            stableThreshold = selectedMetric.stableThreshold,
+            qualityLabel = quality?.let { BiaMeasurementQualityEngine.label(it.level).lowercase(Locale.ITALIAN) },
+        )
+        trendNote.text = "${interpretation.title}\n${interpretation.message}"
     }
 
     private fun dateOf(item: BiaMeasurementEntity): LocalDate =
