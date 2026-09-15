@@ -1,14 +1,21 @@
 package com.myfitai.app.ui
 
-import android.os.Bundle
 import android.content.Intent
+import android.os.Bundle
+import android.view.View
+import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.activity.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
+import com.myfitai.app.domain.progress.ProgressAnalysisCompactContract
+import com.myfitai.app.domain.progress.ProgressAnalysisService
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.ui.progress.PhysicalEvolutionState
 import com.myfitai.app.ui.progress.PhysicalEvolutionViewModel
@@ -21,6 +28,7 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 class PhysicalEvolutionActivity : BaseShellActivity() {
     private val data by lazy { AppDataContainer.get(this) }
@@ -30,12 +38,18 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
     private var metricIndex = 0
     private var rangeIndex = 1
     private var latestState = PhysicalEvolutionState()
+    private lateinit var analysisLastText: TextView
+    private lateinit var analysisNextText: TextView
+    private lateinit var analysisResultText: TextView
+    private lateinit var analysisProgress: ProgressBar
+    private lateinit var analysisButton: MaterialButton
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_physical_evolution)
         bindBack()
         bindBottom(BottomNavBinder.Tab.PROGRESS)
+        bindProgressAnalysisCard()
 
         findViewById<WeightTrendChartView>(R.id.evolutionChart).showYAxisLabels()
         findViewById<SelectableSegmentView>(R.id.metricSegment).apply {
@@ -46,25 +60,146 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
             setRanges(listOf("1M", "3M", "6M", "1Y"), 1)
             setOnRangeSelectedListener { rangeIndex = it; render(latestState) }
         }
-        findViewById<android.view.View>(R.id.addBiaButton).setOnClickListener {
+        findViewById<View>(R.id.addBiaButton).setOnClickListener {
             startActivity(Intent(this, BiaActivity::class.java))
         }
-        findViewById<android.view.View>(R.id.addBodyMeasurementButton).setOnClickListener {
+        findViewById<View>(R.id.addBodyMeasurementButton).setOnClickListener {
             startActivity(Intent(this, BodyMeasuresActivity::class.java))
         }
-        findViewById<android.view.View>(R.id.historyBiaButton).setOnClickListener {
+        findViewById<View>(R.id.historyBiaButton).setOnClickListener {
             startActivity(Intent(this, BiaActivity::class.java).putExtra(BiaActivity.EXTRA_OPEN_HISTORY, true))
         }
-        findViewById<android.view.View>(R.id.historyBodyButton).setOnClickListener {
+        findViewById<View>(R.id.historyBodyButton).setOnClickListener {
             startActivity(Intent(this, BodyMeasuresActivity::class.java).putExtra(BodyMeasuresActivity.EXTRA_OPEN_HISTORY, true))
         }
-        findViewById<android.view.View>(R.id.historyAllButton).setOnClickListener {
+        findViewById<View>(R.id.historyAllButton).setOnClickListener {
             startActivity(Intent(this, HistoryActivity::class.java))
         }
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.state.collect { latestState = it; render(it) }
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (::analysisLastText.isInitialized) renderProgressAnalysisStatus()
+    }
+
+    private fun bindProgressAnalysisCard() {
+        val summaryCard = findViewById<View>(R.id.progressSummaryTitle).parent as View
+        val root = summaryCard.parent as LinearLayout
+        val insertIndex = root.indexOfChild(summaryCard)
+
+        val header = TextView(this).apply {
+            text = "Analisi progressi IA"
+            textSize = 15f
+            setTextColor(getColor(R.color.text_primary))
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+        }
+        root.addView(header, insertIndex, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+            topMargin = dp(24)
+        })
+
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundResource(R.drawable.bg_card)
+            setPadding(dp(16), dp(14), dp(16), dp(14))
+        }
+        analysisLastText = bodyText()
+        analysisNextText = bodyText()
+        analysisResultText = bodyText().apply { visibility = View.GONE }
+        analysisProgress = ProgressBar(this).apply { visibility = View.GONE }
+        analysisButton = MaterialButton(this).apply {
+            text = "Esegui analisi ora"
+            isAllCaps = false
+            setOnClickListener { confirmManualProgressAnalysis() }
+        }
+        card.addView(analysisLastText)
+        card.addView(analysisNextText, marginTopParams(4))
+        card.addView(analysisResultText, marginTopParams(10))
+        card.addView(analysisProgress, LinearLayout.LayoutParams(dp(32), dp(32)).apply { topMargin = dp(10) })
+        card.addView(analysisButton, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(48)).apply { topMargin = dp(12) })
+        root.addView(card, insertIndex + 1, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+            topMargin = dp(8)
+        })
+        renderProgressAnalysisStatus()
+    }
+
+    private fun confirmManualProgressAnalysis() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Eseguire l'analisi progressi con IA?")
+            .setMessage(
+                "L'analisi invia una richiesta al provider IA configurato e consuma la quota disponibile. " +
+                    "Il costo effettivo dipende dal provider, dal modello e dal tuo piano di billing. " +
+                    "Se l'analisi riesce, questa esecuzione diventa il nuovo riferimento per il prossimo controllo automatico."
+            )
+            .setNegativeButton("Annulla", null)
+            .setPositiveButton("Conferma ed esegui") { _, _ -> executeProgressAnalysis() }
+            .show()
+    }
+
+    private fun executeProgressAnalysis() {
+        analysisButton.isEnabled = false
+        analysisButton.text = "Analisi in corso…"
+        analysisProgress.visibility = View.VISIBLE
+        analysisResultText.visibility = View.VISIBLE
+        analysisResultText.text = "Analisi dei trend corporei e dello storico registrato…"
+        lifecycleScope.launch {
+            runCatching { data.progressAnalysisService.analyzeActive() }
+                .onSuccess { result ->
+                    data.activeProfileStore.currentIdOrNull()?.let(data.progressAnalysisScheduler::reschedule)
+                    analysisResultText.text = "${classificationLabel(result.response.classification)} · confidenza ${confidenceLabel(result.response.confidence)}\n${result.response.summary}"
+                }
+                .onFailure { error ->
+                    analysisResultText.text = when (error) {
+                        is ProgressAnalysisService.AnalysisException.NeedsInput -> "Analisi non avviata: servono ${error.fields.joinToString()}. Nessun nuovo risultato è stato salvato."
+                        is com.myfitai.app.ai.AiTransportException.NotConfigured -> "Configura un provider IA e la relativa API key nelle Impostazioni."
+                        is com.myfitai.app.ai.AiTransportException.Http -> "Il provider IA ha rifiutato la richiesta (${error.failureKind})."
+                        is com.myfitai.app.ai.AiTransportException.Network -> "Problema di rete o timeout durante l'analisi."
+                        else -> "Analisi non riuscita. I dati precedenti restano invariati."
+                    }
+                }
+            analysisProgress.visibility = View.GONE
+            analysisButton.isEnabled = true
+            analysisButton.text = "Esegui analisi ora"
+            renderProgressAnalysisStatus(keepTransientResult = true)
+        }
+    }
+
+    private fun renderProgressAnalysisStatus(keepTransientResult: Boolean = false) {
+        val profileId = data.activeProfileStore.currentIdOrNull()
+        if (profileId == null) {
+            analysisLastText.text = "Ultima esecuzione: profilo non disponibile"
+            analysisNextText.text = "Esecuzione automatica: non pianificata"
+            analysisButton.isEnabled = false
+            return
+        }
+        val prefs = data.progressAnalysisPreferences
+        val last = prefs.lastSuccessEpochMillis(profileId)
+        analysisLastText.text = if (last == null) {
+            "Ultima esecuzione: mai"
+        } else {
+            "Ultima esecuzione: ${formatDateTime(last)}"
+        }
+        val next = prefs.nextDueEpochMillis(profileId)
+        analysisNextText.text = if (next == null) {
+            "Automatica: si attiva dopo la prima analisi · frequenza ${prefs.intervalWeeks} sett."
+        } else {
+            val remaining = prefs.remainingMillis(profileId, System.currentTimeMillis()) ?: 0L
+            "Prossima automatica: ${formatDateTime(next)} · manca ${formatRemaining(remaining)}"
+        }
+        if (!keepTransientResult) {
+            val summary = prefs.lastSummary(profileId)
+            val classification = prefs.lastClassification(profileId)?.let(::classificationLabel)
+            val confidence = prefs.lastConfidence(profileId)?.let(::confidenceLabel)
+            if (summary != null) {
+                analysisResultText.visibility = View.VISIBLE
+                analysisResultText.text = listOfNotNull(classification, confidence?.let { "confidenza $it" }).joinToString(" · ") + "\n" + summary
+            } else {
+                analysisResultText.visibility = View.GONE
             }
         }
     }
@@ -81,7 +216,7 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         renderSecondary(R.id.otherIndicatorFatValue, R.id.otherIndicatorFatDelta, state.bodyFat, "%")
         renderSecondary(R.id.otherIndicatorMuscleValue, R.id.otherIndicatorMuscleDelta, state.muscle, "kg")
         renderSecondary(R.id.otherIndicatorWaterValue, R.id.otherIndicatorWaterDelta, state.bodyWater, "%")
-        findViewById<android.view.View>(R.id.visualComparisonSection).visibility = android.view.View.GONE
+        findViewById<View>(R.id.visualComparisonSection).visibility = View.GONE
         findViewById<TextView>(R.id.progressSummaryTitle).text = if (filtered.series.size >= 2) "Trend basato sulle rilevazioni registrate" else "Servono più rilevazioni"
         findViewById<TextView>(R.id.progressSummaryText).text = if (filtered.series.size >= 2) "I valori mostrati derivano esclusivamente dallo storico BIA reale del profilo attivo." else "Aggiungi almeno due rilevazioni comparabili per visualizzare un andamento affidabile."
     }
@@ -102,6 +237,55 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         }
     }
 
+    private fun bodyText() = TextView(this).apply {
+        textSize = 13f
+        setTextColor(getColor(R.color.text_secondary))
+    }
+
+    private fun marginTopParams(top: Int) = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(top) }
+
+    private fun classificationLabel(value: ProgressAnalysisCompactContract.Classification): String = when (value) {
+        ProgressAnalysisCompactContract.Classification.POSITIVE_RECOMPOSITION -> "Ricomposizione positiva"
+        ProgressAnalysisCompactContract.Classification.STABLE -> "Andamento stabile"
+        ProgressAnalysisCompactContract.Classification.WEIGHT_LOSS -> "Dimagrimento in corso"
+        ProgressAnalysisCompactContract.Classification.WEIGHT_LOSS_WITH_MUSCLE_RISK -> "Dimagrimento con segnale muscolare da monitorare"
+        ProgressAnalysisCompactContract.Classification.NEGATIVE_TREND -> "Trend sfavorevole"
+        ProgressAnalysisCompactContract.Classification.INSUFFICIENT_DATA -> "Dati insufficienti"
+    }
+
+    private fun classificationLabel(value: String): String = runCatching {
+        classificationLabel(ProgressAnalysisCompactContract.Classification.valueOf(value))
+    }.getOrDefault(value)
+
+    private fun confidenceLabel(value: ProgressAnalysisCompactContract.Confidence): String = when (value) {
+        ProgressAnalysisCompactContract.Confidence.LOW -> "bassa"
+        ProgressAnalysisCompactContract.Confidence.MEDIUM -> "media"
+        ProgressAnalysisCompactContract.Confidence.HIGH -> "alta"
+    }
+
+    private fun confidenceLabel(value: String): String = runCatching {
+        confidenceLabel(ProgressAnalysisCompactContract.Confidence.valueOf(value))
+    }.getOrDefault(value.lowercase(Locale.ITALIAN))
+
+    private fun formatDateTime(epochMillis: Long): String = Instant.ofEpochMilli(epochMillis)
+        .atZone(ZoneId.systemDefault())
+        .format(DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm", Locale.ITALIAN))
+
+    private fun formatRemaining(millis: Long): String {
+        if (millis <= 0L) return "appena possibile"
+        val totalHours = TimeUnit.MILLISECONDS.toHours(millis)
+        val totalDays = TimeUnit.MILLISECONDS.toDays(millis)
+        val weeks = totalDays / 7
+        val days = totalDays % 7
+        return when {
+            weeks > 0 && days > 0 -> "$weeks ${if (weeks == 1L) "settimana" else "settimane"} e $days ${if (days == 1L) "giorno" else "giorni"}"
+            weeks > 0 -> "$weeks ${if (weeks == 1L) "settimana" else "settimane"}"
+            totalDays > 0 -> "$totalDays ${if (totalDays == 1L) "giorno" else "giorni"}"
+            else -> "${totalHours.coerceAtLeast(1)} ${if (totalHours <= 1) "ora" else "ore"}"
+        }
+    }
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
     private fun fmt(v: Float) = String.format(Locale.ITALIAN, "%.1f", v)
     private fun signed(v: Float) = String.format(Locale.ITALIAN, "%+.1f", v)
 }
