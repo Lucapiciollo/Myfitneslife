@@ -60,8 +60,7 @@ class OpenAiProvider(
             body = body.toString(),
         )
         val response = JSONObject(raw)
-        val jsonText = extractOutputText(response)
-            ?: throw AiTransportException.InvalidResponse()
+        val jsonText = extractOutputText(response) ?: throw AiTransportException.InvalidResponse()
         val usage = response.optJSONObject("usage")?.let { value ->
             val inputDetails = value.optJSONObject("input_tokens_details")
             val outputDetails = value.optJSONObject("output_tokens_details")
@@ -69,8 +68,8 @@ class OpenAiProvider(
                 inputTokens = value.optLong("input_tokens").takeIf { value.has("input_tokens") },
                 outputTokens = value.optLong("output_tokens").takeIf { value.has("output_tokens") },
                 totalTokens = value.optLong("total_tokens").takeIf { value.has("total_tokens") },
-                thoughtsTokens = outputDetails?.optLong("reasoning_tokens")?.takeIf { outputDetails.has("reasoning_tokens") },
-                cachedTokens = inputDetails?.optLong("cached_tokens")?.takeIf { inputDetails.has("cached_tokens") },
+                thoughtsTokens = outputDetails?.takeIf { it.has("reasoning_tokens") }?.optLong("reasoning_tokens"),
+                cachedTokens = inputDetails?.takeIf { it.has("cached_tokens") }?.optLong("cached_tokens"),
             )
         }
         return AiRawResponse(type, model, jsonText, usage)
@@ -80,16 +79,8 @@ class OpenAiProvider(
         val image = request.image ?: return request.userPrompt
         val content = JSONArray()
             .put(JSONObject().put("type", "input_text").put("text", request.userPrompt))
-            .put(
-                JSONObject()
-                    .put("type", "input_image")
-                    .put("image_url", "data:${image.mimeType};base64,${image.base64Data}")
-            )
-        return JSONArray().put(
-            JSONObject()
-                .put("role", "user")
-                .put("content", content)
-        )
+            .put(JSONObject().put("type", "input_image").put("image_url", "data:${image.mimeType};base64,${image.base64Data}"))
+        return JSONArray().put(JSONObject().put("role", "user").put("content", content))
     }
 
     private fun extractOutputText(root: JSONObject): String? {
@@ -98,9 +89,7 @@ class OpenAiProvider(
             val content = output.optJSONObject(i)?.optJSONArray("content") ?: continue
             for (j in 0 until content.length()) {
                 val part = content.optJSONObject(j) ?: continue
-                if (part.optString("type") == "output_text") {
-                    return part.optString("text").takeIf { it.isNotBlank() }
-                }
+                if (part.optString("type") == "output_text") return part.optString("text").takeIf { it.isNotBlank() }
             }
         }
         return null
