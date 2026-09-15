@@ -37,7 +37,9 @@ object BiaMeasurementQualityEngine {
 
         val currentHour = Instant.ofEpochMilli(current.measuredAtEpochMillis).atZone(zoneId).toLocalTime().toSecondOfDay() / 3600f
         val previousHour = Instant.ofEpochMilli(previous.measuredAtEpochMillis).atZone(zoneId).toLocalTime().toSecondOfDay() / 3600f
-        val hourDelta = abs(currentHour - previousHour)
+        val rawHourDelta = abs(currentHour - previousHour)
+        // Measurements close to midnight can be only a few minutes apart despite crossing 00:00.
+        val hourDelta = minOf(rawHourDelta, 24f - rawHourDelta)
         when {
             hourDelta <= 1.5f -> {
                 score += 40

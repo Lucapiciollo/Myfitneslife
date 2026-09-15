@@ -30,6 +30,17 @@ class BiaMeasurementQualityEngineTest {
     }
 
     @Test
+    fun similarHoursAcrossMidnight_areHighQuality() {
+        val previous = sample(epoch(2026, 9, 8, 23, 30), true, true, true, true)
+        val current = sample(epoch(2026, 9, 15, 0, 0), true, true, true, true)
+
+        val result = BiaMeasurementQualityEngine.evaluate(current, previous, ZoneOffset.UTC)
+
+        assertEquals(BiaMeasurementQualityEngine.Level.HIGH, result.level)
+        assertEquals(100, result.score)
+    }
+
+    @Test
     fun noPrevious_isInsufficient() {
         val result = BiaMeasurementQualityEngine.evaluate(
             sample(epoch(2026, 9, 15, 8, 0), true, true, true, true),

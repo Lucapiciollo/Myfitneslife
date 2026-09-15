@@ -44,6 +44,7 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 - [x] DB v4: ogni giorno del piano supporta `supplementsJson` e `hydrationNote`.
 - [x] Migration test reale 3 -> 4 su database storico.
 - [x] DB v5: consumi alimentari persistenti con snapshot nutrizionale, stato consumato/saltato e isolamento per profilo, piano e giorno.
+- [x] DB v6: usage IA persistiti con token, pricing snapshot e costo stimato per provider/modello.
 
 ### Motore locale
 - [x] BMI.
@@ -53,6 +54,7 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 - [x] Target calorico dinamico.
 - [x] Proteine/grassi/carboidrati dinamici.
 - [x] Trend peso/body fat/massa muscolare/vita.
+- [x] Qualità comparabilità BIA e interpretazione locale deterministica dei trend corporei.
 - [x] Waist/height ratio.
 - [x] Classificazione ricomposizione.
 - [x] Business Validator locale ±3%.
@@ -141,13 +143,16 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 - [x] Settings supporta entrambe le chiavi cifrate contemporaneamente, con un solo provider attivo tramite switch.
 - [x] Chiavi salvate nascoste in UI; disponibili solo `Sostituisci` ed `Elimina`.
 - [x] Navigazione Alimentazione bloccata con dialog e link Settings quando il provider attivo non è configurato.
+- [x] Cataloghi modelli Gemini/OpenAI selezionabili e pricing locale associato al modello attivo.
+- [x] Tracking locale usage/costi Gemini e OpenAI con token cached/thinking/reasoning e snapshot del listino.
 
 ## QA E VERIFICA
 
 ### Ultimo stato noto
-- `:app:assembleDebug` verde sull'HEAD verificato con Gradle 9.6.0, Java 17 e Android SDK locale.
-- `:app:testDebugUnitTest` verde dopo l'integrazione Firebase: 44 test, incluso il test aggiornato di selezione provider.
-- `:app:connectedDebugAndroidTest` verde: 46/46 test su `SM-A546B - 16`, inclusi smoke Activity, bottom navigation, QaSeeder, Progress, Settings, Export e notifiche.
+- `:app:assembleDebug` e `:app:assembleRelease` verdi sull'HEAD remoto allineato, con Gradle 9.6.0, Java 17 e Android SDK locale.
+- `:app:testDebugUnitTest` verde sul nuovo HEAD, inclusi pricing IA, quality engine BIA e interpretazione trend.
+- `:app:connectedDebugAndroidTest` verde: 47/47 test su `SM-A546B - 16`, inclusi smoke Activity, bottom navigation, QaSeeder, Progress, Settings, Export, notifiche e migration/usage runtime.
+- Il nuovo HEAD remoto aggiunge test unitari per pricing IA, usage e trend BIA; la suite aggiornata è stata rieseguita e risulta verde.
 - `:app:assembleRelease` verde; il source set debug-only non entra nella build release.
 - Settings device test dopo il refactor BYOK: 2/2 PASS su `SM-A546B - 16`.
 - Le prove precedenti Firebase sono storiche e non rappresentano il provider finale: il runtime attuale è Gemini BYOK diretto.
@@ -160,6 +165,7 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 ### Prossimi step obbligatori
 - [x] Build `:app:assembleDebug` sull'HEAD corrente.
 - [x] Unit test `:app:testDebugUnitTest` sull'HEAD corrente.
+- [x] Build debug/release e unit test rieseguiti dopo l'allineamento al nuovo HEAD remoto.
 - [x] Correggere le regressioni di compilazione/migrazione introdotte da DB v4 e nuovo contratto nutrizionale.
 - [x] Test runtime Room di supplementi, hydration note, compatibilità legacy e cambio versione del pasto.
 - [x] Verifica migrazione DB 3 -> 4.
@@ -171,7 +177,7 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 - [x] Smoke test lifecycle delle Activity principali locali: 17 schermate raggiungono almeno `STARTED` e dispongono di content view senza crash; restano aperti gli E2E funzionali completi.
 - [ ] E2E UI completo di profilo, dieta, sgarro, review, export e foto.
 - [ ] Test runtime provider Gemini/OpenAI, notifiche Android e stress performance.
-- [x] Rieseguire la suite connected completa dopo il gate Alimentazione e la nuova UI delle credenziali: 46/46 PASS su `SM-A546B - 16`.
+- [x] Rieseguire la suite connected completa dopo il gate Alimentazione e la nuova UI delle credenziali: 47/47 PASS su `SM-A546B - 16`.
 - [ ] Testare Gemini BYOK reale su device con API key personale fornita dall'utente; non dichiarare PASS senza risposta strutturata e persistenza verificate.
 - [ ] Risolvere output non parsabile del weekly-plan Gemini in JSON-only; dopo risposta valida registrare `usageMetadata` (input/output/totale token). Il costo monetario effettivo resta verificabile solo tramite Google Cloud Billing.
 - [x] Diagnosi parser weekly-plan completata sul device: output troncato (`JSONException: End of input`, categoria `TRUNCATED_JSON`), `finishReason=MAX_TOKENS`; nessun repair automatico e nessuna persistenza di output invalido.
