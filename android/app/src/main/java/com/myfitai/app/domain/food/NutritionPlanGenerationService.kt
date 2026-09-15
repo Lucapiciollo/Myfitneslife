@@ -12,7 +12,10 @@ import com.myfitai.app.data.repository.PlanVersionDraft
 import com.myfitai.app.data.repository.SupplementDraft
 import com.myfitai.app.data.repository.UserProfileRepository
 import com.myfitai.app.data.repository.WorkoutRepository
+import com.myfitai.app.domain.calculation.AdaptiveNutritionTargetEngine
+import com.myfitai.app.domain.calculation.LocalCalculationEngine
 import com.myfitai.app.domain.calculation.NutritionBusinessValidator
+import com.myfitai.app.domain.calculation.ProfileCalculationMapper
 import com.myfitai.app.domain.calculation.ProfileCalculationService
 import com.myfitai.app.domain.personalization.PersonalResponseService
 import com.myfitai.app.domain.time.SystemTimeProvider
@@ -58,20 +61,43 @@ class NutritionPlanGenerationService(
             if (snapshot.latestBodyMeasurementTimestamp == null) add("una rilevazione di misure corporee")
         }
         if (missingBodyData.isNotEmpty()) throw GenerationException.NeedsInput(missingBodyData)
+
         val calc = snapshot.calculation
+        val goal = ProfileCalculationMapper.goal(profile.goal)
         val missing = buildList {
+            if (goal == null) add("obiettivo")
             if (calc.targetKcal == null) add("target calorie")
             if (calc.proteinG == null) add("proteine")
             if (calc.carbsG == null) add("carboidrati")
             if (calc.fatG == null) add("grassi")
+            if (snapshot.latestWeightKg == null) add("peso")
         }
         if (missing.isNotEmpty()) throw GenerationException.NeedsInput(missing)
 
+        val adaptive = AdaptiveNutritionTargetEngine.adjust(
+            AdaptiveNutritionTargetEngine.Input(
+                goal = goal!!,
+                tdeeKcal = calc.tdeeKcal,
+                baseTargetKcal = calc.targetKcal,
+                currentWeightKg = snapshot.latestWeightKg!!.toDouble(),
+                weight = snapshot.biaMetrics.weight.toAdaptiveEvidence(),
+                bodyFat = snapshot.biaMetrics.bodyFat.toAdaptiveEvidence(),
+                muscleMass = snapshot.biaMetrics.muscleMass.toAdaptiveEvidence(),
+                waist = snapshot.bodyMetrics.waist.toAdaptiveEvidence(),
+                abdomen = snapshot.bodyMetrics.abdomen.toAdaptiveEvidence(),
+            )
+        )
+        val finalTargetKcal = adaptive.targetKcal ?: calc.targetKcal!!
+        val finalMacros = LocalCalculationEngine.calculateMacrosForTarget(
+            targetKcal = finalTargetKcal,
+            weightKg = snapshot.latestWeightKg!!.toDouble(),
+            goal = goal,
+        )
         val targets = NutritionBusinessValidator.Targets(
-            kcal = calc.targetKcal!!,
-            proteinG = calc.proteinG!!,
-            carbsG = calc.carbsG!!,
-            fatG = calc.fatG!!,
+            kcal = finalTargetKcal,
+            proteinG = finalMacros.proteinG,
+            carbsG = finalMacros.carbsG,
+            fatG = finalMacros.fatG,
         )
 
         val zone = time.zoneId
@@ -118,7 +144,7 @@ class NutritionPlanGenerationService(
 
         val draft = PlanVersionDraft(
             source = validated.provider.name,
-            reason = "AI_GENERATION",
+            reason = "AI_GENERATION:${adaptive.decision.name}:${adaptive.reasonCode}:${adaptive.evidenceWindowDays}D",
             targetKcal = targets.kcal.toInt(),
             targetProteinG = targets.proteinG.toFloat(),
             targetCarbsG = targets.carbsG.toFloat(),
@@ -192,10 +218,47 @@ class NutritionPlanGenerationService(
         appendLine("SM:${sportsMode.name}")
         appendLine("P:${compact(profile.goal)}|${compact(profile.activityLevel)}|${profile.wakeTimeMinutes ?: "?"}|${profile.sleepTimeMinutes ?: "?"}")
         appendLine("DP:${compact(profile.dietaryPreferencesJson)}")
-        appendLine("B:${fmtOrUnknown(snapshot.latestWeightKg)}|${fmtOrUnknown(snapshot.latestBodyFatPercent)}|${fmtOrUnknown(snapshot.latestMuscleMassKg)}|${fmtOrUnknown(snapshot.latestSkeletalMuscleKg)}|${fmtOrUnknown(snapshot.latestBodyWaterPercent)}|${fmtOrUnknown(snapshot.latestWaistCm)}")
-        appendLine("TR:${fmtOrUnknown(snapshot.weightTrend.delta)}|${fmtOrUnknown(snapshot.bodyFatTrend.delta)}|${fmtOrUnknown(snapshot.muscleMassTrend.delta)}|${fmtOrUnknown(snapshot.waistTrend.delta)}|${compact(snapshot.recompositionState.toString())}")
+
+        val b = snapshot.biaMetrics
+        appendLine("B0:${values(b.weight.baseline, b.bodyFat.baseline, b.muscleMass.baseline, b.skeletalMuscle.baseline, b.bodyWater.baseline, b.visceralFat.baseline)}")
+        appendLine("B:${values(b.weight.current, b.bodyFat.current, b.muscleMass.current, b.skeletalMuscle.current, b.bodyWater.current, b.visceralFat.current)}")
+        appendLine("BT:${values(b.weight.recentTrend.delta, b.bodyFat.recentTrend.delta, b.muscleMass.recentTrend.delta, b.skeletalMuscle.recentTrend.delta, b.bodyWater.recentTrend.delta, b.visceralFat.recentTrend.delta)}")
+
+        val bm = snapshot.bodyMetrics
+        appendLine("BM0:${bodyValues(bm) { it.baseline }}")
+        appendLine("BM:${bodyValues(bm) { it.current }}")
+        appendLine("BMD:${bodyValues(bm) { it.previousDelta }}")
+        appendLine("BMT:${bodyValuesDouble(bm) { it.recentTrend.delta }}")
+        appendLine("RS:${snapshot.recompositionState.name}")
+
         workoutContext.forEach { appendLine("WO:${compact(it)}") }
+        if (personalContext.isNotBlank()) appendLine("PC:${compact(personalContext)}")
     }
+
+    private fun ProfileCalculationService.MetricSnapshot.toAdaptiveEvidence() = AdaptiveNutritionTargetEngine.Evidence(
+        count = recentTrend.count,
+        spanDays = recentSpanDays,
+        delta = recentTrend.delta,
+    )
+
+    private fun bodyValues(
+        body: ProfileCalculationService.BodyMeasurementsSnapshot,
+        pick: (ProfileCalculationService.MetricSnapshot) -> Float?,
+    ): String = listOf(
+        body.chest, body.waist, body.abdomen, body.shoulders, body.glutes,
+        body.armLeft, body.armRight, body.thighLeft, body.thighRight, body.calfLeft, body.calfRight,
+    ).joinToString("|") { fmtOrUnknown(pick(it)) }
+
+    private fun bodyValuesDouble(
+        body: ProfileCalculationService.BodyMeasurementsSnapshot,
+        pick: (ProfileCalculationService.MetricSnapshot) -> Double?,
+    ): String = listOf(
+        body.chest, body.waist, body.abdomen, body.shoulders, body.glutes,
+        body.armLeft, body.armRight, body.thighLeft, body.thighRight, body.calfLeft, body.calfRight,
+    ).joinToString("|") { fmtOrUnknown(pick(it)) }
+
+    private fun values(vararg values: Float?): String = values.joinToString("|") { fmtOrUnknown(it) }
+    private fun values(vararg values: Double?): String = values.joinToString("|") { fmtOrUnknown(it) }
 
     private fun compact(value: String?): String = value.orEmpty()
         .replace('|', '/')
@@ -212,7 +275,8 @@ class NutritionPlanGenerationService(
         private val SYSTEM_PROMPT = """
 MyFitAI nutrition planner. Output ONLY JSON matching the supplied envelope schema. The `data` string must begin with the exact line `MFP1`, followed by the pipe records below. Do not omit `MFP1`, do not replace it with another header, do not use markdown, and do not add text outside records.
 ${NutritionPlanCompactContract.PROTOCOL}
-Rules: exactly 7 days; records ordered W, then each D with its M/I and optional S/H, then V. Never use `|` or line breaks inside a text field. All kcal/macros are numeric. Daily totals include meals plus caloric supplements and must be within ±3% of authoritative targets. Count oils, dressings and caloric drinks. Ordinary foods first. Protein powder is optional and its kcal/macros count. Creatine only when SM=SPORT and always 0 kcal/P/C/F. BIA is descriptive context only: no diagnosis of protein deficiency, dehydration or disease. H may give cautious hydration guidance. No punitive compensation. V notes <= 8 words.
+Input context: T=kcal|protein|carbs|fat|tolerance and is AUTHORITATIVE. Never recalculate or override T from body data. B0/B/BT order is weightKg|bodyFatPct|muscleMassKg|skeletalMuscleKg|bodyWaterPct|visceralFat and means baseline/current/recent-trend-delta. BM0/BM/BMD/BMT order is chest|waist|abdomen|shoulders|glutes|armLeft|armRight|thighLeft|thighRight|calfLeft|calfRight and means baseline/current/previous-delta/recent-trend-delta. `?` means unavailable. Body/BIA signals are contextual only: use them jointly to inform food choice, distribution and timing, never to autonomously alter calories/macros, diagnose disease, dehydration, edema or muscle loss, or infer causality from one reading. Weight alone must never drive a dietary change.
+Rules: exactly 7 days; records ordered W, then each D with its M/I and optional S/H, then V. Never use `|` or line breaks inside a text field. All kcal/macros are numeric. Daily totals include meals plus caloric supplements and must be within ±3% of authoritative targets. Count oils, dressings and caloric drinks. Ordinary foods first. Protein powder is optional and its kcal/macros count. Creatine only when SM=SPORT and always 0 kcal/P/C/F. H may give cautious hydration guidance. No punitive compensation. V notes <= 8 words.
 VARIETY: make every meal recipe different across the seven days. Rotate protein sources, vegetables, fruit, grains and preparation methods. Do not repeat the same meal title with the same ingredient set on another day. Recurring staples such as oil, salt, spices or water are allowed; the complete recipe must not be duplicated.
 """.trimIndent()
     }
