@@ -50,7 +50,7 @@ class SixMonthHistoryFixtureTest {
             plan.versions.forEach { version ->
                 assertEquals(7, version.days.size)
                 version.days.forEach { day ->
-                    assertTrue(day.meals.size >= 3)
+                    assertEquals(5, day.meals.size)
                     assertNotNull(day.totalKcal)
                     assertTrue(day.meals.all { meal ->
                         meal.timeMinutes in 0..1439 &&

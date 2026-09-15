@@ -47,6 +47,8 @@ interface BiaMeasurementDao {
     @Insert suspend fun insert(value: BiaMeasurementEntity): Long
     @Update suspend fun update(value: BiaMeasurementEntity)
     @Delete suspend fun delete(value: BiaMeasurementEntity)
+    @Query("DELETE FROM bia_measurements WHERE profileId = :profileId")
+    suspend fun deleteByProfile(profileId: Long)
 }
 
 @Dao
@@ -63,6 +65,8 @@ interface BodyMeasurementDao {
     @Insert suspend fun insert(value: BodyMeasurementEntity): Long
     @Update suspend fun update(value: BodyMeasurementEntity)
     @Delete suspend fun delete(value: BodyMeasurementEntity)
+    @Query("DELETE FROM body_measurements WHERE profileId = :profileId")
+    suspend fun deleteByProfile(profileId: Long)
 }
 
 @Dao
@@ -76,6 +80,8 @@ interface WorkoutDao {
     @Insert suspend fun insert(value: WorkoutEntity): Long
     @Update suspend fun update(value: WorkoutEntity)
     @Delete suspend fun delete(value: WorkoutEntity)
+    @Query("DELETE FROM workouts WHERE profileId = :profileId")
+    suspend fun deleteByProfile(profileId: Long)
 }
 
 @Dao
@@ -112,6 +118,8 @@ interface MealPlanDao {
     @Insert suspend fun insertDays(values: List<MealPlanDayEntity>): List<Long>
     @Insert suspend fun insertMeals(values: List<MealEntity>): List<Long>
     @Insert suspend fun insertIngredients(values: List<MealIngredientEntity>): List<Long>
+    @Query("DELETE FROM meal_plans WHERE profileId = :profileId")
+    suspend fun deleteByProfile(profileId: Long)
 }
 
 @Dao
@@ -125,6 +133,8 @@ interface CheatEntryDao {
     @Insert suspend fun insert(value: CheatEntryEntity): Long
     @Update suspend fun update(value: CheatEntryEntity)
     @Delete suspend fun delete(value: CheatEntryEntity)
+    @Query("DELETE FROM cheat_entries WHERE profileId = :profileId")
+    suspend fun deleteByProfile(profileId: Long)
 }
 
 @Dao
@@ -137,4 +147,6 @@ interface WeeklyReviewDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(value: WeeklyReviewEntity): Long
+    @Query("DELETE FROM weekly_reviews WHERE profileId = :profileId")
+    suspend fun deleteByProfile(profileId: Long)
 }

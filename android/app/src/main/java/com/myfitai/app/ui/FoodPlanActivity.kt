@@ -18,6 +18,7 @@ import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.domain.food.FoodMeal
 import com.myfitai.app.domain.food.FoodPlanDay
+import com.myfitai.app.domain.food.FoodPlanMetrics
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.ui.food.FoodPlanViewModel
 import com.myfitai.app.ui.widgets.MealPlanRowView
@@ -133,7 +134,7 @@ class FoodPlanActivity : BaseShellActivity() {
                 val timePrefix = s.timeMinutes?.let { "%02d:%02d · ".format(it / 60, it % 60) }.orEmpty()
                 val dosePart = "${s.name} ${formatMacro(s.dose)} ${s.unit}"
                 val energyPart = if (s.kcal > 0 || s.proteinG > 0f || s.carbsG > 0f || s.fatG > 0f) {
-                    " · ${s.kcal} kcal · P ${formatMacro(s.proteinG)} g · C ${formatMacro(s.carbsG)} g · F ${formatMacro(s.fatG)} g"
+                    " · ${s.kcal} kcal · Proteine ${formatMacro(s.proteinG)} g · Carboidrati ${formatMacro(s.carbsG)} g · Grassi ${formatMacro(s.fatG)} g"
                 } else {
                     ""
                 }
@@ -153,11 +154,12 @@ class FoodPlanActivity : BaseShellActivity() {
     private fun renderTotals(day: FoodPlanDay?) {
         val totalContainer = findViewById<View>(R.id.dailyTotalContainer); val totalHeader = findViewById<View>(R.id.dailyTotalHeader)
         if (day == null) { totalContainer.visibility = View.GONE; totalHeader.visibility = View.GONE; return }
+        val totals = FoodPlanMetrics.dayTotals(day)
         totalContainer.visibility = View.VISIBLE; totalHeader.visibility = View.VISIBLE
-        findViewById<TextView>(R.id.totalKcal).text = day.totalKcal?.let { "$it kcal" } ?: "— kcal"
-        findViewById<TextView>(R.id.totalProtein).text = day.proteinG?.let { "P ${formatMacro(it)}g" } ?: "P —"
-        findViewById<TextView>(R.id.totalCarbs).text = day.carbsG?.let { "C ${formatMacro(it)}g" } ?: "C —"
-        findViewById<TextView>(R.id.totalFat).text = day.fatG?.let { "F ${formatMacro(it)}g" } ?: "F —"
+        findViewById<TextView>(R.id.totalKcal).text = totals.kcal?.let { "${it.toInt()} kcal" } ?: "— kcal"
+        findViewById<TextView>(R.id.totalProtein).text = totals.proteinG?.let { "Proteine: ${formatMacro(it)} g" } ?: "Proteine: —"
+        findViewById<TextView>(R.id.totalCarbs).text = totals.carbsG?.let { "Carboidrati: ${formatMacro(it)} g" } ?: "Carboidrati: —"
+        findViewById<TextView>(R.id.totalFat).text = totals.fatG?.let { "Grassi: ${formatMacro(it)} g" } ?: "Grassi: —"
     }
 
     private fun openMeal(mealId: Long) = startActivity(Intent(this, MealDetailActivity::class.java).putExtra(MealDetailActivity.EXTRA_MEAL_ID, mealId))
@@ -188,6 +190,7 @@ class FoodPlanActivity : BaseShellActivity() {
         return if (start.month == end.month) "${start.dayOfMonth} – ${end.dayOfMonth} ${end.format(monthFormatter).replaceFirstChar { it.uppercase() }}" else "${start.format(DateTimeFormatter.ofPattern("d MMM", Locale.ITALIAN))} – ${end.format(DateTimeFormatter.ofPattern("d MMM", Locale.ITALIAN))} ${end.year}"
     }
     private fun formatMacro(value: Float): String = if (value % 1f == 0f) value.toInt().toString() else String.format(Locale.ITALIAN, "%.1f", value)
+    private fun formatMacro(value: Double): String = if (value % 1.0 == 0.0) value.toInt().toString() else String.format(Locale.ITALIAN, "%.1f", value)
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     companion object { const val EXTRA_WEEK_START_EPOCH_DAY = "week_start_epoch_day" }

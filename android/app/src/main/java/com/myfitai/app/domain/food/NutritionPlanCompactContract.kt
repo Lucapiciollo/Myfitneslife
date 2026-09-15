@@ -25,7 +25,7 @@ object NutritionPlanCompactContract {
 
     const val PROTOCOL = """MFP1
 W|weekStartEpochDay
-D|dateEpochDay|totalKcal|proteinG|carbsG|fatG
+D|dateEpochDay|totalKcal|proteinG|carbsG|fatG (followed by exactly 5 M records)
 M|type|title|timeMinutes|kcal|proteinG|carbsG|fatG|preparation
 I|name|quantity|unit|displayDose|weightState|nutritionConfidence|category
 S|kind|name|dose|unit|timeMinutes|kcal|proteinG|carbsG|fatG|notes
@@ -54,7 +54,7 @@ V|1_or_0|notes"""
         fun flushDay() {
             flushMeal()
             val day = currentDay ?: return
-            require(day.meals.isNotEmpty()) { "PIPE_DAY_WITHOUT_MEALS" }
+            require(day.meals.size == NutritionPlanContract.REQUIRED_MEALS_PER_DAY) { "PIPE_DAY_MUST_HAVE_5_MEALS" }
             days += day.build()
             currentDay = null
         }

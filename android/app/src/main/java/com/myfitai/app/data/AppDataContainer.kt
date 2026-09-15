@@ -16,6 +16,7 @@ import com.myfitai.app.domain.food.NutritionAdviceService
 import com.myfitai.app.domain.food.NutritionPlanGenerationService
 import com.myfitai.app.domain.personalization.PersonalResponseService
 import com.myfitai.app.domain.review.WeeklyReviewService
+import com.myfitai.app.domain.data.DataDeletionService
 import com.myfitai.app.notifications.NotificationScheduler
 
 /**
@@ -35,6 +36,7 @@ class AppDataContainer private constructor(context: Context) {
     val mealPlanRepository = MealPlanRepository(db)
     val cheatEntryRepository = CheatEntryRepository(db)
     val weeklyReviewRepository = WeeklyReviewRepository(db)
+    val dataDeletionService = DataDeletionService(db, activeProfileStore)
 
     val profileCalculationService = ProfileCalculationService(
         profiles = userProfileRepository,

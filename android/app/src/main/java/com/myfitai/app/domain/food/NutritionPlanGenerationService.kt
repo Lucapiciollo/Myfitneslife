@@ -215,6 +215,7 @@ class NutritionPlanGenerationService(
     ): String = buildString {
         appendLine("W:${monday.toEpochDay()}")
         appendLine("T:${targets.kcal.toInt()}|${fmt(targets.proteinG)}|${fmt(targets.carbsG)}|${fmt(targets.fatG)}|3")
+        appendLine("MEALS_PER_DAY:5")
         appendLine("SM:${sportsMode.name}")
         appendLine("P:${compact(profile.goal)}|${compact(profile.activityLevel)}|${profile.wakeTimeMinutes ?: "?"}|${profile.sleepTimeMinutes ?: "?"}")
         appendLine("DP:${compact(profile.dietaryPreferencesJson)}")
@@ -276,7 +277,7 @@ class NutritionPlanGenerationService(
 MyFitAI nutrition planner. Output ONLY JSON matching the supplied envelope schema. The `data` string must begin with the exact line `MFP1`, followed by the pipe records below. Do not omit `MFP1`, do not replace it with another header, do not use markdown, and do not add text outside records.
 ${NutritionPlanCompactContract.PROTOCOL}
 Input context: T=kcal|protein|carbs|fat|tolerance and is AUTHORITATIVE. Never recalculate or override T from body data. B0/B/BT order is weightKg|bodyFatPct|muscleMassKg|skeletalMuscleKg|bodyWaterPct|visceralFat and means baseline/current/recent-trend-delta. BM0/BM/BMD/BMT order is chest|waist|abdomen|shoulders|glutes|armLeft|armRight|thighLeft|thighRight|calfLeft|calfRight and means baseline/current/previous-delta/recent-trend-delta. `?` means unavailable. Body/BIA signals are contextual only: use them jointly to inform food choice, distribution and timing, never to autonomously alter calories/macros, diagnose disease, dehydration, edema or muscle loss, or infer causality from one reading. Weight alone must never drive a dietary change.
-Rules: exactly 7 days; records ordered W, then each D with its M/I and optional S/H, then V. Never use `|` or line breaks inside a text field. All kcal/macros are numeric. Daily totals include meals plus caloric supplements and must be within ±3% of authoritative targets. Count oils, dressings and caloric drinks. Ordinary foods first. Protein powder is optional and its kcal/macros count. Creatine only when SM=SPORT and always 0 kcal/P/C/F. H may give cautious hydration guidance. No punitive compensation. V notes <= 8 words.
+        Rules: exactly 7 days and exactly 5 meals per day; records ordered W, then each D with its 5 M records, their I records, and optional S/H, then V. Use five distinct meal slots with practical timing (for example breakfast, morning snack, lunch, afternoon snack, dinner) unless the supplied schedule requires different names. Never use `|` or line breaks inside a text field. All kcal/macros are numeric. Daily totals include meals plus caloric supplements and must be within ±3% of authoritative targets. Count oils, dressings and caloric drinks. Ordinary foods first. Protein powder is optional and its kcal/macros count. Creatine only when SM=SPORT and always 0 kcal/P/C/F. H may give cautious hydration guidance. No punitive compensation. V notes <= 8 words.
 VARIETY: make every meal recipe different across the seven days. Rotate protein sources, vegetables, fruit, grains and preparation methods. Do not repeat the same meal title with the same ingredient set on another day. Recurring staples such as oil, salt, spices or water are allowed; the complete recipe must not be duplicated.
 """.trimIndent()
     }

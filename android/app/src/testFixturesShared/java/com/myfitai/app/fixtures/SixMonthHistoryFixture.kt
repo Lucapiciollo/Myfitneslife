@@ -175,6 +175,7 @@ object SixMonthHistoryFixture {
                     meal("Pranzo", "Riso e pollo", 720, 55f, 78f, 18f, 720),
                     meal("Cena", "Salmone e patate", 780, 50f, 62f, 27f, 930),
                     meal("Spuntino", "Frutta e whey", 470, 45f, 50f, 15f, 1110),
+                    meal("Spuntino", "Yogurt e frutta", 0, 0f, 0f, 0f, 840),
                 )
                 DayDraft(
                     dateEpochDay = date.toEpochDay(),

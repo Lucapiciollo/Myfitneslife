@@ -34,6 +34,13 @@ class NutritionPlanContractTest {
     }
 
     @Test
+    fun fourMealsPerDay_areRejected() {
+        val original = response()
+        val changed = original.copy(days = listOf(original.days.first().copy(meals = original.days.first().meals.dropLast(1))) + original.days.drop(1))
+        assertFalse(NutritionPlanContract.validateBusiness(changed, week, targets).isSuccess)
+    }
+
+    @Test
     fun agentValidation_doesNotOverrideAppValidation() {
         val original = response().copy(agentValidation = NutritionPlanContract.AgentValidation(true, "looks valid"))
         val badDay = original.days.first().copy(proteinG = 120f)
@@ -165,10 +172,10 @@ class NutritionPlanContractTest {
             type = "Pranzo",
             title = "Pasto completo",
             timeMinutes = 780,
-            kcal = 800,
-            proteinG = 53.333f,
-            carbsG = 93.333f,
-            fatG = 23.333f,
+            kcal = 480,
+            proteinG = 32f,
+            carbsG = 56f,
+            fatG = 14f,
             preparation = "Preparazione semplice",
             ingredients = listOf(
                 NutritionPlanContract.GeneratedIngredient("Riso", 100f, "g", "100 g", "crudo", "high", "cereali"),
@@ -187,6 +194,8 @@ class NutritionPlanContractTest {
                         meal.copy(title = "Pasto completo $offset", ingredients = meal.ingredients.map { it.copy(name = "Riso $offset") }),
                         meal.copy(type = "Cena", title = "Cena completa $offset", ingredients = meal.ingredients.map { it.copy(name = "Patate $offset") }),
                         meal.copy(type = "Colazione", title = "Colazione completa $offset", ingredients = meal.ingredients.map { it.copy(name = "Avena $offset") }),
+                        meal.copy(type = "Spuntino mattutino", title = "Spuntino mattutino $offset", ingredients = meal.ingredients.map { it.copy(name = "Yogurt $offset") }),
+                        meal.copy(type = "Spuntino pomeridiano", title = "Spuntino pomeridiano $offset", ingredients = meal.ingredients.map { it.copy(name = "Frutta $offset") }),
                     ),
                 )
             },
@@ -199,20 +208,20 @@ class NutritionPlanContractTest {
             type = "Pranzo",
             title = "Pasto completo",
             timeMinutes = 780,
-            kcal = 760,
-            proteinG = 45.333f,
-            carbsG = 92.333f,
-            fatG = 22.667f,
+            kcal = 456,
+            proteinG = 27.2f,
+            carbsG = 55.4f,
+            fatG = 13.6f,
             preparation = "Preparazione semplice",
             ingredients = listOf(
                 NutritionPlanContract.GeneratedIngredient("Riso", 100f, "g", "100 g", "crudo", "high", "cereali"),
             ),
         )
         val validDayMeal = meal.copy(
-            kcal = 800,
-            proteinG = 53.333f,
-            carbsG = 93.333f,
-            fatG = 23.333f,
+            kcal = 480,
+            proteinG = 32f,
+            carbsG = 56f,
+            fatG = 14f,
         )
         return NutritionPlanContract.Response(
             weekStartEpochDay = week.toEpochDay(),
@@ -228,12 +237,16 @@ class NutritionPlanContractTest {
                             meal.copy(title = "Pasto completo 0", ingredients = meal.ingredients.map { it.copy(name = "Riso 0") }),
                             meal.copy(type = "Cena", title = "Cena completa 0", ingredients = meal.ingredients.map { it.copy(name = "Patate 0") }),
                             meal.copy(type = "Colazione", title = "Colazione completa 0", ingredients = meal.ingredients.map { it.copy(name = "Avena 0") }),
+                            meal.copy(type = "Spuntino mattutino", title = "Spuntino mattutino 0", ingredients = meal.ingredients.map { it.copy(name = "Yogurt 0") }),
+                            meal.copy(type = "Spuntino pomeridiano", title = "Spuntino pomeridiano 0", ingredients = meal.ingredients.map { it.copy(name = "Frutta 0") }),
                         )
                     } else {
                         listOf(
                             validDayMeal.copy(title = "Pasto completo $index", ingredients = validDayMeal.ingredients.map { it.copy(name = "Riso $index") }),
                             validDayMeal.copy(type = "Cena", title = "Cena completa $index", ingredients = validDayMeal.ingredients.map { it.copy(name = "Patate $index") }),
                             validDayMeal.copy(type = "Colazione", title = "Colazione completa $index", ingredients = validDayMeal.ingredients.map { it.copy(name = "Avena $index") }),
+                            validDayMeal.copy(type = "Spuntino mattutino", title = "Spuntino mattutino $index", ingredients = validDayMeal.ingredients.map { it.copy(name = "Yogurt $index") }),
+                            validDayMeal.copy(type = "Spuntino pomeridiano", title = "Spuntino pomeridiano $index", ingredients = validDayMeal.ingredients.map { it.copy(name = "Frutta $index") }),
                         )
                     },
                 )

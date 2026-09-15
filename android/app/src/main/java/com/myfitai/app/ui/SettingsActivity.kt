@@ -15,6 +15,7 @@ import com.myfitai.app.ai.AiRuntimeConfig
 import com.myfitai.app.ai.AiModelConfig
 import com.myfitai.app.ai.AiSettingsStore
 import com.myfitai.app.ai.GeminiByokProvider
+import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.security.AiCredentialProvider
 import com.myfitai.app.security.SecureAiCredentialStore
@@ -22,6 +23,7 @@ import com.myfitai.app.ui.widgets.SettingRowView
 import kotlinx.coroutines.launch
 
 class SettingsActivity : BaseShellActivity() {
+    private val data by lazy { AppDataContainer.get(this) }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
@@ -159,8 +161,48 @@ class SettingsActivity : BaseShellActivity() {
         }
         findViewById<View>(R.id.rowExport).setOnClickListener { go(ExportActivity::class.java) }
 
+        bindDataDeletion()
+
         render()
     }
+
+
+    private fun bindDataDeletion() {
+        val actions = listOf(
+            R.id.rowDeletePlans to DeletionAction("alimentazioni", data.dataDeletionService::deleteMealPlans),
+            R.id.rowDeleteBia to DeletionAction("misure BIA", data.dataDeletionService::deleteBiaMeasurements),
+            R.id.rowDeleteBody to DeletionAction("misure corporee", data.dataDeletionService::deleteBodyMeasurements),
+            R.id.rowDeleteWorkouts to DeletionAction("allenamenti", data.dataDeletionService::deleteWorkouts),
+            R.id.rowDeleteCheats to DeletionAction("sgarri registrati", data.dataDeletionService::deleteCheatEntries),
+            R.id.rowDeleteReviews to DeletionAction("review settimanali", data.dataDeletionService::deleteWeeklyReviews),
+        )
+        actions.forEach { (viewId, action) ->
+            findViewById<View>(viewId).setOnClickListener { confirmDeletion(action.label, action.delete) }
+        }
+        findViewById<View>(R.id.rowDeleteRecordedData).setOnClickListener {
+            confirmDeletion(
+                "tutti i dati registrati (alimentazioni, misure, allenamenti, sgarri e review)",
+                data.dataDeletionService::deleteRecordedData,
+            )
+        }
+    }
+
+    private fun confirmDeletion(label: String, delete: suspend () -> Unit) {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Eliminare $label?")
+            .setMessage("L'operazione è irreversibile per il profilo attivo. Profilo e chiavi IA resteranno disponibili.")
+            .setNegativeButton("Annulla", null)
+            .setPositiveButton("Elimina") { _, _ ->
+                lifecycleScope.launch {
+                    runCatching { delete() }
+                        .onSuccess { Toast.makeText(this@SettingsActivity, "$label eliminati", Toast.LENGTH_SHORT).show() }
+                        .onFailure { Toast.makeText(this@SettingsActivity, "Eliminazione non riuscita", Toast.LENGTH_LONG).show() }
+                }
+            }
+            .show()
+    }
+
+    private data class DeletionAction(val label: String, val delete: suspend () -> Unit)
 
     private fun providerError(provider: AiCredentialProvider, error: Throwable): String {
         val label = if (provider == AiCredentialProvider.GEMINI) "Gemini" else "OpenAI"

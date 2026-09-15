@@ -40,7 +40,7 @@ Ogni giorno deve contenere:
 - data/giorno;
 - trainingDay;
 - target dinamici ricevuti;
-- pasti con orario;
+- esattamente cinque pasti con orario: colazione, spuntino mattutino, pranzo, spuntino pomeridiano e cena, oppure cinque slot equivalenti coerenti con gli orari dell'utente;
 - ingredienti;
 - quantità numeriche;
 - kcal e macro;

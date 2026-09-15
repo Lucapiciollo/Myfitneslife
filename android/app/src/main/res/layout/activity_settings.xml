@@ -12,6 +12,7 @@
         android:fillViewport="true">
 
         <LinearLayout
+            android:id="@+id/settingsContent"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
@@ -23,19 +24,85 @@
                 <Space android:layout_width="40dp" android:layout_height="1dp" />
             </LinearLayout>
 
-            <com.myfitai.app.ui.widgets.SectionHeaderView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_8"
-                android:text="Intelligenza artificiale" />
+             <com.myfitai.app.ui.widgets.SectionHeaderView
+                 android:id="@+id/generalSectionHeader"
+                 android:layout_width="match_parent"
+                 android:layout_height="wrap_content"
+                 android:layout_marginTop="@dimen/space_8"
+                 android:text="Generale" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_8"
-                android:orientation="vertical"
-                android:background="@drawable/bg_card"
-                android:padding="@dimen/space_16">
+             <LinearLayout
+                 android:id="@+id/generalSectionCard"
+                 android:layout_width="match_parent"
+                 android:layout_height="wrap_content"
+                 android:layout_marginTop="@dimen/space_8"
+                 android:background="@drawable/bg_card"
+                 android:orientation="vertical"
+                 android:paddingHorizontal="@dimen/space_16">
+                 <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowProfile" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_person" app:srLabel="Profilo" />
+                 <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                 <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowFoodPreferences" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="Preferenze alimentari" />
+                 <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                 <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowUnits" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_gear" app:srLabel="Unità di misura" />
+                 <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                 <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowPrivacy" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_lock" app:srLabel="Privacy e dati" />
+                 <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                 <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowExport" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_export" app:srLabel="Esporta dati" />
+             </LinearLayout>
+
+             <com.myfitai.app.ui.widgets.SectionHeaderView
+                 android:id="@+id/dataSectionHeader"
+                 android:layout_width="match_parent"
+                 android:layout_height="wrap_content"
+                 android:layout_marginTop="@dimen/space_20"
+                 android:text="Gestione dati" />
+
+             <LinearLayout
+                 android:id="@+id/dataSectionCard"
+                 android:layout_width="match_parent"
+                 android:layout_height="wrap_content"
+                 android:layout_marginTop="@dimen/space_8"
+                 android:background="@drawable/bg_card"
+                 android:orientation="vertical"
+                 android:paddingHorizontal="@dimen/space_16">
+                 <TextView
+                     android:layout_width="match_parent"
+                     android:layout_height="wrap_content"
+                     android:paddingTop="@dimen/space_12"
+                     android:paddingBottom="@dimen/space_8"
+                     android:text="Le eliminazioni riguardano solo il profilo attivo. Profilo e chiavi IA non vengono cancellati."
+                     android:textColor="@color/text_secondary"
+                     android:textSize="12sp" />
+                 <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeletePlans" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="Elimina alimentazioni" />
+                 <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                 <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteBia" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_gear" app:srLabel="Elimina misure BIA" />
+                 <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                 <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteBody" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_person" app:srLabel="Elimina misure corporee" />
+                 <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                 <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteWorkouts" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_gear" app:srLabel="Elimina allenamenti" />
+                 <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                 <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteCheats" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_add_circle" app:srLabel="Elimina sgarri registrati" />
+                 <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                 <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteReviews" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_export" app:srLabel="Elimina review settimanali" />
+                 <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                 <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteRecordedData" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_lock" app:srLabel="Elimina tutti i dati registrati" />
+             </LinearLayout>
+
+             <com.myfitai.app.ui.widgets.SectionHeaderView
+                 android:id="@+id/aiSectionHeader"
+                 android:layout_width="match_parent"
+                 android:layout_height="wrap_content"
+                 android:layout_marginTop="@dimen/space_20"
+                 android:text="Intelligenza artificiale" />
+
+             <LinearLayout
+                 android:id="@+id/aiSectionCard"
+                 android:layout_width="match_parent"
+                 android:layout_height="wrap_content"
+                 android:layout_marginTop="@dimen/space_8"
+                 android:orientation="vertical"
+                 android:background="@drawable/bg_card"
+                 android:padding="@dimen/space_16">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -196,30 +263,7 @@
                     android:textSize="11sp" />
             </LinearLayout>
 
-            <com.myfitai.app.ui.widgets.SectionHeaderView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_20"
-                android:text="Generale" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_8"
-                android:background="@drawable/bg_card"
-                android:orientation="vertical"
-                android:paddingHorizontal="@dimen/space_16">
-                <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowProfile" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_person" app:srLabel="Profilo" />
-                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
-                <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowFoodPreferences" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="Preferenze alimentari" />
-                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
-                <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowUnits" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_gear" app:srLabel="Unità di misura" />
-                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
-                <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowPrivacy" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_lock" app:srLabel="Privacy e dati" />
-                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
-                <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowExport" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_export" app:srLabel="Esporta dati" />
-            </LinearLayout>
-        </LinearLayout>
+         </LinearLayout>
     </ScrollView>
 
     <include layout="@layout/view_bottom_navigation" />

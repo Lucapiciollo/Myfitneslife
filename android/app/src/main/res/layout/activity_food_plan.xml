@@ -40,6 +40,16 @@
                 android:layout_marginTop="@dimen/space_8" />
 
             <TextView
+                android:id="@+id/mealCountHint"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_8"
+                android:gravity="center"
+                android:text="5 pasti al giorno"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp" />
+
+            <TextView
                 android:id="@+id/emptyPlanText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -105,12 +115,11 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_8"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-                <TextView android:id="@+id/totalKcal" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:textColor="@color/accent_green" android:textStyle="bold" android:textSize="15sp" />
-                <TextView android:id="@+id/totalProtein" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="@dimen/space_8" android:textColor="@color/accent_orange" android:textStyle="bold" android:textSize="13sp" />
-                <TextView android:id="@+id/totalCarbs" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="@dimen/space_8" android:textColor="@color/accent_blue" android:textStyle="bold" android:textSize="13sp" />
-                <TextView android:id="@+id/totalFat" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="@dimen/space_8" android:textColor="@color/accent_purple" android:textStyle="bold" android:textSize="13sp" />
+                android:orientation="vertical">
+                <TextView android:id="@+id/totalKcal" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="@color/accent_green" android:textStyle="bold" android:textSize="15sp" />
+                <TextView android:id="@+id/totalProtein" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:textColor="@color/accent_orange" android:textSize="13sp" />
+                <TextView android:id="@+id/totalCarbs" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:textColor="@color/accent_blue" android:textSize="13sp" />
+                <TextView android:id="@+id/totalFat" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:textColor="@color/accent_purple" android:textSize="13sp" />
             </LinearLayout>
         </LinearLayout>
     </ScrollView>

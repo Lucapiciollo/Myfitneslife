@@ -17,6 +17,14 @@ class NutritionPlanCompactContractTest {
             M|BREAKFAST|Yogurt avena e banana|480|500|35|62|12|Mescola e servi
             I|Yogurt greco|200|g|1 vasetto da 200 g|NET|HIGH|DAIRY
             I|Avena|60|g|60 g|DRY|HIGH|CEREALS
+            M|SNACK|Mela e mandorle|600|300|15|40|12|Servi insieme
+            I|Mela|150|g|1 mela da 150 g|RAW|HIGH|FRUIT
+            M|LUNCH|Riso e pollo|780|600|45|70|15|Cuoci e servi
+            I|Riso|100|g|100 g|DRY|HIGH|CEREALS
+            M|SNACK|Yogurt e frutta|960|400|25|55|8|Servi fresco
+            I|Yogurt|170|g|1 vasetto da 170 g|NET|HIGH|DAIRY
+            M|DINNER|Pesce e patate|1200|600|40|53|23|Cuoci e servi
+            I|Pesce|180|g|180 g|RAW|HIGH|PROTEIN
             H|Bere regolarmente durante la giornata
             V|1|target rispettati
         """.trimIndent()

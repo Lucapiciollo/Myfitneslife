@@ -89,7 +89,7 @@ class MealAlternativeActivity : BaseShellActivity() {
             body.addView(TextView(this).apply {
                 text = String.format(
                     Locale.ITALIAN,
-                    "%d kcal · P %.0fg · C %.0fg · F %.0fg",
+                    "%d kcal · Proteine %.0f g · Carboidrati %.0f g · Grassi %.0f g",
                     alternative.kcal,
                     alternative.proteinG,
                     alternative.carbsG,

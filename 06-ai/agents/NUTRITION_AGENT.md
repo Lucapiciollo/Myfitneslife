@@ -40,6 +40,7 @@ Lavora solo sui dati strutturati dell'app e sulle regole/documentazione controll
 
 ## Qualità del piano
 Il menu deve:
+- contenere esattamente cinque pasti ogni giorno, distribuiti in modo pratico tra colazione, spuntino mattutino, pranzo, spuntino pomeridiano e cena, salvo orari utente che richiedano nomi equivalenti;
 - rispettare il target calorico e i macro entro le tolleranze definite dall'app;
 - mantenere adeguata quota proteica distribuita nella giornata;
 - variare gli alimenti durante la settimana;

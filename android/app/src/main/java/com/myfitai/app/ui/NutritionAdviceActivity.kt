@@ -164,9 +164,9 @@ class NutritionAdviceActivity : BaseShellActivity() {
         setPadding(dp(12), 0, dp(12), dp(6))
         addView(cell("Opzione", 2.4f, bold = true, gravity = Gravity.START, secondary = true))
         addView(cell("kcal", 0.9f, bold = true, secondary = true))
-        addView(cell("P", 0.7f, bold = true, secondary = true))
-        addView(cell("C", 0.7f, bold = true, secondary = true))
-        addView(cell("F", 0.7f, bold = true, secondary = true))
+         addView(cell("Proteine", 0.7f, bold = true, secondary = true))
+         addView(cell("Carboidrati", 0.7f, bold = true, secondary = true))
+         addView(cell("Grassi", 0.7f, bold = true, secondary = true))
     }
 
     private fun cell(
