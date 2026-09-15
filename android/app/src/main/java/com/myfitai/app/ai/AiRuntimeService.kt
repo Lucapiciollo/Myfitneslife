@@ -10,6 +10,7 @@ class AiRuntimeService(context: Context) : AiRuntimeGateway {
     private val settings = AiSettingsStore(appContext)
     private val credentialStore = SecureAiCredentialStore(appContext)
     private val execution = AiExecutionService()
+    private val geminiUsageTracker = GeminiUsageTracker(appContext)
 
     fun config(): AiRuntimeConfig = AiRuntimeConfig(
         useGemini = settings.useGemini,
@@ -24,8 +25,13 @@ class AiRuntimeService(context: Context) : AiRuntimeGateway {
         maxSchemaRetries: Int,
         businessValidator: (String) -> Result<Unit>,
     ): AiExecutionService.ValidatedResponse {
-        val provider = AiProviderSelector.create(appContext, config())
+        val selected = AiProviderSelector.create(appContext, config())
             ?: throw AiTransportException.NotConfigured(config().selectedProvider())
+        val provider: AiProvider = if (selected.type == AiProviderType.GEMINI) {
+            UsageTrackingAiProvider(selected, geminiUsageTracker)
+        } else {
+            selected
+        }
 
         val compact = request.schemaName.contains("_pipe_")
         val scopedRequest = request.copy(
