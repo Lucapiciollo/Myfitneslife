@@ -178,6 +178,7 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 - [x] Smoke test lifecycle delle Activity principali locali: 17 schermate raggiungono almeno `STARTED` e dispongono di content view senza crash; restano aperti gli E2E funzionali completi.
 - [x] E2E UI del flusso consumo verificato su device: piano seminato, dettaglio pasto caricato, registrazione consumo, copertura aggiornata nel piano e Review raggiungibile.
 - [x] E2E UI del flusso sgarro locale verificato: descrizione, gate di conferma IA, annullamento senza chiamata provider e nessuna persistenza prima della conferma; dialog foto raggiungibile senza aprire fotocamera.
+- [x] Fixture foto etichetta verificata: conversione JPEG in memoria, ridimensionamento, rifiuto immagini invalide e cleanup dei file temporanei; import completo da Photo Picker/fotocamera reale resta non certificato.
 - [x] E2E UI export verificato per JSON, CSV ZIP, PDF profilo e PDF piano con dataset QA completo; la foto etichetta reale resta aperta.
 - [ ] E2E UI completo di profilo, dieta, sgarro, review, export e foto.
 - [ ] Test runtime provider Gemini/OpenAI, notifiche Android e stress performance.
