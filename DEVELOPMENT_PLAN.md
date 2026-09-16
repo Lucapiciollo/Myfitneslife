@@ -138,7 +138,7 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 - [x] Firebase AI Logic non è usato nel runtime Gemini; Firebase generico resta configurabile.
 - [x] OpenAI e Gemini condividono il credential store cifrato e la stessa interfaccia `AiProvider`.
 - [ ] Verifica runtime provider Gemini e parità reale Gemini/OpenAI.
-- [ ] Generazione piano settimanale Gemini: Auth Key verificata sul device e JSON-only raggiunge HTTP 200, ma l'output restituito non è parsabile come oggetto JSON (`$ is not a JSON object`); nessun piano/token usage/persistenza certificati.
+- [x] Generazione piano Gemini verificata sul device: modello `gemini-3.5-flash-lite`, HTTP 200, usageMetadata ricevuto, fallback JSON-only, parsing/business validation locale e piano persistito; un primo output è stato respinto per `DAY_TOTALS_INCONSISTENT` e il retry è riuscito.
 - [x] Diagnostica schema weekly-plan: probe A-E reale sul device PASS; schema completo F bloccato da quota Gemini gratuita esaurita (`429 RESOURCE_EXHAUSTED`).
 - [x] Fallback weekly-plan Gemini a `responseMimeType=application/json` senza schema remoto; validazione canonica locale e business validation restano obbligatorie.
 - [x] Settings supporta entrambe le chiavi cifrate contemporaneamente, con un solo provider attivo tramite switch.
@@ -183,8 +183,8 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 - [ ] E2E UI completo di profilo, dieta, sgarro, review, export e foto.
 - [ ] Test runtime provider Gemini/OpenAI, notifiche Android e stress performance.
 - [x] Rieseguire la suite connected completa dopo il gate Alimentazione e la nuova UI delle credenziali: 55/55 PASS su `SM-A546B - 16`.
-- [ ] Testare Gemini BYOK reale su device con API key personale fornita dall'utente; non dichiarare PASS senza risposta strutturata e persistenza verificate.
-- [ ] Risolvere output non parsabile del weekly-plan Gemini in JSON-only; dopo risposta valida registrare `usageMetadata` (input/output/totale token). Il costo monetario effettivo resta verificabile solo tramite Google Cloud Billing.
+- [x] Testare Gemini BYOK reale su device con API key personale inserita manualmente; risposta strutturata, usageMetadata e persistenza piano verificate senza esporre la chiave.
+- [x] Risolvere output non parsabile del weekly-plan Gemini in JSON-only; il flusso ora registra usageMetadata e mantiene la business validation locale. Il costo monetario effettivo resta verificabile solo tramite Google Cloud Billing.
 - [x] Diagnosi parser weekly-plan completata sul device: output troncato (`JSONException: End of input`, categoria `TRUNCATED_JSON`), `finishReason=MAX_TOKENS`; nessun repair automatico e nessuna persistenza di output invalido.
 
 ## Branching

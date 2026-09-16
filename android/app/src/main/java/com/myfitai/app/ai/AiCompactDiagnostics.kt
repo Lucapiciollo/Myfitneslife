@@ -10,9 +10,19 @@ object AiCompactDiagnostics {
         val lines = data.lines().filter { it.isNotBlank() }
         val first = lines.firstOrNull()?.trim().orEmpty()
         val last = lines.lastOrNull()?.trim().orEmpty()
+        val recordStats = lines.drop(1)
+            .groupBy { it.substringBefore('|').take(12) }
+            .entries
+            .sortedBy { it.key }
+            .joinToString(",") { (record, rows) ->
+                val arities = rows.groupingBy { it.split('|').size }.eachCount().entries
+                    .sortedBy { it.key }
+                    .joinToString("/") { "${it.key}x${it.value}" }
+                "$record:${rows.size}:$arities"
+            }
         "dataLength=${data.length} lineCount=${lines.size} expectedVersion=$expectedVersion " +
             "firstLineLength=${first.length} firstLineMatches=${first == expectedVersion} " +
             "firstCharCode=${first.firstOrNull()?.code ?: "-"} lastLineLength=${last.length} " +
-            "lastRecord=${last.substringBefore('|').take(24)}"
+            "lastRecord=${last.substringBefore('|').take(24)} recordStats=$recordStats"
     }.getOrElse { "envelopeDiagnostics=unparseable" }
 }

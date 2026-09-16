@@ -42,7 +42,17 @@ class AiRuntimeService(context: Context) : AiRuntimeGateway {
                 append("\n\n").append(request.systemPrompt.trim())
             },
             maxOutputTokens = if (compact) minOf(request.maxOutputTokens, compactTokenCap(request.schemaName)) else request.maxOutputTokens,
-            thinkingBudget = if (compact) 0 else request.thinkingBudget,
+            // Gemini 3.5 Flash-Lite rejects an explicit thinkingConfig with budget 0.
+            // Compact workloads already constrain output locally; omit the provider field.
+            thinkingBudget = if (compact) null else request.thinkingBudget,
+            // Gemini 3.5 Flash-Lite currently rejects the weekly compact schema as a native
+            // responseSchema. Request JSON-only for that workload and keep envelope/pipe parsing
+            // plus business validation authoritative in the app.
+            useNativeSchema = if (selected.type == AiProviderType.GEMINI && request.schemaName.contains("weekly_nutrition")) {
+                false
+            } else {
+                request.useNativeSchema
+            },
         )
         return execution.execute(provider, scopedRequest, maxSchemaRetries, businessValidator)
     }
