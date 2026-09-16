@@ -152,7 +152,7 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 ### Ultimo stato noto
 - `:app:assembleDebug` e `:app:assembleRelease` verdi sull'HEAD remoto allineato, con Gradle 9.6.0, Java 17 e Android SDK locale.
 - `:app:testDebugUnitTest` verde sul nuovo HEAD, inclusi pricing IA, quality engine BIA e interpretazione trend.
-- `:app:connectedDebugAndroidTest` verde: 54/54 test su `SM-A546B - 16`, inclusi smoke Activity, bottom navigation, QaSeeder, Progress, Settings, Export, notifiche, migration/usage runtime, sessione profilo attivo, E2E consumo pasto, gate sgarro e formati export.
+- `:app:connectedDebugAndroidTest` verde: 55/55 test su `SM-A546B - 16`, inclusi smoke Activity, bottom navigation, QaSeeder, Progress, Settings, Export, notifiche, migration/usage runtime, sessione profilo attivo, E2E consumo pasto, gate sgarro e formati export inclusi PDF piano.
 - Il nuovo HEAD remoto aggiunge test unitari per pricing IA, usage e trend BIA; la suite aggiornata è stata rieseguita e risulta verde.
 - `:app:assembleRelease` verde; il source set debug-only non entra nella build release.
 - Settings device test dopo il refactor BYOK: 2/2 PASS su `SM-A546B - 16`.
@@ -178,10 +178,10 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 - [x] Smoke test lifecycle delle Activity principali locali: 17 schermate raggiungono almeno `STARTED` e dispongono di content view senza crash; restano aperti gli E2E funzionali completi.
 - [x] E2E UI del flusso consumo verificato su device: piano seminato, dettaglio pasto caricato, registrazione consumo, copertura aggiornata nel piano e Review raggiungibile.
 - [x] E2E UI del flusso sgarro locale verificato: descrizione, gate di conferma IA, annullamento senza chiamata provider e nessuna persistenza prima della conferma; dialog foto raggiungibile senza aprire fotocamera.
-- [x] E2E UI export verificato per JSON, CSV ZIP e PDF profilo; PDF piano richiede dataset piano completo e la foto etichetta reale resta aperta.
+- [x] E2E UI export verificato per JSON, CSV ZIP, PDF profilo e PDF piano con dataset QA completo; la foto etichetta reale resta aperta.
 - [ ] E2E UI completo di profilo, dieta, sgarro, review, export e foto.
 - [ ] Test runtime provider Gemini/OpenAI, notifiche Android e stress performance.
-- [x] Rieseguire la suite connected completa dopo il gate Alimentazione e la nuova UI delle credenziali: 54/54 PASS su `SM-A546B - 16`.
+- [x] Rieseguire la suite connected completa dopo il gate Alimentazione e la nuova UI delle credenziali: 55/55 PASS su `SM-A546B - 16`.
 - [ ] Testare Gemini BYOK reale su device con API key personale fornita dall'utente; non dichiarare PASS senza risposta strutturata e persistenza verificate.
 - [ ] Risolvere output non parsabile del weekly-plan Gemini in JSON-only; dopo risposta valida registrare `usageMetadata` (input/output/totale token). Il costo monetario effettivo resta verificabile solo tramite Google Cloud Billing.
 - [x] Diagnosi parser weekly-plan completata sul device: output troncato (`JSONException: End of input`, categoria `TRUNCATED_JSON`), `finishReason=MAX_TOKENS`; nessun repair automatico e nessuna persistenza di output invalido.

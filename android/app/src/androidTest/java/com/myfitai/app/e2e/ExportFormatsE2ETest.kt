@@ -6,6 +6,9 @@ import android.view.View
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.uiautomator.By
+import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.Until
 import com.myfitai.app.data.local.MyFitAiDatabase
 import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.data.profile.ActiveProfileStore
@@ -21,10 +24,12 @@ import java.io.File
 @RunWith(AndroidJUnit4::class)
 class ExportFormatsE2ETest {
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
+    private lateinit var device: UiDevice
     private var scenario: ActivityScenario<ExportActivity>? = null
 
     @Before
     fun seedProfile() {
+        device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
         val database = MyFitAiDatabase.getInstance(context)
         val profileId = runBlocking {
             database.userProfileDao().getFirst()?.id ?: database.userProfileDao().insert(UserProfileEntity(
@@ -59,6 +64,13 @@ class ExportFormatsE2ETest {
         clickAndWaitForFile(com.myfitai.app.R.id.exportPdfRow, "report-profilo", ".pdf")
     }
 
+    @Test
+    fun weeklyPlanPdfRow_createsPdfFromQaPlanThroughRealUi() {
+        seedSixMonthQaPlan()
+        scenario = ActivityScenario.launch(ExportActivity::class.java)
+        clickAndWaitForFile(com.myfitai.app.R.id.exportWeeklyPlanPdfRow, "dieta-settimanale", ".pdf")
+    }
+
     private fun clickAndWaitForFile(id: Int, suffix: String, extension: String) {
         scenario!!.onActivity { activity -> activity.findViewById<View>(id).performClick() }
         val deadline = System.currentTimeMillis() + 30_000L
@@ -69,5 +81,23 @@ class ExportFormatsE2ETest {
             if (file == null) Thread.sleep(200L)
         }
         assertTrue("Missing export $suffix$extension", file != null)
+    }
+
+    private fun seedSixMonthQaPlan() {
+        context.startActivity(Intent().apply {
+            component = android.content.ComponentName(context.packageName, "${context.packageName}.qa.QaSeederActivity")
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        })
+        assertTrue(device.wait(Until.hasObject(By.text("SEED_6_MONTHS")), 8_000))
+        device.findObject(By.text("SEED_6_MONTHS")).click()
+        val deadline = System.currentTimeMillis() + 90_000L
+        var seeded = false
+        while (System.currentTimeMillis() < deadline && !seeded) {
+            val status = device.findObject(By.desc("qa_status"))
+            seeded = status != null && status.text.contains("profile=")
+            if (!seeded) Thread.sleep(250L)
+        }
+        assertTrue("QA plan seed did not complete", seeded)
+        File(context.cacheDir, "exports").deleteRecursively()
     }
 }
