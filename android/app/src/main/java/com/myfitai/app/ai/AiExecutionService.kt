@@ -64,7 +64,7 @@ class AiExecutionService {
             val business = businessValidator(raw.jsonText)
             if (business.isFailure) {
                 val reason = business.exceptionOrNull()?.message ?: "BUSINESS_VALIDATION_FAILED"
-                if (compact && provider is GeminiByokProvider && provider.type == AiProviderType.GEMINI) {
+                if (compact && provider.type == AiProviderType.GEMINI) {
                     val version = request.schemaName.substringBefore("_pipe_").let {
                         when {
                             it.contains("weekly_nutrition") -> "MFP1"
