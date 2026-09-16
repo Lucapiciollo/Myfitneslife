@@ -39,7 +39,7 @@ class GeminiPricingStore(context: Context) {
         prefs.getString(key(model, field), null)?.toBigDecimalOrNull()?.takeIf { it.signum() >= 0 } ?: fallback
 
     private fun defaultPricing(model: String): GeminiPricing = when (model) {
-        AiModelConfig.GEMINI_25_FLASH_LITE -> p(model, "0.10", "0.40", "0.01", "2026-09-15")
+        AiModelConfig.GEMINI_35_FLASH_LITE -> p(model, "0.10", "0.40", "0.01", "2026-09-16")
         AiModelConfig.GEMINI_31_FLASH_LITE -> p(model, "0.25", "1.50", "0.025", "2026-09-15")
         AiModelConfig.GEMINI_25_FLASH -> p(model, "0.30", "2.50", "0.03", "2026-09-15")
         AiModelConfig.GEMINI_37_FLASH -> p(model, "0.75", "3.75", "0.075", "valid through 2026-12-31")

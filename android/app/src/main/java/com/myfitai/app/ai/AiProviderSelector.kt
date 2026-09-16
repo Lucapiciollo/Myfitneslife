@@ -11,7 +11,14 @@ object AiProviderSelector {
             AiProviderType.GEMINI -> GeminiByokProvider(
                 credentialStore = credentials,
                 primaryModel = settings.selectedGeminiModel,
-                fallbackModel = settings.selectedGeminiModel,
+                // A persisted model can become unavailable as the provider catalog evolves.
+                // Keep a known fallback independent from the user's selected primary model so a
+                // 404 MODEL_UNAVAILABLE can recover instead of retrying the same URL.
+                fallbackModel = if (settings.selectedGeminiModel == AiModelConfig.GEMINI_25_FLASH) {
+                    AiModelConfig.GEMINI_35_FLASH_LITE
+                } else {
+                    AiModelConfig.GEMINI_25_FLASH
+                },
             )
             AiProviderType.OPENAI -> OpenAiProvider(
                 credentialStore = credentials,

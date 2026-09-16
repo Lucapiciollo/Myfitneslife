@@ -21,12 +21,17 @@ class GeminiByokProvider(
 
     suspend fun verifyApiKey(apiKey: String): AiRawResponse {
         return generateWithKey(apiKey.trim(), AiStructuredRequest(
-            systemPrompt = "Return only the string ok.",
-            userPrompt = "Reply with ok.",
+            systemPrompt = "Return only a JSON object with status set to ok.",
+            userPrompt = "Reply with {\"status\":\"ok\"}.",
             schemaName = "myfitai_provider_verification",
             schemaJson = "{\"type\":\"object\",\"properties\":{\"status\":{\"type\":\"string\",\"enum\":[\"ok\"]}},\"required\":[\"status\"],\"additionalProperties\":false}",
-            maxOutputTokens = 256,
-            thinkingBudget = 0,
+            maxOutputTokens = 64,
+            // Do not send thinkingConfig during credential verification. Some Gemini models
+            // reject an explicit zero budget even when thinking is not otherwise requested.
+            thinkingBudget = null,
+            // Key verification must not depend on provider-specific native schema support.
+            // The response is still JSON-only and is validated locally by the caller.
+            useNativeSchema = false,
         ))
     }
 
