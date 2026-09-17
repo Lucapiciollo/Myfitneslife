@@ -17,7 +17,7 @@ class CalorieRecoveryRepository(private val db: MyFitAiDatabase) {
             profileId = profileId,
             currentWeekStartEpochDay = currentWeekStartEpochDay,
             tokenPrefix = prefix,
-        ).sumOf { reason ->
+        ).filterNotNull().sumOf { reason ->
             TOKEN_REGEX.findAll(reason)
                 .filter { it.groupValues[1].toLongOrNull() == cheatId }
                 .sumOf { it.groupValues[2].toIntOrNull() ?: 0 }
