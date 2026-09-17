@@ -15,7 +15,10 @@ interface CalorieRecoveryQueryDao {
     )
     suspend fun hasExactReason(profileId: Long, reason: String): Boolean
 
-    /** Only the latest version of each other week is authoritative; historical versions must not double-spend recovery. */
+    /**
+     * Recovery is decided only by a full weekly generation. Meal swaps/cheat adaptations inherit that plan and
+     * must not erase its allocation metadata. If a week is fully regenerated, only its newest AI_GENERATION is authoritative.
+     */
     @Query(
         """SELECT v.reason FROM meal_plan_versions v
             INNER JOIN meal_plans p ON p.id = v.planId
@@ -24,6 +27,7 @@ interface CalorieRecoveryQueryDao {
               AND v.id = (
                   SELECT v2.id FROM meal_plan_versions v2
                   WHERE v2.planId = p.id
+                    AND v2.reason LIKE 'AI_GENERATION:%'
                   ORDER BY v2.versionNumber DESC, v2.id DESC
                   LIMIT 1
               )
