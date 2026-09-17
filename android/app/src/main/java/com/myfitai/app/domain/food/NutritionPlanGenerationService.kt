@@ -128,11 +128,17 @@ class NutritionPlanGenerationService(
         val recentCheats = cheats.between(profileId, recoveryFrom, time.nowEpochMillis()).first()
         val credits = buildList {
             for (entry in recentCheats) {
-                val kcal = entry.estimatedKcal?.takeIf { it > 0 } ?: continue
+                val totalKcal = entry.estimatedKcal?.takeIf { it > 0 } ?: continue
                 if (recovery.wasCheatAdapted(profileId, entry.id)) continue
-                if (recovery.wasRecoveryPlannedOutsideWeek(profileId, entry.id, monday.toEpochDay())) continue
+                val alreadyAllocated = recovery.plannedRecoveryKcalOutsideWeek(
+                    profileId = profileId,
+                    cheatId = entry.id,
+                    currentWeekStartEpochDay = monday.toEpochDay(),
+                )
+                val remainingKcal = (totalKcal - alreadyAllocated).coerceAtLeast(0)
+                if (remainingKcal == 0) continue
                 val occurredOn = Instant.ofEpochMilli(entry.occurredAtEpochMillis).atZone(zone).toLocalDate()
-                add(CalorieRecoveryEngine.Credit(entry.id, occurredOn, kcal))
+                add(CalorieRecoveryEngine.Credit(entry.id, occurredOn, remainingKcal))
             }
         }
         val recoveryPlan = CalorieRecoveryEngine.plan(
@@ -247,8 +253,9 @@ class NutritionPlanGenerationService(
         }
 
         val persistedTargets = averageTargets(dailyTargets.values.toList(), baseTargets)
-        val recoveryTokens = recoveryPlan.usedSourceIds.sorted()
-            .joinToString(",") { CalorieRecoveryRepository.recoveryToken(it) }
+        val recoveryTokens = recoveryPlan.plannedBySource.entries
+            .sortedBy { it.key }
+            .joinToString(",") { (sourceId, kcal) -> CalorieRecoveryRepository.recoveryToken(sourceId, kcal) }
         val recoveryReason = if (recoveryPlan.plannedRecoveryKcal > 0) {
             ":RECOVERY=${recoveryPlan.plannedRecoveryKcal}:$recoveryTokens"
         } else ""
@@ -407,7 +414,7 @@ class NutritionPlanGenerationService(
 MyFitAI nutrition planner. Output ONLY JSON matching the supplied envelope schema. The `data` string must begin with the exact line `MFP1`, followed by the pipe records below. Do not omit `MFP1`, do not replace it with another header, do not use markdown, and do not add text outside records.
 ${NutritionPlanCompactContract.PROTOCOL}
 T is the base local target. Every TD line is the AUTHORITATIVE target for that specific epoch day and overrides T for that day. REC is informational only: available|planned|remaining|maxDailyPercent. Never calculate, increase or decrease recovery yourself and never compensate beyond TD. B0/B/BT order is weightKg|bodyFatPct|muscleMassKg|skeletalMuscleKg|bodyWaterPct|visceralFat and means baseline/current/recent-trend-delta. BM0/BM/BMD/BMT order is chest|waist|abdomen|shoulders|glutes|armLeft|armRight|thighLeft|thighRight|calfLeft|calfRight and means baseline/current/previous-delta/recent-trend-delta. `?` means unavailable. Body/BIA signals are contextual only: use them jointly to inform food choice, distribution and timing, never to autonomously alter calories/macros, diagnose disease, dehydration, edema or muscle loss, or infer causality from one reading. Weight alone must never drive a dietary change.
-DP format is A=allergies;I=intolerances;X=disliked;P=preferred;S=dietStyle;N=notes. A, I and S are HARD constraints: never output an ingredient that violates them. X and P are soft preferences. Do not weaken, reinterpret or override hard constraints. The app independently validates every ingredient and rejects violations.
+DP format is A=allergies;I=intolerances;E=excludedFoods;D=dislikedFoods;P=preferredFoods;S=dietStyle;N=notes. A, I, E and S are HARD constraints: never output an ingredient that violates them. D and P are soft preferences. Do not weaken, reinterpret or override hard constraints. The app independently validates every ingredient and rejects violations.
 Rules: exactly 7 days and exactly MEALS_PER_DAY meals per day. The complete record order is W, then for each day exactly one D followed by its M records, each meal's I records, and optional S/H records; after all 7 days emit exactly ONE V record as the final line. Never emit V inside a day or more than once. Use distinct meal slots with practical timing unless the supplied schedule requires different names. Never use `|` or line breaks inside a text field. All kcal/macros are numeric. Each day's totals include meals plus caloric supplements and must be within ±3% of that day's TD target. Count oils, dressings and caloric drinks. Ordinary foods first. Protein powder is optional and its kcal/macros count. Creatine only when SM=SPORT and always 0 kcal/P/C/F. H may give cautious hydration guidance. No punitive compensation. V notes <= 8 words. Skeleton: MFP1 -> W -> (D -> M/I/S/H repeated for 7 days) -> V exactly once.
 VARIETY: make every meal recipe different across the seven days. Rotate protein sources, vegetables, fruit, grains and preparation methods. Do not repeat the same meal title with the same ingredient set on another day. Recurring staples such as oil, salt, spices or water are allowed; the complete recipe must not be duplicated.
 """.trimIndent()
