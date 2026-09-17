@@ -15,6 +15,8 @@ object NutritionAdviceContract {
         val proteinG: Float,
         val carbsG: Float,
         val fatG: Float,
+        /** Explicit foods/components required so local hard-constraint validation is possible. */
+        val foods: List<String> = emptyList(),
     )
 
     data class Response(
@@ -32,14 +34,23 @@ object NutritionAdviceContract {
         val suggestions = buildList {
             for (i in 0 until suggestionsJson.length()) {
                 val item = suggestionsJson.getJSONObject(i)
-                add(Suggestion(item.getString("title").trim(), item.getString("reason").trim(), item.getInt("estimatedKcal"), item.getDouble("proteinG").toFloat(), item.getDouble("carbsG").toFloat(), item.getDouble("fatG").toFloat()))
+                val foods = item.optJSONArray("foods")?.let { array ->
+                    buildList { for (j in 0 until array.length()) array.optString(j).trim().takeIf { it.isNotBlank() }?.let(::add) }
+                }.orEmpty()
+                add(Suggestion(
+                    item.getString("title").trim(), item.getString("reason").trim(), item.getInt("estimatedKcal"),
+                    item.getDouble("proteinG").toFloat(), item.getDouble("carbsG").toFloat(), item.getDouble("fatG").toFloat(), foods,
+                ))
             }
         }
         val agent = root.getJSONObject("agentValidation")
         return Response(root.getBoolean("inScope"), root.getString("answer").trim(), suggestions, root.getString("assumptions").trim(), NutritionPlanContract.AgentValidation(agent.getBoolean("valid"), agent.getString("notes").trim()))
     }
 
-    fun validateBusiness(response: Response): Result<Unit> = runCatching {
+    fun validateBusiness(
+        response: Response,
+        dietaryProfile: DietaryProfile = DietaryProfile(),
+    ): Result<Unit> = runCatching {
         if (!response.inScope) {
             require(response.suggestions.isEmpty()) { "OUT_OF_SCOPE_WITH_SUGGESTIONS" }
             return@runCatching
@@ -52,6 +63,12 @@ object NutritionAdviceContract {
             require(suggestion.reason.isNotBlank() && suggestion.reason.length <= 120) { "INVALID_SUGGESTION_REASON" }
             require(suggestion.estimatedKcal > 0) { "INVALID_KCAL" }
             require(listOf(suggestion.proteinG, suggestion.carbsG, suggestion.fatG).all { it >= 0f && it.isFinite() }) { "INVALID_MACROS" }
+            if (dietaryProfile.hardConstraints.isNotEmpty() || !dietaryProfile.dietStyle.isNullOrBlank()) {
+                require(suggestion.foods.isNotEmpty()) { "FOODS_REQUIRED_FOR_CONSTRAINT_VALIDATION" }
+            }
+            require(FoodConstraintValidator.validateIngredientNames(suggestion.foods, dietaryProfile).isEmpty()) {
+                "FOOD_CONSTRAINT_VIOLATION"
+            }
         }
     }
 }
