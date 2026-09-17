@@ -28,7 +28,6 @@ data class DietaryProfile(
         put("notes", notes ?: JSONObject.NULL)
     }.toString()
 
-    /** Compact form for prompts. Hard constraints are explicit and precede soft preferences. */
     fun toPromptCompact(): String = buildString {
         append("A=").append(allergies.joinToString(",").ifBlank { "-" })
         append(";I=").append(intolerances.joinToString(",").ifBlank { "-" })
@@ -44,7 +43,6 @@ data class DietaryProfile(
             if (json.isNullOrBlank()) return DietaryProfile()
             return runCatching {
                 val root = JSONObject(json)
-                // Backward compatibility with the old {"notes":"..."} payload.
                 DietaryProfile(
                     preferredFoods = root.stringList("preferredFoods"),
                     dislikedFoods = root.stringList("dislikedFoods"),
@@ -85,7 +83,18 @@ object FoodConstraintValidator {
 
     fun validate(plan: NutritionPlanContract.Response, profile: DietaryProfile): Result<Unit> = runCatching {
         val violations = plan.days.flatMap { day ->
-            day.meals.flatMap { meal -> validateIngredientNames(meal.ingredients.map { it.name }, profile) }
+            val mealViolations = day.meals.flatMap { meal ->
+                validateIngredientNames(meal.ingredients.map { it.name }, profile)
+            }
+            val supplementViolations = day.supplements.flatMap { supplement ->
+                buildList {
+                    addAll(validateIngredientNames(listOf(supplement.name), profile))
+                    if (supplement.kind == "PROTEIN_POWDER" && hasHardConstraints(profile) && proteinSourceIsAmbiguous(supplement.name)) {
+                        add(Violation(supplement.name, "source-not-explicit", "SUPPLEMENT_SOURCE_UNCLEAR"))
+                    }
+                }
+            }
+            mealViolations + supplementViolations
         }
         require(violations.isEmpty()) {
             "FOOD_CONSTRAINT_VIOLATION:${violations.take(5).joinToString(",") { "${it.kind}:${it.constraint}:${it.ingredient}" }}"
@@ -98,10 +107,7 @@ object FoodConstraintValidator {
     }
 
     fun validateIngredientNames(names: List<String>, profile: DietaryProfile): List<Violation> {
-        if (
-            profile.allergies.isEmpty() && profile.intolerances.isEmpty() &&
-            profile.excludedFoods.isEmpty() && profile.dietStyle.isNullOrBlank()
-        ) return emptyList()
+        if (!hasHardConstraints(profile)) return emptyList()
 
         return buildList {
             names.forEach { ingredient ->
@@ -120,6 +126,19 @@ object FoodConstraintValidator {
         }
     }
 
+    private fun hasHardConstraints(profile: DietaryProfile): Boolean =
+        profile.allergies.isNotEmpty() || profile.intolerances.isNotEmpty() ||
+            profile.excludedFoods.isNotEmpty() || !profile.dietStyle.isNullOrBlank()
+
+    private fun proteinSourceIsAmbiguous(name: String): Boolean {
+        val normalized = DietaryProfile.normalize(name)
+        val explicitSources = setOf(
+            "whey", "siero del latte", "caseina", "latte", "soia", "pisello", "riso", "canapa", "albume", "uovo", "vegan", "vegana"
+        )
+        return normalized in setOf("proteine in polvere", "protein powder", "proteine", "protein") ||
+            explicitSources.none(normalized::contains)
+    }
+
     private fun matches(ingredient: String, rawConstraint: String): Boolean {
         val constraint = DietaryProfile.normalize(rawConstraint)
         if (constraint.isBlank()) return false
@@ -128,7 +147,7 @@ object FoodConstraintValidator {
     }
 
     private fun aliases(constraint: String): Set<String> = when (constraint) {
-        "lattosio" -> setOf("latte", "latticini", "yogurt", "formaggio", "panna", "burro", "siero del latte", "whey")
+        "lattosio" -> setOf("latte", "latticini", "yogurt", "formaggio", "panna", "burro", "siero del latte", "whey", "caseina")
         "glutine" -> setOf("frumento", "grano", "orzo", "segale", "farro", "spelta")
         "arachidi" -> setOf("arachide", "burro di arachidi")
         "frutta a guscio", "frutta secca" -> setOf("mandorle", "noci", "nocciole", "pistacchi", "anacardi", "pecan", "macadamia")
@@ -142,7 +161,7 @@ object FoodConstraintValidator {
         if (style.isBlank() || style == "nessuno" || style == "onnivoro") return null
         val meat = setOf("pollo", "tacchino", "manzo", "vitello", "maiale", "prosciutto", "bresaola", "salsiccia", "carne")
         val fish = setOf("pesce", "salmone", "tonno", "merluzzo", "orata", "branzino", "gamber", "polpo", "calamaro")
-        val animal = meat + fish + setOf("latte", "yogurt", "formaggio", "uovo", "uova", "albume", "tuorlo", "miele", "whey", "siero del latte")
+        val animal = meat + fish + setOf("latte", "yogurt", "formaggio", "uovo", "uova", "albume", "tuorlo", "miele", "whey", "caseina", "siero del latte")
         return when (style) {
             "vegetariano", "vegetarian" -> if ((meat + fish).any(ingredient::contains)) rawStyle else null
             "vegano", "vegan" -> if (animal.any(ingredient::contains)) rawStyle else null
