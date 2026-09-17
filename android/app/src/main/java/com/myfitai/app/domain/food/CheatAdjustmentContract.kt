@@ -98,6 +98,7 @@ object CheatAdjustmentContract {
         lockedMeals: List<FoodMeal>,
         futureMeals: List<FoodMeal>,
         targets: NutritionBusinessValidator.Targets,
+        dietaryProfile: DietaryProfile = DietaryProfile(),
     ): Result<Unit> = runCatching {
         val estimate = response.estimate
         require(estimate.kcal > 0 && estimate.proteinG >= 0f && estimate.carbsG >= 0f && estimate.fatG >= 0f) { "CHEAT_ESTIMATE_INVALID" }
@@ -132,6 +133,8 @@ object CheatAdjustmentContract {
                 require(ingredient.unit.isNotBlank() && ingredient.displayDose.isNotBlank()) { "INGREDIENT_DOSE_MISSING" }
                 require(ingredient.weightState.isNotBlank() && ingredient.nutritionConfidence.isNotBlank()) { "INGREDIENT_METADATA_MISSING" }
             }
+            val violations = FoodConstraintValidator.validateIngredientNames(replacement.ingredients.map { it.name }, dietaryProfile)
+            require(violations.isEmpty()) { "FOOD_CONSTRAINT_VIOLATION" }
         }
 
         val replacements = Totals(
