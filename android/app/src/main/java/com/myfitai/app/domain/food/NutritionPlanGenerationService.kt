@@ -5,6 +5,8 @@ import com.myfitai.app.ai.AiStructuredRequest
 import com.myfitai.app.ai.AiUsageMetadata
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.profile.MealCountPreferences
+import com.myfitai.app.data.repository.CalorieRecoveryRepository
+import com.myfitai.app.data.repository.CheatEntryRepository
 import com.myfitai.app.data.repository.DayDraft
 import com.myfitai.app.data.repository.IngredientDraft
 import com.myfitai.app.data.repository.MealDraft
@@ -22,6 +24,7 @@ import com.myfitai.app.domain.personalization.PersonalResponseService
 import com.myfitai.app.domain.time.SystemTimeProvider
 import com.myfitai.app.domain.time.TimeProvider
 import kotlinx.coroutines.flow.first
+import java.time.Instant
 import java.time.LocalDate
 import java.util.Locale
 
@@ -31,6 +34,8 @@ class NutritionPlanGenerationService(
     private val profiles: UserProfileRepository,
     private val workouts: WorkoutRepository,
     private val plans: MealPlanRepository,
+    private val cheats: CheatEntryRepository,
+    private val recovery: CalorieRecoveryRepository,
     private val activeProfileStore: ActiveProfileStore,
     private val personalResponse: PersonalResponseService,
     private val mealCountPreferences: MealCountPreferences? = null,
@@ -56,9 +61,13 @@ class NutritionPlanGenerationService(
         val monday = weekStart.minusDays((weekStart.dayOfWeek.value - 1).toLong())
         if (monday.plusDays(6).isBefore(time.today())) throw GenerationException.PastWeek()
 
-        val profileId = activeProfileStore.currentIdOrNull() ?: throw GenerationException.NeedsInput(listOf("profilo attivo"))
-        val profile = profiles.get(profileId) ?: throw GenerationException.NeedsInput(listOf("profilo"))
-        val snapshot = calculations.activeProfileSnapshot(time.today()) ?: throw GenerationException.NeedsInput(listOf("dati profilo"))
+        val profileId = activeProfileStore.currentIdOrNull()
+            ?: throw GenerationException.NeedsInput(listOf("profilo attivo"))
+        val profile = profiles.get(profileId)
+            ?: throw GenerationException.NeedsInput(listOf("profilo"))
+        val snapshot = calculations.activeProfileSnapshot(time.today())
+            ?: throw GenerationException.NeedsInput(listOf("dati profilo"))
+
         val missingBodyData = buildList {
             if (snapshot.latestBiaTimestamp == null) add("una rilevazione BIA")
             if (snapshot.latestBodyMeasurementTimestamp == null) add("una rilevazione di misure corporee")
@@ -77,12 +86,14 @@ class NutritionPlanGenerationService(
         }
         if (missing.isNotEmpty()) throw GenerationException.NeedsInput(missing)
 
+        val resolvedGoal = goal!!
+        val weightKg = snapshot.latestWeightKg!!.toDouble()
         val adaptive = AdaptiveNutritionTargetEngine.adjust(
             AdaptiveNutritionTargetEngine.Input(
-                goal = goal!!,
+                goal = resolvedGoal,
                 tdeeKcal = calc.tdeeKcal,
                 baseTargetKcal = calc.targetKcal,
-                currentWeightKg = snapshot.latestWeightKg!!.toDouble(),
+                currentWeightKg = weightKg,
                 weight = snapshot.biaMetrics.weight.toAdaptiveEvidence(),
                 bodyFat = snapshot.biaMetrics.bodyFat.toAdaptiveEvidence(),
                 muscleMass = snapshot.biaMetrics.muscleMass.toAdaptiveEvidence(),
@@ -93,10 +104,10 @@ class NutritionPlanGenerationService(
         val finalTargetKcal = adaptive.targetKcal ?: calc.targetKcal!!
         val finalMacros = LocalCalculationEngine.calculateMacrosForTarget(
             targetKcal = finalTargetKcal,
-            weightKg = snapshot.latestWeightKg!!.toDouble(),
-            goal = goal,
+            weightKg = weightKg,
+            goal = resolvedGoal,
         )
-        val targets = NutritionBusinessValidator.Targets(
+        val baseTargets = NutritionBusinessValidator.Targets(
             kcal = finalTargetKcal,
             proteinG = finalMacros.proteinG,
             carbsG = finalMacros.carbsG,
@@ -110,15 +121,41 @@ class NutritionPlanGenerationService(
         val sportsMode = SportsNutritionClassifier.classify(profile.activityLevel, weekWorkouts)
         val mealsPerDay = mealCountPreferences?.get(profileId) ?: MealCountPreferences.DEFAULT
         val personalContext = personalResponse.promptContext(nowEpochMillis = time.nowEpochMillis())
+        val dietaryProfile = DietaryProfile.parse(profile.dietaryPreferencesJson)
+
+        val recoveryFrom = time.today().minusDays(CalorieRecoveryEngine.WINDOW_DAYS)
+            .atStartOfDay(zone).toInstant().toEpochMilli()
+        val recentCheats = cheats.between(profileId, recoveryFrom, time.nowEpochMillis()).first()
+        val credits = buildList {
+            for (entry in recentCheats) {
+                val kcal = entry.estimatedKcal?.takeIf { it > 0 } ?: continue
+                if (recovery.wasCheatAdapted(profileId, entry.id)) continue
+                if (recovery.wasRecoveryPlannedOutsideWeek(profileId, entry.id, monday.toEpochDay())) continue
+                val occurredOn = Instant.ofEpochMilli(entry.occurredAtEpochMillis).atZone(zone).toLocalDate()
+                add(CalorieRecoveryEngine.Credit(entry.id, occurredOn, kcal))
+            }
+        }
+        val recoveryPlan = CalorieRecoveryEngine.plan(
+            monday = monday,
+            today = time.today(),
+            baseTargets = baseTargets,
+            weightKg = weightKg,
+            goal = resolvedGoal,
+            credits = credits,
+        )
+        val dailyTargets = recoveryPlan.days.associate { it.date.toEpochDay() to it.targets }
 
         val request = AiStructuredRequest(
             systemPrompt = SYSTEM_PROMPT,
             userPrompt = buildUserPrompt(
                 monday = monday,
                 profile = profile,
-                targets = targets,
+                baseTargets = baseTargets,
+                dailyTargets = dailyTargets,
+                dietaryProfile = dietaryProfile,
+                recoveryPlan = recoveryPlan,
                 workoutContext = weekWorkouts.map { w ->
-                    val dt = java.time.Instant.ofEpochMilli(w.startedAtEpochMillis).atZone(zone)
+                    val dt = Instant.ofEpochMilli(w.startedAtEpochMillis).atZone(zone)
                     "${dt.toLocalDate()}@${dt.toLocalTime()}@${w.type}@${w.title}@${w.durationMinutes ?: 0}@${if (w.isRestDay) 1 else 0}"
                 },
                 personalContext = personalContext,
@@ -130,8 +167,6 @@ class NutritionPlanGenerationService(
             schemaJson = NutritionPlanCompactContract.schemaJson,
             maxOutputTokens = 6_000,
             thinkingBudget = 0,
-            // Gemini models can reject the full native schema; retry the same request as
-            // JSON-only and keep canonical parsing/business validation local and authoritative.
             allowSchemaFallback = true,
         )
 
@@ -143,19 +178,33 @@ class NutritionPlanGenerationService(
                 runCatching {
                     val response = NutritionPlanCompactContract.parseEnvelope(json, mealsPerDay)
                     NutritionPlanContract.validateBusiness(
-                        response,
-                        monday,
-                        targets,
-                        sportsMode,
+                        response = response,
+                        expectedWeekStart = monday,
+                        targets = baseTargets,
+                        sportsMode = sportsMode,
                         enforceWeeklyVariety = true,
                         mealsPerDay = mealsPerDay,
+                        dailyTargets = dailyTargets,
+                        dietaryProfile = dietaryProfile,
                     ).getOrThrow()
                     parsed = response
                 }
             },
         )
-        val response = parsed ?: runCatching { NutritionPlanCompactContract.parseEnvelope(validated.jsonText, mealsPerDay) }
-            .getOrElse { throw GenerationException.InvalidAiOutput("INVALID_COMPACT_PROTOCOL") }
+        val response = parsed ?: runCatching {
+            NutritionPlanCompactContract.parseEnvelope(validated.jsonText, mealsPerDay).also {
+                NutritionPlanContract.validateBusiness(
+                    response = it,
+                    expectedWeekStart = monday,
+                    targets = baseTargets,
+                    sportsMode = sportsMode,
+                    enforceWeeklyVariety = true,
+                    mealsPerDay = mealsPerDay,
+                    dailyTargets = dailyTargets,
+                    dietaryProfile = dietaryProfile,
+                ).getOrThrow()
+            }
+        }.getOrElse { throw GenerationException.InvalidAiOutput(it.message ?: "INVALID_COMPACT_PROTOCOL") }
 
         val existing = plans.getPlanForWeek(profileId, monday.toEpochDay())
         val reviewReason = if (existing == null) {
@@ -168,16 +217,16 @@ class NutritionPlanGenerationService(
                 plan = response,
                 context = PlanReviewService.Context(
                     monday = monday,
-                    targets = targets,
+                    targets = baseTargets,
                     goal = profile.goal,
                     activityLevel = profile.activityLevel,
                     wakeTimeMinutes = profile.wakeTimeMinutes,
                     sleepTimeMinutes = profile.sleepTimeMinutes,
-                    dietaryPreferences = profile.dietaryPreferencesJson,
+                    dietaryPreferences = dietaryProfile.toPromptCompact(),
                     sportsMode = sportsMode,
                     snapshot = snapshot,
                     workouts = weekWorkouts.map { w ->
-                        val dt = java.time.Instant.ofEpochMilli(w.startedAtEpochMillis).atZone(zone)
+                        val dt = Instant.ofEpochMilli(w.startedAtEpochMillis).atZone(zone)
                         PlanReviewService.WorkoutSignal(
                             dayOffset = (dt.toLocalDate().toEpochDay() - monday.toEpochDay()).toInt().coerceIn(0, 6),
                             timeMinutes = dt.toLocalTime().hour * 60 + dt.toLocalTime().minute,
@@ -197,13 +246,19 @@ class NutritionPlanGenerationService(
             }
         }
 
+        val persistedTargets = averageTargets(dailyTargets.values.toList(), baseTargets)
+        val recoveryTokens = recoveryPlan.usedSourceIds.sorted()
+            .joinToString(",") { CalorieRecoveryRepository.recoveryToken(it) }
+        val recoveryReason = if (recoveryPlan.plannedRecoveryKcal > 0) {
+            ":RECOVERY=${recoveryPlan.plannedRecoveryKcal}:$recoveryTokens"
+        } else ""
         val draft = PlanVersionDraft(
             source = validated.provider.name,
-            reason = "AI_GENERATION:${adaptive.decision.name}:${adaptive.reasonCode}:${adaptive.evidenceWindowDays}D",
-            targetKcal = targets.kcal.toInt(),
-            targetProteinG = targets.proteinG.toFloat(),
-            targetCarbsG = targets.carbsG.toFloat(),
-            targetFatG = targets.fatG.toFloat(),
+            reason = "AI_GENERATION:${adaptive.decision.name}:${adaptive.reasonCode}:${adaptive.evidenceWindowDays}D$recoveryReason",
+            targetKcal = persistedTargets.kcal.toInt(),
+            targetProteinG = persistedTargets.proteinG.toFloat(),
+            targetCarbsG = persistedTargets.carbsG.toFloat(),
+            targetFatG = persistedTargets.fatG.toFloat(),
             days = response.days.sortedBy { it.dateEpochDay }.map { day ->
                 DayDraft(
                     dateEpochDay = day.dateEpochDay,
@@ -261,7 +316,10 @@ class NutritionPlanGenerationService(
     private fun buildUserPrompt(
         monday: LocalDate,
         profile: com.myfitai.app.data.local.entity.UserProfileEntity,
-        targets: NutritionBusinessValidator.Targets,
+        baseTargets: NutritionBusinessValidator.Targets,
+        dailyTargets: Map<Long, NutritionBusinessValidator.Targets>,
+        dietaryProfile: DietaryProfile,
+        recoveryPlan: CalorieRecoveryEngine.Result,
         workoutContext: List<String>,
         personalContext: String,
         snapshot: ProfileCalculationService.Snapshot,
@@ -269,11 +327,15 @@ class NutritionPlanGenerationService(
         mealsPerDay: Int,
     ): String = buildString {
         appendLine("W:${monday.toEpochDay()}")
-        appendLine("T:${targets.kcal.toInt()}|${fmt(targets.proteinG)}|${fmt(targets.carbsG)}|${fmt(targets.fatG)}|3")
+        appendLine("T:${baseTargets.kcal.toInt()}|${fmt(baseTargets.proteinG)}|${fmt(baseTargets.carbsG)}|${fmt(baseTargets.fatG)}|3")
+        dailyTargets.toSortedMap().forEach { (day, target) ->
+            appendLine("TD:$day|${target.kcal.toInt()}|${fmt(target.proteinG)}|${fmt(target.carbsG)}|${fmt(target.fatG)}|3")
+        }
+        appendLine("REC:${recoveryPlan.availableBeforeKcal}|${recoveryPlan.plannedRecoveryKcal}|${recoveryPlan.remainingKcal}|10")
         appendLine("MEALS_PER_DAY:$mealsPerDay")
         appendLine("SM:${sportsMode.name}")
         appendLine("P:${compact(profile.goal)}|${compact(profile.activityLevel)}|${profile.wakeTimeMinutes ?: "?"}|${profile.sleepTimeMinutes ?: "?"}")
-        appendLine("DP:${compact(profile.dietaryPreferencesJson)}")
+        appendLine("DP:${dietaryProfile.toPromptCompact()}")
 
         val b = snapshot.biaMetrics
         appendLine("B0:${values(b.weight.baseline, b.bodyFat.baseline, b.muscleMass.baseline, b.skeletalMuscle.baseline, b.bodyWater.baseline, b.visceralFat.baseline)}")
@@ -289,6 +351,19 @@ class NutritionPlanGenerationService(
 
         workoutContext.forEach { appendLine("WO:${compact(it)}") }
         if (personalContext.isNotBlank()) appendLine("PC:${compact(personalContext)}")
+    }
+
+    private fun averageTargets(
+        values: List<NutritionBusinessValidator.Targets>,
+        fallback: NutritionBusinessValidator.Targets,
+    ): NutritionBusinessValidator.Targets {
+        if (values.isEmpty()) return fallback
+        return NutritionBusinessValidator.Targets(
+            kcal = values.map { it.kcal }.average(),
+            proteinG = values.map { it.proteinG }.average(),
+            carbsG = values.map { it.carbsG }.average(),
+            fatG = values.map { it.fatG }.average(),
+        )
     }
 
     private fun ProfileCalculationService.MetricSnapshot.toAdaptiveEvidence() = AdaptiveNutritionTargetEngine.Evidence(
@@ -331,8 +406,9 @@ class NutritionPlanGenerationService(
         private val SYSTEM_PROMPT = """
 MyFitAI nutrition planner. Output ONLY JSON matching the supplied envelope schema. The `data` string must begin with the exact line `MFP1`, followed by the pipe records below. Do not omit `MFP1`, do not replace it with another header, do not use markdown, and do not add text outside records.
 ${NutritionPlanCompactContract.PROTOCOL}
-Input context: T=kcal|protein|carbs|fat|tolerance and is AUTHORITATIVE. Never recalculate or override T from body data. B0/B/BT order is weightKg|bodyFatPct|muscleMassKg|skeletalMuscleKg|bodyWaterPct|visceralFat and means baseline/current/recent-trend-delta. BM0/BM/BMD/BMT order is chest|waist|abdomen|shoulders|glutes|armLeft|armRight|thighLeft|thighRight|calfLeft|calfRight and means baseline/current/previous-delta/recent-trend-delta. `?` means unavailable. Body/BIA signals are contextual only: use them jointly to inform food choice, distribution and timing, never to autonomously alter calories/macros, diagnose disease, dehydration, edema or muscle loss, or infer causality from one reading. Weight alone must never drive a dietary change.
- Rules: exactly 7 days and exactly MEALS_PER_DAY meals per day. The complete record order is W, then for each day exactly one D followed by its M records, each meal's I records, and optional S/H records; after all 7 days emit exactly ONE V record as the final line. Never emit V inside a day or more than once. Use distinct meal slots with practical timing unless the supplied schedule requires different names. Never use `|` or line breaks inside a text field. All kcal/macros are numeric. Daily totals include meals plus caloric supplements and must be within ±3% of authoritative targets. Count oils, dressings and caloric drinks. Ordinary foods first. Protein powder is optional and its kcal/macros count. Creatine only when SM=SPORT and always 0 kcal/P/C/F. H may give cautious hydration guidance. No punitive compensation. V notes <= 8 words. Skeleton: MFP1 -> W -> (D -> M/I/S/H repeated for 7 days) -> V exactly once.
+T is the base local target. Every TD line is the AUTHORITATIVE target for that specific epoch day and overrides T for that day. REC is informational only: available|planned|remaining|maxDailyPercent. Never calculate, increase or decrease recovery yourself and never compensate beyond TD. B0/B/BT order is weightKg|bodyFatPct|muscleMassKg|skeletalMuscleKg|bodyWaterPct|visceralFat and means baseline/current/recent-trend-delta. BM0/BM/BMD/BMT order is chest|waist|abdomen|shoulders|glutes|armLeft|armRight|thighLeft|thighRight|calfLeft|calfRight and means baseline/current/previous-delta/recent-trend-delta. `?` means unavailable. Body/BIA signals are contextual only: use them jointly to inform food choice, distribution and timing, never to autonomously alter calories/macros, diagnose disease, dehydration, edema or muscle loss, or infer causality from one reading. Weight alone must never drive a dietary change.
+DP format is A=allergies;I=intolerances;X=disliked;P=preferred;S=dietStyle;N=notes. A, I and S are HARD constraints: never output an ingredient that violates them. X and P are soft preferences. Do not weaken, reinterpret or override hard constraints. The app independently validates every ingredient and rejects violations.
+Rules: exactly 7 days and exactly MEALS_PER_DAY meals per day. The complete record order is W, then for each day exactly one D followed by its M records, each meal's I records, and optional S/H records; after all 7 days emit exactly ONE V record as the final line. Never emit V inside a day or more than once. Use distinct meal slots with practical timing unless the supplied schedule requires different names. Never use `|` or line breaks inside a text field. All kcal/macros are numeric. Each day's totals include meals plus caloric supplements and must be within ±3% of that day's TD target. Count oils, dressings and caloric drinks. Ordinary foods first. Protein powder is optional and its kcal/macros count. Creatine only when SM=SPORT and always 0 kcal/P/C/F. H may give cautious hydration guidance. No punitive compensation. V notes <= 8 words. Skeleton: MFP1 -> W -> (D -> M/I/S/H repeated for 7 days) -> V exactly once.
 VARIETY: make every meal recipe different across the seven days. Rotate protein sources, vegetables, fruit, grains and preparation methods. Do not repeat the same meal title with the same ingredient set on another day. Recurring staples such as oil, salt, spices or water are allowed; the complete recipe must not be duplicated.
 """.trimIndent()
     }
