@@ -104,6 +104,7 @@ class AppDataContainer private constructor(context: Context) {
         aiRuntime = aiRuntimeService,
         plans = mealPlanRepository,
         cheats = cheatEntryRepository,
+        profiles = userProfileRepository,
         activeProfileStore = activeProfileStore,
     )
 
