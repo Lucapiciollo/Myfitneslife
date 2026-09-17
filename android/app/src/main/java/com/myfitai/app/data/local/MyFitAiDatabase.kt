@@ -38,6 +38,7 @@ abstract class MyFitAiDatabase : RoomDatabase() {
     abstract fun foodConsumptionDao(): FoodConsumptionDao
     abstract fun weeklyReviewDao(): WeeklyReviewDao
     abstract fun aiUsageDao(): AiUsageDao
+    abstract fun calorieRecoveryQueryDao(): CalorieRecoveryQueryDao
 
     companion object {
         const val DATABASE_NAME = "myfitai.db"
