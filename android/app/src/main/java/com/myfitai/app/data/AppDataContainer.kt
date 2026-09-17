@@ -43,6 +43,7 @@ class AppDataContainer private constructor(context: Context) {
     val workoutRepository = WorkoutRepository(db)
     val mealPlanRepository = MealPlanRepository(db)
     val cheatEntryRepository = CheatEntryRepository(db)
+    val calorieRecoveryRepository = CalorieRecoveryRepository(db)
     val foodConsumptionRepository = FoodConsumptionRepository(db)
     val foodConsumptionService = FoodConsumptionService(foodConsumptionRepository, activeProfileStore)
     val weeklyReviewRepository = WeeklyReviewRepository(db)
@@ -91,6 +92,8 @@ class AppDataContainer private constructor(context: Context) {
         profiles = userProfileRepository,
         workouts = workoutRepository,
         plans = mealPlanRepository,
+        cheats = cheatEntryRepository,
+        recovery = calorieRecoveryRepository,
         activeProfileStore = activeProfileStore,
         personalResponse = personalResponseService,
         mealCountPreferences = mealCountPreferences,
