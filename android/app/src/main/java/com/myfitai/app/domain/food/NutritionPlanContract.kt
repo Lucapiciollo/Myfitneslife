@@ -132,6 +132,8 @@ object NutritionPlanContract {
         sportsMode: SportsNutritionClassifier.Mode = SportsNutritionClassifier.Mode.NORMAL,
         enforceWeeklyVariety: Boolean = false,
         mealsPerDay: Int = REQUIRED_MEALS_PER_DAY,
+        dailyTargets: Map<Long, NutritionBusinessValidator.Targets> = emptyMap(),
+        dietaryProfile: DietaryProfile = DietaryProfile(),
     ): Result<Unit> = runCatching {
         require(response.weekStartEpochDay == expectedWeekStart.toEpochDay()) { "WEEK_START_MISMATCH" }
         require(response.days.size == 7) { "WEEK_MUST_HAVE_7_DAYS" }
@@ -141,8 +143,12 @@ object NutritionPlanContract {
         response.days.forEach { day ->
             require(mealsPerDay in SUPPORTED_MEALS_PER_DAY) { "MEAL_COUNT_NOT_SUPPORTED" }
             require(day.meals.size == mealsPerDay) { "DAY_MUST_HAVE_${mealsPerDay}_MEALS" }
-            val appValidation = NutritionBusinessValidator.validate(targets, NutritionBusinessValidator.Actuals(day.totalKcal.toDouble(), day.proteinG.toDouble(), day.carbsG.toDouble(), day.fatG.toDouble()))
-            require(appValidation.valid) { "TARGET_TOLERANCE_EXCEEDED" }
+            val expectedTargets = dailyTargets[day.dateEpochDay] ?: targets
+            val appValidation = NutritionBusinessValidator.validate(
+                expectedTargets,
+                NutritionBusinessValidator.Actuals(day.totalKcal.toDouble(), day.proteinG.toDouble(), day.carbsG.toDouble(), day.fatG.toDouble()),
+            )
+            require(appValidation.valid) { "TARGET_TOLERANCE_EXCEEDED:${day.dateEpochDay}" }
 
             day.supplements.forEach { supplement ->
                 require(supplement.kind in ALLOWED_SUPPLEMENT_KINDS) { "SUPPLEMENT_NOT_ALLOWED" }
@@ -174,6 +180,7 @@ object NutritionPlanContract {
                 }
             }
         }
+        FoodConstraintValidator.validate(response, dietaryProfile).getOrThrow()
         if (enforceWeeklyVariety) validateWeeklyVariety(response)
     }
 
