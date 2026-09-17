@@ -40,5 +40,5 @@ interface CalorieRecoveryQueryDao {
         profileId: Long,
         currentWeekStartEpochDay: Long,
         tokenPrefix: String,
-    ): List<String>
+    ): List<String?>
 }
