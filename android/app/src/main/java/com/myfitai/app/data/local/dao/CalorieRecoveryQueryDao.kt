@@ -16,17 +16,18 @@ interface CalorieRecoveryQueryDao {
     suspend fun hasExactReason(profileId: Long, reason: String): Boolean
 
     @Query(
-        """SELECT EXISTS(
-            SELECT 1 FROM meal_plan_versions v
+        """SELECT v.reason FROM meal_plan_versions v
             INNER JOIN meal_plans p ON p.id = v.planId
             WHERE p.profileId = :profileId
               AND p.weekStartEpochDay != :currentWeekStartEpochDay
-              AND v.reason LIKE '%' || :token || '%'
-        )"""
+              AND v.reason LIKE '%' || :tokenPrefix || '%'
+              AND v.reason IS NOT NULL
+            ORDER BY v.createdAtEpochMillis ASC, v.id ASC
+        """
     )
-    suspend fun hasRecoveryTokenOutsideWeek(
+    suspend fun recoveryReasonsOutsideWeek(
         profileId: Long,
         currentWeekStartEpochDay: Long,
-        token: String,
-    ): Boolean
+        tokenPrefix: String,
+    ): List<String>
 }
