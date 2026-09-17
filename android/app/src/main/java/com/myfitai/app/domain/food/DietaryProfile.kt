@@ -9,16 +9,19 @@ import java.util.Locale
 data class DietaryProfile(
     val preferredFoods: List<String> = emptyList(),
     val dislikedFoods: List<String> = emptyList(),
+    val excludedFoods: List<String> = emptyList(),
     val intolerances: List<String> = emptyList(),
     val allergies: List<String> = emptyList(),
     val dietStyle: String? = null,
     val notes: String? = null,
 ) {
-    val hardConstraints: List<String> get() = (allergies + intolerances).map(::normalize).filter { it.isNotBlank() }.distinct()
+    val hardConstraints: List<String>
+        get() = (allergies + intolerances + excludedFoods).map(::normalize).filter { it.isNotBlank() }.distinct()
 
     fun toJson(): String = JSONObject().apply {
         put("preferredFoods", JSONArray(preferredFoods))
         put("dislikedFoods", JSONArray(dislikedFoods))
+        put("excludedFoods", JSONArray(excludedFoods))
         put("intolerances", JSONArray(intolerances))
         put("allergies", JSONArray(allergies))
         put("dietStyle", dietStyle ?: JSONObject.NULL)
@@ -29,7 +32,8 @@ data class DietaryProfile(
     fun toPromptCompact(): String = buildString {
         append("A=").append(allergies.joinToString(",").ifBlank { "-" })
         append(";I=").append(intolerances.joinToString(",").ifBlank { "-" })
-        append(";X=").append(dislikedFoods.joinToString(",").ifBlank { "-" })
+        append(";E=").append(excludedFoods.joinToString(",").ifBlank { "-" })
+        append(";D=").append(dislikedFoods.joinToString(",").ifBlank { "-" })
         append(";P=").append(preferredFoods.joinToString(",").ifBlank { "-" })
         append(";S=").append(dietStyle?.takeIf { it.isNotBlank() } ?: "-")
         append(";N=").append(notes?.takeIf { it.isNotBlank() } ?: "-")
@@ -44,6 +48,7 @@ data class DietaryProfile(
                 DietaryProfile(
                     preferredFoods = root.stringList("preferredFoods"),
                     dislikedFoods = root.stringList("dislikedFoods"),
+                    excludedFoods = root.stringList("excludedFoods"),
                     intolerances = root.stringList("intolerances"),
                     allergies = root.stringList("allergies"),
                     dietStyle = root.optString("dietStyle").takeIf { it.isNotBlank() && it != "null" },
@@ -74,7 +79,7 @@ data class DietaryProfile(
     }
 }
 
-/** Deterministic final gate: an LLM cannot override declared allergies/intolerances/diet style. */
+/** Deterministic final gate: an LLM cannot override declared allergies/intolerances/exclusions/diet style. */
 object FoodConstraintValidator {
     data class Violation(val ingredient: String, val constraint: String, val kind: String)
 
@@ -93,7 +98,11 @@ object FoodConstraintValidator {
     }
 
     fun validateIngredientNames(names: List<String>, profile: DietaryProfile): List<Violation> {
-        if (profile.allergies.isEmpty() && profile.intolerances.isEmpty() && profile.dietStyle.isNullOrBlank()) return emptyList()
+        if (
+            profile.allergies.isEmpty() && profile.intolerances.isEmpty() &&
+            profile.excludedFoods.isEmpty() && profile.dietStyle.isNullOrBlank()
+        ) return emptyList()
+
         return buildList {
             names.forEach { ingredient ->
                 val normalizedIngredient = DietaryProfile.normalize(ingredient)
@@ -102,6 +111,9 @@ object FoodConstraintValidator {
                 }
                 profile.intolerances.forEach { constraint ->
                     if (matches(normalizedIngredient, constraint)) add(Violation(ingredient, constraint, "INTOLERANCE"))
+                }
+                profile.excludedFoods.forEach { constraint ->
+                    if (matches(normalizedIngredient, constraint)) add(Violation(ingredient, constraint, "EXCLUDED"))
                 }
                 dietStyleViolation(normalizedIngredient, profile.dietStyle)?.let { add(Violation(ingredient, it, "DIET_STYLE")) }
             }
