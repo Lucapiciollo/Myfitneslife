@@ -51,13 +51,14 @@ class CompactAgentProtocolsTest {
             appendLine("NA1")
             appendLine("S|1")
             appendLine("A|Cinque scelte compatte")
-            repeat(5) { i -> appendLine("O|Scelta $i|coerente|300|25|30|8") }
+            repeat(5) { i -> appendLine("O|Scelta $i|coerente|300|25|30|8|riso,pollo") }
             appendLine("Q|")
             append("V|1|")
         }
         val value = NutritionAdviceCompactContract.parse(envelope(payload))
         assertTrue(value.inScope)
         assertEquals(5, value.suggestions.size)
+        assertEquals(listOf("riso", "pollo"), value.suggestions.first().foods)
     }
 
     @Test fun weeklyReview_parsesCompactRows() {
