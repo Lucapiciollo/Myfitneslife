@@ -33,9 +33,7 @@
             android:gravity="center"
             android:text="Modifica profilo" />
 
-        <Space
-            android:layout_width="48dp"
-            android:layout_height="48dp" />
+        <Space android:layout_width="48dp" android:layout_height="48dp" />
     </LinearLayout>
 
     <androidx.core.widget.NestedScrollView
@@ -83,7 +81,6 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12"
                     android:hint="Nome profilo">
-
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/nameInput"
                         android:layout_width="match_parent"
@@ -100,7 +97,6 @@
                     android:hint="Data di nascita"
                     app:endIconDrawable="@drawable/ic_calendar"
                     app:endIconMode="custom">
-
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/birthDateInput"
                         android:layout_width="match_parent"
@@ -117,7 +113,6 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_8"
                     android:hint="Sesso biologico">
-
                     <AutoCompleteTextView
                         android:id="@+id/sexInput"
                         android:layout_width="match_parent"
@@ -130,14 +125,12 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_8"
                     android:orientation="horizontal">
-
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/heightLayout"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:hint="Altezza (cm)">
-
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/heightInput"
                             android:layout_width="match_parent"
@@ -145,18 +138,13 @@
                             android:inputType="numberDecimal"
                             android:maxLines="1" />
                     </com.google.android.material.textfield.TextInputLayout>
-
-                    <Space
-                        android:layout_width="@dimen/space_8"
-                        android:layout_height="1dp" />
-
+                    <Space android:layout_width="@dimen/space_8" android:layout_height="1dp" />
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/weightLayout"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:hint="Peso (kg)">
-
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/weightInput"
                             android:layout_width="match_parent"
@@ -188,7 +176,6 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12"
                     android:hint="Obiettivo">
-
                     <AutoCompleteTextView
                         android:id="@+id/goalInput"
                         android:layout_width="match_parent"
@@ -203,7 +190,6 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_8"
                     android:hint="Livello di attività">
-
                     <AutoCompleteTextView
                         android:id="@+id/activityInput"
                         android:layout_width="match_parent"
@@ -231,13 +217,11 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12"
                     android:orientation="horizontal">
-
                     <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:hint="Sveglia">
-
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/wakeTimeInput"
                             android:layout_width="match_parent"
@@ -246,17 +230,12 @@
                             android:focusable="false"
                             android:inputType="none" />
                     </com.google.android.material.textfield.TextInputLayout>
-
-                    <Space
-                        android:layout_width="@dimen/space_8"
-                        android:layout_height="1dp" />
-
+                    <Space android:layout_width="@dimen/space_8" android:layout_height="1dp" />
                     <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:hint="Sonno">
-
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/sleepTimeInput"
                             android:layout_width="match_parent"
@@ -280,21 +259,106 @@
                     style="@style/Text.MyFitAI.Section"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Preferenze alimentari" />
+                    android:text="Preferenze e vincoli alimentari" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_4"
+                    android:text="Separa più alimenti con una virgola. Allergie, intolleranze ed esclusioni sono vincoli rigidi."
+                    android:textColor="@color/text_muted"
+                    android:textSize="11sp" />
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12"
-                    android:hint="Preferenze, alimenti graditi, note">
+                    android:hint="Alimenti preferiti">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/preferredFoodsInput"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textCapSentences"
+                        android:maxLines="2" />
+                </com.google.android.material.textfield.TextInputLayout>
 
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_8"
+                    android:hint="Alimenti non graditi">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/dislikedFoodsInput"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textCapSentences"
+                        android:maxLines="2" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_8"
+                    android:hint="Alimenti da escludere">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/excludedFoodsInput"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textCapSentences"
+                        android:maxLines="2" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_8"
+                    android:hint="Intolleranze">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/intolerancesInput"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textCapSentences"
+                        android:maxLines="2" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_8"
+                    android:hint="Allergie">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/allergiesInput"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textCapSentences"
+                        android:maxLines="2" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_8"
+                    android:hint="Stile alimentare">
+                    <AutoCompleteTextView
+                        android:id="@+id/dietStyleInput"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="none" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_8"
+                    android:hint="Note alimentari">
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/preferencesInput"
                         android:layout_width="match_parent"
-                        android:layout_height="104dp"
+                        android:layout_height="96dp"
                         android:gravity="top|start"
                         android:inputType="textMultiLine|textCapSentences"
-                        android:maxLines="5" />
+                        android:maxLines="4" />
                 </com.google.android.material.textfield.TextInputLayout>
             </LinearLayout>
 
