@@ -10,13 +10,13 @@ import com.myfitai.app.domain.calculation.NutritionBusinessValidator
 import com.myfitai.app.domain.time.SystemTimeProvider
 import com.myfitai.app.domain.time.TimeProvider
 import java.time.Instant
-import java.time.ZoneId
 import kotlin.math.abs
 
 class CheatAdjustmentService(
     private val aiRuntime: AiRuntimeGateway,
     private val plans: MealPlanRepository,
     private val cheats: CheatEntryRepository,
+    private val profiles: UserProfileRepository,
     private val activeProfileStore: ActiveProfileStore,
     private val time: TimeProvider = SystemTimeProvider,
 ) {
@@ -28,7 +28,6 @@ class CheatAdjustmentService(
         val labelImage: AiImageInput? = null,
     )
 
-    /** Ephemeral result: nothing has been persisted yet. */
     data class Understanding(
         val understoodFood: String,
         val estimate: CheatAdjustmentContract.Estimate,
@@ -55,10 +54,6 @@ class CheatAdjustmentService(
         class PreviewStale : AdjustmentException("La descrizione è cambiata: fai rivalutare lo sgarro all'IA prima di confermare.")
     }
 
-    /**
-     * First phase. The AI explains what it understood and estimates the event.
-     * No CheatEntry and no plan version are written here.
-     */
     suspend fun analyze(input: Input): Understanding {
         validateInput(input)
         activeProfileStore.currentIdOrNull() ?: throw AdjustmentException.NeedsInput(listOf("profilo attivo"))
@@ -91,10 +86,6 @@ class CheatAdjustmentService(
         )
     }
 
-    /**
-     * Second phase. Only a previously displayed/confirmed understanding may be persisted.
-     * If there is a plan to adapt, the second AI call is constrained to the already-confirmed estimate.
-     */
     suspend fun registerAndAdapt(input: Input, confirmed: Understanding): Result {
         validateInput(input)
         if (confirmed.inputFingerprint != fingerprint(input)) throw AdjustmentException.PreviewStale()
@@ -102,6 +93,9 @@ class CheatAdjustmentService(
         val description = input.description.trim()
         val profileId = activeProfileStore.currentIdOrNull()
             ?: throw AdjustmentException.NeedsInput(listOf("profilo attivo"))
+        val profile = profiles.get(profileId)
+            ?: throw AdjustmentException.NeedsInput(listOf("profilo"))
+        val dietaryProfile = DietaryProfile.parse(profile.dietaryPreferencesJson)
         val zone = time.zoneId
         val occurred = Instant.ofEpochMilli(input.occurredAtEpochMillis).atZone(zone)
         val date = occurred.toLocalDate()
@@ -145,7 +139,10 @@ class CheatAdjustmentService(
         val responseAndValidation = runCatching {
             val request = AiStructuredRequest(
                 systemPrompt = ADJUSTMENT_SYSTEM_PROMPT,
-                userPrompt = buildAdjustmentPrompt(input, confirmed, date.toEpochDay(), minuteOfDay, day, lockedMeals, futureMeals, targets),
+                userPrompt = buildAdjustmentPrompt(
+                    input, confirmed, date.toEpochDay(), minuteOfDay, day,
+                    lockedMeals, futureMeals, targets, dietaryProfile,
+                ),
                 schemaName = CheatAdjustmentContract.SCHEMA_NAME,
                 schemaJson = CheatAdjustmentContract.schemaJson,
                 maxOutputTokens = 8_000,
@@ -158,11 +155,19 @@ class CheatAdjustmentService(
                 businessValidator = { json -> runCatching {
                     val response = CheatAdjustmentContract.parse(json)
                     requireSameEstimate(response.estimate, confirmed.estimate)
-                    CheatAdjustmentContract.validateBusiness(response, lockedMeals, futureMeals, targets).getOrThrow()
+                    CheatAdjustmentContract.validateBusiness(
+                        response, lockedMeals, futureMeals, targets, dietaryProfile,
+                    ).getOrThrow()
                     parsed = response
                 } },
             )
-            (parsed ?: CheatAdjustmentContract.parse(validated.jsonText)) to validated
+            val response = parsed ?: CheatAdjustmentContract.parse(validated.jsonText).also {
+                requireSameEstimate(it.estimate, confirmed.estimate)
+                CheatAdjustmentContract.validateBusiness(
+                    it, lockedMeals, futureMeals, targets, dietaryProfile,
+                ).getOrThrow()
+            }
+            response to validated
         }.getOrElse {
             return Result(
                 cheatId = cheatId,
@@ -170,7 +175,7 @@ class CheatAdjustmentService(
                 newVersionId = null,
                 estimatedKcal = confirmed.estimate.kcal,
                 estimateSummary = confirmed.estimateSummary,
-                adaptationSummary = "Lo sgarro confermato è stato salvato. Nessuna modifica al piano è stata applicata perché l'adattamento IA non è riuscito o non ha rispettato la stima già confermata.",
+                adaptationSummary = "Lo sgarro confermato è stato salvato. Nessuna modifica al piano è stata applicata perché l'adattamento IA non è riuscito o non ha rispettato i vincoli del profilo.",
                 modifiedMeals = emptyList(),
             )
         }
@@ -179,11 +184,7 @@ class CheatAdjustmentService(
         val validated = responseAndValidation.second
         if (!response.adaptationPossible) {
             return Result(
-                cheatId,
-                false,
-                null,
-                confirmed.estimate.kcal,
-                confirmed.estimateSummary,
+                cheatId, false, null, confirmed.estimate.kcal, confirmed.estimateSummary,
                 response.adaptationReason.ifBlank { "Sgarro registrato; nessuna compensazione punitiva applicata." },
                 emptyList(),
             )
@@ -203,7 +204,9 @@ class CheatAdjustmentService(
                             carbsG = replacement.carbsG,
                             fatG = replacement.fatG,
                             preparation = replacement.preparation,
-                            ingredients = replacement.ingredients.map { IngredientDraft(it.name, it.quantity, it.unit, it.displayDose, it.weightState, it.nutritionConfidence, it.category) },
+                            ingredients = replacement.ingredients.map {
+                                IngredientDraft(it.name, it.quantity, it.unit, it.displayDose, it.weightState, it.nutritionConfidence, it.category)
+                            },
                         )
                     } ?: toDraft(sourceMeal)
                 }
@@ -236,11 +239,7 @@ class CheatAdjustmentService(
         )
 
         return Result(
-            cheatId,
-            true,
-            versionId,
-            confirmed.estimate.kcal,
-            confirmed.estimateSummary,
+            cheatId, true, versionId, confirmed.estimate.kcal, confirmed.estimateSummary,
             response.adaptationReason.ifBlank { "Sono stati adattati esclusivamente i pasti ancora futuri di oggi." },
             response.replacementMeals.sortedBy { it.sortOrder }.map { "${it.type}: ${it.title}" },
         )
@@ -294,10 +293,12 @@ class CheatAdjustmentService(
         lockedMeals: List<FoodMeal>,
         futureMeals: List<FoodMeal>,
         targets: NutritionBusinessValidator.Targets,
+        dietaryProfile: DietaryProfile,
     ): String = buildString {
         appendLine("CONFIRMED USER INTERPRETATION: ${confirmed.understoodFood}")
         appendLine("CONFIRMED ESTIMATE - MUST COPY EXACTLY into response.estimate:")
         appendLine("kcal=${confirmed.estimate.kcal}; proteinG=${confirmed.estimate.proteinG}; carbsG=${confirmed.estimate.carbsG}; fatG=${confirmed.estimate.fatG}; confidence=${confirmed.estimate.confidence}; notes=${confirmed.estimate.notes}")
+        appendLine("DP:${dietaryProfile.toPromptCompact()}")
         appendLine("Original user description: ${input.description.trim()}")
         appendLine("Quantity hint: ${input.quantityText?.trim().orEmpty()}")
         appendLine("User notes: ${input.notes?.trim().orEmpty()}")
@@ -308,7 +309,8 @@ class CheatAdjustmentService(
         appendLine("Only these future meals may be replaced, preserving sortOrder and timeMinutes:")
         futureMeals.forEach { appendLine(mealLine(it)) }
         appendLine("Original day totals: kcal=${day.totalKcal}, P=${day.proteinG}, C=${day.carbsG}, F=${day.fatG}")
-        appendLine("Do not re-estimate the deviation. Use the confirmed estimate exactly. If balancing requires implausibly small meals, set adaptationPossible=false with replacementMeals=[].")
+        appendLine("Do not re-estimate the deviation. Use the confirmed estimate exactly. If balancing requires implausibly small meals, set adaptationPossible=false with no replacements.")
+        appendLine("A/I/E/S in DP are hard constraints. D/P are soft preferences. Any replacement violating a hard constraint will be rejected locally.")
         appendLine("If possible, return exactly one replacement per future meal, never move times, and keep each replacement >=100 kcal. Count oils, sauces, condiments and caloric drinks.")
         appendLine("The app will independently verify locked meals + confirmed estimate + replacements within ±3% of the original daily targets. agentValidation is advisory only.")
     }
@@ -325,16 +327,18 @@ class CheatAdjustmentService(
         supplements = day.supplements.map { it.toDraft() },
         hydrationNote = day.hydrationNote,
     )
+
     private fun toDraft(meal: FoodMeal) = MealDraft(
         meal.type, meal.title, meal.timeMinutes, meal.kcal, meal.proteinG, meal.carbsG, meal.fatG, meal.preparation,
         meal.ingredients.map { IngredientDraft(it.name, it.quantity, it.unit, it.displayDose, it.weightState, it.nutritionConfidence, it.category) },
     )
+
     private fun FoodSupplement.toDraft() = SupplementDraft(kind, name, dose, unit, timeMinutes, kcal, proteinG, carbsG, fatG, notes)
     private fun sumOrNull(values: List<Float?>): Float? = values.filterNotNull().takeIf { it.isNotEmpty() }?.sum()
 
     companion object {
         private const val UNDERSTANDING_SYSTEM_PROMPT = """You are MyFitAI Nutrition Understanding Agent. Return only JSON matching the supplied schema. Your first job is to tell the user, in concise Italian, exactly what you understood they consumed, then estimate kcal and macros cautiously. If a nutrition-label image is attached, use only clearly visible values and never invent unreadable data. Nothing is saved at this stage; the user must be able to correct your understanding before confirmation."""
 
-        private const val ADJUSTMENT_SYSTEM_PROMPT = """You are MyFitAI Nutrition Deviation Adaptation Agent. Return only JSON matching the supplied schema. The deviation interpretation and nutritional estimate were already shown to and confirmed by the user: copy that estimate exactly and do not reinterpret it. You may modify only meals explicitly listed as future meals for the same day. Never modify past meals or later days, never move meal times, and never use punitive fasting or extreme restriction. If a valid daily balance within ±3% cannot be achieved with reasonable future meals of at least 100 kcal each, set adaptationPossible=false and return no replacements. The app is authoritative for validation."""
+        private const val ADJUSTMENT_SYSTEM_PROMPT = """You are MyFitAI Nutrition Deviation Adaptation Agent. Return only JSON matching the supplied schema. The deviation interpretation and nutritional estimate were already shown to and confirmed by the user: copy that estimate exactly and do not reinterpret it. DP uses A=allergies, I=intolerances, E=excluded foods, D=disliked, P=preferred, S=diet style, N=notes. A/I/E/S are hard constraints and must never be violated; D/P are soft preferences. You may modify only meals explicitly listed as future meals for the same day. Never modify past meals or later days, never move meal times, and never use punitive fasting or extreme restriction. If a valid daily balance within ±3% cannot be achieved with reasonable future meals of at least 100 kcal each, set adaptationPossible=false and return no replacements. The app independently validates target arithmetic and every replacement ingredient against current hard constraints."""
     }
 }
