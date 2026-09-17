@@ -37,6 +37,7 @@ class NutritionAdviceService(
             ?: return Result(false, "Seleziona prima un profilo attivo.", emptyList(), "", null)
         val profile = profiles.get(profileId)
             ?: return Result(false, "Profilo non disponibile.", emptyList(), "", null)
+        val dietaryProfile = DietaryProfile.parse(profile.dietaryPreferencesJson)
 
         val today = time.today()
         val monday = today.minusDays((today.dayOfWeek.value - 1).toLong())
@@ -51,10 +52,10 @@ class NutritionAdviceService(
 
         val request = AiStructuredRequest(
             systemPrompt = SYSTEM_PROMPT,
-            userPrompt = buildPrompt(normalized, profile.dietaryPreferencesJson, snapshot, todayPlan, deviations, minuteOfDay, mealWindow(minuteOfDay)),
+            userPrompt = buildPrompt(normalized, dietaryProfile, snapshot, todayPlan, deviations, minuteOfDay, mealWindow(minuteOfDay)),
             schemaName = NutritionAdviceContract.SCHEMA_NAME,
             schemaJson = NutritionAdviceContract.schemaJson,
-            maxOutputTokens = 900,
+            maxOutputTokens = 1_100,
             thinkingBudget = 0,
         )
 
@@ -65,7 +66,7 @@ class NutritionAdviceService(
                 maxSchemaRetries = 1,
                 businessValidator = { json -> runCatching {
                     val response = NutritionAdviceContract.parse(json)
-                    NutritionAdviceContract.validateBusiness(response).getOrThrow()
+                    NutritionAdviceContract.validateBusiness(response, dietaryProfile).getOrThrow()
                     parsed = response
                 } },
             )
@@ -73,14 +74,20 @@ class NutritionAdviceService(
             return Result(false, "Consiglio nutrizionale non disponibile in questo momento.", emptyList(), "", null)
         }
 
-        val response = parsed ?: NutritionAdviceContract.parse(validated.jsonText)
+        val response = parsed ?: runCatching {
+            NutritionAdviceContract.parse(validated.jsonText).also {
+                NutritionAdviceContract.validateBusiness(it, dietaryProfile).getOrThrow()
+            }
+        }.getOrElse {
+            return Result(false, "Consiglio nutrizionale non disponibile in questo momento.", emptyList(), "", null)
+        }
         if (!response.inScope) return refused()
         return Result(true, response.answer, response.suggestions, response.assumptions, "${validated.provider.name} · ${validated.model}")
     }
 
     private fun buildPrompt(
         question: String,
-        dietaryPreferencesJson: String?,
+        dietaryProfile: DietaryProfile,
         snapshot: FoodPlanSnapshot?,
         todayPlan: FoodPlanDay?,
         deviations: List<com.myfitai.app.data.local.entity.CheatEntryEntity>,
@@ -89,7 +96,7 @@ class NutritionAdviceService(
     ): String = buildString {
         appendLine("Q:${clean(question)}")
         appendLine("N:$minuteOfDay;$mealWindow")
-        appendLine("P:${clean(dietaryPreferencesJson)}")
+        appendLine("DP:${clean(dietaryProfile.toPromptCompact())}")
         snapshot?.version?.let { appendLine("T:${it.targetKcal};${it.targetProteinG};${it.targetCarbsG};${it.targetFatG}") }
         todayPlan?.meals?.sortedBy { it.sortOrder }?.forEach { m ->
             appendLine("M:${m.timeMinutes};${clean(m.type)};${clean(m.title)};${m.kcal};${m.proteinG};${m.carbsG};${m.fatG}")
@@ -131,6 +138,6 @@ class NutritionAdviceService(
             "cheat", "sgarro", "compens", "deficit", "surplus", "peso", "meal", "food"
         )
 
-        private const val SYSTEM_PROMPT = """Nutrition advice only. Out of scope: S=0 and exact answer "Posso rispondere solo a richieste di consiglio alimentare e nutrizionale.", no options. In scope: use app context only; M rows are planned, not consumed; D rows are recorded deviations. No diagnosis, invented conditions, fasting or punitive restriction. Return exactly 5 options best→worst, each with whole-meal kcal/P/C/F. If Q names a desired food, keep all options centered on it; time only adjusts portion/pairing. Otherwise rank strongly by N meal window, then target fit, balance, calorie impact, practicality. Answer <=120 chars; title <=45; reason <=70; assumptions only if essential <=80. No moral food labels. Plan changes only after app confirmation."""
+        private const val SYSTEM_PROMPT = """Nutrition advice only. Out of scope: S=0 and exact answer "Posso rispondere solo a richieste di consiglio alimentare e nutrizionale.", no options. In scope: use app context only; M rows are planned, not consumed; D rows are recorded deviations. DP uses A=allergies, I=intolerances, E=excluded foods, D=disliked, P=preferred, S=diet style, N=notes. A/I/E/S are HARD constraints and must never be violated; D/P are soft preferences. Every O record MUST list in foodsCsv every food or ingredient implied by the option, comma-separated, so the app can independently reject hard-constraint violations. No diagnosis, invented conditions, fasting or punitive restriction. Return exactly 5 options, each with whole-meal kcal/P/C/F. If Q names a desired food, keep all options centered on it only when it does not violate a hard constraint; otherwise explain the conflict and suggest compliant alternatives. For generic requests use N meal window strongly, then target fit, balance, calorie impact, practicality. Answer <=120 chars; title <=45; reason <=70; assumptions only if essential <=80. No moral food labels. Plan changes only after app confirmation."""
     }
 }
