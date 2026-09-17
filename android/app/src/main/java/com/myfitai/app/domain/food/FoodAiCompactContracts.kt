@@ -119,7 +119,7 @@ object NutritionAdviceCompactContract {
     const val PROTOCOL = """NA1
 S|0_or_1
 A|answer
-O|title|reason|kcal|proteinG|carbsG|fatG
+O|title|reason|kcal|proteinG|carbsG|fatG|foodsCsv
 Q|assumptions
 V|1_or_0|notes"""
     val schemaJson: String get() = AiCompactEnvelope.schemaJson(PROTOCOL)
@@ -136,7 +136,14 @@ V|1_or_0|notes"""
             when (p.firstOrNull()) {
                 "S" -> { require(p.size == 2 && inScope == null); inScope = when (p[1]) { "1" -> true; "0" -> false; else -> error("NA_SCOPE") } }
                 "A" -> { require(p.size == 2 && answer == null); answer = p[1].trim() }
-                "O" -> { require(p.size == 7 && validation == null); suggestions += NutritionAdviceContract.Suggestion(p[1].req("NA_TITLE"), p[2].req("NA_REASON"), p[3].i("NA_KCAL"), p[4].f("NA_P"), p[5].f("NA_C"), p[6].f("NA_F")) }
+                "O" -> {
+                    require(p.size == 8 && validation == null)
+                    val foods = p[7].split(',').map { it.trim() }.filter { it.isNotBlank() }
+                    suggestions += NutritionAdviceContract.Suggestion(
+                        p[1].req("NA_TITLE"), p[2].req("NA_REASON"), p[3].i("NA_KCAL"),
+                        p[4].f("NA_P"), p[5].f("NA_C"), p[6].f("NA_F"), foods,
+                    )
+                }
                 "Q" -> { require(p.size == 2 && assumptions == null); assumptions = p[1].trim() }
                 "V" -> { require(p.size == 3 && validation == null && p[1] in setOf("0", "1")); validation = NutritionPlanContract.AgentValidation(p[1] == "1", p[2].trim()) }
                 else -> error("NA_RECORD_INVALID")
