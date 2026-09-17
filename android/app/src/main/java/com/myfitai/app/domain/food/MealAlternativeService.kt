@@ -45,12 +45,13 @@ class MealAlternativeService(
         class NeedsInput(val fields: List<String>) : AlternativeException("NEEDS_INPUT: ${fields.joinToString()}")
         class PastMeal : AlternativeException("I pasti già trascorsi restano storico e non possono essere sostituiti.")
         class StalePlan : AlternativeException("Il piano è cambiato: genera di nuovo le alternative.")
-        class InvalidAlternative : AlternativeException("L'alternativa non rispetta i vincoli del pasto.")
+        class InvalidAlternative : AlternativeException("L'alternativa non rispetta i vincoli del pasto o del profilo.")
     }
 
     suspend fun generate(weekStartEpochDay: Long, dayEpochDay: Long, mealId: Long): Alternatives {
         val profileId = activeProfileStore.currentIdOrNull() ?: throw AlternativeException.NeedsInput(listOf("profilo attivo"))
         val profile = profiles.get(profileId) ?: throw AlternativeException.NeedsInput(listOf("profilo"))
+        val dietaryProfile = DietaryProfile.parse(profile.dietaryPreferencesJson)
         val snapshot = plans.loadLatestSnapshot(profileId, weekStartEpochDay) ?: throw AlternativeException.NeedsInput(listOf("piano alimentare"))
         val day = snapshot.version.days.firstOrNull { it.dateEpochDay == dayEpochDay } ?: throw AlternativeException.NeedsInput(listOf("giorno del piano"))
         val meal = day.meals.firstOrNull { it.id == mealId } ?: throw AlternativeException.NeedsInput(listOf("pasto"))
@@ -59,7 +60,7 @@ class MealAlternativeService(
 
         val request = AiStructuredRequest(
             systemPrompt = SYSTEM_PROMPT,
-            userPrompt = buildPrompt(profile.dietaryPreferencesJson, day, meal, targetKcal),
+            userPrompt = buildPrompt(dietaryProfile, day, meal, targetKcal),
             schemaName = MealAlternativeContract.SCHEMA_NAME,
             schemaJson = MealAlternativeContract.schemaJson,
             maxOutputTokens = 4_000,
@@ -71,11 +72,15 @@ class MealAlternativeService(
             businessValidator = { json -> runCatching {
                 val response = MealAlternativeContract.parse(json)
                 MealAlternativeContract.validateBusiness(response, meal).getOrThrow()
+                response.alternatives.forEach { FoodConstraintValidator.validateAlternative(it, dietaryProfile).getOrThrow() }
                 parsed = response
             } },
         )
         val response = parsed ?: MealAlternativeContract.parse(validated.jsonText).also {
             MealAlternativeContract.validateBusiness(it, meal).getOrThrow()
+            it.alternatives.forEach { alternative ->
+                FoodConstraintValidator.validateAlternative(alternative, dietaryProfile).getOrThrow()
+            }
         }
 
         return Alternatives(snapshot.planId, snapshot.version.id, weekStartEpochDay, dayEpochDay, meal.id, meal.type, meal.timeMinutes, targetKcal, response.alternatives, validated.provider.name, validated.model)
@@ -84,6 +89,10 @@ class MealAlternativeService(
     suspend fun apply(generated: Alternatives, alternative: MealAlternativeContract.Alternative): ApplyResult {
         if (alternative !in generated.items || alternative.kcal != generated.targetKcal) throw AlternativeException.InvalidAlternative()
         val profileId = activeProfileStore.currentIdOrNull() ?: throw AlternativeException.NeedsInput(listOf("profilo attivo"))
+        val profile = profiles.get(profileId) ?: throw AlternativeException.NeedsInput(listOf("profilo"))
+        if (FoodConstraintValidator.validateAlternative(alternative, DietaryProfile.parse(profile.dietaryPreferencesJson)).isFailure) {
+            throw AlternativeException.InvalidAlternative()
+        }
         val latest = plans.loadLatestSnapshot(profileId, generated.weekStartEpochDay) ?: throw AlternativeException.StalePlan()
         if (latest.version.id != generated.sourceVersionId || latest.planId != generated.planId) throw AlternativeException.StalePlan()
         val sourceDay = latest.version.days.firstOrNull { it.dateEpochDay == generated.dayEpochDay } ?: throw AlternativeException.StalePlan()
@@ -129,14 +138,14 @@ class MealAlternativeService(
         return ApplyResult(versionId, alternative.title, generated.targetKcal)
     }
 
-    private fun buildPrompt(dietaryPreferencesJson: String?, day: FoodPlanDay, meal: FoodMeal, targetKcal: Int): String = buildString {
+    private fun buildPrompt(dietaryProfile: DietaryProfile, day: FoodPlanDay, meal: FoodMeal, targetKcal: Int): String = buildString {
         appendLine("MEAL_TYPE:${meal.type}")
         appendLine("MEAL_TIME_MINUTES:${meal.timeMinutes ?: "unknown"}")
         appendLine("DAY:${LocalDate.ofEpochDay(day.dateEpochDay)}")
         appendLine("CURRENT:${meal.title}|${meal.kcal}kcal|P${meal.proteinG}|C${meal.carbsG}|F${meal.fatG}")
         appendLine("TARGET_KCAL_EXACT:$targetKcal")
-        appendLine("PREFERENCES:${dietaryPreferencesJson.orEmpty()}")
-        appendLine("Return exactly 5 alternatives for this meal. Every alternative kcal MUST equal TARGET_KCAL_EXACT exactly. Keep macros close and include caloric condiments.")
+        appendLine("DP:${dietaryProfile.toPromptCompact()}")
+        appendLine("Return exactly 5 alternatives. A/I/E/S in DP are hard constraints. D/P are soft preferences. Every alternative kcal MUST equal TARGET_KCAL_EXACT exactly. Keep macros close and include caloric condiments.")
     }
 
     private fun ensureNotPast(dayEpochDay: Long, mealTimeMinutes: Int?) {
@@ -158,6 +167,6 @@ class MealAlternativeService(
     private fun sumOrZero(values: List<Float?>): Double = values.filterNotNull().sumOf { it.toDouble() }
 
     companion object {
-        private const val SYSTEM_PROMPT = """You are MyFitAI Meal Alternative Agent. Nutrition only. Return only schema JSON. Return exactly 5 distinct alternatives. Every alternative kcal MUST equal TARGET_KCAL_EXACT exactly. Keep meal type/time appropriate, respect supplied preferences, keep macros close, include all caloric ingredients, and never use punitive compensation."""
+        private const val SYSTEM_PROMPT = """You are MyFitAI Meal Alternative Agent. Nutrition only. Return only schema JSON. DP uses A=allergies, I=intolerances, E=excluded foods, D=disliked, P=preferred, S=diet style, N=notes. A/I/E/S are hard constraints and must never be violated. D/P are soft preferences. Return exactly 5 distinct alternatives. Every alternative kcal MUST equal TARGET_KCAL_EXACT exactly. Keep meal type/time appropriate, keep macros close, include all caloric ingredients, and never use punitive compensation. The app independently validates hard constraints."""
     }
 }
