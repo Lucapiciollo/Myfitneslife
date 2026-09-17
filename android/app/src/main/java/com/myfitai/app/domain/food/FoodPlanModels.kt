@@ -34,6 +34,10 @@ data class FoodPlanDay(
     val meals: List<FoodMeal>,
     val supplements: List<FoodSupplement> = emptyList(),
     val hydrationNote: String? = null,
+    val targetKcal: Int? = null,
+    val targetProteinG: Float? = null,
+    val targetCarbsG: Float? = null,
+    val targetFatG: Float? = null,
 )
 
 data class FoodSupplement(
