@@ -17,6 +17,7 @@ object CalorieRecoveryEngine {
     data class Credit(
         val sourceId: Long,
         val occurredOn: LocalDate,
+        /** Still-unallocated kcal for this source. */
         val kcal: Int,
     )
 
@@ -30,7 +31,8 @@ object CalorieRecoveryEngine {
         val availableBeforeKcal: Int,
         val plannedRecoveryKcal: Int,
         val remainingKcal: Int,
-        val usedSourceIds: Set<Long>,
+        /** Exact amount allocated in this generated week for each source cheat. */
+        val plannedBySource: Map<Long, Int>,
         val days: List<DayPlan>,
     )
 
@@ -49,54 +51,47 @@ object CalorieRecoveryEngine {
         val validCredits = credits
             .filter { it.kcal > 0 }
             .sortedWith(compareBy<Credit> { it.occurredOn }.thenBy { it.sourceId })
-            .map { it to it.kcal }
-            .toMutableList()
-
-        val availableBefore = validCredits.sumOf { it.second }
+        val availableBefore = validCredits.sumOf { it.kcal }
         val perDayCap = (baseTargets.kcal * MAX_DAILY_REDUCTION_RATIO).roundToInt().coerceAtLeast(0)
         val recoveryByDate = dates.associateWith { 0 }.toMutableMap()
-        val usedIds = linkedSetOf<Long>()
+        val plannedBySource = linkedMapOf<Long, Int>()
 
-        validCredits.indices.forEach { index ->
-            val credit = validCredits[index].first
-            var remaining = validCredits[index].second
-            if (remaining <= 0) return@forEach
-
+        for (credit in validCredits) {
+            var remaining = credit.kcal
             val eligible = dates.filter { date ->
                 !date.isBefore(today) &&
                     date.isAfter(credit.occurredOn) &&
                     !date.isAfter(credit.occurredOn.plusDays(WINDOW_DAYS))
             }
-            if (eligible.isEmpty()) return@forEach
+            if (eligible.isEmpty()) continue
 
             while (remaining > 0) {
                 val withCapacity = eligible.filter { (recoveryByDate[it] ?: 0) < perDayCap }
                 if (withCapacity.isEmpty()) break
                 val share = maxOf(1, (remaining.toDouble() / withCapacity.size).roundToInt())
                 var progressed = false
-                withCapacity.forEach { date ->
-                    if (remaining <= 0) return@forEach
+                for (date in withCapacity) {
+                    if (remaining <= 0) break
                     val current = recoveryByDate[date] ?: 0
                     val capacity = perDayCap - current
-                    if (capacity <= 0) return@forEach
+                    if (capacity <= 0) continue
                     val amount = min(remaining, min(capacity, share))
                     if (amount > 0) {
                         recoveryByDate[date] = current + amount
+                        plannedBySource[credit.sourceId] = (plannedBySource[credit.sourceId] ?: 0) + amount
                         remaining -= amount
                         progressed = true
-                        usedIds += credit.sourceId
                     }
                 }
                 if (!progressed) break
             }
-            validCredits[index] = credit to remaining
         }
 
         val dayPlans = dates.map { date ->
             val recovery = recoveryByDate[date] ?: 0
-            val effectiveKcal = (baseTargets.kcal - recovery).coerceAtLeast(baseTargets.kcal * (1.0 - MAX_DAILY_REDUCTION_RATIO))
+            val effectiveKcal = (baseTargets.kcal - recovery)
+                .coerceAtLeast(baseTargets.kcal * (1.0 - MAX_DAILY_REDUCTION_RATIO))
             val macros = LocalCalculationEngine.calculateMacrosForTarget(effectiveKcal, weightKg, goal)
-            // calculateMacrosForTarget keeps protein goal-specific and weight-based, so recovery cannot lower protein.
             DayPlan(
                 date = date,
                 recoveredKcal = recovery,
@@ -109,12 +104,12 @@ object CalorieRecoveryEngine {
             )
         }
 
-        val planned = dayPlans.sumOf { it.recoveredKcal }
+        val planned = plannedBySource.values.sum()
         return Result(
             availableBeforeKcal = availableBefore,
             plannedRecoveryKcal = planned,
             remainingKcal = (availableBefore - planned).coerceAtLeast(0),
-            usedSourceIds = usedIds,
+            plannedBySource = plannedBySource.toMap(),
             days = dayPlans,
         )
     }
