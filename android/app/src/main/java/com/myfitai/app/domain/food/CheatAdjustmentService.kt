@@ -123,9 +123,9 @@ class CheatAdjustmentService(
         val day = snapshot.version.days.firstOrNull { it.dateEpochDay == date.toEpochDay() }
             ?: return Result(cheatId, false, null, confirmed.estimate.kcal, confirmed.estimateSummary,
                 "Sgarro confermato e registrato. Nessun giorno del piano corrisponde alla data selezionata.", emptyList())
-        val targets = planTargets(snapshot.version)
+        val targets = planTargets(day, snapshot.version)
             ?: return Result(cheatId, false, null, confirmed.estimate.kcal, confirmed.estimateSummary,
-                "Sgarro confermato e registrato. I target del piano non sono completi, quindi l'app non ha adattato i pasti.", emptyList())
+                "Sgarro confermato e registrato. I target del giorno non sono completi, quindi l'app non ha adattato i pasti.", emptyList())
 
         val minuteOfDay = occurred.hour * 60 + occurred.minute
         val lockedMeals = day.meals.filter { (it.timeMinutes ?: Int.MIN_VALUE) <= minuteOfDay }
@@ -264,11 +264,12 @@ class CheatAdjustmentService(
         require(abs(actual.fatG - confirmed.fatG) <= 0.05f) { "CONFIRMED_FAT_CHANGED" }
     }
 
-    private fun planTargets(version: FoodPlanVersion): NutritionBusinessValidator.Targets? {
-        val kcal = version.targetKcal?.toDouble() ?: return null
-        val protein = version.targetProteinG?.toDouble() ?: return null
-        val carbs = version.targetCarbsG?.toDouble() ?: return null
-        val fat = version.targetFatG?.toDouble() ?: return null
+    /** Uses the generated day's effective totals first; this preserves recovery-adjusted days. */
+    private fun planTargets(day: FoodPlanDay, version: FoodPlanVersion): NutritionBusinessValidator.Targets? {
+        val kcal = day.totalKcal?.toDouble() ?: version.targetKcal?.toDouble() ?: return null
+        val protein = day.proteinG?.toDouble() ?: version.targetProteinG?.toDouble() ?: return null
+        val carbs = day.carbsG?.toDouble() ?: version.targetCarbsG?.toDouble() ?: return null
+        val fat = day.fatG?.toDouble() ?: version.targetFatG?.toDouble() ?: return null
         return NutritionBusinessValidator.Targets(kcal, protein, carbs, fat)
     }
 
@@ -312,7 +313,7 @@ class CheatAdjustmentService(
         appendLine("Do not re-estimate the deviation. Use the confirmed estimate exactly. If balancing requires implausibly small meals, set adaptationPossible=false with no replacements.")
         appendLine("A/I/E/S in DP are hard constraints. D/P are soft preferences. Any replacement violating a hard constraint will be rejected locally.")
         appendLine("If possible, return exactly one replacement per future meal, never move times, and keep each replacement >=100 kcal. Count oils, sauces, condiments and caloric drinks.")
-        appendLine("The app will independently verify locked meals + confirmed estimate + replacements within ±3% of the original daily targets. agentValidation is advisory only.")
+        appendLine("The app will independently verify locked meals + confirmed estimate + replacements within ±3% of the effective daily targets. agentValidation is advisory only.")
     }
 
     private fun mealLine(meal: FoodMeal) = "sortOrder=${meal.sortOrder}; time=${meal.timeMinutes}; type=${meal.type}; title=${meal.title}; kcal=${meal.kcal}; P=${meal.proteinG}; C=${meal.carbsG}; F=${meal.fatG}"
