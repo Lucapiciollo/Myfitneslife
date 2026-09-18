@@ -1,7 +1,9 @@
 package com.myfitai.app.ui.widgets
 
 import android.content.Context
+import android.content.res.ColorStateList
 import android.util.AttributeSet
+import android.view.Gravity
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
 import com.myfitai.app.R
@@ -17,38 +19,45 @@ open class SelectableSegmentView @JvmOverloads constructor(
     init {
         isSingleSelection = true
         isSelectionRequired = true
+        setBackgroundResource(R.drawable.bg_segment_track)
+        setPadding(dp(4), dp(4), dp(4), dp(4))
+        clipToPadding = false
     }
 
     open fun setSegments(labels: List<String>, selectedIndex: Int = 0) {
+        clearOnButtonCheckedListeners()
         removeAllViews()
+        val safeIndex = selectedIndex.coerceIn(0, (labels.size - 1).coerceAtLeast(0))
         labels.forEachIndexed { index, label ->
             val button = MaterialButton(context, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
                 id = android.view.View.generateViewId()
                 text = label
-                textSize = 12f
+                contentDescription = label
+                textSize = 13f
                 isAllCaps = false
                 maxLines = 1
-                cornerRadius = (10 * resources.displayMetrics.density).toInt()
+                gravity = Gravity.CENTER
+                cornerRadius = dp(10)
                 strokeWidth = 0
-                setPadding(
-                    (4 * resources.displayMetrics.density).toInt(), 0,
-                    (4 * resources.displayMetrics.density).toInt(), 0,
-                )
+                insetTop = 0
+                insetBottom = 0
+                minHeight = 0
+                setPadding(dp(8), 0, dp(8), 0)
                 layoutParams = LayoutParams(0, LayoutParams.MATCH_PARENT, 1f)
                 setTextColor(
-                    android.content.res.ColorStateList(
+                    ColorStateList(
                         arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
-                        intArrayOf(context.getColor(R.color.text_primary), context.getColor(R.color.text_secondary)),
+                        intArrayOf(context.getColor(R.color.white), context.getColor(R.color.text_secondary)),
                     )
                 )
-                backgroundTintList = android.content.res.ColorStateList(
+                backgroundTintList = ColorStateList(
                     arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
                     intArrayOf(context.getColor(R.color.accent_green), context.getColor(android.R.color.transparent)),
                 )
             }
             addView(button)
         }
-        (getChildAt(selectedIndex) as? MaterialButton)?.id?.let { check(it) }
+        (getChildAt(safeIndex) as? MaterialButton)?.id?.let { check(it) }
         addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (isChecked) {
                 val index = (0 until childCount).firstOrNull { getChildAt(it).id == checkedId } ?: return@addOnButtonCheckedListener
@@ -60,4 +69,6 @@ open class SelectableSegmentView @JvmOverloads constructor(
     open fun setOnSegmentSelectedListener(listener: (Int) -> Unit) {
         onSegmentSelected = listener
     }
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 }
