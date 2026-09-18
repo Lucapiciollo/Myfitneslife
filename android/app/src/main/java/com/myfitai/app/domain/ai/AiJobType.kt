@@ -27,6 +27,13 @@ enum class AiJobType(
         successTitle = "Piano alimentare aggiornato",
         successText = "Il nuovo menu è stato validato e salvato.",
         failureTitle = "Piano alimentare non aggiornato",
+    ),
+    WEEKLY_REVIEW(
+        channelId = "ai_weekly_review",
+        channelName = "Review settimanale",
+        successTitle = "Review settimanale pronta",
+        successText = "Il riepilogo della settimana è disponibile.",
+        failureTitle = "Review settimanale non riuscita",
     );
 
     companion object {

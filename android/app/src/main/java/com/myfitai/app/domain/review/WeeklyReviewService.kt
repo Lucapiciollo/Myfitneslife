@@ -65,10 +65,14 @@ class WeeklyReviewService(
     }
 
     suspend fun buildLocalMetrics(weekStart: LocalDate): LocalMetrics {
+        val profileId = activeProfileStore.currentIdOrNull() ?: throw ReviewException.NeedsInput(listOf("profilo attivo"))
+        return buildLocalMetrics(profileId, weekStart)
+    }
+
+    suspend fun buildLocalMetrics(profileId: Long, weekStart: LocalDate): LocalMetrics {
         val monday = monday(weekStart)
         val sunday = monday.plusDays(6)
         if (!sunday.isBefore(time.today())) throw ReviewException.WeekNotCompleted()
-        val profileId = activeProfileStore.currentIdOrNull() ?: throw ReviewException.NeedsInput(listOf("profilo attivo"))
         val zone = time.zoneId
         val from = monday.atStartOfDay(zone).toInstant().toEpochMilli()
         val to = monday.plusDays(7).atStartOfDay(zone).toInstant().toEpochMilli() - 1
@@ -107,7 +111,12 @@ class WeeklyReviewService(
     suspend fun generate(weekStart: LocalDate): Result {
         val monday = monday(weekStart)
         val profileId = activeProfileStore.currentIdOrNull() ?: throw ReviewException.NeedsInput(listOf("profilo attivo"))
-        val metrics = buildLocalMetrics(monday)
+        return generate(profileId, monday)
+    }
+
+    suspend fun generate(profileId: Long, weekStart: LocalDate): Result {
+        val monday = monday(weekStart)
+        val metrics = buildLocalMetrics(profileId, monday)
         val historyContext = personalResponse.promptContext(lookbackDays = 56)
         val request = AiStructuredRequest(
             systemPrompt = SYSTEM_PROMPT,
