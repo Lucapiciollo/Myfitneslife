@@ -18,6 +18,8 @@ import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.data.local.entity.BodyMeasurementEntity
 import com.myfitai.app.domain.body.BodyProportionEngine
+import com.myfitai.app.domain.ai.AiJobType
+import com.myfitai.app.domain.body.BodyProportionsAiJobHandler
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.ui.body.BodyMeasurementsViewModel
 import com.myfitai.app.ui.widgets.BodyMeasurementTrendView
@@ -259,38 +261,11 @@ class BodyMeasuresActivity : BaseShellActivity() {
         confirmAiRequest("L'interpretazione IA delle proporzioni corporee") {
             button.isEnabled = false
             button.text = "Analisi in corso…"
-            lifecycleScope.launch {
-                runCatching { data.bodyProportionAnalysisService.analyze(report) }
-                    .onSuccess { result ->
-                        val message = buildString {
-                            appendLine(result.summary)
-                            if (result.observations.isNotEmpty()) {
-                                appendLine()
-                                appendLine("Osservazioni")
-                                result.observations.forEach { appendLine("• $it") }
-                            }
-                            if (result.monitorNext.isNotEmpty()) {
-                                appendLine()
-                                appendLine("Da monitorare")
-                                result.monitorNext.forEach { appendLine("• $it") }
-                            }
-                        }.trim()
-                        MaterialAlertDialogBuilder(this@BodyMeasuresActivity)
-                            .setTitle("Analisi proporzioni")
-                            .setMessage(message)
-                            .setPositiveButton("Chiudi", null)
-                            .show()
-                    }
-                    .onFailure {
-                        Toast.makeText(
-                            this@BodyMeasuresActivity,
-                            "Analisi IA non disponibile. I calcoli locali restano validi.",
-                            Toast.LENGTH_LONG,
-                        ).show()
-                    }
-                button.isEnabled = true
-                button.text = "Interpreta con IA"
-            }
+            val profileId = data.activeProfileStore.currentIdOrNull() ?: return@confirmAiRequest
+            val reportJson = org.json.JSONObject().put("status", report.status.name).put("maxAsymmetry", report.maxAsymmetryPercent ?: org.json.JSONObject.NULL).put("availableMeasurements", report.availableMeasurements).put("note", report.note).put("ratios", org.json.JSONArray().apply { report.ratios.forEach { put(org.json.JSONObject().put("key", it.key).put("label", it.label).put("value", it.value).put("description", it.description)) } }).put("asymmetries", org.json.JSONArray().apply { report.asymmetries.forEach { put(org.json.JSONObject().put("key", it.key).put("label", it.label).put("percent", it.percent).put("largerSide", it.largerSide ?: org.json.JSONObject.NULL)) } }).toString()
+            val jobKey = "${System.currentTimeMillis()}"
+            data.aiJobScheduler.enqueue(AiJobType.BODY_PROPORTIONS, profileId, jobKey, params = androidx.work.Data.Builder().putString(BodyProportionsAiJobHandler.KEY_REPORT, reportJson).build())
+            lifecycleScope.launch { data.aiJobScheduler.observe(AiJobType.BODY_PROPORTIONS, profileId, jobKey).collect { info -> if (info?.state == androidx.work.WorkInfo.State.SUCCEEDED) { val p = org.json.JSONObject(info.outputData.getString(BodyProportionsAiJobHandler.KEY_PAYLOAD).orEmpty()); MaterialAlertDialogBuilder(this@BodyMeasuresActivity).setTitle("Analisi proporzioni").setMessage(p.getString("summary")).setPositiveButton("Chiudi", null).show(); button.isEnabled = true; button.text = "Interpreta con IA" } } }
         }
     }
 

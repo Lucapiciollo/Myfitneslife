@@ -62,6 +62,20 @@ enum class AiJobType(
         successTitle = "Piano adattato",
         successText = "I pasti futuri sono stati riequilibrati.",
         failureTitle = "Adattamento sgarro non riuscito",
+    ),
+    BODY_PROPORTIONS(
+        channelId = "ai_body_proportions",
+        channelName = "Proporzioni corporee",
+        successTitle = "Interpretazione misure pronta",
+        successText = "La lettura delle proporzioni è disponibile.",
+        failureTitle = "Interpretazione misure non disponibile",
+    ),
+    BIA_IMPORT(
+        channelId = "ai_bia_import",
+        channelName = "Import bioimpedenza",
+        successTitle = "Lettura BIA pronta",
+        successText = "Controlla i valori letti prima di salvarli.",
+        failureTitle = "Import BIA non riuscito",
     );
 
     companion object {

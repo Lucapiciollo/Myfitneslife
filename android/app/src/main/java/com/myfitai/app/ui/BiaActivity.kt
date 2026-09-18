@@ -256,14 +256,14 @@ class BiaActivity : BaseShellActivity() {
         confirmAiRequest("La lettura IA dei valori BIA dalla foto") {
             Toast.makeText(this, "Lettura BIA in corso…", Toast.LENGTH_SHORT).show()
             lifecycleScope.launch {
-                runCatching { data.biaImportService.import(image) }
-                    .onSuccess { showImportPreview(it.preview, it.provider, it.model) }
-                    .onFailure {
-                        val message = if (it is com.myfitai.app.domain.body.BiaImportService.NotBiaImage) {
-                            "Importazione rifiutata: ${it.message} Seleziona una foto di una rilevazione BIA."
-                        } else it.message ?: "Importazione BIA non riuscita"
-                        Toast.makeText(this@BiaActivity, message, Toast.LENGTH_LONG).show()
-                    }
+                val profileId = data.activeProfileStore.currentIdOrNull()
+                if (profileId == null) {
+                    Toast.makeText(this@BiaActivity, "Nessun profilo attivo", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                val key = System.currentTimeMillis().toString()
+                data.aiJobScheduler.enqueue(com.myfitai.app.domain.ai.AiJobType.BIA_IMPORT, profileId, key, params = androidx.work.Data.Builder().putString(com.myfitai.app.domain.ai.AiJobWorker.KEY_IMAGE_PATH, data.aiImageJobStore.write(image)).build())
+                data.aiJobScheduler.observe(com.myfitai.app.domain.ai.AiJobType.BIA_IMPORT, profileId, key).collect { info -> if (info?.state == androidx.work.WorkInfo.State.SUCCEEDED) { val p = org.json.JSONObject(info.outputData.getString(com.myfitai.app.domain.body.BiaImportAiJobHandler.KEY_PAYLOAD).orEmpty()); showImportPreview(com.myfitai.app.domain.body.BiaImportContract.Preview(true, "", p.optLong("measuredAtEpochMillis").takeIf { it > 0 }, p.optDouble("weightKg").takeIf { !p.isNull("weightKg") }?.toFloat(), p.optDouble("bodyFatPercent").takeIf { !p.isNull("bodyFatPercent") }?.toFloat(), p.optDouble("visceralFatLevel").takeIf { !p.isNull("visceralFatLevel") }?.toFloat(), p.optDouble("muscleMassKg").takeIf { !p.isNull("muscleMassKg") }?.toFloat(), p.optDouble("skeletalMuscleKg").takeIf { !p.isNull("skeletalMuscleKg") }?.toFloat(), p.optDouble("bodyWaterPercent").takeIf { !p.isNull("bodyWaterPercent") }?.toFloat(), p.optDouble("bmrKcal").takeIf { !p.isNull("bmrKcal") }?.toFloat(), p.getString("confidence"), p.getString("notes")), p.getString("provider"), p.getString("model")); } }
             }
         }
     }
@@ -515,6 +515,7 @@ class BiaActivity : BaseShellActivity() {
 
     companion object {
         const val EXTRA_OPEN_HISTORY = "open_bia_history"
+        const val EXTRA_AI_JOB_KEY = "bia_ai_job_key"
         private const val KEY_WEIGHT = "weight"
         private const val KEY_BODY_FAT = "bodyFat"
         private const val KEY_VISCERAL_FAT = "visceralFat"
