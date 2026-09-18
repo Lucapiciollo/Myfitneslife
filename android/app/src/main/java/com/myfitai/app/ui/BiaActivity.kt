@@ -45,7 +45,7 @@ class BiaActivity : BaseShellActivity() {
 
     private val data by lazy { AppDataContainer.get(this) }
     private val viewModel: BiaViewModel by viewModels {
-        BiaViewModel.Factory(data.biaRepository, data.activeProfileStore)
+        BiaViewModel.Factory(data.biaRepository, data.activeProfileStore, data.nutritionPathTrigger)
     }
 
     private lateinit var dateInput: TextInputEditText

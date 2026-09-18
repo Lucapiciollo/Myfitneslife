@@ -102,14 +102,15 @@
                  android:layout_marginTop="@dimen/space_20"
                  android:text="Intelligenza artificiale" />
 
-             <LinearLayout
-                 android:id="@+id/aiSectionCard"
+              <LinearLayout
+                  android:id="@+id/aiSectionCard"
                  android:layout_width="match_parent"
                  android:layout_height="wrap_content"
                  android:layout_marginTop="@dimen/space_8"
                  android:orientation="vertical"
                  android:background="@drawable/bg_card"
-                 android:padding="@dimen/space_16">
+                  android:padding="@dimen/space_16">
+                  <com.google.android.material.button.MaterialButton android:id="@+id/analyzeNutritionPathButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Suggerisci il percorso nutrizionale" android:textAllCaps="false" />
 
                 <LinearLayout
                     android:layout_width="match_parent"

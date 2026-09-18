@@ -23,6 +23,8 @@ import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.security.AiCredentialProvider
 import com.myfitai.app.security.SecureAiCredentialStore
 import com.myfitai.app.ui.widgets.SettingRowView
+import com.myfitai.app.domain.food.NutritionPathTrigger
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class SettingsActivity : BaseShellActivity() {
@@ -50,6 +52,7 @@ class SettingsActivity : BaseShellActivity() {
         geminiInput.isLongClickable = false
         openAiInput.isLongClickable = false
         useGeminiSwitch.isChecked = settings.useGemini
+        findViewById<View>(R.id.analyzeNutritionPathButton).setOnClickListener { enqueueNutritionPath() }
 
         fun render() {
             val useGemini = useGeminiSwitch.isChecked
@@ -170,6 +173,21 @@ class SettingsActivity : BaseShellActivity() {
         bindProgressAnalysisFrequency()
         GeminiCostSettingsBinder.bind(this, findViewById(R.id.aiSectionCard), settings)
         render()
+    }
+
+    private fun enqueueNutritionPath() {
+        val profileId = data.activeProfileStore.currentIdOrNull() ?: return
+        lifecycleScope.launch {
+            val bia = data.biaRepository.all(profileId).first()
+            val body = data.bodyMeasurementRepository.all(profileId).first()
+            if (bia.isEmpty() || body.isEmpty()) {
+                Toast.makeText(this@SettingsActivity, "Inserisci prima una BIA e una misura corporea", Toast.LENGTH_LONG).show()
+                return@launch
+            }
+            val key = "${bia.maxOf { it.measuredAtEpochMillis }}-${body.maxOf { it.measuredAtEpochMillis }}"
+            data.nutritionPathScheduler.enqueue(profileId, key)
+            Toast.makeText(this@SettingsActivity, "Suggerimento avviato", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun bindProgressAnalysisFrequency() {

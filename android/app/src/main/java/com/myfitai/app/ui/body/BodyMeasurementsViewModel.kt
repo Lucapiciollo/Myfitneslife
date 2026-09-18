@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.myfitai.app.data.local.entity.BodyMeasurementEntity
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.repository.BodyMeasurementRepository
+import com.myfitai.app.domain.food.NutritionPathTrigger
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.SharedFlow
@@ -19,6 +20,7 @@ import kotlinx.coroutines.launch
 class BodyMeasurementsViewModel(
     private val repository: BodyMeasurementRepository,
     private val activeProfileStore: ActiveProfileStore,
+    private val nutritionPathTrigger: NutritionPathTrigger? = null,
 ) : ViewModel() {
 
     val measurements: StateFlow<List<BodyMeasurementEntity>> = activeProfileStore.activeProfileId
@@ -88,6 +90,7 @@ class BodyMeasurementsViewModel(
                     )
                 )
             }.onSuccess {
+                nutritionPathTrigger?.maybeEnqueue(profileId)
                 _saved.tryEmit(Unit)
             }.onFailure {
                 _error.tryEmit("Impossibile salvare la misurazione")
@@ -106,11 +109,12 @@ class BodyMeasurementsViewModel(
     class Factory(
         private val repository: BodyMeasurementRepository,
         private val activeProfileStore: ActiveProfileStore,
+        private val nutritionPathTrigger: NutritionPathTrigger? = null,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(BodyMeasurementsViewModel::class.java))
-            return BodyMeasurementsViewModel(repository, activeProfileStore) as T
+            return BodyMeasurementsViewModel(repository, activeProfileStore, nutritionPathTrigger) as T
         }
     }
 }

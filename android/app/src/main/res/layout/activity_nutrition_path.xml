@@ -1,0 +1,9 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:padding="24dp" android:background="@color/bg_primary">
+    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Percorso nutrizionale" android:textSize="24sp" android:textStyle="bold" android:textColor="@color/text_primary" />
+    <TextView android:id="@+id/recommendationPath" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="24dp" android:textColor="@color/accent_green_dark" android:textSize="20sp" />
+    <TextView android:id="@+id/recommendationReason" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:textColor="@color/text_secondary" />
+    <TextView android:id="@+id/recommendationConfidence" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:textColor="@color/text_muted" />
+    <TextView android:id="@+id/pathStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:textColor="@color/text_secondary" />
+    <LinearLayout android:id="@+id/alternativesContainer" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" />
+    <com.google.android.material.button.MaterialButton android:id="@+id/chooseButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="24dp" android:text="Scegli questo percorso" />
+</LinearLayout>

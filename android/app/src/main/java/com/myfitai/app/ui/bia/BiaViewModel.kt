@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.myfitai.app.data.local.entity.BiaMeasurementEntity
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.repository.BiaRepository
+import com.myfitai.app.domain.food.NutritionPathTrigger
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -18,6 +19,7 @@ import kotlinx.coroutines.launch
 class BiaViewModel(
     private val repository: BiaRepository,
     private val activeProfileStore: ActiveProfileStore,
+    private val nutritionPathTrigger: NutritionPathTrigger? = null,
 ) : ViewModel() {
 
     val history: StateFlow<List<BiaMeasurementEntity>> = activeProfileStore.activeProfileId
@@ -93,7 +95,10 @@ class BiaViewModel(
                         noRecentWorkout = noRecentWorkout,
                     )
                 )
-            }.onSuccess { _saved.tryEmit(Unit) }
+            }.onSuccess {
+                nutritionPathTrigger?.maybeEnqueue(profileId)
+                _saved.tryEmit(Unit)
+            }
                 .onFailure { _error.tryEmit("Impossibile salvare la misurazione BIA") }
         }
     }
@@ -109,11 +114,12 @@ class BiaViewModel(
     class Factory(
         private val repository: BiaRepository,
         private val activeProfileStore: ActiveProfileStore,
+        private val nutritionPathTrigger: NutritionPathTrigger? = null,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(BiaViewModel::class.java))
-            return BiaViewModel(repository, activeProfileStore) as T
+            return BiaViewModel(repository, activeProfileStore, nutritionPathTrigger) as T
         }
     }
 }

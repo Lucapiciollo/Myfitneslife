@@ -222,6 +222,7 @@ class ProfileEditActivity : BaseShellActivity() {
                 }
                 launch {
                     viewModel.saved.collect {
+                        data.nutritionPathTrigger.maybeEnqueue(it)
                         Toast.makeText(this@ProfileEditActivity, if (isCreate) "Profilo creato" else "Profilo salvato", Toast.LENGTH_SHORT).show()
                         if (isBootstrap) {
                             startActivity(Intent(this@ProfileEditActivity, HomeActivity::class.java).apply {

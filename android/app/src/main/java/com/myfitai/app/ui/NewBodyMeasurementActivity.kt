@@ -24,7 +24,7 @@ class NewBodyMeasurementActivity : BaseShellActivity() {
 
     private val data by lazy { AppDataContainer.get(this) }
     private val viewModel: BodyMeasurementsViewModel by viewModels {
-        BodyMeasurementsViewModel.Factory(data.bodyMeasurementRepository, data.activeProfileStore)
+        BodyMeasurementsViewModel.Factory(data.bodyMeasurementRepository, data.activeProfileStore, data.nutritionPathTrigger)
     }
 
     private val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.ITALIAN)
