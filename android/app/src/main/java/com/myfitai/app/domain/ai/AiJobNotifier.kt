@@ -13,6 +13,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.myfitai.app.R
 import com.myfitai.app.ui.NutritionPathActivity
+import com.myfitai.app.ui.PhysicalEvolutionActivity
 
 object AiJobNotifier {
     fun notifySuccess(context: Context, type: AiJobType, profileId: Long, jobKey: String, provider: String?) {
@@ -32,6 +33,7 @@ object AiJobNotifier {
         }
         val intent = when (type) {
             AiJobType.NUTRITION_PATH -> Intent(context, NutritionPathActivity::class.java).putExtra(NutritionPathActivity.EXTRA_JOB_KEY, jobKey)
+            AiJobType.PROGRESS_ANALYSIS -> Intent(context, PhysicalEvolutionActivity::class.java)
         }
         val pending = PendingIntent.getActivity(context, notificationId(profileId, jobKey), intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         NotificationManagerCompat.from(context).notify(notificationId(profileId, jobKey), NotificationCompat.Builder(context, type.channelId)

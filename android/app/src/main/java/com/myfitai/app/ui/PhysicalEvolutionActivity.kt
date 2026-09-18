@@ -17,6 +17,7 @@ import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.domain.progress.ProgressAnalysisCompactContract
 import com.myfitai.app.domain.progress.ProgressAnalysisService
+import com.myfitai.app.domain.ai.AiJobType
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.ui.progress.PhysicalEvolutionState
 import com.myfitai.app.ui.progress.PhysicalEvolutionViewModel
@@ -227,28 +228,28 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         analysisDetailsButton.visibility = View.GONE
         analysisDetailsContainer.visibility = View.GONE
         analysisDetailsExpanded = false
+        val profileId = data.activeProfileStore.currentIdOrNull() ?: return
+        val jobKey = "manual-${System.currentTimeMillis()}"
+        data.aiJobScheduler.enqueue(AiJobType.PROGRESS_ANALYSIS, profileId, jobKey)
         lifecycleScope.launch {
-            runCatching { data.progressAnalysisService.analyzeActive() }
-                .onSuccess { result ->
-                    data.activeProfileStore.currentIdOrNull()?.let(data.progressAnalysisScheduler::reschedule)
-                    analysisResultText.text = "${classificationLabel(result.response.classification)} · confidenza ${confidenceLabel(result.response.confidence)}\n${result.response.summary}"
-                    renderAnalysisDetails(result.response.patterns)
-                }
-                .onFailure { error ->
-                    analysisResultText.text = when (error) {
-                        is ProgressAnalysisService.AnalysisException.NeedsInput -> "Analisi non avviata: servono ${error.fields.joinToString()}. Nessun nuovo risultato è stato salvato."
-                        is com.myfitai.app.ai.AiTransportException.NotConfigured -> "Configura un provider IA e la relativa API key nelle Impostazioni."
-                        is com.myfitai.app.ai.AiTransportException.Http -> "Il provider IA ha rifiutato la richiesta (${error.failureKind})."
-                        is com.myfitai.app.ai.AiTransportException.Network -> "Problema di rete o timeout durante l'analisi."
-                        else -> "Analisi non riuscita. I dati precedenti restano invariati."
+            data.aiJobScheduler.observe(AiJobType.PROGRESS_ANALYSIS, profileId, jobKey).collect { info ->
+                when (info?.state) {
+                    androidx.work.WorkInfo.State.SUCCEEDED -> {
+                        analysisResultText.text = "Analisi completata. Il risultato aggiornato è disponibile."
+                        analysisProgress.visibility = View.GONE
+                        analysisButton.isEnabled = true
+                        analysisButton.text = "Esegui analisi ora"
+                        renderProgressAnalysisStatus(keepTransientResult = false)
                     }
-                    analysisDetailsButton.visibility = View.GONE
-                    analysisDetailsContainer.visibility = View.GONE
+                    androidx.work.WorkInfo.State.FAILED -> {
+                        analysisResultText.text = info.outputData.getString(com.myfitai.app.domain.ai.AiJobWorker.KEY_ERROR) ?: "Analisi non riuscita. I dati precedenti restano invariati."
+                        analysisProgress.visibility = View.GONE
+                        analysisButton.isEnabled = true
+                        analysisButton.text = "Esegui analisi ora"
+                    }
+                    else -> Unit
                 }
-            analysisProgress.visibility = View.GONE
-            analysisButton.isEnabled = true
-            analysisButton.text = "Esegui analisi ora"
-            renderProgressAnalysisStatus(keepTransientResult = true)
+            }
         }
     }
 

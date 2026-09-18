@@ -13,6 +13,13 @@ enum class AiJobType(
         successTitle = "Suggerimento nutrizionale pronto",
         successText = "Scegli il percorso nutrizionale da seguire.",
         failureTitle = "Suggerimento nutrizionale non disponibile",
+    ),
+    PROGRESS_ANALYSIS(
+        channelId = "ai_progress_analysis",
+        channelName = "Analisi progressi",
+        successTitle = "Analisi progressi pronta",
+        successText = "La lettura dei tuoi progressi è disponibile.",
+        failureTitle = "Analisi progressi non riuscita",
     );
 
     companion object {

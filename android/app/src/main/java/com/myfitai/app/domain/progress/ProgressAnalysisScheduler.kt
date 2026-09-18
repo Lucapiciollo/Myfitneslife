@@ -8,6 +8,8 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
+import com.myfitai.app.domain.ai.AiJobScheduler
+import com.myfitai.app.domain.ai.AiJobType
 import java.util.concurrent.TimeUnit
 
 /**
@@ -17,6 +19,7 @@ import java.util.concurrent.TimeUnit
 class ProgressAnalysisScheduler(
     context: Context,
     private val preferences: ProgressAnalysisPreferences,
+    private val aiJobScheduler: AiJobScheduler? = null,
 ) {
     private val workManager = WorkManager.getInstance(context.applicationContext)
 
@@ -37,6 +40,11 @@ class ProgressAnalysisScheduler(
     private fun enqueue(profileId: Long, nowEpochMillis: Long) {
         val due = preferences.nextDueEpochMillis(profileId) ?: return
         val delay = (due - nowEpochMillis).coerceAtLeast(0L)
+        if (aiJobScheduler != null) {
+            // The common worker currently has no delayed enqueue API; cadence remains owned here.
+            aiJobScheduler.enqueue(AiJobType.PROGRESS_ANALYSIS, profileId, due.toString(), delay)
+            return
+        }
         val request = OneTimeWorkRequestBuilder<ProgressAnalysisWorker>()
             .setInputData(workDataOf(ProgressAnalysisWorker.KEY_PROFILE_ID to profileId))
             .setInitialDelay(delay, TimeUnit.MILLISECONDS)

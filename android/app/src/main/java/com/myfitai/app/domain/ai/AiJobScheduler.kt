@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit
 class AiJobScheduler(context: Context) {
     private val workManager = WorkManager.getInstance(context.applicationContext)
 
-    fun enqueue(type: AiJobType, profileId: Long, jobKey: String) {
+    fun enqueue(type: AiJobType, profileId: Long, jobKey: String, initialDelayMillis: Long = 0L) {
         val request = OneTimeWorkRequestBuilder<AiJobWorker>()
             .setInputData(workDataOf(
                 AiJobWorker.KEY_TYPE to type.name,
@@ -25,6 +25,7 @@ class AiJobScheduler(context: Context) {
             ))
             .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
+            .setInitialDelay(initialDelayMillis.coerceAtLeast(0L), TimeUnit.MILLISECONDS)
             .build()
         workManager.enqueueUniqueWork(name(type, profileId, jobKey), ExistingWorkPolicy.KEEP, request)
     }

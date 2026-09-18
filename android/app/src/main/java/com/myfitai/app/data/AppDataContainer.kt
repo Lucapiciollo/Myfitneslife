@@ -27,6 +27,7 @@ import com.myfitai.app.domain.personalization.PersonalResponseService
 import com.myfitai.app.domain.progress.ProgressAnalysisPreferences
 import com.myfitai.app.domain.progress.ProgressAnalysisScheduler
 import com.myfitai.app.domain.progress.ProgressAnalysisService
+import com.myfitai.app.domain.progress.ProgressAnalysisAiJobHandler
 import com.myfitai.app.domain.review.WeeklyReviewService
 import com.myfitai.app.domain.data.DataDeletionService
 import com.myfitai.app.notifications.NotificationScheduler
@@ -47,11 +48,6 @@ class AppDataContainer private constructor(context: Context) {
     val userProfileRepository = UserProfileRepository(db)
     val biaRepository = BiaRepository(db)
     val bodyMeasurementRepository = BodyMeasurementRepository(db)
-    val aiJobRegistry by lazy {
-        AiJobRegistry(mapOf(
-            AiJobType.NUTRITION_PATH to NutritionPathAiJobHandler(aiRuntimeService, userProfileRepository, profileCalculationService),
-        ))
-    }
     val nutritionPathScheduler = NutritionPathScheduler(appContext, aiJobScheduler)
     val nutritionPathTrigger = NutritionPathTrigger(userProfileRepository, biaRepository, bodyMeasurementRepository, nutritionPathScheduler)
     val workoutRepository = WorkoutRepository(db)
@@ -92,7 +88,13 @@ class AppDataContainer private constructor(context: Context) {
         activeProfileStore = activeProfileStore,
         preferences = progressAnalysisPreferences,
     )
-    val progressAnalysisScheduler = ProgressAnalysisScheduler(appContext, progressAnalysisPreferences)
+    val aiJobRegistry by lazy {
+        AiJobRegistry(mapOf(
+            AiJobType.NUTRITION_PATH to NutritionPathAiJobHandler(aiRuntimeService, userProfileRepository, profileCalculationService),
+            AiJobType.PROGRESS_ANALYSIS to ProgressAnalysisAiJobHandler(progressAnalysisService),
+        ))
+    }
+    val progressAnalysisScheduler = ProgressAnalysisScheduler(appContext, progressAnalysisPreferences, aiJobScheduler)
     val dataDeletionService = DataDeletionService(
         db = db,
         activeProfileStore = activeProfileStore,
