@@ -30,5 +30,9 @@ class AiJobScheduler(context: Context) {
     fun observe(type: AiJobType, profileId: Long, jobKey: String): Flow<WorkInfo?> =
         workManager.getWorkInfosForUniqueWorkFlow(name(type, profileId, jobKey)).map { it.lastOrNull() }
 
+    fun cancel(type: AiJobType, profileId: Long, jobKey: String) {
+        workManager.cancelUniqueWork(name(type, profileId, jobKey))
+    }
+
     private fun name(type: AiJobType, profileId: Long, jobKey: String) = "ai-${type.name.lowercase()}-$profileId-$jobKey"
 }
