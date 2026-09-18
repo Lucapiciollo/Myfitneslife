@@ -177,7 +177,7 @@ class NutritionPlanGenerationService(
         var parsed: NutritionPlanContract.Response? = null
         val validated = aiRuntime.execute(
             request = request,
-            maxSchemaRetries = 1,
+            maxSchemaRetries = 2,
             businessValidator = { json ->
                 runCatching {
                     val response = NutritionPlanCompactContract.parseEnvelope(json, mealsPerDay)
@@ -191,6 +191,16 @@ class NutritionPlanGenerationService(
                         dailyTargets = dailyTargets,
                         dietaryProfile = dietaryProfile,
                     ).getOrThrow()
+                    val integrity = NutritionIntegrityValidator.validate(
+                        response = response,
+                        targets = baseTargets,
+                        mealsPerDay = mealsPerDay,
+                        dailyTargets = dailyTargets,
+                    )
+                    require(integrity.valid) {
+                        "NUTRITION_INTEGRITY_INVALID:" +
+                            integrity.issues.joinToString(",") { it.code }
+                    }
                     parsed = response
                 }
             },
@@ -426,7 +436,7 @@ MyFitAI NutritionPlanAgent. Your ONLY operational responsibility is generating a
 ${NutritionPlanCompactContract.PROTOCOL}
 T is the base local target. Every TD line is the AUTHORITATIVE target for that specific epoch day and overrides T for that day. REC is informational only: available|planned|remaining|maxDailyPercent. Never calculate, increase or decrease recovery yourself and never compensate beyond TD. B0/B/BT order is weightKg|bodyFatPct|muscleMassKg|skeletalMuscleKg|bodyWaterPct|visceralFat and means baseline/current/recent-trend-delta. BM0/BM/BMD/BMT order is chest|waist|abdomen|shoulders|glutes|armLeft|armRight|thighLeft|thighRight|calfLeft|calfRight and means baseline/current/previous-delta/recent-trend-delta. `?` means unavailable. Body/BIA signals are contextual only: use them jointly to inform food choice, distribution and timing, never to autonomously alter calories/macros, diagnose disease, dehydration, edema or muscle loss, or infer causality from one reading. Weight alone must never drive a dietary change.
 DP format is A=allergies;I=intolerances;E=excludedFoods;D=dislikedFoods;P=preferredFoods;S=dietStyle;N=notes. A, I, E and S are HARD constraints: never output an ingredient that violates them. D and P are soft preferences. Do not weaken, reinterpret or override hard constraints. The app independently validates every ingredient and rejects violations.
-Rules: exactly 7 days and exactly MEALS_PER_DAY meals per day. The complete record order is W, then for each day exactly one D followed by its M records, each meal's I records, and optional S/H records; after all 7 days emit exactly ONE V record as the final line. Never emit V inside a day or more than once. Use distinct meal slots with practical timing unless the supplied schedule requires different names. Never use `|` or line breaks inside a text field. All kcal/macros are numeric. Each day's totals include meals plus caloric supplements and must be within ±3% of that day's TD target. Count oils, dressings and caloric drinks. Ordinary foods first. Protein powder is optional and its kcal/macros count. Creatine only when SM=SPORT and always 0 kcal/P/C/F. H may give cautious hydration guidance. No punitive compensation. V notes <= 8 words. Skeleton: MFP1 -> W -> (D -> M/I/S/H repeated for 7 days) -> V exactly once.
+Rules: exactly 7 days and exactly MEALS_PER_DAY meals per day. The complete record order is W, then for each day exactly one D followed by its M records, each meal's I records, and optional S/H records; after all 7 days emit exactly ONE V record as the final line. Never emit V inside a day or more than once. Use distinct meal slots with practical timing unless the supplied schedule requires different names. Never use `|` or line breaks inside a text field. All kcal/macros are numeric. For every day, D kcal/protein/carbs/fat MUST equal the sums of all M records plus caloric S records for that day; calculate those totals before emitting D. For every meal/supplement, kcal must remain coherent with 4*proteinG + 4*carbsG + 9*fatG within the app integrity tolerance. Each day's totals include meals plus caloric supplements and must be within ±3% of that day's TD target. Count oils, dressings and caloric drinks. Ordinary foods first. Protein powder is optional and its kcal/macros count. Creatine only when SM=SPORT and always 0 kcal/P/C/F. H may give cautious hydration guidance. No punitive compensation. V notes <= 8 words. Skeleton: MFP1 -> W -> (D -> M/I/S/H repeated for 7 days) -> V exactly once.
 VARIETY: make every meal recipe different across the seven days. Rotate protein sources, vegetables, fruit, grains and preparation methods. Do not repeat the same meal title with the same ingredient set on another day. Recurring staples such as oil, salt, spices or water are allowed; the complete recipe must not be duplicated.
 """.trimIndent()
     }
