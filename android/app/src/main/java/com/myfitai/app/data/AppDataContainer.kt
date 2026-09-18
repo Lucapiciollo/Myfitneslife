@@ -20,6 +20,7 @@ import com.myfitai.app.domain.food.PlanReviewService
 import com.myfitai.app.domain.food.NutritionPathScheduler
 import com.myfitai.app.domain.food.NutritionPathTrigger
 import com.myfitai.app.domain.food.NutritionPathAiJobHandler
+import com.myfitai.app.domain.food.WeeklyPlanAiJobHandler
 import com.myfitai.app.domain.ai.AiJobRegistry
 import com.myfitai.app.domain.ai.AiJobScheduler
 import com.myfitai.app.domain.ai.AiJobType
@@ -88,12 +89,6 @@ class AppDataContainer private constructor(context: Context) {
         activeProfileStore = activeProfileStore,
         preferences = progressAnalysisPreferences,
     )
-    val aiJobRegistry by lazy {
-        AiJobRegistry(mapOf(
-            AiJobType.NUTRITION_PATH to NutritionPathAiJobHandler(aiRuntimeService, userProfileRepository, profileCalculationService),
-            AiJobType.PROGRESS_ANALYSIS to ProgressAnalysisAiJobHandler(progressAnalysisService),
-        ))
-    }
     val progressAnalysisScheduler = ProgressAnalysisScheduler(appContext, progressAnalysisPreferences, aiJobScheduler)
     val dataDeletionService = DataDeletionService(
         db = db,
@@ -157,6 +152,14 @@ class AppDataContainer private constructor(context: Context) {
         plans = mealPlanRepository,
         activeProfileStore = activeProfileStore,
     )
+
+    val aiJobRegistry by lazy {
+        AiJobRegistry(mapOf(
+            AiJobType.NUTRITION_PATH to NutritionPathAiJobHandler(aiRuntimeService, userProfileRepository, profileCalculationService),
+            AiJobType.PROGRESS_ANALYSIS to ProgressAnalysisAiJobHandler(progressAnalysisService),
+            AiJobType.WEEKLY_PLAN to WeeklyPlanAiJobHandler(nutritionPlanGenerationService, notificationScheduler),
+        ))
+    }
 
     val profileExportService = ProfileExportService(
         context = appContext,

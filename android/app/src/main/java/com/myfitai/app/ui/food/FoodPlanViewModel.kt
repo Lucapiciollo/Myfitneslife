@@ -10,6 +10,9 @@ import com.myfitai.app.data.local.entity.FoodConsumptionEntity
 import com.myfitai.app.domain.food.FoodPlanDay
 import com.myfitai.app.domain.food.FoodPlanSnapshot
 import com.myfitai.app.domain.food.NutritionPlanGenerationService
+import com.myfitai.app.domain.ai.AiJobScheduler
+import com.myfitai.app.domain.ai.AiJobType
+import androidx.work.WorkInfo
 import com.myfitai.app.notifications.NotificationScheduler
 import com.myfitai.app.ai.AiTransportException
 import com.myfitai.app.ai.AiTransportFailureKind
@@ -38,6 +41,7 @@ class FoodPlanViewModel(
     private val generationService: NutritionPlanGenerationService,
     private val notificationScheduler: NotificationScheduler,
     private val consumptionRepository: FoodConsumptionRepository,
+    private val aiJobScheduler: AiJobScheduler,
 ) : ViewModel() {
     data class GenerationState(
         val running: Boolean = false,
@@ -58,6 +62,23 @@ class FoodPlanViewModel(
     private val selectedWeekStart = MutableStateFlow(planWeekMonday(LocalDate.now()))
     private val selectedDayIndex = MutableStateFlow(todayIndexInWeek(selectedWeekStart.value))
     private val generationState = MutableStateFlow(GenerationState())
+
+    init {
+        viewModelScope.launch {
+            combine(activeProfileStore.activeProfileId, selectedWeekStart) { profileId, week -> profileId to week }
+                .flatMapLatest { (profileId, week) ->
+                    if (profileId <= 0L) flowOf(null)
+                    else aiJobScheduler.observe(AiJobType.WEEKLY_PLAN, profileId, week.toEpochDay().toString())
+                }.collect { info ->
+                    when (info?.state) {
+                        WorkInfo.State.ENQUEUED, WorkInfo.State.RUNNING -> generationState.value = GenerationState(running = true)
+                        WorkInfo.State.SUCCEEDED -> generationState.value = GenerationState(successMessage = "Piano generato e validato.")
+                        WorkInfo.State.FAILED -> generationState.value = GenerationState(error = info.outputData.getString("error") ?: "Generazione non riuscita")
+                        else -> Unit
+                    }
+                }
+        }
+    }
 
     private val source = activeProfileStore.activeProfileId.flatMapLatest { profileId ->
         if (profileId <= 0L) flowOf<Triple<LocalDate, FoodPlanSnapshot?, List<FoodConsumptionEntity>>>(Triple(selectedWeekStart.value, null, emptyList()))
@@ -97,23 +118,12 @@ class FoodPlanViewModel(
         val week = selectedWeekStart.value
         generationState.value = GenerationState(running = true)
         viewModelScope.launch {
-            runCatching { generationService.generateWeek(week) }
-                .onSuccess { result ->
-                    runCatching { notificationScheduler.refresh() }
-                    generationState.value = GenerationState(
-                        successMessage = "Piano generato con ${result.provider} · ${result.model}",
-                        usageMessage = "Costo effettivo: verifica il billing del provider IA",
-                    )
-                    }
-                    .onFailure { error ->
-                    val message = when (error) {
-                        is NutritionPlanGenerationService.GenerationException.NeedsInput -> "Completa prima: ${error.fields.joinToString()}"
-                        is NutritionPlanGenerationService.GenerationException.PastWeek -> "Le settimane concluse sono storico in sola lettura."
-                        is AiTransportException.Http -> providerLimitMessage(error)
-                        else -> error.message ?: "Generazione non riuscita"
-                    }
-                    generationState.value = GenerationState(error = message)
-                }
+            val profileId = activeProfileStore.currentIdOrNull()
+            if (profileId == null) {
+                generationState.value = GenerationState(error = "Nessun profilo attivo")
+            } else {
+                aiJobScheduler.enqueue(AiJobType.WEEKLY_PLAN, profileId, week.toEpochDay().toString())
+            }
         }
     }
 
@@ -146,11 +156,12 @@ class FoodPlanViewModel(
         private val generationService: NutritionPlanGenerationService,
         private val notificationScheduler: NotificationScheduler,
         private val consumptionRepository: FoodConsumptionRepository,
+        private val aiJobScheduler: AiJobScheduler,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(FoodPlanViewModel::class.java))
-            return FoodPlanViewModel(repository, activeProfileStore, generationService, notificationScheduler, consumptionRepository) as T
+            return FoodPlanViewModel(repository, activeProfileStore, generationService, notificationScheduler, consumptionRepository, aiJobScheduler) as T
         }
     }
 }

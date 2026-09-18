@@ -20,6 +20,13 @@ enum class AiJobType(
         successTitle = "Analisi progressi pronta",
         successText = "La lettura dei tuoi progressi è disponibile.",
         failureTitle = "Analisi progressi non riuscita",
+    ),
+    WEEKLY_PLAN(
+        channelId = "ai_weekly_plan",
+        channelName = "Piani alimentari",
+        successTitle = "Piano alimentare aggiornato",
+        successText = "Il nuovo menu è stato validato e salvato.",
+        failureTitle = "Piano alimentare non aggiornato",
     );
 
     companion object {

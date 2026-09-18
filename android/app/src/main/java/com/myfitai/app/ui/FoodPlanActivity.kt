@@ -36,7 +36,7 @@ class FoodPlanActivity : BaseShellActivity() {
 
     private val data by lazy { AppDataContainer.get(this) }
     private val viewModel: FoodPlanViewModel by viewModels {
-         FoodPlanViewModel.Factory(data.mealPlanRepository, data.activeProfileStore, data.nutritionPlanGenerationService, data.notificationScheduler, data.foodConsumptionRepository)
+         FoodPlanViewModel.Factory(data.mealPlanRepository, data.activeProfileStore, data.nutritionPlanGenerationService, data.notificationScheduler, data.foodConsumptionRepository, data.aiJobScheduler)
     }
 
     private val mealAlternativeLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->

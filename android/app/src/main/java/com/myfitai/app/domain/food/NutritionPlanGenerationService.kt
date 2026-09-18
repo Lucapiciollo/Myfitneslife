@@ -58,14 +58,18 @@ class NutritionPlanGenerationService(
     )
 
     suspend fun generateWeek(weekStart: LocalDate): Result {
+        val profileId = activeProfileStore.currentIdOrNull()
+            ?: throw GenerationException.NeedsInput(listOf("profilo attivo"))
+        return generateWeek(profileId, weekStart)
+    }
+
+    suspend fun generateWeek(profileId: Long, weekStart: LocalDate): Result {
         val monday = weekStart.minusDays((weekStart.dayOfWeek.value - 1).toLong())
         if (monday.plusDays(6).isBefore(time.today())) throw GenerationException.PastWeek()
 
-        val profileId = activeProfileStore.currentIdOrNull()
-            ?: throw GenerationException.NeedsInput(listOf("profilo attivo"))
         val profile = profiles.get(profileId)
             ?: throw GenerationException.NeedsInput(listOf("profilo"))
-        val snapshot = calculations.activeProfileSnapshot(time.today())
+        val snapshot = calculations.profileSnapshot(profileId, time.today())
             ?: throw GenerationException.NeedsInput(listOf("dati profilo"))
 
         val missingBodyData = buildList {
