@@ -330,129 +330,268 @@ class BiaActivity : BaseShellActivity() {
             "BMR" to (preview.bmrKcal to "kcal"),
         )
         val inputs = linkedMapOf<String, TextInputEditText>()
-        val outer = LinearLayout(this).apply {
+        val importCalendar = Calendar.getInstance().apply {
+            timeInMillis = preview.measuredAtEpochMillis ?: composeMeasurementMillis()
+        }
+
+        val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(20), dp(8), dp(20), 0)
+            setPadding(dp(20), dp(8), dp(20), dp(12))
         }
 
         val statusCard = MaterialCardView(this).apply {
-            radius = dp(16).toFloat()
+            radius = dp(14).toFloat()
             cardElevation = 0f
             setCardBackgroundColor(getColor(R.color.surface_positive_soft))
             strokeColor = getColor(R.color.positive_soft_stroke)
             strokeWidth = dp(1)
         }
-        val statusBody = LinearLayout(this).apply {
+        statusCard.addView(LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = android.view.Gravity.CENTER_VERTICAL
             setPadding(dp(14), dp(12), dp(14), dp(12))
-        }
-        val badge = TextView(this).apply {
-            text = "BIA"
-            gravity = android.view.Gravity.CENTER
-            setTextColor(Color.WHITE)
-            textSize = 12f
-            typeface = Typeface.DEFAULT_BOLD
-            background = roundedBackground(getColor(R.color.accent_green), dp(12))
-        }
-        statusBody.addView(badge, LinearLayout.LayoutParams(dp(48), dp(48)))
-        statusBody.addView(LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(12), 0, 0, 0)
-            addView(TextView(this@BiaActivity).apply {
-                text = "Lettura pronta da controllare"
-                setTextColor(getColor(R.color.text_primary))
-                textSize = 15f
-                typeface = Typeface.DEFAULT_BOLD
-            })
-            addView(TextView(this@BiaActivity).apply {
-                text = "${provider.replace('_', ' ')} · Confidenza ${preview.confidence.lowercase(Locale.ITALIAN)}"
-                setTextColor(getColor(R.color.text_secondary))
-                textSize = 12f
-                setPadding(0, dp(3), 0, 0)
-            })
-        }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-        statusCard.addView(statusBody)
-        outer.addView(statusCard, LinearLayout.LayoutParams(-1, -2))
 
-        outer.addView(TextView(this).apply {
-            text = "Controlla i valori prima di usarli nello storico. Puoi correggere ogni campo."
-            setTextColor(getColor(R.color.text_secondary))
-            textSize = 13f
-            setPadding(0, dp(12), 0, dp(8))
+            addView(TextView(this@BiaActivity).apply {
+                text = "BIA"
+                gravity = android.view.Gravity.CENTER
+                setTextColor(Color.WHITE)
+                textSize = 12f
+                typeface = Typeface.DEFAULT_BOLD
+                background = roundedBackground(getColor(R.color.accent_green), dp(12))
+            }, LinearLayout.LayoutParams(dp(48), dp(48)))
+
+            addView(LinearLayout(this@BiaActivity).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(dp(12), 0, 0, 0)
+                addView(TextView(this@BiaActivity).apply {
+                    text = "Lettura pronta da controllare"
+                    setTextColor(getColor(R.color.text_primary))
+                    textSize = 15f
+                    typeface = Typeface.DEFAULT_BOLD
+                })
+                addView(TextView(this@BiaActivity).apply {
+                    text = "${provider.replace('_', ' ')} · ${model.replace('_', ' ')}"
+                    setTextColor(getColor(R.color.text_secondary))
+                    textSize = 12f
+                    setPadding(0, dp(3), 0, 0)
+                })
+                addView(TextView(this@BiaActivity).apply {
+                    text = "Confidenza ${preview.confidence.lowercase(Locale.ITALIAN)}"
+                    setTextColor(getColor(R.color.accent_green_dark))
+                    textSize = 11f
+                    typeface = Typeface.DEFAULT_BOLD
+                    setPadding(0, dp(3), 0, 0)
+                })
+            }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        })
+        content.addView(statusCard, LinearLayout.LayoutParams(-1, -2))
+
+        content.addView(TextView(this).apply {
+            text = "DATA E ORA DELLA MISURAZIONE"
+            textSize = 11f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(getColor(R.color.text_muted))
+            setPadding(dp(2), dp(16), 0, dp(6))
         })
 
-        val grid = GridLayout(this).apply {
-            columnCount = 2
-            alignmentMode = GridLayout.ALIGN_BOUNDS
-            useDefaultMargins = false
+        val dateValue = TextView(this).apply {
+            text = SimpleDateFormat("dd/MM/yyyy", Locale.ITALIAN).format(importCalendar.time)
+            textSize = 14f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(getColor(R.color.accent_green_dark))
+            gravity = android.view.Gravity.END or android.view.Gravity.CENTER_VERTICAL
         }
-        fields.forEach { (label, valueAndUnit) ->
+        val timeValue = TextView(this).apply {
+            text = String.format(
+                Locale.ITALIAN,
+                "%02d:%02d",
+                importCalendar.get(Calendar.HOUR_OF_DAY),
+                importCalendar.get(Calendar.MINUTE),
+            )
+            textSize = 14f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(getColor(R.color.accent_green_dark))
+            gravity = android.view.Gravity.END or android.view.Gravity.CENTER_VERTICAL
+        }
+
+        val dateTimeCard = MaterialCardView(this).apply {
+            radius = dp(14).toFloat()
+            cardElevation = 0f
+            setCardBackgroundColor(getColor(R.color.surface_primary))
+            strokeColor = getColor(R.color.divider)
+            strokeWidth = dp(1)
+        }
+        val dateTimeBody = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+
+        fun dateTimeRow(label: String, icon: Int, value: TextView, onClick: () -> Unit): LinearLayout =
+            LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = android.view.Gravity.CENTER_VERTICAL
+                setPadding(dp(14), dp(11), dp(14), dp(11))
+                isClickable = true
+                isFocusable = true
+                setOnClickListener { onClick() }
+
+                addView(android.widget.ImageView(this@BiaActivity).apply {
+                    setImageResource(icon)
+                    imageTintList = android.content.res.ColorStateList.valueOf(getColor(R.color.accent_green_dark))
+                }, LinearLayout.LayoutParams(dp(22), dp(22)))
+
+                addView(TextView(this@BiaActivity).apply {
+                    text = label
+                    textSize = 13f
+                    setTextColor(getColor(R.color.text_primary))
+                    setPadding(dp(10), 0, 0, 0)
+                }, LinearLayout.LayoutParams(0, dp(42), 1f).apply {
+                    gravity = android.view.Gravity.CENTER_VERTICAL
+                })
+
+                addView(value, LinearLayout.LayoutParams(dp(110), dp(42)))
+            }
+
+        dateTimeBody.addView(dateTimeRow("Data", R.drawable.ic_calendar, dateValue) {
+            val picker = MaterialDatePicker.Builder.datePicker()
+                .setTitleText("Data misurazione")
+                .setSelection(importCalendar.timeInMillis)
+                .build()
+            picker.addOnPositiveButtonClickListener { selection ->
+                val picked = Calendar.getInstance().apply { timeInMillis = selection }
+                importCalendar.set(Calendar.YEAR, picked.get(Calendar.YEAR))
+                importCalendar.set(Calendar.MONTH, picked.get(Calendar.MONTH))
+                importCalendar.set(Calendar.DAY_OF_MONTH, picked.get(Calendar.DAY_OF_MONTH))
+                dateValue.text = SimpleDateFormat("dd/MM/yyyy", Locale.ITALIAN).format(importCalendar.time)
+            }
+            picker.show(supportFragmentManager, "bia_import_date_picker")
+        })
+        dateTimeBody.addView(View(this).apply {
+            setBackgroundColor(getColor(R.color.divider))
+        }, LinearLayout.LayoutParams(-1, dp(1)).apply {
+            marginStart = dp(14)
+            marginEnd = dp(14)
+        })
+        dateTimeBody.addView(dateTimeRow("Ora", R.drawable.ic_setting_clock, timeValue) {
+            val picker = MaterialTimePicker.Builder()
+                .setTimeFormat(TimeFormat.CLOCK_24H)
+                .setHour(importCalendar.get(Calendar.HOUR_OF_DAY))
+                .setMinute(importCalendar.get(Calendar.MINUTE))
+                .setTitleText("Ora misurazione")
+                .build()
+            picker.addOnPositiveButtonClickListener {
+                importCalendar.set(Calendar.HOUR_OF_DAY, picker.hour)
+                importCalendar.set(Calendar.MINUTE, picker.minute)
+                timeValue.text = String.format(Locale.ITALIAN, "%02d:%02d", picker.hour, picker.minute)
+            }
+            picker.show(supportFragmentManager, "bia_import_time_picker")
+        })
+        dateTimeCard.addView(dateTimeBody)
+        content.addView(dateTimeCard, LinearLayout.LayoutParams(-1, -2))
+
+        content.addView(TextView(this).apply {
+            text = "RISULTATI"
+            textSize = 11f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(getColor(R.color.text_muted))
+            setPadding(dp(2), dp(16), 0, dp(6))
+        })
+
+        val resultsCard = MaterialCardView(this).apply {
+            radius = dp(14).toFloat()
+            cardElevation = 0f
+            setCardBackgroundColor(getColor(R.color.surface_primary))
+            strokeColor = getColor(R.color.divider)
+            strokeWidth = dp(1)
+        }
+        val resultsBody = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+
+        fields.entries.forEachIndexed { index, entry ->
+            val label = entry.key
+            val valueAndUnit = entry.value
             val input = TextInputEditText(this).apply {
                 inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
                 valueAndUnit.first?.let { setText(formatNumber(it)) }
+                hint = "—"
                 setSingleLine(true)
-                textSize = 16f
+                textSize = 15f
+                typeface = Typeface.DEFAULT_BOLD
                 setTextColor(getColor(R.color.text_primary))
+                setHintTextColor(getColor(R.color.text_muted))
+                gravity = android.view.Gravity.END or android.view.Gravity.CENTER_VERTICAL
+                background = null
+                setPadding(dp(4), 0, dp(6), 0)
+                minWidth = dp(74)
+                setSelectAllOnFocus(true)
             }
             inputs[label] = input
-            input.background = null
-            input.setPadding(0, 0, 0, 0)
-            val field = MaterialCardView(this).apply {
-                radius = dp(12).toFloat()
-                cardElevation = 0f
-                setCardBackgroundColor(getColor(R.color.surface_secondary))
-                strokeColor = getColor(R.color.divider)
-                strokeWidth = dp(1)
-                addView(LinearLayout(this@BiaActivity).apply {
-                    orientation = LinearLayout.VERTICAL
-                    setPadding(dp(12), dp(9), dp(12), dp(8))
-                    addView(TextView(this@BiaActivity).apply {
-                        text = label.uppercase(Locale.ITALIAN)
-                        setTextColor(getColor(R.color.text_muted))
-                        textSize = 10f
-                        typeface = Typeface.DEFAULT_BOLD
-                    })
+
+            resultsBody.addView(LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = android.view.Gravity.CENTER_VERTICAL
+                setPadding(dp(14), dp(8), dp(14), dp(8))
+
+                addView(TextView(this@BiaActivity).apply {
+                    text = label
+                    textSize = 13f
+                    setTextColor(getColor(R.color.text_primary))
+                }, LinearLayout.LayoutParams(0, dp(44), 1f).apply {
+                    gravity = android.view.Gravity.CENTER_VERTICAL
+                })
+
+                val valuePill = MaterialCardView(this@BiaActivity).apply {
+                    radius = dp(10).toFloat()
+                    cardElevation = 0f
+                    setCardBackgroundColor(getColor(R.color.surface_secondary))
                     addView(LinearLayout(this@BiaActivity).apply {
                         orientation = LinearLayout.HORIZONTAL
                         gravity = android.view.Gravity.CENTER_VERTICAL
-                        addView(input, LinearLayout.LayoutParams(0, dp(36), 1f))
+                        setPadding(dp(8), 0, dp(8), 0)
+                        addView(input, LinearLayout.LayoutParams(dp(78), dp(40)))
                         addView(TextView(this@BiaActivity).apply {
                             text = valueAndUnit.second
-                            setTextColor(getColor(R.color.accent_green_dark))
-                            textSize = 12f
+                            textSize = 11f
                             typeface = Typeface.DEFAULT_BOLD
+                            setTextColor(getColor(R.color.accent_green_dark))
+                        }, LinearLayout.LayoutParams(-2, dp(40)).apply {
                             gravity = android.view.Gravity.CENTER_VERTICAL
-                        }, LinearLayout.LayoutParams(-2, dp(36)))
-                    }, LinearLayout.LayoutParams(-1, dp(36)))
+                        })
+                    })
+                }
+                addView(valuePill, LinearLayout.LayoutParams(-2, dp(40)))
+            })
+
+            if (index < fields.size - 1) {
+                resultsBody.addView(View(this).apply {
+                    setBackgroundColor(getColor(R.color.divider))
+                }, LinearLayout.LayoutParams(-1, dp(1)).apply {
+                    marginStart = dp(14)
+                    marginEnd = dp(14)
                 })
             }
-            val params = GridLayout.LayoutParams().apply {
-                width = 0
-                height = GridLayout.LayoutParams.WRAP_CONTENT
-                columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
-                setMargins(if (grid.childCount % 2 == 0) 0 else dp(6), dp(5), if (grid.childCount % 2 == 0) dp(6) else 0, dp(5))
-            }
-            grid.addView(field, params)
         }
+        resultsCard.addView(resultsBody)
+        content.addView(resultsCard, LinearLayout.LayoutParams(-1, -2))
 
-        val scrollContainer = ScrollView(this).apply {
-            isFillViewport = true
-            overScrollMode = View.OVER_SCROLL_IF_CONTENT_SCROLLS
-            addView(grid, android.view.ViewGroup.LayoutParams(-1, -2))
-        }
-        outer.addView(scrollContainer, LinearLayout.LayoutParams(-1, dp(400)))
         if (preview.notes.isNotBlank() && preview.notes.lowercase(Locale.ITALIAN) != "none") {
-            outer.addView(TextView(this).apply {
+            content.addView(TextView(this).apply {
                 text = "Nota IA: ${preview.notes}"
                 setTextColor(getColor(R.color.text_muted))
                 textSize = 11f
-                setPadding(0, dp(8), 0, 0)
+                setPadding(dp(2), dp(10), dp(2), 0)
             })
         }
+
+        val scroll = ScrollView(this).apply {
+            isFillViewport = true
+            overScrollMode = View.OVER_SCROLL_IF_CONTENT_SCROLLS
+            addView(content, ScrollView.LayoutParams(-1, -2))
+        }
+
         MaterialAlertDialogBuilder(this)
             .setTitle("Controlla importazione BIA")
-            .setView(outer)
+            .setView(scroll)
             .setNegativeButton("Annulla", null)
             .setPositiveButton("Usa valori") { _, _ ->
                 values[KEY_WEIGHT] = parseFloat(inputs.getValue("Peso").text?.toString())
@@ -463,12 +602,10 @@ class BiaActivity : BaseShellActivity() {
                 values[KEY_BODY_WATER] = parseFloat(inputs.getValue("Acqua corporea").text?.toString())
                 values[KEY_BMR] = parseFloat(inputs.getValue("BMR").text?.toString())
                 bindMeasurementRows()
-                preview.measuredAtEpochMillis?.let { timestamp ->
-                    selectedDateMillis = timestamp
-                    val calendar = Calendar.getInstance().apply { timeInMillis = timestamp }
-                    selectedHour = calendar.get(Calendar.HOUR_OF_DAY)
-                    selectedMinute = calendar.get(Calendar.MINUTE)
-                }
+
+                selectedDateMillis = importCalendar.timeInMillis
+                selectedHour = importCalendar.get(Calendar.HOUR_OF_DAY)
+                selectedMinute = importCalendar.get(Calendar.MINUTE)
                 renderDateTime()
             }
             .show()
