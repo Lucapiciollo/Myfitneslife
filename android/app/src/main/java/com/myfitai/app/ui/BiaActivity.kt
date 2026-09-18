@@ -20,6 +20,7 @@ import com.google.android.material.checkbox.MaterialCheckBox
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.textfield.TextInputLayout
 import com.google.android.material.timepicker.MaterialTimePicker
 import com.google.android.material.timepicker.TimeFormat
 import com.myfitai.app.R
@@ -171,16 +172,39 @@ class BiaActivity : BaseShellActivity() {
     private fun showValueDialog(key: String, label: String, unit: String, row: MeasurementRowView) {
         val input = TextInputEditText(this).apply {
             inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
-            hint = if (unit.isBlank()) "Valore" else "Valore in $unit"
             values[key]?.let { setText(formatNumber(it)) }
             setSelectAllOnFocus(true)
+            maxLines = 1
+        }
+
+        val inputLayout = TextInputLayout(
+            this,
+            null,
+            com.google.android.material.R.attr.textInputStyle,
+        ).apply {
+            hint = if (unit.isBlank()) label else "$label ($unit)"
+            boxBackgroundMode = TextInputLayout.BOX_BACKGROUND_OUTLINE
+            addView(
+                input,
+                TextInputLayout.LayoutParams(
+                    TextInputLayout.LayoutParams.MATCH_PARENT,
+                    TextInputLayout.LayoutParams.WRAP_CONTENT,
+                ),
+            )
         }
 
         val container = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            val padding = (20 * resources.displayMetrics.density).toInt()
-            setPadding(padding, 0, padding, 0)
-            addView(input, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+            val horizontal = (20 * resources.displayMetrics.density).toInt()
+            val top = (8 * resources.displayMetrics.density).toInt()
+            setPadding(horizontal, top, horizontal, 0)
+            addView(
+                inputLayout,
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ),
+            )
         }
 
         MaterialAlertDialogBuilder(this)
