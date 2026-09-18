@@ -75,18 +75,20 @@
                 android:layout_marginTop="@dimen/space_20"
                 android:text="Cosa vuoi mangiare o sapere?" />
 
-            <EditText
-                android:id="@+id/questionInput"
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MyFitAI.Input"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_8"
-                android:minLines="4"
-                android:gravity="top"
-                android:padding="@dimen/space_12"
-                android:background="@drawable/bg_input"
-                android:hint="Es. Stasera vorrei una pizza: cosa mi consigli per restare vicino al piano?"
-                android:textColor="@color/text_primary"
-                android:textColorHint="@color/text_muted" />
+                android:hint="Es. Stasera vorrei una pizza: cosa mi consigli per restare vicino al piano?">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/questionInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="112dp"
+                    android:gravity="top|start"
+                    android:inputType="textMultiLine|textCapSentences"
+                    android:maxLines="5" />
+            </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/askButton"
