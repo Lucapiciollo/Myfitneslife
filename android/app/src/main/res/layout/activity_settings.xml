@@ -147,8 +147,9 @@
                     android:layout_height="wrap_content"
                      android:orientation="vertical"
                      android:layout_marginTop="@dimen/space_12">
-                     <com.google.android.material.textfield.TextInputLayout
-                         android:id="@+id/geminiInputLayout"
+                      <com.google.android.material.textfield.TextInputLayout
+                          android:id="@+id/geminiInputLayout"
+                          style="@style/Widget.MyFitAI.Input"
                          android:layout_width="match_parent"
                          android:layout_height="wrap_content"
                          android:hint="Gemini API key"
@@ -184,8 +185,9 @@
                      android:orientation="vertical"
                      android:layout_marginTop="@dimen/space_12">
 
-                     <com.google.android.material.textfield.TextInputLayout
-                         android:id="@+id/openAiInputLayout"
+                      <com.google.android.material.textfield.TextInputLayout
+                          android:id="@+id/openAiInputLayout"
+                         style="@style/Widget.MyFitAI.Input"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="OpenAI API key"
