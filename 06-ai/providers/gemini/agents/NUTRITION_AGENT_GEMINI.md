@@ -48,8 +48,7 @@ Ogni giorno deve contenere:
 
 Il piano deve essere pratico, sostenibile e sufficientemente vario.
 
-## Operazione ADJUST_AFTER_DEVIATION
-Quando l'utente registra uno sgarro/deviazione:
+zione:
 1. considera il piano/versione attiva;
 2. considera i pasti già consumati come IMMUTABILI;
 3. considera l'evento extra e la sua stima nutrizionale;
@@ -60,6 +59,9 @@ Quando l'utente registra uno sgarro/deviazione:
 8. se il giorno può rientrare nella tolleranza del 3%, non richiedere correzioni sul giorno successivo;
 9. se non è possibile rientrare nel 3% in modo realistico, restituisci una piccola redistribuzione sul giorno successivo, motivata e non punitiva;
 10. restituisci una NUOVA VERSIONE del piano, senza sovrascrivere quella precedente.
+
+
+Questa è l'unica responsabilità operativa del NutritionAgent. Sgarri e deviazioni appartengono al CheatAdjustmentAgent; goal e progressi appartengono ai rispettivi agenti specialistici.
 
 ## Ingredienti
 Ogni ingrediente deve avere almeno:
