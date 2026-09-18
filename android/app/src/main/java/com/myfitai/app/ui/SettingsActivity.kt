@@ -11,6 +11,8 @@ import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.materialswitch.MaterialSwitch
+import com.google.android.material.timepicker.MaterialTimePicker
+import com.google.android.material.timepicker.TimeFormat
 import com.myfitai.app.R
 import com.myfitai.app.ai.AiRuntimeConfig
 import com.myfitai.app.ai.AiModelConfig
@@ -170,6 +172,7 @@ class SettingsActivity : BaseShellActivity() {
         findViewById<View>(R.id.rowExport).setOnClickListener { go(ExportActivity::class.java) }
 
         bindDataDeletion()
+        bindNutritionPlanSchedule()
         bindProgressAnalysisFrequency()
         GeminiCostSettingsBinder.bind(this, findViewById(R.id.aiSectionCard), settings)
         render()
@@ -178,16 +181,114 @@ class SettingsActivity : BaseShellActivity() {
     private fun enqueueNutritionPath() {
         val profileId = data.activeProfileStore.currentIdOrNull() ?: return
         lifecycleScope.launch {
-            val bia = data.biaRepository.all(profileId).first()
-            val body = data.bodyMeasurementRepository.all(profileId).first()
-            if (bia.isEmpty() || body.isEmpty()) {
-                Toast.makeText(this@SettingsActivity, "Inserisci prima una BIA e una misura corporea", Toast.LENGTH_LONG).show()
-                return@launch
-            }
-            val key = "${bia.maxOf { it.measuredAtEpochMillis }}-${body.maxOf { it.measuredAtEpochMillis }}"
-            data.nutritionPathScheduler.enqueue(profileId, key)
-            Toast.makeText(this@SettingsActivity, "Suggerimento avviato", Toast.LENGTH_SHORT).show()
+            val key = data.nutritionPathTrigger.maybeEnqueue(profileId)
+            Toast.makeText(
+                this@SettingsActivity,
+                if (key != null) "Suggerimento avviato con i dati disponibili" else "Profilo non disponibile",
+                Toast.LENGTH_SHORT,
+            ).show()
         }
+    }
+
+    private fun bindNutritionPlanSchedule() {
+        val profileId = data.activeProfileStore.currentIdOrNull() ?: return
+        val card = findViewById<LinearLayout>(R.id.aiSectionCard)
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(0, dp(4), 0, dp(12))
+        }
+        val header = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+        }
+        val title = TextView(this).apply {
+            text = "Generazione automatica piano"
+            textSize = 15f
+            setTextColor(getColor(R.color.text_primary))
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+        }
+        val enabledSwitch = MaterialSwitch(this)
+        header.addView(title, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        header.addView(enabledSwitch)
+        val value = TextView(this).apply {
+            textSize = 12f
+            setTextColor(getColor(R.color.text_secondary))
+        }
+        row.addView(header)
+        row.addView(value, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+            topMargin = dp(3)
+        })
+
+        fun dayLabel(day: java.time.DayOfWeek): String = when (day) {
+            java.time.DayOfWeek.MONDAY -> "Lunedì"
+            java.time.DayOfWeek.TUESDAY -> "Martedì"
+            java.time.DayOfWeek.WEDNESDAY -> "Mercoledì"
+            java.time.DayOfWeek.THURSDAY -> "Giovedì"
+            java.time.DayOfWeek.FRIDAY -> "Venerdì"
+            java.time.DayOfWeek.SATURDAY -> "Sabato"
+            java.time.DayOfWeek.SUNDAY -> "Domenica"
+        }
+
+        fun renderSchedule() {
+            val config = data.nutritionPlanSchedulePreferences.get(profileId)
+            enabledSwitch.isChecked = config.enabled
+            value.text = if (config.enabled) {
+                val hh = config.timeMinutes / 60
+                val mm = config.timeMinutes % 60
+                "Ogni ${dayLabel(config.dayOfWeek)} alle %02d:%02d · prepara la settimana successiva".format(hh, mm)
+            } else {
+                "Disattivata · tocca per scegliere giorno e ora"
+            }
+        }
+
+        fun chooseTime(day: java.time.DayOfWeek) {
+            val config = data.nutritionPlanSchedulePreferences.get(profileId)
+            val picker = MaterialTimePicker.Builder()
+                .setTimeFormat(TimeFormat.CLOCK_24H)
+                .setHour(config.timeMinutes / 60)
+                .setMinute(config.timeMinutes % 60)
+                .setTitleText("Ora di generazione")
+                .build()
+            picker.addOnPositiveButtonClickListener {
+                data.nutritionPlanSchedulePreferences.setDayOfWeek(profileId, day)
+                data.nutritionPlanSchedulePreferences.setTimeMinutes(profileId, picker.hour * 60 + picker.minute)
+                data.nutritionPlanSchedulePreferences.setEnabled(profileId, true)
+                data.nutritionPlanScheduler.reschedule(profileId)
+                renderSchedule()
+                Toast.makeText(this, "Generazione automatica aggiornata", Toast.LENGTH_SHORT).show()
+            }
+            picker.show(supportFragmentManager, "nutrition_plan_schedule_time")
+        }
+
+        row.setOnClickListener {
+            val days = java.time.DayOfWeek.entries
+            val labels = days.map(::dayLabel).toTypedArray()
+            val current = data.nutritionPlanSchedulePreferences.get(profileId).dayOfWeek
+            MaterialAlertDialogBuilder(this)
+                .setTitle("Giorno di generazione")
+                .setSingleChoiceItems(labels, days.indexOf(current)) { dialog, which ->
+                    dialog.dismiss()
+                    chooseTime(days[which])
+                }
+                .setNegativeButton("Annulla", null)
+                .show()
+        }
+
+        enabledSwitch.setOnCheckedChangeListener { _, checked ->
+            val current = data.nutritionPlanSchedulePreferences.get(profileId)
+            if (current.enabled == checked) return@setOnCheckedChangeListener
+            data.nutritionPlanSchedulePreferences.setEnabled(profileId, checked)
+            if (checked) data.nutritionPlanScheduler.reschedule(profileId) else data.nutritionPlanScheduler.cancel(profileId)
+            renderSchedule()
+        }
+
+        renderSchedule()
+        card.addView(row, 0)
+        card.addView(
+            View(this).apply { setBackgroundColor(getColor(R.color.divider)) },
+            1,
+            LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1).apply { bottomMargin = dp(12) },
+        )
     }
 
     private fun bindProgressAnalysisFrequency() {
