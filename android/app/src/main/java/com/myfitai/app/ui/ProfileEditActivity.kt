@@ -80,6 +80,8 @@ class ProfileEditActivity : BaseShellActivity() {
         bindViews()
         if (isCreate) {
             findViewById<View>(R.id.goalLayout).visibility = View.GONE
+            findViewById<TextView>(R.id.goalSectionTitle).text = "Attività"
+            findViewById<View>(R.id.goalAdvisorHint).visibility = View.VISIBLE
             findViewById<TextView>(R.id.bootstrapHint).text =
                 "Inserisci i dati di base. MyFitAI ti consiglierà poi l'obiettivo più coerente; la BIA potrà essere aggiunta anche in seguito."
         }
