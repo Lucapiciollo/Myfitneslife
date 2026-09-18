@@ -33,9 +33,17 @@ object NutritionPathContract {
         return Response(requireNotNull(recommendation) { "NP_RECOMMENDATION_MISSING" }, alternatives.take(2), code, explanation, agentValid)
     }
 
-    fun validateBusiness(response: Response): Result<Unit> = runCatching {
+    fun validateBusiness(
+        response: Response,
+        hasBia: Boolean = true,
+        hasBodyMeasurements: Boolean = true,
+    ): Result<Unit> = runCatching {
+        require(response.agentValid) { "NP_AGENT_VALIDATION_FAILED" }
         require(response.recommendation.path in ALLOWED_PATHS) { "NP_PATH_INVALID" }
         require(response.recommendation.confidence in 0f..1f) { "NP_CONFIDENCE_INVALID" }
+        if (!hasBia && !hasBodyMeasurements) {
+            require(response.recommendation.confidence <= 0.70f) { "NP_CONFIDENCE_TOO_HIGH_FOR_PROFILE_ONLY" }
+        }
         require(response.recommendation.reason.isNotBlank() && response.recommendation.reason.length <= 180) { "NP_REASON_TOO_LONG" }
         response.alternatives.forEach { require(it.path in ALLOWED_PATHS && it.confidence in 0f..1f && it.reason.isNotBlank()) { "NP_ALTERNATIVE_INVALID" } }
         require(response.code.length <= 50 && response.explanation.length <= 180) { "NP_EXPLANATION_TOO_LONG" }
