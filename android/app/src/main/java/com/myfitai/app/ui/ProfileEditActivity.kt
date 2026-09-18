@@ -228,7 +228,7 @@ class ProfileEditActivity : BaseShellActivity() {
                 }
                 launch {
                     viewModel.saved.collect { profileId ->
-                        val recommendationJobKey = data.nutritionPathTrigger.maybeEnqueue(profileId)
+                        val recommendationJobKey = if (isCreate) data.nutritionPathTrigger.maybeEnqueue(profileId) else null
                         Toast.makeText(this@ProfileEditActivity, if (isCreate) "Profilo creato" else "Profilo salvato", Toast.LENGTH_SHORT).show()
                         if (isCreate && recommendationJobKey != null) {
                             startActivity(Intent(this@ProfileEditActivity, NutritionPathActivity::class.java).apply {
