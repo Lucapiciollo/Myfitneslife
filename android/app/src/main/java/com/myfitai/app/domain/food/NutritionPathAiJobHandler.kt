@@ -16,7 +16,7 @@ class NutritionPathAiJobHandler(
     private val profiles: UserProfileRepository,
     private val calculations: ProfileCalculationService,
 ) : AiJobHandler {
-    override suspend fun execute(profileId: Long, jobKey: String): AiJobOutcome {
+    override suspend fun execute(profileId: Long, jobKey: String, params: Data): AiJobOutcome {
         val profile = profiles.get(profileId) ?: return AiJobOutcome.Failure("Profilo non disponibile")
         val snapshot = calculations.profileSnapshot(profileId) ?: return AiJobOutcome.Failure("Dati profilo non disponibili")
         val request = AiStructuredRequest(

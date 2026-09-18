@@ -9,7 +9,7 @@ sealed class AiJobOutcome {
 }
 
 interface AiJobHandler {
-    suspend fun execute(profileId: Long, jobKey: String): AiJobOutcome
+    suspend fun execute(profileId: Long, jobKey: String, params: Data = Data.EMPTY): AiJobOutcome
 }
 
 class AiJobRegistry(private val handlers: Map<AiJobType, AiJobHandler>) {

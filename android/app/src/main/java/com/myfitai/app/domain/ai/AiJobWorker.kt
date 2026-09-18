@@ -15,7 +15,7 @@ class AiJobWorker(appContext: Context, params: WorkerParameters) : CoroutineWork
         val jobKey = inputData.getString(KEY_JOB_KEY).orEmpty()
         val handler = AppDataContainer.get(applicationContext).aiJobRegistry.handlerFor(type)
             ?: return Result.failure(workDataOf(KEY_ERROR to "Handler IA non disponibile"))
-        val outcome = runCatching { handler.execute(profileId, jobKey) }.getOrElse { mapFailure(it) }
+        val outcome = runCatching { handler.execute(profileId, jobKey, inputData) }.getOrElse { mapFailure(it) }
         return when (outcome) {
             is AiJobOutcome.Success -> {
                 AiJobNotifier.notifySuccess(applicationContext, type, profileId, jobKey, outcome.output.getString(KEY_PROVIDER))

@@ -30,8 +30,13 @@ class NutritionAdviceActivity : BaseShellActivity() {
             adviceService = data.nutritionAdviceService,
             cheatService = data.cheatAdjustmentService,
             notificationScheduler = data.notificationScheduler,
+            aiJobScheduler = data.aiJobScheduler,
+            activeProfileStore = data.activeProfileStore,
+            pendingJobKey = intent.getStringExtra(EXTRA_JOB_KEY),
         )
     }
+
+    companion object { const val EXTRA_JOB_KEY = "nutrition_advice_job_key" }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

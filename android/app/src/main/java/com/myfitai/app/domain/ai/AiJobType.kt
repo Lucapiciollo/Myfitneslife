@@ -34,6 +34,13 @@ enum class AiJobType(
         successTitle = "Review settimanale pronta",
         successText = "Il riepilogo della settimana è disponibile.",
         failureTitle = "Review settimanale non riuscita",
+    ),
+    NUTRITION_ADVICE(
+        channelId = "ai_nutrition_advice",
+        channelName = "Consigli nutrizionali",
+        successTitle = "Risposta nutrizionale pronta",
+        successText = "Il consiglio nutrizionale è disponibile.",
+        failureTitle = "Consiglio nutrizionale non disponibile",
     );
 
     companion object {

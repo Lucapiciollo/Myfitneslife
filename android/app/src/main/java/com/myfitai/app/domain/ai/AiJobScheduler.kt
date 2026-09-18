@@ -9,6 +9,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.workDataOf
+import androidx.work.Data
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.util.concurrent.TimeUnit
@@ -16,13 +17,9 @@ import java.util.concurrent.TimeUnit
 class AiJobScheduler(context: Context) {
     private val workManager = WorkManager.getInstance(context.applicationContext)
 
-    fun enqueue(type: AiJobType, profileId: Long, jobKey: String, initialDelayMillis: Long = 0L) {
+    fun enqueue(type: AiJobType, profileId: Long, jobKey: String, initialDelayMillis: Long = 0L, params: Data = Data.EMPTY) {
         val request = OneTimeWorkRequestBuilder<AiJobWorker>()
-            .setInputData(workDataOf(
-                AiJobWorker.KEY_TYPE to type.name,
-                AiJobWorker.KEY_PROFILE_ID to profileId,
-                AiJobWorker.KEY_JOB_KEY to jobKey,
-            ))
+            .setInputData(Data.Builder().putAll(params).putString(AiJobWorker.KEY_TYPE, type.name).putLong(AiJobWorker.KEY_PROFILE_ID, profileId).putString(AiJobWorker.KEY_JOB_KEY, jobKey).build())
             .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
             .setInitialDelay(initialDelayMillis.coerceAtLeast(0L), TimeUnit.MILLISECONDS)

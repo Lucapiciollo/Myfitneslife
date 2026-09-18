@@ -11,7 +11,7 @@ class WeeklyPlanAiJobHandler(
     private val service: NutritionPlanGenerationService,
     private val notifications: NotificationScheduler,
 ) : AiJobHandler {
-    override suspend fun execute(profileId: Long, jobKey: String): AiJobOutcome = try {
+    override suspend fun execute(profileId: Long, jobKey: String, params: androidx.work.Data): AiJobOutcome = try {
         val weekStart = jobKey.toLongOrNull()?.let(LocalDate::ofEpochDay)
             ?: return AiJobOutcome.Failure("Settimana non valida")
         val result = service.generateWeek(profileId, weekStart)

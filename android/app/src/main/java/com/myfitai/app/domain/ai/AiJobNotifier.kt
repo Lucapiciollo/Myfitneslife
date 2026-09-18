@@ -18,6 +18,7 @@ import com.myfitai.app.ui.TabHostActivity
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.ui.FoodPlanActivity
 import com.myfitai.app.ui.WeeklyReviewActivity
+import com.myfitai.app.ui.NutritionAdviceActivity
 
 object AiJobNotifier {
     fun notifySuccess(context: Context, type: AiJobType, profileId: Long, jobKey: String, provider: String?) {
@@ -42,6 +43,7 @@ object AiJobNotifier {
                 jobKey.toLongOrNull()?.let { putExtra(FoodPlanActivity.EXTRA_WEEK_START_EPOCH_DAY, it) }
             }
             AiJobType.WEEKLY_REVIEW -> Intent(context, WeeklyReviewActivity::class.java)
+            AiJobType.NUTRITION_ADVICE -> Intent(context, NutritionAdviceActivity::class.java).putExtra(NutritionAdviceActivity.EXTRA_JOB_KEY, jobKey)
         }
         val pending = PendingIntent.getActivity(context, notificationId(profileId, jobKey), intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         NotificationManagerCompat.from(context).notify(notificationId(profileId, jobKey), NotificationCompat.Builder(context, type.channelId)

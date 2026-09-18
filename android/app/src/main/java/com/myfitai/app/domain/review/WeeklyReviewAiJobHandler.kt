@@ -7,7 +7,7 @@ import com.myfitai.app.domain.ai.AiJobWorker
 import java.time.LocalDate
 
 class WeeklyReviewAiJobHandler(private val service: WeeklyReviewService) : AiJobHandler {
-    override suspend fun execute(profileId: Long, jobKey: String): AiJobOutcome = try {
+    override suspend fun execute(profileId: Long, jobKey: String, params: androidx.work.Data): AiJobOutcome = try {
         val week = jobKey.toLongOrNull()?.let(LocalDate::ofEpochDay)
             ?: return AiJobOutcome.Failure("Settimana non valida")
         val result = service.generate(profileId, week)

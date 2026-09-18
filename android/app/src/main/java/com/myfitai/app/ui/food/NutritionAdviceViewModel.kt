@@ -7,6 +7,11 @@ import com.myfitai.app.domain.food.CheatAdjustmentService
 import com.myfitai.app.domain.food.NutritionAdviceContract
 import com.myfitai.app.domain.food.NutritionAdviceService
 import com.myfitai.app.notifications.NotificationScheduler
+import com.myfitai.app.domain.ai.AiJobScheduler
+import com.myfitai.app.domain.ai.AiJobType
+import com.myfitai.app.domain.food.NutritionAdviceAiJobHandler
+import com.myfitai.app.data.profile.ActiveProfileStore
+import androidx.work.WorkInfo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,6 +21,9 @@ class NutritionAdviceViewModel(
     private val adviceService: NutritionAdviceService,
     private val cheatService: CheatAdjustmentService,
     private val notificationScheduler: NotificationScheduler,
+    private val aiJobScheduler: AiJobScheduler,
+    private val activeProfileStore: ActiveProfileStore,
+    private val pendingJobKey: String? = null,
 ) : ViewModel() {
 
     data class State(
@@ -33,6 +41,23 @@ class NutritionAdviceViewModel(
     private val _state = MutableStateFlow(State())
     val state: StateFlow<State> = _state.asStateFlow()
 
+    init {
+        val jobKey = pendingJobKey
+        if (!jobKey.isNullOrBlank()) {
+            viewModelScope.launch {
+                val profileId = activeProfileStore.currentIdOrNull() ?: return@launch
+                aiJobScheduler.observe(AiJobType.NUTRITION_ADVICE, profileId, jobKey).collect { info ->
+                    when (info?.state) {
+                        WorkInfo.State.ENQUEUED, WorkInfo.State.RUNNING -> _state.value = _state.value.copy(running = true)
+                        WorkInfo.State.SUCCEEDED -> renderPayload(info.outputData.getString(NutritionAdviceAiJobHandler.KEY_PAYLOAD))
+                        WorkInfo.State.FAILED -> _state.value = _state.value.copy(running = false, error = info.outputData.getString("error") ?: "Consiglio non disponibile")
+                        else -> Unit
+                    }
+                }
+            }
+        }
+    }
+
     fun ask(question: String) {
         if (_state.value.running || _state.value.accepting) return
         val normalized = question.trim()
@@ -42,19 +67,13 @@ class NutritionAdviceViewModel(
         }
         _state.value = State(running = true, question = normalized)
         viewModelScope.launch {
-            runCatching { adviceService.ask(normalized) }
-                .onSuccess { result ->
-                    _state.value = State(
-                        question = normalized,
-                        answer = result.answer,
-                        suggestions = result.suggestions,
-                        assumptions = result.assumptions,
-                        providerLabel = result.providerLabel,
-                    )
-                }
-                .onFailure { error ->
-                    _state.value = State(question = normalized, error = error.message ?: "Consiglio non disponibile")
-                }
+            val profileId = activeProfileStore.currentIdOrNull()
+            if (profileId == null) {
+                _state.value = State(question = normalized, error = "Seleziona prima un profilo attivo.")
+            } else {
+                val jobKey = jobKeyFor(normalized)
+                aiJobScheduler.enqueue(AiJobType.NUTRITION_ADVICE, profileId, jobKey, params = androidx.work.Data.Builder().putString(NutritionAdviceAiJobHandler.KEY_QUESTION, normalized).build())
+            }
         }
     }
 
@@ -96,11 +115,34 @@ class NutritionAdviceViewModel(
         private val adviceService: NutritionAdviceService,
         private val cheatService: CheatAdjustmentService,
         private val notificationScheduler: NotificationScheduler,
+        private val aiJobScheduler: AiJobScheduler,
+        private val activeProfileStore: ActiveProfileStore,
+        private val pendingJobKey: String? = null,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(NutritionAdviceViewModel::class.java))
-            return NutritionAdviceViewModel(adviceService, cheatService, notificationScheduler) as T
+            return NutritionAdviceViewModel(adviceService, cheatService, notificationScheduler, aiJobScheduler, activeProfileStore, pendingJobKey) as T
         }
+    }
+
+    private fun renderPayload(payload: String?) {
+        if (payload == null) return
+        runCatching {
+            val root = org.json.JSONObject(payload)
+            val array = root.optJSONArray("suggestions") ?: org.json.JSONArray()
+            val suggestions = buildList {
+                for (i in 0 until array.length()) {
+                    val item = array.getJSONObject(i)
+                    val foods = item.optJSONArray("foods")?.let { values -> buildList { for (j in 0 until values.length()) add(values.optString(j)) } } ?: emptyList()
+                    add(NutritionAdviceContract.Suggestion(item.optString("title"), item.optString("reason"), item.optInt("estimatedKcal"), item.optDouble("proteinG").toFloat(), item.optDouble("carbsG").toFloat(), item.optDouble("fatG").toFloat(), foods))
+                }
+            }
+            _state.value = State(question = root.optString("question"), answer = root.optString("answer"), suggestions = suggestions, assumptions = root.optString("assumptions"), providerLabel = root.optString("providerLabel"))
+        }.onFailure { _state.value = _state.value.copy(running = false, error = "Consiglio non disponibile") }
+    }
+
+    companion object {
+        fun jobKeyFor(question: String) = (question.trim().hashCode() and 0x7fffffff).toString()
     }
 }

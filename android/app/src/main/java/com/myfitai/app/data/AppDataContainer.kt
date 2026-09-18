@@ -21,6 +21,7 @@ import com.myfitai.app.domain.food.NutritionPathScheduler
 import com.myfitai.app.domain.food.NutritionPathTrigger
 import com.myfitai.app.domain.food.NutritionPathAiJobHandler
 import com.myfitai.app.domain.food.WeeklyPlanAiJobHandler
+import com.myfitai.app.domain.food.NutritionAdviceAiJobHandler
 import com.myfitai.app.domain.review.WeeklyReviewAiJobHandler
 import com.myfitai.app.domain.ai.AiJobRegistry
 import com.myfitai.app.domain.ai.AiJobScheduler
@@ -160,6 +161,7 @@ class AppDataContainer private constructor(context: Context) {
             AiJobType.PROGRESS_ANALYSIS to ProgressAnalysisAiJobHandler(progressAnalysisService),
             AiJobType.WEEKLY_PLAN to WeeklyPlanAiJobHandler(nutritionPlanGenerationService, notificationScheduler),
             AiJobType.WEEKLY_REVIEW to WeeklyReviewAiJobHandler(weeklyReviewService),
+            AiJobType.NUTRITION_ADVICE to NutritionAdviceAiJobHandler(nutritionAdviceService),
         ))
     }
 
