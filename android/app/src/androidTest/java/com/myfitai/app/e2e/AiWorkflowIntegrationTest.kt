@@ -266,18 +266,27 @@ private class FakeAiRuntimeGateway : AiRuntimeGateway {
 
     private fun weeklyPlan(prompt: String): String {
         val week = prompt.lineSequence().first { it.startsWith("W:") }.substringAfter(':').toLong()
-        val targets = prompt.lineSequence().first { it.startsWith("T:") }.substringAfter(':').split('|')
+        val baseTargets = prompt.lineSequence().first { it.startsWith("T:") }.substringAfter(':').split('|')
+        val dailyTargets = prompt.lineSequence().filter { it.startsWith("TD:") }.associate { line ->
+            val fields = line.substringAfter(':').split('|')
+            fields[0].toLong() to fields.drop(1)
+        }
         val mealsPerDay = prompt.lineSequence().first { it.startsWith("MEALS_PER_DAY:") }.substringAfter(':').toInt()
-        val kcal = targets[0].toInt()
-        val protein = targets[1].toDouble()
-        val carbs = targets[2].toDouble()
-        val fat = targets[3].toDouble()
+        val kcal = baseTargets[0].toInt()
+        val protein = baseTargets[1].toDouble()
+        val carbs = baseTargets[2].toDouble()
+        val fat = baseTargets[3].toDouble()
         val lines = mutableListOf("MFP1", "W|$week")
         repeat(7) { offset ->
-            lines += "D|${week + offset}|$kcal|$protein|$carbs|$fat"
-            val mealKcal = (0 until mealsPerDay).map { index -> if (index == mealsPerDay - 1) kcal - (kcal / mealsPerDay) * (mealsPerDay - 1) else kcal / mealsPerDay }
+            val target = dailyTargets[week + offset] ?: listOf(kcal.toString(), protein.toString(), carbs.toString(), fat.toString())
+            val dayKcal = target[0].toInt()
+            val dayProtein = target[1].toDouble()
+            val dayCarbs = target[2].toDouble()
+            val dayFat = target[3].toDouble()
+            lines += "D|${week + offset}|$dayKcal|$dayProtein|$dayCarbs|$dayFat"
+            val mealKcal = (0 until mealsPerDay).map { index -> if (index == mealsPerDay - 1) dayKcal - (dayKcal / mealsPerDay) * (mealsPerDay - 1) else dayKcal / mealsPerDay }
             mealKcal.forEachIndexed { index, value ->
-                lines += "M|${if (index == 0) "Colazione" else "Pasto"}|Pasto fixture ${offset}_$index|${420 + index * 120}|$value|${protein / mealsPerDay}|${carbs / mealsPerDay}|${fat / mealsPerDay}|Preparazione fixture"
+                lines += "M|${if (index == 0) "Colazione" else "Pasto"}|Pasto fixture ${offset}_$index|${420 + index * 120}|$value|${dayProtein / mealsPerDay}|${dayCarbs / mealsPerDay}|${dayFat / mealsPerDay}|Preparazione fixture"
                 lines += "I|Ingrediente principale ${offset}_$index|100|g|100 g|RAW|HIGH|fixture"
             }
             lines += "H|Bevi regolarmente in modo prudente."
@@ -312,7 +321,7 @@ private class FakeAiRuntimeGateway : AiRuntimeGateway {
             add("NA1")
             add("S|1")
             add("A|Ecco cinque opzioni di gelato gestibili nel piano.")
-            repeat(5) { index -> add("O|Gelato fixture ${index + 1}|Porzione coerente con il piano|${220 + index * 20}|6|30|8") }
+            repeat(5) { index -> add("O|Gelato fixture ${index + 1}|Porzione coerente con il piano|${220 + index * 20}|6|30|8|gelato") }
             add("Q|Porzione standard")
             add("V|1|fixture")
         }
