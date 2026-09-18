@@ -4,7 +4,25 @@
     <item name="android:statusBarColor">@color/bg_primary</item><item name="android:navigationBarColor">@color/bg_primary</item>
     <item name="colorPrimary">@color/accent_green</item><item name="colorOnPrimary">@color/bg_primary</item>
     <item name="colorSurface">@color/surface_primary</item><item name="colorOnSurface">@color/text_primary</item>
+    <item name="materialAlertDialogTheme">@style/ThemeOverlay.MyFitAI.AlertDialog</item>
     <item name="android:windowBackground">@color/bg_primary</item>
+</style>
+<style name="ThemeOverlay.MyFitAI.AlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+    <item name="android:windowBackground">@color/white</item>
+    <item name="android:colorBackground">@color/white</item>
+    <item name="android:windowElevation">8dp</item>
+    <item name="android:windowMinWidthMajor">88%</item>
+    <item name="android:windowMinWidthMinor">92%</item>
+    <item name="android:textColorPrimary">@color/text_primary</item>
+    <item name="android:textColorSecondary">@color/text_secondary</item>
+    <item name="colorPrimary">@color/accent_green_dark</item>
+    <item name="colorOnPrimary">@color/white</item>
+    <item name="colorSurface">@color/white</item>
+    <item name="colorOnSurface">@color/text_primary</item>
+    <item name="shapeAppearanceOverlay">@style/ShapeAppearanceOverlay.MyFitAI.AlertDialog</item>
+</style>
+<style name="ShapeAppearanceOverlay.MyFitAI.AlertDialog" parent="">
+    <item name="cornerSize">24dp</item>
 </style>
 <style name="Text.MyFitAI.ScreenTitle" parent="TextAppearance.Material3.HeadlineSmall"><item name="android:textColor">@color/text_primary</item><item name="android:textStyle">bold</item></style>
 <style name="Text.MyFitAI.Section" parent="TextAppearance.Material3.TitleMedium"><item name="android:textColor">@color/text_primary</item><item name="android:textStyle">bold</item></style>

@@ -1,5 +1,6 @@
 package com.myfitai.app.ui
 
+import android.app.AlertDialog
 import android.graphics.Typeface
 import android.content.Intent
 import android.net.Uri
@@ -162,7 +163,7 @@ class BiaActivity : BaseShellActivity() {
         findViewById<MeasurementRowView>(viewId).apply {
             showIcon()
             setLabel(label)
-            setValue("—")
+            setValue(values[key]?.let { formatValue(it, unit) } ?: "—")
             isClickable = true
             isFocusable = true
             setOnClickListener { showValueDialog(key, label, unit, this) }
@@ -280,6 +281,7 @@ class BiaActivity : BaseShellActivity() {
         val content = layoutInflater.inflate(R.layout.dialog_bia_import_preview, null, false)
         val scroll = content.findViewById<androidx.core.widget.NestedScrollView>(R.id.biaImportScroll)
         val meta = content.findViewById<TextView>(R.id.biaImportMeta)
+        val date = content.findViewById<TextView>(R.id.biaImportDate)
 
         val inputs = mapOf(
             KEY_WEIGHT to content.findViewById<TextInputEditText>(R.id.biaImportWeight),
@@ -304,10 +306,18 @@ class BiaActivity : BaseShellActivity() {
             append("\nConfidenza: ").append(preview.confidence)
             preview.notes.takeIf { it.isNotBlank() }?.let { append("\n").append(it) }
         }
+        date.text = preview.measuredAtEpochMillis?.let { timestamp ->
+            "Data rilevata: ${SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.ITALIAN).format(Date(timestamp))}"
+        } ?: "Data rilevata: non disponibile"
+
+        val scrollHeight = (resources.displayMetrics.density * 300f).toInt()
+        scroll.layoutParams = (scroll.layoutParams
+            ?: android.view.ViewGroup.LayoutParams(android.view.ViewGroup.LayoutParams.MATCH_PARENT, scrollHeight)).apply {
+            height = scrollHeight
+        }
 
         val dialog = MaterialAlertDialogBuilder(this)
             .setTitle("Controlla importazione BIA")
-            .setMessage("I valori sono una lettura della foto. Correggili prima di salvarli nello storico.")
             .setView(content)
             .setNegativeButton("Annulla", null)
             .setPositiveButton("Usa valori") { _, _ ->
@@ -330,9 +340,12 @@ class BiaActivity : BaseShellActivity() {
             .create()
 
         dialog.setOnShowListener {
-            scroll.layoutParams = scroll.layoutParams.apply {
-                height = (resources.displayMetrics.heightPixels * 0.52f).toInt()
-            }
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(getColor(R.color.text_secondary))
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(getColor(R.color.accent_green_dark))
+            dialog.window?.setLayout(
+                (resources.displayMetrics.widthPixels * 0.92f).toInt(),
+                android.view.WindowManager.LayoutParams.WRAP_CONTENT,
+            )
         }
         dialog.show()
     }
