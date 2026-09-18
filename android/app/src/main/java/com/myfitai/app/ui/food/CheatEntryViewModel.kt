@@ -4,7 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.myfitai.app.domain.food.CheatAdjustmentService
+import com.myfitai.app.domain.food.CheatAdjustmentContract
 import com.myfitai.app.notifications.NotificationScheduler
+import com.myfitai.app.domain.ai.AiJobScheduler
+import com.myfitai.app.domain.ai.AiJobType
+import com.myfitai.app.domain.food.CheatUnderstandingAiJobHandler
+import com.myfitai.app.data.profile.ActiveProfileStore
+import androidx.work.WorkInfo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,6 +19,8 @@ import kotlinx.coroutines.launch
 class CheatEntryViewModel(
     private val service: CheatAdjustmentService,
     private val notificationScheduler: NotificationScheduler,
+    private val aiJobScheduler: AiJobScheduler,
+    private val activeProfileStore: ActiveProfileStore,
 ) : ViewModel() {
 
     data class State(
@@ -28,11 +36,26 @@ class CheatEntryViewModel(
     fun analyze(input: CheatAdjustmentService.Input) {
         if (_state.value.running) return
         _state.value = State(running = true)
+        val profileId = activeProfileStore.currentIdOrNull() ?: run { _state.value = State(error = "Nessun profilo attivo"); return }
+        val jobKey = input.occurredAtEpochMillis.toString()
+        aiJobScheduler.enqueue(AiJobType.CHEAT_UNDERSTANDING, profileId, jobKey, params = androidx.work.Data.Builder().putString(CheatUnderstandingAiJobHandler.KEY_DESCRIPTION, input.description).putString(CheatUnderstandingAiJobHandler.KEY_QUANTITY, input.quantityText).putString(CheatUnderstandingAiJobHandler.KEY_NOTES, input.notes).putLong(CheatUnderstandingAiJobHandler.KEY_OCCURRED_AT, input.occurredAtEpochMillis).build())
         viewModelScope.launch {
-            runCatching { service.analyze(input) }
-                .onSuccess { _state.value = State(understanding = it) }
-                .onFailure { error -> _state.value = State(error = message(error)) }
+            aiJobScheduler.observe(AiJobType.CHEAT_UNDERSTANDING, profileId, jobKey).collect { info ->
+                when (info?.state) {
+                    WorkInfo.State.SUCCEEDED -> renderUnderstanding(info.outputData.getString(CheatUnderstandingAiJobHandler.KEY_PAYLOAD))
+                    WorkInfo.State.FAILED -> _state.value = State(error = info.outputData.getString("error") ?: "Valutazione sgarro non disponibile")
+                    else -> Unit
+                }
+            }
         }
+    }
+
+    private fun renderUnderstanding(payload: String?) {
+        if (payload == null) return
+        runCatching {
+            val root = org.json.JSONObject(payload)
+            _state.value = State(understanding = CheatAdjustmentService.Understanding(root.getString("understoodFood"), CheatAdjustmentContract.Estimate(root.getInt("kcal"), root.getDouble("proteinG").toFloat(), root.getDouble("carbsG").toFloat(), root.getDouble("fatG").toFloat(), root.getString("confidence"), root.getString("notes")), root.getString("provider"), root.getString("model"), ""))
+        }.onFailure { _state.value = State(error = "Valutazione sgarro non disponibile") }
     }
 
     fun confirm(input: CheatAdjustmentService.Input) {
@@ -72,11 +95,13 @@ class CheatEntryViewModel(
     class Factory(
         private val service: CheatAdjustmentService,
         private val notificationScheduler: NotificationScheduler,
+        private val aiJobScheduler: AiJobScheduler,
+        private val activeProfileStore: ActiveProfileStore,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(CheatEntryViewModel::class.java))
-            return CheatEntryViewModel(service, notificationScheduler) as T
+            return CheatEntryViewModel(service, notificationScheduler, aiJobScheduler, activeProfileStore) as T
         }
     }
 }

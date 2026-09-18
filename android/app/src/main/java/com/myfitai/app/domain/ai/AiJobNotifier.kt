@@ -20,6 +20,7 @@ import com.myfitai.app.ui.FoodPlanActivity
 import com.myfitai.app.ui.WeeklyReviewActivity
 import com.myfitai.app.ui.NutritionAdviceActivity
 import com.myfitai.app.ui.MealAlternativeActivity
+import com.myfitai.app.ui.CheatEntryActivity
 
 object AiJobNotifier {
     fun notifySuccess(context: Context, type: AiJobType, profileId: Long, jobKey: String, provider: String?) {
@@ -52,6 +53,7 @@ object AiJobNotifier {
                 putExtra(MealAlternativeActivity.EXTRA_MEAL_ID, parts.getOrNull(2)?.toLongOrNull() ?: -1L)
                 putExtra(MealAlternativeActivity.EXTRA_AI_JOB_KEY, jobKey)
             }
+            AiJobType.CHEAT_UNDERSTANDING -> Intent(context, CheatEntryActivity::class.java)
         }
         val pending = PendingIntent.getActivity(context, notificationId(profileId, jobKey), intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         NotificationManagerCompat.from(context).notify(notificationId(profileId, jobKey), NotificationCompat.Builder(context, type.channelId)

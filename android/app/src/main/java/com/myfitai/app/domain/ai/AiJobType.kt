@@ -48,6 +48,13 @@ enum class AiJobType(
         successTitle = "Alternative pasto pronte",
         successText = "Scegli un'alternativa per il pasto.",
         failureTitle = "Alternative pasto non disponibili",
+    ),
+    CHEAT_UNDERSTANDING(
+        channelId = "ai_cheat_understanding",
+        channelName = "Comprensione sgarro",
+        successTitle = "Valutazione sgarro pronta",
+        successText = "Controlla la stima prima di confermare.",
+        failureTitle = "Valutazione sgarro non disponibile",
     );
 
     companion object {
