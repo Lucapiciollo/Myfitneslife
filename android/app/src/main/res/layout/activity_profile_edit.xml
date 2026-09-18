@@ -77,6 +77,7 @@
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/nameLayout"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12"
@@ -91,6 +92,7 @@
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/birthDateLayout"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_8"
@@ -127,6 +129,7 @@
                     android:orientation="horizontal">
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/heightLayout"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -141,6 +144,7 @@
                     <Space android:layout_width="@dimen/space_8" android:layout_height="1dp" />
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/weightLayout"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -219,6 +223,7 @@
                     android:orientation="horizontal">
                     <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="0dp"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:hint="Sveglia">
@@ -233,6 +238,7 @@
                     <Space android:layout_width="@dimen/space_8" android:layout_height="1dp" />
                     <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="0dp"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:hint="Sonno">
@@ -271,6 +277,7 @@
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12"
                     android:hint="Alimenti preferiti">
@@ -283,6 +290,7 @@
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_8"
@@ -296,6 +304,7 @@
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_8"
@@ -309,6 +318,7 @@
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_8"
@@ -322,6 +332,7 @@
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_8"
@@ -348,6 +359,7 @@
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_8"
