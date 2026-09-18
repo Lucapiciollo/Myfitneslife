@@ -72,12 +72,6 @@ class NutritionPlanGenerationService(
         val snapshot = calculations.profileSnapshot(profileId, time.today())
             ?: throw GenerationException.NeedsInput(listOf("dati profilo"))
 
-        val missingBodyData = buildList {
-            if (snapshot.latestBiaTimestamp == null) add("una rilevazione BIA")
-            if (snapshot.latestBodyMeasurementTimestamp == null) add("una rilevazione di misure corporee")
-        }
-        if (missingBodyData.isNotEmpty()) throw GenerationException.NeedsInput(missingBodyData)
-
         val calc = snapshot.calculation
         val goal = ProfileCalculationMapper.goal(profile.goal)
         val missing = buildList {
