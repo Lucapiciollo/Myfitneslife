@@ -42,7 +42,7 @@ class NutritionPlanScheduler(
         if (!config.enabled) return
 
         val now = Instant.ofEpochMilli(nowEpochMillis).atZone(zoneId)
-        val due = nextOccurrence(now, config.dayOfWeek, config.timeMinutes)
+        val due = nextOccurrence(now, config.dayOfWeek, config.timeMinutes, zoneId)
         val targetWeek = due.toLocalDate()
             .with(TemporalAdjusters.next(DayOfWeek.MONDAY))
         val dueEpochMillis = due.toInstant().toEpochMilli()
@@ -62,18 +62,21 @@ class NutritionPlanScheduler(
         preferences.setScheduledJobKey(profileId, jobKey)
     }
 
-    internal fun nextOccurrence(
-        now: ZonedDateTime,
-        dayOfWeek: DayOfWeek,
-        timeMinutes: Int,
-    ): ZonedDateTime {
-        val hour = timeMinutes / 60
-        val minute = timeMinutes % 60
-        var candidate = now.toLocalDate()
-            .with(TemporalAdjusters.nextOrSame(dayOfWeek))
-            .atTime(hour, minute)
-            .atZone(zoneId)
-        if (!candidate.isAfter(now)) candidate = candidate.plusWeeks(1)
-        return candidate
+    companion object {
+        internal fun nextOccurrence(
+            now: ZonedDateTime,
+            dayOfWeek: DayOfWeek,
+            timeMinutes: Int,
+            zoneId: ZoneId,
+        ): ZonedDateTime {
+            val hour = timeMinutes / 60
+            val minute = timeMinutes % 60
+            var candidate = now.toLocalDate()
+                .with(TemporalAdjusters.nextOrSame(dayOfWeek))
+                .atTime(hour, minute)
+                .atZone(zoneId)
+            if (!candidate.isAfter(now)) candidate = candidate.plusWeeks(1)
+            return candidate
+        }
     }
 }
