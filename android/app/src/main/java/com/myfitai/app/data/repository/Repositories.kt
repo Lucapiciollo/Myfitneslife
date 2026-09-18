@@ -123,6 +123,7 @@ data class PlanVersionDraft(
     val targetCarbsG: Float?,
     val targetFatG: Float?,
     val days: List<DayDraft>,
+    val appValidationJson: String? = null,
 )
 
 class MealPlanRepository(private val db: MyFitAiDatabase) {
@@ -167,6 +168,7 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
                 targetProteinG = draft.targetProteinG,
                 targetCarbsG = draft.targetCarbsG,
                 targetFatG = draft.targetFatG,
+                appValidationJson = draft.appValidationJson,
             )
         )
 

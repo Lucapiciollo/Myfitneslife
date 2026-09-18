@@ -8,6 +8,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -81,6 +82,23 @@ class DatabaseMigrationTest {
             db.query("SELECT COUNT(*) FROM ai_usage_records").use { cursor ->
                 check(cursor.moveToFirst())
                 assertEquals(0, cursor.getInt(0))
+            }
+        }
+    }
+
+    @Test
+    fun migration7To8_addsNullableAppValidationJson() {
+        helper.createDatabase(MyFitAiDatabase.DATABASE_NAME, 7).close()
+        helper.runMigrationsAndValidate(
+            MyFitAiDatabase.DATABASE_NAME,
+            8,
+            true,
+            DatabaseMigrations.MIGRATION_7_8,
+        ).use { db ->
+            db.query("PRAGMA table_info(meal_plan_versions)").use { cursor ->
+                var found = false
+                while (cursor.moveToNext()) if (cursor.getString(1) == "appValidationJson") found = true
+                assertTrue(found)
             }
         }
     }

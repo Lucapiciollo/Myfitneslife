@@ -212,6 +212,18 @@ class NutritionPlanGenerationService(
             }
         }.getOrElse { throw GenerationException.InvalidAiOutput(it.message ?: "INVALID_COMPACT_PROTOCOL") }
 
+        val integrity = NutritionIntegrityValidator.validate(
+            response = response,
+            targets = baseTargets,
+            mealsPerDay = mealsPerDay,
+            dailyTargets = dailyTargets,
+        )
+        if (!integrity.valid) {
+            throw GenerationException.InvalidAiOutput(
+                "NUTRITION_INTEGRITY_INVALID:${integrity.issues.joinToString(",") { it.code }}"
+            )
+        }
+
         val existing = plans.getPlanForWeek(profileId, monday.toEpochDay())
         val reviewReason = if (existing == null) {
             PlanReviewPolicy.Reason.NEW_WEEKLY_PLAN
@@ -266,6 +278,7 @@ class NutritionPlanGenerationService(
             targetProteinG = persistedTargets.proteinG.toFloat(),
             targetCarbsG = persistedTargets.carbsG.toFloat(),
             targetFatG = persistedTargets.fatG.toFloat(),
+            appValidationJson = integrity.toJson().toString(),
             days = response.days.sortedBy { it.dateEpochDay }.map { day ->
                 DayDraft(
                     dateEpochDay = day.dateEpochDay,

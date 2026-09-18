@@ -118,6 +118,7 @@ data class MealPlanVersionEntity(
     val targetProteinG: Float?,
     val targetCarbsG: Float?,
     val targetFatG: Float?,
+    val appValidationJson: String? = null,
 )
 
 @Entity(
