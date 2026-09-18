@@ -15,7 +15,11 @@ class ReminderRescheduleReceiver : BroadcastReceiver() {
         val pending = goAsync()
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             try {
-                AppDataContainer.get(context).notificationScheduler.refresh()
+                val data = AppDataContainer.get(context)
+                data.notificationScheduler.refresh()
+                data.activeProfileStore.currentIdOrNull()?.let { profileId ->
+                    data.nutritionPlanScheduler.reschedule(profileId)
+                }
             } finally {
                 pending.finish()
             }
