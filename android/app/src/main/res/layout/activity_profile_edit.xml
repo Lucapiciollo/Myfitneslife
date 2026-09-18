@@ -168,10 +168,21 @@
                 android:padding="@dimen/space_16">
 
                 <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/goalSectionTitle"
                     style="@style/Text.MyFitAI.Section"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Obiettivo e attività" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/goalAdvisorHint"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_4"
+                    android:text="MyFitAI consiglierà l'obiettivo dopo aver analizzato i dati disponibili."
+                    android:textColor="@color/text_muted"
+                    android:textSize="11sp"
+                    android:visibility="gone" />
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/goalLayout"
