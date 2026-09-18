@@ -16,10 +16,16 @@ class MyFitAiApplication : Application() {
 
         appScope.launch {
             runCatching { data.notificationScheduler.refresh() }
+            data.activeProfileStore.currentIdOrNull()?.let { profileId ->
+                runCatching { data.nutritionPlanScheduler.reschedule(profileId) }
+            }
         }
         appScope.launch {
-            data.activeProfileStore.activeProfileId.collect {
+            data.activeProfileStore.activeProfileId.collect { profileId ->
                 runCatching { data.notificationScheduler.refresh() }
+                if (profileId > 0L) {
+                    runCatching { data.nutritionPlanScheduler.reschedule(profileId) }
+                }
             }
         }
     }
