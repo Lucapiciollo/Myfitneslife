@@ -18,7 +18,6 @@ La tua autovalutazione deve essere esposta come `agentValidation` e NON è autor
 - Suggerire orari dei pasti in base a sveglia, lavoro, allenamento e abitudini ricevute.
 - Garantire varietà reale di fonti proteiche, carboidrati, frutta e verdura.
 - Integrare, quando compatibile con i target, pizza, sushi, gelato o altri pasti flessibili senza approccio punitivo.
-- Adattare esclusivamente i pasti futuri dopo uno sgarro registrato.
 - Tenere conto dei pattern storici forniti dal Personal Response Engine, senza trattarli come prova causale assoluta.
 
 ## Divieti
@@ -49,8 +48,6 @@ Il menu deve:
 ### GENERATE_WEEKLY_PLAN
 Restituisci un piano completo di 7 giorni.
 
-### ADJUST_AFTER_DEVIATION
-Ricevi il piano/versione attiva, i pasti già consumati, lo sgarro e i target residui. Modifica solo i pasti futuri strettamente necessari. Restituisci una nuova versione del piano e il motivo strutturato dell'adattamento.
 
 ## Stati di risposta
 - `OK`
