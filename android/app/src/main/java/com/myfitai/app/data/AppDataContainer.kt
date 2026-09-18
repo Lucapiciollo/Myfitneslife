@@ -19,6 +19,10 @@ import com.myfitai.app.domain.food.NutritionPlanGenerationService
 import com.myfitai.app.domain.food.PlanReviewService
 import com.myfitai.app.domain.food.NutritionPathScheduler
 import com.myfitai.app.domain.food.NutritionPathTrigger
+import com.myfitai.app.domain.food.NutritionPathAiJobHandler
+import com.myfitai.app.domain.ai.AiJobRegistry
+import com.myfitai.app.domain.ai.AiJobScheduler
+import com.myfitai.app.domain.ai.AiJobType
 import com.myfitai.app.domain.personalization.PersonalResponseService
 import com.myfitai.app.domain.progress.ProgressAnalysisPreferences
 import com.myfitai.app.domain.progress.ProgressAnalysisScheduler
@@ -38,11 +42,17 @@ class AppDataContainer private constructor(context: Context) {
     val mealCountPreferences = MealCountPreferences(appContext)
     val profilePhotoStore = ProfilePhotoStore(appContext)
     val progressAnalysisPreferences = ProgressAnalysisPreferences(appContext)
-    val nutritionPathScheduler = NutritionPathScheduler(appContext)
+    val aiJobScheduler = AiJobScheduler(appContext)
 
     val userProfileRepository = UserProfileRepository(db)
     val biaRepository = BiaRepository(db)
     val bodyMeasurementRepository = BodyMeasurementRepository(db)
+    val aiJobRegistry by lazy {
+        AiJobRegistry(mapOf(
+            AiJobType.NUTRITION_PATH to NutritionPathAiJobHandler(aiRuntimeService, userProfileRepository, profileCalculationService),
+        ))
+    }
+    val nutritionPathScheduler = NutritionPathScheduler(appContext, aiJobScheduler)
     val nutritionPathTrigger = NutritionPathTrigger(userProfileRepository, biaRepository, bodyMeasurementRepository, nutritionPathScheduler)
     val workoutRepository = WorkoutRepository(db)
     val mealPlanRepository = MealPlanRepository(db)

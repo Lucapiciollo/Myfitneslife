@@ -11,10 +11,9 @@ import com.google.android.material.button.MaterialButton
 import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.domain.food.NutritionPathContract
-import com.myfitai.app.domain.food.NutritionPathWorker
 import kotlinx.coroutines.launch
 import org.json.JSONObject
-import com.myfitai.app.notifications.NutritionPathNotification
+import com.myfitai.app.domain.ai.AiJobWorker
 
 class NutritionPathActivity : BaseShellActivity() {
     private val data by lazy { AppDataContainer.get(this) }
@@ -34,8 +33,8 @@ class NutritionPathActivity : BaseShellActivity() {
             data.nutritionPathScheduler.observe(profileId, jobKey).collect { info ->
                 when (info?.state) {
                     WorkInfo.State.RUNNING, WorkInfo.State.ENQUEUED -> status("Analisi in corso…")
-                    WorkInfo.State.SUCCEEDED -> render(info.outputData.getString(NutritionPathWorker.KEY_PAYLOAD))
-                    WorkInfo.State.FAILED -> status(info.outputData.getString(NutritionPathWorker.KEY_ERROR) ?: "Suggerimento non disponibile")
+                    WorkInfo.State.SUCCEEDED -> render(info.outputData.getString(com.myfitai.app.domain.food.NutritionPathAiJobHandler.KEY_PAYLOAD))
+                    WorkInfo.State.FAILED -> status(info.outputData.getString(AiJobWorker.KEY_ERROR) ?: "Suggerimento non disponibile")
                     else -> Unit
                 }
             }
