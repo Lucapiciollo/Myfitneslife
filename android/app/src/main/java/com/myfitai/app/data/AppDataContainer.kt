@@ -5,6 +5,7 @@ import com.myfitai.app.ai.AiRuntimeService
 import com.myfitai.app.data.local.MyFitAiDatabase
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.profile.MealCountPreferences
+import com.myfitai.app.data.profile.NutritionPlanSchedulePreferences
 import com.myfitai.app.data.profile.ProfilePhotoStore
 import com.myfitai.app.data.repository.*
 import com.myfitai.app.domain.body.BodyProportionAnalysisService
@@ -16,6 +17,7 @@ import com.myfitai.app.domain.food.FoodConsumptionService
 import com.myfitai.app.domain.food.MealAlternativeService
 import com.myfitai.app.domain.food.NutritionAdviceService
 import com.myfitai.app.domain.food.NutritionPlanGenerationService
+import com.myfitai.app.domain.food.NutritionPlanScheduler
 import com.myfitai.app.domain.food.PlanReviewService
 import com.myfitai.app.domain.food.NutritionPathScheduler
 import com.myfitai.app.domain.food.NutritionPathTrigger
@@ -50,9 +52,11 @@ class AppDataContainer private constructor(context: Context) {
 
     val activeProfileStore = ActiveProfileStore(appContext)
     val mealCountPreferences = MealCountPreferences(appContext)
+    val nutritionPlanSchedulePreferences = NutritionPlanSchedulePreferences(appContext)
     val profilePhotoStore = ProfilePhotoStore(appContext)
     val progressAnalysisPreferences = ProgressAnalysisPreferences(appContext)
     val aiJobScheduler = AiJobScheduler(appContext)
+    val nutritionPlanScheduler = NutritionPlanScheduler(nutritionPlanSchedulePreferences, aiJobScheduler)
     val aiImageJobStore = AiImageJobStore(appContext)
 
     val userProfileRepository = UserProfileRepository(db)
@@ -166,7 +170,12 @@ class AppDataContainer private constructor(context: Context) {
         AiJobRegistry(mapOf(
             AiJobType.NUTRITION_PATH to NutritionPathAiJobHandler(aiRuntimeService, userProfileRepository, profileCalculationService),
             AiJobType.PROGRESS_ANALYSIS to ProgressAnalysisAiJobHandler(progressAnalysisService),
-            AiJobType.WEEKLY_PLAN to WeeklyPlanAiJobHandler(nutritionPlanGenerationService, notificationScheduler),
+            AiJobType.WEEKLY_PLAN to WeeklyPlanAiJobHandler(
+                nutritionPlanGenerationService,
+                notificationScheduler,
+                mealPlanRepository,
+                nutritionPlanScheduler,
+            ),
             AiJobType.WEEKLY_REVIEW to WeeklyReviewAiJobHandler(weeklyReviewService),
             AiJobType.NUTRITION_ADVICE to NutritionAdviceAiJobHandler(nutritionAdviceService),
             AiJobType.MEAL_ALTERNATIVES to MealAlternativesAiJobHandler(mealAlternativeService),
