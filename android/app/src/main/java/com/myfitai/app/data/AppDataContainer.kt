@@ -24,6 +24,7 @@ import com.myfitai.app.domain.food.WeeklyPlanAiJobHandler
 import com.myfitai.app.domain.food.NutritionAdviceAiJobHandler
 import com.myfitai.app.domain.food.MealAlternativesAiJobHandler
 import com.myfitai.app.domain.food.CheatUnderstandingAiJobHandler
+import com.myfitai.app.domain.food.CheatAdjustmentAiJobHandler
 import com.myfitai.app.domain.review.WeeklyReviewAiJobHandler
 import com.myfitai.app.domain.ai.AiJobRegistry
 import com.myfitai.app.domain.ai.AiJobScheduler
@@ -168,6 +169,7 @@ class AppDataContainer private constructor(context: Context) {
             AiJobType.NUTRITION_ADVICE to NutritionAdviceAiJobHandler(nutritionAdviceService),
             AiJobType.MEAL_ALTERNATIVES to MealAlternativesAiJobHandler(mealAlternativeService),
             AiJobType.CHEAT_UNDERSTANDING to CheatUnderstandingAiJobHandler(cheatAdjustmentService, aiImageJobStore),
+            AiJobType.CHEAT_ADJUSTMENT to CheatAdjustmentAiJobHandler(cheatAdjustmentService),
         ))
     }
 

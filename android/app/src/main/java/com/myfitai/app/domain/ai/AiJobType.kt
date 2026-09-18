@@ -55,6 +55,13 @@ enum class AiJobType(
         successTitle = "Valutazione sgarro pronta",
         successText = "Controlla la stima prima di confermare.",
         failureTitle = "Valutazione sgarro non disponibile",
+    ),
+    CHEAT_ADJUSTMENT(
+        channelId = "ai_cheat_adjustment",
+        channelName = "Adattamento sgarro",
+        successTitle = "Piano adattato",
+        successText = "I pasti futuri sono stati riequilibrati.",
+        failureTitle = "Adattamento sgarro non riuscito",
     );
 
     companion object {

@@ -9,6 +9,7 @@ import com.myfitai.app.notifications.NotificationScheduler
 import com.myfitai.app.domain.ai.AiJobScheduler
 import com.myfitai.app.domain.ai.AiJobType
 import com.myfitai.app.domain.food.CheatUnderstandingAiJobHandler
+import com.myfitai.app.domain.food.CheatAdjustmentAiJobHandler
 import com.myfitai.app.domain.ai.AiImageJobStore
 import com.myfitai.app.data.profile.ActiveProfileStore
 import androidx.work.WorkInfo
@@ -69,16 +70,44 @@ class CheatEntryViewModel(
             return
         }
         _state.value = _state.value.copy(running = true, error = null)
+        val profileId = activeProfileStore.currentIdOrNull() ?: run { _state.value = State(understanding = understanding, error = "Nessun profilo attivo"); return }
+        val jobKey = "confirmed-${input.occurredAtEpochMillis}"
+        val params = androidx.work.Data.Builder()
+            .putString(CheatAdjustmentAiJobHandler.KEY_DESCRIPTION, input.description)
+            .putString(CheatAdjustmentAiJobHandler.KEY_QUANTITY, input.quantityText)
+            .putString(CheatAdjustmentAiJobHandler.KEY_NOTES, input.notes)
+            .putLong(CheatAdjustmentAiJobHandler.KEY_OCCURRED_AT, input.occurredAtEpochMillis)
+            .putInt(CheatAdjustmentAiJobHandler.KEY_KCAL, understanding.estimate.kcal)
+            .putFloat(CheatAdjustmentAiJobHandler.KEY_PROTEIN, understanding.estimate.proteinG)
+            .putFloat(CheatAdjustmentAiJobHandler.KEY_CARBS, understanding.estimate.carbsG)
+            .putFloat(CheatAdjustmentAiJobHandler.KEY_FAT, understanding.estimate.fatG)
+            .putString(CheatAdjustmentAiJobHandler.KEY_CONFIDENCE, understanding.estimate.confidence)
+            .putString(CheatAdjustmentAiJobHandler.KEY_ESTIMATE_NOTES, understanding.estimate.notes)
+            .putString(CheatAdjustmentAiJobHandler.KEY_UNDERSTOOD, understanding.understoodFood)
+            .putString(CheatAdjustmentAiJobHandler.KEY_AGENT_PROVIDER, understanding.provider)
+            .putString(CheatAdjustmentAiJobHandler.KEY_AGENT_MODEL, understanding.model)
+            .putString(CheatAdjustmentAiJobHandler.KEY_FINGERPRINT, service.inputFingerprint(input))
+            .build()
+        aiJobScheduler.enqueue(AiJobType.CHEAT_ADJUSTMENT, profileId, jobKey, params = params)
         viewModelScope.launch {
-            runCatching { service.registerAndAdapt(input, understanding) }
-                .onSuccess {
-                    runCatching { notificationScheduler.refresh() }
-                    _state.value = State(result = it)
+            aiJobScheduler.observe(AiJobType.CHEAT_ADJUSTMENT, profileId, jobKey).collect { info ->
+                when (info?.state) {
+                    WorkInfo.State.SUCCEEDED -> renderAdjustment(info.outputData.getString(CheatAdjustmentAiJobHandler.KEY_PAYLOAD))
+                    WorkInfo.State.FAILED -> _state.value = State(understanding = understanding, error = info.outputData.getString("error") ?: "Adattamento sgarro non riuscito")
+                    else -> Unit
                 }
-                .onFailure { error ->
-                    _state.value = State(understanding = understanding, error = message(error))
-                }
+            }
         }
+    }
+
+    private fun renderAdjustment(payload: String?) {
+        if (payload == null) return
+        runCatching {
+            val root = org.json.JSONObject(payload)
+            val modified = root.optJSONArray("modifiedMeals")?.let { values -> buildList { for (i in 0 until values.length()) add(values.optString(i)) } } ?: emptyList()
+            val result = CheatAdjustmentService.Result(root.getLong("cheatId"), root.getBoolean("adapted"), root.optLong("newVersionId").takeIf { !root.isNull("newVersionId") }, root.optInt("estimatedKcal").takeIf { !root.isNull("estimatedKcal") }, root.optString("estimateSummary"), root.optString("adaptationSummary"), modified)
+            _state.value = State(result = result)
+        }.onFailure { _state.value = _state.value.copy(running = false, error = "Adattamento sgarro non riuscito") }
     }
 
     fun invalidateUnderstanding() {
