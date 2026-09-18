@@ -78,6 +78,11 @@ class ProfileEditActivity : BaseShellActivity() {
             else -> bindBack()
         }
         bindViews()
+        if (isCreate) {
+            findViewById<View>(R.id.goalLayout).visibility = View.GONE
+            findViewById<TextView>(R.id.bootstrapHint).text =
+                "Inserisci i dati di base. MyFitAI ti consiglierà poi l'obiettivo più coerente; la BIA potrà essere aggiunta anche in seguito."
+        }
         bindDropdowns()
         bindPickers()
         bindSave()
@@ -172,7 +177,6 @@ class ProfileEditActivity : BaseShellActivity() {
                 if (sex !in setOf("Maschio", "Femmina")) fail(R.id.sexLayout, "Seleziona il sesso biologico")
                 if (height == null) fail(R.id.heightLayout, "Inserisci l'altezza")
                 if (weight == null) fail(R.id.weightLayout, "Inserisci il peso iniziale")
-                if (goal.isBlank()) fail(R.id.goalLayout, "Seleziona un obiettivo")
                 if (activity.isBlank()) fail(R.id.activityLayout, "Seleziona il livello di attività")
             }
             if (!valid) return@setOnClickListener
@@ -194,7 +198,7 @@ class ProfileEditActivity : BaseShellActivity() {
                 biologicalSex = sex.takeIf { it.isNotBlank() },
                 heightCm = height,
                 currentWeightKg = weight,
-                goal = goal,
+                goal = if (isCreate) null else goal,
                 activityLevel = activity,
                 wakeTimeMinutes = wakeTimeMinutes,
                 sleepTimeMinutes = sleepTimeMinutes,
@@ -221,10 +225,16 @@ class ProfileEditActivity : BaseShellActivity() {
                     }
                 }
                 launch {
-                    viewModel.saved.collect {
-                        data.nutritionPathTrigger.maybeEnqueue(it)
+                    viewModel.saved.collect { profileId ->
+                        val recommendationJobKey = data.nutritionPathTrigger.maybeEnqueue(profileId)
                         Toast.makeText(this@ProfileEditActivity, if (isCreate) "Profilo creato" else "Profilo salvato", Toast.LENGTH_SHORT).show()
-                        if (isBootstrap) {
+                        if (isCreate && recommendationJobKey != null) {
+                            startActivity(Intent(this@ProfileEditActivity, NutritionPathActivity::class.java).apply {
+                                putExtra(NutritionPathActivity.EXTRA_JOB_KEY, recommendationJobKey)
+                                if (isBootstrap) addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                            })
+                            finish()
+                        } else if (isBootstrap) {
                             startActivity(Intent(this@ProfileEditActivity, HomeActivity::class.java).apply {
                                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                             })
