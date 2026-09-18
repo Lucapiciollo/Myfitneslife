@@ -31,9 +31,19 @@ class NutritionPlanSchedulePreferences(context: Context) {
         prefs.edit().putInt(keyTime(profileId), timeMinutes).apply()
     }
 
+    fun scheduledJobKey(profileId: Long): String? =
+        prefs.getString(keyScheduledJob(profileId), null)?.takeIf { it.isNotBlank() }
+
+    fun setScheduledJobKey(profileId: Long, jobKey: String?) {
+        prefs.edit().apply {
+            if (jobKey == null) remove(keyScheduledJob(profileId)) else putString(keyScheduledJob(profileId), jobKey)
+        }.apply()
+    }
+
     private fun keyEnabled(profileId: Long) = "auto_plan_enabled_$profileId"
     private fun keyDay(profileId: Long) = "auto_plan_day_$profileId"
     private fun keyTime(profileId: Long) = "auto_plan_time_$profileId"
+    private fun keyScheduledJob(profileId: Long) = "auto_plan_job_$profileId"
 
     companion object {
         private const val PREFS_NAME = "nutrition_plan_schedule"
