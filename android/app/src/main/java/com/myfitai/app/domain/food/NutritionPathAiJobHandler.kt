@@ -40,7 +40,14 @@ Suggerisci un percorso e massimo due alternative. Testi in italiano. Protocollo:
         )
         var parsed: NutritionPathContract.Response? = null
         val validated = aiRuntime.execute(request, maxSchemaRetries = 2) { json -> runCatching {
-            NutritionPathContract.parse(json).also { NutritionPathContract.validateBusiness(it).getOrThrow(); parsed = it }
+            NutritionPathContract.parse(json).also {
+                NutritionPathContract.validateBusiness(
+                    response = it,
+                    hasBia = snapshot.latestBiaTimestamp != null,
+                    hasBodyMeasurements = snapshot.latestBodyMeasurementTimestamp != null,
+                ).getOrThrow()
+                parsed = it
+            }
         } }
         val result = parsed ?: NutritionPathContract.parse(validated.jsonText)
         val payload = JSONObject()
