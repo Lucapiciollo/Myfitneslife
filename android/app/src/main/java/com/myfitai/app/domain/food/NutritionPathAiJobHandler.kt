@@ -20,9 +20,15 @@ class NutritionPathAiJobHandler(
         val profile = profiles.get(profileId) ?: return AiJobOutcome.Failure("Profilo non disponibile")
         val snapshot = calculations.profileSnapshot(profileId) ?: return AiJobOutcome.Failure("Dati profilo non disponibili")
         val request = AiStructuredRequest(
-            systemPrompt = "NutritionPathAgent. Scope solo alimentazione. Suggerisci un percorso e massimo due alternative. Nessuna diagnosi, nessuna modifica a calorie o macro. Testi in italiano. Protocollo: ${NutritionPathContract.PROTOCOL}",
+            systemPrompt = """NutritionPathAgent. Consiglia il goal tecnico iniziale tra RECOMPOSITION, WEIGHT_LOSS, MAINTENANCE, MUSCLE_GAIN e PERFORMANCE.
+Scope solo alimentazione/fitness, nessuna diagnosi e nessuna modifica autonoma a calorie o macro: i numeri restano responsabilità del motore locale.
+Usa esclusivamente i dati disponibili. La BIA e le circonferenze sono opzionali: se mancano non inventare body fat, massa muscolare o altri valori e riduci la confidence.
+Non usare BMI/peso da soli come criterio assoluto. Considera congiuntamente età/sesso/altezza/peso disponibili, attività e segnali corporei disponibili.
+Se i dati sono limitati puoi comunque dare una raccomandazione prudente e alternative, esplicitando la minore qualità del contesto nel reason/code.
+Il goal eventualmente già salvato è solo contesto storico e non deve obbligare la raccomandazione.
+Suggerisci un percorso e massimo due alternative. Testi in italiano. Protocollo: ${NutritionPathContract.PROTOCOL}""".trimIndent(),
             userPrompt = buildString {
-                appendLine("P:${profile.goal ?: "?"}|${profile.activityLevel ?: "?"}")
+                appendLine("P:${profile.biologicalSex ?: "?"}|${profile.birthDateEpochDay ?: "?"}|${profile.heightCm ?: "?"}|${profile.currentWeightKg ?: "?"}|${profile.activityLevel ?: "?"}|${profile.goal ?: "?"}")
                 appendLine("BIA:${snapshot.latestBiaTimestamp ?: "?"}|${snapshot.latestWeightKg ?: "?"}|${snapshot.latestBodyFatPercent ?: "?"}|${snapshot.latestMuscleMassKg ?: "?"}")
                 appendLine("BODY:${snapshot.latestBodyMeasurementTimestamp ?: "?"}|${snapshot.latestWaistCm ?: "?"}")
                 appendLine("TREND:${snapshot.recompositionState.name}")
@@ -40,7 +46,12 @@ class NutritionPathAiJobHandler(
         val payload = JSONObject()
             .put("recommendation", JSONObject().put("path", result.recommendation.path).put("confidence", result.recommendation.confidence).put("reason", result.recommendation.reason))
             .put("alternatives", JSONArray().apply { result.alternatives.forEach { put(JSONObject().put("path", it.path).put("confidence", it.confidence).put("reason", it.reason)) } })
-            .put("code", result.code).put("explanation", result.explanation).put("agentValid", result.agentValid).toString()
+            .put("code", result.code)
+            .put("explanation", result.explanation)
+            .put("agentValid", result.agentValid)
+            .put("hasBia", snapshot.latestBiaTimestamp != null)
+            .put("hasBodyMeasurements", snapshot.latestBodyMeasurementTimestamp != null)
+            .toString()
         return AiJobOutcome.Success(Data.Builder().putString(KEY_PAYLOAD, payload).putString(AiJobWorker.KEY_PROVIDER, "${validated.provider.name} · ${validated.model}").build())
     }
 
