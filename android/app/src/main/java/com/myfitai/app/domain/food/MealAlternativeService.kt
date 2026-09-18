@@ -50,6 +50,10 @@ class MealAlternativeService(
 
     suspend fun generate(weekStartEpochDay: Long, dayEpochDay: Long, mealId: Long): Alternatives {
         val profileId = activeProfileStore.currentIdOrNull() ?: throw AlternativeException.NeedsInput(listOf("profilo attivo"))
+        return generate(profileId, weekStartEpochDay, dayEpochDay, mealId)
+    }
+
+    suspend fun generate(profileId: Long, weekStartEpochDay: Long, dayEpochDay: Long, mealId: Long): Alternatives {
         val profile = profiles.get(profileId) ?: throw AlternativeException.NeedsInput(listOf("profilo"))
         val dietaryProfile = DietaryProfile.parse(profile.dietaryPreferencesJson)
         val snapshot = plans.loadLatestSnapshot(profileId, weekStartEpochDay) ?: throw AlternativeException.NeedsInput(listOf("piano alimentare"))

@@ -13,6 +13,9 @@ import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.domain.food.MealAlternativeContract
 import com.myfitai.app.domain.food.MealAlternativeService
+import com.myfitai.app.domain.ai.AiJobType
+import com.myfitai.app.domain.food.MealAlternativesAiJobHandler
+import androidx.work.WorkInfo
 import com.myfitai.app.navigation.BottomNavBinder
 import kotlinx.coroutines.launch
 import java.util.Locale
@@ -46,24 +49,42 @@ class MealAlternativeActivity : BaseShellActivity() {
             return
         }
 
+        val jobKey = "$weekStart-$day-$mealId"
         confirmAiRequest("La generazione delle alternative per questo pasto") {
+            val profileId = data.activeProfileStore.currentIdOrNull() ?: return@confirmAiRequest
+            data.aiJobScheduler.enqueue(AiJobType.MEAL_ALTERNATIVES, profileId, jobKey)
             lifecycleScope.launch {
-                runCatching { data.mealAlternativeService.generate(weekStart, day, mealId) }
-                    .onSuccess { result ->
-                        generated = result
-                        findViewById<View>(R.id.loadingRow).visibility = View.GONE
-                        findViewById<TextView>(R.id.providerText).apply {
-                            text = "${result.provider} · ${result.model}"
-                            visibility = View.VISIBLE
-                        }
-                        renderAlternatives(result.items)
+                data.aiJobScheduler.observe(AiJobType.MEAL_ALTERNATIVES, profileId, jobKey).collect { info ->
+                    when (info?.state) {
+                        WorkInfo.State.ENQUEUED, WorkInfo.State.RUNNING -> findViewById<View>(R.id.loadingRow).visibility = View.VISIBLE
+                        WorkInfo.State.SUCCEEDED -> renderPayload(info.outputData.getString(MealAlternativesAiJobHandler.KEY_PAYLOAD))
+                        WorkInfo.State.FAILED -> showError(info.outputData.getString("error") ?: "Impossibile generare alternative.")
+                        else -> Unit
                     }
-                    .onFailure { error ->
-                        findViewById<View>(R.id.loadingRow).visibility = View.GONE
-                        showError(error.message ?: "Impossibile generare alternative.")
-                    }
+                }
             }
         }
+    }
+
+    private fun renderPayload(payload: String?) {
+        if (payload == null) return
+        runCatching {
+            val root = org.json.JSONObject(payload)
+            val items = root.getJSONArray("items")
+            val alternatives = buildList {
+                for (i in 0 until items.length()) {
+                    val item = items.getJSONObject(i)
+                    val ingredients = item.getJSONArray("ingredients")
+                    add(MealAlternativeContract.Alternative(item.getString("title"), item.getInt("kcal"), item.getDouble("proteinG").toFloat(), item.getDouble("carbsG").toFloat(), item.getDouble("fatG").toFloat(), item.getString("preparation"), item.getString("reason"), buildList {
+                        for (j in 0 until ingredients.length()) { val v = ingredients.getJSONObject(j); add(MealAlternativeContract.Ingredient(v.getString("name"), v.getDouble("quantity").toFloat(), v.getString("unit"), v.getString("displayDose"), v.getString("weightState"), v.getString("nutritionConfidence"), v.getString("category"))) }
+                    }))
+                }
+            }
+            generated = MealAlternativeService.Alternatives(root.getLong("planId"), root.getLong("sourceVersionId"), root.getLong("weekStartEpochDay"), root.getLong("dayEpochDay"), root.getLong("mealId"), root.getString("mealType"), root.optInt("mealTimeMinutes").takeIf { !root.isNull("mealTimeMinutes") }, root.getInt("targetKcal"), alternatives, root.getString("provider"), root.getString("model"))
+            findViewById<View>(R.id.loadingRow).visibility = View.GONE
+            findViewById<TextView>(R.id.providerText).apply { text = "${generated?.provider} · ${generated?.model}"; visibility = View.VISIBLE }
+            renderAlternatives(alternatives)
+        }.onFailure { showError("Impossibile leggere le alternative.") }
     }
 
     private fun renderAlternatives(items: List<MealAlternativeContract.Alternative>) {
@@ -174,6 +195,7 @@ class MealAlternativeActivity : BaseShellActivity() {
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     companion object {
+        const val EXTRA_AI_JOB_KEY = "meal_alt_ai_job_key"
         const val EXTRA_WEEK_START_EPOCH_DAY = "meal_alt_week_start"
         const val EXTRA_DAY_EPOCH_DAY = "meal_alt_day"
         const val EXTRA_MEAL_ID = "meal_alt_id"

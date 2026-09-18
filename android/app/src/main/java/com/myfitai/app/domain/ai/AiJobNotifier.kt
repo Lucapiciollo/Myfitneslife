@@ -19,6 +19,7 @@ import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.ui.FoodPlanActivity
 import com.myfitai.app.ui.WeeklyReviewActivity
 import com.myfitai.app.ui.NutritionAdviceActivity
+import com.myfitai.app.ui.MealAlternativeActivity
 
 object AiJobNotifier {
     fun notifySuccess(context: Context, type: AiJobType, profileId: Long, jobKey: String, provider: String?) {
@@ -44,6 +45,13 @@ object AiJobNotifier {
             }
             AiJobType.WEEKLY_REVIEW -> Intent(context, WeeklyReviewActivity::class.java)
             AiJobType.NUTRITION_ADVICE -> Intent(context, NutritionAdviceActivity::class.java).putExtra(NutritionAdviceActivity.EXTRA_JOB_KEY, jobKey)
+            AiJobType.MEAL_ALTERNATIVES -> Intent(context, MealAlternativeActivity::class.java).apply {
+                val parts = jobKey.split('-')
+                putExtra(MealAlternativeActivity.EXTRA_WEEK_START_EPOCH_DAY, parts.getOrNull(0)?.toLongOrNull() ?: Long.MIN_VALUE)
+                putExtra(MealAlternativeActivity.EXTRA_DAY_EPOCH_DAY, parts.getOrNull(1)?.toLongOrNull() ?: Long.MIN_VALUE)
+                putExtra(MealAlternativeActivity.EXTRA_MEAL_ID, parts.getOrNull(2)?.toLongOrNull() ?: -1L)
+                putExtra(MealAlternativeActivity.EXTRA_AI_JOB_KEY, jobKey)
+            }
         }
         val pending = PendingIntent.getActivity(context, notificationId(profileId, jobKey), intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         NotificationManagerCompat.from(context).notify(notificationId(profileId, jobKey), NotificationCompat.Builder(context, type.channelId)

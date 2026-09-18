@@ -41,6 +41,13 @@ enum class AiJobType(
         successTitle = "Risposta nutrizionale pronta",
         successText = "Il consiglio nutrizionale è disponibile.",
         failureTitle = "Consiglio nutrizionale non disponibile",
+    ),
+    MEAL_ALTERNATIVES(
+        channelId = "ai_meal_alternatives",
+        channelName = "Alternative pasto",
+        successTitle = "Alternative pasto pronte",
+        successText = "Scegli un'alternativa per il pasto.",
+        failureTitle = "Alternative pasto non disponibili",
     );
 
     companion object {
