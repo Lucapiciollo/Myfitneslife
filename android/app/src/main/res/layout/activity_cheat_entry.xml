@@ -59,16 +59,19 @@
                 <com.google.android.material.chip.Chip android:id="@+id/chipAltro" style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Altro" android:checkable="true" app:chipBackgroundColor="@color/chip_background_selector" android:textColor="@color/chip_text_selector" app:checkedIconVisible="false" app:chipStrokeColor="@color/divider" app:chipStrokeWidth="1dp" />
             </com.google.android.material.chip.ChipGroup>
 
-            <EditText
-                android:id="@+id/descriptionInput"
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MyFitAI.Input"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_12"
-                android:padding="@dimen/space_12"
-                android:background="@drawable/bg_input"
-                android:textColor="@color/text_primary"
-                android:textColorHint="@color/text_muted"
-                android:hint="Descrivi cosa hai mangiato" />
+                android:hint="Descrivi cosa hai mangiato">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/descriptionInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textCapSentences"
+                    android:maxLines="3" />
+            </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
@@ -108,7 +111,20 @@
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.myfitai.app.ui.widgets.SectionHeaderView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:text="Note (opzionale)" />
-            <EditText android:id="@+id/notesInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:minLines="3" android:gravity="top" android:padding="@dimen/space_12" android:background="@drawable/bg_input" android:hint="Es. con amici, fuori casa..." android:textColor="@color/text_primary" android:textColorHint="@color/text_muted" />
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MyFitAI.Input"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_8"
+                android:hint="Es. con amici, fuori casa...">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/notesInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="96dp"
+                    android:gravity="top|start"
+                    android:inputType="textMultiLine|textCapSentences"
+                    android:maxLines="4" />
+            </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/analyzeButton"
@@ -140,18 +156,20 @@
                     <TextView android:id="@+id/aiEstimate" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="14sp" />
                     <TextView android:id="@+id/aiEstimateNotes" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:textColor="@color/text_secondary" android:textSize="12sp" />
                     <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:text="Non ha capito bene? Spiega meglio e fai rivalutare prima di confermare." android:textColor="@color/text_secondary" android:textSize="12sp" />
-                    <EditText
-                        android:id="@+id/clarificationInput"
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.MyFitAI.Input"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:minLines="2"
-                        android:gravity="top"
-                        android:padding="@dimen/space_12"
-                        android:background="@drawable/bg_input"
-                        android:hint="Es. ne ho mangiati 80 g, non tutta la confezione..."
-                        android:textColor="@color/text_primary"
-                        android:textColorHint="@color/text_muted" />
+                        android:hint="Es. ne ho mangiati 80 g, non tutta la confezione...">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/clarificationInput"
+                            android:layout_width="match_parent"
+                            android:layout_height="88dp"
+                            android:gravity="top|start"
+                            android:inputType="textMultiLine|textCapSentences"
+                            android:maxLines="4" />
+                    </com.google.android.material.textfield.TextInputLayout>
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/reevaluateButton"
                         style="@style/Widget.Material3.Button.OutlinedButton"
