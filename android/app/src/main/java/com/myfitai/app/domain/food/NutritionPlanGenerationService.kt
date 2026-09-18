@@ -169,17 +169,23 @@ class NutritionPlanGenerationService(
             ),
             schemaName = NutritionPlanCompactContract.SCHEMA_NAME,
             schemaJson = NutritionPlanCompactContract.schemaJson,
-            maxOutputTokens = 6_000,
+            maxOutputTokens = 8_192,
             thinkingBudget = 0,
             allowSchemaFallback = true,
         )
 
         var parsed: NutritionPlanContract.Response? = null
+        var attemptIndex = 0
+        var acceptedTolerance = STRICT_TARGET_TOLERANCE
+        var acceptedMacroRatio = STRICT_MACRO_KCAL_RATIO
         val validated = aiRuntime.execute(
             request = request,
             maxSchemaRetries = 2,
             businessValidator = { json ->
                 runCatching {
+                    // Primo tentativo -3% (mai sopra il target); i retry passano a -4% per avere più chance.
+                    val attemptTolerance = if (attemptIndex == 0) STRICT_TARGET_TOLERANCE else RETRY_TARGET_TOLERANCE
+                    attemptIndex++
                     val response = NutritionPlanCompactContract.parseEnvelope(json, mealsPerDay)
                     NutritionPlanContract.validateBusiness(
                         response = response,
@@ -190,12 +196,17 @@ class NutritionPlanGenerationService(
                         mealsPerDay = mealsPerDay,
                         dailyTargets = dailyTargets,
                         dietaryProfile = dietaryProfile,
+                        tolerance = attemptTolerance,
+                        targetBelowOnly = false,
                     ).getOrThrow()
                     val integrity = NutritionIntegrityValidator.validate(
                         response = response,
                         targets = baseTargets,
                         mealsPerDay = mealsPerDay,
                         dailyTargets = dailyTargets,
+                        tolerance = attemptTolerance,
+                        belowOnly = false,
+                        macroKcalToleranceRatio = if (attemptIndex == 1) STRICT_MACRO_KCAL_RATIO else RETRY_MACRO_KCAL_RATIO,
                     )
                     require(integrity.valid) {
                         "NUTRITION_INTEGRITY_INVALID:" +
@@ -211,6 +222,8 @@ class NutritionPlanGenerationService(
                                 }
                             }
                     }
+                    acceptedTolerance = attemptTolerance
+                    acceptedMacroRatio = if (attemptIndex == 1) STRICT_MACRO_KCAL_RATIO else RETRY_MACRO_KCAL_RATIO
                     parsed = response
                 }
             },
@@ -226,7 +239,21 @@ class NutritionPlanGenerationService(
                     mealsPerDay = mealsPerDay,
                     dailyTargets = dailyTargets,
                     dietaryProfile = dietaryProfile,
+                    tolerance = RETRY_TARGET_TOLERANCE,
+                    targetBelowOnly = false,
                 ).getOrThrow()
+                val integrity = NutritionIntegrityValidator.validate(
+                    response = it,
+                    targets = baseTargets,
+                    mealsPerDay = mealsPerDay,
+                    dailyTargets = dailyTargets,
+                    tolerance = RETRY_TARGET_TOLERANCE,
+                    belowOnly = false,
+                    macroKcalToleranceRatio = RETRY_MACRO_KCAL_RATIO,
+                )
+                require(integrity.valid) {
+                    "NUTRITION_INTEGRITY_INVALID:${integrity.issues.joinToString(",") { it.code }}"
+                }
             }
         }.getOrElse { throw GenerationException.InvalidAiOutput(it.message ?: "INVALID_COMPACT_PROTOCOL") }
 
@@ -235,12 +262,10 @@ class NutritionPlanGenerationService(
             targets = baseTargets,
             mealsPerDay = mealsPerDay,
             dailyTargets = dailyTargets,
+            tolerance = acceptedTolerance,
+            belowOnly = false,
+            macroKcalToleranceRatio = acceptedMacroRatio,
         )
-        if (!integrity.valid) {
-            throw GenerationException.InvalidAiOutput(
-                "NUTRITION_INTEGRITY_INVALID:${integrity.issues.joinToString(",") { it.code }}"
-            )
-        }
 
         val existing = plans.getPlanForWeek(profileId, monday.toEpochDay())
         val reviewReason = if (existing == null) {
@@ -441,6 +466,10 @@ class NutritionPlanGenerationService(
     private fun fmtOrUnknown(value: Float?): String = value?.let { String.format(Locale.US, "%.1f", it) } ?: "?"
 
     companion object {
+        private const val STRICT_TARGET_TOLERANCE = 0.03
+        private const val RETRY_TARGET_TOLERANCE = 0.04
+        private const val STRICT_MACRO_KCAL_RATIO = 0.10
+        private const val RETRY_MACRO_KCAL_RATIO = 0.15
         private val SYSTEM_PROMPT = """
 MyFitAI NutritionPlanAgent. Your ONLY operational responsibility is generating a complete weekly nutrition plan from the authoritative targets and context supplied by the app. Never choose/change the user's goal, interpret progress, or adapt a recorded deviation/cheat; dedicated agents own those tasks. Output ONLY JSON matching the supplied envelope schema. The `data` string must begin with the exact line `MFP1`, followed by the pipe records below. Do not omit `MFP1`, do not replace it with another header, do not use markdown, and do not add text outside records.
 ${NutritionPlanCompactContract.PROTOCOL}

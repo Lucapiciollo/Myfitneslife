@@ -40,6 +40,31 @@ class NutritionPlanCompactContractTest {
     }
 
     @Test
+    fun perDayValidationRecords_andPipeInHydration_areTolerated() {
+        val payload = """
+            MFP1
+            W|1
+            D|1|2400|160|280|70
+            M|BREAKFAST|Colazione|480|500|35|62|12|Prep
+            I|Yogurt|200|g|1 vasetto|NET|HIGH|DAIRY
+            H|Bevi 2L|circa 8 bicchieri
+            V|1|ok giorno 1
+            D|2|2400|160|280|70
+            M|BREAKFAST|Colazione|480|500|35|62|12|Prep
+            I|Yogurt|200|g|1 vasetto|NET|HIGH|DAIRY
+            H|Idratati bene
+            V|1|ok giorno 2
+        """.trimIndent()
+
+        val response = NutritionPlanCompactContract.parsePayload(payload, mealsPerDay = 1)
+
+        assertEquals(2, response.days.size)
+        assertEquals("Bevi 2L|circa 8 bicchieri", response.days.first().hydrationNote)
+        assertTrue(response.agentValidation.valid)
+        assertEquals("ok giorno 2", response.agentValidation.notes)
+    }
+
+    @Test
     fun malformedRecord_isRejected() {
         val payload = """
             MFP1

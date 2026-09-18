@@ -73,7 +73,7 @@ class FoodPlanViewModel(
                     when (info?.state) {
                         WorkInfo.State.ENQUEUED, WorkInfo.State.RUNNING -> generationState.value = GenerationState(running = true)
                         WorkInfo.State.SUCCEEDED -> generationState.value = GenerationState(successMessage = "Piano generato e validato.")
-                        WorkInfo.State.FAILED -> generationState.value = GenerationState(error = info.outputData.getString("error") ?: "Generazione non riuscita")
+                        WorkInfo.State.FAILED -> generationState.value = GenerationState(error = friendlyGenerationError(info.outputData.getString("error")))
                         else -> Unit
                     }
                 }
@@ -128,6 +128,30 @@ class FoodPlanViewModel(
     }
 
     fun clearGenerationMessage() { if (!generationState.value.running) generationState.value = GenerationState() }
+
+    private fun friendlyGenerationError(raw: String?): String = when {
+        raw.isNullOrBlank() -> "Generazione non riuscita. Riprova a generare il piano."
+        raw.startsWith("NUTRITION_INTEGRITY_INVALID") ->
+            "L'IA ha prodotto un piano con valori nutrizionali incoerenti (calorie e macro non tornano) anche dopo alcuni tentativi. Riprova a generare il piano."
+        raw.startsWith("TARGET_TOLERANCE_EXCEEDED") ->
+            "Il piano generato non rispetta il target nutrizionale del giorno (fuori dalla tolleranza consentita). Riprova a generare il piano."
+        raw.startsWith("DAY_TOTALS_INCONSISTENT") ->
+            "Nel piano generato la somma dei pasti non coincide con i totali del giorno. Riprova a generare il piano."
+        raw.startsWith("WEEK_MUST_HAVE_7_DAYS") || raw.startsWith("WEEK_DATES_INVALID") || raw.startsWith("WEEK_START_MISMATCH") || raw.contains("MEALS") || raw.contains("MEAL_COUNT") ->
+            "Il piano generato è incompleto o mal strutturato (non copre tutti e 7 i giorni o i pasti previsti). Riprova a generare il piano."
+        raw.startsWith("PLAN_REVIEW_") ->
+            "La revisione automatica ha respinto il piano generato. Riprova a generare il piano."
+        raw.startsWith("INVALID_SCHEMA") || raw.startsWith("PIPE_") || raw.contains("INVALID_COMPACT_PROTOCOL") ->
+            "La risposta dell'IA non era nel formato atteso. Riprova a generare il piano."
+        raw.startsWith("Completa prima") || raw.startsWith("NEEDS_INPUT") -> raw
+        raw == "PAST_WEEK_READ_ONLY" ->
+            "Le settimane concluse sono di sola lettura e non possono essere rigenerate."
+        raw.contains("non configurato", ignoreCase = true) ->
+            "Nessun provider IA configurato. Configura Gemini o OpenAI nelle Impostazioni, poi genera il piano."
+        raw.contains("raggiungibile", ignoreCase = true) || raw.contains("disponibile", ignoreCase = true) ->
+            "$raw Riprova a generare il piano."
+        else -> "Generazione non riuscita ($raw). Riprova a generare il piano."
+    }
 
     private fun providerLimitMessage(error: AiTransportException.Http): String = when (error.failureKind) {
         AiTransportFailureKind.QUOTA_EXHAUSTED -> {

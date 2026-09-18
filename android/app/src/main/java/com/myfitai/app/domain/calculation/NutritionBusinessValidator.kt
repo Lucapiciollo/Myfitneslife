@@ -42,6 +42,7 @@ object NutritionBusinessValidator {
         targets: Targets,
         actuals: Actuals,
         tolerance: Double = DEFAULT_TOLERANCE,
+        belowOnly: Boolean = false,
     ): Result {
         require(tolerance in 0.0..0.20) { "Tolerance out of supported range" }
         require(targets.kcal > 0 && targets.proteinG > 0 && targets.carbsG >= 0 && targets.fatG > 0) {
@@ -51,12 +52,12 @@ object NutritionBusinessValidator {
             "Actuals must be non-negative"
         }
 
-        val kcal = validateField(targets.kcal, actuals.kcal, tolerance)
-        val protein = validateField(targets.proteinG, actuals.proteinG, tolerance)
+        val kcal = validateField(targets.kcal, actuals.kcal, tolerance, belowOnly)
+        val protein = validateField(targets.proteinG, actuals.proteinG, tolerance, belowOnly)
         val carbs = if (targets.carbsG == 0.0) {
             FieldValidation(0.0, actuals.carbsG, if (actuals.carbsG == 0.0) 0.0 else Double.POSITIVE_INFINITY, actuals.carbsG == 0.0)
-        } else validateField(targets.carbsG, actuals.carbsG, tolerance)
-        val fat = validateField(targets.fatG, actuals.fatG, tolerance)
+        } else validateField(targets.carbsG, actuals.carbsG, tolerance, belowOnly)
+        val fat = validateField(targets.fatG, actuals.fatG, tolerance, belowOnly)
 
         return Result(
             valid = kcal.valid && protein.valid && carbs.valid && fat.valid,
@@ -67,13 +68,19 @@ object NutritionBusinessValidator {
         )
     }
 
-    private fun validateField(target: Double, actual: Double, tolerance: Double): FieldValidation {
-        val deviation = abs(actual - target) / target
+    private fun validateField(target: Double, actual: Double, tolerance: Double, belowOnly: Boolean = false): FieldValidation {
+        val signedDeviation = (actual - target) / target
+        val valid = if (belowOnly) {
+            // Solo sotto al target: mai sopra, e non oltre la tolleranza sotto.
+            signedDeviation <= 1e-9 && -signedDeviation <= tolerance + 1e-9
+        } else {
+            abs(signedDeviation) <= tolerance + 1e-9
+        }
         return FieldValidation(
             target = target,
             actual = actual,
-            deviationRatio = deviation,
-            valid = deviation <= tolerance + 1e-9,
+            deviationRatio = abs(signedDeviation),
+            valid = valid,
         )
     }
 }

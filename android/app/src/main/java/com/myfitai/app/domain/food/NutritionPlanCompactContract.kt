@@ -74,7 +74,7 @@ V|1_or_0|notes"""
                     weekStart = parts[1].toLongStrict("PIPE_W_INVALID")
                 }
                 "D" -> {
-                    require(parts.size == 6 && weekStart != null && validation == null) { "PIPE_D_INVALID" }
+                    require(parts.size == 6 && weekStart != null) { "PIPE_D_INVALID" }
                     flushDay()
                     currentDay = DayBuilder(
                         dateEpochDay = parts[1].toLongStrict("PIPE_D_DATE_INVALID"),
@@ -85,7 +85,7 @@ V|1_or_0|notes"""
                     )
                 }
                 "M" -> {
-                    require(parts.size == 9 && currentDay != null && validation == null) { "PIPE_M_INVALID" }
+                    require(parts.size == 9 && currentDay != null) { "PIPE_M_INVALID" }
                     flushMeal()
                     currentMeal = MealBuilder(
                         type = parts[1].requiredText("PIPE_M_TYPE_INVALID"),
@@ -99,7 +99,7 @@ V|1_or_0|notes"""
                     )
                 }
                 "I" -> {
-                    require(parts.size == 8 && currentMeal != null && validation == null) { "PIPE_I_INVALID" }
+                    require(parts.size == 8 && currentMeal != null) { "PIPE_I_INVALID" }
                     currentMeal!!.ingredients += NutritionPlanContract.GeneratedIngredient(
                         name = parts[1].requiredText("PIPE_I_NAME_INVALID"),
                         quantity = parts[2].toFloatStrict("PIPE_I_QTY_INVALID"),
@@ -111,7 +111,7 @@ V|1_or_0|notes"""
                     )
                 }
                 "S" -> {
-                    require(parts.size == 11 && currentDay != null && validation == null) { "PIPE_S_INVALID" }
+                    require(parts.size == 11 && currentDay != null) { "PIPE_S_INVALID" }
                     flushMeal()
                     currentDay!!.supplements += NutritionPlanContract.GeneratedSupplement(
                         kind = parts[1].requiredText("PIPE_S_KIND_INVALID"),
@@ -127,20 +127,20 @@ V|1_or_0|notes"""
                     )
                 }
                 "H" -> {
-                    require(parts.size == 2 && currentDay != null && validation == null) { "PIPE_H_INVALID" }
+                    require(parts.size >= 2 && currentDay != null) { "PIPE_H_INVALID" }
                     flushMeal()
                     require(currentDay!!.hydrationNote == null) { "PIPE_H_DUPLICATE" }
-                    currentDay!!.hydrationNote = parts[1].trim()
+                    currentDay!!.hydrationNote = parts.drop(1).joinToString("|").trim()
                 }
                 "V" -> {
-                    require(parts.size == 3 && weekStart != null && validation == null) { "PIPE_V_INVALID" }
+                    require(parts.size >= 3 && weekStart != null) { "PIPE_V_INVALID" }
                     flushDay()
                     val valid = when (parts[1]) {
                         "1" -> true
                         "0" -> false
                         else -> error("PIPE_V_FLAG_INVALID")
                     }
-                    validation = NutritionPlanContract.AgentValidation(valid, parts[2].trim())
+                    validation = NutritionPlanContract.AgentValidation(valid, parts.drop(2).joinToString("|").trim())
                 }
                 else -> error("PIPE_RECORD_UNKNOWN")
             }

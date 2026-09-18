@@ -79,7 +79,7 @@ Percorsi principali:
 - `06-ai/schemas/`
 
 ## Regola validator nutrizionale
-I target sono dinamici e calcolati dall'app. Tolleranza ufficiale: ±3% su calorie e macro rispetto ai target correnti.
+I target sono dinamici e calcolati dall'app. Tolleranza: ±3% su calorie e macro rispetto ai target correnti al primo tentativo. In caso di errore i retry di generazione usano ±4%; al successo si ripristina ±3%.
 Gli LLM possono solo auto-valutarsi con `agentValidation`; il responso definitivo è `appValidation` calcolato localmente.
 
 ## Comfort digestivo e ritenzione

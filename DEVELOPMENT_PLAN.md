@@ -11,7 +11,7 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 - Pipeline: `App -> Local Calculation Engine -> AiProvider -> Agent -> JSON -> Schema Validator -> Business Validator -> Persistenza -> UI`.
 - Gemini e OpenAI devono produrre contratti canonici equivalenti.
 - `agentValidation` è informativa; `appValidation` è autorevole.
-- Tolleranza nutrizionale ufficiale: ±3%.
+- Tolleranza nutrizionale: ±3% sui target correnti al primo tentativo. In caso di errore i retry di generazione usano ±4%; al successo si torna a ±3%.
 - Piani alimentari immutabili/versionati.
 - Nessuna compensazione punitiva.
 - I pasti già trascorsi restano storico.

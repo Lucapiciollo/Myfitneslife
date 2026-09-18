@@ -134,6 +134,8 @@ object NutritionPlanContract {
         mealsPerDay: Int = REQUIRED_MEALS_PER_DAY,
         dailyTargets: Map<Long, NutritionBusinessValidator.Targets> = emptyMap(),
         dietaryProfile: DietaryProfile = DietaryProfile(),
+        tolerance: Double = NutritionBusinessValidator.DEFAULT_TOLERANCE,
+        targetBelowOnly: Boolean = false,
     ): Result<Unit> = runCatching {
         require(response.weekStartEpochDay == expectedWeekStart.toEpochDay()) { "WEEK_START_MISMATCH" }
         require(response.days.size == 7) { "WEEK_MUST_HAVE_7_DAYS" }
@@ -147,6 +149,8 @@ object NutritionPlanContract {
             val appValidation = NutritionBusinessValidator.validate(
                 expectedTargets,
                 NutritionBusinessValidator.Actuals(day.totalKcal.toDouble(), day.proteinG.toDouble(), day.carbsG.toDouble(), day.fatG.toDouble()),
+                tolerance = tolerance,
+                belowOnly = targetBelowOnly,
             )
             require(appValidation.valid) { "TARGET_TOLERANCE_EXCEEDED:${day.dateEpochDay}" }
 

@@ -58,7 +58,7 @@ class AiRuntimeService(context: Context) : AiRuntimeGateway {
     }
 
     private fun compactTokenCap(schemaName: String): Int = when {
-        "weekly_nutrition" in schemaName -> 6_000
+        "weekly_nutrition" in schemaName -> 8_192
         "cheat_adjustment" in schemaName -> 2_500
         "meal_alternatives" in schemaName -> 2_200
         "nutrition_advice" in schemaName -> 900

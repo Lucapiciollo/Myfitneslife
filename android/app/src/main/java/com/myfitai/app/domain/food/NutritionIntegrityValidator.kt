@@ -48,6 +48,9 @@ object NutritionIntegrityValidator {
         targets: NutritionBusinessValidator.Targets,
         mealsPerDay: Int,
         dailyTargets: Map<Long, NutritionBusinessValidator.Targets> = emptyMap(),
+        tolerance: Double = NutritionBusinessValidator.DEFAULT_TOLERANCE,
+        belowOnly: Boolean = false,
+        macroKcalToleranceRatio: Double = KCAL_TOLERANCE_RATIO,
     ): AppNutritionValidation {
         val errors = mutableListOf<NutritionValidationIssue>()
         val warnings = mutableListOf<NutritionValidationIssue>()
@@ -56,12 +59,14 @@ object NutritionIntegrityValidator {
             val targetResult = NutritionBusinessValidator.validate(
                 target,
                 NutritionBusinessValidator.Actuals(day.totalKcal.toDouble(), day.proteinG.toDouble(), day.carbsG.toDouble(), day.fatG.toDouble()),
+                tolerance = tolerance,
+                belowOnly = belowOnly,
             )
             if (!targetResult.valid) errors += issue("TARGET_DAY_OUT_OF_RANGE", "Il giorno non rispetta il target dinamico", dayEpochDay = day.dateEpochDay)
             if (day.meals.size != mealsPerDay) errors += issue("MEAL_COUNT_INVALID", "Il numero di pasti non coincide con il profilo", dayEpochDay = day.dateEpochDay, expected = mealsPerDay.toDouble(), actual = day.meals.size.toDouble())
 
-            day.meals.forEach { meal -> validateItem(meal.kcal, meal.proteinG, meal.carbsG, meal.fatG, day.dateEpochDay, meal.title, errors) }
-            day.supplements.forEach { supplement -> validateItem(supplement.kcal, supplement.proteinG, supplement.carbsG, supplement.fatG, day.dateEpochDay, supplement.name, errors) }
+            day.meals.forEach { meal -> validateItem(meal.kcal, meal.proteinG, meal.carbsG, meal.fatG, day.dateEpochDay, meal.title, errors, macroKcalToleranceRatio) }
+            day.supplements.forEach { supplement -> validateItem(supplement.kcal, supplement.proteinG, supplement.carbsG, supplement.fatG, day.dateEpochDay, supplement.name, errors, macroKcalToleranceRatio) }
 
             val mealKcal = day.meals.sumOf { it.kcal } + day.supplements.sumOf { it.kcal }
             val mealProtein = day.meals.sumOf { it.proteinG.toDouble() } + day.supplements.sumOf { it.proteinG.toDouble() }
@@ -78,9 +83,9 @@ object NutritionIntegrityValidator {
         return AppNutritionValidation(true, errors.isEmpty(), VERSION, errors, warnings)
     }
 
-    private fun validateItem(kcal: Int, protein: Float, carbs: Float, fat: Float, day: Long, title: String, errors: MutableList<NutritionValidationIssue>) {
+    private fun validateItem(kcal: Int, protein: Float, carbs: Float, fat: Float, day: Long, title: String, errors: MutableList<NutritionValidationIssue>, kcalToleranceRatio: Double = KCAL_TOLERANCE_RATIO) {
         val expected = protein * 4.0 + carbs * 4.0 + fat * 9.0
-        val tolerance = max(KCAL_MIN_TOLERANCE, kcal * KCAL_TOLERANCE_RATIO)
+        val tolerance = max(KCAL_MIN_TOLERANCE, kcal * kcalToleranceRatio)
         if (abs(expected - kcal) > tolerance) errors += issue("MACRO_CALORIE_INCONSISTENCY", "Le calorie dichiarate non sono coerenti con i macro", day, title, expected, kcal.toDouble(), if (kcal == 0) null else abs(expected - kcal) / kcal * 100.0)
     }
 
