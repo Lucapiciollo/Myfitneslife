@@ -106,21 +106,117 @@ class HomeActivity : BaseShellActivity() {
     }
 
     private fun showTodayMenu(menu: List<HomeViewModel.NextMealState>) {
-        val content = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(4), dp(20), dp(4)) }
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(8), dp(20), dp(12))
+        }
+
+        content.addView(TextView(this).apply {
+            text = todayLabel()
+            textSize = 12f
+            setTextColor(getColor(R.color.text_secondary))
+            setPadding(0, 0, 0, dp(8))
+        })
+
         if (menu.isEmpty()) {
-            content.addView(TextView(this).apply { text = "Nessun menu pianificato per oggi."; textSize = 14f; setTextColor(getColor(R.color.text_secondary)) })
-        } else {
-            menu.forEach { meal ->
-                content.addView(TextView(this).apply {
-                    val time = meal.timeMinutes?.let { "%02d:%02d".format(it / 60, it % 60) } ?: "Orario non indicato"
-                    text = "$time · ${meal.type}\n${meal.title} · ${meal.kcal ?: "—"} kcal"
+            val emptyCard = com.google.android.material.card.MaterialCardView(this).apply {
+                radius = dp(14).toFloat()
+                cardElevation = 0f
+                setCardBackgroundColor(getColor(R.color.surface_secondary))
+                strokeColor = getColor(R.color.divider)
+                strokeWidth = dp(1)
+                addView(TextView(this@HomeActivity).apply {
+                    text = "Nessun pasto pianificato per oggi."
                     textSize = 14f
-                    setTextColor(getColor(R.color.text_primary))
-                    setPadding(0, dp(10), 0, dp(10))
+                    setTextColor(getColor(R.color.text_secondary))
+                    setPadding(dp(16), dp(16), dp(16), dp(16))
                 })
             }
+            content.addView(emptyCard, LinearLayout.LayoutParams(-1, -2))
+        } else {
+            menu.sortedWith(compareBy<HomeViewModel.NextMealState> { it.timeMinutes ?: Int.MAX_VALUE }.thenBy { it.mealId })
+                .forEachIndexed { index, meal ->
+                    val card = com.google.android.material.card.MaterialCardView(this).apply {
+                        radius = dp(14).toFloat()
+                        cardElevation = 0f
+                        setCardBackgroundColor(getColor(R.color.surface_primary))
+                        strokeColor = getColor(R.color.divider)
+                        strokeWidth = dp(1)
+                        isClickable = true
+                        isFocusable = true
+                    }
+
+                    val row = LinearLayout(this).apply {
+                        orientation = LinearLayout.HORIZONTAL
+                        gravity = android.view.Gravity.CENTER_VERTICAL
+                        setPadding(dp(14), dp(12), dp(14), dp(12))
+                    }
+
+                    val timeBadge = TextView(this).apply {
+                        val time = meal.timeMinutes?.let { "%02d:%02d".format(it / 60, it % 60) } ?: "—"
+                        text = time
+                        gravity = android.view.Gravity.CENTER
+                        textSize = 12f
+                        typeface = android.graphics.Typeface.DEFAULT_BOLD
+                        setTextColor(getColor(R.color.accent_green_dark))
+                        setBackgroundResource(R.drawable.bg_positive_soft)
+                        setPadding(dp(9), dp(7), dp(9), dp(7))
+                    }
+                    row.addView(timeBadge, LinearLayout.LayoutParams(dp(62), -2))
+
+                    row.addView(LinearLayout(this).apply {
+                        orientation = LinearLayout.VERTICAL
+                        setPadding(dp(12), 0, dp(8), 0)
+                        addView(TextView(this@HomeActivity).apply {
+                            text = meal.type.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ITALIAN) else it.toString() }
+                            textSize = 11f
+                            typeface = android.graphics.Typeface.DEFAULT_BOLD
+                            setTextColor(getColor(R.color.text_muted))
+                        })
+                        addView(TextView(this@HomeActivity).apply {
+                            text = meal.title
+                            textSize = 14f
+                            typeface = android.graphics.Typeface.DEFAULT_BOLD
+                            setTextColor(getColor(R.color.text_primary))
+                            setPadding(0, dp(2), 0, 0)
+                        })
+                        addView(TextView(this@HomeActivity).apply {
+                            text = meal.kcal?.let { "$it kcal" } ?: "Calorie non indicate"
+                            textSize = 12f
+                            setTextColor(getColor(R.color.text_secondary))
+                            setPadding(0, dp(3), 0, 0)
+                        })
+                    }, LinearLayout.LayoutParams(0, -2, 1f))
+
+                    row.addView(TextView(this).apply {
+                        text = "›"
+                        textSize = 24f
+                        setTextColor(getColor(R.color.text_muted))
+                        gravity = android.view.Gravity.CENTER
+                    }, LinearLayout.LayoutParams(dp(24), dp(40)))
+
+                    card.addView(row)
+                    card.setOnClickListener {
+                        startActivity(Intent(this@HomeActivity, MealDetailActivity::class.java).putExtra(MealDetailActivity.EXTRA_MEAL_ID, meal.mealId))
+                    }
+
+                    content.addView(card, LinearLayout.LayoutParams(-1, -2).apply {
+                        if (index > 0) topMargin = dp(8)
+                    })
+                }
         }
-        MaterialAlertDialogBuilder(this).setTitle("Menu di oggi").setView(content).setPositiveButton("Chiudi", null).show()
+
+        val scroll = android.widget.ScrollView(this).apply {
+            isFillViewport = true
+            overScrollMode = View.OVER_SCROLL_IF_CONTENT_SCROLLS
+            addView(content, android.widget.ScrollView.LayoutParams(-1, -2))
+        }
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Pasti di oggi")
+            .setView(scroll)
+            .setNegativeButton("Chiudi", null)
+            .show()
     }
 
     private fun renderDashboard(state: HomeViewModel.DashboardState) {
