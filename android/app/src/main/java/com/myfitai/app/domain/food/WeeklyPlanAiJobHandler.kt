@@ -40,9 +40,34 @@ class WeeklyPlanAiJobHandler(
             AiJobOutcome.Failure("Completa prima: ${error.fields.joinToString()}")
         } catch (error: NutritionPlanGenerationService.GenerationException.PastWeek) {
             AiJobOutcome.Failure("Le settimane concluse sono storico in sola lettura.")
+        } catch (error: NutritionPlanGenerationService.GenerationException.InvalidAiOutput) {
+            AiJobOutcome.Failure(humanReadableValidationError(error.message.orEmpty()))
         } finally {
             if (automatic) automaticScheduler.scheduleNextAfterAutomaticRun(profileId)
         }
+    }
+
+    private fun humanReadableValidationError(message: String): String {
+        if (!message.startsWith("NUTRITION_INTEGRITY_INVALID:")) {
+            return "Il piano generato non ha superato la validazione: $message"
+        }
+        val labels = message.substringAfter(':')
+            .split(',')
+            .filter { it.isNotBlank() }
+            .distinct()
+            .map { code ->
+                when (code) {
+                    "TARGET_DAY_OUT_OF_RANGE" -> "target giornaliero fuori dal ±3%"
+                    "MEAL_COUNT_INVALID" -> "numero di pasti non corretto"
+                    "DAY_MEALS_KCAL_MISMATCH" -> "somma kcal dei pasti diversa dal totale del giorno"
+                    "DAY_MEALS_PROTEIN_MISMATCH" -> "somma proteine diversa dal totale del giorno"
+                    "DAY_MEALS_CARBS_MISMATCH" -> "somma carboidrati diversa dal totale del giorno"
+                    "DAY_MEALS_FAT_MISMATCH" -> "somma grassi diversa dal totale del giorno"
+                    "MACRO_CALORIE_INCONSISTENCY" -> "kcal non coerenti con i macro del pasto"
+                    else -> code
+                }
+            }
+        return "Piano rifiutato dal validatore locale: ${labels.joinToString("; ")}."
     }
 
     companion object {
