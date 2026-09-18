@@ -130,8 +130,14 @@ class NutritionPathActivity : BaseShellActivity() {
                     updatedAtEpochMillis = System.currentTimeMillis(),
                 )
             )
-            openFoodPlan(java.time.LocalDate.now().with(java.time.DayOfWeek.MONDAY).toEpochDay())
-            finish()
+            val opened = openFoodPlan(
+                java.time.LocalDate.now().with(java.time.DayOfWeek.MONDAY).toEpochDay()
+            )
+            if (opened) {
+                finish()
+            } else {
+                status("Obiettivo salvato. Configura un provider IA per aprire e generare il piano alimentare.")
+            }
         }
     }
 
