@@ -45,7 +45,7 @@ class CheatEntryActivity : BaseShellActivity() {
 
     private val data by lazy { AppDataContainer.get(this) }
     private val viewModel: CheatEntryViewModel by viewModels {
-        CheatEntryViewModel.Factory(data.cheatAdjustmentService, data.notificationScheduler, data.aiJobScheduler, data.activeProfileStore)
+        CheatEntryViewModel.Factory(data.cheatAdjustmentService, data.notificationScheduler, data.aiJobScheduler, data.activeProfileStore, data.aiImageJobStore)
     }
 
     private var selectedDate: LocalDate = LocalDate.now()

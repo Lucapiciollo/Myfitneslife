@@ -82,13 +82,13 @@ class CheatAdjustmentService(
             estimate = preview.estimate,
             provider = validated.provider.name,
             model = validated.model,
-            inputFingerprint = fingerprint(input),
+            inputFingerprint = inputFingerprint(input),
         )
     }
 
     suspend fun registerAndAdapt(input: Input, confirmed: Understanding): Result {
         validateInput(input)
-        if (confirmed.inputFingerprint != fingerprint(input)) throw AdjustmentException.PreviewStale()
+        if (confirmed.inputFingerprint != inputFingerprint(input)) throw AdjustmentException.PreviewStale()
 
         val description = input.description.trim()
         val profileId = activeProfileStore.currentIdOrNull()
@@ -250,7 +250,7 @@ class CheatAdjustmentService(
         require(input.occurredAtEpochMillis > 0L)
     }
 
-    private fun fingerprint(input: Input): String = listOf(
+    fun inputFingerprint(input: Input): String = listOf(
         input.description.trim(),
         input.quantityText?.trim().orEmpty(),
         input.notes?.trim().orEmpty(),

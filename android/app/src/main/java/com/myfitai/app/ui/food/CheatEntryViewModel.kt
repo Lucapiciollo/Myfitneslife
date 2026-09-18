@@ -9,6 +9,7 @@ import com.myfitai.app.notifications.NotificationScheduler
 import com.myfitai.app.domain.ai.AiJobScheduler
 import com.myfitai.app.domain.ai.AiJobType
 import com.myfitai.app.domain.food.CheatUnderstandingAiJobHandler
+import com.myfitai.app.domain.ai.AiImageJobStore
 import com.myfitai.app.data.profile.ActiveProfileStore
 import androidx.work.WorkInfo
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,6 +22,7 @@ class CheatEntryViewModel(
     private val notificationScheduler: NotificationScheduler,
     private val aiJobScheduler: AiJobScheduler,
     private val activeProfileStore: ActiveProfileStore,
+    private val imageStore: AiImageJobStore,
 ) : ViewModel() {
 
     data class State(
@@ -38,7 +40,9 @@ class CheatEntryViewModel(
         _state.value = State(running = true)
         val profileId = activeProfileStore.currentIdOrNull() ?: run { _state.value = State(error = "Nessun profilo attivo"); return }
         val jobKey = input.occurredAtEpochMillis.toString()
-        aiJobScheduler.enqueue(AiJobType.CHEAT_UNDERSTANDING, profileId, jobKey, params = androidx.work.Data.Builder().putString(CheatUnderstandingAiJobHandler.KEY_DESCRIPTION, input.description).putString(CheatUnderstandingAiJobHandler.KEY_QUANTITY, input.quantityText).putString(CheatUnderstandingAiJobHandler.KEY_NOTES, input.notes).putLong(CheatUnderstandingAiJobHandler.KEY_OCCURRED_AT, input.occurredAtEpochMillis).build())
+        val params = androidx.work.Data.Builder().putString(CheatUnderstandingAiJobHandler.KEY_DESCRIPTION, input.description).putString(CheatUnderstandingAiJobHandler.KEY_QUANTITY, input.quantityText).putString(CheatUnderstandingAiJobHandler.KEY_NOTES, input.notes).putLong(CheatUnderstandingAiJobHandler.KEY_OCCURRED_AT, input.occurredAtEpochMillis)
+        input.labelImage?.let { params.putString(com.myfitai.app.domain.ai.AiJobWorker.KEY_IMAGE_PATH, imageStore.write(it)) }
+        aiJobScheduler.enqueue(AiJobType.CHEAT_UNDERSTANDING, profileId, jobKey, params = params.build())
         viewModelScope.launch {
             aiJobScheduler.observe(AiJobType.CHEAT_UNDERSTANDING, profileId, jobKey).collect { info ->
                 when (info?.state) {
@@ -97,11 +101,12 @@ class CheatEntryViewModel(
         private val notificationScheduler: NotificationScheduler,
         private val aiJobScheduler: AiJobScheduler,
         private val activeProfileStore: ActiveProfileStore,
+        private val imageStore: AiImageJobStore,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(CheatEntryViewModel::class.java))
-            return CheatEntryViewModel(service, notificationScheduler, aiJobScheduler, activeProfileStore) as T
+            return CheatEntryViewModel(service, notificationScheduler, aiJobScheduler, activeProfileStore, imageStore) as T
         }
     }
 }

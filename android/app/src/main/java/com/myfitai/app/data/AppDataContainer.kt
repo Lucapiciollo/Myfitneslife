@@ -28,6 +28,7 @@ import com.myfitai.app.domain.review.WeeklyReviewAiJobHandler
 import com.myfitai.app.domain.ai.AiJobRegistry
 import com.myfitai.app.domain.ai.AiJobScheduler
 import com.myfitai.app.domain.ai.AiJobType
+import com.myfitai.app.domain.ai.AiImageJobStore
 import com.myfitai.app.domain.personalization.PersonalResponseService
 import com.myfitai.app.domain.progress.ProgressAnalysisPreferences
 import com.myfitai.app.domain.progress.ProgressAnalysisScheduler
@@ -49,6 +50,7 @@ class AppDataContainer private constructor(context: Context) {
     val profilePhotoStore = ProfilePhotoStore(appContext)
     val progressAnalysisPreferences = ProgressAnalysisPreferences(appContext)
     val aiJobScheduler = AiJobScheduler(appContext)
+    val aiImageJobStore = AiImageJobStore(appContext)
 
     val userProfileRepository = UserProfileRepository(db)
     val biaRepository = BiaRepository(db)
@@ -165,7 +167,7 @@ class AppDataContainer private constructor(context: Context) {
             AiJobType.WEEKLY_REVIEW to WeeklyReviewAiJobHandler(weeklyReviewService),
             AiJobType.NUTRITION_ADVICE to NutritionAdviceAiJobHandler(nutritionAdviceService),
             AiJobType.MEAL_ALTERNATIVES to MealAlternativesAiJobHandler(mealAlternativeService),
-            AiJobType.CHEAT_UNDERSTANDING to CheatUnderstandingAiJobHandler(cheatAdjustmentService),
+            AiJobType.CHEAT_UNDERSTANDING to CheatUnderstandingAiJobHandler(cheatAdjustmentService, aiImageJobStore),
         ))
     }
 

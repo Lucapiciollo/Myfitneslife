@@ -15,7 +15,9 @@ class AiJobWorker(appContext: Context, params: WorkerParameters) : CoroutineWork
         val jobKey = inputData.getString(KEY_JOB_KEY).orEmpty()
         val handler = AppDataContainer.get(applicationContext).aiJobRegistry.handlerFor(type)
             ?: return Result.failure(workDataOf(KEY_ERROR to "Handler IA non disponibile"))
+        val imagePath = inputData.getString(KEY_IMAGE_PATH)
         val outcome = runCatching { handler.execute(profileId, jobKey, inputData) }.getOrElse { mapFailure(it) }
+        if (outcome !is AiJobOutcome.Retry) AppDataContainer.get(applicationContext).aiImageJobStore.delete(imagePath)
         return when (outcome) {
             is AiJobOutcome.Success -> {
                 AiJobNotifier.notifySuccess(applicationContext, type, profileId, jobKey, outcome.output.getString(KEY_PROVIDER))
@@ -48,6 +50,7 @@ class AiJobWorker(appContext: Context, params: WorkerParameters) : CoroutineWork
         const val KEY_JOB_KEY = "job_key"
         const val KEY_ERROR = "error"
         const val KEY_PROVIDER = "provider"
+        const val KEY_IMAGE_PATH = "image_path"
         const val MAX_RETRY_ATTEMPTS = 2
     }
 }
