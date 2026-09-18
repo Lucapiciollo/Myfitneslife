@@ -39,7 +39,7 @@ data class AppNutritionValidation(
 
 object NutritionIntegrityValidator {
     const val VERSION = "nutrition-integrity-v1"
-    private const val KCAL_TOLERANCE_RATIO = 0.10
+    private const val KCAL_TOLERANCE_RATIO = 0.15
     private const val KCAL_MIN_TOLERANCE = 50.0
     private const val MACRO_TOLERANCE = 0.2
 
