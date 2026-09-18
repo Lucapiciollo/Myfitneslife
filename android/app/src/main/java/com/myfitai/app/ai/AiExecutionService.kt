@@ -20,7 +20,7 @@ class AiExecutionService {
         maxSchemaRetries: Int = 1,
         businessValidator: (String) -> Result<Unit> = { Result.success(Unit) },
     ): ValidatedResponse {
-        require(maxSchemaRetries in 0..2)
+        require(maxSchemaRetries in 0..4)
         val compact = request.schemaName.contains("_pipe_")
         var attempt = 0
         var currentRequest = request
@@ -53,7 +53,7 @@ class AiExecutionService {
                 attempt++
                 currentRequest = request.copy(
                     userPrompt = request.userPrompt + if (compact) {
-                        "\nFIX: invalid envelope. Return exact schema + pipe protocol only."
+                        compactRetryInstruction(request.schemaName, attempt, "invalid envelope")
                     } else {
                         "\nPrevious output was INVALID_SCHEMA. Return exactly one valid JSON object. Do not use markdown. Do not wrap the JSON in code fences. Do not add text before or after the JSON. All strings must be valid JSON strings with escaped special characters."
                     }
@@ -86,7 +86,7 @@ class AiExecutionService {
                 if (compact && attempt < maxSchemaRetries) {
                     attempt++
                     currentRequest = request.copy(
-                        userPrompt = request.userPrompt + "\nFIX:${reason.take(80)}. Regenerate exact pipe records only."
+                        userPrompt = request.userPrompt + compactRetryInstruction(request.schemaName, attempt, reason)
                     )
                     continue
                 }
@@ -94,5 +94,24 @@ class AiExecutionService {
             }
             return ValidatedResponse(raw.provider, raw.model, raw.jsonText, raw.usage)
         }
+    }
+
+    private fun compactRetryInstruction(schemaName: String, attempt: Int, reason: String): String {
+        val protocol = when {
+            schemaName.contains("cheat_adjustment") ->
+                "First line must be exactly CA1. Then output exactly one E line, exactly one A line, optional R followed by I lines only when A|1, and exactly one final V line. Never omit CA1, never start with E, never add prose or markdown."
+            schemaName.contains("cheat_understanding") ->
+                "First line must be exactly CU1. Then output exactly one U line, exactly one E line, and no other lines. Never add prose or markdown."
+            else ->
+                "The data must contain the exact pipe protocol header and records, with no prose or markdown."
+        }
+        // A numeric rejection needs numeric guidance: repeating the format rules alone makes the
+        // model resend the same out-of-range totals.
+        val correction = if (reason.startsWith("TARGET_TOLERANCE_EXCEEDED")) {
+            " Fix only the listed day: change ingredient quantities and the matching meal kcal/macros, then recompute the D totals as the exact sum of that day's meals and supplements. Land each listed macro on its aim value, never on the range boundary, and never above target. Do not change the number of days or meals."
+        } else {
+            ""
+        }
+        return "\nRETRY $attempt: compact output rejected [$reason].$correction Return one JSON object with only data. $protocol"
     }
 }

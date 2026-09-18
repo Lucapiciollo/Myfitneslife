@@ -17,7 +17,7 @@ Stato: **IMPLEMENTATO LATO CODICE — BUILD/DEVICE TEST PENDING**.
    - replacement mancanti/extra;
    - pasti futuri sotto 100 kcal;
    - ingredienti privi di quantità/metadati;
-   - giornata effettiva fuori ±3% quando l'adattamento è dichiarato possibile.
+   - giornata effettiva fuori dal range target -3% .. target quando l'adattamento è dichiarato possibile.
 6. Se lo sgarro rende impossibile rientrare nel target senza restrizioni eccessive, l'unico risultato accettabile è `adaptationPossible=false`: lo sgarro resta registrato e il piano non viene compensato in modo punitivo.
 7. Quando l'adattamento è valido, viene creata una nuova versione immutabile del piano con reason `CHEAT_ADAPTATION:<cheatId>`.
 

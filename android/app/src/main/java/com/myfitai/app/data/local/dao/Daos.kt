@@ -85,6 +85,33 @@ interface WorkoutDao {
 }
 
 @Dao
+interface WorkoutEnergyExpenditureDao {
+    @Query("SELECT * FROM workout_energy_expenditures WHERE profileId = :profileId ORDER BY exerciseDateEpochDay DESC, workoutId DESC")
+    fun observeAll(profileId: Long): Flow<List<WorkoutEnergyExpenditureEntity>>
+
+    @Query("SELECT * FROM workout_energy_expenditures WHERE profileId = :profileId AND exerciseDateEpochDay = :epochDay ORDER BY workoutId ASC")
+    suspend fun forDay(profileId: Long, epochDay: Long): List<WorkoutEnergyExpenditureEntity>
+
+    @Query("SELECT * FROM workout_energy_expenditures WHERE profileId = :profileId AND exerciseDateEpochDay BETWEEN :fromEpochDay AND :toEpochDay ORDER BY exerciseDateEpochDay ASC, workoutId ASC")
+    suspend fun forRange(profileId: Long, fromEpochDay: Long, toEpochDay: Long): List<WorkoutEnergyExpenditureEntity>
+
+    @Query("SELECT * FROM workout_energy_expenditures WHERE workoutId = :workoutId LIMIT 1")
+    suspend fun getByWorkoutId(workoutId: Long): WorkoutEnergyExpenditureEntity?
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertIfAbsent(value: WorkoutEnergyExpenditureEntity): Long
+
+    @Update
+    suspend fun update(value: WorkoutEnergyExpenditureEntity)
+
+    @Query("UPDATE workout_energy_expenditures SET caloriesKcal = :caloriesKcal, source = :source, updatedAtEpochMillis = :updatedAtEpochMillis WHERE workoutId = :workoutId")
+    suspend fun updateCalories(workoutId: Long, caloriesKcal: Int, source: String, updatedAtEpochMillis: Long): Int
+
+    @Query("DELETE FROM workout_energy_expenditures WHERE profileId = :profileId")
+    suspend fun deleteByProfile(profileId: Long)
+}
+
+@Dao
 interface MealPlanDao {
     @Query("SELECT * FROM meal_plans WHERE profileId = :profileId ORDER BY weekStartEpochDay DESC, id DESC")
     fun observePlans(profileId: Long): Flow<List<MealPlanEntity>>

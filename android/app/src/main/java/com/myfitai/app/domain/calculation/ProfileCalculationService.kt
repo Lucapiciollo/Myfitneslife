@@ -4,6 +4,7 @@ import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.repository.BiaRepository
 import com.myfitai.app.data.repository.BodyMeasurementRepository
 import com.myfitai.app.data.repository.UserProfileRepository
+import com.myfitai.app.data.repository.WorkoutEnergyExpenditureRepository
 import kotlinx.coroutines.flow.first
 import java.time.LocalDate
 import java.time.Period
@@ -18,6 +19,7 @@ class ProfileCalculationService(
     private val bia: BiaRepository,
     private val bodyMeasurements: BodyMeasurementRepository,
     private val activeProfileStore: ActiveProfileStore,
+    private val exerciseEnergy: WorkoutEnergyExpenditureRepository? = null,
 ) {
 
     data class MetricSnapshot(
@@ -84,6 +86,9 @@ class ProfileCalculationService(
 
         val latestBia = biaHistory.lastOrNull()
         val latestBody = bodyHistory.lastOrNull()
+        val exerciseKcalToday = exerciseEnergy?.forDay(profileId, today.toEpochDay())
+            ?.sumOf { it.caloriesKcal.coerceAtLeast(0) }
+            ?: 0
         val weightKg = latestBia?.weightKg?.toDouble() ?: profile.currentWeightKg?.toDouble()
         val ageYears = profile.birthDateEpochDay?.let { epochDay ->
             val birth = LocalDate.ofEpochDay(epochDay)
@@ -104,6 +109,7 @@ class ProfileCalculationService(
                 activityLevel = ProfileCalculationMapper.activity(profile.activityLevel),
                 goal = ProfileCalculationMapper.goal(profile.goal),
                 waistCm = latestBody?.waistCm?.toDouble(),
+                exerciseKcal = exerciseKcalToday,
             )
         )
 

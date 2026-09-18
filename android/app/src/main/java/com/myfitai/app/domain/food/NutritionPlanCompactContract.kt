@@ -24,8 +24,9 @@ object NutritionPlanCompactContract {
     ).toString()
 
     const val PROTOCOL = """MFP1
-W|weekStartEpochDay
-D|dateEpochDay|totalKcal|proteinG|carbsG|fatG (followed by exactly 5 M records)
+ W|weekStartEpochDay
+ RANGE|startEpochDay|endEpochDay|dayCount
+ D|dateEpochDay|totalKcal|proteinG|carbsG|fatG (followed by exactly 5 M records)
 M|type|title|timeMinutes|kcal|proteinG|carbsG|fatG|preparation
 I|name|quantity|unit|displayDose|weightState|nutritionConfidence|category
 S|kind|name|dose|unit|timeMinutes|kcal|proteinG|carbsG|fatG|notes
@@ -39,6 +40,8 @@ V|1_or_0|notes"""
 
     fun parsePayload(payload: String, mealsPerDay: Int = NutritionPlanContract.REQUIRED_MEALS_PER_DAY): NutritionPlanContract.Response {
         var weekStart: Long? = null
+        var rangeStart: Long? = null
+        var rangeEnd: Long? = null
         var validation: NutritionPlanContract.AgentValidation? = null
         val days = mutableListOf<NutritionPlanContract.GeneratedDay>()
         var currentDay: DayBuilder? = null
@@ -72,6 +75,12 @@ V|1_or_0|notes"""
                 "W" -> {
                     require(parts.size == 2 && weekStart == null && days.isEmpty() && currentDay == null) { "PIPE_W_INVALID" }
                     weekStart = parts[1].toLongStrict("PIPE_W_INVALID")
+                }
+                "RANGE" -> {
+                    require(parts.size == 4 && weekStart != null && rangeStart == null && validation == null) { "PIPE_RANGE_INVALID" }
+                    rangeStart = parts[1].toLongStrict("PIPE_RANGE_START_INVALID")
+                    rangeEnd = parts[2].toLongStrict("PIPE_RANGE_END_INVALID")
+                    require(parts[3].toIntOrNull() == (rangeEnd!! - rangeStart!! + 1).toInt()) { "PIPE_RANGE_COUNT_INVALID" }
                 }
                 "D" -> {
                     require(parts.size == 6 && weekStart != null && validation == null) { "PIPE_D_INVALID" }
@@ -127,10 +136,13 @@ V|1_or_0|notes"""
                     )
                 }
                 "H" -> {
-                    require(parts.size == 2 && currentDay != null && validation == null) { "PIPE_H_INVALID" }
+                    // H carries a single free-text hydration note. A stray separator inside prose
+                    // cannot shift any numeric field, so the remainder is rejoined instead of
+                    // failing the whole plan. Numeric records stay strictly positional.
+                    require(parts.size >= 2 && currentDay != null && validation == null) { "PIPE_H_INVALID" }
                     flushMeal()
                     require(currentDay!!.hydrationNote == null) { "PIPE_H_DUPLICATE" }
-                    currentDay!!.hydrationNote = parts[1].trim()
+                    currentDay!!.hydrationNote = parts.drop(1).joinToString(" ") { it.trim() }.trim()
                 }
                 "V" -> {
                     require(parts.size == 3 && weekStart != null && validation == null) { "PIPE_V_INVALID" }
@@ -149,6 +161,7 @@ V|1_or_0|notes"""
 
         require(weekStart != null) { "PIPE_WEEK_MISSING" }
         require(validation != null) { "PIPE_VALIDATION_MISSING" }
+        if (rangeStart != null) require(days.map { it.dateEpochDay }.toSet() == (rangeStart!!..rangeEnd!!).toSet()) { "PIPE_RANGE_DATES_INVALID" }
         return NutritionPlanContract.Response(weekStart!!, days, validation!!)
     }
 

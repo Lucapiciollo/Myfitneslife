@@ -4,6 +4,7 @@ import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.myfitai.app.R
 import com.myfitai.app.ai.AiModelConfig
@@ -12,7 +13,7 @@ import com.myfitai.app.ai.GeminiPricingStore
 import com.myfitai.app.ai.OpenAiPricingStore
 
 object AiModelSelectionBinder {
-    fun bind(activity: SettingsActivity, card: LinearLayout, settings: AiSettingsStore) {
+    fun bind(activity: AppCompatActivity, card: LinearLayout, settings: AiSettingsStore) {
         val geminiPricing = GeminiPricingStore(activity)
         val openAiPricing = OpenAiPricingStore(activity)
 
@@ -44,7 +45,7 @@ object AiModelSelectionBinder {
     }
 
     private fun addModelRow(
-        activity: SettingsActivity,
+        activity: AppCompatActivity,
         card: LinearLayout,
         title: String,
         models: List<String>,
@@ -97,5 +98,5 @@ object AiModelSelectionBinder {
         render()
     }
 
-    private fun dp(activity: SettingsActivity, value: Int) = (value * activity.resources.displayMetrics.density).toInt()
+    private fun dp(activity: AppCompatActivity, value: Int) = (value * activity.resources.displayMetrics.density).toInt()
 }

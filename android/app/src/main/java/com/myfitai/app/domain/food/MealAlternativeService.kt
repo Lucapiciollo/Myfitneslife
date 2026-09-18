@@ -10,6 +10,10 @@ import com.myfitai.app.data.repository.MealPlanRepository
 import com.myfitai.app.data.repository.PlanVersionDraft
 import com.myfitai.app.data.repository.SupplementDraft
 import com.myfitai.app.data.repository.UserProfileRepository
+import com.myfitai.app.data.repository.NutritionRecoveryRepository
+import com.myfitai.app.data.repository.WorkoutEnergyExpenditureRepository
+import com.myfitai.app.data.local.entity.NutritionRecoveryEventEntity
+import com.myfitai.app.domain.calculation.NutritionBusinessValidator
 import com.myfitai.app.domain.time.SystemTimeProvider
 import com.myfitai.app.domain.time.TimeProvider
 import java.time.LocalDate
@@ -23,7 +27,9 @@ class MealAlternativeService(
     private val profiles: UserProfileRepository,
     private val plans: MealPlanRepository,
     private val activeProfileStore: ActiveProfileStore,
+    private val recovery: NutritionRecoveryRepository,
     private val time: TimeProvider = SystemTimeProvider,
+    private val exerciseEnergy: WorkoutEnergyExpenditureRepository? = null,
 ) {
     data class Alternatives(
         val planId: Long,
@@ -39,7 +45,7 @@ class MealAlternativeService(
         val model: String,
     )
 
-    data class ApplyResult(val versionId: Long, val title: String, val kcal: Int)
+    data class ApplyResult(val versionId: Long, val title: String, val kcal: Int, val proteinShortfallG: Float = 0f, val recoveryAddedKcal: Int = 0)
 
     sealed class AlternativeException(message: String) : Exception(message) {
         class NeedsInput(val fields: List<String>) : AlternativeException("NEEDS_INPUT: ${fields.joinToString()}")
@@ -82,7 +88,7 @@ class MealAlternativeService(
     }
 
     suspend fun apply(generated: Alternatives, alternative: MealAlternativeContract.Alternative): ApplyResult {
-        if (alternative !in generated.items || alternative.kcal != generated.targetKcal) throw AlternativeException.InvalidAlternative()
+        if (alternative !in generated.items || alternative.kcal !in 1..generated.targetKcal) throw AlternativeException.InvalidAlternative()
         val profileId = activeProfileStore.currentIdOrNull() ?: throw AlternativeException.NeedsInput(listOf("profilo attivo"))
         val latest = plans.loadLatestSnapshot(profileId, generated.weekStartEpochDay) ?: throw AlternativeException.StalePlan()
         if (latest.version.id != generated.sourceVersionId || latest.planId != generated.planId) throw AlternativeException.StalePlan()
@@ -95,7 +101,7 @@ class MealAlternativeService(
             type = sourceMeal.type,
             title = alternative.title,
             timeMinutes = sourceMeal.timeMinutes,
-            kcal = generated.targetKcal,
+            kcal = alternative.kcal,
             proteinG = alternative.proteinG,
             carbsG = alternative.carbsG,
             fatG = alternative.fatG,
@@ -126,7 +132,17 @@ class MealAlternativeService(
             createdAtEpochMillis = time.nowEpochMillis(),
             draft = PlanVersionDraft(generated.provider, "AI_MEAL_SWAP:${sourceMeal.id}", latest.version.targetKcal, latest.version.targetProteinG, latest.version.targetCarbsG, latest.version.targetFatG, days),
         )
-        return ApplyResult(versionId, alternative.title, generated.targetKcal)
+        val updatedDay = days.first { it.dateEpochDay == generated.dayEpochDay }
+        val targetProtein = latest.version.targetProteinG?.toDouble()
+        val actualProtein = updatedDay.proteinG?.toDouble() ?: 0.0
+        val proteinShortfall = if (targetProtein != null && actualProtein < targetProtein * (1.0 - NutritionBusinessValidator.DEFAULT_TOLERANCE)) {
+            (targetProtein - actualProtein).toFloat().coerceAtLeast(0f)
+        } else 0f
+        val targetKcal = latest.version.targetKcal?.toDouble()
+        val exerciseKcal = exerciseEnergy?.forDay(profileId, generated.dayEpochDay)?.sumOf { it.caloriesKcal.coerceAtLeast(0) } ?: 0
+        val dailyExcess = if (targetKcal != null) ((updatedDay.totalKcal ?: 0) - targetKcal - exerciseKcal).toInt().coerceAtLeast(0) else 0
+        val recoveryAdded = registerMealSwapRecoveryIfNeeded(profileId, generated.dayEpochDay, dailyExcess)
+        return ApplyResult(versionId, alternative.title, alternative.kcal, proteinShortfall, recoveryAdded)
     }
 
     private fun buildPrompt(dietaryPreferencesJson: String?, day: FoodPlanDay, meal: FoodMeal, targetKcal: Int): String = buildString {
@@ -134,9 +150,16 @@ class MealAlternativeService(
         appendLine("MEAL_TIME_MINUTES:${meal.timeMinutes ?: "unknown"}")
         appendLine("DAY:${LocalDate.ofEpochDay(day.dateEpochDay)}")
         appendLine("CURRENT:${meal.title}|${meal.kcal}kcal|P${meal.proteinG}|C${meal.carbsG}|F${meal.fatG}")
-        appendLine("TARGET_KCAL_EXACT:$targetKcal")
+        appendLine("MAX_KCAL:$targetKcal")
         appendLine("PREFERENCES:${dietaryPreferencesJson.orEmpty()}")
-        appendLine("Return exactly 5 alternatives for this meal. Every alternative kcal MUST equal TARGET_KCAL_EXACT exactly. Keep macros close and include caloric condiments.")
+        appendLine("Return exactly 5 alternatives for this meal. Every alternative kcal MUST be greater than 0 and less than or equal to MAX_KCAL. Do not modify later meals. Keep the same meal category and time, recalculate protein/carbs/fat from ingredients, and include caloric condiments.")
+    }
+
+    private suspend fun registerMealSwapRecoveryIfNeeded(profileId: Long, dayEpochDay: Long, excessKcal: Int): Int {
+        if (excessKcal <= 0) return 0
+        if (recovery.activeEventForSource(profileId, dayEpochDay, SOURCE_MEAL_SWAP) != null) return 0
+        recovery.insertEvent(NutritionRecoveryEventEntity(profileId = profileId, createdAtEpochMillis = time.nowEpochMillis(), eventEpochDay = dayEpochDay, source = SOURCE_MEAL_SWAP, originalExcessKcal = excessKcal, remainingKcal = excessKcal, recoveredKcal = 0, expiresEpochDay = dayEpochDay + NutritionRecoveryTargetEngine.DEFAULT_RECOVERY_WINDOW_DAYS - 1, status = NutritionRecoveryTargetEngine.STATUS_ACTIVE, reason = "Eccedenza giornaliera dopo sostituzione pasto"))
+        return excessKcal
     }
 
     private fun ensureNotPast(dayEpochDay: Long, mealTimeMinutes: Int?) {
@@ -158,6 +181,7 @@ class MealAlternativeService(
     private fun sumOrZero(values: List<Float?>): Double = values.filterNotNull().sumOf { it.toDouble() }
 
     companion object {
-        private const val SYSTEM_PROMPT = """You are MyFitAI Meal Alternative Agent. Nutrition only. Return only schema JSON. Return exactly 5 distinct alternatives. Every alternative kcal MUST equal TARGET_KCAL_EXACT exactly. Keep meal type/time appropriate, respect supplied preferences, keep macros close, include all caloric ingredients, and never use punitive compensation."""
+        private const val SOURCE_MEAL_SWAP = "MEAL_SWAP"
+        private const val SYSTEM_PROMPT = """You are MyFitAI Meal Alternative Agent. Nutrition only. Return only schema JSON. Return exactly 5 distinct alternatives. Each alternative must use the same meal category and time, have calories > 0 and <= MAX_KCAL, and have macros recalculated from its ingredients. Never modify later meals, include all caloric ingredients, respect supplied preferences, and never use punitive compensation."""
     }
 }

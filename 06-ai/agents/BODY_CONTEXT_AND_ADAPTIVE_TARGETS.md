@@ -36,7 +36,7 @@ Misure corporee, ordine fisso:
 - Vita/addome in calo con massa muscolare stabile o crescente può essere trattato come contesto compatibile con progresso favorevole, senza diagnosi e senza modificare `T`.
 - Differenze sinistra/destra sono osservazioni, non diagnosi.
 - Non dedurre disidratazione, edema, perdita muscolare patologica, intolleranze o malattie dai dati.
-- Il modello può adattare composizione pratica e timing dei pasti ma deve rispettare `T` entro la tolleranza ufficiale ±3%.
+- Il modello può adattare composizione pratica e timing dei pasti ma deve rispettare `T` nel range ufficiale `T * 0.97 .. T`, mai sopra `T`.
 
 ## Persistenza e tracciabilità
 

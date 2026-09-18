@@ -37,7 +37,7 @@ L'aderenza ai singoli pasti **non viene inventata**: al momento non esiste ancor
 - il riepilogo serve solo per praticità, timing e varietà;
 - le osservazioni storiche sono descrittive/associative;
 - i target calcolati localmente restano autorevoli;
-- la validazione finale ±3% resta dell'app.
+- la validazione finale target -3% .. target resta dell'app.
 
 Pipeline:
 

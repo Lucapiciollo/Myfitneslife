@@ -52,11 +52,13 @@ class ProfileActivity : BaseShellActivity() {
     }
 
     private fun bindSettingsNavigation() {
-        val openEditor = { go(ProfileEditActivity::class.java) }
-        findViewById<SettingRowView>(R.id.rowPersonalData).setOnClickListener { openEditor() }
-        findViewById<SettingRowView>(R.id.rowGoals).setOnClickListener { openEditor() }
-        findViewById<SettingRowView>(R.id.rowFoodPreferences).setOnClickListener { openEditor() }
-        findViewById<SettingRowView>(R.id.rowDaySchedule).setOnClickListener { openEditor() }
+        fun openEditor(section: String) {
+            startActivity(Intent(this, ProfileEditActivity::class.java).putExtra(ProfileEditActivity.EXTRA_INITIAL_SECTION, section))
+        }
+        findViewById<SettingRowView>(R.id.rowPersonalData).setOnClickListener { openEditor(ProfileEditActivity.SECTION_PERSONAL_DATA) }
+        findViewById<SettingRowView>(R.id.rowGoals).setOnClickListener { openEditor(ProfileEditActivity.SECTION_GOALS) }
+        findViewById<SettingRowView>(R.id.rowFoodPreferences).setOnClickListener { openEditor(ProfileEditActivity.SECTION_FOOD) }
+        findViewById<SettingRowView>(R.id.rowDaySchedule).setOnClickListener { openEditor(ProfileEditActivity.SECTION_DAY) }
         findViewById<SettingRowView>(R.id.rowWorkouts).setOnClickListener { go(WorkoutsActivity::class.java) }
         findViewById<SettingRowView>(R.id.rowNotifications).setOnClickListener { go(NotificationsActivity::class.java) }
         findViewById<SettingRowView>(R.id.rowExport).setOnClickListener { go(ExportActivity::class.java) }
@@ -69,12 +71,23 @@ class ProfileActivity : BaseShellActivity() {
             getString(if (hasKey) R.string.profile_openai_configured else R.string.profile_openai_not_configured),
             if (hasKey) R.color.accent_green else R.color.text_muted,
         )
+        val geminiRow = findViewById<SettingRowView>(R.id.rowGeminiKey)
+        geminiRow.setOnClickListener { go(SettingsActivity::class.java) }
+        val hasGeminiKey = SecureAiCredentialStore(this).exists(AiCredentialProvider.GEMINI)
+        geminiRow.setTrailingBadge(
+            getString(if (hasGeminiKey) R.string.profile_gemini_configured else R.string.profile_gemini_not_configured),
+            if (hasGeminiKey) R.color.accent_green else R.color.text_muted,
+        )
     }
 
     private fun bindProfileActions() {
         findViewById<TextView>(R.id.profileName).setOnClickListener { showProfileMenu(it) }
-        findViewById<TextView>(R.id.profileStats).setOnClickListener { go(ProfileEditActivity::class.java) }
-        findViewById<TextView>(R.id.profileGoal).setOnClickListener { go(ProfileEditActivity::class.java) }
+        findViewById<TextView>(R.id.profileStats).setOnClickListener {
+            startActivity(Intent(this, ProfileEditActivity::class.java).putExtra(ProfileEditActivity.EXTRA_INITIAL_SECTION, ProfileEditActivity.SECTION_PERSONAL_DATA))
+        }
+        findViewById<TextView>(R.id.profileGoal).setOnClickListener {
+            startActivity(Intent(this, ProfileEditActivity::class.java).putExtra(ProfileEditActivity.EXTRA_INITIAL_SECTION, ProfileEditActivity.SECTION_GOALS))
+        }
         findViewById<ShapeableImageView>(R.id.profileAvatar).setOnClickListener { showPhotoMenu() }
     }
 
@@ -151,10 +164,7 @@ class ProfileActivity : BaseShellActivity() {
             } else {
                 profiles.getOrNull(item.itemId - 1)?.let { profile ->
                     data.activeProfileStore.selectProfile(profile.id, makeDefault = true)
-                    startActivity(Intent(this, HomeActivity::class.java).apply {
-                        putExtra(com.myfitai.app.navigation.BottomNavBinder.EXTRA_TAB_ROOT, true)
-                            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NO_ANIMATION)
-                    })
+                    startActivity(Intent(this, TabHostActivity::class.java).putExtra(com.myfitai.app.navigation.BottomNavBinder.EXTRA_INITIAL_TAB, com.myfitai.app.navigation.BottomNavBinder.Tab.HOME.name).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP))
                     finish()
                 }
             }

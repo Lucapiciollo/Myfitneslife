@@ -1,6 +1,7 @@
 package com.myfitai.app.domain.export
 
 import android.content.Context
+import android.os.Build
 import androidx.core.content.FileProvider
 import androidx.room.withTransaction
 import com.myfitai.app.data.local.MyFitAiDatabase
@@ -24,10 +25,12 @@ import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
 import java.time.DayOfWeek
+import java.time.Instant
 import java.time.LocalDate
 import java.time.Period
 import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAdjusters
+import java.time.ZoneId
 import java.util.Locale
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
@@ -53,6 +56,8 @@ class ProfileExportService(
         val reviews = db.weeklyReviewDao().observeAll(profileId).first().sortedBy { it.weekStartEpochDay }
         val foodConsumptions = db.foodConsumptionDao().observeAll(profileId).first().sortedWith(compareBy({ it.plannedDateEpochDay }, { it.updatedAtEpochMillis }, { it.id }))
         val plans = db.mealPlanDao().observePlans(profileId).first().sortedBy { it.weekStartEpochDay }
+        val workoutEnergy = db.workoutEnergyExpenditureDao().observeAll(profileId).first().sortedBy { it.exerciseDateEpochDay }
+        val aiUsage = db.aiUsageDao().all()
 
         if (format == Format.WEEKLY_PLAN_PDF) {
             val currentWeekStart = time.today()
@@ -68,7 +73,7 @@ class ProfileExportService(
             return ExportedFile(file, "application/pdf")
         }
 
-        val root = buildCanonicalRoot(profileId, profile, bia, body, workouts, cheats, reviews, foodConsumptions, plans)
+        val root = buildCanonicalRoot(profileId, profile, bia, body, workouts, workoutEnergy, cheats, reviews, foodConsumptions, plans, aiUsage)
 
         return when (format) {
             Format.JSON -> writeJson(profile.name, root)
@@ -91,6 +96,7 @@ class ProfileExportService(
                         activityLevel = ProfileCalculationMapper.activity(profile.activityLevel),
                         goal = ProfileCalculationMapper.goal(profile.goal),
                         waistCm = latestBody?.waistCm?.toDouble(),
+                        exerciseKcal = db.workoutEnergyExpenditureDao().forDay(profileId, time.today().toEpochDay()).sumOf { it.caloriesKcal.coerceAtLeast(0) },
                     )
                 )
                 val file = exportFile(profile.name, "report-profilo", "pdf")
@@ -130,15 +136,27 @@ class ProfileExportService(
         bia: List<com.myfitai.app.data.local.entity.BiaMeasurementEntity>,
         body: List<com.myfitai.app.data.local.entity.BodyMeasurementEntity>,
         workouts: List<com.myfitai.app.data.local.entity.WorkoutEntity>,
+        workoutEnergy: List<com.myfitai.app.data.local.entity.WorkoutEnergyExpenditureEntity>,
         cheats: List<com.myfitai.app.data.local.entity.CheatEntryEntity>,
         reviews: List<com.myfitai.app.data.local.entity.WeeklyReviewEntity>,
         foodConsumptions: List<com.myfitai.app.data.local.entity.FoodConsumptionEntity>,
         plans: List<MealPlanEntity>,
+        aiUsage: List<com.myfitai.app.data.local.entity.AiUsageRecordEntity>,
     ): JSONObject {
         val root = JSONObject().apply {
-            put("schema", "myfitai_profile_export_v1")
+            put("schema", "myfitai_profile_export_v2")
+            put("schemaVersion", 2)
             put("exportedAtEpochMillis", time.nowEpochMillis())
             put("profileId", profileId)
+            put("appVersion", runCatching { appContext.packageManager.getPackageInfo(appContext.packageName, 0).versionName }.getOrNull() ?: "unknown")
+            put("locale", Locale.getDefault().toLanguageTag())
+            put("timezone", time.zoneId.id)
+            put("contentLanguage", "it")
+            put("summary", JSONObject().apply {
+                put("biaMeasurements", bia.size); put("bodyMeasurements", body.size); put("workouts", workouts.size); put("cheatEntries", cheats.size)
+                put("weeklyReviews", reviews.size); put("foodConsumptions", foodConsumptions.size); put("mealPlans", plans.size)
+                put("containsQaData", ExportDataQualityAnalyzer.dataQuality(bia, body, workouts, cheats, foodConsumptions, reviews, plans).getBoolean("containsQaData"))
+            })
             put("profile", JSONObject().apply {
                 put("id", profile.id)
                 put("name", profile.name)
@@ -154,33 +172,49 @@ class ProfileExportService(
                 putNullable("dietaryPreferencesJson", profile.dietaryPreferencesJson)
             })
             put("biaMeasurements", JSONArray().apply { bia.forEach { r -> put(JSONObject().apply {
-                put("id", r.id); put("measuredAtEpochMillis", r.measuredAtEpochMillis)
+                 put("id", r.id); put("measuredAtEpochMillis", r.measuredAtEpochMillis); put("measuredAtIso", iso(r.measuredAtEpochMillis)); putOrigin(ExportDataQualityAnalyzer.sourceFrom(r.notes))
                 putNullable("weightKg", r.weightKg); putNullable("bodyFatPercent", r.bodyFatPercent); putNullable("visceralFatLevel", r.visceralFatLevel)
                 putNullable("muscleMassKg", r.muscleMassKg); putNullable("skeletalMuscleKg", r.skeletalMuscleKg); putNullable("bodyWaterPercent", r.bodyWaterPercent)
                 putNullable("bmrKcal", r.bmrKcal); put("fasting", r.fasting); put("justWokeUp", r.justWokeUp); put("afterBathroom", r.afterBathroom); put("noRecentWorkout", r.noRecentWorkout); putNullable("notes", r.notes)
             }) } })
             put("bodyMeasurements", JSONArray().apply { body.forEach { r -> put(JSONObject().apply {
-                put("id", r.id); put("measuredAtEpochMillis", r.measuredAtEpochMillis); putNullable("chestCm", r.chestCm); putNullable("waistCm", r.waistCm)
+                 put("id", r.id); put("measuredAtEpochMillis", r.measuredAtEpochMillis); put("measuredAtIso", iso(r.measuredAtEpochMillis)); putOrigin(ExportDataQualityAnalyzer.sourceFrom(r.notes)); putNullable("chestCm", r.chestCm); putNullable("waistCm", r.waistCm)
                 putNullable("abdomenCm", r.abdomenCm); putNullable("shouldersCm", r.shouldersCm); putNullable("glutesCm", r.glutesCm); putNullable("armLeftCm", r.armLeftCm)
                 putNullable("armRightCm", r.armRightCm); putNullable("thighLeftCm", r.thighLeftCm); putNullable("thighRightCm", r.thighRightCm); putNullable("calfLeftCm", r.calfLeftCm); putNullable("calfRightCm", r.calfRightCm); putNullable("notes", r.notes)
             }) } })
             put("workouts", JSONArray().apply { workouts.forEach { r -> put(JSONObject().apply {
-                put("id", r.id); put("startedAtEpochMillis", r.startedAtEpochMillis); put("type", r.type); put("title", r.title); putNullable("durationMinutes", r.durationMinutes); put("isRestDay", r.isRestDay); putNullable("notes", r.notes)
+                 put("id", r.id); put("startedAtEpochMillis", r.startedAtEpochMillis); put("startedAtIso", iso(r.startedAtEpochMillis)); put("type", r.type); put("title", r.title); putNullable("durationMinutes", r.durationMinutes); put("isRestDay", r.isRestDay); putNullable("perceivedIntensity", r.perceivedIntensity); putNullable("notes", r.notes); putOrigin(ExportDataQualityAnalyzer.sourceFrom(r.type, r.title, r.notes))
             }) } })
             put("cheatEntries", JSONArray().apply { cheats.forEach { r -> put(JSONObject().apply {
-                put("id", r.id); put("occurredAtEpochMillis", r.occurredAtEpochMillis); put("description", r.description); putNullable("quantityText", r.quantityText); putNullable("estimatedKcal", r.estimatedKcal); putNullable("estimatedProteinG", r.estimatedProteinG); putNullable("estimatedCarbsG", r.estimatedCarbsG); putNullable("estimatedFatG", r.estimatedFatG); putNullable("planVersionId", r.planVersionId); putNullable("notes", r.notes)
+                 put("id", r.id); put("occurredAtEpochMillis", r.occurredAtEpochMillis); put("occurredAtIso", iso(r.occurredAtEpochMillis)); put("description", r.description); putNullable("quantityText", r.quantityText); putNullable("estimatedKcal", r.estimatedKcal); putNullable("estimatedProteinG", r.estimatedProteinG); putNullable("estimatedCarbsG", r.estimatedCarbsG); putNullable("estimatedFatG", r.estimatedFatG); putNullable("planVersionId", r.planVersionId); putNullable("notes", r.notes); putOrigin(ExportDataQualityAnalyzer.sourceFrom(r.description, r.notes))
             }) } })
             put("weeklyReviews", JSONArray().apply { reviews.forEach { r -> put(JSONObject().apply {
                 put("id", r.id); put("weekStartEpochDay", r.weekStartEpochDay); put("createdAtEpochMillis", r.createdAtEpochMillis); putNullable("adherencePercent", r.adherencePercent); put("summary", r.summary); putNullable("structuredJson", r.structuredJson)
             }) } })
             put("foodConsumptions", JSONArray().apply { foodConsumptions.forEach { r -> put(JSONObject().apply {
-                put("id", r.id); put("planId", r.planId); put("planVersionId", r.planVersionId); put("dayId", r.dayId)
+                 put("id", r.id); put("planId", r.planId); put("planVersionId", r.planVersionId); put("dayId", r.dayId); put("dataSource", "USER")
                 put("plannedDateEpochDay", r.plannedDateEpochDay); put("itemType", r.itemType); put("itemKey", r.itemKey)
                 putNullable("mealId", r.mealId); putNullable("supplementKey", r.supplementKey); put("status", r.status)
                 put("recordedAtEpochMillis", r.recordedAtEpochMillis); put("updatedAtEpochMillis", r.updatedAtEpochMillis)
                 put("quantityFactor", r.quantityFactor); putNullable("kcal", r.kcal); putNullable("proteinG", r.proteinG)
                 putNullable("carbsG", r.carbsG); putNullable("fatG", r.fatG); putNullable("note", r.note)
             }) } })
+            put("workoutEnergyExpenditures", JSONArray().apply { workoutEnergy.forEach { r -> put(JSONObject().apply {
+                put("id", r.id); put("workoutId", r.workoutId); put("exerciseDateEpochDay", r.exerciseDateEpochDay); put("caloriesKcal", r.caloriesKcal); put("source", r.source); put("createdAtEpochMillis", r.createdAtEpochMillis); put("updatedAtEpochMillis", r.updatedAtEpochMillis); putOrigin(if (r.source == "DEFAULT") ExportOrigin(ExportDataSource.SYSTEM) else ExportOrigin(ExportDataSource.IMPORT))
+            }) } })
+            put("dataQuality", ExportDataQualityAnalyzer.dataQuality(bia, body, workouts, cheats, foodConsumptions, reviews, plans))
+            put("computedTrends", ExportTrendCalculator.trends(bia, body))
+            put("nutritionAdherence", JSONObject().apply {
+                put("available", foodConsumptions.isNotEmpty())
+                put("reason", if (foodConsumptions.isEmpty()) "NO_FOOD_CONSUMPTIONS" else JSONObject.NULL)
+                put("daysWithData", foodConsumptions.map { it.plannedDateEpochDay }.toSet().size)
+                put("daysExpected", 7)
+            })
+            put("workoutSummary", workoutSummary(workouts))
+            put("cheatSummary", JSONObject().apply { put("count", cheats.size); put("estimatedKcalTotal", cheats.sumOf { it.estimatedKcal ?: 0 }); put("averageEstimatedKcal", cheats.mapNotNull { it.estimatedKcal }.averageOrZero()) })
+            put("weeklyReviewSummary", JSONObject().apply { put("available", reviews.isNotEmpty()); put("count", reviews.size) })
+            put("anomalies", detectAnomalies(bia, body, workouts, foodConsumptions, plans))
+            put("aiUsage", JSONArray().apply { aiUsage.forEach { r -> put(JSONObject().apply { put("timestampEpochMillis", r.timestampEpochMillis); put("timestampIso", iso(r.timestampEpochMillis)); put("provider", r.provider); put("model", r.model); put("inputTokens", r.inputTokens); put("outputTokens", r.outputTokens); put("thoughtsTokens", r.thoughtsTokens); put("cachedTokens", r.cachedTokens); putNullable("totalTokens", r.totalTokens); put("costUsdNanos", r.costUsdNanos); put("pricingSource", r.pricingSource); put("pricingEffectiveDate", r.pricingEffectiveDate) }) } })
         }
 
         val planJson = JSONArray()
@@ -194,7 +228,7 @@ class ProfileExportService(
                     db.mealPlanDao().getMeals(profileId, day.id).forEach { meal ->
                         val ingredients = JSONArray()
                         db.mealPlanDao().getIngredients(profileId, meal.id).forEach { ing -> ingredients.put(JSONObject().apply {
-                            put("id", ing.id); put("name", ing.name); put("quantity", ing.quantity); put("unit", ing.unit); putNullable("displayDose", ing.displayDose); putNullable("weightState", ing.weightState); putNullable("nutritionConfidence", ing.nutritionConfidence); putNullable("category", ing.category); put("sortOrder", ing.sortOrder)
+                             put("id", ing.id); put("name", ing.name); put("quantity", ing.quantity); put("unit", ing.unit); putNullable("displayDose", ing.displayDose); put("weightState", ExportDataQualityAnalyzer.normalizeWeightState(ing.weightState)); putNullable("nutritionConfidence", ExportDataQualityAnalyzer.nutritionConfidence(ing.nutritionConfidence)); put("category", ExportDataQualityAnalyzer.normalizeCategory(ing.category)); put("sortOrder", ing.sortOrder)
                         }) }
                         mealsJson.put(JSONObject().apply {
                             put("id", meal.id); put("sortOrder", meal.sortOrder); put("type", meal.type); put("title", meal.title); putNullable("timeMinutes", meal.timeMinutes); putNullable("kcal", meal.kcal); putNullable("proteinG", meal.proteinG); putNullable("carbsG", meal.carbsG); putNullable("fatG", meal.fatG); putNullable("preparation", meal.preparation); put("ingredients", ingredients)
@@ -231,9 +265,74 @@ class ProfileExportService(
             }
             planJson.put(JSONObject().apply { put("id", plan.id); put("weekStartEpochDay", plan.weekStartEpochDay); put("createdAtEpochMillis", plan.createdAtEpochMillis); put("status", plan.status); put("versions", versionsJson) })
         }
+        for (planIndex in 0 until planJson.length()) {
+            val planJsonObject = planJson.getJSONObject(planIndex)
+            val versions = planJsonObject.getJSONArray("versions")
+            for (versionIndex in 0 until versions.length()) {
+                val version = versions.getJSONObject(versionIndex)
+                val origin = ExportDataQualityAnalyzer.sourceFrom(version.optString("source"), version.optString("reason"))
+                version.put("dataSource", origin.dataSource.name)
+                version.put("isTestData", origin.dataSource == ExportDataSource.QA || origin.dataSource == ExportDataSource.SYNTHETIC)
+                version.put("aiMetadata", JSONObject().apply {
+                    put("providerOrSource", version.optString("source"))
+                    put("generationReason", version.optString("reason"))
+                    put("agentValidation", JSONObject.NULL)
+                    put("appValidation", JSONObject().put("available", false).put("reason", "NOT_PERSISTED_FOR_HISTORICAL_VERSION"))
+                })
+            }
+        }
         root.put("mealPlans", planJson)
         return root
     }
+
+    private fun iso(epochMillis: Long): String = Instant.ofEpochMilli(epochMillis).atZone(time.zoneId).toOffsetDateTime().toString()
+
+    private fun org.json.JSONObject.putOrigin(origin: ExportOrigin) {
+        put("dataSource", origin.dataSource.name)
+        put("originReasons", JSONArray(origin.reasons))
+        put("isTestData", origin.dataSource == ExportDataSource.QA || origin.dataSource == ExportDataSource.SYNTHETIC)
+    }
+
+    private fun workoutSummary(rows: List<com.myfitai.app.data.local.entity.WorkoutEntity>): JSONObject {
+        val active = rows.filterNot { it.isRestDay }.sortedBy { it.startedAtEpochMillis }
+        var longest = 0
+        var current = 0
+        var previous: LocalDate? = null
+        active.forEach { row ->
+            val date = Instant.ofEpochMilli(row.startedAtEpochMillis).atZone(time.zoneId).toLocalDate()
+            current = if (previous != null && date == previous!!.plusDays(1)) current + 1 else 1
+            longest = maxOf(longest, current)
+            previous = date
+        }
+        return JSONObject().apply {
+            put("totalWorkouts", active.size)
+            put("totalMinutes", active.sumOf { it.durationMinutes ?: 0 })
+            put("restDaysRecorded", rows.count { it.isRestDay })
+            putNullable("firstWorkoutAt", active.firstOrNull()?.startedAtEpochMillis)
+            putNullable("lastWorkoutAt", active.lastOrNull()?.startedAtEpochMillis)
+            put("longestConsecutiveWorkoutDays", longest)
+        }
+    }
+
+    private fun detectAnomalies(
+        bia: List<com.myfitai.app.data.local.entity.BiaMeasurementEntity>,
+        body: List<com.myfitai.app.data.local.entity.BodyMeasurementEntity>,
+        workouts: List<com.myfitai.app.data.local.entity.WorkoutEntity>,
+        consumptions: List<com.myfitai.app.data.local.entity.FoodConsumptionEntity>,
+        plans: List<MealPlanEntity>,
+    ): JSONArray = JSONArray().apply {
+        val duplicateBiaDates = bia.groupBy { Instant.ofEpochMilli(it.measuredAtEpochMillis).atZone(time.zoneId).toLocalDate() }.filterValues { it.size > 1 }
+        if (duplicateBiaDates.isNotEmpty()) put(JSONObject().apply { put("type", "DUPLICATE_MEASUREMENT_DATE"); put("severity", "WARNING"); put("message", "Sono presenti più misurazioni BIA nello stesso giorno"); put("count", duplicateBiaDates.values.sumOf { it.size }) })
+        val dailyWorkouts = workouts.filterNot { it.isRestDay }.groupBy { Instant.ofEpochMilli(it.startedAtEpochMillis).atZone(time.zoneId).toLocalDate() }.keys.sorted()
+        var longest = 0; var current = 0; var previous: LocalDate? = null
+        dailyWorkouts.forEach { date -> current = if (previous != null && date == previous!!.plusDays(1)) current + 1 else 1; longest = maxOf(longest, current); previous = date }
+        if (longest >= 14) put(JSONObject().apply { put("type", "CONSECUTIVE_DAILY_WORKOUTS"); put("severity", "WARNING"); put("message", "$longest allenamenti su giorni consecutivi"); put("longestConsecutiveDays", longest) })
+        if (plans.isNotEmpty() && consumptions.isEmpty()) put(JSONObject().apply { put("type", "PLAN_WITHOUT_CONSUMPTIONS"); put("severity", "INFO"); put("message", "Sono presenti piani ma nessun consumo reale registrato") })
+        val invalidBia = bia.count { listOf(it.weightKg, it.bodyFatPercent, it.visceralFatLevel, it.muscleMassKg, it.skeletalMuscleKg, it.bodyWaterPercent, it.bmrKcal).any { value -> value?.isNaN() == true || value?.isInfinite() == true || value != null && value < 0f } }
+        if (invalidBia > 0) put(JSONObject().apply { put("type", "INVALID_BIA_VALUE"); put("severity", "ERROR"); put("message", "$invalidBia misurazioni BIA contengono valori non validi"); put("count", invalidBia) })
+    }
+
+    private fun List<Int>.averageOrZero(): Double = if (isEmpty()) 0.0 else average()
 
     private suspend fun loadLatestSnapshot(plan: MealPlanEntity): FoodPlanSnapshot? = db.withTransaction {
         val dao = db.mealPlanDao()

@@ -18,11 +18,15 @@ import com.myfitai.app.ai.AiSettingsStore
 import com.myfitai.app.ai.GeminiByokProvider
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.data.profile.MealCountPreferences
+import com.myfitai.app.data.profile.NutritionAutoGenerationPreferences
+import com.myfitai.app.data.profile.NutritionMealSchedulePreferences
 import com.myfitai.app.domain.progress.ProgressAnalysisPreferences
+import com.myfitai.app.domain.ai.AiJobType
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.security.AiCredentialProvider
 import com.myfitai.app.security.SecureAiCredentialStore
 import com.myfitai.app.ui.widgets.SettingRowView
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class SettingsActivity : BaseShellActivity() {
@@ -50,6 +54,8 @@ class SettingsActivity : BaseShellActivity() {
         geminiInput.isLongClickable = false
         openAiInput.isLongClickable = false
         useGeminiSwitch.isChecked = settings.useGemini
+        bindNutritionAutomation()
+        findViewById<View>(R.id.analyzeNutritionPathButton).setOnClickListener { enqueueNutritionPath() }
 
         fun render() {
             val useGemini = useGeminiSwitch.isChecked
@@ -220,6 +226,83 @@ class SettingsActivity : BaseShellActivity() {
         }
         card.addView(row, 0)
         card.addView(View(this).apply { setBackgroundColor(getColor(R.color.divider)) }, 1, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1).apply { bottomMargin = dp(12) })
+    }
+
+    private fun bindNutritionAutomation() {
+        val profileId = data.activeProfileStore.currentIdOrNull() ?: return
+        val autoSwitch = findViewById<MaterialSwitch>(R.id.nutritionAutoGenerationSwitch)
+        val cadenceText = findViewById<TextView>(R.id.nutritionCadenceValue)
+        val timesText = findViewById<TextView>(R.id.nutritionMealTimesValue)
+        fun render() {
+            val enabled = data.nutritionAutoGenerationPreferences.enabled(profileId)
+            autoSwitch.isChecked = enabled
+            cadenceText.text = if (enabled) data.nutritionAutoGenerationPreferences.cadence(profileId).label else "Disattivata · generazione manuale"
+            val times = data.nutritionMealSchedulePreferences.times(profileId, data.mealCountPreferences.get(profileId))
+            timesText.text = times.joinToString(" · ", transform = NutritionMealSchedulePreferences::format)
+        }
+        autoSwitch.setOnCheckedChangeListener { _, checked ->
+            data.nutritionAutoGenerationPreferences.setEnabled(profileId, checked)
+            data.nutritionAutoGenerationScheduler.refresh(profileId)
+            render()
+        }
+        findViewById<View>(R.id.rowNutritionCadence).setOnClickListener {
+            val values = NutritionAutoGenerationPreferences.Cadence.entries
+            MaterialAlertDialogBuilder(this)
+                .setTitle("Frequenza generazione piano")
+                .setSingleChoiceItems(values.map { it.label }.toTypedArray(), values.indexOf(data.nutritionAutoGenerationPreferences.cadence(profileId))) { dialog, which ->
+                    data.nutritionAutoGenerationPreferences.setCadence(profileId, values[which])
+                    data.nutritionAutoGenerationScheduler.refresh(profileId)
+                    render()
+                    dialog.dismiss()
+                }.setNegativeButton("Annulla", null).show()
+        }
+        findViewById<View>(R.id.rowNutritionMealTimes).setOnClickListener { showNutritionMealTimesDialog(profileId) { render() } }
+        render()
+    }
+
+    private fun enqueueNutritionPath() {
+        val profileId = data.activeProfileStore.currentIdOrNull()
+        if (profileId == null) {
+            Toast.makeText(this, "Completa prima il profilo", Toast.LENGTH_LONG).show()
+            return
+        }
+        lifecycleScope.launch {
+            val profile = data.userProfileRepository.get(profileId)
+            val bia = data.biaRepository.all(profileId).first()
+            val body = data.bodyMeasurementRepository.all(profileId).first()
+            if (profile == null || bia.isEmpty() || body.isEmpty()) {
+                Toast.makeText(this@SettingsActivity, "Inserisci prima profilo, una BIA e una misura corporea", Toast.LENGTH_LONG).show()
+                return@launch
+            }
+            val jobKey = "${System.currentTimeMillis()}"
+            data.aiJobScheduler.enqueue(AiJobType.NUTRITION_PATH, profileId, jobKey)
+            Toast.makeText(this@SettingsActivity, "Suggerimento avviato. Riceverai una notifica quando sarà pronto.", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun showNutritionMealTimesDialog(profileId: Long, onChanged: () -> Unit) {
+        val count = data.mealCountPreferences.get(profileId)
+        val times = data.nutritionMealSchedulePreferences.times(profileId, count).toMutableList()
+        val labels = (0 until count).map { "Pasto ${it + 1}" }
+        fun open(index: Int) {
+            if (index >= count) {
+                data.nutritionMealSchedulePreferences.setTimes(profileId, times)
+                lifecycleScope.launch { data.notificationScheduler.refresh() }
+                onChanged()
+                return
+            }
+            val current = times[index]
+            val picker = com.google.android.material.timepicker.MaterialTimePicker.Builder()
+                .setTimeFormat(com.google.android.material.timepicker.TimeFormat.CLOCK_24H)
+                .setHour(current / 60).setMinute(current % 60)
+                .setTitleText(labels[index]).build()
+            picker.addOnPositiveButtonClickListener {
+                times[index] = NutritionMealSchedulePreferences.parse(picker.hour, picker.minute)
+                open(index + 1)
+            }
+            picker.show(supportFragmentManager, "nutrition_meal_time_$index")
+        }
+        open(0)
     }
 
     private fun showMealCountDialog() {

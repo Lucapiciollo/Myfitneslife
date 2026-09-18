@@ -7,6 +7,7 @@ import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.repository.BiaRepository
 import com.myfitai.app.domain.progress.ProgressSeriesEngine
 import com.myfitai.app.domain.progress.ProgressSeriesPoint
+import com.myfitai.app.domain.calculation.WeeklyBodyExpectation
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flatMapLatest
@@ -25,6 +26,7 @@ data class PhysicalEvolutionState(
     val bodyFat: ProgressMetricState = ProgressMetricState(),
     val muscle: ProgressMetricState = ProgressMetricState(),
     val bodyWater: ProgressMetricState = ProgressMetricState(),
+    val weeklyExpectation: WeeklyBodyExpectation.Result = WeeklyBodyExpectation.Result(false, WeeklyBodyExpectation.Source.INSUFFICIENT_DATA),
 )
 
 class PhysicalEvolutionViewModel(
@@ -32,7 +34,7 @@ class PhysicalEvolutionViewModel(
     activeProfileStore: ActiveProfileStore,
 ) : ViewModel() {
     val state: StateFlow<PhysicalEvolutionState> = activeProfileStore.activeProfileId.flatMapLatest { profileId ->
-        if (profileId <= 0L) flowOf(emptyList()) else bia.all(profileId)
+            if (profileId <= 0L) flowOf(emptyList()) else bia.all(profileId)
     }.map { rows ->
         fun metric(selector: (com.myfitai.app.data.local.entity.BiaMeasurementEntity) -> Float?): ProgressMetricState {
             val points = rows.mapNotNull { r -> selector(r)?.let { ProgressPoint(r.measuredAtEpochMillis, it) } }
@@ -49,7 +51,7 @@ class PhysicalEvolutionViewModel(
             muscle = metric { it.muscleMassKg },
             bodyWater = metric { it.bodyWaterPercent },
         )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PhysicalEvolutionState())
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, PhysicalEvolutionState())
 
     fun filtered(metric: ProgressMetricState, rangeIndex: Int): ProgressMetricState {
         val zone = ZoneId.systemDefault()

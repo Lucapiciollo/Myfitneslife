@@ -10,6 +10,7 @@ import com.myfitai.app.domain.time.TimeProvider
 class FoodConsumptionService(
     private val repository: FoodConsumptionRepository,
     private val activeProfileStore: ActiveProfileStore,
+    private val recoveryRepository: com.myfitai.app.data.repository.NutritionRecoveryRepository? = null,
     private val time: TimeProvider = SystemTimeProvider,
 ) {
     suspend fun setMealStatus(
@@ -117,6 +118,11 @@ class FoodConsumptionService(
             note = note,
         )
         val persistedId = repository.upsert(value)
+        if (status == FoodConsumptionStatus.CONSUMED) {
+            recoveryRepository?.let { recovery ->
+                recovery.confirmWithdrawal(profileId, plannedDateEpochDay, now)
+            }
+        }
         return value.copy(id = if (value.id == 0L) persistedId else value.id)
     }
 

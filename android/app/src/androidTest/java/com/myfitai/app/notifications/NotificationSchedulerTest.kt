@@ -7,6 +7,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.myfitai.app.data.local.MyFitAiDatabase
 import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.data.profile.ActiveProfileStore
+import com.myfitai.app.data.profile.MealCountPreferences
+import com.myfitai.app.data.profile.NutritionMealSchedulePreferences
 import com.myfitai.app.data.repository.DayDraft
 import com.myfitai.app.data.repository.IngredientDraft
 import com.myfitai.app.data.repository.MealDraft
@@ -126,8 +128,10 @@ class NotificationSchedulerTest {
         plans = plans,
         activeProfileStore = store,
         time = time,
-        alarmGateway = alarms,
-        settings = settings,
+            alarmGateway = alarms,
+            mealCountPreferences = MealCountPreferences(ApplicationProvider.getApplicationContext()),
+            mealSchedulePreferences = NutritionMealSchedulePreferences(ApplicationProvider.getApplicationContext()),
+            settings = settings,
     )
 
     private suspend fun insertPlan(date: LocalDate, meals: List<MealDraft>) {

@@ -2,5 +2,9 @@
     <application>
         <activity android:name=".qa.GeminiSchemaProbeActivity" android:exported="true" />
         <activity android:name=".qa.QaSeederActivity" android:exported="true" />
+        <activity android:name=".qa.DeleteLatestCheatActivity" android:exported="true" />
+        <activity android:name=".qa.DeleteAllDeviationDataActivity" android:exported="true" />
+        <activity android:name=".qa.InspectRecoveryDataActivity" android:exported="true" />
+        <activity android:name=".qa.GeneratePlanNowActivity" android:exported="true" />
     </application>
 </manifest>

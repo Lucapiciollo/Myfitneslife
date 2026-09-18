@@ -76,6 +76,7 @@ class ProfileEditActivity : BaseShellActivity() {
         bindPickers()
         bindSave()
         observeState()
+        scrollToRequestedSection()
     }
 
     private fun bindViews() {
@@ -90,6 +91,22 @@ class ProfileEditActivity : BaseShellActivity() {
         sleepTimeInput = findViewById(R.id.sleepTimeInput)
         preferencesInput = findViewById(R.id.preferencesInput)
         saveButton = findViewById(R.id.saveProfileButton)
+    }
+
+    private fun scrollToRequestedSection() {
+        val sectionId = when (intent.getStringExtra(EXTRA_INITIAL_SECTION)) {
+            SECTION_PERSONAL_DATA -> R.id.personalDataCard
+            SECTION_GOALS -> R.id.goalsActivityCard
+            SECTION_DAY -> R.id.dayScheduleCard
+            SECTION_FOOD -> R.id.foodPreferencesCard
+            else -> null
+        } ?: return
+        findViewById<View>(R.id.profileEditScroll).post {
+            findViewById<View>(sectionId).requestFocus()
+        (findViewById<View>(R.id.profileEditScroll) as android.widget.ScrollView).post {
+            (findViewById<View>(R.id.profileEditScroll) as android.widget.ScrollView).smoothScrollTo(0, findViewById<View>(sectionId).top)
+        }
+        }
     }
 
     private fun bindDropdowns() {
@@ -195,15 +212,16 @@ class ProfileEditActivity : BaseShellActivity() {
                 }
                 launch {
                     viewModel.saved.collect {
+                        data.nutritionPathTrigger.maybeEnqueue(it)
                         Toast.makeText(this@ProfileEditActivity, if (isCreate) "Profilo creato" else "Profilo salvato", Toast.LENGTH_SHORT).show()
                         if (isBootstrap) {
-                            startActivity(Intent(this@ProfileEditActivity, HomeActivity::class.java).apply {
+                            startActivity(Intent(this@ProfileEditActivity, MeasurementsActivity::class.java).apply {
                                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                             })
                             finish()
                         } else if (isCreate) {
-                            startActivity(Intent(this@ProfileEditActivity, HomeActivity::class.java).apply {
-                                putExtra(com.myfitai.app.navigation.BottomNavBinder.EXTRA_TAB_ROOT, true)
+                            startActivity(Intent(this@ProfileEditActivity, TabHostActivity::class.java).apply {
+                                putExtra(com.myfitai.app.navigation.BottomNavBinder.EXTRA_INITIAL_TAB, com.myfitai.app.navigation.BottomNavBinder.Tab.HOME.name)
                                 addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NO_ANIMATION)
                             })
                             finish()
@@ -249,5 +267,10 @@ class ProfileEditActivity : BaseShellActivity() {
     companion object {
         const val EXTRA_BOOTSTRAP = "profile_bootstrap"
         const val EXTRA_CREATE = "profile_create"
+        const val EXTRA_INITIAL_SECTION = "profile_initial_section"
+        const val SECTION_PERSONAL_DATA = "personal_data"
+        const val SECTION_GOALS = "goals"
+        const val SECTION_DAY = "day_schedule"
+        const val SECTION_FOOD = "food_preferences"
     }
 }

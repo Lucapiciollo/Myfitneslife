@@ -5,11 +5,16 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.myfitai.app.data.local.entity.WeeklyReviewEntity
 import com.myfitai.app.data.profile.ActiveProfileStore
+import com.myfitai.app.domain.ai.AiJobScheduler
+import com.myfitai.app.domain.ai.AiJobState
+import com.myfitai.app.domain.ai.AiJobType
 import com.myfitai.app.domain.review.WeeklyReviewService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.time.DayOfWeek
@@ -19,6 +24,7 @@ import java.time.temporal.TemporalAdjusters
 class WeeklyReviewViewModel(
     private val service: WeeklyReviewService,
     private val activeProfileStore: ActiveProfileStore,
+    private val scheduler: AiJobScheduler,
 ) : ViewModel() {
     data class ReviewContent(
         val summary: String,
@@ -44,6 +50,7 @@ class WeeklyReviewViewModel(
         viewModelScope.launch {
             activeProfileStore.activeProfileId.collectLatest { reload() }
         }
+        observeGenerationJob()
     }
 
     fun previousWeek() {
@@ -60,33 +67,42 @@ class WeeklyReviewViewModel(
         reload()
     }
 
+    /**
+     * The review runs as a background job: it survives leaving the screen, and the user is notified
+     * when it is ready. On return the screen reattaches to the same job and reloads the stored review.
+     */
     fun generate() {
         if (_state.value.generating) return
         val week = _state.value.weekStart
+        val profileId = activeProfileStore.currentIdOrNull() ?: return
         _state.value = _state.value.copy(generating = true, error = null, successMessage = null)
+        scheduler.enqueue(AiJobType.WEEKLY_REVIEW, profileId, jobKey(week))
+    }
+
+    private fun observeGenerationJob() {
         viewModelScope.launch {
-            runCatching { service.generate(week) }
-                .onSuccess { result ->
-                    _state.value = _state.value.copy(
-                        generating = false,
-                        review = result.entity,
-                        content = ReviewContent(result.response.summary, result.response.observations, result.response.nextWeekGuidance),
-                        metrics = result.metrics,
-                        successMessage = "Review aggiornata con ${result.provider} · ${result.model}",
-                    )
+            activeProfileStore.activeProfileId.flatMapLatest { profileId ->
+                if (profileId <= 0L) flowOf(AiJobState.Idle)
+                else scheduler.observe(AiJobType.WEEKLY_REVIEW, profileId, jobKey(_state.value.weekStart))
+            }.collect { jobState ->
+                when (jobState) {
+                    AiJobState.Idle -> Unit
+                    AiJobState.Running -> _state.value = _state.value.copy(generating = true, error = null, successMessage = null)
+                    is AiJobState.Succeeded -> {
+                        scheduler.consume(jobState.id)
+                        _state.value = _state.value.copy(generating = false, successMessage = "Review aggiornata con ${jobState.provider}")
+                        reload()
+                    }
+                    is AiJobState.Failed -> {
+                        scheduler.consume(jobState.id)
+                        _state.value = _state.value.copy(generating = false, error = jobState.message)
+                    }
                 }
-                .onFailure { error ->
-                    _state.value = _state.value.copy(
-                        generating = false,
-                        error = when (error) {
-                            is WeeklyReviewService.ReviewException.NeedsInput -> "Completa prima: ${error.fields.joinToString()}"
-                            is WeeklyReviewService.ReviewException.WeekNotCompleted -> "La review è disponibile solo dopo la chiusura della settimana."
-                            else -> error.message ?: "Impossibile generare la review"
-                        },
-                    )
-                }
+            }
         }
     }
+
+    private fun jobKey(week: LocalDate): String = week.toEpochDay().toString()
 
     private fun reload() {
         val week = _state.value.weekStart
@@ -122,11 +138,12 @@ class WeeklyReviewViewModel(
     class Factory(
         private val service: WeeklyReviewService,
         private val activeProfileStore: ActiveProfileStore,
+        private val scheduler: AiJobScheduler,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(WeeklyReviewViewModel::class.java))
-            return WeeklyReviewViewModel(service, activeProfileStore) as T
+            return WeeklyReviewViewModel(service, activeProfileStore, scheduler) as T
         }
     }
 

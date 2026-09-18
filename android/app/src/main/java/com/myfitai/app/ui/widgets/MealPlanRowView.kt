@@ -20,6 +20,7 @@ class MealPlanRowView @JvmOverloads constructor(
     private val kcalView: TextView
     private val descriptionView: TextView
     private val changeButton: ImageView
+    private val statusView: TextView
 
     init {
         orientation = HORIZONTAL
@@ -69,6 +70,13 @@ class MealPlanRowView @JvmOverloads constructor(
             textSize = 13f
         }
         textColumn.addView(descriptionView)
+        statusView = TextView(context).apply {
+            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply { topMargin = (4 * density).toInt() }
+            setTextColor(context.getColor(R.color.text_muted))
+            textSize = 11f
+            visibility = GONE
+        }
+        textColumn.addView(statusView)
         addView(textColumn)
 
         changeButton = ImageView(context).apply {
@@ -96,6 +104,13 @@ class MealPlanRowView @JvmOverloads constructor(
         descriptionView.text = description
     }
 
+    fun setStatus(status: String, emphasized: Boolean = false) {
+        statusView.text = status
+        statusView.visibility = VISIBLE
+        statusView.setTextColor(context.getColor(if (emphasized) R.color.accent_green_dark else R.color.text_muted))
+        statusView.setTypeface(statusView.typeface, if (emphasized) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
+    }
+
     fun setImage(resId: Int) {
         thumbnail.setImageResource(resId)
     }
@@ -107,5 +122,6 @@ class MealPlanRowView @JvmOverloads constructor(
     fun setChangeEnabled(enabled: Boolean) {
         changeButton.isEnabled = enabled
         changeButton.alpha = if (enabled) 1f else 0.35f
+        changeButton.contentDescription = if (enabled) "Cambia pasto con IA" else "Cambio pasto non disponibile: il pasto è concluso o non modificabile"
     }
 }

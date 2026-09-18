@@ -59,6 +59,19 @@ class SixMonthQaDataSeeder(context: Context) {
         return counts(profileId)
     }
 
+    suspend fun seedCurrentPlanOnly(): String {
+        val profileId = profiles.profiles.first().firstOrNull()?.id
+            ?: profiles.create(profile("Test Sport", "Moderatamente attivo", 89f, 94f))
+        active.selectProfile(profileId)
+        val week = today.with(TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY))
+        val current = plans.loadLatestSnapshot(profileId, week.toEpochDay())
+        if (current == null || current.version.days.any { it.meals.size != 5 }) {
+            val actualPlanId = current?.planId ?: plans.createPlan(profileId, week.toEpochDay(), epoch(week, 8))
+            plans.appendVersion(profileId, actualPlanId, epoch(week, 8), version(week, "QA_LOCAL", "QA_CURRENT_PLAN_5_MEALS"))
+        }
+        return counts(profileId)
+    }
+
     suspend fun seedDemo12Months(): String {
         val existing = profiles.profiles.first().firstOrNull { it.name == DEMO_NAME }
         val profileId = existing?.id ?: profiles.create(profile(DEMO_NAME, "Moderatamente attivo", 88f, 96f))
@@ -163,8 +176,14 @@ class SixMonthQaDataSeeder(context: Context) {
     private suspend fun counts(profileId: Long): String = "profile=$profileId bia=${db.biaMeasurementDao().observeAll(profileId).first().size} body=${db.bodyMeasurementDao().observeAll(profileId).first().size} workouts=${db.workoutDao().observeAll(profileId).first().size} plans=${db.mealPlanDao().observePlans(profileId).first().size} cheats=${db.cheatEntryDao().observeAll(profileId).first().size}"
 
     private fun profile(name: String, activity: String, weight: Float, initial: Float) = UserProfileEntity(name = name, birthDateEpochDay = LocalDate.of(1983, 8, 9).toEpochDay(), heightCm = 186f, currentWeightKg = weight, goal = "Ricomposizione", activityLevel = activity, wakeTimeMinutes = 420, sleepTimeMinutes = 1410, dietaryPreferencesJson = null, createdAtEpochMillis = 1L, updatedAtEpochMillis = epoch(today), biologicalSex = "Maschio", initialWeightKg = initial)
-    private fun version(week: LocalDate, source: String, reason: String?) = PlanVersionDraft(source, reason, 2400, 180f, 280f, 70f, (0..6).map { day -> DayDraft(week.plusDays(day.toLong()).toEpochDay(), 2400, 180f, 280f, 70f, listOf(meal("Colazione", 600, 420), meal("Pranzo", 800, 780), meal("Cena", 1000, 1200)), supplements = listOf(SupplementDraft("PROTEIN_POWDER", "Whey", 30f, "g", 1110, 120, 24f, 3f, 2f, "QA")), hydrationNote = "Idratazione QA prudente" ) })
-    private fun meal(type: String, kcal: Int, time: Int) = MealDraft(type, "QA $type", time, kcal, 50f, 70f, 18f, "Preparazione QA", listOf(IngredientDraft("Riso", 100f, "g", "100 g", "RAW", "HIGH", "cereali")))
+    private fun version(week: LocalDate, source: String, reason: String?) = PlanVersionDraft(source, reason, 2400, 180f, 280f, 70f, (0..6).map { day -> DayDraft(week.plusDays(day.toLong()).toEpochDay(), 2400, 180f, 280f, 70f, listOf(
+        meal("Colazione", 600, 420, 45f, 75f, 18f),
+        meal("Spuntino mattutino", 450, 630, 30f, 55f, 12f),
+        meal("Pranzo", 500, 780, 35f, 65f, 14f),
+        meal("Spuntino pomeridiano", 350, 960, 22f, 42f, 10f),
+        meal("Cena", 380, 1200, 24f, 40f, 14f),
+    ), supplements = listOf(SupplementDraft("PROTEIN_POWDER", "Whey", 30f, "g", 1110, 120, 24f, 3f, 2f, "QA")), hydrationNote = "Idratazione QA prudente" ) })
+    private fun meal(type: String, kcal: Int, time: Int, proteinG: Float, carbsG: Float, fatG: Float) = MealDraft(type, "QA $type", time, kcal, proteinG, carbsG, fatG, "Preparazione QA", listOf(IngredientDraft("Riso", 100f, "g", "100 g", "RAW", "HIGH", "cereali")))
     private fun epoch(date: LocalDate, hour: Int = 7) = date.atTime(hour, 0).toInstant(ZoneOffset.UTC).toEpochMilli()
     private fun oscillation(index: Int) = listOf(0f, .3f, -.2f, .15f, -.25f)[index % 5]
 

@@ -24,12 +24,19 @@ import java.util.Locale
 
 class NutritionAdviceActivity : BaseShellActivity() {
 
+    companion object {
+        const val EXTRA_JOB_KEY = "nutrition_advice_job_key"
+    }
+
     private val data by lazy { AppDataContainer.get(this) }
     private val viewModel: NutritionAdviceViewModel by viewModels {
         NutritionAdviceViewModel.Factory(
             adviceService = data.nutritionAdviceService,
             cheatService = data.cheatAdjustmentService,
             notificationScheduler = data.notificationScheduler,
+            activeProfileStore = data.activeProfileStore,
+            scheduler = data.aiJobScheduler,
+            results = data.aiJobResultRepository,
         )
     }
 
@@ -45,6 +52,8 @@ class NutritionAdviceActivity : BaseShellActivity() {
                 viewModel.ask(question)
             }
         }
+
+        intent.getStringExtra(EXTRA_JOB_KEY)?.let(viewModel::reattachToJob)
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {

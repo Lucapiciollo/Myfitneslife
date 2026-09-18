@@ -37,6 +37,7 @@
     </LinearLayout>
 
     <androidx.core.widget.NestedScrollView
+        android:id="@+id/profileEditScroll"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
@@ -61,11 +62,21 @@
                 android:textSize="13sp"
                 android:visibility="gone" />
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/nameLayout"
+            <LinearLayout
+                android:id="@+id/personalDataCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_12"
+                android:layout_marginTop="@dimen/space_16"
+                android:background="@drawable/bg_card"
+                android:orientation="vertical"
+                android:padding="@dimen/space_16">
+            <TextView style="@style/Text.MyFitAI.Section" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Dati personali" />
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/nameLayout"
+                style="@style/Widget.MyFitAI.Input.Outlined"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                 android:layout_marginTop="@dimen/space_12"
                 android:hint="Nome profilo">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/nameInput"
@@ -73,10 +84,11 @@
                     android:layout_height="wrap_content"
                     android:inputType="textPersonName"
                     android:maxLines="1" />
-            </com.google.android.material.textfield.TextInputLayout>
+             </com.google.android.material.textfield.TextInputLayout>
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/birthDateLayout"
+             <com.google.android.material.textfield.TextInputLayout
+                 android:id="@+id/birthDateLayout"
+                 style="@style/Widget.MyFitAI.Input.DateTime"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_12"
@@ -92,9 +104,9 @@
                     android:inputType="none" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/sexLayout"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+             <com.google.android.material.textfield.TextInputLayout
+                 android:id="@+id/sexLayout"
+                 style="@style/Widget.MyFitAI.Input.Dropdown"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_12"
@@ -106,14 +118,16 @@
                     android:inputType="none" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <LinearLayout
+             <LinearLayout
+                 android:id="@+id/goalsActivityCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_12"
-                android:orientation="horizontal">
+                 android:orientation="horizontal">
 
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/heightLayout"
+                 <com.google.android.material.textfield.TextInputLayout
+                     android:id="@+id/heightLayout"
+                     style="@style/Widget.MyFitAI.Input.Outlined"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -128,8 +142,9 @@
 
                 <Space android:layout_width="@dimen/space_12" android:layout_height="1dp" />
 
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/weightLayout"
+                 <com.google.android.material.textfield.TextInputLayout
+                     android:id="@+id/weightLayout"
+                     style="@style/Widget.MyFitAI.Input.Outlined"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -141,18 +156,27 @@
                         android:inputType="numberDecimal"
                         android:maxLines="1" />
                 </com.google.android.material.textfield.TextInputLayout>
+             </LinearLayout>
             </LinearLayout>
 
-            <com.google.android.material.textview.MaterialTextView
+             <LinearLayout
+                 android:id="@+id/dayScheduleCard"
+                 android:layout_width="match_parent"
+                 android:layout_height="wrap_content"
+                 android:layout_marginTop="@dimen/space_16"
+                 android:background="@drawable/bg_card"
+                 android:orientation="vertical"
+                 android:padding="@dimen/space_16">
+             <com.google.android.material.textview.MaterialTextView
                 style="@style/Text.MyFitAI.Section"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_24"
+                 android:layout_marginTop="0dp"
                 android:text="Obiettivo e attività" />
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/goalLayout"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+             <com.google.android.material.textfield.TextInputLayout
+                 android:id="@+id/goalLayout"
+                 style="@style/Widget.MyFitAI.Input.Dropdown"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_12"
@@ -160,21 +184,30 @@
                 <AutoCompleteTextView android:id="@+id/goalInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="none" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/activityLayout"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+             <com.google.android.material.textfield.TextInputLayout
+                 android:id="@+id/activityLayout"
+                 style="@style/Widget.MyFitAI.Input.Dropdown"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_12"
                 android:hint="Livello di attività">
                 <AutoCompleteTextView android:id="@+id/activityInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="none" />
-            </com.google.android.material.textfield.TextInputLayout>
+             </com.google.android.material.textfield.TextInputLayout>
+             </LinearLayout>
 
-            <com.google.android.material.textview.MaterialTextView
+             <LinearLayout
+                 android:id="@+id/foodPreferencesCard"
+                 android:layout_width="match_parent"
+                 android:layout_height="wrap_content"
+                 android:layout_marginTop="@dimen/space_16"
+                 android:background="@drawable/bg_card"
+                 android:orientation="vertical"
+                 android:padding="@dimen/space_16">
+             <com.google.android.material.textview.MaterialTextView
                 style="@style/Text.MyFitAI.Section"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_24"
+                 android:layout_marginTop="0dp"
                 android:text="Giornata" />
 
             <LinearLayout
@@ -182,23 +215,32 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_12"
                 android:orientation="horizontal">
-                <com.google.android.material.textfield.TextInputLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:hint="Sveglia">
+                 <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.Input.DateTime" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:hint="Sveglia">
                     <com.google.android.material.textfield.TextInputEditText android:id="@+id/wakeTimeInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:focusable="false" android:clickable="true" android:inputType="none" />
                 </com.google.android.material.textfield.TextInputLayout>
                 <Space android:layout_width="@dimen/space_12" android:layout_height="1dp" />
-                <com.google.android.material.textfield.TextInputLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:hint="Sonno">
+                 <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.Input.DateTime" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:hint="Sonno">
                     <com.google.android.material.textfield.TextInputEditText android:id="@+id/sleepTimeInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:focusable="false" android:clickable="true" android:inputType="none" />
                 </com.google.android.material.textfield.TextInputLayout>
-            </LinearLayout>
+             </LinearLayout>
+             </LinearLayout>
 
-            <com.google.android.material.textview.MaterialTextView
+             <LinearLayout
+                 android:layout_width="match_parent"
+                 android:layout_height="wrap_content"
+                 android:layout_marginTop="@dimen/space_16"
+                 android:background="@drawable/bg_card"
+                 android:orientation="vertical"
+                 android:padding="@dimen/space_16">
+             <com.google.android.material.textview.MaterialTextView
                 style="@style/Text.MyFitAI.Section"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_24"
+                 android:layout_marginTop="0dp"
                 android:text="Preferenze alimentari" />
 
-            <com.google.android.material.textfield.TextInputLayout
+             <com.google.android.material.textfield.TextInputLayout
+                 style="@style/Widget.MyFitAI.Input.Outlined"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_12"
@@ -210,7 +252,8 @@
                     android:gravity="top|start"
                     android:inputType="textMultiLine|textCapSentences"
                     android:maxLines="6" />
-            </com.google.android.material.textfield.TextInputLayout>
+             </com.google.android.material.textfield.TextInputLayout>
+             </LinearLayout>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/saveProfileButton"

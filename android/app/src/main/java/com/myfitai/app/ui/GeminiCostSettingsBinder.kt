@@ -7,6 +7,8 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
+import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.LifecycleOwner
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.myfitai.app.R
 import com.myfitai.app.ai.AiModelConfig
@@ -19,8 +21,8 @@ import java.math.BigDecimal
 import java.math.RoundingMode
 
 object GeminiCostSettingsBinder {
-    fun bind(activity: SettingsActivity, card: LinearLayout, settings: AiSettingsStore) {
-        OpenAiCostSettingsBinder.bind(activity, card)
+    fun bind(activity: AppCompatActivity, card: LinearLayout, settings: AiSettingsStore, lifecycleOwner: LifecycleOwner = activity) {
+        OpenAiCostSettingsBinder.bind(activity, card, lifecycleOwner)
         AiModelSelectionBinder.bind(activity, card, settings)
         val tracker = GeminiUsageTracker(activity)
         val pricingStore = GeminiPricingStore(activity)
@@ -46,21 +48,21 @@ object GeminiCostSettingsBinder {
 
         fun currentModel(): String = settings.selectedGeminiModel
         fun refresh() {
-            activity.lifecycleScope.launch {
+            lifecycleOwner.lifecycleScope.launch {
                 val summary = runCatching { tracker.summary() }.getOrNull()
                 val pricing = pricingStore.pricingFor(currentModel())
                 value.text = if (summary == null) "Spesa non disponibile · ${pricingLabel(pricing)}"
                 else "Oggi ${money(summary.todayUsd)} · mese ${money(summary.monthUsd)} · totale ${money(summary.totalUsd)}\n${summary.requestCount} richieste · ${pricingLabel(pricing)}"
             }
         }
-        row.setOnClickListener { showCostDialog(activity, tracker, pricingStore, currentModel(), ::refresh) }
+        row.setOnClickListener { showCostDialog(activity, lifecycleOwner, tracker, pricingStore, currentModel(), ::refresh) }
         card.addView(row, 0)
         card.addView(View(activity).apply { setBackgroundColor(activity.getColor(R.color.divider)) }, 1, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1).apply { bottomMargin = dp(activity, 12) })
         refresh()
     }
 
-    private fun showCostDialog(activity: SettingsActivity, tracker: GeminiUsageTracker, pricingStore: GeminiPricingStore, model: String, refresh: () -> Unit) {
-        activity.lifecycleScope.launch {
+    private fun showCostDialog(activity: AppCompatActivity, lifecycleOwner: LifecycleOwner, tracker: GeminiUsageTracker, pricingStore: GeminiPricingStore, model: String, refresh: () -> Unit) {
+        lifecycleOwner.lifecycleScope.launch {
             val pricing = pricingStore.pricingFor(model)
             val summary = runCatching { tracker.summary() }.getOrNull()
             val message = buildString {
@@ -86,7 +88,7 @@ object GeminiCostSettingsBinder {
         }
     }
 
-    private fun showPricingEditor(activity: SettingsActivity, pricingStore: GeminiPricingStore, pricing: GeminiPricing, refresh: () -> Unit) {
+    private fun showPricingEditor(activity: AppCompatActivity, pricingStore: GeminiPricingStore, pricing: GeminiPricing, refresh: () -> Unit) {
         val container = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(activity, 24), dp(activity, 8), dp(activity, 24), 0) }
         val input = decimalField(activity, "Input USD / 1M token", pricing.inputUsdPerMillion)
         val output = decimalField(activity, "Output + thinking USD / 1M token", pricing.outputUsdPerMillion)
@@ -103,9 +105,9 @@ object GeminiCostSettingsBinder {
         dialog.show()
     }
 
-    private fun decimalField(activity: SettingsActivity, hint: String, value: BigDecimal) = EditText(activity).apply { this.hint = hint; inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL; setText(value.stripTrailingZeros().toPlainString()) }
+    private fun decimalField(activity: AppCompatActivity, hint: String, value: BigDecimal) = EditText(activity).apply { this.hint = hint; inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL; setText(value.stripTrailingZeros().toPlainString()) }
     private fun parseDecimal(raw: String?) = raw?.trim()?.replace(',', '.')?.toBigDecimalOrNull()
     private fun pricingLabel(p: GeminiPricing) = "${AiModelConfig.displayName(p.model)} · ${if (p.source == GeminiPricingStore.SOURCE_MANUAL) "prezzi manuali" else "listino ${p.effectiveDate}"}"
     private fun money(value: BigDecimal) = "$" + value.setScale(4, RoundingMode.HALF_UP).toPlainString()
-    private fun dp(activity: SettingsActivity, value: Int) = (value * activity.resources.displayMetrics.density).toInt()
+    private fun dp(activity: AppCompatActivity, value: Int) = (value * activity.resources.displayMetrics.density).toInt()
 }

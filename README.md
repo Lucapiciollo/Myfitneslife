@@ -44,7 +44,7 @@ Tutti gli agenti sono vincolati al solo dominio nutrizionale. Dati corporei, BIA
 ## Nutrizione e piano alimentare
 Regole principali:
 - target kcal e macro calcolati localmente;
-- tolleranza ufficiale ±3%;
+- tolleranza ufficiale dal target -3% al target, mai sopra il target;
 - piani immutabili/versionati;
 - nessuna compensazione punitiva dopo uno sgarro;
 - modifica solo dei pasti futuri;

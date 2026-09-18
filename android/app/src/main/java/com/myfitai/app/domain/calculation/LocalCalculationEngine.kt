@@ -47,12 +47,15 @@ object LocalCalculationEngine {
         val activityLevel: ActivityLevel?,
         val goal: Goal?,
         val waistCm: Double? = null,
+        val exerciseKcal: Int = 0,
     )
 
     data class Result(
         val bmi: Double?,
         val bmrKcal: Double?,
+        val baseTdeeKcal: Double? = null,
         val tdeeKcal: Double?,
+        val exerciseKcal: Int = 0,
         val targetKcal: Double?,
         val proteinG: Double?,
         val fatG: Double?,
@@ -91,7 +94,8 @@ object LocalCalculationEngine {
 
         val bmrWithMethod = calculateBmr(input, weight, height)
         val bmr = bmrWithMethod?.first
-        val tdee = if (bmr != null && input.activityLevel != null) bmr * input.activityLevel.multiplier else null
+        val baseTdee = if (bmr != null && input.activityLevel != null) bmr * input.activityLevel.multiplier else null
+        val tdee = baseTdee?.plus(input.exerciseKcal.coerceAtLeast(0))
         val targetKcal = if (tdee != null && input.goal != null) tdee * goalEnergyFactor(input.goal) else null
 
         val macros = if (targetKcal != null && weight != null && input.goal != null) {
@@ -105,7 +109,9 @@ object LocalCalculationEngine {
         return Result(
             bmi = bmi,
             bmrKcal = bmr,
+            baseTdeeKcal = baseTdee,
             tdeeKcal = tdee,
+            exerciseKcal = input.exerciseKcal.coerceAtLeast(0),
             targetKcal = targetKcal,
             proteinG = macros?.proteinG,
             fatG = macros?.fatG,

@@ -67,9 +67,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_12"
-                android:background="@drawable/bg_card"
-                android:orientation="vertical"
-                android:paddingHorizontal="@dimen/space_16" />
+                android:orientation="vertical" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/exportButton"

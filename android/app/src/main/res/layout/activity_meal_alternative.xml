@@ -69,7 +69,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="Le alternative mantengono lo stesso tipo/orario e le stesse calorie del pasto."
+                        android:text="Stessa categoria e stesso orario. Le calorie possono essere uguali o inferiori; i macro vengono ricalcolati."
                         android:textColor="@color/text_secondary"
                         android:textSize="13sp" />
                 </LinearLayout>

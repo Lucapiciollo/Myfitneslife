@@ -1,5 +1,6 @@
 package com.myfitai.app.domain.food
 
+import com.myfitai.app.domain.calculation.NutritionBusinessValidator
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -50,5 +51,58 @@ class NutritionPlanCompactContractTest {
         """.trimIndent()
 
         assertTrue(runCatching { NutritionPlanCompactContract.parsePayload(payload) }.isFailure)
+    }
+
+    @Test
+    fun providerDayTotals_areNormalizedFromMealsAndSupplements() {
+        val date = LocalDate.of(2026, 9, 14).toEpochDay()
+        val response = NutritionPlanCompactContract.parseEnvelope(JSONObject().put("data", """
+            MFP1
+            W|$date
+            D|$date|1|1|1|1
+            M|BREAKFAST|Pasto|480|500|35|62|12|Prep
+            I|Yogurt|200|g|200 g|NET|HIGH|DAIRY
+            V|1|ok
+        """.trimIndent()).toString(), mealsPerDay = 1)
+
+        val normalized = NutritionPlanContract.normalizeDerivedDayTotals(response)
+
+        assertEquals(500, normalized.days.single().totalKcal)
+        assertEquals(35f, normalized.days.single().proteinG)
+        assertEquals(62f, normalized.days.single().carbsG)
+        assertEquals(12f, normalized.days.single().fatG)
+    }
+
+    @Test
+    fun rangeRecord_isAcceptedForCurrentWeekSubset() {
+        val monday = LocalDate.of(2026, 9, 14).toEpochDay()
+        val payload = """
+            MFP1
+            W|$monday
+            RANGE|${monday + 2}|${monday + 2}|1
+            D|${monday + 2}|500|35|62|12
+            M|BREAKFAST|Pasto 1|480|100|7|12.4|2.4|Prep
+            I|Yogurt|40|g|40 g|NET|HIGH|DAIRY
+            M|SNACK|Pasto 2|600|100|7|12.4|2.4|Prep
+            I|Yogurt|40|g|40 g|NET|HIGH|DAIRY
+            M|LUNCH|Pasto 3|780|100|7|12.4|2.4|Prep
+            I|Yogurt|40|g|40 g|NET|HIGH|DAIRY
+            M|SNACK|Pasto 4|960|100|7|12.4|2.4|Prep
+            I|Yogurt|40|g|40 g|NET|HIGH|DAIRY
+            M|DINNER|Pasto 5|1200|100|7|12.4|2.4|Prep
+            I|Yogurt|40|g|40 g|NET|HIGH|DAIRY
+            V|1|ok
+        """.trimIndent()
+        val parsed = NutritionPlanCompactContract.parseEnvelope(JSONObject().put("data", payload).toString(), mealsPerDay = 5)
+
+        val validation = NutritionPlanContract.validateBusiness(
+            NutritionPlanContract.normalizeDerivedDayTotals(parsed),
+            LocalDate.ofEpochDay(monday),
+            NutritionBusinessValidator.Targets(500.0, 35.0, 62.0, 12.0),
+            mealsPerDay = 5,
+            expectedStartEpochDay = monday + 2,
+            expectedEndEpochDay = monday + 2,
+        )
+        assertTrue("range validation failed: ${validation.exceptionOrNull()?.message}", validation.isSuccess)
     }
 }

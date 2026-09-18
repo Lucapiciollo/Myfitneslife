@@ -22,9 +22,53 @@
                 <TextView android:id="@+id/backButton" android:layout_width="40dp" android:layout_height="40dp" android:gravity="center" android:text="‹" android:textSize="30sp" android:textColor="@color/text_primary" />
                 <TextView android:id="@+id/title" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:gravity="center" android:text="Impostazioni" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="17sp" />
                 <Space android:layout_width="40dp" android:layout_height="1dp" />
-            </LinearLayout>
+              </LinearLayout>
 
-             <com.myfitai.app.ui.widgets.SectionHeaderView
+              <com.myfitai.app.ui.widgets.SectionHeaderView
+                  android:id="@+id/nutritionAutomationSectionHeader"
+                  android:layout_width="match_parent"
+                  android:layout_height="wrap_content"
+                  android:layout_marginTop="@dimen/space_20"
+                  android:text="Piano alimentare" />
+
+              <LinearLayout
+                  android:id="@+id/nutritionAutomationCard"
+                  android:layout_width="match_parent"
+                  android:layout_height="wrap_content"
+                  android:layout_marginTop="@dimen/space_8"
+                  android:background="@drawable/bg_card"
+                  android:orientation="vertical"
+                  android:paddingHorizontal="@dimen/space_16">
+                  <LinearLayout
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:gravity="center_vertical"
+                      android:paddingVertical="@dimen/space_12">
+                      <LinearLayout
+                          android:layout_width="0dp"
+                          android:layout_height="wrap_content"
+                          android:layout_weight="1"
+                          android:orientation="vertical">
+                          <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Generazione automatica" android:textColor="@color/text_primary" android:textSize="15sp" android:textStyle="bold" />
+                          <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="Disattivata: il piano viene generato solo quando lo richiedi." android:textColor="@color/text_secondary" android:textSize="12sp" />
+                      </LinearLayout>
+                      <com.google.android.material.materialswitch.MaterialSwitch
+                          android:id="@+id/nutritionAutoGenerationSwitch"
+                          android:layout_width="wrap_content"
+                          android:layout_height="wrap_content"
+                          app:thumbTint="@color/white"
+                          app:trackTint="@color/accent_green" />
+                  </LinearLayout>
+                  <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowNutritionCadence" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_gear" app:srLabel="Frequenza generazione" />
+                  <TextView android:id="@+id/nutritionCadenceValue" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingStart="@dimen/space_16" android:paddingBottom="@dimen/space_8" android:textColor="@color/text_secondary" android:textSize="12sp" />
+                  <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowNutritionMealTimes" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_clock" app:srLabel="Orari dei pasti" />
+                  <TextView android:id="@+id/nutritionMealTimesValue" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingStart="@dimen/space_16" android:paddingBottom="@dimen/space_12" android:textColor="@color/text_secondary" android:textSize="12sp" />
+                  <com.google.android.material.button.MaterialButton android:id="@+id/analyzeNutritionPathButton" style="@style/Widget.MyFitAI.Button.Secondary" android:layout_width="match_parent" android:layout_height="52dp" android:layout_marginTop="@dimen/space_8" android:layout_marginBottom="@dimen/space_4" android:text="Suggerisci il percorso nutrizionale" android:textAllCaps="false" />
+              </LinearLayout>
+
+              <com.myfitai.app.ui.widgets.SectionHeaderView
                  android:id="@+id/generalSectionHeader"
                  android:layout_width="match_parent"
                  android:layout_height="wrap_content"
@@ -273,5 +317,4 @@
          </LinearLayout>
     </ScrollView>
 
-    <include layout="@layout/view_bottom_navigation" />
 </LinearLayout>

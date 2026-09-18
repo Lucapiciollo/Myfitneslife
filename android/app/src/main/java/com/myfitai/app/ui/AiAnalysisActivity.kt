@@ -62,6 +62,6 @@ class AiAnalysisActivity : BaseShellActivity() {
     }
 
     private fun StringBuilder.metric(label: String, value: Double?, unit: String) {
-        if (value != null) append("$label: ${String.format(Locale.ITALIAN, "%+.2f", value)} $unit.")
+        if (value != null) append("$label: ${String.format(Locale.ITALIAN, "%+.1f", value)} $unit.")
     }
 }

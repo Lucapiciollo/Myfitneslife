@@ -18,6 +18,10 @@ import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.data.local.entity.BodyMeasurementEntity
 import com.myfitai.app.domain.body.BodyProportionEngine
+import com.myfitai.app.data.local.entity.AiJobResultEntity
+import com.myfitai.app.domain.ai.AiJobState
+import com.myfitai.app.domain.ai.AiJobType
+import com.myfitai.app.domain.ai.BodyProportionsAiJobHandler
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.ui.body.BodyMeasurementsViewModel
 import com.myfitai.app.ui.widgets.BodyMeasurementTrendView
@@ -244,7 +248,7 @@ class BodyMeasuresActivity : BaseShellActivity() {
             report.asymmetries.forEach { a ->
                 add("${a.label}: ${formatPercent(a.percent)}${a.largerSide?.let { " · lato $it maggiore" } ?: ""}")
             }
-            report.ratios.forEach { r -> add("${r.label}: ${String.format(Locale.ITALIAN, "%.2f", r.value)}") }
+            report.ratios.forEach { r -> add("${r.label}: ${String.format(Locale.ITALIAN, "%.1f", r.value)}") }
         }
         findViewById<TextView>(proportionDetailsId).text = if (details.isEmpty()) {
             "Inserisci misure bilaterali e circonferenze per ottenere rapporti più completi."
@@ -259,40 +263,55 @@ class BodyMeasuresActivity : BaseShellActivity() {
         confirmAiRequest("L'interpretazione IA delle proporzioni corporee") {
             button.isEnabled = false
             button.text = "Analisi in corso…"
-            lifecycleScope.launch {
-                runCatching { data.bodyProportionAnalysisService.analyze(report) }
-                    .onSuccess { result ->
-                        val message = buildString {
-                            appendLine(result.summary)
-                            if (result.observations.isNotEmpty()) {
-                                appendLine()
-                                appendLine("Osservazioni")
-                                result.observations.forEach { appendLine("• $it") }
-                            }
-                            if (result.monitorNext.isNotEmpty()) {
-                                appendLine()
-                                appendLine("Da monitorare")
-                                result.monitorNext.forEach { appendLine("• $it") }
-                            }
-                        }.trim()
-                        MaterialAlertDialogBuilder(this@BodyMeasuresActivity)
-                            .setTitle("Analisi proporzioni")
-                            .setMessage(message)
-                            .setPositiveButton("Chiudi", null)
-                            .show()
+            val profileId = data.activeProfileStore.currentIdOrNull() ?: return@confirmAiRequest
+            val jobKey = latestProportionJobKey()
+            data.aiJobScheduler.enqueue(AiJobType.BODY_PROPORTIONS, profileId, jobKey)
+            observeProportionJob(button, profileId, jobKey)
+        }
+    }
+
+    private fun observeProportionJob(button: MaterialButton, profileId: Long, jobKey: String) {
+        lifecycleScope.launch {
+            data.aiJobScheduler.observe(AiJobType.BODY_PROPORTIONS, profileId, jobKey).collect { state ->
+                when (state) {
+                    AiJobState.Idle -> Unit
+                    AiJobState.Running -> Unit
+                    is AiJobState.Succeeded -> {
+                        data.aiJobScheduler.consume(state.id)
+                        button.isEnabled = true
+                        button.text = "Interpreta con IA"
+                        val row = data.aiJobResultRepository.find(profileId, AiJobType.BODY_PROPORTIONS, jobKey)
+                        row?.payloadJson?.let { showProportionInterpretation(BodyProportionsAiJobHandler.decode(it)) }
                     }
-                    .onFailure {
-                        Toast.makeText(
-                            this@BodyMeasuresActivity,
-                            "Analisi IA non disponibile. I calcoli locali restano validi.",
-                            Toast.LENGTH_LONG,
-                        ).show()
+                    is AiJobState.Failed -> {
+                        data.aiJobScheduler.consume(state.id)
+                        button.isEnabled = true
+                        button.text = "Interpreta con IA"
+                        Toast.makeText(this@BodyMeasuresActivity, state.message, Toast.LENGTH_LONG).show()
                     }
-                button.isEnabled = true
-                button.text = "Interpreta con IA"
+                }
             }
         }
     }
+
+    private fun showProportionInterpretation(result: com.myfitai.app.domain.body.BodyProportionAnalysisService.Interpretation) {
+        val message = buildString {
+            appendLine(result.summary)
+            if (result.observations.isNotEmpty()) {
+                appendLine()
+                appendLine("Osservazioni")
+                result.observations.forEach { appendLine("• $it") }
+            }
+            if (result.monitorNext.isNotEmpty()) {
+                appendLine()
+                appendLine("Da monitorare")
+                result.monitorNext.forEach { appendLine("• $it") }
+            }
+        }.trim()
+        MaterialAlertDialogBuilder(this).setTitle("Analisi proporzioni").setMessage(message).setPositiveButton("Chiudi", null).show()
+    }
+
+    private fun latestProportionJobKey(): String = measurements.maxOfOrNull { it.measuredAtEpochMillis }?.toString() ?: "none"
 
     private fun renderTrend() {
         findViewById<TextView>(R.id.trendMetricLabel).text = selectedMetric.label
@@ -447,6 +466,7 @@ class BodyMeasuresActivity : BaseShellActivity() {
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     companion object {
+        const val EXTRA_JOB_KEY = "body_proportions_job_key"
         const val EXTRA_OPEN_HISTORY = "open_body_history"
         private const val PROPORTION_CARD_TAG = "body_proportion_card"
         private var proportionStatusId: Int = View.NO_ID

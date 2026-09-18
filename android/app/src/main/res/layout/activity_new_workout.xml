@@ -49,7 +49,7 @@
             android:orientation="horizontal">
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/dateLayout"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                 style="@style/Widget.MyFitAI.Input.DateTime"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -65,7 +65,7 @@
             <Space android:layout_width="@dimen/space_12" android:layout_height="1dp" />
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/timeLayout"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                 style="@style/Widget.MyFitAI.Input.DateTime"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -82,7 +82,7 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/typeLayout"
-            style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+             style="@style/Widget.MyFitAI.Input.Dropdown"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/space_12"
@@ -96,7 +96,7 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/titleLayout"
-            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+             style="@style/Widget.MyFitAI.Input.Outlined"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/space_12"
@@ -110,7 +110,7 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/durationLayout"
-            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+             style="@style/Widget.MyFitAI.Input.Outlined"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/space_12"
@@ -123,8 +123,22 @@
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/intensityLayout"
+             style="@style/Widget.MyFitAI.Input.Dropdown"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="0dp"
+            android:hint="Intensità percepita (1-10)">
+            <AutoCompleteTextView
+                android:id="@+id/intensityInput"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="none" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/notesLayout"
-            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+             style="@style/Widget.MyFitAI.Input.Outlined"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/space_12"

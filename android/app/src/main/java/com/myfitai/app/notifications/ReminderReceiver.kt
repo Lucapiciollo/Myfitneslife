@@ -15,6 +15,9 @@ import androidx.core.content.ContextCompat
 import com.myfitai.app.R
 import com.myfitai.app.ui.MealDetailActivity
 import com.myfitai.app.ui.WeeklyReviewActivity
+import com.myfitai.app.ui.FoodPlanActivity
+import com.myfitai.app.ui.TabHostActivity
+import com.myfitai.app.navigation.BottomNavBinder
 
 class ReminderReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -111,14 +114,13 @@ class ReminderReceiver : BroadcastReceiver() {
     private fun canNotify(context: Context): Boolean =
         Build.VERSION.SDK_INT < 33 || ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
 
-    private fun ensureChannels(context: Context) {
-        if (Build.VERSION.SDK_INT < 26) return
-        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        manager.createNotificationChannel(NotificationChannel(CHANNEL_MEALS, "Promemoria pasti", NotificationManager.IMPORTANCE_HIGH))
-        manager.createNotificationChannel(NotificationChannel(CHANNEL_REVIEW, "Review settimanale", NotificationManager.IMPORTANCE_DEFAULT))
-    }
-
     companion object {
+        fun ensureChannels(context: Context) {
+            if (Build.VERSION.SDK_INT < 26) return
+            val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            manager.createNotificationChannel(NotificationChannel(CHANNEL_MEALS, "Promemoria pasti", NotificationManager.IMPORTANCE_HIGH))
+            manager.createNotificationChannel(NotificationChannel(CHANNEL_REVIEW, "Review settimanale", NotificationManager.IMPORTANCE_DEFAULT))
+        }
         const val ACTION_MEAL = "com.myfitai.app.action.MEAL_REMINDER"
         const val ACTION_SNOOZE = "com.myfitai.app.action.SNOOZE_MEAL"
         const val ACTION_WEEKLY_REVIEW = "com.myfitai.app.action.WEEKLY_REVIEW"

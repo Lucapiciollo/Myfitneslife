@@ -10,6 +10,7 @@ import com.myfitai.app.data.local.entity.WorkoutEntity
 import com.myfitai.app.data.local.entity.FoodConsumptionEntity
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.domain.food.FoodConsumptionService
+import com.myfitai.app.domain.calculation.ProfileCalculationService
 import com.myfitai.app.domain.food.FoodConsumptionStatus
 import com.myfitai.app.domain.food.FoodMeal
 import com.myfitai.app.domain.time.TimeProvider
@@ -434,6 +435,64 @@ class MyFitAiDatabaseTest {
         assertEquals(FoodConsumptionStatus.SKIPPED.name, skipped.status)
         service.clear(20L, "MEAL:40")
         assertEquals(null, db.foodConsumptionDao().getForItem(profileId, 20L, "MEAL:40"))
+    }
+
+    @Test
+    fun workout_createsDefaultEnergy_andExternalUpdateIsReadableByDay() = runBlocking {
+        val profileId = db.userProfileDao().insert(profile("Allenamento energetico"))
+        val workouts = com.myfitai.app.data.repository.WorkoutRepository(db)
+        val energy = com.myfitai.app.data.repository.WorkoutEnergyExpenditureRepository(db)
+        val workoutId = workouts.insert(workout(profileId, 86_400_000L, "Pesi"), nowEpochMillis = 2_000L)
+
+        val default = energy.forDay(profileId, java.time.Instant.ofEpochMilli(86_400_000L).atZone(java.time.ZoneId.systemDefault()).toLocalDate().toEpochDay())
+        assertEquals(1, default.size)
+        assertEquals(500, default.single().caloriesKcal)
+        assertEquals("DEFAULT", default.single().source)
+
+        energy.updateCalories(workoutId, 640, updatedAtEpochMillis = 3_000L)
+        val updated = energy.getByWorkoutId(workoutId)!!
+        assertEquals(640, updated.caloriesKcal)
+        assertEquals("EXTERNAL_APP", updated.source)
+        assertEquals(3_000L, updated.updatedAtEpochMillis)
+    }
+
+    @Test
+    fun profileCalculation_readsExerciseEnergyFromLedgerAndAddsItToTdee() = runBlocking {
+        val now = 86_400_000L
+        val profileId = db.userProfileDao().insert(UserProfileEntity(
+            name = "Calcolo energetico",
+            birthDateEpochDay = java.time.Instant.ofEpochMilli(now).atZone(java.time.ZoneId.systemDefault()).toLocalDate().minusYears(40).toEpochDay(),
+            heightCm = 180f,
+            currentWeightKg = 80f,
+            goal = "Mantenimento",
+            activityLevel = "Sedentario",
+            wakeTimeMinutes = null,
+            sleepTimeMinutes = null,
+            dietaryPreferencesJson = null,
+            photoPath = null,
+            createdAtEpochMillis = now,
+            updatedAtEpochMillis = now,
+            biologicalSex = "Maschio",
+            initialWeightKg = 80f,
+        ))
+        val workoutRepository = com.myfitai.app.data.repository.WorkoutRepository(db)
+        val energyRepository = com.myfitai.app.data.repository.WorkoutEnergyExpenditureRepository(db)
+        val workoutId = workoutRepository.insert(workout(profileId, now, "Pesi"), nowEpochMillis = now)
+        energyRepository.updateCalories(workoutId, 640, now + 1)
+        val store = ActiveProfileStore(ApplicationProvider.getApplicationContext())
+        store.selectProfile(profileId)
+
+        val snapshot = ProfileCalculationService(
+            profiles = com.myfitai.app.data.repository.UserProfileRepository(db),
+            bia = com.myfitai.app.data.repository.BiaRepository(db),
+            bodyMeasurements = com.myfitai.app.data.repository.BodyMeasurementRepository(db),
+            activeProfileStore = store,
+            exerciseEnergy = energyRepository,
+        ).profileSnapshot(profileId, java.time.Instant.ofEpochMilli(now).atZone(java.time.ZoneId.systemDefault()).toLocalDate())!!
+
+        assertEquals(640, snapshot.calculation.exerciseKcal)
+        assertEquals(2076.0, snapshot.calculation.baseTdeeKcal!!, 0.1)
+        assertEquals(2716.0, snapshot.calculation.tdeeKcal!!, 0.1)
     }
 
     private fun profile(name: String): UserProfileEntity {

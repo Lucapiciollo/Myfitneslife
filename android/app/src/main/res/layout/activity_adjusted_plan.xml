@@ -50,6 +50,17 @@
                 android:textSize="15sp" />
 
             <TextView
+                android:id="@+id/planStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_8"
+                android:padding="@dimen/space_12"
+                android:background="@drawable/bg_positive"
+                android:textColor="@color/white"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
                 android:id="@+id/resultSummary"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -58,6 +69,17 @@
                 android:background="@drawable/bg_positive"
                 android:textColor="@color/white"
                 android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/recoveryResult"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_12"
+                android:padding="@dimen/space_12"
+                android:background="@drawable/bg_card"
+                android:textColor="@color/text_secondary"
+                android:textSize="13sp"
+                android:visibility="gone" />
 
             <TextView
                 android:id="@+id/modifiedHeader"

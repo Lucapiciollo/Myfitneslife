@@ -82,7 +82,33 @@ data class WorkoutEntity(
     val title: String,
     val durationMinutes: Int?,
     val isRestDay: Boolean,
+    val perceivedIntensity: Int? = null,
     val notes: String? = null,
+)
+
+@Entity(
+    tableName = "workout_energy_expenditures",
+    foreignKeys = [ForeignKey(
+        entity = WorkoutEntity::class,
+        parentColumns = ["id"],
+        childColumns = ["workoutId"],
+        onDelete = ForeignKey.CASCADE,
+    )],
+    indices = [
+        Index("profileId"),
+        Index("workoutId", unique = true),
+        Index(value = ["profileId", "exerciseDateEpochDay"]),
+    ],
+)
+data class WorkoutEnergyExpenditureEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val profileId: Long,
+    val workoutId: Long,
+    val exerciseDateEpochDay: Long,
+    val caloriesKcal: Int,
+    val source: String,
+    val createdAtEpochMillis: Long,
+    val updatedAtEpochMillis: Long,
 )
 
 @Entity(
@@ -118,6 +144,7 @@ data class MealPlanVersionEntity(
     val targetProteinG: Float?,
     val targetCarbsG: Float?,
     val targetFatG: Float?,
+    val appValidationJson: String? = null,
 )
 
 @Entity(

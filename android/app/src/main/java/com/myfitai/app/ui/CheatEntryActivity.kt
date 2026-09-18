@@ -43,9 +43,21 @@ import java.util.Locale
 
 class CheatEntryActivity : BaseShellActivity() {
 
+    companion object {
+        const val EXTRA_AI_JOB_KEY = "cheat_ai_job_key"
+        const val EXTRA_AI_JOB_TYPE = "cheat_ai_job_type"
+    }
+
     private val data by lazy { AppDataContainer.get(this) }
     private val viewModel: CheatEntryViewModel by viewModels {
-        CheatEntryViewModel.Factory(data.cheatAdjustmentService, data.notificationScheduler)
+        CheatEntryViewModel.Factory(
+            data.cheatAdjustmentService,
+            data.notificationScheduler,
+            data.activeProfileStore,
+            data.aiJobScheduler,
+            data.aiJobResultRepository,
+            data.aiImageJobStore,
+        )
     }
 
     private var selectedDate: LocalDate = LocalDate.now()
@@ -53,6 +65,7 @@ class CheatEntryActivity : BaseShellActivity() {
     private var labelImage: AiImageInput? = null
     private var pendingCameraFile: File? = null
     private var labelProcessing = false
+    private var planGateChecked = false
     private val labelTempStore by lazy { LabelImageTempStore(this) }
 
     private val galleryLauncher = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
@@ -69,6 +82,25 @@ class CheatEntryActivity : BaseShellActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_cheat_entry)
         bindBack()
+
+        lifecycleScope.launch {
+            val weekStart = selectedDate.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY))
+            val profileId = data.activeProfileStore.currentIdOrNull()
+            val hasPlan = profileId != null && withContext(Dispatchers.IO) {
+                data.mealPlanRepository.loadLatestSnapshot(profileId, weekStart.toEpochDay()) != null
+            }
+            if (!hasPlan) {
+                startActivity(Intent(this@CheatEntryActivity, TabHostActivity::class.java).apply {
+                    putExtra(com.myfitai.app.navigation.BottomNavBinder.EXTRA_INITIAL_TAB, com.myfitai.app.navigation.BottomNavBinder.Tab.FOOD.name)
+                    putExtra(FoodPlanActivity.EXTRA_WEEK_START_EPOCH_DAY, weekStart.toEpochDay())
+                })
+                finish()
+                return@launch
+            }
+            planGateChecked = true
+        }
+
+        intent.getStringExtra(EXTRA_AI_JOB_KEY)?.let(viewModel::reattachToJob)
 
         findViewById<SelectableSegmentView>(R.id.modeSegment)
             .setSegments(listOf("Rapido", "Dettagliato"), selectedIndex = 0)
@@ -216,6 +248,7 @@ class CheatEntryActivity : BaseShellActivity() {
     }
 
     private fun analyze() {
+        if (!planGateChecked) return
         val input = buildInput() ?: return
         confirmAiRequest("La valutazione dello sgarro") {
             viewModel.analyze(input)
@@ -223,6 +256,7 @@ class CheatEntryActivity : BaseShellActivity() {
     }
 
     private fun confirm() {
+        if (!planGateChecked) return
         val input = buildInput() ?: return
         confirmAiRequest("La conferma dello sgarro e l'adattamento dei pasti futuri") {
             viewModel.confirm(input.copy(labelImage = null))
@@ -314,6 +348,10 @@ class CheatEntryActivity : BaseShellActivity() {
                 .putExtra(AdjustedPlanActivity.EXTRA_ESTIMATE, result.estimateSummary)
                 .putExtra(AdjustedPlanActivity.EXTRA_ADAPTED, result.adapted)
                 .putExtra(AdjustedPlanActivity.EXTRA_SUMMARY, result.adaptationSummary)
+                .putExtra(AdjustedPlanActivity.EXTRA_RECOVERY_BEFORE, result.recovery?.budgetBeforeKcal ?: 0)
+                .putExtra(AdjustedPlanActivity.EXTRA_RECOVERY_PLANNED, result.recovery?.plannedRecoveryKcal ?: 0)
+                .putExtra(AdjustedPlanActivity.EXTRA_RECOVERY_EFFECTIVE_TARGET, result.recovery?.effectiveTargetKcal ?: 0)
+                .putExtra(AdjustedPlanActivity.EXTRA_RECOVERY_AFTER, result.recovery?.budgetAfterPlannedKcal ?: 0)
                 .putStringArrayListExtra(AdjustedPlanActivity.EXTRA_MODIFIED_MEALS, ArrayList(result.modifiedMeals))
         )
         finish()

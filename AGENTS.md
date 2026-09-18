@@ -79,7 +79,7 @@ Percorsi principali:
 - `06-ai/schemas/`
 
 ## Regola validator nutrizionale
-I target sono dinamici e calcolati dall'app. Tolleranza ufficiale: ±3% su calorie e macro rispetto ai target correnti.
+I target sono dinamici e calcolati dall'app. Tolleranza ufficiale: da target -3% a target su calorie e macro rispetto ai target correnti; mai sopra il target.
 Gli LLM possono solo auto-valutarsi con `agentValidation`; il responso definitivo è `appValidation` calcolato localmente.
 
 ## Comfort digestivo e ritenzione
@@ -102,7 +102,7 @@ Applicare `06-ai/providers/shared/SEASONALITY_TIMING_RULES.md`.
 
 Ordine di priorità:
 1. sicurezza, allergie/intolleranze e dati utente;
-2. target dinamici e tolleranza ±3%;
+2. target dinamici e tolleranza target -3% .. target;
 3. timing nutrizionale e comfort digestivo;
 4. preferenze e storico;
 5. stagionalità, varietà e praticità.

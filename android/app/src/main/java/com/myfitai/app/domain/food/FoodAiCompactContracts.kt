@@ -2,8 +2,11 @@ package com.myfitai.app.domain.food
 
 import com.myfitai.app.ai.AiCompactEnvelope
 
-private fun String.f(code: String): Float = toFloatOrNull()?.takeIf { it.isFinite() } ?: error(code)
-private fun String.i(code: String): Int = toIntOrNull() ?: error(code)
+private fun String.f(code: String): Float = normalizedNumber().toFloatOrNull()?.takeIf { it.isFinite() }
+    ?: error("$code value='$this'")
+private fun String.i(code: String): Int = normalizedNumber().toIntOrNull() ?: error("$code value='$this'")
+/** Providers occasionally emit locale decimal commas in compact numeric fields. */
+private fun String.normalizedNumber(): String = trim().replace(',', '.')
 private fun String.req(code: String): String = trim().also { require(it.isNotEmpty()) { code } }
 private fun compactLines(json: String, version: String): List<String> = AiCompactEnvelope.data(json)
     .lineSequence().map { it.trim() }.filter { it.isNotEmpty() }.toList()
@@ -96,10 +99,26 @@ V|1_or_0|notes"""
         lines.drop(1).forEach { line ->
             val p = line.split('|')
             when (p.firstOrNull()) {
-                "A" -> { require(p.size == 8 && validation == null); flush(); current = AlternativeBuilder(p[1].req("MA_TITLE"), p[2].i("MA_KCAL"), p[3].f("MA_P"), p[4].f("MA_C"), p[5].f("MA_F"), p[6].trim(), p[7].trim()) }
-                "I" -> { require(p.size == 8 && current != null && validation == null); current!!.ingredients += MealAlternativeContract.Ingredient(p[1].req("MA_INAME"), p[2].f("MA_QTY"), p[3].req("MA_UNIT"), p[4].req("MA_DOSE"), p[5].trim(), p[6].trim(), p[7].trim()) }
-                "V" -> { require(p.size == 3 && validation == null && p[1] in setOf("0", "1")); flush(); validation = NutritionPlanContract.AgentValidation(p[1] == "1", p[2].trim()) }
-                else -> error("MA_RECORD_INVALID")
+                "A" -> {
+                    require(p.size == 8) { "MA_A_FIELDS_${p.size}" }
+                    flush()
+                    current = AlternativeBuilder(p[1].req("MA_TITLE"), p[2].i("MA_KCAL"), p[3].f("MA_P"), p[4].f("MA_C"), p[5].f("MA_F"), p[6].trim(), p[7].trim())
+                }
+                "I" -> {
+                    require(p.size == 8) { "MA_I_FIELDS_${p.size}" }
+                    require(current != null) { "MA_I_WITHOUT_ALTERNATIVE" }
+                    current!!.ingredients += MealAlternativeContract.Ingredient(p[1].req("MA_INAME"), p[2].f("MA_QTY"), p[3].req("MA_UNIT"), p[4].req("MA_DOSE"), p[5].trim(), p[6].trim(), p[7].trim())
+                }
+                "V" -> {
+                    require(p.size == 3) { "MA_V_FIELDS_${p.size}" }
+                    require(p[1] in setOf("0", "1")) { "MA_V_FLAG_${p[1]}" }
+                    flush()
+                    // Gemini sometimes emits the agent-validation marker after each alternative
+                    // instead of once at the end. It is advisory; keep the first marker and parse
+                    // all alternatives so app validation remains authoritative.
+                    if (validation == null) validation = NutritionPlanContract.AgentValidation(p[1] == "1", p[2].trim())
+                }
+                else -> error("MA_RECORD_INVALID_${p.firstOrNull().orEmpty()}")
             }
         }
         flush()

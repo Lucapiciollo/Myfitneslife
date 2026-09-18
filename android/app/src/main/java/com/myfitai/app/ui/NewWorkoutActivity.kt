@@ -29,7 +29,7 @@ class NewWorkoutActivity : BaseShellActivity() {
 
     private val data by lazy { AppDataContainer.get(this) }
     private val viewModel: WorkoutViewModel by viewModels {
-        WorkoutViewModel.Factory(data.workoutRepository, data.activeProfileStore)
+        WorkoutViewModel.Factory(data.workoutRepository, data.workoutEnergyExpenditureRepository, data.activeProfileStore)
     }
 
     private var selectedDate = LocalDate.now()
@@ -54,12 +54,15 @@ class NewWorkoutActivity : BaseShellActivity() {
         val typeInput = findViewById<AutoCompleteTextView>(R.id.typeInput)
         val titleInput = findViewById<TextInputEditText>(R.id.titleInput)
         val durationInput = findViewById<TextInputEditText>(R.id.durationInput)
+        val intensityInput = findViewById<AutoCompleteTextView>(R.id.intensityInput)
         val notesInput = findViewById<TextInputEditText>(R.id.notesInput)
         val restSwitch = findViewById<MaterialSwitch>(R.id.restDaySwitch)
 
         val types = listOf("Pesi", "Cardio", "Mobilità", "Sport", "Altro")
         typeInput.setAdapter(ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, types))
         typeInput.setText(types.first(), false)
+        intensityInput.setAdapter(ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, (1..10).map { "$it/10" }))
+        intensityInput.setText("5/10", false)
 
         fun renderDateTime() {
             dateInput.setText(selectedDate.format(dateFormatter))
@@ -97,6 +100,7 @@ class NewWorkoutActivity : BaseShellActivity() {
             typeInput.isEnabled = !checked
             titleInput.isEnabled = !checked
             durationInput.isEnabled = !checked
+            intensityInput.isEnabled = !checked
         }
 
         findViewById<android.view.View>(R.id.saveWorkoutButton).setOnClickListener {
@@ -106,12 +110,14 @@ class NewWorkoutActivity : BaseShellActivity() {
                 return@setOnClickListener
             }
             val startedAt = selectedDate.atTime(selectedTime).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+            val intensity = intensityInput.text?.toString()?.substringBefore('/')?.toIntOrNull()
             viewModel.save(
                 startedAtEpochMillis = startedAt,
                 type = typeInput.text?.toString().orEmpty(),
                 title = titleInput.text?.toString().orEmpty(),
                 durationMinutes = duration,
                 isRestDay = restSwitch.isChecked,
+                perceivedIntensity = intensity,
                 notes = notesInput.text?.toString(),
             )
         }

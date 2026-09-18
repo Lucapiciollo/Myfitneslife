@@ -21,4 +21,7 @@ interface AiUsageDao {
 
     @Query("SELECT * FROM ai_usage_records WHERE provider = :provider ORDER BY timestampEpochMillis DESC, id DESC LIMIT 1")
     suspend fun latest(provider: String): AiUsageRecordEntity?
+
+    @Query("SELECT * FROM ai_usage_records ORDER BY timestampEpochMillis ASC, id ASC")
+    suspend fun all(): List<AiUsageRecordEntity>
 }

@@ -53,6 +53,7 @@ class GeminiByokProvider(
     }
 
     private suspend fun generateWithModel(apiKey: String, model: String, request: AiStructuredRequest): AiRawResponse {
+        logPromptForDebug(model, request)
         val generationConfig = JSONObject().put("responseMimeType", "application/json")
         if (request.useNativeSchema) {
             val mapped = GeminiSchemaMapper.map(request.remoteSchemaJson ?: request.schemaJson)
@@ -110,6 +111,29 @@ class GeminiByokProvider(
             "schemaName=$schemaName schemaMode=$schemaMode canonicalSchemaLength=${mapped.canonicalLength} mappedSchemaLength=${mapped.mappedLength} " +
                 "maxDepth=${mapped.maxDepth} propertyCount=${mapped.propertyCount} arrayCount=${mapped.arrayCount}",
         )
+    }
+
+    /** Debug-only prompt trace for QA; never includes credentials or image bytes. */
+    private fun logPromptForDebug(model: String, request: AiStructuredRequest) {
+        if (!credentialStore.isDebuggable()) return
+        android.util.Log.d(
+            "MyFitAiGeminiPrompt",
+            "BEGIN schemaName=${request.schemaName} model=$model imageAttached=${request.image != null}",
+        )
+        logChunks("systemPrompt", request.systemPrompt)
+        logChunks("userPrompt", request.userPrompt)
+        android.util.Log.d("MyFitAiGeminiPrompt", "END schemaName=${request.schemaName}")
+    }
+
+    private fun logChunks(label: String, value: String) {
+        val chunkSize = 3000
+        if (value.isEmpty()) {
+            android.util.Log.d("MyFitAiGeminiPrompt", "$label[0]=<empty>")
+            return
+        }
+        value.chunked(chunkSize).forEachIndexed { index, chunk ->
+            android.util.Log.d("MyFitAiGeminiPrompt", "$label[$index]=$chunk")
+        }
     }
 
     private fun buildContent(request: AiStructuredRequest): JSONObject {

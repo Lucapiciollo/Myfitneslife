@@ -131,7 +131,7 @@ Each case contains ID, prerequisites, input, steps, expected result, severity an
 | ID | Prerequisites | Input / Steps | Expected Result | Severity | Result | Notes |
 |---|---|---|---|---|---|---|
 | H-001 | Valid profile, provider | Generate current week | Exactly seven days are persisted as a new version | Blocker | NOT RUN | Provider required |
-| H-002 | Generated plan | Inspect every day | Kcal/macros are within official `±3%` and totals are coherent | Blocker | PASS | Automated contract coverage |
+| H-002 | Generated plan | Inspect every day | Kcal/macros are within official `target -3% .. target` range and totals are coherent | Blocker | PASS | Automated contract coverage |
 | H-003 | Generated plan | Inspect ingredients | Numeric quantity, unit and displayDose exist; condiments/beverages are explicit | High | NOT RUN | |
 | H-004 | Generated plan | Inspect timing/seasonality | Timing follows context; seasonality does not override targets | High | NOT RUN | |
 | H-005 | Generated plan | Inspect text | No invented allergy, intolerance, diagnosis or medical claim | Blocker | PASS | Validator/prompt rules |

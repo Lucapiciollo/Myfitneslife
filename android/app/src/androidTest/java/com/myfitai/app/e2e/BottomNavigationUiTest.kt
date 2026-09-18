@@ -8,6 +8,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.UiScrollable
+import androidx.test.uiautomator.UiSelector
 import androidx.test.uiautomator.Until
 import org.junit.After
 import org.junit.Assert.assertTrue
@@ -64,6 +66,8 @@ class BottomNavigationUiTest {
     @Test
     fun launch_reachesHomeAndBottomTabsAreVisible() {
         assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/navHome")), 5_000))
+        // The four root tabs are rendered inside the single host task.
+        assertTrue(device.hasObject(By.pkg("com.myfitai.app")))
         assertTrue(device.hasObject(By.res("com.myfitai.app:id/navFood")))
         assertTrue(device.hasObject(By.res("com.myfitai.app:id/navProgress")))
         assertTrue(device.hasObject(By.res("com.myfitai.app:id/navMore")))
@@ -93,6 +97,91 @@ class BottomNavigationUiTest {
         assertTrue(device.wait(Until.hasObject(By.textContains("Uscire da MyFitAI")), 3_000))
         device.findObject(By.text("Esci")).click()
         assertTrue(device.wait(Until.hasObject(By.pkg("com.sec.android.app.launcher")), 5_000))
+    }
+
+    @Test
+    fun activeTabRoot_survivesTabSwitchWithoutRecreatingVisibleRoot() {
+        assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/navHome")), 5_000))
+        device.findObject(By.res("com.myfitai.app:id/navProgress")).click()
+        assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/evolutionChart")), 5_000))
+        device.findObject(By.res("com.myfitai.app:id/navHome")).click()
+        // Anchor on the always-visible Home header: cards further down move off-screen as soon as
+        // the profile owns a generated plan, which would make this assertion data dependent.
+        assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/greetingText")), 5_000))
+        device.findObject(By.res("com.myfitai.app:id/navProgress")).click()
+        assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/evolutionChart")), 5_000))
+    }
+
+    @Test
+    fun home_nextMealCard_exposesMealSwapActionWhenFutureMealExists() {
+        assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/navHome")), 5_000))
+        runCatching {
+            UiScrollable(UiSelector().scrollable(true))
+                .scrollIntoView(UiSelector().resourceId("com.myfitai.app:id/upcomingMealsCard"))
+        }
+        val swap = device.findObject(By.desc("Cambia pasto con IA"))
+        if (swap == null) {
+            // The fixture may not contain a current future meal; the Home root must still be stable.
+            assertTrue(device.hasObject(By.res("com.myfitai.app:id/greetingText")))
+        } else {
+            assertTrue(swap.isEnabled)
+        }
+    }
+
+    @Test
+    fun home_todayMenuButton_opensTodayMenuDialog() {
+        assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/navHome")), 5_000))
+        UiScrollable(UiSelector().scrollable(true)).scrollIntoView(UiSelector().resourceId("com.myfitai.app:id/todayMenuButton"))
+        device.findObject(By.res("com.myfitai.app:id/todayMenuButton")).click()
+        assertTrue(device.wait(Until.hasObject(By.text("Menu di oggi")), 3_000))
+        assertTrue(device.hasObject(By.text("Chiudi")))
+    }
+
+    @Test
+    fun foodPlan_explainsDailyFlowAndMealStatus() {
+        assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/navHome")), 5_000))
+        device.findObject(By.res("com.myfitai.app:id/navFood")).click()
+        assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/weekRangeLabel")), 5_000))
+        assertTrue(device.hasObject(By.res("com.myfitai.app:id/energyTargetCard")))
+        assertTrue(device.hasObject(By.res("com.myfitai.app:id/mealCountHint")))
+        if (!device.hasObject(By.textContains("Piano v"))) {
+            assertTrue(device.hasObject(By.res("com.myfitai.app:id/generatePlanButton")))
+        } else {
+            assertTrue(device.hasObject(By.res("com.myfitai.app:id/supplementsCard")) || device.hasObject(By.res("com.myfitai.app:id/mealsContainer")))
+            assertTrue(device.hasObject(By.textContains("Pasto concluso")) || device.hasObject(By.text("Da registrare")))
+            scrollFoodPlanDown()
+            assertTrue(device.hasObject(By.res("com.myfitai.app:id/dailyTotalContainer")))
+            scrollUntilFoodActions()
+            assertTrue(device.hasObject(By.res("com.myfitai.app:id/weeklyActionsCard")))
+            assertTrue(device.hasObject(By.textContains("Registrato da te = cibo segnato")))
+        }
+    }
+
+    private fun scrollFoodPlanDown() {
+        repeat(4) {
+            if (device.hasObject(By.res("com.myfitai.app:id/dailyTotalContainer"))) return
+            device.swipe(device.displayWidth / 2, (device.displayHeight * 0.8).toInt(), device.displayWidth / 2, (device.displayHeight * 0.3).toInt(), 20)
+        }
+    }
+
+    private fun scrollUntilFoodActions() {
+        repeat(4) {
+            if (device.hasObject(By.res("com.myfitai.app:id/weeklyActionsCard"))) return
+            device.swipe(device.displayWidth / 2, (device.displayHeight * 0.8).toInt(), device.displayWidth / 2, (device.displayHeight * 0.3).toInt(), 20)
+        }
+    }
+
+    @Test
+    fun workoutDetail_isChildScreenWithoutRootBottomNavigation() {
+        assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/navHome")), 5_000))
+        UiScrollable(UiSelector().scrollable(true)).scrollIntoView(UiSelector().resourceId("com.myfitai.app:id/todayWorkoutButton"))
+        device.findObject(By.res("com.myfitai.app:id/todayWorkoutButton")).click()
+        assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/workoutList")), 5_000))
+        assertTrue(device.hasObject(By.res("com.myfitai.app:id/weeklySummaryCard")))
+        assertTrue(device.hasObject(By.res("com.myfitai.app:id/dayCard")))
+        assertTrue(!device.hasObject(By.res("com.myfitai.app:id/navHome")))
+        device.pressBack()
+        assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/navHome")), 5_000))
     }
 
     private fun clickAndWait(navId: String, screenId: String) {

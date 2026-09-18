@@ -25,7 +25,15 @@
                     android:contentDescription="Indietro"
                     android:padding="10dp"
                     android:src="@drawable/ic_arrow_back" />
-                <Space android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" />
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="Bioimpedenziometria"
+                    android:textAppearance="@style/Text.MyFitAI.ScreenTitle"
+                    android:textSize="18sp" />
+                <Space android:layout_width="40dp" android:layout_height="1dp" />
             </LinearLayout>
 
             <com.myfitai.app.ui.widgets.BiaSegmentView
@@ -41,7 +49,8 @@
 
                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_16" android:orientation="horizontal">
                     <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/dateInputLayout"
+                     android:id="@+id/dateInputLayout"
+                         style="@style/Widget.MyFitAI.Input.DateTime"
                         android:layout_width="0dp"
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
@@ -56,7 +65,8 @@
                     </com.google.android.material.textfield.TextInputLayout>
                     <Space android:layout_width="@dimen/space_12" android:layout_height="1dp" />
                     <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/timeInputLayout"
+                     android:id="@+id/timeInputLayout"
+                         style="@style/Widget.MyFitAI.Input.DateTime"
                         android:layout_width="0dp"
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
@@ -77,10 +87,19 @@
                     android:layout_marginTop="@dimen/space_20"
                     android:text="Condizioni della misura" />
 
-                <com.google.android.material.checkbox.MaterialCheckBox android:id="@+id/checkFasting" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="A digiuno" app:buttonTint="@color/accent_green" />
-                <com.google.android.material.checkbox.MaterialCheckBox android:id="@+id/checkJustWoken" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Appena sveglio" app:buttonTint="@color/accent_green" />
-                <com.google.android.material.checkbox.MaterialCheckBox android:id="@+id/checkAfterShower" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Dopo bagno" app:buttonTint="@color/accent_green" />
-                <com.google.android.material.checkbox.MaterialCheckBox android:id="@+id/checkNoWorkout" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Nessun allenamento recente" app:buttonTint="@color/accent_green" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_8"
+                    android:background="@drawable/bg_card"
+                    android:orientation="vertical"
+                    android:paddingHorizontal="@dimen/space_12"
+                    android:paddingVertical="@dimen/space_8">
+                    <com.google.android.material.checkbox.MaterialCheckBox android:id="@+id/checkFasting" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="A digiuno" app:buttonTint="@color/accent_green" />
+                    <com.google.android.material.checkbox.MaterialCheckBox android:id="@+id/checkJustWoken" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Appena sveglio" app:buttonTint="@color/accent_green" />
+                    <com.google.android.material.checkbox.MaterialCheckBox android:id="@+id/checkAfterShower" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Dopo bagno" app:buttonTint="@color/accent_green" />
+                    <com.google.android.material.checkbox.MaterialCheckBox android:id="@+id/checkNoWorkout" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Nessun allenamento recente" app:buttonTint="@color/accent_green" />
+                </LinearLayout>
 
                 <com.myfitai.app.ui.widgets.SectionHeaderView
                     android:layout_width="match_parent"
@@ -88,7 +107,7 @@
                     android:layout_marginTop="@dimen/space_20"
                     android:text="Risultati" />
 
-                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:background="@drawable/bg_card" android:orientation="vertical" android:paddingHorizontal="@dimen/space_16">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:background="@drawable/bg_card" android:orientation="vertical" android:paddingHorizontal="@dimen/space_12" android:paddingVertical="@dimen/space_4">
                     <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowWeight" android:layout_width="match_parent" android:layout_height="wrap_content" />
                     <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowBodyFat" android:layout_width="match_parent" android:layout_height="wrap_content" />
                     <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowVisceralFat" android:layout_width="match_parent" android:layout_height="wrap_content" />
@@ -115,7 +134,7 @@
                      android:text="Salva misurazione" />
                  <com.google.android.material.button.MaterialButton
                      android:id="@+id/importPhotoButton"
-                     style="@style/Widget.Material3.Button.OutlinedButton"
+                     style="@style/Widget.MyFitAI.Button.Secondary"
                      android:layout_width="match_parent"
                      android:layout_height="52dp"
                      android:layout_marginTop="@dimen/space_8"

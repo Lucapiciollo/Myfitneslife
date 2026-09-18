@@ -71,6 +71,57 @@ class LocalCalculationEngineTest {
     }
 
     @Test
+    fun calculate_addsExerciseCaloriesToBaseTdeeWithoutChangingBmr() {
+        val result = LocalCalculationEngine.calculate(
+            LocalCalculationEngine.Input(
+                weightKg = 80.0,
+                heightCm = 180.0,
+                ageYears = 40,
+                biologicalSex = LocalCalculationEngine.BiologicalSex.MALE,
+                activityLevel = LocalCalculationEngine.ActivityLevel.SEDENTARY,
+                goal = LocalCalculationEngine.Goal.MAINTENANCE,
+                exerciseKcal = 500,
+            ),
+        )
+
+        assertEquals(2076.0, result.baseTdeeKcal!!, 0.01)
+        assertEquals(2576.0, result.tdeeKcal!!, 0.01)
+        assertEquals(500, result.exerciseKcal)
+    }
+
+    @Test
+    fun dailyCalorieProgress_capsBatteryAtTargetAndReportsExcess() {
+        val empty = DailyCalorieProgress.calculate(2400, 0)
+        val full = DailyCalorieProgress.calculate(2400, 2400)
+        val excess = DailyCalorieProgress.calculate(2400, 2600)
+
+        assertEquals(0, empty.percent)
+        assertEquals(DailyCalorieProgress.Status.EMPTY, empty.status)
+        assertEquals(100, full.percent)
+        assertEquals(DailyCalorieProgress.Status.COMPLETE, full.status)
+        assertEquals(100, excess.percent)
+        assertEquals(200, excess.exceededKcal)
+        assertEquals(DailyCalorieProgress.Status.EXCEEDED, excess.status)
+    }
+
+    @Test
+    fun recoveryRemainingPercent_isZeroWithoutBudgetAndFallsAsBudgetIsRecovered() {
+        val empty = DailyCalorieProgress.recoveryRemainingPercent(null)
+        val state = com.myfitai.app.domain.food.NutritionRecoveryTargetEngine.State(
+            budgetBeforeKcal = 500,
+            plannedRecoveryKcal = 100,
+            effectiveTargetKcal = 2300,
+            budgetAfterPlannedKcal = 400,
+            confirmedRecoveryKcal = 0,
+            budgetAfterConfirmedKcal = 500,
+            remainingDays = 5,
+        )
+
+        assertEquals(0, empty)
+        assertEquals(66, DailyCalorieProgress.recoveryRemainingPercent(state))
+    }
+
+    @Test
     fun trend_sortsValuesBeforeCalculatingDelta() {
         val stats = LocalCalculationEngine.trend(
             listOf(
@@ -112,7 +163,7 @@ class LocalCalculationEngineTest {
     }
 
     @Test
-    fun nutritionValidator_acceptsBoundaryAndRejectsOutsideThreePercent() {
+    fun nutritionValidator_acceptsTargetAndLowerThreePercentBoundary_butRejectsAboveTarget() {
         val targets = NutritionBusinessValidator.Targets(
             kcal = 2000.0,
             proteinG = 160.0,
@@ -120,16 +171,27 @@ class LocalCalculationEngineTest {
             fatG = 60.0,
         )
 
-        val atBoundary = NutritionBusinessValidator.validate(
+        val atTarget = NutritionBusinessValidator.validate(
             targets,
             NutritionBusinessValidator.Actuals(
-                kcal = 2060.0,
+                kcal = 2000.0,
                 proteinG = 155.2,
-                carbsG = 226.6,
+                carbsG = 220.0,
                 fatG = 58.2,
             )
         )
-        assertTrue(atBoundary.valid)
+        assertTrue(atTarget.valid)
+
+        val atLowerBoundary = NutritionBusinessValidator.validate(
+            targets,
+            NutritionBusinessValidator.Actuals(
+                kcal = 1940.0,
+                proteinG = 155.2,
+                carbsG = 213.4,
+                fatG = 58.2,
+            )
+        )
+        assertTrue(atLowerBoundary.valid)
 
         val outside = NutritionBusinessValidator.validate(
             targets,

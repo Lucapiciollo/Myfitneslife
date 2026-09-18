@@ -3,6 +3,7 @@ package com.myfitai.app.domain.food
 import com.myfitai.app.domain.calculation.NutritionBusinessValidator
 import org.json.JSONObject
 import java.time.LocalDate
+import java.util.Locale
 
 /** Canonical provider-neutral contract for weekly nutrition generation. */
 object NutritionPlanContract {
@@ -132,17 +133,21 @@ object NutritionPlanContract {
         sportsMode: SportsNutritionClassifier.Mode = SportsNutritionClassifier.Mode.NORMAL,
         enforceWeeklyVariety: Boolean = false,
         mealsPerDay: Int = REQUIRED_MEALS_PER_DAY,
+        expectedStartEpochDay: Long = expectedWeekStart.toEpochDay(),
+        expectedEndEpochDay: Long = expectedWeekStart.plusDays(6).toEpochDay(),
     ): Result<Unit> = runCatching {
         require(response.weekStartEpochDay == expectedWeekStart.toEpochDay()) { "WEEK_START_MISMATCH" }
-        require(response.days.size == 7) { "WEEK_MUST_HAVE_7_DAYS" }
-        val expectedDates = (0L..6L).map { expectedWeekStart.plusDays(it).toEpochDay() }.toSet()
+        require(expectedStartEpochDay in expectedWeekStart.toEpochDay()..expectedEndEpochDay) { "PLAN_RANGE_INVALID" }
+        require(expectedEndEpochDay <= expectedWeekStart.plusDays(6).toEpochDay()) { "PLAN_RANGE_INVALID" }
+        val expectedDates = (expectedStartEpochDay..expectedEndEpochDay).toSet()
+        require(response.days.size == expectedDates.size) { "PLAN_RANGE_DAY_COUNT_INVALID" }
         require(response.days.map { it.dateEpochDay }.toSet() == expectedDates) { "WEEK_DATES_INVALID" }
 
         response.days.forEach { day ->
             require(mealsPerDay in SUPPORTED_MEALS_PER_DAY) { "MEAL_COUNT_NOT_SUPPORTED" }
             require(day.meals.size == mealsPerDay) { "DAY_MUST_HAVE_${mealsPerDay}_MEALS" }
             val appValidation = NutritionBusinessValidator.validate(targets, NutritionBusinessValidator.Actuals(day.totalKcal.toDouble(), day.proteinG.toDouble(), day.carbsG.toDouble(), day.fatG.toDouble()))
-            require(appValidation.valid) { "TARGET_TOLERANCE_EXCEEDED" }
+            require(appValidation.valid) { toleranceFailureMessage(day.dateEpochDay, appValidation) }
 
             day.supplements.forEach { supplement ->
                 require(supplement.kind in ALLOWED_SUPPLEMENT_KINDS) { "SUPPLEMENT_NOT_ALLOWED" }
@@ -177,8 +182,48 @@ object NutritionPlanContract {
         if (enforceWeeklyVariety) validateWeeklyVariety(response)
     }
 
+    /** Day totals are derived from meals and supplements; provider summary fields are not authoritative. */
+    fun normalizeDerivedDayTotals(response: Response): Response = response.copy(
+        days = response.days.map { day ->
+            day.copy(
+                totalKcal = day.meals.sumOf { it.kcal } + day.supplements.sumOf { it.kcal },
+                proteinG = (day.meals.sumOf { it.proteinG.toDouble() } + day.supplements.sumOf { it.proteinG.toDouble() }).toFloat(),
+                carbsG = (day.meals.sumOf { it.carbsG.toDouble() } + day.supplements.sumOf { it.carbsG.toDouble() }).toFloat(),
+                fatG = (day.meals.sumOf { it.fatG.toDouble() } + day.supplements.sumOf { it.fatG.toDouble() }).toFloat(),
+            )
+        },
+    )
+
     const val REQUIRED_MEALS_PER_DAY = 5
     val SUPPORTED_MEALS_PER_DAY = setOf(4, 5, 6)
+
+    /**
+     * The rejection reason is fed back to the provider on retry, so it must state which day and
+     * which macro missed the authoritative window, the exact allowed range and a single target
+     * value to aim for. A bare error code, or a boundary-only hint, makes the model land a few
+     * decimals outside the window over and over.
+     */
+    private fun toleranceFailureMessage(dateEpochDay: Long, result: NutritionBusinessValidator.Result): String = buildString {
+        append("TARGET_TOLERANCE_EXCEEDED day=").append(dateEpochDay)
+        appendFieldCorrection("kcal", result.kcal)
+        appendFieldCorrection("protein", result.protein)
+        appendFieldCorrection("carbs", result.carbs)
+        appendFieldCorrection("fat", result.fat)
+        append(" Aim for the aim value, not the range boundary.")
+    }
+
+    private fun StringBuilder.appendFieldCorrection(name: String, field: NutritionBusinessValidator.FieldValidation) {
+        if (field.valid) return
+        val minimum = field.target * (1.0 - NutritionBusinessValidator.DEFAULT_TOLERANCE)
+        // Half of the tolerance band: leaves room for rounding on both sides.
+        val aim = field.target * (1.0 - NutritionBusinessValidator.DEFAULT_TOLERANCE / 2.0)
+        append(' ').append(name).append('=').append(fmt(field.actual))
+        append(" allowed=").append(fmt(minimum)).append("..").append(fmt(field.target))
+        append(" aim=").append(fmt(aim))
+    }
+
+    private fun fmt(value: Double): String = String.format(Locale.US, "%.1f", value)
+
 
     /** Rejects identical recipes repeated on different days while allowing recurring staples. */
     private fun validateWeeklyVariety(response: Response) {

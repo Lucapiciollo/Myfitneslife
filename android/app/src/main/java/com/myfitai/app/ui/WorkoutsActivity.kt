@@ -29,10 +29,11 @@ class WorkoutsActivity : BaseShellActivity() {
 
     private val data by lazy { AppDataContainer.get(this) }
     private val viewModel: WorkoutViewModel by viewModels {
-        WorkoutViewModel.Factory(data.workoutRepository, data.activeProfileStore)
+        WorkoutViewModel.Factory(data.workoutRepository, data.workoutEnergyExpenditureRepository, data.activeProfileStore)
     }
 
     private var workouts: List<WorkoutEntity> = emptyList()
+    private var energyByWorkout: Map<Long, com.myfitai.app.data.local.entity.WorkoutEnergyExpenditureEntity> = emptyMap()
     private var weekStart: LocalDate = LocalDate.now().with(TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY))
     private var selectedDayIndex: Int = (LocalDate.now().dayOfWeek.value - 1).coerceIn(0, 6)
     private val zone: ZoneId = ZoneId.systemDefault()
@@ -99,6 +100,12 @@ class WorkoutsActivity : BaseShellActivity() {
                     }
                 }
                 launch {
+                    viewModel.energyByWorkout.collect { values ->
+                        energyByWorkout = values
+                        renderSelectedDay()
+                    }
+                }
+                launch {
                     viewModel.deleted.collect {
                         Toast.makeText(this@WorkoutsActivity, "Voce rimossa dallo storico", Toast.LENGTH_SHORT).show()
                     }
@@ -113,6 +120,7 @@ class WorkoutsActivity : BaseShellActivity() {
     }
 
     private fun renderSelectedDay() {
+        renderWeeklySummary()
         val selectedDate = weekStart.plusDays(selectedDayIndex.toLong())
         val dayItems = workouts
             .filter { workoutDate(it) == selectedDate }
@@ -136,15 +144,34 @@ class WorkoutsActivity : BaseShellActivity() {
         val workoutCount = dayItems.count { !it.isRestDay }
         val restCount = dayItems.count { it.isRestDay }
         val totalMinutes = dayItems.filterNot { it.isRestDay }.mapNotNull { it.durationMinutes }.sum()
+        val totalExerciseKcal = dayItems.filterNot { it.isRestDay }.sumOf { energyByWorkout[it.id]?.caloriesKcal ?: 0 }
         summary.text = buildString {
             append(selectedDate.format(dayFormatter))
             append("\n")
             append("$workoutCount allenamenti")
             if (restCount > 0) append(" · $restCount riposo")
             if (totalMinutes > 0) append(" · $totalMinutes min")
+            if (totalExerciseKcal > 0) append(" · $totalExerciseKcal kcal")
         }
 
         dayItems.forEach { workout -> container.addView(createWorkoutRow(workout)) }
+    }
+
+    private fun renderWeeklySummary() {
+        val weekItems = workouts.filter { workout ->
+            val date = workoutDate(workout)
+            !date.isBefore(weekStart) && date.isBefore(weekStart.plusDays(7))
+        }
+        val sessions = weekItems.count { !it.isRestDay }
+        val restDays = weekItems.count { it.isRestDay }
+        val minutes = weekItems.filterNot { it.isRestDay }.sumOf { it.durationMinutes ?: 0 }
+        val kcal = weekItems.filterNot { it.isRestDay }.sumOf { energyByWorkout[it.id]?.caloriesKcal ?: 500 }
+        findViewById<TextView>(R.id.weeklySummaryText).text = buildString {
+            append("$sessions allenamenti")
+            append(" · $restDays riposi")
+            append("\n$minutes minuti")
+            append(" · $kcal kcal stimate")
+        }
     }
 
     private fun createWorkoutRow(workout: WorkoutEntity): WorkoutRowView = WorkoutRowView(this).apply {
@@ -154,6 +181,8 @@ class WorkoutsActivity : BaseShellActivity() {
             add(instant.format(timeFormatter))
             workout.durationMinutes?.let { add("$it minuti") }
             if (!workout.isRestDay) add(typeLabel(workout.type))
+            workout.perceivedIntensity?.let { add("Intensità $it/10") }
+            if (!workout.isRestDay) add("${energyByWorkout[workout.id]?.caloriesKcal ?: 500} kcal")
             workout.notes?.takeIf { it.isNotBlank() }?.let { add(it) }
         }.joinToString(" · ")
         setSubtitle(subtitle.ifBlank { if (workout.isRestDay) "Giornata di recupero" else "Allenamento" })

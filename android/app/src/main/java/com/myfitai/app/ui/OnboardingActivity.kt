@@ -43,7 +43,7 @@ class OnboardingActivity : AppCompatActivity() {
         if (!isInteractionAllowed()) return
         navigationExecuted = true
         startActivity(
-            Intent(this, HomeActivity::class.java).apply {
+            Intent(this, TabHostActivity::class.java).apply {
                 addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             }
         )

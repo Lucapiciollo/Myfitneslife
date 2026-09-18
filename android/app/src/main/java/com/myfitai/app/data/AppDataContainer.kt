@@ -5,8 +5,26 @@ import com.myfitai.app.ai.AiRuntimeService
 import com.myfitai.app.data.local.MyFitAiDatabase
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.profile.MealCountPreferences
+import com.myfitai.app.data.profile.NutritionAutoGenerationPreferences
 import com.myfitai.app.data.profile.ProfilePhotoStore
 import com.myfitai.app.data.repository.*
+import com.myfitai.app.domain.ai.AiJobRegistry
+import com.myfitai.app.domain.ai.AiJobScheduler
+import com.myfitai.app.domain.ai.AiJobType
+import com.myfitai.app.domain.ai.BodyProportionsAiJobHandler
+import com.myfitai.app.domain.ai.CheatAdjustmentAiJobHandler
+import com.myfitai.app.domain.ai.CheatUnderstandingAiJobHandler
+import com.myfitai.app.domain.ai.AiImageJobStore
+import com.myfitai.app.domain.ai.MealAlternativesAiJobHandler
+import com.myfitai.app.domain.ai.BiaImportAiJobHandler
+import com.myfitai.app.domain.ai.NutritionAdviceAiJobHandler
+import com.myfitai.app.domain.ai.NutritionPathAiJobHandler
+import com.myfitai.app.domain.ai.NutritionPathTrigger
+import com.myfitai.app.domain.ai.ProgressAnalysisAiJobHandler
+import com.myfitai.app.domain.ai.WeeklyPlanAiJobHandler
+import com.myfitai.app.domain.ai.WeeklyReviewAiJobHandler
+import com.myfitai.app.domain.body.BodyProportionEngine
+import kotlinx.coroutines.flow.first
 import com.myfitai.app.domain.body.BodyProportionAnalysisService
 import com.myfitai.app.domain.body.BiaImportService
 import com.myfitai.app.domain.calculation.ProfileCalculationService
@@ -16,6 +34,8 @@ import com.myfitai.app.domain.food.FoodConsumptionService
 import com.myfitai.app.domain.food.MealAlternativeService
 import com.myfitai.app.domain.food.NutritionAdviceService
 import com.myfitai.app.domain.food.NutritionPlanGenerationService
+import com.myfitai.app.domain.food.NutritionAutoGenerationScheduler
+import com.myfitai.app.data.profile.NutritionMealSchedulePreferences
 import com.myfitai.app.domain.food.PlanReviewService
 import com.myfitai.app.domain.personalization.PersonalResponseService
 import com.myfitai.app.domain.progress.ProgressAnalysisPreferences
@@ -34,6 +54,8 @@ class AppDataContainer private constructor(context: Context) {
 
     val activeProfileStore = ActiveProfileStore(appContext)
     val mealCountPreferences = MealCountPreferences(appContext)
+    val nutritionAutoGenerationPreferences = NutritionAutoGenerationPreferences(appContext)
+    val nutritionMealSchedulePreferences = NutritionMealSchedulePreferences(appContext)
     val profilePhotoStore = ProfilePhotoStore(appContext)
     val progressAnalysisPreferences = ProgressAnalysisPreferences(appContext)
 
@@ -41,10 +63,12 @@ class AppDataContainer private constructor(context: Context) {
     val biaRepository = BiaRepository(db)
     val bodyMeasurementRepository = BodyMeasurementRepository(db)
     val workoutRepository = WorkoutRepository(db)
+    val workoutEnergyExpenditureRepository = WorkoutEnergyExpenditureRepository(db)
     val mealPlanRepository = MealPlanRepository(db)
     val cheatEntryRepository = CheatEntryRepository(db)
+    val nutritionRecoveryRepository = NutritionRecoveryRepository(db)
     val foodConsumptionRepository = FoodConsumptionRepository(db)
-    val foodConsumptionService = FoodConsumptionService(foodConsumptionRepository, activeProfileStore)
+    val foodConsumptionService = FoodConsumptionService(foodConsumptionRepository, activeProfileStore, nutritionRecoveryRepository)
     val weeklyReviewRepository = WeeklyReviewRepository(db)
 
     val profileCalculationService = ProfileCalculationService(
@@ -52,6 +76,7 @@ class AppDataContainer private constructor(context: Context) {
         bia = biaRepository,
         bodyMeasurements = bodyMeasurementRepository,
         activeProfileStore = activeProfileStore,
+        exerciseEnergy = workoutEnergyExpenditureRepository,
     )
 
     val personalResponseService = PersonalResponseService(
@@ -94,7 +119,9 @@ class AppDataContainer private constructor(context: Context) {
         activeProfileStore = activeProfileStore,
         personalResponse = personalResponseService,
         mealCountPreferences = mealCountPreferences,
+        mealSchedule = nutritionMealSchedulePreferences,
         planReview = planReviewService,
+        recovery = nutritionRecoveryRepository,
     )
 
     val cheatAdjustmentService = CheatAdjustmentService(
@@ -102,6 +129,9 @@ class AppDataContainer private constructor(context: Context) {
         plans = mealPlanRepository,
         cheats = cheatEntryRepository,
         activeProfileStore = activeProfileStore,
+        recovery = nutritionRecoveryRepository,
+        consumptions = foodConsumptionRepository,
+        exerciseEnergy = workoutEnergyExpenditureRepository,
     )
 
     val nutritionAdviceService = NutritionAdviceService(
@@ -117,6 +147,8 @@ class AppDataContainer private constructor(context: Context) {
         profiles = userProfileRepository,
         plans = mealPlanRepository,
         activeProfileStore = activeProfileStore,
+        recovery = nutritionRecoveryRepository,
+        exerciseEnergy = workoutEnergyExpenditureRepository,
     )
 
     val weeklyReviewService = WeeklyReviewService(
@@ -136,7 +168,49 @@ class AppDataContainer private constructor(context: Context) {
         context = appContext,
         plans = mealPlanRepository,
         activeProfileStore = activeProfileStore,
+        mealCountPreferences = mealCountPreferences,
+        mealSchedulePreferences = nutritionMealSchedulePreferences,
     )
+
+    val aiJobResultRepository = AiJobResultRepository(db.aiJobResultDao())
+    val aiJobScheduler = AiJobScheduler(appContext)
+    val nutritionPathTrigger = NutritionPathTrigger(userProfileRepository, biaRepository, bodyMeasurementRepository, aiJobScheduler)
+    val nutritionAutoGenerationScheduler = NutritionAutoGenerationScheduler(appContext, nutritionAutoGenerationPreferences)
+    val aiImageJobStore = AiImageJobStore(appContext)
+
+    /** Every AI operation runs through this registry, so new ones only add a handler here. */
+    val aiJobRegistry = AiJobRegistry(
+        mapOf(
+            AiJobType.WEEKLY_PLAN to WeeklyPlanAiJobHandler(nutritionPlanGenerationService),
+            AiJobType.PROGRESS_ANALYSIS to ProgressAnalysisAiJobHandler(progressAnalysisService),
+            AiJobType.WEEKLY_REVIEW to WeeklyReviewAiJobHandler(weeklyReviewService),
+            AiJobType.NUTRITION_ADVICE to NutritionAdviceAiJobHandler(nutritionAdviceService),
+            AiJobType.NUTRITION_PATH to NutritionPathAiJobHandler(aiRuntimeService) { profileId ->
+                val snapshot = profileCalculationService.profileSnapshot(profileId)
+                val profile = userProfileRepository.get(profileId)
+                val bia = biaRepository.all(profileId).first().takeLast(5)
+                val body = bodyMeasurementRepository.all(profileId).first().takeLast(5)
+                val workouts = workoutRepository.all(profileId).first().takeLast(14)
+                buildString {
+                    appendLine("P:${profile?.goal ?: "?"}|${profile?.activityLevel ?: "?"}|${profile?.heightCm ?: "?"}|${profile?.currentWeightKg ?: "?"}")
+                    appendLine("BIA:${bia.size}|${bia.firstOrNull()?.weightKg ?: "?"}|${bia.lastOrNull()?.weightKg ?: "?"}|${bia.lastOrNull()?.bodyFatPercent ?: "?"}|${bia.lastOrNull()?.muscleMassKg ?: "?"}")
+                    appendLine("BODY:${body.size}|${body.firstOrNull()?.waistCm ?: "?"}|${body.lastOrNull()?.waistCm ?: "?"}|${body.lastOrNull()?.abdomenCm ?: "?"}")
+                    appendLine("WO:${workouts.count { !it.isRestDay }}|${workouts.count { it.isRestDay }}")
+                    appendLine("DATA:${if (snapshot?.latestBiaTimestamp != null && snapshot.latestBodyMeasurementTimestamp != null) "SUFFICIENT" else "INCOMPLETE"}")
+                }
+            },
+            AiJobType.CHEAT_UNDERSTANDING to CheatUnderstandingAiJobHandler(cheatAdjustmentService, aiImageJobStore),
+            AiJobType.CHEAT_ADJUSTMENT to CheatAdjustmentAiJobHandler(cheatAdjustmentService),
+            AiJobType.MEAL_ALTERNATIVES to MealAlternativesAiJobHandler(mealAlternativeService),
+            AiJobType.BIA_IMPORT to BiaImportAiJobHandler(biaImportService, aiImageJobStore),
+            AiJobType.BODY_PROPORTIONS to BodyProportionsAiJobHandler(bodyProportionAnalysisService) { profileId ->
+                val profile = userProfileRepository.get(profileId)
+                val latest = bodyMeasurementRepository.latest(profileId).first()
+                BodyProportionEngine.analyze(latest, profile?.heightCm)
+            },
+        )
+    )
+
 
     val profileExportService = ProfileExportService(
         context = appContext,

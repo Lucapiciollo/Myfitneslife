@@ -23,7 +23,7 @@ import java.util.Locale
 class WeeklyReviewActivity : BaseShellActivity() {
     private val data by lazy { AppDataContainer.get(this) }
     private val viewModel: WeeklyReviewViewModel by viewModels {
-        WeeklyReviewViewModel.Factory(data.weeklyReviewService, data.activeProfileStore)
+        WeeklyReviewViewModel.Factory(data.weeklyReviewService, data.activeProfileStore, data.aiJobScheduler)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -34,6 +34,7 @@ object PersonalResponseEngine {
         val muscleMassDeltaKg: Double?,
         val waistDeltaCm: Double?,
         val patterns: List<Pattern>,
+        val recentDeviationContext: List<String> = emptyList(),
     ) {
         fun toPromptContext(maxChars: Int = 900): String {
             val text = buildString {
@@ -41,6 +42,7 @@ object PersonalResponseEngine {
                     .append(';').append(cheatCount).append(';').append(workoutCount).append(';').append(restDayCount).append('\n')
                 append("PD:").append(weightDeltaKg.formatOrNA()).append(';').append(bodyFatDeltaPoints.formatOrNA())
                     .append(';').append(muscleMassDeltaKg.formatOrNA()).append(';').append(waistDeltaCm.formatOrNA())
+                recentDeviationContext.forEach { append("\nCD:").append(it.replace('\n', ' ').take(180)) }
                 patterns.forEach { append("\nPP:").append(it.code).append(';').append(it.evidenceCount).append(';').append(it.text.replace('\n', ' ').take(140)) }
                 append("\nSAFE:never causal;Do not alter local numerical targets")
             }
@@ -81,6 +83,12 @@ object PersonalResponseEngine {
             muscleMassDeltaKg = delta(recentBia.mapNotNull { it.muscleMassKg?.toDouble() }),
             waistDeltaCm = delta(recentBody.mapNotNull { it.waistCm?.toDouble() }),
             patterns = patterns,
+            recentDeviationContext = recentCheats
+                .sortedByDescending { it.occurredAtEpochMillis }
+                .take(8)
+                .map { cheat ->
+                    "date=${java.time.Instant.ofEpochMilli(cheat.occurredAtEpochMillis)};food=${cheat.description};kcal=${cheat.estimatedKcal ?: "?"};P=${cheat.estimatedProteinG ?: "?"};C=${cheat.estimatedCarbsG ?: "?"};F=${cheat.estimatedFatG ?: "?"}"
+                },
         )
     }
 

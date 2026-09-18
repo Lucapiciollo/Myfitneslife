@@ -1,12 +1,17 @@
 package com.myfitai.app.ui
 
 import android.graphics.Typeface
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.text.InputType
 import android.view.View
 import android.widget.LinearLayout
+import android.widget.GridLayout
+import android.widget.ScrollView
+import android.widget.Space
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
@@ -19,6 +24,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.checkbox.MaterialCheckBox
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.card.MaterialCardView
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.timepicker.MaterialTimePicker
 import com.google.android.material.timepicker.TimeFormat
@@ -28,6 +34,12 @@ import com.myfitai.app.data.local.entity.BiaMeasurementEntity
 import com.myfitai.app.domain.body.AiImageProcessor
 import com.myfitai.app.domain.body.AiImageTempStore
 import com.myfitai.app.domain.body.BiaImportContract
+import com.myfitai.app.data.local.entity.AiJobResultEntity
+import com.myfitai.app.domain.ai.AiJobState
+import com.myfitai.app.domain.ai.AiJobType
+import com.myfitai.app.domain.ai.AiJobWorker
+import com.myfitai.app.domain.ai.BiaImportAiJobHandler
+import com.myfitai.app.domain.ai.AiImageJobStore
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.ui.bia.BiaViewModel
 import com.myfitai.app.ui.widgets.MeasurementRowView
@@ -45,7 +57,7 @@ class BiaActivity : BaseShellActivity() {
 
     private val data by lazy { AppDataContainer.get(this) }
     private val viewModel: BiaViewModel by viewModels {
-        BiaViewModel.Factory(data.biaRepository, data.activeProfileStore)
+        BiaViewModel.Factory(data.biaRepository, data.activeProfileStore, data.nutritionPathTrigger)
     }
 
     private lateinit var dateInput: TextInputEditText
@@ -70,6 +82,7 @@ class BiaActivity : BaseShellActivity() {
     private var selectedMinute: Int = Calendar.getInstance().get(Calendar.MINUTE)
     private var pendingImportFile: File? = null
     private val imageTempStore by lazy { AiImageTempStore(this) }
+    private val backgroundImageStore by lazy { AiImageJobStore(this) }
 
     private val galleryLauncher = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) processImportUri(uri)
@@ -94,6 +107,7 @@ class BiaActivity : BaseShellActivity() {
         bindPhotoImport()
         observeState()
         renderDateTime()
+        intent.getStringExtra(EXTRA_AI_JOB_KEY)?.let(::reattachImportJob)
         if (intent.getBooleanExtra(EXTRA_OPEN_HISTORY, false)) {
             findViewById<SelectableSegmentView>(R.id.biaSegment).getChildAt(1)?.performClick()
         }
@@ -161,7 +175,7 @@ class BiaActivity : BaseShellActivity() {
         findViewById<MeasurementRowView>(viewId).apply {
             showIcon()
             setLabel(label)
-            setValue("—")
+            setValue(values[key]?.let { formatValue(it, unit) } ?: "—")
             isClickable = true
             isFocusable = true
             setOnClickListener { showValueDialog(key, label, unit, this) }
@@ -254,58 +268,200 @@ class BiaActivity : BaseShellActivity() {
 
     private fun importImage(image: com.myfitai.app.ai.AiImageInput) {
         confirmAiRequest("La lettura IA dei valori BIA dalla foto") {
-            Toast.makeText(this, "Lettura BIA in corso…", Toast.LENGTH_SHORT).show()
-            lifecycleScope.launch {
-                runCatching { data.biaImportService.import(image) }
-                    .onSuccess { showImportPreview(it.preview, it.provider, it.model) }
-                    .onFailure {
-                        val message = if (it is com.myfitai.app.domain.body.BiaImportService.NotBiaImage) {
-                            "Importazione rifiutata: ${it.message} Seleziona una foto di una rilevazione BIA."
-                        } else it.message ?: "Importazione BIA non riuscita"
-                        Toast.makeText(this@BiaActivity, message, Toast.LENGTH_LONG).show()
+            val profileId = data.activeProfileStore.currentIdOrNull() ?: return@confirmAiRequest
+            val jobKey = "${System.currentTimeMillis()}"
+            val imagePath = backgroundImageStore.write(image)
+            data.aiJobScheduler.enqueue(
+                AiJobType.BIA_IMPORT,
+                profileId,
+                jobKey,
+                androidx.work.Data.Builder().putString(AiJobWorker.KEY_IMAGE_PATH, imagePath).build(),
+            )
+            observeImportJob(profileId, jobKey)
+        }
+    }
+
+    private fun observeImportJob(profileId: Long, jobKey: String) {
+        lifecycleScope.launch {
+            data.aiJobScheduler.observe(AiJobType.BIA_IMPORT, profileId, jobKey).collect { state ->
+                when (state) {
+                    AiJobState.Idle -> Unit
+                    AiJobState.Running -> Toast.makeText(this@BiaActivity, "Lettura BIA in corso…", Toast.LENGTH_SHORT).show()
+                    is AiJobState.Succeeded -> {
+                        data.aiJobScheduler.consume(state.id)
+                        val row = data.aiJobResultRepository.find(profileId, AiJobType.BIA_IMPORT, jobKey)
+                        row?.payloadJson?.let { result ->
+                            val decoded = BiaImportAiJobHandler.decode(result)
+                            showImportPreview(decoded.preview, decoded.provider, decoded.model)
+                        }
                     }
+                    is AiJobState.Failed -> {
+                        data.aiJobScheduler.consume(state.id)
+                        Toast.makeText(this@BiaActivity, state.message, Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun reattachImportJob(jobKey: String) {
+        val profileId = data.activeProfileStore.currentIdOrNull() ?: return
+        lifecycleScope.launch {
+            val row = data.aiJobResultRepository.find(profileId, AiJobType.BIA_IMPORT, jobKey)
+            when {
+                row?.status == AiJobResultEntity.STATUS_SUCCEEDED && row.payloadJson != null -> {
+                    val decoded = BiaImportAiJobHandler.decode(row.payloadJson)
+                    showImportPreview(decoded.preview, decoded.provider, decoded.model)
+                }
+                row?.status == AiJobResultEntity.STATUS_FAILED -> Toast.makeText(this@BiaActivity, row.errorMessage ?: "Importazione BIA non riuscita", Toast.LENGTH_LONG).show()
+                else -> observeImportJob(profileId, jobKey)
             }
         }
     }
 
     private fun showImportPreview(preview: BiaImportContract.Preview, provider: String, model: String) {
         val fields = linkedMapOf(
-            "Peso (kg)" to preview.weightKg,
-            "Grasso corporeo (%)" to preview.bodyFatPercent,
-            "Grasso viscerale" to preview.visceralFatLevel,
-            "Massa muscolare (kg)" to preview.muscleMassKg,
-            "Muscolo scheletrico (kg)" to preview.skeletalMuscleKg,
-            "Acqua corporea (%)" to preview.bodyWaterPercent,
-            "BMR (kcal)" to preview.bmrKcal,
+            "Peso" to (preview.weightKg to "kg"),
+            "Grasso corporeo" to (preview.bodyFatPercent to "%"),
+            "Grasso viscerale" to (preview.visceralFatLevel to "livello"),
+            "Massa muscolare" to (preview.muscleMassKg to "kg"),
+            "Muscolo scheletrico" to (preview.skeletalMuscleKg to "kg"),
+            "Acqua corporea" to (preview.bodyWaterPercent to "%"),
+            "BMR" to (preview.bmrKcal to "kcal"),
         )
-        val inputs = fields.mapValues { (_, value) -> TextInputEditText(this).apply {
-            inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
-            value?.let { setText(formatNumber(it)) }
-            hint = "Lascia vuoto se non leggibile"
-        } }
-        val container = LinearLayout(this).apply {
+        val inputs = linkedMapOf<String, TextInputEditText>()
+        val outer = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            val padding = (20 * resources.displayMetrics.density).toInt()
-            setPadding(padding, 0, padding, 0)
-            addView(TextView(this@BiaActivity).apply { text = "Provider $provider · $model\nConfidenza: ${preview.confidence}\n${preview.notes}"; textSize = 12f })
-            inputs.forEach { (label, input) ->
-                addView(TextView(this@BiaActivity).apply { text = label; textSize = 12f; setPadding(0, padding / 2, 0, 0) })
-                addView(input)
+            setPadding(dp(20), dp(8), dp(20), 0)
+        }
+
+        val statusCard = MaterialCardView(this).apply {
+            radius = dp(16).toFloat()
+            cardElevation = 0f
+            setCardBackgroundColor(getColor(R.color.surface_positive_soft))
+            strokeColor = getColor(R.color.positive_soft_stroke)
+            strokeWidth = dp(1)
+        }
+        val statusBody = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            setPadding(dp(14), dp(12), dp(14), dp(12))
+        }
+        val badge = TextView(this).apply {
+            text = "BIA"
+            gravity = android.view.Gravity.CENTER
+            setTextColor(Color.WHITE)
+            textSize = 12f
+            typeface = Typeface.DEFAULT_BOLD
+            background = roundedBackground(getColor(R.color.accent_green), dp(12))
+        }
+        statusBody.addView(badge, LinearLayout.LayoutParams(dp(48), dp(48)))
+        statusBody.addView(LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(12), 0, 0, 0)
+            addView(TextView(this@BiaActivity).apply {
+                text = "Lettura pronta da controllare"
+                setTextColor(getColor(R.color.text_primary))
+                textSize = 15f
+                typeface = Typeface.DEFAULT_BOLD
+            })
+            addView(TextView(this@BiaActivity).apply {
+                text = "${provider.replace('_', ' ')} · Confidenza ${preview.confidence.lowercase(Locale.ITALIAN)}"
+                setTextColor(getColor(R.color.text_secondary))
+                textSize = 12f
+                setPadding(0, dp(3), 0, 0)
+            })
+        }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        statusCard.addView(statusBody)
+        outer.addView(statusCard, LinearLayout.LayoutParams(-1, -2))
+
+        outer.addView(TextView(this).apply {
+            text = "Controlla i valori prima di usarli nello storico. Puoi correggere ogni campo."
+            setTextColor(getColor(R.color.text_secondary))
+            textSize = 13f
+            setPadding(0, dp(12), 0, dp(8))
+        })
+
+        val grid = GridLayout(this).apply {
+            columnCount = 2
+            alignmentMode = GridLayout.ALIGN_BOUNDS
+            useDefaultMargins = false
+        }
+        fields.forEach { (label, valueAndUnit) ->
+            val input = TextInputEditText(this).apply {
+                inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
+                valueAndUnit.first?.let { setText(formatNumber(it)) }
+                setSingleLine(true)
+                textSize = 16f
+                setTextColor(getColor(R.color.text_primary))
             }
+            inputs[label] = input
+            input.background = null
+            input.setPadding(0, 0, 0, 0)
+            val field = MaterialCardView(this).apply {
+                radius = dp(12).toFloat()
+                cardElevation = 0f
+                setCardBackgroundColor(getColor(R.color.surface_secondary))
+                strokeColor = getColor(R.color.divider)
+                strokeWidth = dp(1)
+                addView(LinearLayout(this@BiaActivity).apply {
+                    orientation = LinearLayout.VERTICAL
+                    setPadding(dp(12), dp(9), dp(12), dp(8))
+                    addView(TextView(this@BiaActivity).apply {
+                        text = label.uppercase(Locale.ITALIAN)
+                        setTextColor(getColor(R.color.text_muted))
+                        textSize = 10f
+                        typeface = Typeface.DEFAULT_BOLD
+                    })
+                    addView(LinearLayout(this@BiaActivity).apply {
+                        orientation = LinearLayout.HORIZONTAL
+                        gravity = android.view.Gravity.CENTER_VERTICAL
+                        addView(input, LinearLayout.LayoutParams(0, dp(36), 1f))
+                        addView(TextView(this@BiaActivity).apply {
+                            text = valueAndUnit.second
+                            setTextColor(getColor(R.color.accent_green_dark))
+                            textSize = 12f
+                            typeface = Typeface.DEFAULT_BOLD
+                            gravity = android.view.Gravity.CENTER_VERTICAL
+                        }, LinearLayout.LayoutParams(-2, dp(36)))
+                    }, LinearLayout.LayoutParams(-1, dp(36)))
+                })
+            }
+            val params = GridLayout.LayoutParams().apply {
+                width = 0
+                height = GridLayout.LayoutParams.WRAP_CONTENT
+                columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
+                setMargins(if (grid.childCount % 2 == 0) 0 else dp(6), dp(5), if (grid.childCount % 2 == 0) dp(6) else 0, dp(5))
+            }
+            grid.addView(field, params)
+        }
+
+        val scrollContainer = ScrollView(this).apply {
+            isFillViewport = true
+            overScrollMode = View.OVER_SCROLL_IF_CONTENT_SCROLLS
+            addView(grid, android.view.ViewGroup.LayoutParams(-1, -2))
+        }
+        outer.addView(scrollContainer, LinearLayout.LayoutParams(-1, dp(400)))
+        if (preview.notes.isNotBlank() && preview.notes.lowercase(Locale.ITALIAN) != "none") {
+            outer.addView(TextView(this).apply {
+                text = "Nota IA: ${preview.notes}"
+                setTextColor(getColor(R.color.text_muted))
+                textSize = 11f
+                setPadding(0, dp(8), 0, 0)
+            })
         }
         MaterialAlertDialogBuilder(this)
             .setTitle("Controlla importazione BIA")
-            .setMessage("I valori sono una lettura della foto. Correggili prima di salvarli nello storico.")
-            .setView(container)
+            .setView(outer)
             .setNegativeButton("Annulla", null)
             .setPositiveButton("Usa valori") { _, _ ->
-                values[KEY_WEIGHT] = parseFloat(inputs.getValue("Peso (kg)").text?.toString())
-                values[KEY_BODY_FAT] = parseFloat(inputs.getValue("Grasso corporeo (%)").text?.toString())
+                values[KEY_WEIGHT] = parseFloat(inputs.getValue("Peso").text?.toString())
+                values[KEY_BODY_FAT] = parseFloat(inputs.getValue("Grasso corporeo").text?.toString())
                 values[KEY_VISCERAL_FAT] = parseFloat(inputs.getValue("Grasso viscerale").text?.toString())
-                values[KEY_MUSCLE_MASS] = parseFloat(inputs.getValue("Massa muscolare (kg)").text?.toString())
-                values[KEY_SKELETAL_MUSCLE] = parseFloat(inputs.getValue("Muscolo scheletrico (kg)").text?.toString())
-                values[KEY_BODY_WATER] = parseFloat(inputs.getValue("Acqua corporea (%)").text?.toString())
-                values[KEY_BMR] = parseFloat(inputs.getValue("BMR (kcal)").text?.toString())
+                values[KEY_MUSCLE_MASS] = parseFloat(inputs.getValue("Massa muscolare").text?.toString())
+                values[KEY_SKELETAL_MUSCLE] = parseFloat(inputs.getValue("Muscolo scheletrico").text?.toString())
+                values[KEY_BODY_WATER] = parseFloat(inputs.getValue("Acqua corporea").text?.toString())
+                values[KEY_BMR] = parseFloat(inputs.getValue("BMR").text?.toString())
                 bindMeasurementRows()
                 preview.measuredAtEpochMillis?.let { timestamp ->
                     selectedDateMillis = timestamp
@@ -316,6 +472,11 @@ class BiaActivity : BaseShellActivity() {
                 renderDateTime()
             }
             .show()
+    }
+
+    private fun roundedBackground(color: Int, radius: Int): GradientDrawable = GradientDrawable().apply {
+        setColor(color)
+        cornerRadius = radius.toFloat()
     }
 
     private fun observeState() {
@@ -513,7 +674,10 @@ class BiaActivity : BaseShellActivity() {
 
     private fun formatSigned(value: Float): String = String.format(Locale.ITALIAN, "%+.1f", value)
 
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+
     companion object {
+        const val EXTRA_AI_JOB_KEY = "bia_import_job_key"
         const val EXTRA_OPEN_HISTORY = "open_bia_history"
         private const val KEY_WEIGHT = "weight"
         private const val KEY_BODY_FAT = "bodyFat"

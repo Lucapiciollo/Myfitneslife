@@ -19,6 +19,7 @@ class MealCardView @JvmOverloads constructor(
     private val titleView: TextView
     private val kcalView: TextView
     private val thumbnail: ShapeableImageView
+    private val changeButton: ImageView
 
     init {
         orientation = HORIZONTAL
@@ -59,6 +60,16 @@ class MealCardView @JvmOverloads constructor(
         textColumn.addView(kcalView)
         addView(textColumn)
 
+        changeButton = ImageView(context).apply {
+            val size = (40 * density).toInt()
+            layoutParams = LayoutParams(size, size).apply { marginEnd = (4 * density).toInt() }
+            setImageResource(R.drawable.ic_refresh)
+            setPadding((8 * density).toInt(), (8 * density).toInt(), (8 * density).toInt(), (8 * density).toInt())
+            contentDescription = "Cambia pasto con IA"
+            visibility = GONE
+        }
+        addView(changeButton)
+
         thumbnail = ShapeableImageView(context).apply {
             val size = (72 * density).toInt()
             layoutParams = LayoutParams(size, size)
@@ -82,5 +93,14 @@ class MealCardView @JvmOverloads constructor(
 
     fun setImage(resId: Int) {
         thumbnail.setImageResource(resId)
+    }
+
+    fun setChangeEnabled(enabled: Boolean) {
+        changeButton.visibility = if (enabled) VISIBLE else GONE
+        changeButton.isEnabled = enabled
+    }
+
+    fun setOnChangeClickListener(listener: () -> Unit) {
+        changeButton.setOnClickListener { listener() }
     }
 }

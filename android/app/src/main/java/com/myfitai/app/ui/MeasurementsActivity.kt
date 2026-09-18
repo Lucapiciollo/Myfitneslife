@@ -43,6 +43,16 @@ class MeasurementsActivity : BaseShellActivity() {
         findViewById<android.view.View>(R.id.allHistoryButton).setOnClickListener { startActivity(Intent(this, HistoryActivity::class.java)) }
 
         lifecycleScope.launch {
+            val profileId = data.activeProfileStore.currentIdOrNull() ?: return@launch
+            val hasBia = data.biaRepository.all(profileId).first().isNotEmpty()
+            val hasBody = data.bodyMeasurementRepository.all(profileId).first().isNotEmpty()
+            if (!hasBia || !hasBody) {
+                findViewById<TextView>(R.id.dietTargetReasonText).text =
+                    "Completa almeno una rilevazione BIA e una misura corporea per preparare il suggerimento del percorso nutrizionale."
+            }
+        }
+
+        lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     data.activeProfileStore.activeProfileId

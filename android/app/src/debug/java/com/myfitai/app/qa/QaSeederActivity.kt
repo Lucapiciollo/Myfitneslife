@@ -24,6 +24,7 @@ class QaSeederActivity : Activity() {
             addView(status)
             addView(button("RESET") { run("Reset") { seeder.reset(); "Database QA resettato" } })
             addView(button("SEED_6_MONTHS") { run("Seed 6 mesi") { seeder.seedSixMonths() } })
+            addView(button("SEED_CURRENT_PLAN_ONLY") { run("Seed piano corrente") { seeder.seedCurrentPlanOnly() } })
             addView(button("SEED_DEMO_12_MONTHS") { run("Seed demo 12 mesi") { seeder.seedDemo12Months() } })
             addView(button("SEED_STRESS") { run("Seed stress") { seeder.seedStress() } })
         })

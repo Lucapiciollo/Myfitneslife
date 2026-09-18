@@ -42,7 +42,7 @@ Sale, spezie, erbe, aceto e succo di limone possono essere indicati in dose prat
 - non inventare target idrici: usare quelli dell’app se disponibili.
 
 ## Bilanciamento giornaliero
-Se un pasto è più ricco di sodio, grassi, fibre o volume, non vietare automaticamente l’alimento: riequilibrare i pasti successivi evitando di concentrare nuovamente lo stesso fattore, mantenendo i target dinamici entro ±3%.
+Se un pasto è più ricco di sodio, grassi, fibre o volume, non vietare automaticamente l’alimento: riequilibrare i pasti successivi evitando di concentrare nuovamente lo stesso fattore, mantenendo i target dinamici nel range target -3% .. target.
 
 ## Controlli obbligatori del PlanReviewAgent
 Il revisore deve rifiutare/segnalare come hard violation quando:

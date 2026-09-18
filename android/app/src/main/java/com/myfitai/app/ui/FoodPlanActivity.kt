@@ -12,31 +12,39 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
+import com.myfitai.app.data.local.entity.CheatEntryEntity
+import com.myfitai.app.domain.food.NutritionRecoveryTargetEngine
+import com.myfitai.app.domain.calculation.EnergyTargetPresentation
+import com.myfitai.app.domain.calculation.LocalCalculationEngine
 import com.myfitai.app.domain.food.FoodMeal
 import com.myfitai.app.domain.food.FoodPlanDay
 import com.myfitai.app.domain.food.FoodPlanMetrics
 import com.myfitai.app.domain.food.FoodPlanVersion
 import com.myfitai.app.domain.food.FoodConsumptionMetrics
+import com.myfitai.app.domain.food.FoodConsumptionKeys
+import com.myfitai.app.domain.food.FoodConsumptionStatus
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.ui.food.FoodPlanViewModel
 import com.myfitai.app.ui.widgets.MealPlanRowView
 import com.myfitai.app.ui.widgets.WeekDaySelectorView
 import kotlinx.coroutines.launch
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
 class FoodPlanActivity : BaseShellActivity() {
 
     private val data by lazy { AppDataContainer.get(this) }
     private val viewModel: FoodPlanViewModel by viewModels {
-         FoodPlanViewModel.Factory(data.mealPlanRepository, data.activeProfileStore, data.nutritionPlanGenerationService, data.notificationScheduler, data.foodConsumptionRepository)
+         FoodPlanViewModel.Factory(data.mealPlanRepository, data.userProfileRepository, data.activeProfileStore, data.nutritionPlanGenerationService, data.profileCalculationService, data.notificationScheduler, data.foodConsumptionRepository, data.cheatEntryRepository, data.nutritionRecoveryRepository, data.workoutEnergyExpenditureRepository, data.aiJobScheduler)
     }
 
     private val mealAlternativeLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -52,13 +60,18 @@ class FoodPlanActivity : BaseShellActivity() {
         findViewById<View>(R.id.prevWeekButton).setOnClickListener { viewModel.previousWeek() }
         findViewById<View>(R.id.nextWeekButton).setOnClickListener { viewModel.nextWeek() }
         findViewById<View>(R.id.shoppingButton).setOnClickListener {
-            startActivity(Intent(this, ShoppingListActivity::class.java).putExtra(ShoppingListActivity.EXTRA_WEEK_START_EPOCH_DAY, viewModel.state.value.weekStart.toEpochDay()))
+            viewModel.state.value.takeIf { it.hasPlan }?.let { state ->
+                startActivity(Intent(this, ShoppingListActivity::class.java).putExtra(ShoppingListActivity.EXTRA_WEEK_START_EPOCH_DAY, state.weekStart.toEpochDay()))
+            }
         }
-        findViewById<View>(R.id.cheatButton).setOnClickListener { go(CheatEntryActivity::class.java) }
+        findViewById<View>(R.id.cheatButton).setOnClickListener {
+            if (viewModel.state.value.hasPlan) go(CheatEntryActivity::class.java)
+        }
         findViewById<View>(R.id.generatePlanButton).setOnClickListener { confirmPlanGeneration() }
         renderMealCountPreference()
         weekDaySelector.setOnDaySelectedListener(viewModel::selectDay)
-        lifecycleScope.launch { repeatOnLifecycle(Lifecycle.State.STARTED) { viewModel.state.collect(::render) } }
+        arrangeFoodSections()
+        lifecycleScope.launch { viewModel.state.collect(::render) }
     }
 
     private fun renderMealCountPreference() {
@@ -80,6 +93,8 @@ class FoodPlanActivity : BaseShellActivity() {
     }
 
     private fun render(state: FoodPlanViewModel.State) {
+        findViewById<View>(R.id.shoppingButton).isEnabled = state.hasPlan && !state.generation.running
+        findViewById<View>(R.id.cheatButton).isEnabled = state.hasPlan && !state.generation.running
         val weekEnd = state.weekStart.plusDays(6)
         findViewById<TextView>(R.id.weekRangeLabel).text = formatWeekRange(state.weekStart, weekEnd)
         weekDaySelector.setDays((0..6).map { offset ->
@@ -102,8 +117,92 @@ class FoodPlanActivity : BaseShellActivity() {
         else if (!state.hasPlan) empty.text = "Nessun piano per questa settimana. Genera un piano per vedere pasti, quantità e valori nutrizionali."
 
         renderGeneration(state)
+        renderEnergy(state.energy)
+        renderRecovery(state)
         renderMeals(state.weekStart, day)
-        renderTotals(day, state.snapshot?.version, state.consumptionRecords)
+        renderSupplements(day)
+        renderTotals(day, state.snapshot?.version, state.consumptionRecords, state.cheatEntries, state.exerciseKcalByDay[day?.dateEpochDay] ?: 0)
+    }
+
+    private fun arrangeFoodSections() {
+        val content = weekDaySelector.parent as? LinearLayout ?: return
+        val orderedIds = listOf(
+            R.id.energyTargetCard,
+            R.id.mealCountHint,
+            R.id.recoverySummary,
+            R.id.emptyPlanText,
+            R.id.generationStatusContainer,
+            R.id.mealsContainer,
+            R.id.supplementsCard,
+            R.id.dailyTotalContainer,
+            R.id.weeklyActionsCard,
+            R.id.generatePlanButton,
+        )
+        val views = orderedIds.mapNotNull(content::findViewById)
+        views.forEach(content::removeView)
+        views.forEach(content::addView)
+    }
+
+    private fun renderRecovery(state: FoodPlanViewModel.State) {
+        val recovery = findViewById<TextView>(R.id.recoverySummary)
+        val stateValue = state.recovery
+        recovery.visibility = if (stateValue == null || stateValue.budgetBeforeKcal <= 0) View.GONE else View.VISIBLE
+        if (stateValue != null) recovery.text = "Riequilibrio attivo\nKcal in eccesso prima: ${stateValue.budgetBeforeKcal} · Oggi da riequilibrare: −${stateValue.plannedRecoveryKcal} · Eccedenza residua: ${stateValue.budgetAfterPlannedKcal}\nConfermato: ${stateValue.confirmedRecoveryKcal} kcal"
+    }
+
+    private fun renderEnergy(state: EnergyTargetPresentation.State) {
+        findViewById<TextView>(R.id.energyGoalLabel).text = when (state.goal) {
+            LocalCalculationEngine.Goal.RECOMPOSITION -> "Ricomposizione"
+            LocalCalculationEngine.Goal.WEIGHT_LOSS -> "Dimagrimento"
+            LocalCalculationEngine.Goal.MAINTENANCE -> "Mantenimento"
+            LocalCalculationEngine.Goal.MUSCLE_GAIN -> "Aumento massa"
+            LocalCalculationEngine.Goal.PERFORMANCE -> "Performance"
+            null -> "Obiettivo energetico"
+        }
+        findViewById<TextView>(R.id.energyGoalDescription).text = when (state.goal) {
+            LocalCalculationEngine.Goal.RECOMPOSITION -> "Ridurre gradualmente il grasso e mantenere o aumentare la massa muscolare."
+            LocalCalculationEngine.Goal.WEIGHT_LOSS -> "Creare un deficit calorico controllato per ridurre il peso nel tempo."
+            LocalCalculationEngine.Goal.MAINTENANCE -> "Mantenere il peso attuale con un apporto vicino al consumo giornaliero."
+            LocalCalculationEngine.Goal.MUSCLE_GAIN -> "Favorire l'aumento della massa muscolare con un apporto energetico adeguato."
+            LocalCalculationEngine.Goal.PERFORMANCE -> "Sostenere allenamenti e recupero con energia sufficiente."
+            null -> "Seleziona un obiettivo per interpretare il target calorico."
+        }
+        val factorPercent = state.goal?.let { ((LocalCalculationEngine.goalEnergyFactor(it) - 1.0) * 100.0).roundToInt() }
+        findViewById<TextView>(R.id.energyModeLabel).text = factorPercent?.let {
+            when {
+                it > 0 -> "+$it% vs mantenimento"
+                it < 0 -> "−${abs(it)}% vs mantenimento"
+                else -> "0% vs mantenimento"
+            }
+        } ?: when (state.mode) {
+            EnergyTargetPresentation.Mode.RECOVERY_ADJUSTED -> "Recovery"
+            EnergyTargetPresentation.Mode.INSUFFICIENT_DATA -> "Da completare"
+            else -> "Target"
+        }
+        findViewById<TextView>(R.id.energyTargetCaption).text = if (state.mode == EnergyTargetPresentation.Mode.RECOVERY_ADJUSTED) "Target effettivo di oggi" else "Target di oggi"
+        findViewById<TextView>(R.id.energyTargetValue).text = state.effectiveTargetKcal?.let { "$it kcal" } ?: "Non disponibile"
+        val exerciseSummary = if (state.exerciseKcal > 0) " · Base ${UiNumberFormat.decimal(state.baseTdeeKcal)} + esercizio ${state.exerciseKcal} kcal" else ""
+        findViewById<TextView>(R.id.energyTargetSubline).text = when (state.mode) {
+            EnergyTargetPresentation.Mode.DEFICIT -> "Segui questo valore per assumere meno calorie del mantenimento."
+            EnergyTargetPresentation.Mode.MAINTENANCE -> "Segui questo valore per restare vicino al mantenimento."
+            EnergyTargetPresentation.Mode.SURPLUS -> "Segui questo valore per sostenere un aumento controllato."
+            EnergyTargetPresentation.Mode.RECOVERY_ADJUSTED -> "Valore ridotto temporaneamente per riequilibrare la giornata."
+            EnergyTargetPresentation.Mode.INSUFFICIENT_DATA -> "Completa profilo, peso e rilevazioni per calcolarlo."
+        } + exerciseSummary
+        findViewById<TextView>(R.id.energyMaintenanceValue).text = "${UiNumberFormat.decimal(state.tdeeKcal)} kcal"
+        findViewById<TextView>(R.id.energyDifferenceValue).text = when (state.mode) {
+            EnergyTargetPresentation.Mode.DEFICIT -> state.differenceKcal?.let { "−${abs(it)} kcal" } ?: "—"
+            EnergyTargetPresentation.Mode.SURPLUS -> state.differenceKcal?.let { "+${abs(it)} kcal" } ?: "—"
+            EnergyTargetPresentation.Mode.MAINTENANCE -> "In linea"
+            EnergyTargetPresentation.Mode.RECOVERY_ADJUSTED -> state.recovery?.plannedRecoveryKcal?.let { "−$it kcal" } ?: "—"
+            EnergyTargetPresentation.Mode.INSUFFICIENT_DATA -> "—"
+        }
+        findViewById<View>(R.id.energyRecoveryDetails).apply {
+            visibility = if (state.mode == EnergyTargetPresentation.Mode.RECOVERY_ADJUSTED) View.VISIBLE else View.GONE
+        }
+        findViewById<TextView>(R.id.energyRecoveryValue).text = state.recovery?.let {
+            "Normale ${state.normalTargetKcal ?: "—"} kcal  •  Eccedenza residua ${it.budgetAfterPlannedKcal} kcal  •  Confermato ${it.confirmedRecoveryKcal} kcal"
+        }.orEmpty()
     }
 
     private fun renderGeneration(state: FoodPlanViewModel.State) {
@@ -142,25 +241,32 @@ class FoodPlanActivity : BaseShellActivity() {
             val changeEnabled = canChangeMeal(day.dateEpochDay, meal.timeMinutes) && meal.kcal != null
             val row = MealPlanRowView(this).apply {
                 setTitle(displayMealType(meal.type)); setKcal(meal.kcal?.let { "$it kcal" } ?: "—"); setDescription(meal.title); setImage(imageFor(meal))
+                val record = viewModel.state.value.consumptionRecords.firstOrNull { it.itemKey == FoodConsumptionKeys.meal(meal.id) }
+                val date = LocalDate.ofEpochDay(day.dateEpochDay)
+                val past = date.isBefore(LocalDate.now()) || (date == LocalDate.now() && (meal.timeMinutes ?: Int.MAX_VALUE) <= LocalTime.now().hour * 60 + LocalTime.now().minute)
+                setStatus(when (record?.status) { FoodConsumptionStatus.CONSUMED.name -> "Registrato da te"; FoodConsumptionStatus.SKIPPED.name -> "Saltato"; else -> if (past) "Pasto concluso · da registrare" else "Da registrare" }, record?.status == FoodConsumptionStatus.CONSUMED.name)
                 setOnClickListener { openMeal(meal.id) }; setChangeEnabled(changeEnabled)
                 if (changeEnabled) setOnChangeClickListener { openMealAlternatives(weekStart, day, meal) }
                 contentDescription = "${displayMealType(meal.type)}: ${meal.title}"
             }
             container.addView(row, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(8) })
         }
-        day?.supplements?.takeIf { it.isNotEmpty() }?.let { supplements ->
-            container.addView(infoRow("Integrazione", supplements.joinToString("\n") { s ->
-                val timePrefix = s.timeMinutes?.let { "%02d:%02d · ".format(it / 60, it % 60) }.orEmpty()
-                val dosePart = "${s.name} ${formatMacro(s.dose)} ${s.unit}"
-                val energyPart = if (s.kcal > 0 || s.proteinG > 0f || s.carbsG > 0f || s.fatG > 0f) {
-                    " · ${s.kcal} kcal · Proteine ${formatMacro(s.proteinG)} g · Carboidrati ${formatMacro(s.carbsG)} g · Grassi ${formatMacro(s.fatG)} g"
-                } else {
-                    ""
-                }
-                "$timePrefix$dosePart$energyPart"
-            }))
-        }
         day?.hydrationNote?.takeIf { it.isNotBlank() }?.let { container.addView(infoRow("Idratazione", it)) }
+    }
+
+    private fun renderSupplements(day: FoodPlanDay?) {
+        val card = findViewById<View>(R.id.supplementsCard)
+        val container = findViewById<LinearLayout>(R.id.supplementsContainer)
+        container.removeAllViews()
+        val supplements = day?.supplements.orEmpty()
+        card.visibility = if (supplements.isEmpty()) View.GONE else View.VISIBLE
+        supplements.forEach { supplement ->
+            val timing = supplement.timeMinutes?.let { "%02d:%02d · ".format(it / 60, it % 60) }.orEmpty()
+            container.addView(infoRow(
+                "${timing}${supplement.name} · dose ${formatMacro(supplement.dose)} ${supplement.unit}",
+                "${supplement.kcal} kcal · Proteine ${formatMacro(supplement.proteinG)} g · Carboidrati ${formatMacro(supplement.carbsG)} g · Grassi ${formatMacro(supplement.fatG)} g${supplement.notes?.let { "\nNote: $it" }.orEmpty()}",
+            ))
+        }
     }
 
     private fun infoRow(title: String, body: String) = TextView(this).apply {
@@ -170,7 +276,7 @@ class FoodPlanActivity : BaseShellActivity() {
         contentDescription = "$title: $body"
     }
 
-    private fun renderTotals(day: FoodPlanDay?, version: FoodPlanVersion?, records: List<com.myfitai.app.data.local.entity.FoodConsumptionEntity>) {
+    private fun renderTotals(day: FoodPlanDay?, version: FoodPlanVersion?, records: List<com.myfitai.app.data.local.entity.FoodConsumptionEntity>, cheats: List<CheatEntryEntity>, exerciseKcal: Int) {
         val totalContainer = findViewById<View>(R.id.dailyTotalContainer); val totalHeader = findViewById<View>(R.id.dailyTotalHeader)
         if (day == null) { totalContainer.visibility = View.GONE; totalHeader.visibility = View.GONE; return }
         val totals = FoodPlanMetrics.dayTotals(day)
@@ -180,25 +286,45 @@ class FoodPlanActivity : BaseShellActivity() {
         val selectedDate = LocalDate.ofEpochDay(day.dateEpochDay)
         val dayLabel = selectedDate.format(DateTimeFormatter.ofPattern("EEE d MMM", Locale.ITALIAN))
             .replaceFirstChar { it.uppercase() }
+        val dayCheats = cheats.filter {
+            Instant.ofEpochMilli(it.occurredAtEpochMillis)
+                .atZone(java.time.ZoneId.systemDefault())
+                .toLocalDate() == selectedDate
+        }
+        val cheatKcal = dayCheats.sumOf { it.estimatedKcal?.toDouble() ?: 0.0 }
+        val cheatProtein = dayCheats.sumOf { it.estimatedProteinG?.toDouble() ?: 0.0 }
+        val cheatCarbs = dayCheats.sumOf { it.estimatedCarbsG?.toDouble() ?: 0.0 }
+        val cheatFat = dayCheats.sumOf { it.estimatedFatG?.toDouble() ?: 0.0 }
+        val hasConsumedData = dayRecords.isNotEmpty() || dayCheats.isNotEmpty()
         findViewById<TextView>(R.id.dailyTotalHeader).text = "Totale giornaliero · $dayLabel"
-        findViewById<TextView>(R.id.dailyTotalLegend).text = "Target / piano / consumo registrato"
+        findViewById<TextView>(R.id.dailyTotalLegend).text = "Registrato da te = cibo segnato. Esercizio = kcal allenamento. Bilancio netto = cibo registrato − esercizio."
         findViewById<TextView>(R.id.totalKcalTarget).text = formatValue(version?.targetKcal, "kcal")
         findViewById<TextView>(R.id.totalKcalPlanned).text = formatValue(totals.kcal, "kcal")
-        findViewById<TextView>(R.id.totalKcalConsumed).text = formatConsumed(consumed.kcal, dayRecords.isNotEmpty(), "kcal")
+        findViewById<TextView>(R.id.totalKcalConsumed).text = formatConsumed(consumed.kcal + cheatKcal, hasConsumedData, "kcal")
+        findViewById<TextView>(R.id.exerciseKcalValue).text = if (exerciseKcal > 0) "+$exerciseKcal kcal" else "Nessun allenamento"
+        findViewById<TextView>(R.id.netKcalValue).text = if (hasConsumedData && exerciseKcal > 0) "${(consumed.kcal + cheatKcal - exerciseKcal).toInt()} kcal" else if (hasConsumedData) formatConsumed(consumed.kcal + cheatKcal, true, "kcal") else "—"
         findViewById<TextView>(R.id.totalProteinTarget).text = formatValue(version?.targetProteinG, "g")
         findViewById<TextView>(R.id.totalProteinPlanned).text = formatValue(totals.proteinG, "g")
-        findViewById<TextView>(R.id.totalProteinConsumed).text = formatConsumed(consumed.proteinG, dayRecords.isNotEmpty(), "g")
+        findViewById<TextView>(R.id.totalProteinConsumed).text = formatConsumed(consumed.proteinG + cheatProtein, hasConsumedData, "g")
         findViewById<TextView>(R.id.totalCarbsTarget).text = formatValue(version?.targetCarbsG, "g")
         findViewById<TextView>(R.id.totalCarbsPlanned).text = formatValue(totals.carbsG, "g")
-        findViewById<TextView>(R.id.totalCarbsConsumed).text = formatConsumed(consumed.carbsG, dayRecords.isNotEmpty(), "g")
+        findViewById<TextView>(R.id.totalCarbsConsumed).text = formatConsumed(consumed.carbsG + cheatCarbs, hasConsumedData, "g")
         findViewById<TextView>(R.id.totalFatTarget).text = formatValue(version?.targetFatG, "g")
         findViewById<TextView>(R.id.totalFatPlanned).text = formatValue(totals.fatG, "g")
-        findViewById<TextView>(R.id.totalFatConsumed).text = formatConsumed(consumed.fatG, dayRecords.isNotEmpty(), "g")
+        findViewById<TextView>(R.id.totalFatConsumed).text = formatConsumed(consumed.fatG + cheatFat, hasConsumedData, "g")
         val expected = day.meals.size + day.supplements.size
-        findViewById<TextView>(R.id.consumptionCoverage).text = if (dayRecords.isEmpty()) {
-            "Consumo: nessuna registrazione"
+        findViewById<TextView>(R.id.consumptionCoverage).text = if (dayRecords.isEmpty() && dayCheats.isEmpty()) {
+            "Consumo registrato da te: nessun alimento segnato"
         } else {
-            "Registrati: ${consumed.recordedCount} di $expected elementi · consumati ${consumed.consumedCount}"
+            "Consumo registrato da te: ${consumed.recordedCount} di $expected elementi · consumati ${consumed.consumedCount}" +
+                dayCheats.takeIf { it.isNotEmpty() }?.let { " · sgarri ${it.size}" }.orEmpty()
+        }
+        findViewById<TextView>(R.id.cheatSummary).apply {
+            visibility = if (dayCheats.isEmpty()) View.GONE else View.VISIBLE
+            text = dayCheats.joinToString("\n") { cheat ->
+                "Sgarro registrato: ${cheat.description}" +
+                    (cheat.estimatedKcal?.let { " · ≈ $it kcal" }.orEmpty())
+            }
         }
     }
 

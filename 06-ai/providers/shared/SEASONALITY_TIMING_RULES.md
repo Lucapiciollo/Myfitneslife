@@ -5,7 +5,7 @@ Queste regole sono condivise da Gemini e OpenAI e si applicano a generazione, ad
 ## Principio di priorità
 La stagionalità è una preferenza di selezione, NON un vincolo superiore ai target nutrizionali. Ordine di priorità:
 1. sicurezza, allergie/intolleranze e dati utente;
-2. target dinamici e tolleranza ±3%;
+2. target dinamici nel range target -3% .. target;
 3. timing nutrizionale e comfort digestivo;
 4. preferenze e storico utente;
 5. stagionalità, varietà e praticità.
@@ -31,7 +31,7 @@ Gli orari dei pasti devono essere coerenti con gli orari e le abitudini ricevute
 Non inventare orari se l'app non li fornisce e non imporre regole rigide del tipo “frutta solo al mattino”, “carboidrati vietati la sera” o equivalenti non giustificati.
 
 ## Coerenza con calorie e macro
-Qualunque sostituzione stagionale deve essere ricalcolata e deve mantenere calorie e macro nei target dinamici entro ±3%. La stagionalità non giustifica mai uno scostamento fuori tolleranza.
+Qualunque sostituzione stagionale deve essere ricalcolata e deve mantenere calorie e macro nei target dinamici nel range target -3% .. target. La stagionalità non giustifica mai uno scostamento fuori tolleranza.
 
 ## Revisione
 Il PlanReviewAgent deve segnalare una violazione solo se il piano dichiara di applicare la stagionalità ma usa dati incoerenti o inventati. La mancata scelta stagionale, da sola, non è una hard violation quando target, preferenze, disponibilità o timing rendono migliore un'altra scelta.

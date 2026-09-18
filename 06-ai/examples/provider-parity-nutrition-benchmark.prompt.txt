@@ -5,7 +5,7 @@ Questo prompt viene inviato identico a Gemini e OpenAI. Devi rispettare il medes
 
 REGOLE GLOBALI
 - I target sono dinamici e già calcolati dall'app: non modificarli e non ricalcolarli.
-- Tolleranza ufficiale: ±3%.
+- Tolleranza ufficiale: target -3% .. target, mai sopra il target.
 - Non inventare dati mancanti. Se manca un dato essenziale usa lo stato previsto dallo schema.
 - Nessuna diagnosi, farmaci o indicazioni cliniche.
 - Nessuna teoria generica di food combining.
@@ -38,7 +38,7 @@ intolerances: []
 knownDigestiveSensitivities: []
 
 TASK
-Genera SOLO un payload di test compatibile con lo schema canonico per la settimana che inizia il 2026-09-14, compilando il solo giorno 2026-09-14 come `trainingDay=true` con 5 pasti (BREAKFAST, LUNCH, PRE_WORKOUT, POST_WORKOUT o DINNER, SNACK). Il totale della giornata deve essere entro ±3% dei target.
+Genera SOLO un payload di test compatibile con lo schema canonico per la settimana che inizia il 2026-09-14, compilando il solo giorno 2026-09-14 come `trainingDay=true` con 5 pasti (BREAKFAST, LUNCH, PRE_WORKOUT, POST_WORKOUT o DINNER, SNACK). Il totale della giornata deve essere nel range target -3% .. target, mai sopra i target.
 
 VINCOLO DI PARITY
 Usa ESATTAMENTE questi nomi canonici: `status`, `operation`, `weekStart`, `needsInput`, `evidenceIds`, `days`, `date`, `trainingDay`, `meals`, `mealType`, `time`, `title`, `ingredients`, `name`, `quantity`, `unit`, `weightState`, `nutritionConfidence`, `kcal`, `proteinG`, `carbsG`, `fatG`, `digestiveProfile`, `bloatingRisk`, `waterRetentionRisk`, `digestiveFlags`, `digestiveNote`, `totals`, `agentValidation`.

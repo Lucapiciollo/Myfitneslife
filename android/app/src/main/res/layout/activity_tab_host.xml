@@ -5,11 +5,25 @@
     android:orientation="vertical"
     android:background="@color/bg_primary">
 
+    <LinearLayout
+        android:id="@+id/tabShell"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+    <FrameLayout
+        android:id="@+id/tabHeader"
+        android:layout_width="match_parent"
+        android:layout_height="54dp" />
+
     <FrameLayout
         android:id="@+id/tabContent"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1" />
+
+    </LinearLayout>
 
     <include layout="@layout/view_bottom_navigation" />
 </LinearLayout>

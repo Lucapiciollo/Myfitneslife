@@ -4,15 +4,28 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.myfitai.app.data.profile.ActiveProfileStore
+import com.myfitai.app.data.repository.UserProfileRepository
 import com.myfitai.app.data.repository.MealPlanRepository
 import com.myfitai.app.data.repository.FoodConsumptionRepository
 import com.myfitai.app.data.local.entity.FoodConsumptionEntity
+import com.myfitai.app.data.local.entity.CheatEntryEntity
+import com.myfitai.app.data.repository.CheatEntryRepository
+import com.myfitai.app.data.repository.NutritionRecoveryRepository
+import com.myfitai.app.data.repository.WorkoutEnergyExpenditureRepository
+import com.myfitai.app.domain.food.NutritionRecoveryTargetEngine
 import com.myfitai.app.domain.food.FoodPlanDay
 import com.myfitai.app.domain.food.FoodPlanSnapshot
 import com.myfitai.app.domain.food.NutritionPlanGenerationService
+import com.myfitai.app.domain.ai.AiJobScheduler
+import com.myfitai.app.domain.ai.AiJobState
+import com.myfitai.app.domain.ai.AiJobType
+import com.myfitai.app.domain.calculation.EnergyTargetPresentation
+import com.myfitai.app.domain.calculation.ProfileCalculationMapper
+import com.myfitai.app.domain.calculation.ProfileCalculationService
 import com.myfitai.app.notifications.NotificationScheduler
 import com.myfitai.app.ai.AiTransportException
 import com.myfitai.app.ai.AiTransportFailureKind
+import com.myfitai.app.ai.AiExecutionService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -34,11 +47,27 @@ private fun todayIndexInWeek(weekStart: LocalDate): Int {
 
 class FoodPlanViewModel(
     private val repository: MealPlanRepository,
+    private val profiles: UserProfileRepository,
     private val activeProfileStore: ActiveProfileStore,
     private val generationService: NutritionPlanGenerationService,
+    private val calculations: ProfileCalculationService,
     private val notificationScheduler: NotificationScheduler,
     private val consumptionRepository: FoodConsumptionRepository,
+    private val cheatEntryRepository: CheatEntryRepository,
+    private val recoveryRepository: NutritionRecoveryRepository,
+    private val exerciseEnergyRepository: WorkoutEnergyExpenditureRepository,
+    private val generationScheduler: AiJobScheduler,
 ) : ViewModel() {
+    private data class SourceData(
+        val weekStart: LocalDate,
+        val snapshot: FoodPlanSnapshot?,
+        val records: List<FoodConsumptionEntity>,
+        val cheats: List<CheatEntryEntity>,
+        val recovery: NutritionRecoveryTargetEngine.State? = null,
+        val energy: EnergyTargetPresentation.State = EnergyTargetPresentation.State(mode = EnergyTargetPresentation.Mode.INSUFFICIENT_DATA),
+        val exerciseKcalByDay: Map<Long, Int> = emptyMap(),
+    )
+
     data class GenerationState(
         val running: Boolean = false,
         val error: String? = null,
@@ -53,33 +82,85 @@ class FoodPlanViewModel(
         val hasPlan: Boolean = false,
         val generation: GenerationState = GenerationState(),
         val consumptionRecords: List<FoodConsumptionEntity> = emptyList(),
+        val cheatEntries: List<CheatEntryEntity> = emptyList(),
+        val recovery: NutritionRecoveryTargetEngine.State? = null,
+        val energy: EnergyTargetPresentation.State = EnergyTargetPresentation.State(mode = EnergyTargetPresentation.Mode.INSUFFICIENT_DATA),
+        val exerciseKcalByDay: Map<Long, Int> = emptyMap(),
     )
 
     private val selectedWeekStart = MutableStateFlow(planWeekMonday(LocalDate.now()))
     private val selectedDayIndex = MutableStateFlow(todayIndexInWeek(selectedWeekStart.value))
     private val generationState = MutableStateFlow(GenerationState())
+    private val refreshTick = MutableStateFlow(0)
+
+    init {
+        viewModelScope.launch {
+            activeProfileStore.activeProfileId.flatMapLatest { profileId ->
+                if (profileId <= 0L) flowOf(AiJobState.Idle)
+                else selectedWeekStart.flatMapLatest { week ->
+                    generationScheduler.observe(AiJobType.WEEKLY_PLAN, profileId, jobKey(week))
+                }
+            }.collect { applyGenerationState(it) }
+        }
+    }
 
     private val source = activeProfileStore.activeProfileId.flatMapLatest { profileId ->
-        if (profileId <= 0L) flowOf<Triple<LocalDate, FoodPlanSnapshot?, List<FoodConsumptionEntity>>>(Triple(selectedWeekStart.value, null, emptyList()))
+        if (profileId <= 0L) flowOf(SourceData(selectedWeekStart.value, null, emptyList(), emptyList(), null))
         else selectedWeekStart.flatMapLatest { weekStart ->
-            combine(repository.plans(profileId), consumptionRepository.all(profileId)) { _, records ->
-                Triple(weekStart, repository.loadLatestSnapshot(profileId, weekStart.toEpochDay()), records)
+            refreshTick.flatMapLatest {
+                combine(profiles.profile(profileId), repository.plans(profileId), consumptionRepository.all(profileId), cheatEntryRepository.all(profileId), recoveryRepository.events(profileId)) { profile, _, records, cheats, events ->
+                val snapshot = repository.loadLatestSnapshot(profileId, weekStart.toEpochDay())
+                val exerciseKcalByDay = exerciseEnergyRepository.forRange(profileId, weekStart.toEpochDay(), weekStart.plusDays(6).toEpochDay())
+                    .groupBy { it.exerciseDateEpochDay }.mapValues { (_, values) -> values.sumOf { it.caloriesKcal.coerceAtLeast(0) } }
+                val recovery = snapshot?.version?.targetKcal?.let { target ->
+                    val day = LocalDate.now().toEpochDay()
+                    NutritionRecoveryTargetEngine.calculate(
+                        target,
+                        events,
+                        day,
+                        recoveryRepository.withdrawal(profileId, day),
+                        recoveryRepository.plannedBefore(profileId, day),
+                        exerciseKcal = exerciseKcalByDay[day] ?: 0,
+                    )
+                }
+                val calculation = calculations.profileSnapshot(profileId)?.calculation
+                    SourceData(
+                    weekStart = weekStart,
+                    snapshot = snapshot,
+                    records = records,
+                    cheats = cheats,
+                    recovery = recovery,
+                    energy = EnergyTargetPresentation.build(
+                        calculation = calculation,
+                        recovery = recovery,
+                        goal = ProfileCalculationMapper.goal(profile?.goal),
+                    ),
+                    exerciseKcalByDay = exerciseKcalByDay,
+                    )
+                }
             }
         }
     }
 
-    val state: StateFlow<State> = combine(source, selectedDayIndex, generationState) { (weekStart, snapshot, records), dayIndex, generation ->
+    val state: StateFlow<State> = combine(source, selectedDayIndex, generationState) { sourceValue, dayIndex, generation ->
+        val weekStart = sourceValue.weekStart
+        val snapshot = sourceValue.snapshot
+        val records = sourceValue.records
         val safeIndex = dayIndex.coerceIn(0, 6)
         State(
             weekStart = weekStart,
             snapshot = snapshot,
             selectedDayIndex = safeIndex,
-            selectedDay = snapshot?.version?.days?.firstOrNull { it.dateEpochDay == weekStart.plusDays(safeIndex.toLong()).toEpochDay() },
+            selectedDay = snapshot?.version?.days?.firstOrNull { day -> day.dateEpochDay == weekStart.plusDays(safeIndex.toLong()).toEpochDay() },
             hasPlan = snapshot != null,
             generation = generation,
             consumptionRecords = records,
+            cheatEntries = sourceValue.cheats,
+            recovery = sourceValue.recovery,
+            energy = sourceValue.energy,
+            exerciseKcalByDay = sourceValue.exerciseKcalByDay,
         )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), State())
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, State())
 
     fun selectWeek(weekStartEpochDay: Long) {
         if (generationState.value.running) return
@@ -95,25 +176,35 @@ class FoodPlanViewModel(
     fun generateCurrentWeek() {
         if (generationState.value.running) return
         val week = selectedWeekStart.value
+        val profileId = activeProfileStore.currentIdOrNull() ?: return
         generationState.value = GenerationState(running = true)
-        viewModelScope.launch {
-            runCatching { generationService.generateWeek(week) }
-                .onSuccess { result ->
-                    runCatching { notificationScheduler.refresh() }
-                    generationState.value = GenerationState(
-                        successMessage = "Piano generato con ${result.provider} · ${result.model}",
-                        usageMessage = "Costo effettivo: verifica il billing del provider IA",
-                    )
-                    }
-                    .onFailure { error ->
-                    val message = when (error) {
-                        is NutritionPlanGenerationService.GenerationException.NeedsInput -> "Completa prima: ${error.fields.joinToString()}"
-                        is NutritionPlanGenerationService.GenerationException.PastWeek -> "Le settimane concluse sono storico in sola lettura."
-                        is AiTransportException.Http -> providerLimitMessage(error)
-                        else -> error.message ?: "Generazione non riuscita"
-                    }
-                    generationState.value = GenerationState(error = message)
-                }
+        generationScheduler.enqueue(AiJobType.WEEKLY_PLAN, profileId, jobKey(week))
+    }
+
+    fun cancelGeneration() {
+        if (!generationState.value.running) return
+        val profileId = activeProfileStore.currentIdOrNull() ?: return
+        generationScheduler.cancel(AiJobType.WEEKLY_PLAN, profileId, jobKey(selectedWeekStart.value))
+        generationState.value = GenerationState(error = "Generazione annullata")
+    }
+
+    private fun jobKey(week: LocalDate): String = week.toEpochDay().toString()
+
+    private suspend fun applyGenerationState(workState: AiJobState) {
+        when (workState) {
+            AiJobState.Idle -> Unit
+            AiJobState.Running -> generationState.value = GenerationState(running = true)
+            is AiJobState.Succeeded -> {
+                generationScheduler.consume(workState.id)
+                runCatching { notificationScheduler.refresh() }
+                generationState.value = GenerationState(successMessage = "Piano generato con ${workState.provider}", usageMessage = "Piano validato localmente e aggiornato automaticamente")
+                refreshTick.value++
+            }
+            is AiJobState.Failed -> {
+                generationScheduler.consume(workState.id)
+                generationState.value = GenerationState(error = workState.message)
+                refreshTick.value++
+            }
         }
     }
 
@@ -140,17 +231,31 @@ class FoodPlanViewModel(
         else -> "circa ${((seconds + 59) / 60)} minuti"
     }
 
+    private fun friendlyGenerationError(message: String?): String = when {
+        message == "DAY_TOTALS_INCONSISTENT" -> "i totali giornalieri non coincidono con i pasti"
+        message?.contains("PIPE_I_INVALID") == true -> "un ingrediente contiene separatori non validi"
+        message?.contains("TARGET_TOLERANCE_EXCEEDED") == true -> "i valori sono fuori dal target nutrizionale"
+        message?.contains("INVALID_SCHEMA") == true -> "il formato JSON/pipe non è valido"
+        else -> "controllo locale fallito"
+    }
+
     class Factory(
         private val repository: MealPlanRepository,
+        private val profiles: UserProfileRepository,
         private val activeProfileStore: ActiveProfileStore,
         private val generationService: NutritionPlanGenerationService,
+        private val calculations: ProfileCalculationService,
         private val notificationScheduler: NotificationScheduler,
         private val consumptionRepository: FoodConsumptionRepository,
+        private val cheatEntryRepository: CheatEntryRepository,
+        private val recoveryRepository: NutritionRecoveryRepository,
+        private val exerciseEnergyRepository: WorkoutEnergyExpenditureRepository,
+        private val generationScheduler: AiJobScheduler,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(FoodPlanViewModel::class.java))
-            return FoodPlanViewModel(repository, activeProfileStore, generationService, notificationScheduler, consumptionRepository) as T
+            return FoodPlanViewModel(repository, profiles, activeProfileStore, generationService, calculations, notificationScheduler, consumptionRepository, cheatEntryRepository, recoveryRepository, exerciseEnergyRepository, generationScheduler) as T
         }
     }
 }

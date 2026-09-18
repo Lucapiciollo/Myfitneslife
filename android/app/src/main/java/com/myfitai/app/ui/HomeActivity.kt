@@ -5,16 +5,22 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.view.View
 import android.widget.TextView
+import android.widget.ProgressBar
+import android.content.res.ColorStateList
+import android.widget.LinearLayout
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.domain.calculation.LocalCalculationEngine
+import com.myfitai.app.domain.calculation.DailyCalorieProgress
+import com.myfitai.app.domain.calculation.EnergyTargetPresentation
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.notifications.NotificationPreferences
 import com.myfitai.app.ui.home.HomeViewModel
@@ -29,6 +35,8 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
 class HomeActivity : BaseShellActivity() {
 
@@ -41,6 +49,9 @@ class HomeActivity : BaseShellActivity() {
             workoutRepository = data.workoutRepository,
             mealPlanRepository = data.mealPlanRepository,
             activeProfileStore = data.activeProfileStore,
+            profileCalculationService = data.profileCalculationService,
+            recoveryRepository = data.nutritionRecoveryRepository,
+            foodConsumptionRepository = data.foodConsumptionRepository,
         )
     }
 
@@ -65,6 +76,7 @@ class HomeActivity : BaseShellActivity() {
         }
         findViewById<android.view.View>(R.id.nextWorkoutCard).setOnClickListener { go(WorkoutsActivity::class.java) }
         findViewById<android.view.View>(R.id.measurementsButton).setOnClickListener { go(MeasurementsActivity::class.java) }
+        findViewById<android.view.View>(R.id.todayMenuButton).setOnClickListener { showTodayMenu(viewModel.state.value.todayMenu) }
         findViewById<TextView>(R.id.todayLabel).text = todayLabel()
 
         findViewById<MetricCardView>(R.id.metricWeight).setLabel(getString(R.string.dashboard_metric_weight))
@@ -90,11 +102,25 @@ class HomeActivity : BaseShellActivity() {
     }
 
     private fun observeDashboard() {
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.state.collect(::renderDashboard)
+        lifecycleScope.launch { viewModel.state.collect(::renderDashboard) }
+    }
+
+    private fun showTodayMenu(menu: List<HomeViewModel.NextMealState>) {
+        val content = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(4), dp(20), dp(4)) }
+        if (menu.isEmpty()) {
+            content.addView(TextView(this).apply { text = "Nessun menu pianificato per oggi."; textSize = 14f; setTextColor(getColor(R.color.text_secondary)) })
+        } else {
+            menu.forEach { meal ->
+                content.addView(TextView(this).apply {
+                    val time = meal.timeMinutes?.let { "%02d:%02d".format(it / 60, it % 60) } ?: "Orario non indicato"
+                    text = "$time · ${meal.type}\n${meal.title} · ${meal.kcal ?: "—"} kcal"
+                    textSize = 14f
+                    setTextColor(getColor(R.color.text_primary))
+                    setPadding(0, dp(10), 0, dp(10))
+                })
             }
         }
+        MaterialAlertDialogBuilder(this).setTitle("Menu di oggi").setView(content).setPositiveButton("Chiudi", null).show()
     }
 
     private fun renderDashboard(state: HomeViewModel.DashboardState) {
@@ -104,13 +130,93 @@ class HomeActivity : BaseShellActivity() {
         renderMetric(findViewById(R.id.metricWeight), state.weight.value, state.weight.deltaFromPrevious, "kg", DeltaSemantic.NEUTRAL)
         renderMetric(findViewById(R.id.metricFat), state.bodyFat.value, state.bodyFat.deltaFromPrevious, "%", DeltaSemantic.DOWN_IS_POSITIVE)
         renderMetric(findViewById(R.id.metricMuscle), state.muscleMass.value, state.muscleMass.deltaFromPrevious, "kg", DeltaSemantic.UP_IS_POSITIVE)
+        renderEnergy(state.energy)
+        renderCalorieProgress(state)
 
         findViewById<WeightTrendChartView>(R.id.weightTrendChart).setSeries(
             state.trendSeries.map { it.label to it.values },
         )
-        findViewById<TextView>(R.id.recompositionStateText).text = recompositionText(state.recompositionState)
+        findViewById<TextView>(R.id.recompositionStateText).text = trendStatus(state.recompositionState)
+        findViewById<TextView>(R.id.trendExplanationText).text = "Confronta grasso corporeo e massa muscolare tra le rilevazioni disponibili. Non è una diagnosi: serve a capire la direzione dei cambiamenti nel tempo."
+        renderTodaySummary(state)
+        renderWeeklyExpectation(state)
         renderNextMeal(state.nextMeal)
         renderNextWorkout(state.nextWorkout)
+    }
+
+    private fun renderWeeklyExpectation(state: HomeViewModel.DashboardState) {
+        val status = findViewById<TextView>(R.id.weeklyExpectationStatus)
+        val detail = findViewById<TextView>(R.id.weeklyExpectationDetail)
+        val result = state.weeklyExpectation
+        status.text = when (result.goalStatus) {
+            com.myfitai.app.domain.calculation.WeeklyBodyExpectation.GoalStatus.REACHED -> "Obiettivo in linea con gli ultimi dati"
+            com.myfitai.app.domain.calculation.WeeklyBodyExpectation.GoalStatus.REVIEW_REQUIRED -> "Andamento da rivedere con più dati"
+            com.myfitai.app.domain.calculation.WeeklyBodyExpectation.GoalStatus.IN_PROGRESS -> "Obiettivo in corso"
+            com.myfitai.app.domain.calculation.WeeklyBodyExpectation.GoalStatus.NEEDS_MORE_DATA -> "Servono più rilevazioni"
+        }
+        detail.text = if (result.available) "Atteso dal piano: ${UiNumberFormat.decimal(result.expectedFatLossKgMin)}–${UiNumberFormat.decimal(result.expectedFatLossKgMax)} kg di grasso teorico. ${result.caution}" else "${result.caution}"
+    }
+
+    private fun renderTodaySummary(state: HomeViewModel.DashboardState) {
+        val progress = DailyCalorieProgress.calculate(state.energy.effectiveTargetKcal, state.consumedKcalToday)
+        val calories = findViewById<TextView>(R.id.todayCaloriesSummary)
+        calories.text = when {
+            progress.targetKcal == null -> "Calorie: target non disponibile"
+            progress.status == DailyCalorieProgress.Status.EMPTY -> "Calorie: nessun alimento registrato"
+            progress.exceededKcal > 0 -> "Calorie: sopra il target di ${progress.exceededKcal} kcal"
+            else -> "Calorie: ${progress.consumedKcal} / ${progress.targetKcal} kcal registrate"
+        }
+        calories.setTextColor(getColor(if (progress.exceededKcal > 0) R.color.semantic_error else if (progress.status == DailyCalorieProgress.Status.COMPLETE) R.color.accent_green_dark else R.color.text_primary))
+        findViewById<TextView>(R.id.todayMealsSummary).text = if (state.plannedMealsToday > 0) "Pasti: ${state.consumedMealsToday} di ${state.plannedMealsToday} registrati" else "Pasti: nessun piano per oggi"
+        findViewById<TextView>(R.id.todayWorkoutSummary).text = when {
+            state.workoutToday != null -> "Allenamento: ${state.workoutToday.title}"
+            state.restDayToday -> "Allenamento: oggi è previsto riposo"
+            else -> "Allenamento: nessuno registrato oggi"
+        }
+    }
+
+    private fun renderCalorieProgress(state: HomeViewModel.DashboardState) {
+        val progress = DailyCalorieProgress.calculate(state.energy.effectiveTargetKcal, state.consumedKcalToday)
+        val calorieBar = findViewById<ProgressBar>(R.id.calorieProgressBar)
+        calorieBar.progress = progress.percent
+        calorieBar.progressTintList = ColorStateList.valueOf(getColorForCalorieStatus(progress.status))
+        findViewById<TextView>(R.id.calorieProgressValue).text = when {
+            progress.targetKcal == null -> "Completa i dati per calcolare il target."
+            progress.status == DailyCalorieProgress.Status.EMPTY -> "Nessun alimento registrato · la pila è vuota"
+            progress.exceededKcal > 0 -> "${progress.consumedKcal} / ${progress.targetKcal} kcal · sopra il target di ${progress.exceededKcal} kcal"
+            progress.percent >= 100 -> "${progress.consumedKcal} / ${progress.targetKcal} kcal · target raggiunto"
+            else -> "${progress.consumedKcal} / ${progress.targetKcal} kcal · ${progress.percent}% completato"
+        }
+        val recovery = state.energy.recovery
+        findViewById<ProgressBar>(R.id.recoveryTankProgressBar).progress = DailyCalorieProgress.recoveryRemainingPercent(recovery)
+        findViewById<TextView>(R.id.recoveryTankValue).text = if (recovery == null || recovery.budgetBeforeKcal <= 0) {
+            "Nessun recovery attivo."
+        } else {
+            "${recovery.budgetAfterPlannedKcal} kcal residue · ${recovery.exerciseKcal} kcal esercizio già considerate · ${DailyCalorieProgress.recoveryRemainingPercent(recovery)}% dell'eccedenza"
+        }
+        findViewById<View>(R.id.energyRecoveryDetails).visibility = View.VISIBLE
+    }
+
+    private fun getColorForCalorieStatus(status: DailyCalorieProgress.Status): Int = when (status) {
+        DailyCalorieProgress.Status.NO_TARGET -> getColor(R.color.text_muted)
+        DailyCalorieProgress.Status.EMPTY -> getColor(R.color.semantic_warning)
+        DailyCalorieProgress.Status.IN_PROGRESS, DailyCalorieProgress.Status.COMPLETE -> getColor(R.color.accent_green)
+        DailyCalorieProgress.Status.EXCEEDED -> getColor(R.color.semantic_error)
+    }
+
+    private fun todaySummary(state: HomeViewModel.DashboardState): String {
+        val target = state.energy.effectiveTargetKcal?.let { "Target $it kcal" } ?: "Target non disponibile"
+        val meal = state.nextMeal?.let { meal ->
+            val time = meal.timeMinutes?.let { String.format(Locale.ITALIAN, "%02d:%02d", it / 60, it % 60) }
+            listOfNotNull("Pasto", time, meal.title).joinToString(" · ")
+        } ?: "Nessun prossimo pasto"
+        val workout = state.nextWorkout?.let { workout ->
+            val time = Instant.ofEpochMilli(workout.startedAtEpochMillis)
+                .atZone(ZoneId.systemDefault())
+                .format(DateTimeFormatter.ofPattern("HH:mm", Locale.ITALIAN))
+            "Allenamento $time · ${workout.title}"
+        } ?: "Nessun allenamento imminente"
+        return listOf(target, meal, workout).joinToString("\n")
     }
 
     private fun renderNextMeal(next: HomeViewModel.NextMealState?) {
@@ -163,6 +269,76 @@ class HomeActivity : BaseShellActivity() {
         }
     }
 
+    private fun renderEnergy(state: com.myfitai.app.domain.calculation.EnergyTargetPresentation.State) {
+        val modeLabel = findViewById<TextView>(R.id.energyModeLabel)
+        val goalLabel = findViewById<TextView>(R.id.energyGoalLabel)
+        val targetCaption = findViewById<TextView>(R.id.energyTargetCaption)
+        val targetValue = findViewById<TextView>(R.id.energyTargetValue)
+        val subline = findViewById<TextView>(R.id.energyTargetSubline)
+        val maintenanceValue = findViewById<TextView>(R.id.energyMaintenanceValue)
+        val differenceValue = findViewById<TextView>(R.id.energyDifferenceValue)
+        val recoveryDetails = findViewById<View>(R.id.energyRecoveryDetails)
+        val recoveryValue = findViewById<TextView>(R.id.energyRecoveryValue)
+
+        goalLabel.text = goalLabel(state.goal)
+        findViewById<TextView>(R.id.energyGoalDescription).text = goalDescription(state.goal)
+        modeLabel.text = when (state.mode) {
+            EnergyTargetPresentation.Mode.DEFICIT -> "Deficit"
+            EnergyTargetPresentation.Mode.MAINTENANCE -> "Mantenimento"
+            EnergyTargetPresentation.Mode.SURPLUS -> "Surplus"
+            EnergyTargetPresentation.Mode.RECOVERY_ADJUSTED -> "Recovery"
+            EnergyTargetPresentation.Mode.INSUFFICIENT_DATA -> "Da completare"
+        }
+        val goalPercent = state.goal?.let { ((LocalCalculationEngine.goalEnergyFactor(it) - 1.0) * 100.0).roundToInt() }
+        modeLabel.text = goalPercent?.let { formatGoalPercent(it) } ?: modeLabel.text
+        targetCaption.text = if (state.mode == EnergyTargetPresentation.Mode.RECOVERY_ADJUSTED) "Target effettivo di oggi" else "Target di oggi"
+        targetValue.text = state.effectiveTargetKcal?.let { "$it kcal" } ?: "Non disponibile"
+        maintenanceValue.text = "${UiNumberFormat.decimal(state.tdeeKcal)} kcal"
+        differenceValue.text = when (state.mode) {
+            EnergyTargetPresentation.Mode.DEFICIT -> state.differenceKcal?.let { "−${abs(it)} kcal" } ?: "—"
+            EnergyTargetPresentation.Mode.SURPLUS -> state.differenceKcal?.let { "+${abs(it)} kcal" } ?: "—"
+            EnergyTargetPresentation.Mode.MAINTENANCE -> "In linea"
+            EnergyTargetPresentation.Mode.RECOVERY_ADJUSTED -> state.recovery?.plannedRecoveryKcal?.let { "−$it kcal" } ?: "—"
+            EnergyTargetPresentation.Mode.INSUFFICIENT_DATA -> "—"
+        }
+        val exerciseSummary = if (state.exerciseKcal > 0) " · Base ${UiNumberFormat.decimal(state.baseTdeeKcal)} + esercizio ${state.exerciseKcal} kcal" else ""
+        subline.text = when (state.mode) {
+            EnergyTargetPresentation.Mode.DEFICIT -> "Deficit previsto rispetto al mantenimento"
+            EnergyTargetPresentation.Mode.MAINTENANCE -> "Target allineato al mantenimento"
+            EnergyTargetPresentation.Mode.SURPLUS -> "Surplus previsto rispetto al mantenimento"
+            EnergyTargetPresentation.Mode.RECOVERY_ADJUSTED -> "Riduzione temporanea, senza compensazioni punitive"
+            EnergyTargetPresentation.Mode.INSUFFICIENT_DATA -> "Completa profilo, peso e rilevazioni"
+        } + exerciseSummary
+        recoveryDetails.visibility = View.VISIBLE
+        recoveryValue.text = state.recovery?.let {
+            "Normale ${state.normalTargetKcal ?: "—"} kcal  •  Eccedenza residua ${it.budgetAfterPlannedKcal} kcal  •  Confermato ${it.confirmedRecoveryKcal} kcal"
+        } ?: "Nessun recovery attivo."
+    }
+
+    private fun goalLabel(goal: LocalCalculationEngine.Goal?): String = when (goal) {
+        LocalCalculationEngine.Goal.RECOMPOSITION -> "Ricomposizione"
+        LocalCalculationEngine.Goal.WEIGHT_LOSS -> "Dimagrimento"
+        LocalCalculationEngine.Goal.MAINTENANCE -> "Mantenimento"
+        LocalCalculationEngine.Goal.MUSCLE_GAIN -> "Aumento massa"
+        LocalCalculationEngine.Goal.PERFORMANCE -> "Performance"
+        null -> "Obiettivo energetico"
+    }
+
+    private fun goalDescription(goal: LocalCalculationEngine.Goal?): String = when (goal) {
+        LocalCalculationEngine.Goal.RECOMPOSITION -> "Ridurre gradualmente il grasso e mantenere o aumentare la massa muscolare."
+        LocalCalculationEngine.Goal.WEIGHT_LOSS -> "Creare un deficit calorico controllato per ridurre il peso nel tempo."
+        LocalCalculationEngine.Goal.MAINTENANCE -> "Mantenere il peso attuale con un apporto vicino al consumo giornaliero."
+        LocalCalculationEngine.Goal.MUSCLE_GAIN -> "Favorire l'aumento della massa muscolare con un apporto energetico adeguato."
+        LocalCalculationEngine.Goal.PERFORMANCE -> "Sostenere allenamenti e recupero con energia sufficiente."
+        null -> "Seleziona un obiettivo per interpretare il target calorico."
+    }
+
+    private fun formatGoalPercent(percent: Int): String = when {
+        percent > 0 -> "+$percent%"
+        percent < 0 -> "−${abs(percent)}%"
+        else -> "0%"
+    }
+
     private fun todayLabel(): String = LocalDate.now()
         .format(DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.ITALIAN))
         .replaceFirstChar { it.uppercase(Locale.ITALIAN) }
@@ -191,6 +367,17 @@ class HomeActivity : BaseShellActivity() {
         LocalCalculationEngine.RecompositionState.MIXED -> "Trend misto: servono più rilevazioni per una lettura più chiara."
         LocalCalculationEngine.RecompositionState.NOT_ENOUGH_DATA -> "Aggiungi almeno due rilevazioni comparabili per vedere il trend corporeo."
     }
+
+    private fun trendStatus(state: LocalCalculationEngine.RecompositionState): String = when (state) {
+        LocalCalculationEngine.RecompositionState.FAVORABLE -> "Direzione favorevole: grasso in calo, massa muscolare in aumento."
+        LocalCalculationEngine.RecompositionState.FAT_LOSS_WITH_STABLE_MUSCLE -> "Grasso in calo, massa muscolare stabile."
+        LocalCalculationEngine.RecompositionState.MUSCLE_GAIN_WITH_STABLE_FAT -> "Massa muscolare in aumento, grasso stabile."
+        LocalCalculationEngine.RecompositionState.STABLE -> "Trend stabile: non emergono cambiamenti rilevanti."
+        LocalCalculationEngine.RecompositionState.MIXED -> "Trend misto: i dati non mostrano una direzione unica."
+        LocalCalculationEngine.RecompositionState.NOT_ENOUGH_DATA -> "Dati insufficienti per leggere una direzione."
+    }
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     private fun formatNumber(value: Float): String = if (value % 1f == 0f) value.toInt().toString() else String.format(Locale.ITALIAN, "%.1f", value)
     private fun formatSigned(value: Float): String = String.format(Locale.ITALIAN, "%+.1f", value)

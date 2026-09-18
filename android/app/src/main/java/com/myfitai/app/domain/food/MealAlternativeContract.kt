@@ -40,7 +40,7 @@ object MealAlternativeContract {
         response.alternatives.forEach { alternative ->
             require(alternative.title.isNotBlank()) { "EMPTY_TITLE" }
             require(normalizedTitles.add(alternative.title.lowercase())) { "DUPLICATE_ALTERNATIVE" }
-            require(alternative.kcal == targetKcal) { "CALORIE_CONSTRAINT_VIOLATED" }
+            require(alternative.kcal in 1..targetKcal) { "CALORIE_CONSTRAINT_VIOLATED" }
             require(alternative.proteinG >= 0f && alternative.proteinG.isFinite()) { "INVALID_PROTEIN" }
             require(alternative.carbsG >= 0f && alternative.carbsG.isFinite()) { "INVALID_CARBS" }
             require(alternative.fatG >= 0f && alternative.fatG.isFinite()) { "INVALID_FAT" }

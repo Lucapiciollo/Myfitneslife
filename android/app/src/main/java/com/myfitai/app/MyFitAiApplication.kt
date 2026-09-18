@@ -20,6 +20,7 @@ class MyFitAiApplication : Application() {
         appScope.launch {
             data.activeProfileStore.activeProfileId.collect {
                 runCatching { data.notificationScheduler.refresh() }
+                if (it > 0L) runCatching { data.nutritionAutoGenerationScheduler.refresh(it) }
             }
         }
     }

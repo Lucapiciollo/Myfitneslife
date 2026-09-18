@@ -3,7 +3,7 @@ package com.myfitai.app.domain.calculation
 import kotlin.math.abs
 
 /**
- * Validator autorevole dell'app. La tolleranza ufficiale è ±3% sui target correnti.
+ * Validator autorevole dell'app. Il range ufficiale è target -3% .. target: mai sopra il target.
  * L'eventuale agentValidation proveniente dall'AI non sostituisce questo controllo.
  */
 object NutritionBusinessValidator {
@@ -73,7 +73,10 @@ object NutritionBusinessValidator {
             target = target,
             actual = actual,
             deviationRatio = deviation,
-            valid = deviation <= tolerance + 1e-9,
+            valid = actual >= target * (1.0 - tolerance) - NUMERIC_EPSILON && actual <= target + NUMERIC_EPSILON,
         )
     }
+
+    // Float-based meal sums can accumulate a few last-place rounding units.
+    private const val NUMERIC_EPSILON = 1e-4
 }

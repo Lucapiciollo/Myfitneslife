@@ -13,6 +13,10 @@ import com.myfitai.app.data.local.MyFitAiDatabase
 import com.myfitai.app.data.local.entity.FoodConsumptionEntity
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.repository.MealPlanRepository
+import com.myfitai.app.data.repository.DayDraft
+import com.myfitai.app.data.repository.IngredientDraft
+import com.myfitai.app.data.repository.MealDraft
+import com.myfitai.app.data.repository.PlanVersionDraft
 import com.myfitai.app.domain.calculation.ProfileCalculationService
 import com.myfitai.app.domain.food.CheatAdjustmentService
 import com.myfitai.app.domain.food.MealAlternativeService
@@ -91,6 +95,7 @@ class AiWorkflowIntegrationTest {
         val alternatives = services().mealAlternative.generate(week.toEpochDay(), week.toEpochDay(), meal.id)
 
         assertEquals(5, alternatives.items.size)
+        assertTrue(alternatives.items.all { it.kcal in 1 until meal.kcal!! })
         assertEquals(before.version.id, alternatives.sourceVersionId)
         assertEquals(1, repository.versions(store.currentIdOrNull()!!, before.planId).first().size)
 
@@ -101,6 +106,55 @@ class AiWorkflowIntegrationTest {
         assertEquals(before.version.days.first().supplements, after.version.days.first().supplements)
         assertEquals(before.version.days.first().hydrationNote, after.version.days.first().hydrationNote)
         assertFalse(before.version.days.first().meals.last().title == after.version.days.first().meals.last().title)
+        assertTrue(applied.kcal < meal.kcal!!)
+        assertEquals(
+            before.version.days.first().meals.dropLast(1).map { it.title to (it.kcal to it.proteinG) },
+            after.version.days.first().meals.dropLast(1).map { it.title to (it.kcal to it.proteinG) },
+        )
+        assertEquals(0, applied.recoveryAddedKcal)
+    }
+
+    @Test
+    fun mealSwap_recordsPositiveRecoveryAndProteinShortfallWhenDayWasAlreadyOverTarget() = runBlocking {
+        val profileId = store.currentIdOrNull()!!
+        val plans = MealPlanRepository(db)
+        val week = SixMonthHistoryFixture.TODAY
+        val planId = plans.createPlan(profileId, week.toEpochDay(), time.nowEpochMillis())
+        val sourceMeals = listOf(
+            MealDraft("Colazione", "Colazione", 1320, 700, 20f, 60f, 20f, "Fixture", listOf(IngredientDraft("Avena", 100f, "g", "100 g", "RAW", "HIGH", "cereali"))),
+            MealDraft("Pranzo", "Pranzo", 780, 500, 20f, 50f, 15f, "Fixture", listOf(IngredientDraft("Riso", 100f, "g", "100 g", "RAW", "HIGH", "cereali"))),
+            MealDraft("Cena", "Cena", 1140, 500, 20f, 50f, 15f, "Fixture", listOf(IngredientDraft("Patate", 200f, "g", "200 g", "RAW", "HIGH", "verdure"))),
+            MealDraft("Snack", "Snack", 1260, 500, 20f, 50f, 15f, "Fixture", listOf(IngredientDraft("Yogurt", 150f, "g", "150 g", "RAW", "HIGH", "latticini"))),
+        )
+        plans.appendVersion(profileId, planId, time.nowEpochMillis(), PlanVersionDraft(
+            source = "TEST",
+            reason = null,
+            targetKcal = 2000,
+            targetProteinG = 200f,
+            targetCarbsG = 220f,
+            targetFatG = 65f,
+            days = listOf(DayDraft(week.toEpochDay(), 2200, 80f, 210f, 65f, sourceMeals)),
+        ))
+
+        val before = plans.loadLatestSnapshot(profileId, week.toEpochDay())!!
+        val generated = services().mealAlternative.generate(week.toEpochDay(), week.toEpochDay(), before.version.days.first().meals.first().id)
+        val applied = services().mealAlternative.apply(generated, generated.items.first())
+        val events = com.myfitai.app.data.repository.NutritionRecoveryRepository(db).activeEvents(profileId, week.toEpochDay())
+
+        assertEquals(150, applied.recoveryAddedKcal)
+        assertTrue(applied.proteinShortfallG > 0f)
+        assertTrue(events.any { it.source == "MEAL_SWAP" && it.remainingKcal == 150 })
+
+        val latest = plans.loadLatestSnapshot(profileId, week.toEpochDay())!!
+        val secondGenerated = services().mealAlternative.generate(
+            week.toEpochDay(),
+            week.toEpochDay(),
+            latest.version.days.first().meals.first().id,
+        )
+        val secondApplied = services().mealAlternative.apply(secondGenerated, secondGenerated.items.first())
+        val eventsAfterSecondSwap = com.myfitai.app.data.repository.NutritionRecoveryRepository(db).activeEvents(profileId, week.toEpochDay())
+        assertEquals(0, secondApplied.recoveryAddedKcal)
+        assertEquals(1, eventsAfterSecondSwap.count { it.source == "MEAL_SWAP" })
     }
 
     @Test
@@ -134,6 +188,57 @@ class AiWorkflowIntegrationTest {
         assertEquals(before + 1, db.cheatEntryDao().observeAll(profileId).first().size)
         assertFalse(result.adapted)
         assertTrue(result.newVersionId == null)
+    }
+
+    @Test
+    fun cheatWithoutPlan_isRejectedBeforeAiRequest() = runBlocking {
+        val profileId = store.currentIdOrNull()!!
+        val before = gateway.requests.size
+        val beforeCheats = db.cheatEntryDao().observeAll(profileId).first().size
+        val input = CheatAdjustmentService.Input(
+            description = "Pizza senza piano",
+            quantityText = "una porzione",
+            notes = null,
+            occurredAtEpochMillis = SixMonthHistoryFixture.epoch(LocalDate.of(2026, 9, 14), 20),
+        )
+
+        val error = runCatching { services().cheat.analyze(input) }.exceptionOrNull()
+
+        assertTrue(error is CheatAdjustmentService.AdjustmentException.NoPlanForWeek)
+        assertEquals(before, gateway.requests.size)
+        assertEquals(beforeCheats, db.cheatEntryDao().observeAll(profileId).first().size)
+    }
+
+    @Test
+    fun impossibleCheatAdjustment_isPersistedWithoutCallingAdjustmentAgent() = runBlocking {
+        val profileId = store.currentIdOrNull()!!
+        val week = SixMonthHistoryFixture.TODAY
+        val generation = services().generation
+        generation.generateWeek(week)
+        val beforeRequests = gateway.requests.size
+        val beforeCheats = db.cheatEntryDao().observeAll(profileId).first().size
+        val input = CheatAdjustmentService.Input(
+            description = "Pizza margherita grande",
+            quantityText = "una pizza",
+            notes = null,
+            occurredAtEpochMillis = SixMonthHistoryFixture.epoch(week, 12),
+        )
+        val confirmed = CheatAdjustmentService.Understanding(
+            understoodFood = "Pizza margherita grande",
+            estimate = com.myfitai.app.domain.food.CheatAdjustmentContract.Estimate(1000, 40f, 120f, 38f, "medium", "confermato"),
+            provider = "fixture",
+            model = "fixture",
+            inputFingerprint = listOf(input.description.trim(), input.quantityText.orEmpty(), "", input.occurredAtEpochMillis.toString()).joinToString("|"),
+        )
+
+        val result = services().cheat.registerAndAdapt(input, confirmed)
+        val requestedSchemas = gateway.requests.drop(beforeRequests).map { it.schemaName }
+
+        assertFalse(result.adapted)
+        assertTrue(result.newVersionId == null)
+        assertTrue(result.adaptationSummary.contains("UNAVOIDABLE_FAT_ABOVE_MAX"))
+        assertEquals(beforeCheats + 1, db.cheatEntryDao().observeAll(profileId).first().size)
+        assertTrue(requestedSchemas.none { it == "myfitai_cheat_adjustment_pipe_v1" })
     }
 
     @Test
@@ -200,13 +305,14 @@ class AiWorkflowIntegrationTest {
         val cheats = com.myfitai.app.data.repository.CheatEntryRepository(db)
         val reviews = com.myfitai.app.data.repository.WeeklyReviewRepository(db)
         val consumptions = com.myfitai.app.data.repository.FoodConsumptionRepository(db)
+        val recovery = com.myfitai.app.data.repository.NutritionRecoveryRepository(db)
         val calculations = ProfileCalculationService(profiles, bia, body, store)
         val personal = PersonalResponseService(store, plans, cheats, workouts, bia, body)
         return Services(
             generation = NutritionPlanGenerationService(gateway, calculations, profiles, workouts, plans, store, personal, time = time),
-            mealAlternative = MealAlternativeService(gateway, profiles, plans, store, time),
+            mealAlternative = MealAlternativeService(gateway, profiles, plans, store, recovery, time),
             advice = NutritionAdviceService(gateway, profiles, plans, cheats, store, time),
-            cheat = CheatAdjustmentService(gateway, plans, cheats, store, time),
+            cheat = CheatAdjustmentService(gateway, plans, cheats, store, time, consumptions = consumptions),
             review = WeeklyReviewService(gateway, reviews, plans, workouts, cheats, bia, body, personal, store, time, consumptions),
         )
     }
@@ -287,7 +393,7 @@ private class FakeAiRuntimeGateway : AiRuntimeGateway {
     }
 
     private fun alternatives(prompt: String): String {
-        val kcal = Regex("TARGET_KCAL_EXACT:(\\d+)").find(prompt)!!.groupValues[1].toInt()
+        val kcal = Regex("MAX_KCAL:(\\d+)").find(prompt)!!.groupValues[1].toInt() - 50
         val values = JSONArray()
         repeat(5) { index ->
             values.put(JSONObject().apply {

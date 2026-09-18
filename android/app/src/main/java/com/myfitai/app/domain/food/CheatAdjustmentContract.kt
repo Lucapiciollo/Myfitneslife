@@ -105,7 +105,7 @@ object CheatAdjustmentContract {
 
         val locked = totals(lockedMeals)
         val minimumFutureKcal = futureMeals.size * 100.0
-        val upperKcal = targets.kcal * (1.0 + NutritionBusinessValidator.DEFAULT_TOLERANCE)
+        val upperKcal = targets.kcal
         val canFitWithoutStarvation = locked.kcal + estimate.kcal + minimumFutureKcal <= upperKcal
 
         if (!response.adaptationPossible) {

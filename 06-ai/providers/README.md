@@ -18,7 +18,7 @@ I due provider devono produrre lo stesso contratto JSON e passare gli stessi val
 In questa fase il selettore è predisposto ma non sono presenti chiamate di rete reali.
 
 ## Tolleranza nutrizionale runtime
-La tolleranza ufficiale corrente del progetto è ±3% sui target nutrizionali dinamici calcolati dall'app. Gli agenti Gemini e OpenAI devono usare i target ricevuti a runtime e non valori fissi di esempio.
+La tolleranza ufficiale corrente del progetto è dal -3% allo 0% sui target nutrizionali dinamici calcolati dall'app: `target * 0.97 .. target`, mai sopra il target. Gli agenti Gemini e OpenAI devono usare i target ricevuti a runtime e non valori fissi di esempio.
 
 ## Validazione
-Gli agenti di entrambi i provider possono restituire `agentValidation`, che è solo informativa. Il runtime calcola `appValidation` localmente con tolleranza ±3% sui target dinamici; solo `appValidation` è autorevole.
+Gli agenti di entrambi i provider possono restituire `agentValidation`, che è solo informativa. Il runtime calcola `appValidation` localmente nel range target -3% .. target; solo `appValidation` è autorevole.

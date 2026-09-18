@@ -39,9 +39,52 @@ class BodyMeasurementRepository(private val db: MyFitAiDatabase) {
 class WorkoutRepository(private val db: MyFitAiDatabase) {
     fun all(profileId: Long): Flow<List<WorkoutEntity>> = db.workoutDao().observeAll(profileId)
     fun between(profileId: Long, from: Long, to: Long) = db.workoutDao().observeBetween(profileId, from, to)
-    suspend fun insert(value: WorkoutEntity) = db.workoutDao().insert(value)
+    suspend fun insert(value: WorkoutEntity, nowEpochMillis: Long = System.currentTimeMillis()): Long = db.withTransaction {
+        val id = db.workoutDao().insert(value)
+        if (!value.isRestDay) WorkoutEnergyExpenditureRepository(db).ensureDefault(value.copy(id = id), nowEpochMillis)
+        id
+    }
     suspend fun update(value: WorkoutEntity) = db.workoutDao().update(value)
     suspend fun delete(value: WorkoutEntity) = db.workoutDao().delete(value)
+}
+
+class WorkoutEnergyExpenditureRepository(private val db: MyFitAiDatabase) {
+    fun all(profileId: Long): Flow<List<WorkoutEnergyExpenditureEntity>> = db.workoutEnergyExpenditureDao().observeAll(profileId)
+    suspend fun forDay(profileId: Long, epochDay: Long) = db.workoutEnergyExpenditureDao().forDay(profileId, epochDay)
+    suspend fun forRange(profileId: Long, fromEpochDay: Long, toEpochDay: Long) = db.workoutEnergyExpenditureDao().forRange(profileId, fromEpochDay, toEpochDay)
+    suspend fun getByWorkoutId(workoutId: Long) = db.workoutEnergyExpenditureDao().getByWorkoutId(workoutId)
+
+    suspend fun ensureDefault(workout: WorkoutEntity, nowEpochMillis: Long): WorkoutEnergyExpenditureEntity? {
+        if (workout.isRestDay) return null
+        val value = WorkoutEnergyExpenditureEntity(
+            profileId = workout.profileId,
+            workoutId = workout.id,
+            exerciseDateEpochDay = java.time.Instant.ofEpochMilli(workout.startedAtEpochMillis)
+                .atZone(java.time.ZoneId.systemDefault()).toLocalDate().toEpochDay(),
+            caloriesKcal = DEFAULT_EXERCISE_KCAL,
+            source = SOURCE_DEFAULT,
+            createdAtEpochMillis = nowEpochMillis,
+            updatedAtEpochMillis = nowEpochMillis,
+        )
+        db.workoutEnergyExpenditureDao().insertIfAbsent(value)
+        return db.workoutEnergyExpenditureDao().getByWorkoutId(workout.id)
+    }
+
+    suspend fun updateCalories(workoutId: Long, caloriesKcal: Int, updatedAtEpochMillis: Long, source: String = SOURCE_EXTERNAL_APP) {
+        require(caloriesKcal >= 0) { "caloriesKcal must be non-negative" }
+        require(source.isNotBlank()) { "source must not be blank" }
+        check(db.workoutEnergyExpenditureDao().updateCalories(workoutId, caloriesKcal, source, updatedAtEpochMillis) == 1) {
+            "Workout energy expenditure not found for workoutId=$workoutId"
+        }
+    }
+
+    suspend fun deleteByProfile(profileId: Long) = db.workoutEnergyExpenditureDao().deleteByProfile(profileId)
+
+    companion object {
+        const val DEFAULT_EXERCISE_KCAL = 500
+        const val SOURCE_DEFAULT = "DEFAULT"
+        const val SOURCE_EXTERNAL_APP = "EXTERNAL_APP"
+    }
 }
 
 class CheatEntryRepository(private val db: MyFitAiDatabase) {
@@ -123,6 +166,7 @@ data class PlanVersionDraft(
     val targetCarbsG: Float?,
     val targetFatG: Float?,
     val days: List<DayDraft>,
+    val appValidationJson: String? = null,
 )
 
 class MealPlanRepository(private val db: MyFitAiDatabase) {
@@ -167,6 +211,7 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
                 targetProteinG = draft.targetProteinG,
                 targetCarbsG = draft.targetCarbsG,
                 targetFatG = draft.targetFatG,
+                appValidationJson = draft.appValidationJson,
             )
         )
 

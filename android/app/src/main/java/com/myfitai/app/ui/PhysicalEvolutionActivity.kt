@@ -10,7 +10,6 @@ import android.widget.ImageButton
 import androidx.activity.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.myfitai.app.R
@@ -73,11 +72,7 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
             setRanges(listOf("1M", "3M", "6M", "1Y"), 1)
             setOnRangeSelectedListener { rangeIndex = it; render(latestState) }
         }
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.state.collect { latestState = it; render(it) }
-            }
-        }
+        lifecycleScope.launch { viewModel.state.collect { latestState = it; render(it) } }
     }
 
     override fun onResume() {

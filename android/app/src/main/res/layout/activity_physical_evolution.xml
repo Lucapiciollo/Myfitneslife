@@ -49,11 +49,26 @@
                 <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical"><TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Acqua corporea" android:textColor="@color/text_secondary"/><TextView android:id="@+id/otherIndicatorWaterValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="—" android:textColor="@color/text_primary" android:textStyle="bold"/><TextView android:id="@+id/otherIndicatorWaterDelta" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:text="—" android:textColor="@color/text_secondary"/></LinearLayout>
             </LinearLayout>
              <LinearLayout android:id="@+id/visualComparisonSection" android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone" />
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:background="@drawable/bg_positive_soft" android:orientation="vertical" android:padding="@dimen/space_12">
+             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:background="@drawable/bg_positive_soft" android:orientation="vertical" android:padding="@dimen/space_12">
                 <TextView android:id="@+id/progressSummaryTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Servono più rilevazioni" android:textColor="@color/text_primary" android:textStyle="bold" />
                 <TextView android:id="@+id/progressSummaryText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:text="I dati mostrati derivano dallo storico reale." android:textColor="@color/text_secondary" />
-            </LinearLayout>
-        </LinearLayout>
+             </LinearLayout>
+             <com.google.android.material.card.MaterialCardView
+                 android:id="@+id/weeklyExpectationCard"
+                 android:layout_width="match_parent"
+                 android:layout_height="wrap_content"
+                 android:layout_marginTop="@dimen/space_16"
+                 app:cardBackgroundColor="@color/surface_primary"
+                 app:cardCornerRadius="@dimen/radius_medium"
+                 app:cardElevation="0dp"
+                 app:strokeColor="@color/divider"
+                 app:strokeWidth="1dp">
+                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="@dimen/space_16">
+                     <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Aspettativa teorica della settimana" android:textColor="@color/text_primary" android:textSize="16sp" android:textStyle="bold" />
+                     <TextView android:id="@+id/weeklyExpectationValue" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:text="Calcolo in corso…" android:textColor="@color/accent_green_dark" android:textSize="15sp" android:textStyle="bold" />
+                     <TextView android:id="@+id/weeklyExpectationDetail" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_6" android:textColor="@color/text_secondary" android:textSize="12sp" />
+                 </LinearLayout>
+             </com.google.android.material.card.MaterialCardView>
+         </LinearLayout>
     </ScrollView>
-    <include layout="@layout/view_bottom_navigation" />
 </LinearLayout>

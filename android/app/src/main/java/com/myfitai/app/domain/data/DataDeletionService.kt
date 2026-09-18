@@ -29,6 +29,7 @@ class DataDeletionService(
 
     suspend fun deleteWorkouts() = withProfile { profileId ->
         db.workoutDao().deleteByProfile(profileId)
+        db.workoutEnergyExpenditureDao().deleteByProfile(profileId)
         invalidateProgressAnalysis(profileId)
     }
 
@@ -46,6 +47,7 @@ class DataDeletionService(
             db.biaMeasurementDao().deleteByProfile(profileId)
             db.bodyMeasurementDao().deleteByProfile(profileId)
             db.workoutDao().deleteByProfile(profileId)
+            db.workoutEnergyExpenditureDao().deleteByProfile(profileId)
             db.cheatEntryDao().deleteByProfile(profileId)
             db.weeklyReviewDao().deleteByProfile(profileId)
         }

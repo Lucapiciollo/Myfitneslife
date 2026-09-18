@@ -71,7 +71,7 @@ class HistoryActivity : BaseShellActivity() {
             0 -> state.measurements.forEachIndexed { index, row ->
                 addRow(container, index,
                     icon = R.drawable.ic_setting_person,
-                    title = "Misure ${formatInstantDate(row.measuredAtEpochMillis)}",
+                    title = dayTitle(row.measuredAtEpochMillis, "Misure corporee"),
                     subtitle = measurementSubtitle(row),
                     onClick = { go(BodyMeasuresActivity::class.java) },
                 )
@@ -79,7 +79,7 @@ class HistoryActivity : BaseShellActivity() {
             1 -> state.bia.forEachIndexed { index, row ->
                 addRow(container, index,
                     icon = R.drawable.ic_nav_progress,
-                    title = "BIA ${formatInstantDate(row.measuredAtEpochMillis)}",
+                    title = dayTitle(row.measuredAtEpochMillis, "Bioimpedenziometria"),
                     subtitle = biaSubtitle(row),
                     onClick = { go(BiaActivity::class.java) },
                 )
@@ -89,7 +89,7 @@ class HistoryActivity : BaseShellActivity() {
                 val end = start.plusDays(6)
                 addRow(container, index,
                     icon = R.drawable.ic_calendar,
-                    title = "${formatWeekDate(start)} – ${formatWeekDate(end)}",
+                    title = "Settimana ${start.format(DateTimeFormatter.ofPattern("d MMM", Locale.ITALIAN))} – ${end.format(DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ITALIAN))}",
                     subtitle = "Piano v${snapshot.version.versionNumber} · ${snapshot.version.source}",
                     onClick = {
                         openFoodPlan(snapshot.weekStartEpochDay)
@@ -99,7 +99,7 @@ class HistoryActivity : BaseShellActivity() {
             else -> state.cheats.forEachIndexed { index, row ->
                 addRow(container, index,
                     icon = R.drawable.ic_setting_food,
-                    title = "Sgarro ${formatInstantDateTime(row.occurredAtEpochMillis)}",
+                    title = dayTitle(row.occurredAtEpochMillis, "Extra alimentare"),
                     subtitle = cheatSubtitle(row),
                     onClick = null,
                 )
@@ -121,9 +121,6 @@ class HistoryActivity : BaseShellActivity() {
         subtitle: String,
         onClick: (() -> Unit)?,
     ) {
-        if (index > 0) {
-            container.addView(View(this).apply { setBackgroundColor(getColor(R.color.divider)) }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1))
-        }
         container.addView(HistoryRowView(this).apply {
             setIcon(icon)
             setTitle(title)
@@ -132,7 +129,9 @@ class HistoryActivity : BaseShellActivity() {
                 isClickable = false
                 isFocusable = false
             }
-        }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+        }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+            if (index > 0) topMargin = (8 * resources.displayMetrics.density).toInt()
+        })
     }
 
     private fun measurementSubtitle(row: com.myfitai.app.data.local.entity.BodyMeasurementEntity): String {
@@ -161,6 +160,12 @@ class HistoryActivity : BaseShellActivity() {
     private fun formatInstantDate(value: Long): String = Instant.ofEpochMilli(value)
         .atZone(ZoneId.systemDefault()).toLocalDate()
         .format(DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ITALIAN))
+
+    private fun dayTitle(value: Long, label: String): String {
+        val date = Instant.ofEpochMilli(value).atZone(ZoneId.systemDefault()).toLocalDate()
+        val day = date.format(DateTimeFormatter.ofPattern("EEEE", Locale.ITALIAN)).replaceFirstChar { it.uppercase() }
+        return "$day · $label"
+    }
 
     private fun formatInstantDateTime(value: Long): String = Instant.ofEpochMilli(value)
         .atZone(ZoneId.systemDefault())

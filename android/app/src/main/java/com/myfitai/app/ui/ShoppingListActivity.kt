@@ -38,6 +38,7 @@ class ShoppingListActivity : BaseShellActivity() {
         )
     }
     private var confirmationShownFor: String? = null
+    private var redirectedToPlan = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,6 +65,15 @@ class ShoppingListActivity : BaseShellActivity() {
     }
 
     private fun render(state: ShoppingListViewModel.State) {
+        if (!state.loading && state.versionId == null && !redirectedToPlan) {
+            redirectedToPlan = true
+            startActivity(Intent(this, TabHostActivity::class.java).apply {
+                putExtra(com.myfitai.app.navigation.BottomNavBinder.EXTRA_INITIAL_TAB, com.myfitai.app.navigation.BottomNavBinder.Tab.FOOD.name)
+                putExtra(FoodPlanActivity.EXTRA_WEEK_START_EPOCH_DAY, state.weekStartEpochDay)
+            })
+            finish()
+            return
+        }
         val monday = LocalDate.ofEpochDay(state.weekStartEpochDay)
         val sunday = monday.plusDays(6)
         findViewById<TextView>(R.id.weekLabel).text = formatWeek(monday, sunday)

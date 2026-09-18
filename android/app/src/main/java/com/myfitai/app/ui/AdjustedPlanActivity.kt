@@ -17,14 +17,27 @@ class AdjustedPlanActivity : BaseShellActivity() {
         val adapted = intent.getBooleanExtra(EXTRA_ADAPTED, false)
         val summary = intent.getStringExtra(EXTRA_SUMMARY).orEmpty()
         val modifiedMeals = intent.getStringArrayListExtra(EXTRA_MODIFIED_MEALS).orEmpty()
+        val recoveryBefore = intent.getIntExtra(EXTRA_RECOVERY_BEFORE, 0)
+        val recoveryPlanned = intent.getIntExtra(EXTRA_RECOVERY_PLANNED, 0)
+        val recoveryEffectiveTarget = intent.getIntExtra(EXTRA_RECOVERY_EFFECTIVE_TARGET, 0)
+        val recoveryAfter = intent.getIntExtra(EXTRA_RECOVERY_AFTER, 0)
 
         findViewById<TextView>(R.id.resultTitle).text = if (adapted) "Piano aggiornato" else "Sgarro registrato"
         findViewById<TextView>(R.id.resultDescription).text = buildString {
             if (description.isNotBlank()) appendLine(description)
             if (estimate.isNotBlank()) append(estimate)
         }.trim()
+        findViewById<TextView>(R.id.planStatus).text = if (adapted) {
+            "Piano da seguire rigenerato e salvato"
+        } else {
+            "Sgarro registrato. Il piano da seguire non è stato rigenerato."
+        }
         findViewById<TextView>(R.id.resultSummary).text = summary.ifBlank {
             if (adapted) "Sono stati modificati solo i pasti ancora futuri di oggi." else "Il piano non è stato modificato."
+        }
+        findViewById<TextView>(R.id.recoveryResult).apply {
+            visibility = if (recoveryBefore > 0) View.VISIBLE else View.GONE
+            text = "Riequilibrio attivo\nKcal in eccesso prima: $recoveryBefore\nOggi da riequilibrare: -$recoveryPlanned kcal\nTarget effettivo: $recoveryEffectiveTarget kcal\nEccedenza residua: $recoveryAfter kcal"
         }
         findViewById<TextView>(R.id.modifiedHeader).visibility = if (modifiedMeals.isEmpty()) View.GONE else View.VISIBLE
 
@@ -57,5 +70,9 @@ class AdjustedPlanActivity : BaseShellActivity() {
         const val EXTRA_ADAPTED = "cheat_adapted"
         const val EXTRA_SUMMARY = "cheat_summary"
         const val EXTRA_MODIFIED_MEALS = "cheat_modified_meals"
+        const val EXTRA_RECOVERY_BEFORE = "cheat_recovery_before"
+        const val EXTRA_RECOVERY_PLANNED = "cheat_recovery_planned"
+        const val EXTRA_RECOVERY_EFFECTIVE_TARGET = "cheat_recovery_effective_target"
+        const val EXTRA_RECOVERY_AFTER = "cheat_recovery_after"
     }
 }

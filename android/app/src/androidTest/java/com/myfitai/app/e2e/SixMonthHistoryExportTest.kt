@@ -119,7 +119,8 @@ class SixMonthHistoryExportTest {
         val exported = service.export(ProfileExportService.Format.JSON)
         val root = JSONObject(exported.file.readText())
 
-        assertEquals("myfitai_profile_export_v1", root.getString("schema"))
+        assertEquals("myfitai_profile_export_v2", root.getString("schema"))
+        assertEquals(2, root.getInt("schemaVersion"))
         assertEquals("Test Sport", root.getJSONObject("profile").getString("name"))
         assertEquals(13, root.getJSONArray("biaMeasurements").length())
         assertEquals(13, root.getJSONArray("bodyMeasurements").length())
@@ -132,6 +133,17 @@ class SixMonthHistoryExportTest {
         assertEquals(26, root.getJSONArray("mealPlans").length())
         assertTrue(root.getJSONArray("mealPlans").toString().contains("supplements"))
         assertTrue(root.getJSONArray("mealPlans").toString().contains("hydrationNote"))
+        assertTrue(root.has("dataQuality"))
+        assertTrue(root.has("computedTrends"))
+        assertTrue(root.has("anomalies"))
+        assertTrue(root.has("nutritionAdherence"))
+        assertTrue(root.has("workoutEnergyExpenditures"))
+        assertTrue(root.has("workoutSummary"))
+        assertTrue(root.has("cheatSummary"))
+        assertTrue(root.has("weeklyReviewSummary"))
+        assertTrue(root.has("aiUsage"))
+        assertEquals("QA", root.getJSONArray("biaMeasurements").getJSONObject(0).getString("dataSource"))
+        assertTrue(root.getJSONObject("nutritionAdherence").getBoolean("available"))
         assertFalse(root.toString().contains("apiKey"))
         assertFalse(root.toString().contains("openai"))
     }
@@ -172,6 +184,7 @@ class SixMonthHistoryExportTest {
         val emptyExport = exportService().export(ProfileExportService.Format.JSON).file
         val emptyRoot = JSONObject(emptyExport.readText())
         assertEquals("Test Empty", emptyRoot.getJSONObject("profile").getString("name"))
+        assertEquals("myfitai_profile_export_v2", emptyRoot.getString("schema"))
         assertEquals(0, emptyRoot.getJSONArray("biaMeasurements").length())
         assertEquals(0, emptyRoot.getJSONArray("mealPlans").length())
 

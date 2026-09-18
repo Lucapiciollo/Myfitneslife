@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.myfitai.app.data.local.entity.WorkoutEntity
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.repository.WorkoutRepository
+import com.myfitai.app.data.local.entity.WorkoutEnergyExpenditureEntity
+import com.myfitai.app.data.repository.WorkoutEnergyExpenditureRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.SharedFlow
@@ -13,11 +15,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class WorkoutViewModel(
     private val repository: WorkoutRepository,
+    private val energyRepository: WorkoutEnergyExpenditureRepository,
     private val activeProfileStore: ActiveProfileStore,
 ) : ViewModel() {
 
@@ -26,6 +30,13 @@ class WorkoutViewModel(
             if (profileId > 0) repository.all(profileId) else flowOf(emptyList())
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val energyByWorkout: StateFlow<Map<Long, WorkoutEnergyExpenditureEntity>> = activeProfileStore.activeProfileId
+        .flatMapLatest { profileId ->
+            if (profileId > 0) energyRepository.all(profileId) else flowOf(emptyList())
+        }
+        .map { values -> values.associateBy { it.workoutId } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
     private val _saved = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val saved: SharedFlow<Unit> = _saved.asSharedFlow()
@@ -42,6 +53,7 @@ class WorkoutViewModel(
         title: String,
         durationMinutes: Int?,
         isRestDay: Boolean,
+        perceivedIntensity: Int?,
         notes: String?,
     ) {
         val profileId = activeProfileStore.currentIdOrNull() ?: run {
@@ -57,6 +69,10 @@ class WorkoutViewModel(
             _error.tryEmit("Durata non valida")
             return
         }
+        if (!isRestDay && perceivedIntensity != null && perceivedIntensity !in 1..10) {
+            _error.tryEmit("Intensità non valida")
+            return
+        }
 
         viewModelScope.launch {
             runCatching {
@@ -68,8 +84,9 @@ class WorkoutViewModel(
                         title = if (isRestDay) "Riposo" else cleanTitle,
                         durationMinutes = if (isRestDay) null else durationMinutes,
                         isRestDay = isRestDay,
+                        perceivedIntensity = if (isRestDay) null else perceivedIntensity,
                         notes = notes?.trim()?.takeIf { it.isNotEmpty() },
-                    )
+                    ),
                 )
             }.onSuccess { _saved.tryEmit(Unit) }
                 .onFailure { _error.tryEmit("Impossibile salvare l'allenamento") }
@@ -86,12 +103,13 @@ class WorkoutViewModel(
 
     class Factory(
         private val repository: WorkoutRepository,
+        private val energyRepository: WorkoutEnergyExpenditureRepository,
         private val activeProfileStore: ActiveProfileStore,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(WorkoutViewModel::class.java))
-            return WorkoutViewModel(repository, activeProfileStore) as T
+            return WorkoutViewModel(repository, energyRepository, activeProfileStore) as T
         }
     }
 }

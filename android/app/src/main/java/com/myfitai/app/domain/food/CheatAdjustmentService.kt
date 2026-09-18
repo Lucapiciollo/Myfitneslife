@@ -11,6 +11,7 @@ import com.myfitai.app.domain.time.SystemTimeProvider
 import com.myfitai.app.domain.time.TimeProvider
 import java.time.Instant
 import java.time.ZoneId
+import kotlinx.coroutines.flow.first
 import kotlin.math.abs
 
 class CheatAdjustmentService(
@@ -19,6 +20,9 @@ class CheatAdjustmentService(
     private val cheats: CheatEntryRepository,
     private val activeProfileStore: ActiveProfileStore,
     private val time: TimeProvider = SystemTimeProvider,
+    private val recovery: com.myfitai.app.data.repository.NutritionRecoveryRepository? = null,
+    private val consumptions: com.myfitai.app.data.repository.FoodConsumptionRepository? = null,
+    private val exerciseEnergy: com.myfitai.app.data.repository.WorkoutEnergyExpenditureRepository? = null,
 ) {
     data class Input(
         val description: String,
@@ -48,10 +52,12 @@ class CheatAdjustmentService(
         val estimateSummary: String,
         val adaptationSummary: String,
         val modifiedMeals: List<String>,
+        val recovery: NutritionRecoveryTargetEngine.State? = null,
     )
 
     sealed class AdjustmentException(message: String) : Exception(message) {
         class NeedsInput(val fields: List<String>) : AdjustmentException("NEEDS_INPUT: ${fields.joinToString()}")
+        class NoPlanForWeek(val weekStartEpochDay: Long) : AdjustmentException("NO_PLAN_FOR_WEEK:$weekStartEpochDay")
         class PreviewStale : AdjustmentException("La descrizione è cambiata: fai rivalutare lo sgarro all'IA prima di confermare.")
     }
 
@@ -61,7 +67,13 @@ class CheatAdjustmentService(
      */
     suspend fun analyze(input: Input): Understanding {
         validateInput(input)
-        activeProfileStore.currentIdOrNull() ?: throw AdjustmentException.NeedsInput(listOf("profilo attivo"))
+        val profileId = activeProfileStore.currentIdOrNull() ?: throw AdjustmentException.NeedsInput(listOf("profilo attivo"))
+        val occurred = Instant.ofEpochMilli(input.occurredAtEpochMillis).atZone(time.zoneId).toLocalDate()
+        val monday = occurred.minusDays((occurred.dayOfWeek.value - 1).toLong())
+        // Do not spend provider quota to estimate an event that cannot affect a plan.
+        if (plans.loadLatestSnapshot(profileId, monday.toEpochDay()) == null) {
+            throw AdjustmentException.NoPlanForWeek(monday.toEpochDay())
+        }
 
         val request = AiStructuredRequest(
             systemPrompt = UNDERSTANDING_SYSTEM_PROMPT,
@@ -126,26 +138,91 @@ class CheatAdjustmentService(
             return Result(cheatId, false, null, confirmed.estimate.kcal, confirmed.estimateSummary,
                 "Sgarro confermato e registrato. Non esiste un piano per quella settimana, quindi non è stata applicata alcuna modifica.", emptyList())
         }
-        val day = snapshot.version.days.firstOrNull { it.dateEpochDay == date.toEpochDay() }
+        val currentDay = snapshot.version.days.firstOrNull { it.dateEpochDay == date.toEpochDay() }
+        val currentDayHasFutureMeals = currentDay?.meals?.any { (it.timeMinutes ?: Int.MIN_VALUE) > occurred.hour * 60 + occurred.minute } == true
+        val day = if (currentDayHasFutureMeals) currentDay else {
+            snapshot.version.days.firstOrNull { it.dateEpochDay > date.toEpochDay() }
+        }
             ?: return Result(cheatId, false, null, confirmed.estimate.kcal, confirmed.estimateSummary,
-                "Sgarro confermato e registrato. Nessun giorno del piano corrisponde alla data selezionata.", emptyList())
+                "Sgarro confermato e registrato. Non ci sono giorni futuri del piano da adattare.", emptyList())
         val targets = planTargets(snapshot.version)
             ?: return Result(cheatId, false, null, confirmed.estimate.kcal, confirmed.estimateSummary,
                 "Sgarro confermato e registrato. I target del piano non sono completi, quindi l'app non ha adattato i pasti.", emptyList())
 
         val minuteOfDay = occurred.hour * 60 + occurred.minute
-        val lockedMeals = day.meals.filter { (it.timeMinutes ?: Int.MIN_VALUE) <= minuteOfDay }
-        val futureMeals = day.meals.filter { (it.timeMinutes ?: Int.MIN_VALUE) > minuteOfDay }
+        val adaptingNextDay = day.dateEpochDay != date.toEpochDay()
+        val lockedMeals = if (adaptingNextDay) emptyList() else day.meals.filter { (it.timeMinutes ?: Int.MIN_VALUE) <= minuteOfDay }
+        val confirmedLocked = if (adaptingNextDay || consumptions == null) {
+            emptyList()
+        } else {
+            consumptions.forVersionDay(profileId, snapshot.version.id, date.toEpochDay()).first()
+                .filter { it.status == FoodConsumptionStatus.CONSUMED.name && it.plannedDateEpochDay == date.toEpochDay() }
+                .mapNotNull { record ->
+                    day.meals.firstOrNull { meal ->
+                        (record.mealId != null && meal.id == record.mealId) || record.itemKey == FoodConsumptionKeys.meal(meal.id)
+                    }?.copy(
+                        kcal = record.kcal,
+                        proteinG = record.proteinG,
+                        carbsG = record.carbsG,
+                        fatG = record.fatG,
+                    )
+                }
+        }
+        val effectiveLockedMeals = if (confirmedLocked.isNotEmpty()) {
+            val confirmedIds = confirmedLocked.map { it.id }.toSet()
+            lockedMeals.filterNot { it.id in confirmedIds } + confirmedLocked
+        } else lockedMeals
+        val futureMeals = if (adaptingNextDay) day.meals else day.meals.filter { (it.timeMinutes ?: Int.MIN_VALUE) > minuteOfDay }
 
         if (futureMeals.isEmpty()) {
             return Result(cheatId, false, null, confirmed.estimate.kcal, confirmed.estimateSummary,
                 "Sgarro registrato. Non ci sono altri pasti futuri da adattare oggi.", emptyList())
         }
 
+        val exerciseKcal = exerciseEnergy?.forDay(profileId, date.toEpochDay())?.sumOf { it.caloriesKcal.coerceAtLeast(0) } ?: 0
+        val feasibility = CheatAdjustmentFeasibilityEngine.evaluate(
+            targets = targets.copy(kcal = targets.kcal + exerciseKcal),
+            lockedMeals = effectiveLockedMeals,
+            deviation = confirmed.estimate,
+            futureMeals = futureMeals,
+            debugLogger = { message -> android.util.Log.d("CheatAdjustmentFeasibility", message) },
+        )
+        if (!feasibility.possible) {
+            val residual = feasibility.residualKcalToCarry
+            if (residual > 0 && recovery != null) {
+                recovery.insertEvent(com.myfitai.app.data.local.entity.NutritionRecoveryEventEntity(
+                    profileId = profileId,
+                    createdAtEpochMillis = time.nowEpochMillis(),
+                    eventEpochDay = date.toEpochDay(),
+                    source = NutritionRecoveryTargetEngine.SOURCE_CHEAT,
+                    originalExcessKcal = residual,
+                    remainingKcal = residual,
+                    recoveredKcal = 0,
+                    expiresEpochDay = date.toEpochDay() + NutritionRecoveryTargetEngine.DEFAULT_RECOVERY_WINDOW_DAYS - 1,
+                    status = NutritionRecoveryTargetEngine.STATUS_ACTIVE,
+                    reason = feasibility.reasonCode.name,
+                ))
+            }
+            val recoveryState = recovery?.let { repository ->
+                val events = repository.activeEvents(profileId, date.toEpochDay())
+                NutritionRecoveryTargetEngine.calculate(snapshot.version.targetKcal ?: targets.kcal.toInt(), events, date.toEpochDay(), exerciseKcal = exerciseKcal)
+            }
+            return Result(
+                cheatId = cheatId,
+                adapted = false,
+                newVersionId = null,
+                estimatedKcal = confirmed.estimate.kcal,
+                estimateSummary = confirmed.estimateSummary,
+                adaptationSummary = "Sgarro registrato. Nessuna chiamata IA eseguita: riequilibrio impossibile (${feasibility.reasonCode.name}). Residuo recovery: ${residual} kcal.",
+                modifiedMeals = emptyList(),
+                recovery = recoveryState,
+            )
+        }
+
         val responseAndValidation = runCatching {
             val request = AiStructuredRequest(
                 systemPrompt = ADJUSTMENT_SYSTEM_PROMPT,
-                userPrompt = buildAdjustmentPrompt(input, confirmed, date.toEpochDay(), minuteOfDay, day, lockedMeals, futureMeals, targets),
+                 userPrompt = buildAdjustmentPrompt(input, confirmed, day.dateEpochDay, if (adaptingNextDay) 0 else minuteOfDay, day, effectiveLockedMeals, futureMeals, targets, adaptingNextDay),
                 schemaName = CheatAdjustmentContract.SCHEMA_NAME,
                 schemaJson = CheatAdjustmentContract.schemaJson,
                 maxOutputTokens = 8_000,
@@ -154,11 +231,11 @@ class CheatAdjustmentService(
             var parsed: CheatAdjustmentContract.Response? = null
             val validated = aiRuntime.execute(
                 request = request,
-                maxSchemaRetries = 1,
+                maxSchemaRetries = 3,
                 businessValidator = { json -> runCatching {
                     val response = CheatAdjustmentContract.parse(json)
                     requireSameEstimate(response.estimate, confirmed.estimate)
-                    CheatAdjustmentContract.validateBusiness(response, lockedMeals, futureMeals, targets).getOrThrow()
+                     CheatAdjustmentContract.validateBusiness(response, effectiveLockedMeals, futureMeals, targets).getOrThrow()
                     parsed = response
                 } },
             )
@@ -241,7 +318,7 @@ class CheatAdjustmentService(
             versionId,
             confirmed.estimate.kcal,
             confirmed.estimateSummary,
-            response.adaptationReason.ifBlank { "Sono stati adattati esclusivamente i pasti ancora futuri di oggi." },
+                 "Piano da seguire rigenerato e salvato. " + response.adaptationReason.ifBlank { "Sono stati adattati esclusivamente i pasti ancora futuri di oggi." },
             response.replacementMeals.sortedBy { it.sortOrder }.map { "${it.type}: ${it.title}" },
         )
     }
@@ -294,6 +371,7 @@ class CheatAdjustmentService(
         lockedMeals: List<FoodMeal>,
         futureMeals: List<FoodMeal>,
         targets: NutritionBusinessValidator.Targets,
+        adaptingNextDay: Boolean,
     ): String = buildString {
         appendLine("CONFIRMED USER INTERPRETATION: ${confirmed.understoodFood}")
         appendLine("CONFIRMED ESTIMATE - MUST COPY EXACTLY into response.estimate:")
@@ -301,7 +379,8 @@ class CheatAdjustmentService(
         appendLine("Original user description: ${input.description.trim()}")
         appendLine("Quantity hint: ${input.quantityText?.trim().orEmpty()}")
         appendLine("User notes: ${input.notes?.trim().orEmpty()}")
-        appendLine("Date epoch day: $dateEpochDay; occurred minute of day: $minuteOfDay")
+        appendLine("Deviation timestamp epoch millis: ${input.occurredAtEpochMillis}; adaptation day epoch day: $dateEpochDay; adaptation minute: $minuteOfDay")
+        if (adaptingNextDay) appendLine("The deviation day has no future meals. Adapt only the next available plan day; all its meals are future relative to the deviation.")
         appendLine("Authoritative daily targets: kcal=${targets.kcal}, proteinG=${targets.proteinG}, carbsG=${targets.carbsG}, fatG=${targets.fatG}")
         appendLine("LOCKED meals at or before the event:")
         lockedMeals.forEach { appendLine(mealLine(it)) }
@@ -310,7 +389,7 @@ class CheatAdjustmentService(
         appendLine("Original day totals: kcal=${day.totalKcal}, P=${day.proteinG}, C=${day.carbsG}, F=${day.fatG}")
         appendLine("Do not re-estimate the deviation. Use the confirmed estimate exactly. If balancing requires implausibly small meals, set adaptationPossible=false with replacementMeals=[].")
         appendLine("If possible, return exactly one replacement per future meal, never move times, and keep each replacement >=100 kcal. Count oils, sauces, condiments and caloric drinks.")
-        appendLine("The app will independently verify locked meals + confirmed estimate + replacements within ±3% of the original daily targets. agentValidation is advisory only.")
+        appendLine("The app will independently verify locked meals + confirmed estimate + replacements within target -3%..target; values above target are invalid. agentValidation is advisory only.")
     }
 
     private fun mealLine(meal: FoodMeal) = "sortOrder=${meal.sortOrder}; time=${meal.timeMinutes}; type=${meal.type}; title=${meal.title}; kcal=${meal.kcal}; P=${meal.proteinG}; C=${meal.carbsG}; F=${meal.fatG}"
@@ -333,8 +412,12 @@ class CheatAdjustmentService(
     private fun sumOrNull(values: List<Float?>): Float? = values.filterNotNull().takeIf { it.isNotEmpty() }?.sum()
 
     companion object {
-        private const val UNDERSTANDING_SYSTEM_PROMPT = """You are MyFitAI Nutrition Understanding Agent. Return only JSON matching the supplied schema. Your first job is to tell the user, in concise Italian, exactly what you understood they consumed, then estimate kcal and macros cautiously. If a nutrition-label image is attached, use only clearly visible values and never invent unreadable data. Nothing is saved at this stage; the user must be able to correct your understanding before confirmation."""
+        private const val UNDERSTANDING_SYSTEM_PROMPT = """You are MyFitAI Nutrition Understanding Agent. Return only the JSON envelope. Its data string must follow this exact protocol and must include the header as the first line:
+CU1
+U|understoodFood
+E|kcal|proteinG|carbsG|fatG|low_medium_high|notes
+Use exactly three lines in data: CU1, one U record and one E record. Never omit CU1, never add prose or markdown, and never use pipes or line breaks inside text fields. Tell the user in concise Italian exactly what you understood they consumed, then estimate kcal and macros cautiously. If a nutrition-label image is attached, use only clearly visible values and never invent unreadable data. Nothing is saved at this stage; the user must be able to correct your understanding before confirmation."""
 
-        private const val ADJUSTMENT_SYSTEM_PROMPT = """You are MyFitAI Nutrition Deviation Adaptation Agent. Return only JSON matching the supplied schema. The deviation interpretation and nutritional estimate were already shown to and confirmed by the user: copy that estimate exactly and do not reinterpret it. You may modify only meals explicitly listed as future meals for the same day. Never modify past meals or later days, never move meal times, and never use punitive fasting or extreme restriction. If a valid daily balance within ±3% cannot be achieved with reasonable future meals of at least 100 kcal each, set adaptationPossible=false and return no replacements. The app is authoritative for validation."""
+        private const val ADJUSTMENT_SYSTEM_PROMPT = """You are MyFitAI Nutrition Deviation Adaptation Agent. Return only JSON matching the supplied schema. The deviation interpretation and nutritional estimate were already shown to and confirmed by the user: copy that estimate exactly and do not reinterpret it. You may modify only meals explicitly listed as future meals for the same day. Never modify past meals or later days, never move meal times, and never use punitive fasting or extreme restriction. A valid daily balance means every metric is within target -3%..target; never exceed the target. If it cannot be achieved with reasonable future meals of at least 100 kcal each, set adaptationPossible=false and return no replacements. The app is authoritative for validation."""
     }
 }

@@ -24,8 +24,12 @@ import com.myfitai.app.data.local.entity.*
         FoodConsumptionEntity::class,
         WeeklyReviewEntity::class,
         AiUsageRecordEntity::class,
+        NutritionRecoveryEventEntity::class,
+        NutritionRecoveryWithdrawalEntity::class,
+        WorkoutEnergyExpenditureEntity::class,
+        AiJobResultEntity::class,
     ],
-    version = 6,
+    version = 11,
     exportSchema = true,
 )
 abstract class MyFitAiDatabase : RoomDatabase() {
@@ -38,6 +42,9 @@ abstract class MyFitAiDatabase : RoomDatabase() {
     abstract fun foodConsumptionDao(): FoodConsumptionDao
     abstract fun weeklyReviewDao(): WeeklyReviewDao
     abstract fun aiUsageDao(): AiUsageDao
+    abstract fun nutritionRecoveryDao(): NutritionRecoveryDao
+    abstract fun workoutEnergyExpenditureDao(): WorkoutEnergyExpenditureDao
+    abstract fun aiJobResultDao(): AiJobResultDao
 
     companion object {
         const val DATABASE_NAME = "myfitai.db"
@@ -169,5 +176,98 @@ object DatabaseMigrations {
         }
     }
 
-    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+    val MIGRATION_6_7 = object : Migration(6, 7) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("""CREATE TABLE IF NOT EXISTS nutrition_recovery_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                profileId INTEGER NOT NULL,
+                createdAtEpochMillis INTEGER NOT NULL,
+                eventEpochDay INTEGER NOT NULL,
+                source TEXT NOT NULL,
+                originalExcessKcal INTEGER NOT NULL,
+                remainingKcal INTEGER NOT NULL,
+                recoveredKcal INTEGER NOT NULL,
+                expiresEpochDay INTEGER NOT NULL,
+                status TEXT NOT NULL,
+                reason TEXT NOT NULL
+            )""".trimIndent())
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_nutrition_recovery_events_profileId ON nutrition_recovery_events(profileId)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_nutrition_recovery_events_profileId_status ON nutrition_recovery_events(profileId, status)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_nutrition_recovery_events_profileId_expiresEpochDay ON nutrition_recovery_events(profileId, expiresEpochDay)")
+            db.execSQL("""CREATE TABLE IF NOT EXISTS nutrition_recovery_withdrawals (
+                profileId INTEGER NOT NULL,
+                withdrawalEpochDay INTEGER NOT NULL,
+                eventId INTEGER NOT NULL,
+                plannedRecoveryKcal INTEGER NOT NULL,
+                confirmedRecoveryKcal INTEGER NOT NULL,
+                createdAtEpochMillis INTEGER NOT NULL,
+                updatedAtEpochMillis INTEGER NOT NULL,
+                PRIMARY KEY(profileId, withdrawalEpochDay)
+            )""".trimIndent())
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_nutrition_recovery_withdrawals_eventId ON nutrition_recovery_withdrawals(eventId)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_nutrition_recovery_withdrawals_profileId ON nutrition_recovery_withdrawals(profileId)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_nutrition_recovery_withdrawals_withdrawalEpochDay ON nutrition_recovery_withdrawals(withdrawalEpochDay)")
+        }
+    }
+
+    val MIGRATION_7_8 = object : Migration(7, 8) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("""CREATE TABLE IF NOT EXISTS workout_energy_expenditures (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                profileId INTEGER NOT NULL,
+                workoutId INTEGER NOT NULL,
+                exerciseDateEpochDay INTEGER NOT NULL,
+                caloriesKcal INTEGER NOT NULL,
+                source TEXT NOT NULL,
+                createdAtEpochMillis INTEGER NOT NULL,
+                updatedAtEpochMillis INTEGER NOT NULL,
+                FOREIGN KEY(workoutId) REFERENCES workouts(id) ON DELETE CASCADE
+            )""".trimIndent())
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_workout_energy_expenditures_profileId ON workout_energy_expenditures(profileId)")
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_workout_energy_expenditures_workoutId ON workout_energy_expenditures(workoutId)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_workout_energy_expenditures_profileId_exerciseDateEpochDay ON workout_energy_expenditures(profileId, exerciseDateEpochDay)")
+            db.execSQL("""INSERT OR IGNORE INTO workout_energy_expenditures (profileId, workoutId, exerciseDateEpochDay, caloriesKcal, source, createdAtEpochMillis, updatedAtEpochMillis)
+                SELECT profileId, id, CAST(strftime('%s', date(startedAtEpochMillis / 1000, 'unixepoch', 'localtime')) / 86400 AS INTEGER), 500, 'DEFAULT', startedAtEpochMillis, startedAtEpochMillis
+                FROM workouts WHERE isRestDay = 0""".trimIndent())
+        }
+    }
+
+    val MIGRATION_8_9 = object : Migration(8, 9) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE workouts ADD COLUMN perceivedIntensity INTEGER")
+        }
+    }
+
+    /** Background AI jobs need a durable result so the UI can reattach after a notification. */
+    val MIGRATION_9_10 = object : Migration(9, 10) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS ai_job_results (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    profileId INTEGER NOT NULL,
+                    jobType TEXT NOT NULL,
+                    jobKey TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    payloadJson TEXT,
+                    errorMessage TEXT,
+                    provider TEXT,
+                    consumed INTEGER NOT NULL DEFAULT 0,
+                    updatedAtEpochMillis INTEGER NOT NULL,
+                    FOREIGN KEY(profileId) REFERENCES user_profile(id) ON UPDATE NO ACTION ON DELETE CASCADE
+                )
+                """.trimIndent()
+            )
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_ai_job_results_profileId_jobType_jobKey ON ai_job_results (profileId, jobType, jobKey)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_ai_job_results_profileId_jobType ON ai_job_results (profileId, jobType)")
+        }
+    }
+
+    val MIGRATION_10_11 = object : Migration(10, 11) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE meal_plan_versions ADD COLUMN appValidationJson TEXT")
+        }
+    }
+
+    val ALL: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
 }

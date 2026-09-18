@@ -95,13 +95,291 @@
                     <com.myfitai.app.ui.widgets.MetricCardView android:id="@+id/metricMuscle" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" />
                 </LinearLayout>
 
-                <TextView
-                    android:id="@+id/recompositionStateText"
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/energyTargetCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_16"
+                    app:cardBackgroundColor="@color/surface_primary"
+                    app:cardCornerRadius="@dimen/radius_medium"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/divider"
+                    app:strokeWidth="1dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="@dimen/space_16">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                         <TextView
+                             android:id="@+id/energyGoalLabel"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Obiettivo energetico"
+                                android:textColor="@color/text_primary"
+                             android:textSize="15sp"
+                             android:textStyle="bold" />
+                             <TextView
+                                android:id="@+id/energyModeLabel"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:background="@drawable/bg_pill_selected"
+                                android:paddingHorizontal="@dimen/space_10"
+                                android:paddingVertical="@dimen/space_4"
+                                android:textColor="@color/accent_green_dark"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+                         </LinearLayout>
+
+                         <TextView
+                             android:id="@+id/energyGoalDescription"
+                             android:layout_width="match_parent"
+                             android:layout_height="wrap_content"
+                             android:layout_marginTop="@dimen/space_4"
+                             android:textColor="@color/text_secondary"
+                             android:textSize="12sp" />
+
+                         <TextView
+                            android:id="@+id/energyTargetCaption"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/space_16"
+                            android:text="Target di oggi"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:id="@+id/energyTargetValue"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/space_2"
+                            android:textColor="@color/text_primary"
+                            android:textSize="28sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                             android:id="@+id/energyTargetSubline"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/space_4"
+                            android:textColor="@color/accent_green_dark"
+                             android:textSize="12sp" />
+
+                         <TextView
+                             android:id="@+id/calorieProgressLabel"
+                             android:layout_width="match_parent"
+                             android:layout_height="wrap_content"
+                             android:layout_marginTop="@dimen/space_16"
+                             android:text="Calorie alimentari registrate"
+                             android:textColor="@color/text_primary"
+                             android:textSize="13sp"
+                             android:textStyle="bold" />
+                         <ProgressBar
+                             android:id="@+id/calorieProgressBar"
+                             style="?android:attr/progressBarStyleHorizontal"
+                             android:layout_width="match_parent"
+                             android:layout_height="20dp"
+                             android:layout_marginTop="@dimen/space_8"
+                             android:max="100"
+                             android:progress="0"
+                             android:progressDrawable="@drawable/progress_battery" />
+                         <TextView
+                              android:id="@+id/calorieProgressValue"
+                             android:layout_width="match_parent"
+                             android:layout_height="wrap_content"
+                             android:layout_marginTop="@dimen/space_4"
+                              android:textColor="@color/text_secondary"
+                              android:textSize="12sp" />
+
+                         <LinearLayout
+                             android:id="@+id/energyRecoveryDetails"
+                             android:layout_width="match_parent"
+                             android:layout_height="wrap_content"
+                             android:layout_marginTop="@dimen/space_12"
+                             android:background="@drawable/bg_positive_soft"
+                             android:orientation="vertical"
+                             android:padding="@dimen/space_10"
+                             android:visibility="gone">
+                             <TextView
+                                 android:layout_width="wrap_content"
+                                 android:layout_height="wrap_content"
+                                 android:text="Kcal in eccesso da riequilibrare"
+                                 android:textColor="@color/accent_green_dark"
+                                 android:textSize="12sp"
+                                 android:textStyle="bold" />
+                             <TextView
+                                 android:id="@+id/energyRecoveryValue"
+                                 android:layout_width="match_parent"
+                                 android:layout_height="wrap_content"
+                                 android:layout_marginTop="@dimen/space_2"
+                                 android:textColor="@color/text_secondary"
+                                 android:textSize="12sp" />
+                             <TextView
+                                 android:id="@+id/recoveryTankLabel"
+                                 android:layout_width="match_parent"
+                                 android:layout_height="wrap_content"
+                                 android:layout_marginTop="@dimen/space_12"
+                                 android:text="Eccedenza residua"
+                                 android:textColor="@color/accent_green_dark"
+                                 android:textSize="12sp"
+                                 android:textStyle="bold" />
+                             <ProgressBar
+                                 android:id="@+id/recoveryTankProgressBar"
+                                 style="?android:attr/progressBarStyleHorizontal"
+                                 android:layout_width="match_parent"
+                                 android:layout_height="16dp"
+                                 android:layout_marginTop="@dimen/space_6"
+                                 android:max="100"
+                                 android:progress="0"
+                                 android:progressDrawable="@drawable/progress_recovery_tank" />
+                             <TextView
+                                 android:id="@+id/recoveryTankValue"
+                                 android:layout_width="match_parent"
+                                 android:layout_height="wrap_content"
+                                 android:layout_marginTop="@dimen/space_4"
+                                 android:textColor="@color/text_secondary"
+                                 android:textSize="12sp" />
+                         </LinearLayout>
+
+                         <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginTop="@dimen/space_12"
+                            android:background="@color/divider" />
+
+                         <LinearLayout
+                             android:layout_width="match_parent"
+                             android:layout_height="wrap_content"
+                             android:layout_marginTop="@dimen/space_12"
+                             android:orientation="vertical">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical">
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                     android:text="Mantenimento giornaliero"
+                                    android:textColor="@color/text_muted"
+                                    android:textSize="11sp" />
+                                <TextView
+                                    android:id="@+id/energyMaintenanceValue"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="@dimen/space_2"
+                                    android:textColor="@color/text_primary"
+                                    android:textSize="14sp"
+                                    android:textStyle="bold" />
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                 android:layout_marginTop="@dimen/space_12"
+                                android:orientation="vertical">
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                     android:text="Differenza dal mantenimento"
+                                    android:textColor="@color/text_muted"
+                                    android:textSize="11sp" />
+                                <TextView
+                                    android:id="@+id/energyDifferenceValue"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="@dimen/space_2"
+                                    android:textColor="@color/text_primary"
+                                    android:textSize="14sp"
+                                    android:textStyle="bold" />
+                            </LinearLayout>
+                        </LinearLayout>
+
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/todaySummaryCard"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="12sp" />
+                    app:cardBackgroundColor="@color/surface_secondary"
+                    app:cardCornerRadius="@dimen/radius_medium"
+                    app:cardElevation="0dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="@dimen/space_12">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Oggi"
+                            android:textColor="@color/text_primary"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+                         <LinearLayout
+                             android:layout_width="match_parent"
+                             android:layout_height="wrap_content"
+                             android:layout_marginTop="@dimen/space_8"
+                             android:orientation="vertical">
+                             <TextView
+                                 android:id="@+id/todayCaloriesSummary"
+                                 android:layout_width="match_parent"
+                                 android:layout_height="wrap_content"
+                                 android:textColor="@color/text_primary"
+                                 android:textSize="13sp"
+                                 android:textStyle="bold" />
+                             <TextView
+                                 android:id="@+id/todayMealsSummary"
+                                 android:layout_width="match_parent"
+                                 android:layout_height="wrap_content"
+                                 android:layout_marginTop="@dimen/space_4"
+                                 android:textColor="@color/text_secondary"
+                                 android:textSize="12sp" />
+                             <TextView
+                                 android:id="@+id/todayWorkoutSummary"
+                                 android:layout_width="match_parent"
+                                 android:layout_height="wrap_content"
+                                 android:layout_marginTop="@dimen/space_4"
+                                 android:textColor="@color/text_secondary"
+                                 android:textSize="12sp" />
+                             <com.google.android.material.button.MaterialButton
+                                 android:id="@+id/todayMenuButton"
+                                 style="@style/Widget.Material3.Button.TextButton"
+                                 android:layout_width="wrap_content"
+                                 android:layout_height="40dp"
+                                 android:layout_marginTop="@dimen/space_8"
+                                 android:text="Vedi menu di oggi"
+                                 android:textAllCaps="false" />
+                         </LinearLayout>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/weeklyExpectationCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_12"
+                    app:cardBackgroundColor="@color/surface_primary"
+                    app:cardCornerRadius="@dimen/radius_medium"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/divider"
+                    app:strokeWidth="1dp">
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="@dimen/space_12">
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Aspettativa della settimana" android:textColor="@color/text_primary" android:textSize="14sp" android:textStyle="bold" />
+                        <TextView android:id="@+id/weeklyExpectationStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:textColor="@color/accent_green_dark" android:textSize="13sp" android:textStyle="bold" />
+                        <TextView android:id="@+id/weeklyExpectationDetail" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:textColor="@color/text_secondary" android:textSize="12sp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
 
                 <com.myfitai.app.ui.widgets.WeightTrendChartView
                     android:id="@+id/weightTrendChart"
@@ -123,11 +401,79 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12" />
 
-                <com.myfitai.app.ui.widgets.SectionHeaderView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:text="@string/dashboard_next_meal_title" />
-                <com.myfitai.app.ui.widgets.MealCardView android:id="@+id/nextMealCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_12" />
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/trendInterpretationCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_12"
+                    app:cardBackgroundColor="@color/surface_secondary"
+                    app:cardCornerRadius="@dimen/radius_medium"
+                    app:cardElevation="0dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="@dimen/space_12">
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                             android:text="Cosa significa il trend"
+                             android:textColor="@color/accent_green_dark"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+                        <TextView
+                            android:id="@+id/recompositionStateText"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/space_4"
+                            android:textColor="@color/text_secondary"
+                            android:textStyle="bold"
+                            android:textSize="12sp" />
+                        <TextView
+                             android:id="@+id/trendExplanationText"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/space_4"
+                             android:text="Confronta grasso corporeo e massa muscolare tra le rilevazioni disponibili. Non è una diagnosi: serve a capire la direzione dei cambiamenti nel tempo."
+                             android:textColor="@color/text_muted"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
 
-                <com.myfitai.app.ui.widgets.SectionHeaderView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:text="@string/dashboard_next_workout_title" />
-                <com.myfitai.app.ui.widgets.WorkoutCardView android:id="@+id/nextWorkoutCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_12" />
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/upcomingMealsCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_20"
+                    app:cardBackgroundColor="@color/surface_primary"
+                    app:cardCornerRadius="@dimen/radius_medium"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/divider"
+                    app:strokeWidth="1dp">
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="@dimen/space_16">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Prossimi pasti" android:textColor="@color/text_primary" android:textSize="15sp" android:textStyle="bold" />
+                        <com.myfitai.app.ui.widgets.MealCardView android:id="@+id/nextMealCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" />
+                        <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginTop="@dimen/space_8" android:background="@color/divider" />
+                        <TextView android:id="@+id/secondMealSummary" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:textColor="@color/text_secondary" android:textSize="13sp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/todayWorkoutCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_12"
+                    app:cardBackgroundColor="@color/surface_primary"
+                    app:cardCornerRadius="@dimen/radius_medium"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/divider"
+                    app:strokeWidth="1dp">
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="@dimen/space_16">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Allenamento di oggi" android:textColor="@color/text_primary" android:textSize="15sp" android:textStyle="bold" />
+                        <com.myfitai.app.ui.widgets.WorkoutCardView android:id="@+id/nextWorkoutCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" />
+                        <com.google.android.material.button.MaterialButton android:id="@+id/todayWorkoutButton" style="@style/Widget.Material3.Button.OutlinedButton" android:layout_width="match_parent" android:layout_height="44dp" android:layout_marginTop="@dimen/space_8" android:text="Gestisci allenamento" android:textAllCaps="false" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
 
                 <com.myfitai.app.ui.widgets.SectionHeaderView
                     android:layout_width="match_parent"
@@ -146,5 +492,4 @@
         </LinearLayout>
     </ScrollView>
 
-    <include layout="@layout/view_bottom_navigation" />
 </LinearLayout>

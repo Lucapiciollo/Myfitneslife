@@ -2,6 +2,8 @@ package com.myfitai.app.notifications
 
 import android.content.Context
 import com.myfitai.app.data.profile.ActiveProfileStore
+import com.myfitai.app.data.profile.MealCountPreferences
+import com.myfitai.app.data.profile.NutritionMealSchedulePreferences
 import com.myfitai.app.data.repository.MealPlanRepository
 import com.myfitai.app.domain.time.SystemTimeProvider
 import com.myfitai.app.domain.time.TimeProvider
@@ -15,6 +17,8 @@ class NotificationScheduler(
     context: Context,
     private val plans: MealPlanRepository,
     private val activeProfileStore: ActiveProfileStore,
+    private val mealCountPreferences: MealCountPreferences,
+    private val mealSchedulePreferences: NutritionMealSchedulePreferences,
     private val time: TimeProvider = SystemTimeProvider,
     private val alarmGateway: NotificationAlarmGateway = AndroidNotificationAlarmGateway(context),
     private val settings: NotificationSettings = NotificationPreferences(context),
@@ -49,7 +53,9 @@ class NotificationScheduler(
                 val date = LocalDate.ofEpochDay(day.dateEpochDay)
                 if (date.isAfter(horizon)) return@dayLoop
                 day.meals.forEach mealLoop@{ meal ->
-                    val minutes = meal.timeMinutes ?: return@mealLoop
+                    val mealIndex = meal.sortOrder.coerceAtLeast(0)
+                    val configuredTimes = mealSchedulePreferences.times(profileId, mealCountPreferences.get(profileId))
+                    val minutes = configuredTimes.getOrNull(mealIndex) ?: meal.timeMinutes ?: return@mealLoop
                     if (minutes !in 0..1439) return@mealLoop
                     val trigger = date.atStartOfDay(zone).plusMinutes(minutes.toLong()).toInstant().toEpochMilli() - leadMillis
                     if (trigger <= now) return@mealLoop
