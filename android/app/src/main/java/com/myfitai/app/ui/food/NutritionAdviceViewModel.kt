@@ -44,17 +44,7 @@ class NutritionAdviceViewModel(
     init {
         val jobKey = pendingJobKey
         if (!jobKey.isNullOrBlank()) {
-            viewModelScope.launch {
-                val profileId = activeProfileStore.currentIdOrNull() ?: return@launch
-                aiJobScheduler.observe(AiJobType.NUTRITION_ADVICE, profileId, jobKey).collect { info ->
-                    when (info?.state) {
-                        WorkInfo.State.ENQUEUED, WorkInfo.State.RUNNING -> _state.value = _state.value.copy(running = true)
-                        WorkInfo.State.SUCCEEDED -> renderPayload(info.outputData.getString(NutritionAdviceAiJobHandler.KEY_PAYLOAD))
-                        WorkInfo.State.FAILED -> _state.value = _state.value.copy(running = false, error = info.outputData.getString("error") ?: "Consiglio non disponibile")
-                        else -> Unit
-                    }
-                }
-            }
+            observeJob(jobKey)
         }
     }
 
@@ -73,6 +63,21 @@ class NutritionAdviceViewModel(
             } else {
                 val jobKey = jobKeyFor(normalized)
                 aiJobScheduler.enqueue(AiJobType.NUTRITION_ADVICE, profileId, jobKey, params = androidx.work.Data.Builder().putString(NutritionAdviceAiJobHandler.KEY_QUESTION, normalized).build())
+                observeJob(jobKey)
+            }
+        }
+    }
+
+    private fun observeJob(jobKey: String) {
+        viewModelScope.launch {
+            val profileId = activeProfileStore.currentIdOrNull() ?: return@launch
+            aiJobScheduler.observe(AiJobType.NUTRITION_ADVICE, profileId, jobKey).collect { info ->
+                when (info?.state) {
+                    WorkInfo.State.ENQUEUED, WorkInfo.State.RUNNING -> _state.value = _state.value.copy(running = true)
+                    WorkInfo.State.SUCCEEDED -> renderPayload(info.outputData.getString(NutritionAdviceAiJobHandler.KEY_PAYLOAD))
+                    WorkInfo.State.FAILED -> _state.value = _state.value.copy(running = false, error = info.outputData.getString("error") ?: "Consiglio non disponibile")
+                    else -> Unit
+                }
             }
         }
     }

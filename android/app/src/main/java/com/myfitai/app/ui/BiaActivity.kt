@@ -263,7 +263,20 @@ class BiaActivity : BaseShellActivity() {
                 }
                 val key = System.currentTimeMillis().toString()
                 data.aiJobScheduler.enqueue(com.myfitai.app.domain.ai.AiJobType.BIA_IMPORT, profileId, key, params = androidx.work.Data.Builder().putString(com.myfitai.app.domain.ai.AiJobWorker.KEY_IMAGE_PATH, data.aiImageJobStore.write(image)).build())
-                data.aiJobScheduler.observe(com.myfitai.app.domain.ai.AiJobType.BIA_IMPORT, profileId, key).collect { info -> if (info?.state == androidx.work.WorkInfo.State.SUCCEEDED) { val p = org.json.JSONObject(info.outputData.getString(com.myfitai.app.domain.body.BiaImportAiJobHandler.KEY_PAYLOAD).orEmpty()); showImportPreview(com.myfitai.app.domain.body.BiaImportContract.Preview(true, "", p.optLong("measuredAtEpochMillis").takeIf { it > 0 }, p.optDouble("weightKg").takeIf { !p.isNull("weightKg") }?.toFloat(), p.optDouble("bodyFatPercent").takeIf { !p.isNull("bodyFatPercent") }?.toFloat(), p.optDouble("visceralFatLevel").takeIf { !p.isNull("visceralFatLevel") }?.toFloat(), p.optDouble("muscleMassKg").takeIf { !p.isNull("muscleMassKg") }?.toFloat(), p.optDouble("skeletalMuscleKg").takeIf { !p.isNull("skeletalMuscleKg") }?.toFloat(), p.optDouble("bodyWaterPercent").takeIf { !p.isNull("bodyWaterPercent") }?.toFloat(), p.optDouble("bmrKcal").takeIf { !p.isNull("bmrKcal") }?.toFloat(), p.getString("confidence"), p.getString("notes")), p.getString("provider"), p.getString("model")); } }
+                data.aiJobScheduler.observe(com.myfitai.app.domain.ai.AiJobType.BIA_IMPORT, profileId, key).collect { info ->
+                    when (info?.state) {
+                        androidx.work.WorkInfo.State.SUCCEEDED -> {
+                            val p = org.json.JSONObject(info.outputData.getString(com.myfitai.app.domain.body.BiaImportAiJobHandler.KEY_PAYLOAD).orEmpty())
+                            showImportPreview(com.myfitai.app.domain.body.BiaImportContract.Preview(true, "", p.optLong("measuredAtEpochMillis").takeIf { it > 0 }, p.optDouble("weightKg").takeIf { !p.isNull("weightKg") }?.toFloat(), p.optDouble("bodyFatPercent").takeIf { !p.isNull("bodyFatPercent") }?.toFloat(), p.optDouble("visceralFatLevel").takeIf { !p.isNull("visceralFatLevel") }?.toFloat(), p.optDouble("muscleMassKg").takeIf { !p.isNull("muscleMassKg") }?.toFloat(), p.optDouble("skeletalMuscleKg").takeIf { !p.isNull("skeletalMuscleKg") }?.toFloat(), p.optDouble("bodyWaterPercent").takeIf { !p.isNull("bodyWaterPercent") }?.toFloat(), p.optDouble("bmrKcal").takeIf { !p.isNull("bmrKcal") }?.toFloat(), p.getString("confidence"), p.getString("notes")), p.getString("provider"), p.getString("model"))
+                        }
+                        androidx.work.WorkInfo.State.FAILED,
+                        androidx.work.WorkInfo.State.CANCELLED -> {
+                            val message = info.outputData.getString("error") ?: "Impossibile leggere i valori BIA dalla foto"
+                            Toast.makeText(this@BiaActivity, message, Toast.LENGTH_LONG).show()
+                        }
+                        else -> Unit
+                    }
+                }
             }
         }
     }

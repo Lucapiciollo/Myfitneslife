@@ -12,7 +12,10 @@ import androidx.work.WorkInfo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.time.DayOfWeek
@@ -49,9 +52,12 @@ class WeeklyReviewViewModel(
             activeProfileStore.activeProfileId.collectLatest { reload() }
         }
         viewModelScope.launch {
-            activeProfileStore.activeProfileId.collectLatest { profileId ->
+            combine(
+                activeProfileStore.activeProfileId,
+                _state.map { it.weekStart }.distinctUntilChanged(),
+            ) { profileId, weekStart -> profileId to weekStart }.collectLatest { (profileId, weekStart) ->
                 if (profileId <= 0L) return@collectLatest
-                val weekKey = _state.value.weekStart.toEpochDay().toString()
+                val weekKey = weekStart.toEpochDay().toString()
                 aiJobScheduler.observe(AiJobType.WEEKLY_REVIEW, profileId, weekKey).collect { info ->
                     when (info?.state) {
                         WorkInfo.State.ENQUEUED, WorkInfo.State.RUNNING -> _state.value = _state.value.copy(generating = true)
