@@ -282,43 +282,47 @@ class BiaActivity : BaseShellActivity() {
     }
 
     private fun showImportPreview(preview: BiaImportContract.Preview, provider: String, model: String) {
-        val fields = linkedMapOf(
-            "Peso (kg)" to preview.weightKg,
-            "Grasso corporeo (%)" to preview.bodyFatPercent,
-            "Grasso viscerale" to preview.visceralFatLevel,
-            "Massa muscolare (kg)" to preview.muscleMassKg,
-            "Muscolo scheletrico (kg)" to preview.skeletalMuscleKg,
-            "Acqua corporea (%)" to preview.bodyWaterPercent,
-            "BMR (kcal)" to preview.bmrKcal,
+        val content = layoutInflater.inflate(R.layout.dialog_bia_import_preview, null, false)
+        val scroll = content.findViewById<androidx.core.widget.NestedScrollView>(R.id.biaImportScroll)
+        val meta = content.findViewById<TextView>(R.id.biaImportMeta)
+
+        val inputs = mapOf(
+            KEY_WEIGHT to content.findViewById<TextInputEditText>(R.id.biaImportWeight),
+            KEY_BODY_FAT to content.findViewById<TextInputEditText>(R.id.biaImportBodyFat),
+            KEY_VISCERAL_FAT to content.findViewById<TextInputEditText>(R.id.biaImportVisceralFat),
+            KEY_MUSCLE_MASS to content.findViewById<TextInputEditText>(R.id.biaImportMuscleMass),
+            KEY_SKELETAL_MUSCLE to content.findViewById<TextInputEditText>(R.id.biaImportSkeletalMuscle),
+            KEY_BODY_WATER to content.findViewById<TextInputEditText>(R.id.biaImportBodyWater),
+            KEY_BMR to content.findViewById<TextInputEditText>(R.id.biaImportBmr),
         )
-        val inputs = fields.mapValues { (_, value) -> TextInputEditText(this).apply {
-            inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
-            value?.let { setText(formatNumber(it)) }
-            hint = "Lascia vuoto se non leggibile"
-        } }
-        val container = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            val padding = (20 * resources.displayMetrics.density).toInt()
-            setPadding(padding, 0, padding, 0)
-            addView(TextView(this@BiaActivity).apply { text = "Provider $provider · $model\nConfidenza: ${preview.confidence}\n${preview.notes}"; textSize = 12f })
-            inputs.forEach { (label, input) ->
-                addView(TextView(this@BiaActivity).apply { text = label; textSize = 12f; setPadding(0, padding / 2, 0, 0) })
-                addView(input)
-            }
+
+        inputs.getValue(KEY_WEIGHT).setText(preview.weightKg?.let(::formatNumber).orEmpty())
+        inputs.getValue(KEY_BODY_FAT).setText(preview.bodyFatPercent?.let(::formatNumber).orEmpty())
+        inputs.getValue(KEY_VISCERAL_FAT).setText(preview.visceralFatLevel?.let(::formatNumber).orEmpty())
+        inputs.getValue(KEY_MUSCLE_MASS).setText(preview.muscleMassKg?.let(::formatNumber).orEmpty())
+        inputs.getValue(KEY_SKELETAL_MUSCLE).setText(preview.skeletalMuscleKg?.let(::formatNumber).orEmpty())
+        inputs.getValue(KEY_BODY_WATER).setText(preview.bodyWaterPercent?.let(::formatNumber).orEmpty())
+        inputs.getValue(KEY_BMR).setText(preview.bmrKcal?.let(::formatNumber).orEmpty())
+
+        meta.text = buildString {
+            append("Provider ").append(provider).append(" · ").append(model)
+            append("\nConfidenza: ").append(preview.confidence)
+            preview.notes.takeIf { it.isNotBlank() }?.let { append("\n").append(it) }
         }
-        MaterialAlertDialogBuilder(this)
+
+        val dialog = MaterialAlertDialogBuilder(this)
             .setTitle("Controlla importazione BIA")
             .setMessage("I valori sono una lettura della foto. Correggili prima di salvarli nello storico.")
-            .setView(container)
+            .setView(content)
             .setNegativeButton("Annulla", null)
             .setPositiveButton("Usa valori") { _, _ ->
-                values[KEY_WEIGHT] = parseFloat(inputs.getValue("Peso (kg)").text?.toString())
-                values[KEY_BODY_FAT] = parseFloat(inputs.getValue("Grasso corporeo (%)").text?.toString())
-                values[KEY_VISCERAL_FAT] = parseFloat(inputs.getValue("Grasso viscerale").text?.toString())
-                values[KEY_MUSCLE_MASS] = parseFloat(inputs.getValue("Massa muscolare (kg)").text?.toString())
-                values[KEY_SKELETAL_MUSCLE] = parseFloat(inputs.getValue("Muscolo scheletrico (kg)").text?.toString())
-                values[KEY_BODY_WATER] = parseFloat(inputs.getValue("Acqua corporea (%)").text?.toString())
-                values[KEY_BMR] = parseFloat(inputs.getValue("BMR (kcal)").text?.toString())
+                values[KEY_WEIGHT] = parseFloat(inputs.getValue(KEY_WEIGHT).text?.toString())
+                values[KEY_BODY_FAT] = parseFloat(inputs.getValue(KEY_BODY_FAT).text?.toString())
+                values[KEY_VISCERAL_FAT] = parseFloat(inputs.getValue(KEY_VISCERAL_FAT).text?.toString())
+                values[KEY_MUSCLE_MASS] = parseFloat(inputs.getValue(KEY_MUSCLE_MASS).text?.toString())
+                values[KEY_SKELETAL_MUSCLE] = parseFloat(inputs.getValue(KEY_SKELETAL_MUSCLE).text?.toString())
+                values[KEY_BODY_WATER] = parseFloat(inputs.getValue(KEY_BODY_WATER).text?.toString())
+                values[KEY_BMR] = parseFloat(inputs.getValue(KEY_BMR).text?.toString())
                 bindMeasurementRows()
                 preview.measuredAtEpochMillis?.let { timestamp ->
                     selectedDateMillis = timestamp
@@ -328,7 +332,14 @@ class BiaActivity : BaseShellActivity() {
                 }
                 renderDateTime()
             }
-            .show()
+            .create()
+
+        dialog.setOnShowListener {
+            scroll.layoutParams = scroll.layoutParams.apply {
+                height = (resources.displayMetrics.heightPixels * 0.52f).toInt()
+            }
+        }
+        dialog.show()
     }
 
     private fun observeState() {
