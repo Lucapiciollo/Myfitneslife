@@ -162,16 +162,35 @@ V|1_or_0|notes"""
         val supplements: MutableList<NutritionPlanContract.GeneratedSupplement> = mutableListOf(),
         var hydrationNote: String? = null,
     ) {
-        fun build() = NutritionPlanContract.GeneratedDay(
-            dateEpochDay = dateEpochDay,
-            totalKcal = totalKcal,
-            proteinG = proteinG,
-            carbsG = carbsG,
-            fatG = fatG,
-            meals = meals.toList(),
-            supplements = supplements.toList(),
-            hydrationNote = hydrationNote.orEmpty(),
-        )
+        fun build(): NutritionPlanContract.GeneratedDay {
+            val finalMeals = meals.toList()
+            val finalSupplements = supplements.toList()
+            // D totals are transport hints only. The app is authoritative and derives the
+            // persisted/validated daily totals from the actual meal + caloric supplement records.
+            val derivedKcal = finalMeals.sumOf { it.kcal } + finalSupplements.sumOf { it.kcal }
+            val derivedProtein = (
+                finalMeals.sumOf { it.proteinG.toDouble() } +
+                    finalSupplements.sumOf { it.proteinG.toDouble() }
+                ).toFloat()
+            val derivedCarbs = (
+                finalMeals.sumOf { it.carbsG.toDouble() } +
+                    finalSupplements.sumOf { it.carbsG.toDouble() }
+                ).toFloat()
+            val derivedFat = (
+                finalMeals.sumOf { it.fatG.toDouble() } +
+                    finalSupplements.sumOf { it.fatG.toDouble() }
+                ).toFloat()
+            return NutritionPlanContract.GeneratedDay(
+                dateEpochDay = dateEpochDay,
+                totalKcal = derivedKcal,
+                proteinG = derivedProtein,
+                carbsG = derivedCarbs,
+                fatG = derivedFat,
+                meals = finalMeals,
+                supplements = finalSupplements,
+                hydrationNote = hydrationNote.orEmpty(),
+            )
+        }
     }
 
     private data class MealBuilder(
