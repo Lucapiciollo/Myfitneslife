@@ -21,6 +21,10 @@ class NutritionPlanScheduler(
     private val zoneId: ZoneId = ZoneId.systemDefault(),
 ) {
     fun reschedule(profileId: Long, nowEpochMillis: Long = System.currentTimeMillis()) {
+        // A due job can be waiting for network or already executing. Do not cancel it
+        // just because the app was opened or the active profile was refreshed.
+        val previous = preferences.scheduledJobKey(profileId)
+        if (preferences.get(profileId).enabled && isDueJob(previous, nowEpochMillis)) return
         cancel(profileId)
         scheduleNext(profileId, nowEpochMillis)
     }
@@ -63,6 +67,10 @@ class NutritionPlanScheduler(
     }
 
     companion object {
+        internal fun isDueJob(jobKey: String?, nowEpochMillis: Long): Boolean =
+            jobKey?.removePrefix("auto-")?.takeIf { jobKey.startsWith("auto-") }
+                ?.toLongOrNull()?.let { it <= nowEpochMillis } == true
+
         internal fun nextOccurrence(
             now: ZonedDateTime,
             dayOfWeek: DayOfWeek,
