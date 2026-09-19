@@ -20,13 +20,17 @@ class NutritionPathTrigger(
 ) {
     suspend fun maybeEnqueue(profileId: Long): String? {
         val profile = profiles.get(profileId) ?: return null
-        val latestBia = bia.all(profileId).first().maxByOrNull { it.measuredAtEpochMillis }
-        val latestBody = body.all(profileId).first().maxByOrNull { it.measuredAtEpochMillis }
+        val latestBia = bia.all(profileId).first()
+            .maxWithOrNull(compareBy({ it.measuredAtEpochMillis }, { it.id }))
+        val latestBody = body.all(profileId).first()
+            .maxWithOrNull(compareBy({ it.measuredAtEpochMillis }, { it.id }))
 
         val key = buildString {
             append(profile.updatedAtEpochMillis)
             append('-').append(latestBia?.measuredAtEpochMillis ?: 0L)
+            append('-').append(latestBia?.id ?: 0L)
             append('-').append(latestBody?.measuredAtEpochMillis ?: 0L)
+            append('-').append(latestBody?.id ?: 0L)
         }
         scheduler.enqueue(profileId, key)
         return key
