@@ -27,7 +27,7 @@ class BiaViewModel(
         .flatMapLatest { repository.all(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    private val _saved = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    private val _saved = MutableSharedFlow<String?>(extraBufferCapacity = 1)
     val saved = _saved.asSharedFlow()
 
     private val _deleted = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
@@ -96,8 +96,12 @@ class BiaViewModel(
                     )
                 )
             }.onSuccess {
-                nutritionPathTrigger?.maybeEnqueue(profileId)
-                _saved.tryEmit(Unit)
+                // The BIA is already persisted. Report the advisor job key to the screen,
+                // rather than silently enqueueing an analysis the user never sees.
+                val recommendationJobKey = runCatching {
+                    nutritionPathTrigger?.maybeEnqueue(profileId)
+                }.getOrNull()
+                _saved.tryEmit(recommendationJobKey)
             }
                 .onFailure { _error.tryEmit("Impossibile salvare la misurazione BIA") }
         }
