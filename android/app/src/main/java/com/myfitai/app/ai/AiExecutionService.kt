@@ -11,6 +11,7 @@ class AiExecutionService {
 
     sealed class Failure(message: String) : Exception(message) {
         class InvalidSchema(val errors: List<String>) : Failure("INVALID_SCHEMA")
+        class OutputTruncated : Failure("OUTPUT_TRUNCATED")
         class BusinessRejected(val reason: String) : Failure(reason)
     }
 
@@ -26,6 +27,11 @@ class AiExecutionService {
         var currentRequest = request
         while (true) {
             val raw = provider.generateStructured(currentRequest)
+            // A token-limited answer is incomplete, not a schema/business failure.
+            // Never persist an incomplete nutrition plan or retry the same inadequate budget.
+            if (raw.finishReason == "MAX_TOKENS" || raw.finishReason == "max_output_tokens") {
+                throw Failure.OutputTruncated()
+            }
             val schemaResult = CanonicalJsonSchemaValidator.validate(raw.jsonText, request.schemaJson)
             if (!schemaResult.valid) {
                 if (provider is GeminiByokProvider) {
