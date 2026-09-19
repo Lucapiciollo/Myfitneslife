@@ -3,6 +3,7 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/biaImportScroll"
+    android:background="@color/white"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:clipToPadding="false"
@@ -17,12 +18,9 @@
         android:paddingBottom="@dimen/space_12">
 
         <com.google.android.material.card.MaterialCardView
+            style="@style/Widget.MyFitAI.Dialog.Card"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:cardBackgroundColor="@color/surface_primary"
-            app:cardCornerRadius="14dp"
-            app:strokeColor="@color/divider"
-            app:strokeWidth="1dp">
+            android:layout_height="wrap_content">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -50,13 +48,10 @@
         </com.google.android.material.card.MaterialCardView>
 
         <com.google.android.material.card.MaterialCardView
+            style="@style/Widget.MyFitAI.Dialog.Card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_12"
-            app:cardBackgroundColor="@color/surface_primary"
-            app:cardCornerRadius="14dp"
-            app:strokeColor="@color/divider"
-            app:strokeWidth="1dp">
+            android:layout_marginTop="@dimen/space_12">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -79,6 +74,7 @@
                     android:layout_marginTop="@dimen/space_12"
                     android:hint="Peso (kg)">
                     <com.google.android.material.textfield.TextInputEditText
+                style="@style/Widget.MyFitAI.InputEditText"
                         android:id="@+id/biaImportWeight"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -93,6 +89,7 @@
             android:layout_marginTop="@dimen/space_8"
             android:hint="Grasso corporeo (%)">
             <com.google.android.material.textfield.TextInputEditText
+                style="@style/Widget.MyFitAI.InputEditText"
                 android:id="@+id/biaImportBodyFat"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -107,6 +104,7 @@
             android:layout_marginTop="@dimen/space_8"
             android:hint="Grasso viscerale">
             <com.google.android.material.textfield.TextInputEditText
+                style="@style/Widget.MyFitAI.InputEditText"
                 android:id="@+id/biaImportVisceralFat"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -121,6 +119,7 @@
             android:layout_marginTop="@dimen/space_8"
             android:hint="Massa muscolare (kg)">
             <com.google.android.material.textfield.TextInputEditText
+                style="@style/Widget.MyFitAI.InputEditText"
                 android:id="@+id/biaImportMuscleMass"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -135,6 +134,7 @@
             android:layout_marginTop="@dimen/space_8"
             android:hint="Muscolo scheletrico (kg)">
             <com.google.android.material.textfield.TextInputEditText
+                style="@style/Widget.MyFitAI.InputEditText"
                 android:id="@+id/biaImportSkeletalMuscle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -149,6 +149,7 @@
             android:layout_marginTop="@dimen/space_8"
             android:hint="Acqua corporea (%)">
             <com.google.android.material.textfield.TextInputEditText
+                style="@style/Widget.MyFitAI.InputEditText"
                 android:id="@+id/biaImportBodyWater"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -163,6 +164,7 @@
             android:layout_marginTop="@dimen/space_8"
             android:hint="BMR (kcal)">
             <com.google.android.material.textfield.TextInputEditText
+                style="@style/Widget.MyFitAI.InputEditText"
                 android:id="@+id/biaImportBmr"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
