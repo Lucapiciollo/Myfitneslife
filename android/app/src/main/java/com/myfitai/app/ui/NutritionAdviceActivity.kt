@@ -5,7 +5,7 @@ import android.graphics.Typeface
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
-import android.widget.EditText
+import com.google.android.material.textfield.TextInputEditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.viewModels
@@ -45,7 +45,7 @@ class NutritionAdviceActivity : BaseShellActivity() {
         bindBottom(BottomNavBinder.Tab.FOOD)
 
         findViewById<View>(R.id.askButton).setOnClickListener {
-            val question = findViewById<EditText>(R.id.questionInput).text?.toString().orEmpty()
+            val question = findViewById<TextInputEditText>(R.id.questionInput).text?.toString().orEmpty()
             confirmAiRequest("La richiesta di un consiglio nutrizionale") {
                 viewModel.ask(question)
             }
