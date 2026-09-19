@@ -111,6 +111,7 @@ abstract class BaseShellActivity : AppCompatActivity() {
 
         profileSwitcher = AutoCompleteTextView(this@BaseShellActivity).apply {
             hint = "Seleziona profilo"
+            setBackgroundResource(R.drawable.bg_input)
             setTextColor(getColor(R.color.text_primary))
             setHintTextColor(getColor(R.color.text_muted))
             textSize = 15f
