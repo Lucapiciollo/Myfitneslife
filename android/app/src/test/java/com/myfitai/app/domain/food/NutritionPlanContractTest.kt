@@ -25,6 +25,22 @@ class NutritionPlanContractTest {
     }
 
     @Test
+    fun dynamicDailyTarget_isAuthoritativeEvenWhenBaseTargetMatches() {
+        val specialDay = week.plusDays(2).toEpochDay()
+        val dynamicTargets = mapOf(
+            specialDay to NutritionBusinessValidator.Targets(2600.0, 175.0, 305.0, 75.0),
+        )
+        assertFalse(
+            NutritionPlanContract.validateBusiness(
+                response = response(),
+                expectedWeekStart = week,
+                targets = targets,
+                dailyTargets = dynamicTargets,
+            ).isSuccess,
+        )
+    }
+
+    @Test
     fun wrongWeekDates_areRejected() {
         val original = response()
         val changed = original.copy(days = original.days.mapIndexed { index, day ->
