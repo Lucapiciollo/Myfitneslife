@@ -38,6 +38,7 @@ class SettingsActivity : BaseShellActivity() {
         setContentView(R.layout.activity_settings)
         bindBottom(BottomNavBinder.Tab.MORE)
         bindBack()
+        bindSectionHelp()
 
         val settings = AiSettingsStore(this)
         val credentialStore = SecureAiCredentialStore(this)
@@ -179,6 +180,27 @@ class SettingsActivity : BaseShellActivity() {
         render()
     }
 
+    private fun bindSectionHelp() {
+        findViewById<View>(R.id.generalSectionHelpButton).setOnClickListener {
+            showHelpCard(
+                "Generale",
+                "Qui trovi il profilo attivo, le rilevazioni, le preferenze alimentari, il numero di pasti, la privacy e l'esportazione dei dati.",
+            )
+        }
+        findViewById<View>(R.id.dataSectionHelpButton).setOnClickListener {
+            showHelpCard(
+                "Gestione dati",
+                "Le eliminazioni riguardano solo il profilo attivo. Usale per rimuovere categorie specifiche oppure tutti i dati registrati senza cancellare il profilo e le chiavi IA.",
+            )
+        }
+        findViewById<View>(R.id.aiSectionHelpButton).setOnClickListener {
+            showHelpCard(
+                "Intelligenza artificiale",
+                "Qui configuri il provider IA, verifichi e gestisci le chiavi API e attivi le funzioni automatiche dell'app. Le chiavi vengono protette localmente e non sono mostrate in chiaro dopo il salvataggio.",
+            )
+        }
+    }
+
     private fun enqueueNutritionPath() {
         val profileId = data.activeProfileStore.currentIdOrNull() ?: return
         lifecycleScope.launch {
@@ -271,13 +293,14 @@ class SettingsActivity : BaseShellActivity() {
             val days = java.time.DayOfWeek.entries
             val labels = days.map(::dayLabel).toTypedArray()
             val current = data.nutritionPlanSchedulePreferences.get(profileId).dayOfWeek
+            var selectedIndex = days.indexOf(current)
             MaterialAlertDialogBuilder(this)
                 .setTitle("Giorno di generazione")
-                .setSingleChoiceItems(labels, days.indexOf(current)) { dialog, which ->
-                    dialog.dismiss()
-                    chooseTime(days[which])
+                .setSingleChoiceItems(labels, selectedIndex) { _, which ->
+                    selectedIndex = which
                 }
                 .setNegativeButton("Annulla", null)
+                .setPositiveButton("OK") { _, _ -> chooseTime(days[selectedIndex]) }
                 .show()
         }
 
@@ -285,18 +308,22 @@ class SettingsActivity : BaseShellActivity() {
             val frequencies = NutritionPlanSchedulePreferences.Frequency.entries
             val labels = arrayOf("Ogni giorno", "Ogni settimana", "Ogni 2 settimane", "Ogni mese")
             val current = data.nutritionPlanSchedulePreferences.get(profileId).frequency
+            var selectedIndex = frequencies.indexOf(current)
             MaterialAlertDialogBuilder(this)
                 .setTitle("Frequenza generazione pasti")
-                .setSingleChoiceItems(labels, frequencies.indexOf(current)) { dialog, which ->
-                    data.nutritionPlanSchedulePreferences.setFrequency(profileId, frequencies[which])
-                    dialog.dismiss()
-                    if (frequencies[which] == NutritionPlanSchedulePreferences.Frequency.DAILY || frequencies[which] == NutritionPlanSchedulePreferences.Frequency.MONTHLY) {
+                .setSingleChoiceItems(labels, selectedIndex) { _, which ->
+                    selectedIndex = which
+                }
+                .setNegativeButton("Annulla", null)
+                .setPositiveButton("OK") { _, _ ->
+                    val selectedFrequency = frequencies[selectedIndex]
+                    data.nutritionPlanSchedulePreferences.setFrequency(profileId, selectedFrequency)
+                    if (selectedFrequency == NutritionPlanSchedulePreferences.Frequency.DAILY || selectedFrequency == NutritionPlanSchedulePreferences.Frequency.MONTHLY) {
                         chooseTime(data.nutritionPlanSchedulePreferences.get(profileId).dayOfWeek)
                     } else {
                         chooseDay()
                     }
                 }
-                .setNegativeButton("Annulla", null)
                 .show()
         }
 

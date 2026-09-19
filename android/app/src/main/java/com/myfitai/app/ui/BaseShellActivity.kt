@@ -230,14 +230,21 @@ abstract class BaseShellActivity : AppCompatActivity() {
 
         // Le schermate legate a entità del vecchio profilo non devono restare aperte.
         // Si torna alla Home: i ViewModel profile-scoped ricostruiscono lo stato dal nuovo activeProfileId.
-        startActivity(Intent(this, HomeActivity::class.java).apply {
-            putExtra(BottomNavBinder.EXTRA_TAB_ROOT, true)
+        startActivity(Intent(this, TabHostActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NO_ANIMATION)
         })
         if (this !is HomeActivity) finish()
     }
 
-    protected fun bindBack() { findViewById<View?>(R.id.backButton)?.setOnClickListener { finish() } }
+    protected fun bindBack() {
+        findViewById<View?>(R.id.backButton)?.let { backButton ->
+            if (intent.getBooleanExtra(BottomNavBinder.EXTRA_EMBEDDED_TAB, false)) {
+                backButton.visibility = View.GONE
+            } else {
+                backButton.setOnClickListener { finish() }
+            }
+        }
+    }
     protected fun bindBottom(tab: BottomNavBinder.Tab) { BottomNavBinder.bind(this, tab) }
     protected fun confirmAiRequest(action: String, onConfirmed: () -> Unit) {
         MaterialAlertDialogBuilder(this)

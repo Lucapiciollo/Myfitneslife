@@ -56,10 +56,32 @@ class FoodPlanActivity : BaseShellActivity() {
         }
         findViewById<View>(R.id.cheatButton).setOnClickListener { go(CheatEntryActivity::class.java) }
         findViewById<View>(R.id.generatePlanButton).setOnClickListener { confirmPlanGeneration() }
+        bindFoodHelp()
         findViewById<View>(R.id.dailyTotalHelpButton).setOnClickListener { showTotalsHelp() }
         renderMealCountPreference()
         weekDaySelector.setOnDaySelectedListener(viewModel::selectDay)
         lifecycleScope.launch { repeatOnLifecycle(Lifecycle.State.STARTED) { viewModel.state.collect(::render) } }
+    }
+
+    private fun bindFoodHelp() {
+        findViewById<View>(R.id.weekActionsHelpButton).setOnClickListener {
+            showHelpCard(
+                "Azioni settimana",
+                "Apri la lista della spesa per raccogliere gli ingredienti del piano oppure registra uno sgarro per tenerne conto nello storico dei consumi.",
+            )
+        }
+        findViewById<View>(R.id.foodPlanHelpButton).setOnClickListener {
+            showHelpCard(
+                "Piano alimentare",
+                "Qui puoi generare o rigenerare con IA il piano della settimana selezionata. Il piano viene controllato localmente prima di essere salvato.",
+            )
+        }
+        findViewById<View>(R.id.dayMealsHelpButton).setOnClickListener {
+            showHelpCard(
+                "Pasti del giorno",
+                "Mostra i pasti previsti per il giorno selezionato. Tocca un pasto per vedere i dettagli e, quando disponibile, scegliere un'alternativa.",
+            )
+        }
     }
 
     private fun renderMealCountPreference() {

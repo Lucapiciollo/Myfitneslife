@@ -61,10 +61,26 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
-                    <com.myfitai.app.ui.widgets.SectionHeaderView
+                    <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Azioni settimana" />
+                        android:layout_height="40dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+                        <com.myfitai.app.ui.widgets.SectionHeaderView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Azioni settimana" />
+                        <ImageButton
+                            android:id="@+id/weekActionsHelpButton"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:background="@android:color/transparent"
+                            android:contentDescription="Spiega azioni settimana"
+                            android:padding="8dp"
+                            android:src="@drawable/ic_help_outline"
+                            app:tint="@color/text_secondary" />
+                    </LinearLayout>
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -110,10 +126,26 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
-                    <com.myfitai.app.ui.widgets.SectionHeaderView
+                    <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Piano alimentare" />
+                        android:layout_height="40dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+                        <com.myfitai.app.ui.widgets.SectionHeaderView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Piano alimentare" />
+                        <ImageButton
+                            android:id="@+id/foodPlanHelpButton"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:background="@android:color/transparent"
+                            android:contentDescription="Spiega piano alimentare"
+                            android:padding="8dp"
+                            android:src="@drawable/ic_help_outline"
+                            app:tint="@color/text_secondary" />
+                    </LinearLayout>
                     <TextView
                         android:id="@+id/emptyPlanText"
                         android:layout_width="match_parent"
@@ -175,10 +207,26 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
-                    <com.myfitai.app.ui.widgets.SectionHeaderView
+                    <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Pasti del giorno" />
+                        android:layout_height="40dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+                        <com.myfitai.app.ui.widgets.SectionHeaderView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Pasti del giorno" />
+                        <ImageButton
+                            android:id="@+id/dayMealsHelpButton"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:background="@android:color/transparent"
+                            android:contentDescription="Spiega pasti del giorno"
+                            android:padding="8dp"
+                            android:src="@drawable/ic_help_outline"
+                            app:tint="@color/text_secondary" />
+                    </LinearLayout>
                     <LinearLayout
                         android:id="@+id/mealsContainer"
                         android:layout_width="match_parent"
@@ -208,6 +256,12 @@
                         android:layout_height="wrap_content"
                         android:gravity="center_vertical"
                         android:orientation="horizontal">
+                        <com.myfitai.app.ui.widgets.SectionHeaderView
+                            android:id="@+id/dailyTotalTitle"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Totale giornaliero" />
                         <ImageButton
                             android:id="@+id/dailyTotalHelpButton"
                             android:layout_width="40dp"
@@ -217,12 +271,6 @@
                             android:padding="8dp"
                             android:src="@drawable/ic_help_outline"
                             app:tint="@color/text_secondary" />
-                        <com.myfitai.app.ui.widgets.SectionHeaderView
-                            android:id="@+id/dailyTotalTitle"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Totale giornaliero" />
                     </LinearLayout>
                     <LinearLayout
                         android:id="@+id/dailyTotalContainer"

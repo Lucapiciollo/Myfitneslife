@@ -151,9 +151,8 @@ class ProfileActivity : BaseShellActivity() {
             } else {
                 profiles.getOrNull(item.itemId - 1)?.let { profile ->
                     data.activeProfileStore.selectProfile(profile.id, makeDefault = true)
-                    startActivity(Intent(this, HomeActivity::class.java).apply {
-                        putExtra(com.myfitai.app.navigation.BottomNavBinder.EXTRA_TAB_ROOT, true)
-                            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NO_ANIMATION)
+                    startActivity(Intent(this, TabHostActivity::class.java).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NO_ANIMATION)
                     })
                     finish()
                 }

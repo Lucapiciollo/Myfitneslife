@@ -92,6 +92,7 @@ class BiaActivity : BaseShellActivity() {
         bindViews()
         bindSegments()
         bindDateTime()
+        bindHelpCards()
         bindMeasurementRows()
         bindSave()
         bindPhotoImport()
@@ -149,6 +150,27 @@ class BiaActivity : BaseShellActivity() {
                 renderDateTime()
             }
             picker.show(supportFragmentManager, "bia_time_picker")
+        }
+    }
+
+    private fun bindHelpCards() {
+        findViewById<View>(R.id.biaDateHelpButton).setOnClickListener {
+            showHelpCard(
+                "Data e ora",
+                "Indicano quando è stata eseguita la rilevazione BIA. Usa la data e l'ora riportate dalla bilancia o dall'app del dispositivo, così lo storico resta ordinato correttamente.",
+            )
+        }
+        findViewById<View>(R.id.biaConditionsHelpButton).setOnClickListener {
+            showHelpCard(
+                "Condizioni della misura",
+                "Segna le condizioni più vicine al momento della rilevazione. Servono a dare contesto ai valori: non modificano automaticamente i dati registrati.",
+            )
+        }
+        findViewById<View>(R.id.biaResultsHelpButton).setOnClickListener {
+            showHelpCard(
+                "Risultati",
+                "Inserisci i valori letti dalla bilancia BIA. I dati vengono salvati nello storico del profilo attivo e usati per mostrare l'andamento nel tempo.",
+            )
         }
     }
 

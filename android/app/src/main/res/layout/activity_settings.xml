@@ -24,12 +24,28 @@
                 <Space android:layout_width="40dp" android:layout_height="1dp" />
             </LinearLayout>
 
-             <com.myfitai.app.ui.widgets.SectionHeaderView
-                 android:id="@+id/generalSectionHeader"
+             <LinearLayout
                  android:layout_width="match_parent"
-                 android:layout_height="wrap_content"
+                 android:layout_height="40dp"
                  android:layout_marginTop="@dimen/space_8"
-                 android:text="Generale" />
+                 android:gravity="center_vertical"
+                 android:orientation="horizontal">
+                 <com.myfitai.app.ui.widgets.SectionHeaderView
+                     android:id="@+id/generalSectionHeader"
+                     android:layout_width="0dp"
+                     android:layout_height="wrap_content"
+                     android:layout_weight="1"
+                     android:text="Generale" />
+                 <ImageButton
+                     android:id="@+id/generalSectionHelpButton"
+                     android:layout_width="40dp"
+                     android:layout_height="40dp"
+                     android:background="@android:color/transparent"
+                     android:contentDescription="Spiega impostazioni generali"
+                     android:padding="8dp"
+                     android:src="@drawable/ic_help_outline"
+                     app:tint="@color/text_secondary" />
+             </LinearLayout>
 
              <LinearLayout
                  android:id="@+id/generalSectionCard"
@@ -55,12 +71,28 @@
                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowExport" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_export" app:srLabel="Esporta dati" />
              </LinearLayout>
 
-             <com.myfitai.app.ui.widgets.SectionHeaderView
-                 android:id="@+id/dataSectionHeader"
+             <LinearLayout
                  android:layout_width="match_parent"
-                 android:layout_height="wrap_content"
+                 android:layout_height="40dp"
                  android:layout_marginTop="@dimen/space_20"
-                 android:text="Gestione dati" />
+                 android:gravity="center_vertical"
+                 android:orientation="horizontal">
+                 <com.myfitai.app.ui.widgets.SectionHeaderView
+                     android:id="@+id/dataSectionHeader"
+                     android:layout_width="0dp"
+                     android:layout_height="wrap_content"
+                     android:layout_weight="1"
+                     android:text="Gestione dati" />
+                 <ImageButton
+                     android:id="@+id/dataSectionHelpButton"
+                     android:layout_width="40dp"
+                     android:layout_height="40dp"
+                     android:background="@android:color/transparent"
+                     android:contentDescription="Spiega gestione dati"
+                     android:padding="8dp"
+                     android:src="@drawable/ic_help_outline"
+                     app:tint="@color/text_secondary" />
+             </LinearLayout>
 
              <LinearLayout
                  android:id="@+id/dataSectionCard"
@@ -95,12 +127,28 @@
                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteRecordedData" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_lock" app:srLabel="Elimina tutti i dati registrati" />
              </LinearLayout>
 
-             <com.myfitai.app.ui.widgets.SectionHeaderView
-                 android:id="@+id/aiSectionHeader"
+             <LinearLayout
                  android:layout_width="match_parent"
-                 android:layout_height="wrap_content"
+                 android:layout_height="40dp"
                  android:layout_marginTop="@dimen/space_20"
-                 android:text="Intelligenza artificiale" />
+                 android:gravity="center_vertical"
+                 android:orientation="horizontal">
+                 <com.myfitai.app.ui.widgets.SectionHeaderView
+                     android:id="@+id/aiSectionHeader"
+                     android:layout_width="0dp"
+                     android:layout_height="wrap_content"
+                     android:layout_weight="1"
+                     android:text="Intelligenza artificiale" />
+                 <ImageButton
+                     android:id="@+id/aiSectionHelpButton"
+                     android:layout_width="40dp"
+                     android:layout_height="40dp"
+                     android:background="@android:color/transparent"
+                     android:contentDescription="Spiega intelligenza artificiale"
+                     android:padding="8dp"
+                     android:src="@drawable/ic_help_outline"
+                     app:tint="@color/text_secondary" />
+             </LinearLayout>
 
               <LinearLayout
                   android:id="@+id/aiSectionCard"

@@ -62,16 +62,39 @@
 
                     <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
+                        android:layout_height="40dp"
                         android:gravity="center_vertical"
                         android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Data e ora"
+                            android:textColor="@color/text_secondary"
+                            android:textStyle="bold" />
+                        <ImageButton
+                            android:id="@+id/biaDateHelpButton"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:background="@android:color/transparent"
+                            android:contentDescription="Spiega data e ora"
+                            android:padding="8dp"
+                            android:src="@drawable/ic_help_outline"
+                            app:tint="@color/text_secondary" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="vertical">
 
                         <com.google.android.material.textfield.TextInputLayout
                             style="@style/Widget.MyFitAI.Input"
                             android:id="@+id/dateInputLayout"
-                            android:layout_width="0dp"
+                            android:layout_width="match_parent"
                             android:layout_height="56dp"
-                            android:layout_weight="1"
                             android:hint="Data rilevazione"
                             app:endIconDrawable="@drawable/ic_calendar"
                             app:endIconMode="custom">
@@ -91,17 +114,16 @@
                         </com.google.android.material.textfield.TextInputLayout>
 
                         <View
-                            android:layout_width="1dp"
-                            android:layout_height="32dp"
-                            android:layout_marginHorizontal="@dimen/space_8"
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginVertical="@dimen/space_8"
                             android:background="@color/divider" />
 
                         <com.google.android.material.textfield.TextInputLayout
                             style="@style/Widget.MyFitAI.Input"
                             android:id="@+id/timeInputLayout"
-                            android:layout_width="0dp"
+                            android:layout_width="match_parent"
                             android:layout_height="56dp"
-                            android:layout_weight="1"
                             android:hint="Ora"
                             app:endIconDrawable="@drawable/ic_setting_clock"
                             app:endIconMode="custom">
@@ -119,11 +141,28 @@
                     </LinearLayout>
                 </LinearLayout>
 
-                <com.myfitai.app.ui.widgets.SectionHeaderView
+                <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:layout_height="40dp"
                     android:layout_marginTop="@dimen/space_16"
-                    android:text="Condizioni della misura" />
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <com.myfitai.app.ui.widgets.SectionHeaderView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Condizioni della misura" />
+                    <ImageButton
+                        android:id="@+id/biaConditionsHelpButton"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="@android:color/transparent"
+                        android:contentDescription="Spiega condizioni della misura"
+                        android:padding="8dp"
+                        android:src="@drawable/ic_help_outline"
+                        app:tint="@color/text_secondary" />
+                </LinearLayout>
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -187,11 +226,28 @@
                     </LinearLayout>
                 </LinearLayout>
 
-                <com.myfitai.app.ui.widgets.SectionHeaderView
+                <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:layout_height="40dp"
                     android:layout_marginTop="@dimen/space_16"
-                    android:text="Risultati" />
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <com.myfitai.app.ui.widgets.SectionHeaderView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Risultati" />
+                    <ImageButton
+                        android:id="@+id/biaResultsHelpButton"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="@android:color/transparent"
+                        android:contentDescription="Spiega risultati BIA"
+                        android:padding="8dp"
+                        android:src="@drawable/ic_help_outline"
+                        app:tint="@color/text_secondary" />
+                </LinearLayout>
 
                 <LinearLayout
                     android:layout_width="match_parent"

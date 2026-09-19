@@ -36,6 +36,11 @@
                    android:layout_marginTop="@dimen/space_24"
                    android:gravity="center_vertical"
                    android:orientation="horizontal">
+                   <com.myfitai.app.ui.widgets.SectionHeaderView
+                       android:layout_width="0dp"
+                       android:layout_height="wrap_content"
+                       android:layout_weight="1"
+                       android:text="Altri indicatori" />
                    <ImageButton
                        android:id="@+id/otherIndicatorsHelpButton"
                        android:layout_width="40dp"
@@ -44,11 +49,6 @@
                        android:contentDescription="Spiega altri indicatori"
                        android:src="@drawable/ic_help_outline"
                        app:tint="@color/text_secondary" />
-                   <com.myfitai.app.ui.widgets.SectionHeaderView
-                       android:layout_width="0dp"
-                       android:layout_height="wrap_content"
-                       android:layout_weight="1"
-                       android:text="Altri indicatori" />
                </LinearLayout>
                         <com.google.android.material.card.MaterialCardView style="@style/Widget.MyFitAI.Card" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8">
                             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingHorizontal="@dimen/space_16">

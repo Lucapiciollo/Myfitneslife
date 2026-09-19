@@ -237,13 +237,12 @@ class ProfileEditActivity : BaseShellActivity() {
                             })
                             finish()
                         } else if (isBootstrap) {
-                            startActivity(Intent(this@ProfileEditActivity, HomeActivity::class.java).apply {
+                            startActivity(Intent(this@ProfileEditActivity, TabHostActivity::class.java).apply {
                                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                             })
                             finish()
                         } else if (isCreate) {
-                            startActivity(Intent(this@ProfileEditActivity, HomeActivity::class.java).apply {
-                                putExtra(com.myfitai.app.navigation.BottomNavBinder.EXTRA_TAB_ROOT, true)
+                            startActivity(Intent(this@ProfileEditActivity, TabHostActivity::class.java).apply {
                                 addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NO_ANIMATION)
                             })
                             finish()
