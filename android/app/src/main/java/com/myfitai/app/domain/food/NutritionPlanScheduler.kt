@@ -68,7 +68,8 @@ class NutritionPlanScheduler(
 
     companion object {
         internal fun isDueJob(jobKey: String?, nowEpochMillis: Long): Boolean =
-            jobKey?.removePrefix("auto-")?.takeIf { jobKey.startsWith("auto-") }
+            jobKey?.takeIf { it.startsWith("auto-") }
+                ?.removePrefix("auto-")
                 ?.toLongOrNull()?.let { it <= nowEpochMillis } == true
 
         internal fun nextOccurrence(
