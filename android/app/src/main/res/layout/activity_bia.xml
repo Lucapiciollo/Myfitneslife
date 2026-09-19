@@ -67,24 +67,24 @@
                         android:orientation="horizontal">
 
                         <com.google.android.material.textfield.TextInputLayout
+                            style="@style/Widget.MyFitAI.Input"
                             android:id="@+id/dateInputLayout"
                             android:layout_width="0dp"
                             android:layout_height="56dp"
                             android:layout_weight="1"
                             android:hint="Data"
-                            app:boxBackgroundMode="none"
                             app:endIconDrawable="@drawable/ic_calendar"
                             app:endIconMode="custom">
 
                             <com.google.android.material.textfield.TextInputEditText
+                style="@style/Widget.MyFitAI.InputEditText"
                                 android:id="@+id/dateInput"
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent"
-                                android:background="@null"
                                 android:clickable="true"
                                 android:focusable="false"
                                 android:inputType="none"
-                                android:paddingHorizontal="0dp" />
+ />
                         </com.google.android.material.textfield.TextInputLayout>
 
                         <View
@@ -94,24 +94,24 @@
                             android:background="@color/divider" />
 
                         <com.google.android.material.textfield.TextInputLayout
+                            style="@style/Widget.MyFitAI.Input"
                             android:id="@+id/timeInputLayout"
                             android:layout_width="0dp"
                             android:layout_height="56dp"
                             android:layout_weight="1"
                             android:hint="Ora"
-                            app:boxBackgroundMode="none"
                             app:endIconDrawable="@drawable/ic_setting_clock"
                             app:endIconMode="custom">
 
                             <com.google.android.material.textfield.TextInputEditText
+                style="@style/Widget.MyFitAI.InputEditText"
                                 android:id="@+id/timeInput"
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent"
-                                android:background="@null"
                                 android:clickable="true"
                                 android:focusable="false"
                                 android:inputType="none"
-                                android:paddingHorizontal="0dp" />
+ />
                         </com.google.android.material.textfield.TextInputLayout>
                     </LinearLayout>
                 </LinearLayout>
