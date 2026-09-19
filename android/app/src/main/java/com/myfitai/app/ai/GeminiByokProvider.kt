@@ -128,7 +128,10 @@ class GeminiByokProvider(
             // first part silently truncates the weekly-plan envelope.
             val text = buildString {
                 for (j in 0 until parts.length()) {
-                    parts.optJSONObject(j)?.optString("text")?.let { append(it) }
+                    val part = parts.optJSONObject(j) ?: continue
+                    if (!part.optBoolean("thought", false)) {
+                        part.optString("text").let { append(it) }
+                    }
                 }
             }
             if (text.isNotBlank()) return text
