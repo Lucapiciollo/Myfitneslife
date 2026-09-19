@@ -47,7 +47,9 @@ class CheatEntryViewModel(
         viewModelScope.launch {
             aiJobScheduler.observe(AiJobType.CHEAT_UNDERSTANDING, profileId, jobKey).collect { info ->
                 when (info?.state) {
-                    WorkInfo.State.SUCCEEDED -> renderUnderstanding(info.outputData.getString(CheatUnderstandingAiJobHandler.KEY_PAYLOAD))
+                    WorkInfo.State.SUCCEEDED -> renderUnderstanding(
+                        info.outputData.getString(CheatUnderstandingAiJobHandler.KEY_PAYLOAD),
+                    )
                     WorkInfo.State.FAILED -> _state.value = State(error = info.outputData.getString("error") ?: "Valutazione sgarro non disponibile")
                     else -> Unit
                 }
@@ -56,11 +58,16 @@ class CheatEntryViewModel(
     }
 
     private fun renderUnderstanding(payload: String?) {
-        if (payload == null) return
+        if (payload.isNullOrBlank()) {
+            _state.value = State(error = "L'IA ha completato la richiesta senza restituire una valutazione.")
+            return
+        }
         runCatching {
             val root = org.json.JSONObject(payload)
             _state.value = State(understanding = CheatAdjustmentService.Understanding(root.getString("understoodFood"), CheatAdjustmentContract.Estimate(root.getInt("kcal"), root.getDouble("proteinG").toFloat(), root.getDouble("carbsG").toFloat(), root.getDouble("fatG").toFloat(), root.getString("confidence"), root.getString("notes")), root.getString("provider"), root.getString("model"), ""))
-        }.onFailure { _state.value = State(error = "Valutazione sgarro non disponibile") }
+        }.onFailure { error ->
+            _state.value = State(error = error.message?.takeIf { it.isNotBlank() } ?: "Risposta IA non valida.")
+        }
     }
 
     fun confirm(input: CheatAdjustmentService.Input) {
@@ -101,13 +108,18 @@ class CheatEntryViewModel(
     }
 
     private fun renderAdjustment(payload: String?) {
-        if (payload == null) return
+        if (payload.isNullOrBlank()) {
+            _state.value = _state.value.copy(running = false, error = "L'IA ha completato l'adattamento senza restituire un risultato.")
+            return
+        }
         runCatching {
             val root = org.json.JSONObject(payload)
             val modified = root.optJSONArray("modifiedMeals")?.let { values -> buildList { for (i in 0 until values.length()) add(values.optString(i)) } } ?: emptyList()
             val result = CheatAdjustmentService.Result(root.getLong("cheatId"), root.getBoolean("adapted"), root.optLong("newVersionId").takeIf { !root.isNull("newVersionId") }, root.optInt("estimatedKcal").takeIf { !root.isNull("estimatedKcal") }, root.optString("estimateSummary"), root.optString("adaptationSummary"), modified)
             _state.value = State(result = result)
-        }.onFailure { _state.value = _state.value.copy(running = false, error = "Adattamento sgarro non riuscito") }
+        }.onFailure { error ->
+            _state.value = _state.value.copy(running = false, error = error.message?.takeIf { it.isNotBlank() } ?: "Risposta IA non valida.")
+        }
     }
 
     fun invalidateUnderstanding() {
