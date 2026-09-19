@@ -310,7 +310,10 @@ class BiaActivity : BaseShellActivity() {
             "Data rilevata: ${SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.ITALIAN).format(Date(timestamp))}"
         } ?: "Data rilevata: non disponibile"
 
-        val scrollHeight = (resources.displayMetrics.density * 300f).toInt()
+        val scrollHeight = minOf(
+            (resources.displayMetrics.density * 300f).toInt(),
+            (resources.displayMetrics.heightPixels * 0.46f).toInt(),
+        )
         scroll.layoutParams = (scroll.layoutParams
             ?: android.view.ViewGroup.LayoutParams(android.view.ViewGroup.LayoutParams.MATCH_PARENT, scrollHeight)).apply {
             height = scrollHeight
@@ -345,6 +348,7 @@ class BiaActivity : BaseShellActivity() {
             .create()
 
         dialog.setOnShowListener {
+            dialog.window?.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
             dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(getColor(R.color.text_secondary))
             dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(getColor(R.color.accent_green_dark))
             dialog.window?.setLayout(
