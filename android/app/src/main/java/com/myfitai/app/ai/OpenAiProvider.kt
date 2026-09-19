@@ -60,6 +60,11 @@ class OpenAiProvider(
             body = body.toString(),
         )
         val response = JSONObject(raw)
+        if (response.optString("status") == "incomplete" &&
+            response.optJSONObject("incomplete_details")?.optString("reason") == "max_output_tokens"
+        ) {
+            throw AiExecutionService.Failure.OutputTruncated()
+        }
         val jsonText = extractOutputText(response) ?: throw AiTransportException.InvalidResponse()
         val usage = response.optJSONObject("usage")?.let { value ->
             val inputDetails = value.optJSONObject("input_tokens_details")
