@@ -359,9 +359,14 @@ class BiaActivity : BaseShellActivity() {
                     }
                 }
                 launch {
-                    viewModel.saved.collect {
+                    viewModel.saved.collect { recommendationJobKey ->
                         Toast.makeText(this@BiaActivity, "Misurazione BIA aggiunta allo storico", Toast.LENGTH_SHORT).show()
                         resetForm()
+                        // Only a saved BIA can trigger a visible goal recommendation. Never
+                        // silently replace the existing goal: NutritionPathActivity asks the user.
+                        startActivity(Intent(this@BiaActivity, NutritionPathActivity::class.java).apply {
+                            recommendationJobKey?.let { putExtra(NutritionPathActivity.EXTRA_JOB_KEY, it) }
+                        })
                     }
                 }
                 launch {
