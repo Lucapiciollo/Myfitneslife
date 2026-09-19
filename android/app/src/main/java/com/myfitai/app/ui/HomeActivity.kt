@@ -109,8 +109,16 @@ class HomeActivity : BaseShellActivity() {
             state.trendSeries.map { it.label to it.values },
         )
         findViewById<TextView>(R.id.recompositionStateText).text = recompositionText(state.recompositionState)
+        renderCalories(state.calories)
         renderNextMeal(state.nextMeal)
         renderNextWorkout(state.nextWorkout)
+    }
+
+    private fun renderCalories(calories: HomeViewModel.CalorieState) {
+        fun kcal(value: Int?) = value?.let { "$it kcal" } ?: "—"
+        findViewById<TextView>(R.id.caloriesBmrValue).text = kcal(calories.bmr)
+        findViewById<TextView>(R.id.caloriesTdeeValue).text = kcal(calories.tdee)
+        findViewById<TextView>(R.id.caloriesTargetValue).text = kcal(calories.target)
     }
 
     private fun renderNextMeal(next: HomeViewModel.NextMealState?) {

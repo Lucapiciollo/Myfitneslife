@@ -14,6 +14,7 @@ import com.myfitai.app.data.repository.MealPlanRepository
 import com.myfitai.app.data.repository.UserProfileRepository
 import com.myfitai.app.data.repository.WorkoutRepository
 import com.myfitai.app.domain.calculation.LocalCalculationEngine
+import com.myfitai.app.domain.calculation.ProfileCalculationMapper
 import com.myfitai.app.domain.food.FoodMeal
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -27,6 +28,7 @@ import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.Period
 import java.time.ZoneId
 import java.time.temporal.TemporalAdjusters
 
@@ -41,6 +43,7 @@ class HomeViewModel(
 
     data class MetricState(val value: Float?, val deltaFromPrevious: Float?)
     data class TrendSeries(val label: String, val values: List<Float>)
+    data class CalorieState(val bmr: Int? = null, val tdee: Int? = null, val target: Int? = null)
     data class NextWorkoutState(val startedAtEpochMillis: Long, val title: String, val type: String)
     data class NextMealState(
         val mealId: Long,
@@ -59,6 +62,7 @@ class HomeViewModel(
         val muscleMass: MetricState = MetricState(null, null),
         val trendSeries: List<TrendSeries> = emptyList(),
         val recompositionState: LocalCalculationEngine.RecompositionState = LocalCalculationEngine.RecompositionState.NOT_ENOUGH_DATA,
+        val calories: CalorieState = CalorieState(),
         val nextWorkout: NextWorkoutState? = null,
         val nextMeal: NextMealState? = null,
     )
@@ -118,6 +122,8 @@ class HomeViewModel(
             .minWithOrNull(compareBy<WorkoutEntity> { it.startedAtEpochMillis }.thenBy { it.id })
             ?.let { NextWorkoutState(it.startedAtEpochMillis, it.title, it.type) }
 
+        val calories = calorieState(source)
+
         return DashboardState(
             profileName = source.profile?.name,
             goal = source.profile?.goal,
@@ -130,8 +136,42 @@ class HomeViewModel(
                 TrendSeries("Massa muscolare", muscleSeries),
             ),
             recompositionState = LocalCalculationEngine.classifyRecomposition(fatTrend.delta, muscleTrend.delta),
+            calories = calories,
             nextWorkout = nextWorkout,
             nextMeal = nextMeal,
+        )
+    }
+
+    private fun calorieState(source: Source): CalorieState {
+        val profile = source.profile ?: return CalorieState()
+        val today = LocalDate.now()
+        val latestBia = source.bia.maxByOrNull { it.measuredAtEpochMillis }
+        val latestBody = source.body.maxByOrNull { it.measuredAtEpochMillis }
+        val weightKg = latestBia?.weightKg?.toDouble() ?: profile.currentWeightKg?.toDouble()
+        val ageYears = profile.birthDateEpochDay?.let { epochDay ->
+            val birth = LocalDate.ofEpochDay(epochDay)
+            if (birth.isAfter(today)) null else Period.between(birth, today).years
+        }
+        val calculation = LocalCalculationEngine.calculate(
+            LocalCalculationEngine.Input(
+                weightKg = weightKg,
+                heightCm = profile.heightCm?.toDouble(),
+                ageYears = ageYears,
+                biologicalSex = when (profile.biologicalSex?.trim()?.lowercase()) {
+                    "maschio", "male", "m" -> LocalCalculationEngine.BiologicalSex.MALE
+                    "femmina", "female", "f" -> LocalCalculationEngine.BiologicalSex.FEMALE
+                    else -> null
+                },
+                bodyFatPercent = latestBia?.bodyFatPercent?.toDouble(),
+                activityLevel = ProfileCalculationMapper.activity(profile.activityLevel),
+                goal = ProfileCalculationMapper.goal(profile.goal),
+                waistCm = latestBody?.waistCm?.toDouble(),
+            )
+        )
+        return CalorieState(
+            bmr = calculation.bmrKcal?.let { Math.round(it).toInt() },
+            tdee = calculation.tdeeKcal?.let { Math.round(it).toInt() },
+            target = calculation.targetKcal?.let { Math.round(it).toInt() },
         )
     }
 
