@@ -27,6 +27,7 @@ class NutritionPlanSchedulerTest {
 
         val due = NutritionPlanScheduler.nextOccurrence(
             now = now,
+            frequency = com.myfitai.app.data.profile.NutritionPlanSchedulePreferences.Frequency.WEEKLY,
             dayOfWeek = DayOfWeek.SATURDAY,
             timeMinutes = 9 * 60 + 30,
             zoneId = zone,
@@ -43,6 +44,7 @@ class NutritionPlanSchedulerTest {
 
         val due = NutritionPlanScheduler.nextOccurrence(
             now = now,
+            frequency = com.myfitai.app.data.profile.NutritionPlanSchedulePreferences.Frequency.WEEKLY,
             dayOfWeek = DayOfWeek.SATURDAY,
             timeMinutes = 9 * 60,
             zoneId = zone,
