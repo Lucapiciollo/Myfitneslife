@@ -12,6 +12,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.domain.calculation.LocalCalculationEngine
@@ -40,6 +41,9 @@ class HomeActivity : BaseShellActivity() {
             bodyRepository = data.bodyMeasurementRepository,
             workoutRepository = data.workoutRepository,
             mealPlanRepository = data.mealPlanRepository,
+            cheatRepository = data.cheatEntryRepository,
+            recoveryRepository = data.calorieRecoveryRepository,
+            foodConsumptionRepository = data.foodConsumptionRepository,
             activeProfileStore = data.activeProfileStore,
         )
     }
@@ -49,6 +53,8 @@ class HomeActivity : BaseShellActivity() {
     }
 
     private var currentNextMealId: Long? = null
+    private var currentCalories: HomeViewModel.CalorieState? = null
+    private var currentUpcomingMeals: List<HomeViewModel.NextMealState> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,6 +70,8 @@ class HomeActivity : BaseShellActivity() {
             } ?: openFoodPlan()
         }
         findViewById<android.view.View>(R.id.nextWorkoutCard).setOnClickListener { go(WorkoutsActivity::class.java) }
+        findViewById<android.view.View>(R.id.caloriesCard).setOnClickListener { showTdeeExplanation() }
+        findViewById<android.view.View>(R.id.todayMenuButton).setOnClickListener { showTodayMenu() }
         findViewById<android.view.View>(R.id.measurementsButton).setOnClickListener { go(MeasurementsActivity::class.java) }
         findViewById<TextView>(R.id.todayLabel).text = todayLabel()
 
@@ -110,15 +118,127 @@ class HomeActivity : BaseShellActivity() {
         )
         findViewById<TextView>(R.id.recompositionStateText).text = recompositionText(state.recompositionState)
         renderCalories(state.calories)
+        renderRecovery(state.recovery)
+        renderUpcomingMeals(state.upcomingMeals)
         renderNextMeal(state.nextMeal)
         renderNextWorkout(state.nextWorkout)
     }
 
+    private fun renderRecovery(recovery: HomeViewModel.RecoveryState) {
+        val value = findViewById<TextView>(R.id.recoveryValueText)
+        val hint = findViewById<TextView>(R.id.recoveryHintText)
+        if (recovery.pendingKcal > 0) {
+            value.text = "${recovery.pendingKcal} kcal"
+            val credits = if (recovery.creditCount == 1) "1 sgarro recente" else "${recovery.creditCount} sgarri recenti"
+            hint.text = "Da recuperare nei prossimi giorni · $credits"
+        } else {
+            value.text = "0 kcal"
+            hint.text = "Nessun extra da recuperare. Sei in pari."
+        }
+    }
+
+    private fun renderUpcomingMeals(meals: List<HomeViewModel.NextMealState>) {
+        currentUpcomingMeals = meals
+        findViewById<android.view.View>(R.id.todayMenuButton).visibility =
+            if (meals.size >= 2) android.view.View.VISIBLE else android.view.View.GONE
+    }
+
+    private fun showTodayMenu() {
+        val meals = currentUpcomingMeals
+        if (meals.isEmpty()) {
+            openFoodPlan()
+            return
+        }
+        val items = meals.map { meal ->
+            val date = LocalDate.ofEpochDay(meal.dateEpochDay)
+            val today = LocalDate.now()
+            val dayLabel = when (date) {
+                today -> "Oggi"
+                today.plusDays(1) -> "Domani"
+                else -> date.format(DateTimeFormatter.ofPattern("EEE d MMM", Locale.ITALIAN))
+            }
+            val time = meal.timeMinutes?.let { String.format(Locale.ITALIAN, "%02d:%02d", it / 60, it % 60) }
+            val header = listOfNotNull(dayLabel, time).joinToString(" ")
+            val kcal = meal.kcal?.let { " · $it kcal" } ?: ""
+            "$header — ${meal.title}$kcal"
+        }.toTypedArray()
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Prossimi pasti")
+            .setItems(items) { _, which ->
+                if (!com.myfitai.app.ai.AiProviderAccess.requireConfigured(this)) return@setItems
+                val meal = meals.getOrNull(which) ?: return@setItems
+                startActivity(Intent(this, MealDetailActivity::class.java).putExtra(MealDetailActivity.EXTRA_MEAL_ID, meal.mealId))
+            }
+            .setNegativeButton("Chiudi", null)
+            .show()
+    }
+
     private fun renderCalories(calories: HomeViewModel.CalorieState) {
+        currentCalories = calories
         fun kcal(value: Int?) = value?.let { "$it kcal" } ?: "—"
         findViewById<TextView>(R.id.caloriesBmrValue).text = kcal(calories.bmr)
         findViewById<TextView>(R.id.caloriesTdeeValue).text = kcal(calories.tdee)
         findViewById<TextView>(R.id.caloriesTargetValue).text = kcal(calories.target)
+        findViewById<TextView>(R.id.caloriesConsumedText).apply {
+            val target = calories.target
+            text = if (target != null && target > 0) {
+                val remaining = target - calories.consumedKcal
+                if (remaining >= 0) {
+                    "Consumate oggi: ${calories.consumedKcal} / $target kcal · rimangono $remaining"
+                } else {
+                    "Consumate oggi: ${calories.consumedKcal} / $target kcal · ${-remaining} oltre il target"
+                }
+            } else {
+                "Consumate oggi: ${calories.consumedKcal} kcal"
+            }
+        }
+        findViewById<com.google.android.material.progressindicator.LinearProgressIndicator>(R.id.caloriesConsumedProgress).apply {
+            val target = calories.target ?: 0
+            max = 100
+            progress = if (target > 0) (calories.consumedKcal * 100 / target).coerceIn(0, 100) else 0
+        }
+        findViewById<TextView>(R.id.caloriesModeText).apply {
+            val percent = calories.energyPercent?.let { p ->
+                when {
+                    p > 0 -> "+$p% sul consumo"
+                    p < 0 -> "$p% sul consumo"
+                    else -> "in pari col consumo"
+                }
+            }
+            text = when {
+                calories.goalLabel != null && percent != null -> "${calories.goalLabel} · $percent"
+                calories.goalLabel != null -> calories.goalLabel
+                percent != null -> percent
+                else -> "Obiettivo non impostato"
+            }
+        }
+    }
+
+    private fun showTdeeExplanation() {
+        val c = currentCalories
+        fun kcal(value: Int?) = value?.let { "$it kcal" } ?: "—"
+        val percentLine = c?.energyPercent?.let { p ->
+            when {
+                p > 0 -> "Surplus del +$p% rispetto al consumo, per favorire l'aumento di massa."
+                p < 0 -> "Deficit del $p% rispetto al consumo, per favorire la perdita di grasso."
+                else -> "Target in pari col consumo, per mantenere il peso."
+            }
+        } ?: "Imposta un obiettivo nel profilo per calcolare il target."
+        val message = buildString {
+            appendLine("• Metabolismo basale (BMR): ${kcal(c?.bmr)}")
+            appendLine("  Energia che il corpo consuma a riposo.")
+            appendLine()
+            appendLine("• Consumo giornaliero (TDEE): ${kcal(c?.tdee)}")
+            appendLine("  BMR moltiplicato per il livello di attività.")
+            appendLine()
+            appendLine("• Target calorico: ${kcal(c?.target)}")
+            append("  $percentLine")
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Come calcoliamo le calorie")
+            .setMessage(message)
+            .setPositiveButton("Ho capito", null)
+            .show()
     }
 
     private fun renderNextMeal(next: HomeViewModel.NextMealState?) {

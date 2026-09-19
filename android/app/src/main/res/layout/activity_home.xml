@@ -124,10 +124,22 @@
                     android:layout_marginTop="@dimen/space_12" />
 
                 <com.myfitai.app.ui.widgets.SectionHeaderView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:text="Calorie base giornaliere" />
+                <TextView
+                    android:id="@+id/caloriesModeText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_4"
+                    android:text="—"
+                    android:textColor="@color/accent_green"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
                 <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/caloriesCard"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12"
+                    android:clickable="true"
+                    android:focusable="true"
                     app:cardBackgroundColor="@color/surface_secondary"
                     app:cardCornerRadius="16dp"
                     app:cardElevation="0dp"
@@ -205,16 +217,76 @@
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
                 <TextView
+                    android:id="@+id/caloriesConsumedText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_12"
+                    android:text="Consumate oggi: 0 kcal"
+                    android:textColor="@color/text_primary"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+                <com.google.android.material.progressindicator.LinearProgressIndicator
+                    android:id="@+id/caloriesConsumedProgress"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_4"
-                    android:text="Calcolo locale in base a corpo, attività e obiettivo."
+                    app:trackCornerRadius="4dp"
+                    app:trackThickness="8dp"
+                    app:indicatorColor="@color/accent_green"
+                    app:trackColor="@color/divider" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_4"
+                    android:text="Calcolo locale in base a corpo, attività e obiettivo. Tocca per i dettagli."
                     android:textColor="@color/text_muted"
                     android:textSize="11sp" />
+
+                <com.myfitai.app.ui.widgets.SectionHeaderView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:text="Riserva di recupero" />
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_12"
+                    app:cardBackgroundColor="@color/surface_secondary"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/divider"
+                    app:strokeWidth="1dp">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="@dimen/space_16">
+                        <TextView
+                            android:id="@+id/recoveryValueText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="—"
+                            android:textColor="@color/text_primary"
+                            android:textSize="18sp"
+                            android:textStyle="bold" />
+                        <TextView
+                            android:id="@+id/recoveryHintText"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/space_4"
+                            android:text="Calorie extra da recuperare nei prossimi giorni."
+                            android:textColor="@color/text_muted"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
 
                 <com.myfitai.app.ui.widgets.SectionHeaderView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:text="@string/dashboard_next_meal_title" />
 
                 <com.myfitai.app.ui.widgets.MealCardView android:id="@+id/nextMealCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_12" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/todayMenuButton"
+                    style="@style/Widget.Material3.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_4"
+                    android:text="Vedi i prossimi pasti"
+                    android:textAllCaps="false" />
 
                 <com.myfitai.app.ui.widgets.SectionHeaderView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:text="@string/dashboard_next_workout_title" />
                 <com.myfitai.app.ui.widgets.WorkoutCardView android:id="@+id/nextWorkoutCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_12" />
