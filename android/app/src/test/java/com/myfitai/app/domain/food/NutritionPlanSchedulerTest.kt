@@ -1,6 +1,8 @@
 package com.myfitai.app.domain.food
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.DayOfWeek
 import java.time.ZoneId
@@ -9,6 +11,15 @@ import java.time.ZonedDateTime
 class NutritionPlanSchedulerTest {
 
     private val zone = ZoneId.of("Europe/Rome")
+
+    @Test
+    fun appRefreshPreservesAlreadyDueAutomaticWork() {
+        assertTrue(NutritionPlanScheduler.isDueJob("auto-1000", 1000L))
+        assertTrue(NutritionPlanScheduler.isDueJob("auto-1000", 1500L))
+        assertFalse(NutritionPlanScheduler.isDueJob("auto-2000", 1500L))
+        assertFalse(NutritionPlanScheduler.isDueJob("manual-1000", 1500L))
+        assertFalse(NutritionPlanScheduler.isDueJob(null, 1500L))
+    }
 
     @Test
     fun nextOccurrenceUsesConfiguredDayAndTime() {
