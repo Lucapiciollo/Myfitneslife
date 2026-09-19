@@ -82,6 +82,7 @@
                 android:layout_marginTop="@dimen/space_8"
                 android:hint="Es. Stasera vorrei una pizza: cosa mi consigli per restare vicino al piano?">
                 <com.google.android.material.textfield.TextInputEditText
+                style="@style/Widget.MyFitAI.InputEditText"
                     android:id="@+id/questionInput"
                     android:layout_width="match_parent"
                     android:layout_height="112dp"
