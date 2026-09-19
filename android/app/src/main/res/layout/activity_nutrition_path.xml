@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -19,32 +20,17 @@
             android:padding="@dimen/space_16">
 
             <TextView
+                style="@style/Text.MyFitAI.ScreenTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Percorso nutrizionale"
-                android:textSize="24sp"
-                android:textStyle="bold"
-                android:textColor="@color/text_primary" />
-
-            <com.google.android.material.card.MaterialCardView
-                style="@style/Widget.MyFitAI.Dialog.Card"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_12">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="@dimen/space_16">
+                android:text="Percorso nutrizionale" />
 
             <TextView
                 android:id="@+id/currentGoalText"
+                style="@style/Text.MyFitAI.Body"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_12"
-                android:textColor="@color/text_secondary"
-                android:textSize="13sp"
                 android:visibility="gone" />
 
             <com.google.android.material.card.MaterialCardView
@@ -60,94 +46,60 @@
                     android:padding="@dimen/space_16">
 
                     <TextView
-                android:id="@+id/recommendationPath"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_20"
-                android:text="Analisi in corso…"
-                android:textColor="@color/accent_green_dark"
-                android:textSize="20sp"
-                android:textStyle="bold" />
+                        android:id="@+id/recommendationPath"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Analisi in corso…"
+                        android:textColor="@color/accent_green_dark"
+                        android:textSize="20sp"
+                        android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/recommendationReason"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_8"
-                android:textColor="@color/text_primary"
-                android:textSize="14sp" />
+                    <TextView
+                        android:id="@+id/recommendationReason"
+                        style="@style/Text.MyFitAI.Body"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_8" />
 
-            <TextView
-                android:id="@+id/recommendationExplanation"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_8"
-                android:textColor="@color/text_secondary"
-                android:textSize="13sp"
-                android:visibility="gone" />
+                    <TextView
+                        android:id="@+id/recommendationExplanation"
+                        style="@style/Text.MyFitAI.Body"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_8"
+                        android:visibility="gone" />
 
-            <TextView
-                android:id="@+id/recommendationConfidence"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_8"
-                android:textColor="@color/text_muted"
-                android:textSize="12sp" />
-
+                    <TextView
+                        android:id="@+id/recommendationConfidence"
+                        style="@style/Text.MyFitAI.Caption"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_8" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
             <TextView
                 android:id="@+id/pathStatus"
+                style="@style/Text.MyFitAI.Body"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_16"
-                android:textColor="@color/text_secondary"
-                android:textSize="13sp" />
+                android:layout_marginTop="@dimen/space_16" />
 
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/alternativesCard"
-                style="@style/Widget.MyFitAI.Dialog.Card"
+            <LinearLayout
+                android:id="@+id/alternativesContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_12"
-                android:visibility="gone">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="@dimen/space_16">
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Altri percorsi disponibili"
-                        android:textColor="@color/text_primary"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
-
-                    <LinearLayout
-                        android:id="@+id/alternativesContainer"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/space_8"
-                        android:orientation="vertical" />
-
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+                android:orientation="vertical" />
 
             <TextView
                 android:id="@+id/goalConfirmationHint"
+                style="@style/Text.MyFitAI.Caption"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_16"
                 android:text="L’obiettivo attuale non cambia finché non confermi una scelta."
-                android:textColor="@color/text_muted"
-                android:textSize="12sp"
                 android:visibility="gone" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
