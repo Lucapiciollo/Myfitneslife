@@ -141,8 +141,10 @@ class FoodPlanViewModel(
             "Il piano generato è incompleto o mal strutturato (non copre tutti e 7 i giorni o i pasti previsti). Riprova a generare il piano."
         raw.startsWith("PLAN_REVIEW_") ->
             "La revisione automatica ha respinto il piano generato. Riprova a generare il piano."
+        raw.startsWith("OUTPUT_TRUNCATED") ->
+            "Il provider IA ha interrotto la risposta prima di completare i 7 giorni del piano. Aggiorna l'app e riprova; nessun piano incompleto è stato salvato."
         raw.startsWith("INVALID_SCHEMA") || raw.startsWith("PIPE_") || raw.contains("INVALID_COMPACT_PROTOCOL") ->
-            "La risposta dell'IA non era nel formato atteso. Riprova a generare il piano."
+            "La risposta dell'IA non era nel formato atteso anche dopo i tentativi di correzione. Riprova a generare il piano."
         raw.startsWith("Completa prima") || raw.startsWith("NEEDS_INPUT") -> raw
         raw == "PAST_WEEK_READ_ONLY" ->
             "Le settimane concluse sono di sola lettura e non possono essere rigenerate."
