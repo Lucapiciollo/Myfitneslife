@@ -85,14 +85,17 @@ class OpenAiProvider(
 
     private fun extractOutputText(root: JSONObject): String? {
         val output = root.optJSONArray("output") ?: return null
-        for (i in 0 until output.length()) {
-            val content = output.optJSONObject(i)?.optJSONArray("content") ?: continue
-            for (j in 0 until content.length()) {
-                val part = content.optJSONObject(j) ?: continue
-                if (part.optString("type") == "output_text") return part.optString("text").takeIf { it.isNotBlank() }
+        // Do not drop subsequent output_text items: a long weekly plan may be split.
+        val text = buildString {
+            for (i in 0 until output.length()) {
+                val content = output.optJSONObject(i)?.optJSONArray("content") ?: continue
+                for (j in 0 until content.length()) {
+                    val part = content.optJSONObject(j) ?: continue
+                    if (part.optString("type") == "output_text") append(part.optString("text"))
+                }
             }
         }
-        return null
+        return text.takeIf { it.isNotBlank() }
     }
 
     companion object {
