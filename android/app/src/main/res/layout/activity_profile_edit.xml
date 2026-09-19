@@ -118,6 +118,7 @@
                     android:layout_marginTop="@dimen/space_8"
                     android:hint="Sesso biologico">
                     <AutoCompleteTextView
+                        style="@style/Widget.MyFitAI.InputDropdownText"
                         android:id="@+id/sexInput"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -196,6 +197,7 @@
                     android:layout_marginTop="@dimen/space_12"
                     android:hint="Obiettivo">
                     <AutoCompleteTextView
+                        style="@style/Widget.MyFitAI.InputDropdownText"
                         android:id="@+id/goalInput"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -210,6 +212,7 @@
                     android:layout_marginTop="@dimen/space_8"
                     android:hint="Livello di attività">
                     <AutoCompleteTextView
+                        style="@style/Widget.MyFitAI.InputDropdownText"
                         android:id="@+id/activityInput"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -374,6 +377,7 @@
                     android:layout_marginTop="@dimen/space_8"
                     android:hint="Stile alimentare">
                     <AutoCompleteTextView
+                        style="@style/Widget.MyFitAI.InputDropdownText"
                         android:id="@+id/dietStyleInput"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
