@@ -194,7 +194,7 @@ class NutritionPlanGenerationService(
                         enforceWeeklyVariety = true,
                         mealsPerDay = mealsPerDay,
                         // Validate each day against its actual app-computed recovery/target context.
-                        dailyTargets = emptyMap(),
+                        dailyTargets = dailyTargets,
                         dietaryProfile = dietaryProfile,
                         tolerance = attemptTolerance,
                         targetBelowOnly = false,
