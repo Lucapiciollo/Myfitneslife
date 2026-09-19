@@ -169,7 +169,7 @@ class NutritionPlanGenerationService(
             ),
             schemaName = NutritionPlanCompactContract.SCHEMA_NAME,
             schemaJson = NutritionPlanCompactContract.schemaJson,
-            maxOutputTokens = 8_192,
+            maxOutputTokens = 24_576,
             thinkingBudget = 0,
             allowSchemaFallback = true,
         )
