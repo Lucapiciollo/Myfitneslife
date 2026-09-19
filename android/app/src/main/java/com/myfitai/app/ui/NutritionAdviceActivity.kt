@@ -112,8 +112,8 @@ class NutritionAdviceActivity : BaseShellActivity() {
 
         suggestions.forEach { suggestion ->
             val card = MaterialCardView(this).apply {
-                radius = dp(12).toFloat()
-                setCardBackgroundColor(getColor(R.color.surface_primary))
+                radius = resources.getDimension(R.dimen.radius_medium)
+                setCardBackgroundColor(getColor(R.color.white))
                 strokeColor = getColor(R.color.divider)
                 strokeWidth = dp(1)
             }
