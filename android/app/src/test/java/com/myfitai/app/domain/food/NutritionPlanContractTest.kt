@@ -71,6 +71,27 @@ class NutritionPlanContractTest {
     }
 
     @Test
+    fun deficitPlanCannotSaturateMaintenanceEvenIfWithinTargetTolerance() {
+        val plan = response()
+        assertFalse(
+            NutritionPlanContract.validateBusiness(
+                response = plan,
+                expectedWeekStart = week,
+                targets = targets,
+                maintenanceCeilingKcal = 2400.0,
+            ).isSuccess,
+        )
+        assertTrue(
+            NutritionPlanContract.validateBusiness(
+                response = plan,
+                expectedWeekStart = week,
+                targets = targets,
+                maintenanceCeilingKcal = 2600.0,
+            ).isSuccess,
+        )
+    }
+
+    @Test
     fun wrongWeekDates_areRejected() {
         val original = response()
         val changed = original.copy(days = original.days.mapIndexed { index, day ->
