@@ -180,9 +180,11 @@ class BodyMeasuresActivity : BaseShellActivity() {
 
         val card = MaterialCardView(this).apply {
             tag = PROPORTION_CARD_TAG
-            radius = dp(16).toFloat()
+            radius = resources.getDimension(R.dimen.radius_medium)
             cardElevation = 0f
-            setCardBackgroundColor(getColor(R.color.surface_primary))
+            setCardBackgroundColor(getColor(R.color.white))
+            strokeColor = getColor(R.color.divider)
+            strokeWidth = dp(1)
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT,
