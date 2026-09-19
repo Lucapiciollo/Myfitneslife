@@ -150,10 +150,20 @@ class HomeViewModel(
         if (profileId <= 0L) {
             flowOf<List<FoodPlanDay>>(emptyList())
         } else {
-            mealPlanRepository.plans(profileId).flatMapLatest {
-                flow {
-                    val monday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-                    emit(mealPlanRepository.loadLatestSnapshot(profileId, monday.toEpochDay())?.version?.days.orEmpty())
+            mealPlanRepository.plans(profileId).flatMapLatest { plans ->
+                val monday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+                val weekStart = monday.toEpochDay()
+                val plan = plans.firstOrNull { it.weekStartEpochDay == weekStart }
+                if (plan == null) {
+                    flowOf<List<FoodPlanDay>>(emptyList())
+                } else {
+                    // Observe versions too: regenerating a week can append a version
+                    // without changing the parent meal-plan row.
+                    mealPlanRepository.versions(profileId, plan.id).flatMapLatest {
+                        flow {
+                            emit(mealPlanRepository.loadLatestSnapshot(profileId, weekStart)?.version?.days.orEmpty())
+                        }
+                    }
                 }
             }
         }
