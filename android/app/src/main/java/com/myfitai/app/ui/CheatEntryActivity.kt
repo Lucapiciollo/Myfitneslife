@@ -6,7 +6,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
-import android.widget.EditText
+import com.google.android.material.textfield.TextInputEditText
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.activity.result.PickVisualMediaRequest
@@ -234,9 +234,9 @@ class CheatEntryActivity : BaseShellActivity() {
             showStatus("Attendi il completamento della foto dell'etichetta.")
             return null
         }
-        val description = findViewById<EditText>(R.id.descriptionInput).text?.toString()?.trim().orEmpty()
+        val description = findViewById<TextInputEditText>(R.id.descriptionInput).text?.toString()?.trim().orEmpty()
         if (description.isBlank()) {
-            findViewById<EditText>(R.id.descriptionInput).error = "Descrivi cosa hai mangiato"
+            findViewById<TextInputEditText>(R.id.descriptionInput).error = "Descrivi cosa hai mangiato"
             return null
         }
         val category = selectedCategory()
@@ -247,8 +247,8 @@ class CheatEntryActivity : BaseShellActivity() {
             return null
         }
 
-        val baseNotes = findViewById<EditText>(R.id.notesInput).text?.toString()?.trim().orEmpty()
-        val clarification = findViewById<EditText>(R.id.clarificationInput).text?.toString()?.trim().orEmpty()
+        val baseNotes = findViewById<TextInputEditText>(R.id.notesInput).text?.toString()?.trim().orEmpty()
+        val clarification = findViewById<TextInputEditText>(R.id.clarificationInput).text?.toString()?.trim().orEmpty()
         val notes = listOfNotNull(
             baseNotes.takeIf { it.isNotBlank() },
             clarification.takeIf { it.isNotBlank() }?.let { "Chiarimento utente dopo la prima lettura IA: $it" },
@@ -310,7 +310,7 @@ class CheatEntryActivity : BaseShellActivity() {
         viewModel.consumeResult()
         startActivity(
             Intent(this, AdjustedPlanActivity::class.java)
-                .putExtra(AdjustedPlanActivity.EXTRA_DESCRIPTION, findViewById<EditText>(R.id.descriptionInput).text?.toString().orEmpty())
+                .putExtra(AdjustedPlanActivity.EXTRA_DESCRIPTION, findViewById<TextInputEditText>(R.id.descriptionInput).text?.toString().orEmpty())
                 .putExtra(AdjustedPlanActivity.EXTRA_ESTIMATE, result.estimateSummary)
                 .putExtra(AdjustedPlanActivity.EXTRA_ADAPTED, result.adapted)
                 .putExtra(AdjustedPlanActivity.EXTRA_SUMMARY, result.adaptationSummary)
