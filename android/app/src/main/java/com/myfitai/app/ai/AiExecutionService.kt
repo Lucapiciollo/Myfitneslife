@@ -34,7 +34,7 @@ class AiExecutionService {
             }
             val schemaResult = CanonicalJsonSchemaValidator.validate(raw.jsonText, request.schemaJson)
             if (!schemaResult.valid) {
-                if (provider is GeminiByokProvider) {
+                if (provider.type == AiProviderType.GEMINI) {
                     val text = raw.jsonText
                     val diagnostics = runCatching {
                         org.json.JSONObject(text)
