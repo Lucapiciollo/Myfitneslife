@@ -336,6 +336,11 @@ class BiaActivity : BaseShellActivity() {
                     selectedMinute = calendar.get(Calendar.MINUTE)
                 }
                 renderDateTime()
+                Toast.makeText(
+                    this@BiaActivity,
+                    "Valori caricati: premi Salva per registrare la BIA e visualizzare il consiglio motivato sull'obiettivo.",
+                    Toast.LENGTH_LONG,
+                ).show()
             }
             .create()
 
