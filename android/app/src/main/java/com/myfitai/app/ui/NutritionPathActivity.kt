@@ -23,7 +23,21 @@ class NutritionPathActivity : BaseShellActivity() {
         setContentView(R.layout.activity_nutrition_path)
         bindBack()
         findViewById<MaterialButton>(R.id.chooseButton).setOnClickListener { choose(selectedPath) }
+        showCurrentGoalIfPresent()
         observe()
+    }
+
+    private fun showCurrentGoalIfPresent() {
+        lifecycleScope.launch {
+            val profileId = data.activeProfileStore.currentIdOrNull() ?: return@launch
+            val currentGoal = data.userProfileRepository.get(profileId)?.goal
+                ?.takeIf { it.isNotBlank() } ?: return@launch
+            findViewById<TextView>(R.id.currentGoalText).apply {
+                text = "Obiettivo attuale: $currentGoal"
+                visibility = android.view.View.VISIBLE
+            }
+            findViewById<TextView>(R.id.goalConfirmationHint).visibility = android.view.View.VISIBLE
+        }
     }
 
     private fun observe() {
@@ -59,6 +73,11 @@ class NutritionPathActivity : BaseShellActivity() {
 
         findViewById<TextView>(R.id.recommendationPath).text = label(selectedPath!!)
         findViewById<TextView>(R.id.recommendationReason).text = recommendation.getString("reason")
+        findViewById<TextView>(R.id.recommendationExplanation).apply {
+            val explanation = root.optString("explanation").trim()
+            text = explanation
+            visibility = if (explanation.isBlank()) android.view.View.GONE else android.view.View.VISIBLE
+        }
         findViewById<TextView>(R.id.recommendationConfidence).text =
             "Confidenza ${confidenceLabel(recommendation.getDouble("confidence"))}"
 
@@ -99,6 +118,7 @@ class NutritionPathActivity : BaseShellActivity() {
         findViewById<TextView>(R.id.recommendationReason).text =
             "La scelta potrà essere rivalutata in seguito quando saranno disponibili più dati."
         findViewById<TextView>(R.id.recommendationConfidence).text = ""
+        findViewById<TextView>(R.id.recommendationExplanation).visibility = android.view.View.GONE
         status(message)
 
         findViewById<MaterialButton>(R.id.chooseButton).isEnabled = false
