@@ -195,8 +195,7 @@ class NutritionPlanGenerationService(
             maxSchemaRetries = 2,
             businessValidator = { json ->
                 runCatching {
-                    val attemptTolerance = targetTolerance
-                    attemptIndex++
+                    val currentAttempt = attemptIndex++
                     val response = NutritionPlanCompactContract.parseEnvelope(json, mealsPerDay)
                     NutritionPlanContract.validateBusiness(
                         response = response,
@@ -208,14 +207,19 @@ class NutritionPlanGenerationService(
                         // Validate each day against its actual app-computed recovery/target context.
                         dailyTargets = dailyTargets,
                         dietaryProfile = dietaryProfile,
-                        tolerance = attemptTolerance,
+                        tolerance = targetTolerance,
                         targetBelowOnly = false,
                         expectedFirstDate = generationStart,
                         maintenanceCeilingKcal = maintenanceCeilingKcal,
                     ).getOrThrow()
+                    // The model must center the real M+S calorie sum on each daily target.
+                    // Use the official ±3% guardrail only on the final business retry.
+                    if (currentAttempt < 2) {
+                        validatePreferredCalorieCentering(response, baseTargets, dailyTargets).getOrThrow()
+                    }
                     // L'integrità nutrizionale è informativa (persistita in appValidation), non blocca:
-                    // il gate autorevole resta validateBusiness (struttura, target ±tolleranza, totali giorno).
-                    acceptedTolerance = attemptTolerance
+                    // il gate autorevole resta validateBusiness (struttura, target ±3%, totali giorno).
+                    acceptedTolerance = targetTolerance
                     parsed = response
                 }
             },
@@ -453,6 +457,23 @@ class NutritionPlanGenerationService(
     private fun fmtOrUnknown(value: Float?): String = value?.let { String.format(Locale.US, "%.1f", it) } ?: "?"
 
     companion object {
+        private const val PREFERRED_KCAL_TOLERANCE = 0.01
+
+        internal fun validatePreferredCalorieCentering(
+            response: NutritionPlanContract.Response,
+            baseTargets: NutritionBusinessValidator.Targets,
+            dailyTargets: Map<Long, NutritionBusinessValidator.Targets>,
+        ): Result<Unit> = runCatching {
+            response.days.forEach { day ->
+                val target = (dailyTargets[day.dateEpochDay] ?: baseTargets).kcal
+                require(target > 0.0) { "CALORIE_TARGET_INVALID" }
+                val deviation = kotlin.math.abs(day.totalKcal - target) / target
+                require(deviation <= PREFERRED_KCAL_TOLERANCE + 1e-9) {
+                    "CALORIE_TARGET_NOT_CENTERED:${day.dateEpochDay}:target=${target.toInt()}:actual=${day.totalKcal}:preferred=1%"
+                }
+            }
+        }
+
         private val SYSTEM_PROMPT = """
 MyFitAI NutritionPlanAgent. Your ONLY operational responsibility is generating a complete weekly nutrition plan from the authoritative targets and context supplied by the app. Never choose/change the user's goal, interpret progress, or adapt a recorded deviation/cheat; dedicated agents own those tasks. Output ONLY JSON matching the supplied envelope schema. The `data` string must begin with the exact line `MFP1`, followed by the pipe records below. Do not omit `MFP1`, do not replace it with another header, do not use markdown, and do not add text outside records.
 ${NutritionPlanCompactContract.PROTOCOL}
