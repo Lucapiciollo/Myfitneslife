@@ -18,9 +18,11 @@ import com.myfitai.app.data.repository.UserProfileRepository
 import com.myfitai.app.data.repository.WorkoutRepository
 import com.myfitai.app.domain.calculation.LocalCalculationEngine
 import com.myfitai.app.domain.calculation.ProfileCalculationMapper
+import com.myfitai.app.domain.calculation.WeeklyBodyExpectation
 import com.myfitai.app.domain.food.CalorieRecoveryEngine
 import com.myfitai.app.domain.food.FoodConsumptionMetrics
 import com.myfitai.app.domain.food.FoodMeal
+import com.myfitai.app.domain.food.FoodPlanDay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -85,6 +87,7 @@ class HomeViewModel(
         val nextMeal: NextMealState? = null,
         val upcomingMeals: List<NextMealState> = emptyList(),
         val recovery: RecoveryState = RecoveryState(),
+        val weeklyExpectation: WeeklyBodyExpectation.Result = WeeklyBodyExpectation.Result(available = false),
     )
 
     private data class Source(
@@ -143,6 +146,19 @@ class HomeViewModel(
         }
     }
 
+    private val weeklyPlanSource = activeProfileStore.activeProfileId.flatMapLatest { profileId ->
+        if (profileId <= 0L) {
+            flowOf<List<FoodPlanDay>>(emptyList())
+        } else {
+            mealPlanRepository.plans(profileId).flatMapLatest {
+                flow {
+                    val monday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+                    emit(mealPlanRepository.loadLatestSnapshot(profileId, monday.toEpochDay())?.version?.days.orEmpty())
+                }
+            }
+        }
+    }
+
     val state: StateFlow<DashboardState> = combine(
         source,
         selectedRange,
@@ -151,6 +167,15 @@ class HomeViewModel(
         consumedTodaySource,
     ) { source, rangeIndex, upcomingMeals, recovery, consumedKcal ->
         buildState(source, rangeIndex, upcomingMeals, recovery, consumedKcal)
+    }.combine(weeklyPlanSource) { dashboard, plannedDays ->
+        val monday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        dashboard.copy(
+            weeklyExpectation = WeeklyBodyExpectation.calculate(
+                maintenanceKcal = dashboard.calories.tdee,
+                weekStartEpochDay = monday.toEpochDay(),
+                plannedDays = plannedDays.map { it.dateEpochDay to it.totalKcal },
+            ),
+        )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DashboardState())
 
     fun selectRange(index: Int) { selectedRange.value = index.coerceIn(0, 3) }
