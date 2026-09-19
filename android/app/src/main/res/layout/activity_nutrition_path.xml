@@ -47,7 +47,19 @@
                 android:textSize="13sp"
                 android:visibility="gone" />
 
-            <TextView
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.MyFitAI.Dialog.Card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_16">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="@dimen/space_16">
+
+                    <TextView
                 android:id="@+id/recommendationPath"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -82,6 +94,9 @@
                 android:textColor="@color/text_muted"
                 android:textSize="12sp" />
 
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
             <TextView
                 android:id="@+id/pathStatus"
                 android:layout_width="match_parent"
@@ -90,12 +105,37 @@
                 android:textColor="@color/text_secondary"
                 android:textSize="13sp" />
 
-            <LinearLayout
-                android:id="@+id/alternativesContainer"
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/alternativesCard"
+                style="@style/Widget.MyFitAI.Dialog.Card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_12"
-                android:orientation="vertical" />
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="@dimen/space_16">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Altri percorsi disponibili"
+                        android:textColor="@color/text_primary"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <LinearLayout
+                        android:id="@+id/alternativesContainer"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_8"
+                        android:orientation="vertical" />
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
             <TextView
                 android:id="@+id/goalConfirmationHint"
