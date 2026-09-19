@@ -83,6 +83,7 @@
                     android:layout_marginTop="@dimen/space_12"
                     android:hint="Nome profilo">
                     <com.google.android.material.textfield.TextInputEditText
+                style="@style/Widget.MyFitAI.InputEditText"
                         android:id="@+id/nameInput"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -100,6 +101,7 @@
                     app:endIconDrawable="@drawable/ic_calendar"
                     app:endIconMode="custom">
                     <com.google.android.material.textfield.TextInputEditText
+                style="@style/Widget.MyFitAI.InputEditText"
                         android:id="@+id/birthDateInput"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -135,6 +137,7 @@
                         android:layout_weight="1"
                         android:hint="Altezza (cm)">
                         <com.google.android.material.textfield.TextInputEditText
+                style="@style/Widget.MyFitAI.InputEditText"
                             android:id="@+id/heightInput"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
@@ -150,6 +153,7 @@
                         android:layout_weight="1"
                         android:hint="Peso (kg)">
                         <com.google.android.material.textfield.TextInputEditText
+                style="@style/Widget.MyFitAI.InputEditText"
                             android:id="@+id/weightInput"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
@@ -239,6 +243,7 @@
                         android:layout_weight="1"
                         android:hint="Sveglia">
                         <com.google.android.material.textfield.TextInputEditText
+                style="@style/Widget.MyFitAI.InputEditText"
                             android:id="@+id/wakeTimeInput"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
@@ -254,6 +259,7 @@
                         android:layout_weight="1"
                         android:hint="Sonno">
                         <com.google.android.material.textfield.TextInputEditText
+                style="@style/Widget.MyFitAI.InputEditText"
                             android:id="@+id/sleepTimeInput"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
@@ -293,6 +299,7 @@
                     android:layout_marginTop="@dimen/space_12"
                     android:hint="Alimenti preferiti">
                     <com.google.android.material.textfield.TextInputEditText
+                style="@style/Widget.MyFitAI.InputEditText"
                         android:id="@+id/preferredFoodsInput"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -307,6 +314,7 @@
                     android:layout_marginTop="@dimen/space_8"
                     android:hint="Alimenti non graditi">
                     <com.google.android.material.textfield.TextInputEditText
+                style="@style/Widget.MyFitAI.InputEditText"
                         android:id="@+id/dislikedFoodsInput"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -321,6 +329,7 @@
                     android:layout_marginTop="@dimen/space_8"
                     android:hint="Alimenti da escludere">
                     <com.google.android.material.textfield.TextInputEditText
+                style="@style/Widget.MyFitAI.InputEditText"
                         android:id="@+id/excludedFoodsInput"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -335,6 +344,7 @@
                     android:layout_marginTop="@dimen/space_8"
                     android:hint="Intolleranze">
                     <com.google.android.material.textfield.TextInputEditText
+                style="@style/Widget.MyFitAI.InputEditText"
                         android:id="@+id/intolerancesInput"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -349,6 +359,7 @@
                     android:layout_marginTop="@dimen/space_8"
                     android:hint="Allergie">
                     <com.google.android.material.textfield.TextInputEditText
+                style="@style/Widget.MyFitAI.InputEditText"
                         android:id="@+id/allergiesInput"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -376,6 +387,7 @@
                     android:layout_marginTop="@dimen/space_8"
                     android:hint="Note alimentari">
                     <com.google.android.material.textfield.TextInputEditText
+                style="@style/Widget.MyFitAI.InputEditText"
                         android:id="@+id/preferencesInput"
                         android:layout_width="match_parent"
                         android:layout_height="96dp"
