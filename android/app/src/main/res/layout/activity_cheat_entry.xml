@@ -1,0 +1,199 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg_primary">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="@dimen/space_16">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:gravity="center_vertical">
+                <TextView
+                    android:id="@+id/backButton"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:gravity="center"
+                    android:text="‹"
+                    android:textSize="30sp"
+                    android:textColor="@color/text_primary" />
+                <Space android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" />
+            </LinearLayout>
+
+            <com.myfitai.app.ui.widgets.SelectableSegmentView
+                android:id="@+id/modeSegment"
+                android:layout_width="match_parent"
+                android:layout_height="44dp" />
+
+            <com.myfitai.app.ui.widgets.SectionHeaderView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_20"
+                android:text="Cosa hai mangiato?" />
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/foodChipGroup"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_8"
+                app:singleSelection="true"
+                app:chipSpacingHorizontal="@dimen/space_8"
+                app:chipSpacingVertical="@dimen/space_8">
+                <com.google.android.material.chip.Chip android:id="@+id/chipPizza" style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Pizza" android:checkable="true" app:chipBackgroundColor="@color/chip_background_selector" android:textColor="@color/chip_text_selector" app:checkedIconVisible="false" app:chipStrokeColor="@color/divider" app:chipStrokeWidth="1dp" />
+                <com.google.android.material.chip.Chip android:id="@+id/chipGelato" style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Gelato" android:checkable="true" app:chipBackgroundColor="@color/chip_background_selector" android:textColor="@color/chip_text_selector" app:checkedIconVisible="false" app:chipStrokeColor="@color/divider" app:chipStrokeWidth="1dp" />
+                <com.google.android.material.chip.Chip android:id="@+id/chipSushi" style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Sushi" android:checkable="true" app:chipBackgroundColor="@color/chip_background_selector" android:textColor="@color/chip_text_selector" app:checkedIconVisible="false" app:chipStrokeColor="@color/divider" app:chipStrokeWidth="1dp" />
+                <com.google.android.material.chip.Chip android:id="@+id/chipDolci" style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Dolci" android:checkable="true" app:chipBackgroundColor="@color/chip_background_selector" android:textColor="@color/chip_text_selector" app:checkedIconVisible="false" app:chipStrokeColor="@color/divider" app:chipStrokeWidth="1dp" />
+                <com.google.android.material.chip.Chip android:id="@+id/chipFastFood" style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Fast food" android:checkable="true" app:chipBackgroundColor="@color/chip_background_selector" android:textColor="@color/chip_text_selector" app:checkedIconVisible="false" app:chipStrokeColor="@color/divider" app:chipStrokeWidth="1dp" />
+                <com.google.android.material.chip.Chip android:id="@+id/chipAltro" style="@style/Widget.Material3.Chip.Filter" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Altro" android:checkable="true" app:chipBackgroundColor="@color/chip_background_selector" android:textColor="@color/chip_text_selector" app:checkedIconVisible="false" app:chipStrokeColor="@color/divider" app:chipStrokeWidth="1dp" />
+            </com.google.android.material.chip.ChipGroup>
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MyFitAI.Input"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_12"
+                android:hint="Descrivi cosa hai mangiato">
+                <com.google.android.material.textfield.TextInputEditText
+                style="@style/Widget.MyFitAI.InputEditText"
+                    android:id="@+id/descriptionInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textCapSentences"
+                    android:maxLines="3" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_12"
+                app:cardBackgroundColor="@color/surface_primary"
+                app:cardCornerRadius="12dp"
+                app:strokeColor="@color/divider"
+                app:strokeWidth="1dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="@dimen/space_12">
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Etichetta nutrizionale (opzionale)" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="14sp" />
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="Aggiungi la foto solo se il prodotto ha un'etichetta: verrà usata dall'IA per rendere più precisa la stima e non sarà salvata." android:textColor="@color/text_secondary" android:textSize="12sp" />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/addLabelPhotoButton" style="@style/Widget.Material3.Button.OutlinedButton" android:layout_width="match_parent" android:layout_height="48dp" android:layout_marginTop="10dp" android:text="+ Foto etichetta nutrizionale" android:textAllCaps="false" />
+                    <LinearLayout android:id="@+id/labelPhotoStatusRow" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:gravity="center_vertical" android:visibility="gone">
+                        <TextView android:id="@+id/labelPhotoStatus" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Etichetta pronta ✓" android:textColor="@color/accent_green" android:textSize="12sp" android:textStyle="bold" />
+                        <TextView android:id="@+id/removeLabelPhotoButton" android:layout_width="wrap_content" android:layout_height="40dp" android:gravity="center" android:paddingHorizontal="10dp" android:text="Rimuovi" android:textColor="@color/text_secondary" android:textSize="12sp" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.myfitai.app.ui.widgets.SectionHeaderView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:text="Quando?" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:orientation="horizontal">
+                <LinearLayout android:id="@+id/dateField" android:layout_width="0dp" android:layout_weight="1" android:layout_height="56dp" android:orientation="horizontal" android:gravity="center_vertical" android:background="@drawable/bg_input" android:padding="@dimen/space_12">
+                    <ImageView android:layout_width="18dp" android:layout_height="18dp" android:src="@drawable/ic_calendar" android:importantForAccessibility="no" />
+                    <TextView android:id="@+id/dateValue" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="@dimen/space_8" android:gravity="center_vertical" android:textColor="@color/text_primary" android:textSize="16sp" />
+                </LinearLayout>
+                <Space android:layout_width="@dimen/space_12" android:layout_height="1dp" />
+                <LinearLayout android:id="@+id/timeField" android:layout_width="0dp" android:layout_weight="1" android:layout_height="56dp" android:orientation="horizontal" android:gravity="center_vertical" android:background="@drawable/bg_input" android:padding="@dimen/space_12">
+                    <ImageView android:layout_width="18dp" android:layout_height="18dp" android:src="@drawable/ic_setting_clock" android:importantForAccessibility="no" />
+                    <TextView android:id="@+id/timeValue" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="@dimen/space_8" android:gravity="center_vertical" android:textColor="@color/text_primary" android:textSize="16sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <com.myfitai.app.ui.widgets.SectionHeaderView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:text="Quantità" />
+            <com.google.android.material.textfield.TextInputLayout android:id="@+id/quantityLayout" style="@style/Widget.MyFitAI.InputDropdown" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8">
+                <AutoCompleteTextView
+                        style="@style/Widget.MyFitAI.InputDropdownText" android:id="@+id/quantityInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="none" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.myfitai.app.ui.widgets.SectionHeaderView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:text="Note (opzionale)" />
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.MyFitAI.Input"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_8"
+                android:hint="Es. con amici, fuori casa...">
+                <com.google.android.material.textfield.TextInputEditText
+                style="@style/Widget.MyFitAI.InputEditText"
+                    android:id="@+id/notesInput"
+                    android:layout_width="match_parent"
+                    android:layout_height="96dp"
+                    android:gravity="top|start"
+                    android:inputType="textMultiLine|textCapSentences"
+                    android:maxLines="4" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/analyzeButton"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginTop="@dimen/space_20"
+                android:text="Fai capire lo sgarro all'IA"
+                android:textAllCaps="false"
+                android:textStyle="bold"
+                app:cornerRadius="12dp"
+                app:backgroundTint="@color/accent_green" />
+
+            <ProgressBar android:id="@+id/progress" android:layout_width="32dp" android:layout_height="32dp" android:layout_gravity="center_horizontal" android:layout_marginTop="@dimen/space_12" android:visibility="gone" />
+            <TextView android:id="@+id/statusText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:gravity="center" android:textColor="@color/text_secondary" android:textSize="13sp" android:visibility="gone" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/aiUnderstandingCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_16"
+                android:visibility="gone"
+                app:cardBackgroundColor="@color/surface_primary"
+                app:cardCornerRadius="14dp"
+                app:strokeColor="@color/accent_green"
+                app:strokeWidth="1dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="@dimen/space_16">
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Cosa ha capito l'IA" android:textColor="@color/accent_green" android:textStyle="bold" android:textSize="15sp" />
+                    <TextView android:id="@+id/aiUnderstoodFood" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:textColor="@color/text_primary" android:textSize="14sp" />
+                    <TextView android:id="@+id/aiEstimate" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="14sp" />
+                    <TextView android:id="@+id/aiEstimateNotes" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:textColor="@color/text_secondary" android:textSize="12sp" />
+                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:text="Non ha capito bene? Spiega meglio e fai rivalutare prima di confermare." android:textColor="@color/text_secondary" android:textSize="12sp" />
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.MyFitAI.Input"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:hint="Es. ne ho mangiati 80 g, non tutta la confezione...">
+                        <com.google.android.material.textfield.TextInputEditText
+                style="@style/Widget.MyFitAI.InputEditText"
+                            android:id="@+id/clarificationInput"
+                            android:layout_width="match_parent"
+                            android:layout_height="88dp"
+                            android:gravity="top|start"
+                            android:inputType="textMultiLine|textCapSentences"
+                            android:maxLines="4" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/reevaluateButton"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:layout_marginTop="10dp"
+                        android:text="Rivaluta con la mia spiegazione"
+                        android:textAllCaps="false" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/confirmButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="52dp"
+                        android:layout_marginTop="10dp"
+                        android:text="Ha capito · Conferma e salva"
+                        android:textAllCaps="false"
+                        android:textStyle="bold"
+                        app:cornerRadius="12dp"
+                        app:backgroundTint="@color/accent_green" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

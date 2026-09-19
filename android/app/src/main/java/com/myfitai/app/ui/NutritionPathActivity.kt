@@ -1,0 +1,212 @@
+package com.myfitai.app.ui
+
+import android.os.Bundle
+import android.widget.LinearLayout
+import android.widget.TextView
+import androidx.lifecycle.lifecycleScope
+import androidx.work.WorkInfo
+import com.google.android.material.button.MaterialButton
+import com.myfitai.app.R
+import com.myfitai.app.data.AppDataContainer
+import com.myfitai.app.domain.ai.AiJobWorker
+import com.myfitai.app.domain.food.NutritionPathAiJobHandler
+import kotlinx.coroutines.launch
+import org.json.JSONObject
+
+class NutritionPathActivity : BaseShellActivity() {
+    private val data by lazy { AppDataContainer.get(this) }
+    private val jobKey by lazy { intent.getStringExtra(EXTRA_JOB_KEY).orEmpty() }
+    private var selectedPath: String? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_nutrition_path)
+        bindBack()
+        findViewById<MaterialButton>(R.id.chooseButton).setOnClickListener { choose(selectedPath) }
+        showCurrentGoalIfPresent()
+        observe()
+    }
+
+    private fun showCurrentGoalIfPresent() {
+        lifecycleScope.launch {
+            val profileId = data.activeProfileStore.currentIdOrNull() ?: return@launch
+            val currentGoal = data.userProfileRepository.get(profileId)?.goal
+                ?.takeIf { it.isNotBlank() } ?: return@launch
+            findViewById<TextView>(R.id.currentGoalText).apply {
+                text = "Obiettivo attuale: $currentGoal"
+                visibility = android.view.View.VISIBLE
+            }
+            findViewById<TextView>(R.id.goalConfirmationHint).visibility = android.view.View.VISIBLE
+        }
+    }
+
+    private fun observe() {
+        val profileId = data.activeProfileStore.currentIdOrNull()
+        if (profileId == null || jobKey.isBlank()) {
+            showManualFallback("Non posso generare il consiglio automatico. Puoi comunque scegliere l'obiettivo.")
+            return
+        }
+        lifecycleScope.launch {
+            data.nutritionPathScheduler.observe(profileId, jobKey).collect { info ->
+                when (info?.state) {
+                    WorkInfo.State.RUNNING, WorkInfo.State.ENQUEUED -> status("Analizzo il profilo…")
+                    WorkInfo.State.SUCCEEDED -> runCatching {
+                        render(info.outputData.getString(NutritionPathAiJobHandler.KEY_PAYLOAD))
+                    }.onFailure {
+                        showManualFallback("Il consiglio non è leggibile. Puoi scegliere manualmente senza perdere la BIA salvata.")
+                    }
+                    WorkInfo.State.FAILED -> showManualFallback(
+                        info.outputData.getString(AiJobWorker.KEY_ERROR)
+                            ?: "Consiglio automatico non disponibile. Puoi scegliere manualmente."
+                    )
+                    else -> Unit
+                }
+            }
+        }
+    }
+
+    private fun render(payload: String?) {
+        if (payload == null) {
+            showManualFallback("Risultato non disponibile. Puoi scegliere manualmente.")
+            return
+        }
+
+        val root = JSONObject(payload)
+        val recommendation = root.getJSONObject("recommendation")
+        selectedPath = recommendation.getString("path")
+
+        findViewById<TextView>(R.id.recommendationPath).text = label(selectedPath!!)
+        findViewById<TextView>(R.id.recommendationReason).text = recommendation.getString("reason")
+        findViewById<TextView>(R.id.recommendationExplanation).apply {
+            val explanation = root.optString("explanation").trim()
+            text = explanation
+            visibility = if (explanation.isBlank()) android.view.View.GONE else android.view.View.VISIBLE
+        }
+        findViewById<TextView>(R.id.recommendationConfidence).text =
+            "Confidenza ${confidenceLabel(recommendation.getDouble("confidence"))}"
+
+        val hasBia = root.optBoolean("hasBia", false)
+        val hasBody = root.optBoolean("hasBodyMeasurements", false)
+        status(
+            when {
+                hasBia && hasBody -> "Consiglio basato su profilo, BIA e misure corporee."
+                hasBia -> "Consiglio basato su profilo e BIA. Le circonferenze potranno affinare le valutazioni future."
+                hasBody -> "Consiglio basato su profilo e misure corporee. Una BIA potrà affinare la valutazione."
+                else -> "Consiglio iniziale basato sui dati del profilo. Puoi aggiungere una BIA in seguito per affinare la valutazione."
+            }
+        )
+
+        val alternatives = findViewById<LinearLayout>(R.id.alternativesContainer)
+        alternatives.removeAllViews()
+        val array = root.optJSONArray("alternatives")
+        if (array != null) {
+            for (i in 0 until array.length()) {
+                val item = array.getJSONObject(i)
+                addAlternativeButton(
+                    container = alternatives,
+                    path = item.getString("path"),
+                    reason = item.optString("reason"),
+                )
+            }
+        }
+
+        findViewById<android.view.View>(R.id.alternativesCard).visibility =
+            if (alternatives.childCount > 0) android.view.View.VISIBLE else android.view.View.GONE
+        findViewById<MaterialButton>(R.id.chooseButton).apply {
+            isEnabled = selectedPath != null
+            text = "Usa ${label(selectedPath!!)}"
+        }
+    }
+
+    private fun showManualFallback(message: String) {
+        selectedPath = null
+        findViewById<TextView>(R.id.recommendationPath).text = "Scegli il tuo obiettivo"
+        findViewById<TextView>(R.id.recommendationReason).text =
+            "La scelta potrà essere rivalutata in seguito quando saranno disponibili più dati."
+        findViewById<TextView>(R.id.recommendationConfidence).text = ""
+        findViewById<TextView>(R.id.recommendationExplanation).visibility = android.view.View.GONE
+        status(message)
+
+        findViewById<MaterialButton>(R.id.chooseButton).isEnabled = false
+        val alternatives = findViewById<LinearLayout>(R.id.alternativesContainer)
+        alternatives.removeAllViews()
+        GOAL_PATHS.forEach { path ->
+            addAlternativeButton(alternatives, path, "")
+        }
+        findViewById<android.view.View>(R.id.alternativesCard).visibility = android.view.View.VISIBLE
+    }
+
+    private fun addAlternativeButton(container: LinearLayout, path: String, reason: String) {
+        container.addView(
+            MaterialButton(this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
+                text = if (reason.isBlank()) label(path) else "${label(path)}\n$reason"
+                isAllCaps = false
+                setTextColor(getColor(R.color.text_primary))
+                strokeColor = android.content.res.ColorStateList.valueOf(getColor(R.color.divider))
+                strokeWidth = (resources.displayMetrics.density).toInt().coerceAtLeast(1)
+                backgroundTintList = android.content.res.ColorStateList.valueOf(getColor(R.color.white))
+                cornerRadius = (14 * resources.displayMetrics.density).toInt()
+                insetTop = 0
+                insetBottom = 0
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ).apply { topMargin = (8 * resources.displayMetrics.density).toInt() }
+                setOnClickListener { choose(path) }
+            }
+        )
+    }
+
+    private fun choose(path: String?) {
+        if (path == null) return
+        lifecycleScope.launch {
+            val id = data.activeProfileStore.currentIdOrNull() ?: return@launch
+            val profile = data.userProfileRepository.get(id) ?: return@launch
+            data.userProfileRepository.update(
+                profile.copy(
+                    goal = canonical(path),
+                    updatedAtEpochMillis = System.currentTimeMillis(),
+                )
+            )
+            val opened = openFoodPlan(
+                java.time.LocalDate.now().with(java.time.DayOfWeek.MONDAY).toEpochDay()
+            )
+            if (opened) {
+                finish()
+            } else {
+                status("Obiettivo salvato. Configura un provider IA per aprire e generare il piano alimentare.")
+            }
+        }
+    }
+
+    private fun status(text: String) {
+        findViewById<TextView>(R.id.pathStatus).text = text
+    }
+
+    private fun confidenceLabel(value: Double): String = when {
+        value >= 0.75 -> "alta"
+        value >= 0.45 -> "media"
+        else -> "bassa"
+    }
+
+    private fun label(path: String) = mapOf(
+        "RECOMPOSITION" to "Ricomposizione",
+        "WEIGHT_LOSS" to "Dimagrimento",
+        "MAINTENANCE" to "Mantenimento",
+        "MUSCLE_GAIN" to "Aumento massa muscolare",
+        "PERFORMANCE" to "Performance",
+    )[path] ?: path
+
+    private fun canonical(path: String) = label(path)
+
+    companion object {
+        const val EXTRA_JOB_KEY = "nutrition_path_job_key"
+        private val GOAL_PATHS = listOf(
+            "RECOMPOSITION",
+            "WEIGHT_LOSS",
+            "MAINTENANCE",
+            "MUSCLE_GAIN",
+            "PERFORMANCE",
+        )
+    }
+}

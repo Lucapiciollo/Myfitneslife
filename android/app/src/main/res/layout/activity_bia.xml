@@ -1,0 +1,339 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg_primary">
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:fillViewport="true"
+        android:paddingBottom="@dimen/space_24">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="@dimen/space_16">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:gravity="center_vertical">
+
+                <androidx.appcompat.widget.AppCompatImageButton
+                    android:id="@+id/backButton"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="@android:color/transparent"
+                    android:contentDescription="Indietro"
+                    android:padding="10dp"
+                    android:src="@drawable/ic_arrow_back" />
+
+                <Space
+                    android:layout_width="0dp"
+                    android:layout_height="1dp"
+                    android:layout_weight="1" />
+            </LinearLayout>
+
+            <com.myfitai.app.ui.widgets.BiaSegmentView
+                android:id="@+id/biaSegment"
+                android:layout_width="match_parent"
+                android:layout_height="44dp" />
+
+            <LinearLayout
+                android:id="@+id/newMeasurementContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_12"
+                    android:background="@drawable/bg_card"
+                    android:orientation="vertical"
+                    android:paddingHorizontal="@dimen/space_16"
+                    android:paddingTop="@dimen/space_8"
+                    android:paddingBottom="@dimen/space_8">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="40dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Data e ora"
+                            android:textColor="@color/text_secondary"
+                            android:textStyle="bold" />
+                        <ImageButton
+                            android:id="@+id/biaDateHelpButton"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:background="@android:color/transparent"
+                            android:contentDescription="Spiega data e ora"
+                            android:padding="8dp"
+                            android:src="@drawable/ic_help_outline"
+                            app:tint="@color/text_secondary" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="vertical">
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/Widget.MyFitAI.Input"
+                            android:id="@+id/dateInputLayout"
+                            android:layout_width="match_parent"
+                            android:layout_height="64dp"
+                            android:hint="Data rilevazione"
+                            app:endIconDrawable="@drawable/ic_calendar"
+                            app:endIconMode="custom">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                style="@style/Widget.MyFitAI.InputEditText"
+                                android:id="@+id/dateInput"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:clickable="true"
+                                android:focusable="false"
+                                android:gravity="center_vertical"
+                                android:inputType="none"
+                                android:textColor="@color/text_primary"
+                                android:textSize="16sp"
+ />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginVertical="@dimen/space_8"
+                            android:background="@color/divider" />
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/Widget.MyFitAI.Input"
+                            android:id="@+id/timeInputLayout"
+                            android:layout_width="match_parent"
+                            android:layout_height="64dp"
+                            android:hint="Ora"
+                            app:endIconDrawable="@drawable/ic_setting_clock"
+                            app:endIconMode="custom">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                style="@style/Widget.MyFitAI.InputEditText"
+                                android:id="@+id/timeInput"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:clickable="true"
+                                android:focusable="false"
+                                android:gravity="center_vertical"
+                                android:inputType="none"
+                                android:minHeight="64dp"
+                                android:textColor="@color/text_primary"
+                                android:textSize="16sp"
+ />
+                        </com.google.android.material.textfield.TextInputLayout>
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="40dp"
+                    android:layout_marginTop="@dimen/space_16"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <com.myfitai.app.ui.widgets.SectionHeaderView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Condizioni della misura" />
+                    <ImageButton
+                        android:id="@+id/biaConditionsHelpButton"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="@android:color/transparent"
+                        android:contentDescription="Spiega condizioni della misura"
+                        android:padding="8dp"
+                        android:src="@drawable/ic_help_outline"
+                        app:tint="@color/text_secondary" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_8"
+                    android:background="@drawable/bg_card"
+                    android:orientation="vertical"
+                    android:paddingHorizontal="@dimen/space_12"
+                    android:paddingVertical="@dimen/space_4">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.checkbox.MaterialCheckBox
+                            android:id="@+id/checkFasting"
+                            android:layout_width="0dp"
+                            android:layout_height="44dp"
+                            android:layout_weight="1"
+                            android:gravity="center_vertical"
+                            android:text="A digiuno"
+                            android:textSize="13sp"
+                            app:buttonTint="@color/accent_green" />
+
+                        <com.google.android.material.checkbox.MaterialCheckBox
+                            android:id="@+id/checkJustWoken"
+                            android:layout_width="0dp"
+                            android:layout_height="44dp"
+                            android:layout_weight="1"
+                            android:gravity="center_vertical"
+                            android:text="Appena sveglio"
+                            android:textSize="13sp"
+                            app:buttonTint="@color/accent_green" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.checkbox.MaterialCheckBox
+                            android:id="@+id/checkAfterShower"
+                            android:layout_width="0dp"
+                            android:layout_height="44dp"
+                            android:layout_weight="1"
+                            android:gravity="center_vertical"
+                            android:text="Dopo bagno"
+                            android:textSize="13sp"
+                            app:buttonTint="@color/accent_green" />
+
+                        <com.google.android.material.checkbox.MaterialCheckBox
+                            android:id="@+id/checkNoWorkout"
+                            android:layout_width="0dp"
+                            android:layout_height="44dp"
+                            android:layout_weight="1"
+                            android:gravity="center_vertical"
+                            android:text="No allenamento"
+                            android:textSize="13sp"
+                            app:buttonTint="@color/accent_green" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="40dp"
+                    android:layout_marginTop="@dimen/space_16"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <com.myfitai.app.ui.widgets.SectionHeaderView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Risultati" />
+                    <ImageButton
+                        android:id="@+id/biaResultsHelpButton"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="@android:color/transparent"
+                        android:contentDescription="Spiega risultati BIA"
+                        android:padding="8dp"
+                        android:src="@drawable/ic_help_outline"
+                        app:tint="@color/text_secondary" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_8"
+                    android:background="@drawable/bg_card"
+                    android:orientation="vertical"
+                    android:paddingHorizontal="@dimen/space_12">
+
+                    <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowWeight" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                    <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowBodyFat" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                    <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowVisceralFat" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                    <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowMuscleMass" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                    <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowSkeletalMuscle" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                    <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowBodyWater" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                    <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowBmr" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                </LinearLayout>
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_4"
+                    android:paddingHorizontal="@dimen/space_4"
+                    android:text="Tocca un valore per inserirlo o modificarlo."
+                    android:textColor="@color/text_muted"
+                    android:textSize="11sp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_12"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/importPhotoButton"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:text="Importa foto"
+                        android:textAllCaps="false" />
+
+                    <Space
+                        android:layout_width="@dimen/space_8"
+                        android:layout_height="1dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/saveButton"
+                        style="@style/Widget.MyFitAI.Button.Primary"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:text="Salva" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/historyContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/historySummary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_12"
+                    android:background="@drawable/bg_card_soft"
+                    android:padding="@dimen/space_16"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp" />
+
+                <LinearLayout
+                    android:id="@+id/historyList"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_8"
+                    android:orientation="vertical" />
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <include layout="@layout/view_bottom_navigation" />
+</LinearLayout>

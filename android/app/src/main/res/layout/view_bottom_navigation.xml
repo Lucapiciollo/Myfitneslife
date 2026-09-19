@@ -1,0 +1,6 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/bottomNav" android:layout_width="match_parent" android:layout_height="76dp" android:orientation="horizontal" android:gravity="center" android:paddingHorizontal="8dp" android:paddingVertical="8dp" android:background="@color/surface_primary">
+<TextView style="@style/Widget.MyFitAI.BottomNavItem" android:id="@+id/navHome" android:drawableTop="@drawable/ic_nav_home" android:text="@string/nav_home" android:contentDescription="@string/nav_home" />
+<TextView style="@style/Widget.MyFitAI.BottomNavItem" android:id="@+id/navFood" android:drawableTop="@drawable/ic_nav_food" android:text="@string/nav_food" android:contentDescription="@string/nav_food" />
+<TextView style="@style/Widget.MyFitAI.BottomNavItem" android:id="@+id/navProgress" android:drawableTop="@drawable/ic_nav_progress" android:text="@string/nav_progress" android:contentDescription="@string/nav_progress" />
+<TextView style="@style/Widget.MyFitAI.BottomNavItem" android:id="@+id/navMore" android:drawableTop="@drawable/ic_nav_more" android:text="@string/nav_more" android:contentDescription="@string/nav_more" />
+</LinearLayout>

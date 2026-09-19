@@ -1,0 +1,6 @@
+<resources>
+    <declare-styleable name="SettingRowView">
+        <attr name="srIcon" format="reference" />
+        <attr name="srLabel" format="string" />
+    </declare-styleable>
+</resources>

@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ProgressAnalysisCompactEnvelope",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "data": {
+      "type": "string",
+      "description": "PA1 compact pipe protocol validated and expanded locally by the app"
+    }
+  },
+  "required": ["data"]
+}

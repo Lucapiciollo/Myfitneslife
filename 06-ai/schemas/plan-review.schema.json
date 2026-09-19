@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PlanReviewCompactEnvelope",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "data": {
+      "type": "string",
+      "description": "PR1 pipe protocol: S|A_R_N|score_0_100 followed by zero or more I|issueCode|I_W_M_C|dayOffset_or_-|mealType_or_- records"
+    }
+  },
+  "required": ["data"],
+  "description": "Token-efficient transport for qualitative plan review. Numeric and structural authority remains the local Business Validator."
+}

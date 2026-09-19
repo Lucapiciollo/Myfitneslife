@@ -1,0 +1,337 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg_primary">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:id="@+id/settingsContent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="@dimen/space_16">
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical">
+                <TextView android:id="@+id/backButton" android:layout_width="40dp" android:layout_height="40dp" android:gravity="center" android:text="‹" android:textSize="30sp" android:textColor="@color/text_primary" />
+                <TextView android:id="@+id/title" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:gravity="center" android:text="Impostazioni" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="17sp" />
+                <Space android:layout_width="40dp" android:layout_height="1dp" />
+            </LinearLayout>
+
+             <LinearLayout
+                 android:layout_width="match_parent"
+                 android:layout_height="40dp"
+                 android:layout_marginTop="@dimen/space_8"
+                 android:gravity="center_vertical"
+                 android:orientation="horizontal">
+                 <com.myfitai.app.ui.widgets.SectionHeaderView
+                     android:id="@+id/generalSectionHeader"
+                     android:layout_width="0dp"
+                     android:layout_height="wrap_content"
+                     android:layout_weight="1"
+                     android:text="Generale" />
+                 <ImageButton
+                     android:id="@+id/generalSectionHelpButton"
+                     android:layout_width="40dp"
+                     android:layout_height="40dp"
+                     android:background="@android:color/transparent"
+                     android:contentDescription="Spiega impostazioni generali"
+                     android:padding="8dp"
+                     android:src="@drawable/ic_help_outline"
+                     app:tint="@color/text_secondary" />
+             </LinearLayout>
+
+             <LinearLayout
+                 android:id="@+id/generalSectionCard"
+                 android:layout_width="match_parent"
+                 android:layout_height="wrap_content"
+                 android:layout_marginTop="@dimen/space_8"
+                 android:background="@drawable/bg_card"
+                 android:orientation="vertical"
+                  android:paddingHorizontal="@dimen/space_16">
+                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowProfile" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_person" app:srLabel="Profilo" />
+                  <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowMeasurements" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_person" app:srLabel="Rilevazioni" />
+                  <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowFoodPreferences" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="Preferenze alimentari" />
+                 <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                 <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowMealCount" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="Pasti al giorno" />
+                 <TextView android:id="@+id/mealCountValue" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingStart="@dimen/space_16" android:paddingBottom="@dimen/space_8" android:text="Pasti al giorno" android:textColor="@color/text_secondary" android:textSize="12sp" />
+                 <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                 <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowUnits" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_gear" app:srLabel="Unità di misura" />
+                 <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                 <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowPrivacy" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_lock" app:srLabel="Privacy e dati" />
+                 <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                 <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowExport" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_export" app:srLabel="Esporta dati" />
+             </LinearLayout>
+
+             <LinearLayout
+                 android:layout_width="match_parent"
+                 android:layout_height="40dp"
+                 android:layout_marginTop="@dimen/space_20"
+                 android:gravity="center_vertical"
+                 android:orientation="horizontal">
+                 <com.myfitai.app.ui.widgets.SectionHeaderView
+                     android:id="@+id/dataSectionHeader"
+                     android:layout_width="0dp"
+                     android:layout_height="wrap_content"
+                     android:layout_weight="1"
+                     android:text="Gestione dati" />
+                 <ImageButton
+                     android:id="@+id/dataSectionHelpButton"
+                     android:layout_width="40dp"
+                     android:layout_height="40dp"
+                     android:background="@android:color/transparent"
+                     android:contentDescription="Spiega gestione dati"
+                     android:padding="8dp"
+                     android:src="@drawable/ic_help_outline"
+                     app:tint="@color/text_secondary" />
+             </LinearLayout>
+
+             <LinearLayout
+                 android:id="@+id/dataSectionCard"
+                 android:layout_width="match_parent"
+                 android:layout_height="wrap_content"
+                 android:layout_marginTop="@dimen/space_8"
+                 android:background="@drawable/bg_card"
+                 android:orientation="vertical"
+                 android:paddingHorizontal="@dimen/space_16">
+                 <TextView
+                     android:layout_width="match_parent"
+                     android:layout_height="wrap_content"
+                     android:paddingTop="@dimen/space_12"
+                     android:paddingBottom="@dimen/space_8"
+                     android:text="Le eliminazioni riguardano solo il profilo attivo. Profilo e chiavi IA non vengono cancellati."
+                     android:textColor="@color/text_secondary"
+                     android:textSize="12sp" />
+                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeletePlans" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="Elimina alimentazioni" />
+                  <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteConsumptions" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="Elimina consumi registrati" />
+                  <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteBia" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_gear" app:srLabel="Elimina misure BIA" />
+                 <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                 <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteBody" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_person" app:srLabel="Elimina misure corporee" />
+                 <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                 <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteWorkouts" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_gear" app:srLabel="Elimina allenamenti" />
+                 <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                 <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteCheats" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_add_circle" app:srLabel="Elimina sgarri registrati" />
+                 <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                 <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteReviews" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_export" app:srLabel="Elimina review settimanali" />
+                 <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                 <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteRecordedData" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_lock" app:srLabel="Elimina tutti i dati registrati" />
+             </LinearLayout>
+
+             <LinearLayout
+                 android:layout_width="match_parent"
+                 android:layout_height="40dp"
+                 android:layout_marginTop="@dimen/space_20"
+                 android:gravity="center_vertical"
+                 android:orientation="horizontal">
+                 <com.myfitai.app.ui.widgets.SectionHeaderView
+                     android:id="@+id/aiSectionHeader"
+                     android:layout_width="0dp"
+                     android:layout_height="wrap_content"
+                     android:layout_weight="1"
+                     android:text="Intelligenza artificiale" />
+                 <ImageButton
+                     android:id="@+id/aiSectionHelpButton"
+                     android:layout_width="40dp"
+                     android:layout_height="40dp"
+                     android:background="@android:color/transparent"
+                     android:contentDescription="Spiega intelligenza artificiale"
+                     android:padding="8dp"
+                     android:src="@drawable/ic_help_outline"
+                     app:tint="@color/text_secondary" />
+             </LinearLayout>
+
+              <LinearLayout
+                  android:id="@+id/aiSectionCard"
+                 android:layout_width="match_parent"
+                 android:layout_height="wrap_content"
+                 android:layout_marginTop="@dimen/space_8"
+                 android:orientation="vertical"
+                 android:background="@drawable/bg_card"
+                  android:padding="@dimen/space_16">
+                  <com.google.android.material.button.MaterialButton android:id="@+id/analyzeNutritionPathButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Suggerisci il percorso nutrizionale" android:textAllCaps="false" />
+                                    <TextView
+                                            android:layout_width="match_parent"
+                                            android:layout_height="wrap_content"
+                                            android:layout_marginTop="@dimen/space_8"
+                                            android:text="Agenti IA disponibili: piano alimentare automatico, analisi progressi, percorso nutrizionale e review settimanale. I controlli automatici sono mostrati qui sotto."
+                                            android:textColor="@color/text_secondary"
+                                            android:textSize="12sp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Usa Gemini" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="15sp" />
+                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Gemini Developer API diretta · se disattivato verrà usato OpenAI" android:textColor="@color/text_secondary" android:textSize="12sp" />
+                    </LinearLayout>
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/useGeminiSwitch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:thumbTint="@color/white"
+                        app:trackTint="@color/accent_green" />
+                </LinearLayout>
+
+                 <TextView android:id="@+id/activeProviderText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_12"
+                    android:text="Provider non configurato"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="13sp" />
+
+                 <LinearLayout
+                    android:id="@+id/geminiKeyContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                     android:orientation="vertical"
+                     android:layout_marginTop="@dimen/space_12">
+                      <com.google.android.material.textfield.TextInputLayout
+                          android:id="@+id/geminiInputLayout"
+                          style="@style/Widget.MyFitAI.Input"
+                         android:layout_width="match_parent"
+                         android:layout_height="wrap_content"
+                         android:hint="Gemini API key"
+                         app:endIconMode="password_toggle">
+                         <com.google.android.material.textfield.TextInputEditText
+                style="@style/Widget.MyFitAI.InputEditText"
+                             android:id="@+id/geminiApiKeyInput"
+                             android:layout_width="match_parent"
+                              android:layout_height="wrap_content"
+                              android:inputType="textPassword"
+                              android:singleLine="true"
+                              android:importantForAccessibility="no" />
+                     </com.google.android.material.textfield.TextInputLayout>
+                 <TextView
+                        android:id="@+id/geminiKeyStatusText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_6"
+                         android:text="Chiave Gemini non configurata"
+                        android:textColor="@color/text_secondary"
+                         android:textSize="11sp" />
+                      <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="@dimen/space_10">
+                          <com.google.android.material.button.MaterialButton android:id="@+id/pasteGeminiKeyButton" style="@style/Widget.Material3.Button.OutlinedButton" android:layout_width="0dp" android:layout_weight="1" android:layout_height="44dp" android:layout_marginEnd="@dimen/space_6" android:text="Incolla" android:textAllCaps="false" />
+                          <com.google.android.material.button.MaterialButton android:id="@+id/saveGeminiKeyButton" android:layout_width="0dp" android:layout_weight="1" android:layout_height="44dp" android:layout_marginEnd="@dimen/space_6" android:text="Verifica e salva" android:textAllCaps="false" app:backgroundTint="@color/accent_green" />
+                         <com.google.android.material.button.MaterialButton android:id="@+id/replaceGeminiKeyButton" style="@style/Widget.Material3.Button.OutlinedButton" android:layout_width="0dp" android:layout_weight="1" android:layout_height="44dp" android:layout_marginStart="@dimen/space_6" android:text="Sostituisci" android:textAllCaps="false" />
+                         <com.google.android.material.button.MaterialButton android:id="@+id/deleteGeminiKeyButton" style="@style/Widget.Material3.Button.OutlinedButton" android:layout_width="0dp" android:layout_weight="1" android:layout_height="44dp" android:layout_marginStart="@dimen/space_6" android:text="Elimina" android:textAllCaps="false" />
+                     </LinearLayout>
+                </LinearLayout>
+
+                 <LinearLayout
+                     android:id="@+id/openAiKeyContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                     android:orientation="vertical"
+                     android:layout_marginTop="@dimen/space_12">
+
+                      <com.google.android.material.textfield.TextInputLayout
+                          android:id="@+id/openAiInputLayout"
+                         style="@style/Widget.MyFitAI.Input"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="OpenAI API key"
+                        app:endIconMode="password_toggle"
+                        app:passwordToggleTint="@color/text_secondary">
+                        <com.google.android.material.textfield.TextInputEditText
+                style="@style/Widget.MyFitAI.InputEditText"
+                            android:id="@+id/openAiApiKeyInput"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                             android:inputType="textPassword"
+                             android:singleLine="true"
+                             android:hint="sk-…"
+                             android:importantForAccessibility="no" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <TextView
+                        android:id="@+id/openAiKeyStatusText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_6"
+                        android:text="Nessuna chiave OpenAI salvata"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="11sp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                         android:orientation="horizontal"
+                         android:layout_marginTop="@dimen/space_10">
+                         <com.google.android.material.button.MaterialButton
+                             android:id="@+id/pasteOpenAiKeyButton"
+                             style="@style/Widget.Material3.Button.OutlinedButton"
+                             android:layout_width="0dp"
+                             android:layout_weight="1"
+                             android:layout_height="44dp"
+                             android:layout_marginEnd="@dimen/space_6"
+                             android:text="Incolla"
+                             android:textAllCaps="false" />
+                         <com.google.android.material.button.MaterialButton
+                             android:id="@+id/saveOpenAiKeyButton"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="44dp"
+                            android:layout_marginEnd="@dimen/space_6"
+                             android:text="Verifica e salva"
+                            android:textAllCaps="false"
+                            android:textStyle="bold"
+                            android:textSize="13sp"
+                            app:cornerRadius="10dp"
+                             app:backgroundTint="@color/accent_green" />
+                         <com.google.android.material.button.MaterialButton
+                             android:id="@+id/replaceOpenAiKeyButton"
+                             style="@style/Widget.Material3.Button.OutlinedButton"
+                             android:layout_width="0dp"
+                             android:layout_weight="1"
+                             android:layout_height="44dp"
+                             android:layout_marginStart="@dimen/space_6"
+                             android:text="Sostituisci"
+                             android:textAllCaps="false" />
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/deleteOpenAiKeyButton"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="44dp"
+                            android:layout_marginStart="@dimen/space_6"
+                            android:text="Rimuovi"
+                            android:textAllCaps="false"
+                            android:textStyle="bold"
+                            android:textSize="13sp"
+                            android:textColor="@color/text_primary"
+                            app:cornerRadius="10dp"
+                            app:strokeColor="@color/divider" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_8"
+                         android:text="Le chiavi non vengono mai salvate in chiaro, esportate, inserite nei log o incluse nei backup. Firebase AI Logic non viene usato per Gemini."
+                    android:textColor="@color/text_secondary"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+         </LinearLayout>
+    </ScrollView>
+
+    <include layout="@layout/view_bottom_navigation" />
+</LinearLayout>

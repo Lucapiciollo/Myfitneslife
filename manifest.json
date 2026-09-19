@@ -1,0 +1,420 @@
+{
+  "assets": [
+    {
+      "path": "brand/myfitai_logo_full.png",
+      "size": [
+        270,
+        202
+      ],
+      "sourceBox": [
+        20,
+        118,
+        155,
+        219
+      ]
+    },
+    {
+      "path": "brand/myfitai_leaf_mark.png",
+      "size": [
+        246,
+        200
+      ],
+      "sourceBox": [
+        166,
+        119,
+        289,
+        219
+      ]
+    },
+    {
+      "path": "backgrounds/onboarding_mountain.jpg",
+      "size": [
+        330,
+        286
+      ],
+      "sourceBox": [
+        984,
+        121,
+        1149,
+        264
+      ]
+    },
+    {
+      "path": "backgrounds/green_header_abstract.png",
+      "size": [
+        234,
+        286
+      ],
+      "sourceBox": [
+        1159,
+        121,
+        1276,
+        264
+      ]
+    },
+    {
+      "path": "decorative/leaf_decoration.png",
+      "size": [
+        182,
+        206
+      ],
+      "sourceBox": [
+        983,
+        299,
+        1074,
+        402
+      ]
+    },
+    {
+      "path": "decorative/green_wave_bottom.png",
+      "size": [
+        254,
+        206
+      ],
+      "sourceBox": [
+        1082,
+        299,
+        1209,
+        402
+      ]
+    },
+    {
+      "path": "decorative/leaf_corner.png",
+      "size": [
+        180,
+        206
+      ],
+      "sourceBox": [
+        1328,
+        299,
+        1418,
+        402
+      ]
+    },
+    {
+      "path": "decorative/green_blur.png",
+      "size": [
+        166,
+        206
+      ],
+      "sourceBox": [
+        1434,
+        299,
+        1517,
+        402
+      ]
+    },
+    {
+      "path": "body/body_front.png",
+      "size": [
+        260,
+        576
+      ],
+      "sourceBox": [
+        530,
+        119,
+        660,
+        407
+      ]
+    },
+    {
+      "path": "body/body_back.png",
+      "size": [
+        254,
+        576
+      ],
+      "sourceBox": [
+        671,
+        119,
+        798,
+        407
+      ]
+    },
+    {
+      "path": "avatars/avatar_default_male.png",
+      "size": [
+        248,
+        248
+      ],
+      "sourceBox": [
+        808,
+        120,
+        932,
+        244
+      ]
+    },
+    {
+      "path": "avatars/avatar_placeholder.png",
+      "size": [
+        146,
+        150
+      ],
+      "sourceBox": [
+        888,
+        249,
+        961,
+        324
+      ]
+    },
+    {
+      "path": "meals/meal_breakfast.jpg",
+      "size": [
+        423,
+        246
+      ],
+      "sourceBox": [
+        20,
+        570,
+        161,
+        652
+      ]
+    },
+    {
+      "path": "meals/meal_lunch.jpg",
+      "size": [
+        450,
+        246
+      ],
+      "sourceBox": [
+        173,
+        570,
+        323,
+        652
+      ]
+    },
+    {
+      "path": "meals/meal_dinner.jpg",
+      "size": [
+        456,
+        246
+      ],
+      "sourceBox": [
+        336,
+        570,
+        488,
+        652
+      ]
+    },
+    {
+      "path": "meals/meal_snack.jpg",
+      "size": [
+        423,
+        246
+      ],
+      "sourceBox": [
+        20,
+        679,
+        161,
+        761
+      ]
+    },
+    {
+      "path": "meals/meal_pasta.jpg",
+      "size": [
+        450,
+        246
+      ],
+      "sourceBox": [
+        173,
+        679,
+        323,
+        761
+      ]
+    },
+    {
+      "path": "meals/meal_salad.jpg",
+      "size": [
+        456,
+        246
+      ],
+      "sourceBox": [
+        336,
+        679,
+        488,
+        761
+      ]
+    },
+    {
+      "path": "workouts/workout_dumbbell.jpg",
+      "size": [
+        408,
+        240
+      ],
+      "sourceBox": [
+        518,
+        570,
+        654,
+        650
+      ]
+    },
+    {
+      "path": "workouts/workout_bench.jpg",
+      "size": [
+        381,
+        240
+      ],
+      "sourceBox": [
+        660,
+        570,
+        787,
+        650
+      ]
+    },
+    {
+      "path": "workouts/workout_lat_machine.jpg",
+      "size": [
+        384,
+        240
+      ],
+      "sourceBox": [
+        793,
+        570,
+        921,
+        650
+      ]
+    },
+    {
+      "path": "workouts/workout_running.jpg",
+      "size": [
+        408,
+        234
+      ],
+      "sourceBox": [
+        518,
+        684,
+        654,
+        762
+      ]
+    },
+    {
+      "path": "workouts/workout_yoga.jpg",
+      "size": [
+        381,
+        234
+      ],
+      "sourceBox": [
+        660,
+        684,
+        787,
+        762
+      ]
+    },
+    {
+      "path": "workouts/workout_gym.jpg",
+      "size": [
+        384,
+        234
+      ],
+      "sourceBox": [
+        793,
+        684,
+        921,
+        762
+      ]
+    },
+    {
+      "path": "food-categories/protein.png",
+      "size": [
+        186,
+        198
+      ],
+      "sourceBox": [
+        945,
+        572,
+        1007,
+        638
+      ]
+    },
+    {
+      "path": "food-categories/carbs.png",
+      "size": [
+        189,
+        198
+      ],
+      "sourceBox": [
+        1016,
+        572,
+        1079,
+        638
+      ]
+    },
+    {
+      "path": "food-categories/fats.png",
+      "size": [
+        186,
+        198
+      ],
+      "sourceBox": [
+        1085,
+        572,
+        1147,
+        638
+      ]
+    },
+    {
+      "path": "food-categories/vegetables.png",
+      "size": [
+        189,
+        198
+      ],
+      "sourceBox": [
+        1154,
+        572,
+        1217,
+        638
+      ]
+    },
+    {
+      "path": "food-categories/fruits.png",
+      "size": [
+        186,
+        219
+      ],
+      "sourceBox": [
+        945,
+        681,
+        1007,
+        754
+      ]
+    },
+    {
+      "path": "food-categories/dairy.png",
+      "size": [
+        189,
+        219
+      ],
+      "sourceBox": [
+        1016,
+        681,
+        1079,
+        754
+      ]
+    },
+    {
+      "path": "food-categories/condiments.png",
+      "size": [
+        186,
+        219
+      ],
+      "sourceBox": [
+        1085,
+        681,
+        1147,
+        754
+      ]
+    },
+    {
+      "path": "food-categories/beverages.png",
+      "size": [
+        189,
+        219
+      ],
+      "sourceBox": [
+        1154,
+        681,
+        1217,
+        754
+      ]
+    }
+  ]
+}

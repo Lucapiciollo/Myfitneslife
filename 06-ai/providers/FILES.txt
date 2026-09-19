@@ -1,0 +1,9 @@
+/mnt/data/myfitai-v4/myfitai-dev-pack/06-ai/providers/FILES.txt
+/mnt/data/myfitai-v4/myfitai-dev-pack/06-ai/providers/README.md
+/mnt/data/myfitai-v4/myfitai-dev-pack/06-ai/providers/gemini/agents/NUTRITION_AGENT_GEMINI.md
+/mnt/data/myfitai-v4/myfitai-dev-pack/06-ai/providers/gemini/agents/PLAN_REVIEW_AGENT_GEMINI.md
+/mnt/data/myfitai-v4/myfitai-dev-pack/06-ai/providers/gemini/agents/PROGRESS_ANALYSIS_AGENT_GEMINI.md
+/mnt/data/myfitai-v4/myfitai-dev-pack/06-ai/providers/openai/agents/NUTRITION_AGENT_GPT.md
+/mnt/data/myfitai-v4/myfitai-dev-pack/06-ai/providers/openai/agents/PLAN_REVIEW_AGENT_GPT.md
+/mnt/data/myfitai-v4/myfitai-dev-pack/06-ai/providers/openai/agents/PROGRESS_ANALYSIS_AGENT_GPT.md
+/mnt/data/myfitai-v4/myfitai-dev-pack/06-ai/providers/shared/PROVIDER_CONTRACT.md

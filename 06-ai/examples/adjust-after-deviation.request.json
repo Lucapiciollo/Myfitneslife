@@ -1,0 +1,24 @@
+{
+  "operation": "ADJUST_AFTER_DEVIATION",
+  "sourcePlanVersionId": "plan_2026_09_14_v1",
+  "eventTime": "2026-09-15T15:30:00+02:00",
+  "deviation": {
+    "description": "Gelato medio pistacchio e nocciola",
+    "quantityLabel": "medio",
+    "estimatedKcalByApp": 320
+  },
+  "alreadyConsumedMealIds": ["2026-09-15-breakfast", "2026-09-15-snack", "2026-09-15-lunch"],
+  "futureMeals": [],
+  "remainingTargets": {
+    "kcal": 1050,
+    "proteinG": 83,
+    "carbsG": 105,
+    "fatG": 26,
+    "tolerancePercent": 3
+  },
+  "weeklyBalance": {
+    "plannedKcal": 18200,
+    "estimatedActualKcal": 18520
+  },
+  "evidenceIds": []
+}

@@ -1,0 +1,50 @@
+{
+  "status": "OK",
+  "operation": "GENERATE_WEEKLY_PLAN",
+  "weekStart": "2026-09-14",
+  "needsInput": [],
+  "evidenceIds": [],
+  "days": [
+    {
+      "date": "2026-09-14",
+      "trainingDay": true,
+      "meals": [
+        {
+          "mealType": "BREAKFAST",
+          "time": "07:30",
+          "title": "Example meal",
+          "ingredients": [
+            {
+              "name": "Example ingredient",
+              "quantity": 100,
+              "unit": "g",
+              "weightState": "NOT_APPLICABLE",
+              "nutritionConfidence": "STANDARD"
+            }
+          ],
+          "kcal": 500,
+          "proteinG": 35,
+          "carbsG": 60,
+          "fatG": 15,
+          "digestiveProfile": {
+            "bloatingRisk": "LOW",
+            "waterRetentionRisk": "LOW",
+            "digestiveFlags": [],
+            "digestiveNote": "Moderate meal volume and fat content."
+          }
+        }
+      ],
+      "totals": {
+        "kcal": 500,
+        "proteinG": 35,
+        "carbsG": 60,
+        "fatG": 15
+      }
+    }
+  ],
+  "agentValidation": {
+    "withinTolerance": false,
+    "allConstraintsSatisfied": false,
+    "notes": ["Example fixture only"]
+  }
+}
