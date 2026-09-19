@@ -204,18 +204,25 @@ class FoodPlanActivity : BaseShellActivity() {
         val dayLabel = selectedDate.format(DateTimeFormatter.ofPattern("EEE d MMM", Locale.ITALIAN))
             .replaceFirstChar { it.uppercase() }
         findViewById<TextView>(R.id.dailyTotalTitle).text = "Totale giornaliero · $dayLabel"
-        findViewById<TextView>(R.id.dailyTotalLegend).text = "Target / piano / consumo registrato"
+        val dayTargetKcal = day.targetKcal ?: version?.targetKcal
+        val baseTargetKcal = version?.targetKcal?.toDouble() ?: baseKcal
+        val reducedKcal = if (dayTargetKcal != null && baseTargetKcal != null) {
+            (baseTargetKcal - dayTargetKcal).toInt().takeIf { it > 0 }
+        } else null
+        findViewById<TextView>(R.id.dailyTotalLegend).text = reducedKcal?.let {
+            "Target ridotto di $it kcal per compensare lo sgarro · piano / consumo registrato"
+        } ?: "Target / piano / consumo registrato"
         findViewById<TextView>(R.id.totalKcalBase).text = formatValue(baseKcal, "kcal")
-        findViewById<TextView>(R.id.totalKcalTarget).text = formatValue(version?.targetKcal, "kcal")
+        findViewById<TextView>(R.id.totalKcalTarget).text = formatValue(dayTargetKcal, "kcal")
         findViewById<TextView>(R.id.totalKcalPlanned).text = NutritionEstimateFormatter.formatEstimatedKcal(totals.kcal)
         findViewById<TextView>(R.id.totalKcalConsumed).text = formatConsumed(consumed.kcal, dayRecords.isNotEmpty(), "kcal")
-        findViewById<TextView>(R.id.totalProteinTarget).text = formatValue(version?.targetProteinG, "g")
+        findViewById<TextView>(R.id.totalProteinTarget).text = formatValue(day.targetProteinG ?: version?.targetProteinG, "g")
         findViewById<TextView>(R.id.totalProteinPlanned).text = NutritionEstimateFormatter.formatEstimatedMacro(totals.proteinG, "g")
         findViewById<TextView>(R.id.totalProteinConsumed).text = formatConsumed(consumed.proteinG, dayRecords.isNotEmpty(), "g")
-        findViewById<TextView>(R.id.totalCarbsTarget).text = formatValue(version?.targetCarbsG, "g")
+        findViewById<TextView>(R.id.totalCarbsTarget).text = formatValue(day.targetCarbsG ?: version?.targetCarbsG, "g")
         findViewById<TextView>(R.id.totalCarbsPlanned).text = NutritionEstimateFormatter.formatEstimatedMacro(totals.carbsG, "g")
         findViewById<TextView>(R.id.totalCarbsConsumed).text = formatConsumed(consumed.carbsG, dayRecords.isNotEmpty(), "g")
-        findViewById<TextView>(R.id.totalFatTarget).text = formatValue(version?.targetFatG, "g")
+        findViewById<TextView>(R.id.totalFatTarget).text = formatValue(day.targetFatG ?: version?.targetFatG, "g")
         findViewById<TextView>(R.id.totalFatPlanned).text = NutritionEstimateFormatter.formatEstimatedMacro(totals.fatG, "g")
         findViewById<TextView>(R.id.totalFatConsumed).text = formatConsumed(consumed.fatG, dayRecords.isNotEmpty(), "g")
         val expected = day.meals.size + day.supplements.size

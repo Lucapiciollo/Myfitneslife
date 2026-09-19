@@ -224,7 +224,7 @@ class CheatEntryActivity : BaseShellActivity() {
 
     private fun confirm() {
         val input = buildInput() ?: return
-        confirmAiRequest("La conferma dello sgarro e l'adattamento dei pasti futuri") {
+        confirmAiRequest("La conferma dello sgarro e la distribuzione del surplus nella settimana") {
             viewModel.confirm(input.copy(labelImage = null))
         }
     }

@@ -24,7 +24,7 @@ class AdjustedPlanActivity : BaseShellActivity() {
             if (estimate.isNotBlank()) append(estimate)
         }.trim()
         findViewById<TextView>(R.id.resultSummary).text = summary.ifBlank {
-            if (adapted) "Sono stati modificati solo i pasti ancora futuri di oggi." else "Il piano non è stato modificato."
+            if (adapted) "Il surplus è stato inserito nel serbatoio e distribuito gradualmente sui giorni futuri della settimana." else "Il piano non è stato modificato."
         }
         findViewById<TextView>(R.id.modifiedHeader).visibility = if (modifiedMeals.isEmpty()) View.GONE else View.VISIBLE
 

@@ -11,6 +11,7 @@ import com.myfitai.app.domain.time.SystemTimeProvider
 import com.myfitai.app.domain.time.TimeProvider
 import java.time.Instant
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 class CheatAdjustmentService(
     private val aiRuntime: AiRuntimeGateway,
@@ -128,99 +129,51 @@ class CheatAdjustmentService(
                 "Sgarro confermato e registrato. I target del giorno non sono completi, quindi l'app non ha adattato i pasti.", emptyList())
 
         val minuteOfDay = occurred.hour * 60 + occurred.minute
-        val lockedMeals = day.meals.filter { (it.timeMinutes ?: Int.MIN_VALUE) <= minuteOfDay }
-        val futureMeals = day.meals.filter { (it.timeMinutes ?: Int.MIN_VALUE) > minuteOfDay }
-
-        if (futureMeals.isEmpty()) {
+        val eligibleDays = snapshot.version.days.filter { sourceDay ->
+            sourceDay.dateEpochDay > date.toEpochDay() ||
+                (sourceDay.dateEpochDay == date.toEpochDay() && sourceDay.meals.any { (it.timeMinutes ?: Int.MIN_VALUE) > minuteOfDay })
+        }
+        if (eligibleDays.isEmpty()) {
             return Result(cheatId, false, null, confirmed.estimate.kcal, confirmed.estimateSummary,
-                "Sgarro registrato. Non ci sono altri pasti futuri da adattare oggi.", emptyList())
+                "Sgarro registrato. Non ci sono target futuri nella settimana su cui distribuire il surplus.", emptyList())
         }
 
-        val responseAndValidation = runCatching {
-            val request = AiStructuredRequest(
-                systemPrompt = ADJUSTMENT_SYSTEM_PROMPT,
-                userPrompt = buildAdjustmentPrompt(
-                    input, confirmed, date.toEpochDay(), minuteOfDay, day,
-                    lockedMeals, futureMeals, targets, dietaryProfile,
-                ),
-                schemaName = CheatAdjustmentContract.SCHEMA_NAME,
-                schemaJson = CheatAdjustmentContract.schemaJson,
-                maxOutputTokens = 8_000,
-                image = null,
-            )
-            var parsed: CheatAdjustmentContract.Response? = null
-            val validated = aiRuntime.execute(
-                request = request,
-                maxSchemaRetries = 1,
-                businessValidator = { json -> runCatching {
-                    val response = CheatAdjustmentContract.parse(json)
-                    requireSameEstimate(response.estimate, confirmed.estimate)
-                    CheatAdjustmentContract.validateBusiness(
-                        response, lockedMeals, futureMeals, targets, dietaryProfile,
-                    ).getOrThrow()
-                    parsed = response
-                } },
-            )
-            val response = parsed ?: CheatAdjustmentContract.parse(validated.jsonText).also {
-                requireSameEstimate(it.estimate, confirmed.estimate)
-                CheatAdjustmentContract.validateBusiness(
-                    it, lockedMeals, futureMeals, targets, dietaryProfile,
-                ).getOrThrow()
-            }
-            response to validated
-        }.getOrElse {
-            return Result(
-                cheatId = cheatId,
-                adapted = false,
-                newVersionId = null,
-                estimatedKcal = confirmed.estimate.kcal,
-                estimateSummary = confirmed.estimateSummary,
-                adaptationSummary = "Lo sgarro confermato è stato salvato. Nessuna modifica al piano è stata applicata perché l'adattamento IA non è riuscito o non ha rispettato i vincoli del profilo.",
-                modifiedMeals = emptyList(),
-            )
-        }
-
-        val response = responseAndValidation.first
-        val validated = responseAndValidation.second
-        if (!response.adaptationPossible) {
-            return Result(
-                cheatId, false, null, confirmed.estimate.kcal, confirmed.estimateSummary,
-                response.adaptationReason.ifBlank { "Sgarro registrato; nessuna compensazione punitiva applicata." },
-                emptyList(),
-            )
-        }
-
-        val replacementByOrder = response.replacementMeals.associateBy { it.sortOrder }
+        var remainingSurplus = confirmed.estimate.kcal.toDouble()
+        val reductions = mutableMapOf<Long, Int>()
         val adjustedDays = snapshot.version.days.map { sourceDay ->
-            if (sourceDay.id != day.id) toDraft(sourceDay) else {
-                val adjustedMeals = sourceDay.meals.map { sourceMeal ->
-                    replacementByOrder[sourceMeal.sortOrder]?.let { replacement ->
-                        MealDraft(
-                            type = replacement.type,
-                            title = replacement.title,
-                            timeMinutes = replacement.timeMinutes,
-                            kcal = replacement.kcal,
-                            proteinG = replacement.proteinG,
-                            carbsG = replacement.carbsG,
-                            fatG = replacement.fatG,
-                            preparation = replacement.preparation,
-                            ingredients = replacement.ingredients.map {
-                                IngredientDraft(it.name, it.quantity, it.unit, it.displayDose, it.weightState, it.nutritionConfidence, it.category)
-                            },
-                        )
-                    } ?: toDraft(sourceMeal)
-                }
-                DayDraft(
-                    dateEpochDay = sourceDay.dateEpochDay,
-                    totalKcal = adjustedMeals.mapNotNull { it.kcal }.takeIf { it.isNotEmpty() }?.sum()?.plus(sourceDay.supplements.sumOf { it.kcal }),
-                    proteinG = sumOrNull(adjustedMeals.map { it.proteinG })?.plus(sourceDay.supplements.sumOf { it.proteinG.toDouble() }.toFloat()),
-                    carbsG = sumOrNull(adjustedMeals.map { it.carbsG })?.plus(sourceDay.supplements.sumOf { it.carbsG.toDouble() }.toFloat()),
-                    fatG = sumOrNull(adjustedMeals.map { it.fatG })?.plus(sourceDay.supplements.sumOf { it.fatG.toDouble() }.toFloat()),
-                    meals = adjustedMeals,
-                    supplements = sourceDay.supplements.map { it.toDraft() },
-                    hydrationNote = sourceDay.hydrationNote,
-                )
+            val eligibleIndex = eligibleDays.indexOfFirst { it.id == sourceDay.id }
+            if (eligibleIndex < 0) return@map toDraft(sourceDay)
+            val baseTarget = (sourceDay.targetKcal ?: sourceDay.totalKcal ?: snapshot.version.targetKcal ?: 0).coerceAtLeast(1)
+            val maxDailyReduction = (baseTarget * MAX_DAILY_REDUCTION_RATIO).roundToInt().coerceAtLeast(1)
+            val reduction = minOf(remainingSurplus.roundToInt(), maxDailyReduction)
+            remainingSurplus -= reduction
+            reductions[sourceDay.id] = reduction
+            val eventDay = sourceDay.dateEpochDay == date.toEpochDay()
+            val adjustable = sourceDay.meals.filter { !eventDay || (it.timeMinutes ?: Int.MIN_VALUE) > minuteOfDay }
+            val locked = sourceDay.meals - adjustable.toSet()
+            val lockedKcal = locked.sumOf { it.kcal ?: 0 } + sourceDay.supplements.sumOf { it.kcal }
+            val adjustableKcal = adjustable.sumOf { it.kcal ?: 0 }
+            val newTarget = (baseTarget - reduction).coerceAtLeast(1)
+            val targetForAdjustableMeals = (newTarget - lockedKcal).coerceAtLeast(0)
+            val scale = if (adjustableKcal > 0) targetForAdjustableMeals.toDouble() / adjustableKcal else 1.0
+            val adjustedMeals = sourceDay.meals.map { sourceMeal ->
+                if (sourceMeal !in adjustable || sourceMeal.kcal == null) toDraft(sourceMeal)
+                else scaleMeal(sourceMeal, scale)
             }
+            DayDraft(
+                dateEpochDay = sourceDay.dateEpochDay,
+                totalKcal = adjustedMeals.mapNotNull { it.kcal }.sum() + sourceDay.supplements.sumOf { it.kcal },
+                proteinG = sumOrNull(adjustedMeals.map { it.proteinG })?.plus(sourceDay.supplements.sumOf { it.proteinG.toDouble() }.toFloat()),
+                carbsG = sumOrNull(adjustedMeals.map { it.carbsG })?.plus(sourceDay.supplements.sumOf { it.carbsG.toDouble() }.toFloat()),
+                fatG = sumOrNull(adjustedMeals.map { it.fatG })?.plus(sourceDay.supplements.sumOf { it.fatG.toDouble() }.toFloat()),
+                targetKcal = newTarget,
+                targetProteinG = sourceDay.targetProteinG,
+                targetCarbsG = sourceDay.targetCarbsG,
+                targetFatG = sourceDay.targetFatG,
+                meals = adjustedMeals,
+                supplements = sourceDay.supplements.map { it.toDraft() },
+                hydrationNote = sourceDay.hydrationNote,
+            )
         }
 
         val versionId = plans.appendVersion(
@@ -228,8 +181,8 @@ class CheatAdjustmentService(
             planId = snapshot.planId,
             createdAtEpochMillis = time.nowEpochMillis(),
             draft = PlanVersionDraft(
-                source = validated.provider.name,
-                reason = "CHEAT_ADAPTATION:$cheatId",
+                source = "LOCAL_RESERVOIR",
+                reason = "CHEAT_WEEKLY_RESERVOIR:$cheatId",
                 targetKcal = snapshot.version.targetKcal,
                 targetProteinG = snapshot.version.targetProteinG,
                 targetCarbsG = snapshot.version.targetCarbsG,
@@ -240,8 +193,8 @@ class CheatAdjustmentService(
 
         return Result(
             cheatId, true, versionId, confirmed.estimate.kcal, confirmed.estimateSummary,
-            response.adaptationReason.ifBlank { "Sono stati adattati esclusivamente i pasti ancora futuri di oggi." },
-            response.replacementMeals.sortedBy { it.sortOrder }.map { "${it.type}: ${it.title}" },
+            "Surplus di ${confirmed.estimate.kcal} kcal inserito nel serbatoio e distribuito sui prossimi ${reductions.size} giorni. Target ridotti gradualmente; residuo non ancora distribuito: ${remainingSurplus.coerceAtLeast(0.0).roundToInt()} kcal.",
+            reductions.keys.map { "Target ${java.time.LocalDate.ofEpochDay(it)}: -${reductions.getValue(it)} kcal" },
         )
     }
 
@@ -310,13 +263,30 @@ class CheatAdjustmentService(
         appendLine("Only these future meals may be replaced, preserving sortOrder and timeMinutes:")
         futureMeals.forEach { appendLine(mealLine(it)) }
         appendLine("Original day totals: kcal=${day.totalKcal}, P=${day.proteinG}, C=${day.carbsG}, F=${day.fatG}")
+        val lockedKcal = lockedMeals.sumOf { (it.kcal ?: 0).toDouble() }
+        val lockedProtein = lockedMeals.sumOf { (it.proteinG ?: 0f).toDouble() }
+        val lockedCarbs = lockedMeals.sumOf { (it.carbsG ?: 0f).toDouble() }
+        val lockedFat = lockedMeals.sumOf { (it.fatG ?: 0f).toDouble() }
+        appendLine("Required replacement totals after locked meals + confirmed estimate: kcal=${targets.kcal - lockedKcal - confirmed.estimate.kcal}; proteinG=${targets.proteinG - lockedProtein - confirmed.estimate.proteinG}; carbsG=${targets.carbsG - lockedCarbs - confirmed.estimate.carbsG}; fatG=${targets.fatG - lockedFat - confirmed.estimate.fatG}")
         appendLine("Do not re-estimate the deviation. Use the confirmed estimate exactly. If balancing requires implausibly small meals, set adaptationPossible=false with no replacements.")
         appendLine("A/I/E/S in DP are hard constraints. D/P are soft preferences. Any replacement violating a hard constraint will be rejected locally.")
-        appendLine("If possible, return exactly one replacement per future meal, never move times, and keep each replacement >=100 kcal. Count oils, sauces, condiments and caloric drinks.")
+        appendLine("If adaptationPossible=1, return exactly one replacement per future meal. The sum of all replacement kcal/proteinG/carbsG/fatG must each fall within ±3% of the required replacement totals above; do not balance kcal while ignoring macros. Never move times, keep each replacement >=100 kcal, and count oils, sauces, condiments and caloric drinks.")
         appendLine("The app will independently verify locked meals + confirmed estimate + replacements within ±3% of the effective daily targets. agentValidation is advisory only.")
     }
 
     private fun mealLine(meal: FoodMeal) = "sortOrder=${meal.sortOrder}; time=${meal.timeMinutes}; type=${meal.type}; title=${meal.title}; kcal=${meal.kcal}; P=${meal.proteinG}; C=${meal.carbsG}; F=${meal.fatG}"
+
+    private fun scaleMeal(meal: FoodMeal, scale: Double) = MealDraft(
+        type = meal.type,
+        title = meal.title,
+        timeMinutes = meal.timeMinutes,
+        kcal = (meal.kcal!! * scale).roundToInt().coerceAtLeast(1),
+        proteinG = meal.proteinG?.times(scale.toFloat()),
+        carbsG = meal.carbsG?.times(scale.toFloat()),
+        fatG = meal.fatG?.times(scale.toFloat()),
+        preparation = meal.preparation,
+        ingredients = meal.ingredients.map { IngredientDraft(it.name, it.quantity, it.unit, it.displayDose.orEmpty(), it.weightState.orEmpty(), it.nutritionConfidence.orEmpty(), it.category.orEmpty()) },
+    )
 
     private fun toDraft(day: FoodPlanDay) = DayDraft(
         dateEpochDay = day.dateEpochDay,
@@ -324,6 +294,10 @@ class CheatAdjustmentService(
         proteinG = day.proteinG,
         carbsG = day.carbsG,
         fatG = day.fatG,
+        targetKcal = day.targetKcal,
+        targetProteinG = day.targetProteinG,
+        targetCarbsG = day.targetCarbsG,
+        targetFatG = day.targetFatG,
         meals = day.meals.map(::toDraft),
         supplements = day.supplements.map { it.toDraft() },
         hydrationNote = day.hydrationNote,
@@ -338,8 +312,9 @@ class CheatAdjustmentService(
     private fun sumOrNull(values: List<Float?>): Float? = values.filterNotNull().takeIf { it.isNotEmpty() }?.sum()
 
     companion object {
+        private const val MAX_DAILY_REDUCTION_RATIO = 0.15
         private const val UNDERSTANDING_SYSTEM_PROMPT = """You are MyFitAI Nutrition Understanding Agent. Return only JSON matching the supplied schema. The JSON data value must contain exactly these three newline-separated records, in this order: CU1, U|understoodFood, and E|kcal|proteinG|carbsG|fatG|confidence|notes. Never return only the U record, never omit CU1 or E, and never put the records on one line. Your first job is to tell the user, in concise Italian, exactly what you understood they consumed, then estimate kcal and macros cautiously. If a nutrition-label image is attached, use only clearly visible values and never invent unreadable data. Nothing is saved at this stage; the user must be able to correct your understanding before confirmation."""
 
-        private const val ADJUSTMENT_SYSTEM_PROMPT = """You are MyFitAI Nutrition Deviation Adaptation Agent. Return only JSON matching the supplied schema. The deviation interpretation and nutritional estimate were already shown to and confirmed by the user: copy that estimate exactly and do not reinterpret it. DP uses A=allergies, I=intolerances, E=excluded foods, D=disliked, P=preferred, S=diet style, N=notes. A/I/E/S are hard constraints and must never be violated; D/P are soft preferences. You may modify only meals explicitly listed as future meals for the same day. Never modify past meals or later days, never move meal times, and never use punitive fasting or extreme restriction. If a valid daily balance within ±3% cannot be achieved with reasonable future meals of at least 100 kcal each, set adaptationPossible=false and return no replacements. The app independently validates target arithmetic and every replacement ingredient against current hard constraints."""
+        private const val ADJUSTMENT_SYSTEM_PROMPT = """You are MyFitAI Nutrition Deviation Adaptation Agent. Return only JSON matching the supplied schema. The JSON data value must contain newline-separated pipe records and must start with CA1 on its own first line. Always include the required E estimate record, then exactly one A record, any R replacement records followed by their I ingredient records, and one final V validation record. Never omit CA1, never put CA1 on the same line as another record, and never return only E/A/R/I/V records without the CA1 header. The deviation interpretation and nutritional estimate were already shown to and confirmed by the user: copy that estimate exactly and do not reinterpret it. DP uses A=allergies, I=intolerances, E=excluded foods, D=disliked, P=preferred, S=diet style, N=notes. A/I/E/S are hard constraints and must never be violated; D/P are soft preferences. You may modify only meals explicitly listed as future meals for the same day. Never modify past meals or later days, never move meal times, and never use punitive fasting or extreme restriction. If a valid daily balance within ±3% cannot be achieved with reasonable future meals of at least 100 kcal each, set adaptationPossible=false and return no replacements. The app independently validates target arithmetic and every replacement ingredient against current hard constraints."""
     }
 }
