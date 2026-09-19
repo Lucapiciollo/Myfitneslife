@@ -25,7 +25,7 @@ object NutritionPlanCompactContract {
 
     const val PROTOCOL = """MFP1
 W|weekStartEpochDay
-D|dateEpochDay|totalKcal|proteinG|carbsG|fatG (followed by exactly 5 M records)
+D|dateEpochDay|totalKcal|proteinG|carbsG|fatG (followed by exactly MEALS_PER_DAY M records, as supplied in the user prompt)
 M|type|title|timeMinutes|kcal|proteinG|carbsG|fatG|preparation
 I|name|quantity|unit|displayDose|weightState|nutritionConfidence|category
 S|kind|name|dose|unit|timeMinutes|kcal|proteinG|carbsG|fatG|notes
