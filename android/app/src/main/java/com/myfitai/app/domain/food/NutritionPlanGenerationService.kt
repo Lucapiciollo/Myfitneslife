@@ -182,7 +182,7 @@ class NutritionPlanGenerationService(
             maxSchemaRetries = 2,
             businessValidator = { json ->
                 runCatching {
-                    // Primo tentativo -3% (mai sopra il target); i retry passano a -4% per avere più chance.
+                    // Every attempt must respect the authoritative app target tolerance (±3%).
                     val attemptTolerance = if (attemptIndex == 0) STRICT_TARGET_TOLERANCE else RETRY_TARGET_TOLERANCE
                     attemptIndex++
                     val response = NutritionPlanCompactContract.parseEnvelope(json, mealsPerDay)
@@ -193,7 +193,7 @@ class NutritionPlanGenerationService(
                         sportsMode = sportsMode,
                         enforceWeeklyVariety = true,
                         mealsPerDay = mealsPerDay,
-                        // Gate giornaliero sul target base uniforme (il recovery per-giorno resta solo come guida nel prompt).
+                        // Validate each day against its actual app-computed recovery/target context.
                         dailyTargets = emptyMap(),
                         dietaryProfile = dietaryProfile,
                         tolerance = attemptTolerance,
@@ -215,7 +215,7 @@ class NutritionPlanGenerationService(
                     sportsMode = sportsMode,
                     enforceWeeklyVariety = true,
                     mealsPerDay = mealsPerDay,
-                    dailyTargets = emptyMap(),
+                    dailyTargets = dailyTargets,
                     dietaryProfile = dietaryProfile,
                     tolerance = RETRY_TARGET_TOLERANCE,
                     targetBelowOnly = false,
@@ -431,8 +431,8 @@ class NutritionPlanGenerationService(
     private fun fmtOrUnknown(value: Float?): String = value?.let { String.format(Locale.US, "%.1f", it) } ?: "?"
 
     companion object {
-        private const val STRICT_TARGET_TOLERANCE = 0.12
-        private const val RETRY_TARGET_TOLERANCE = 0.15
+        private const val STRICT_TARGET_TOLERANCE = NutritionBusinessValidator.DEFAULT_TOLERANCE
+        private const val RETRY_TARGET_TOLERANCE = NutritionBusinessValidator.DEFAULT_TOLERANCE
         private val SYSTEM_PROMPT = """
 MyFitAI NutritionPlanAgent. Your ONLY operational responsibility is generating a complete weekly nutrition plan from the authoritative targets and context supplied by the app. Never choose/change the user's goal, interpret progress, or adapt a recorded deviation/cheat; dedicated agents own those tasks. Output ONLY JSON matching the supplied envelope schema. The `data` string must begin with the exact line `MFP1`, followed by the pipe records below. Do not omit `MFP1`, do not replace it with another header, do not use markdown, and do not add text outside records.
 ${NutritionPlanCompactContract.PROTOCOL}
