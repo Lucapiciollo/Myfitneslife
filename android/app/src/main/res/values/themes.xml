@@ -57,7 +57,7 @@
      <item name="hintTextColor">@color/myfitai_input_hint</item>
      <item name="android:minHeight">52dp</item>
  </style>
- <style name="Widget.MyFitAI.InputDropdownText">
+ <style name="Widget.MyFitAI.InputDropdownText" parent="Widget.AppCompat.AutoCompleteTextView">
      <item name="android:background">@color/transparent</item>
      <item name="android:textColor">@color/text_primary</item>
      <item name="android:textColorHint">@color/text_secondary</item>
