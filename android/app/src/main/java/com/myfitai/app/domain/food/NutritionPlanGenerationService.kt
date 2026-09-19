@@ -152,7 +152,12 @@ class NutritionPlanGenerationService(
         val dailyTargets = recoveryPlan.days
             .filter { !it.date.isBefore(generationStart) }
             .associate { it.date.toEpochDay() to it.targets }
-        val targetTolerance = toleranceFor(resolvedGoal)
+        // The same app-authoritative ±3% tolerance applies to every goal.
+        val targetTolerance = NutritionBusinessValidator.DEFAULT_TOLERANCE
+        val maintenanceCeilingKcal = calc.tdeeKcal?.takeIf {
+            resolvedGoal == LocalCalculationEngine.Goal.WEIGHT_LOSS ||
+                resolvedGoal == LocalCalculationEngine.Goal.RECOMPOSITION
+        }
 
         val request = AiStructuredRequest(
             systemPrompt = SYSTEM_PROMPT,
@@ -163,6 +168,7 @@ class NutritionPlanGenerationService(
                 baseTargets = baseTargets,
                 dailyTargets = dailyTargets,
                 targetTolerance = targetTolerance,
+                maintenanceCeilingKcal = maintenanceCeilingKcal,
                 dietaryProfile = dietaryProfile,
                 recoveryPlan = recoveryPlan,
                 workoutContext = weekWorkouts.map { w ->
@@ -205,6 +211,7 @@ class NutritionPlanGenerationService(
                         tolerance = attemptTolerance,
                         targetBelowOnly = false,
                         expectedFirstDate = generationStart,
+                        maintenanceCeilingKcal = maintenanceCeilingKcal,
                     ).getOrThrow()
                     // L'integrità nutrizionale è informativa (persistita in appValidation), non blocca:
                     // il gate autorevole resta validateBusiness (struttura, target ±tolleranza, totali giorno).
@@ -227,6 +234,7 @@ class NutritionPlanGenerationService(
                     tolerance = targetTolerance,
                     targetBelowOnly = false,
                     expectedFirstDate = generationStart,
+                    maintenanceCeilingKcal = maintenanceCeilingKcal,
                 ).getOrThrow()
             }
         }.getOrElse { throw GenerationException.InvalidAiOutput(it.message ?: "INVALID_COMPACT_PROTOCOL") }
@@ -356,6 +364,7 @@ class NutritionPlanGenerationService(
         baseTargets: NutritionBusinessValidator.Targets,
         dailyTargets: Map<Long, NutritionBusinessValidator.Targets>,
         targetTolerance: Double,
+        maintenanceCeilingKcal: Double?,
         dietaryProfile: DietaryProfile,
         recoveryPlan: CalorieRecoveryEngine.Result,
         workoutContext: List<String>,
@@ -365,6 +374,7 @@ class NutritionPlanGenerationService(
         mealsPerDay: Int,
     ): String = buildString {
         appendLine("W:${monday.toEpochDay()}")
+        appendLine("E:${maintenanceCeilingKcal?.toInt() ?: "?"}")
         appendLine("T:${baseTargets.kcal.toInt()}|${fmt(baseTargets.proteinG)}|${fmt(baseTargets.carbsG)}|${fmt(baseTargets.fatG)}|${(targetTolerance * 100).toInt()}")
         dailyTargets.toSortedMap().forEach { (day, target) ->
             appendLine("TD:$day|${target.kcal.toInt()}|${fmt(target.proteinG)}|${fmt(target.carbsG)}|${fmt(target.fatG)}|${(targetTolerance * 100).toInt()}")
@@ -442,17 +452,10 @@ class NutritionPlanGenerationService(
     private fun fmtOrUnknown(value: Float?): String = value?.let { String.format(Locale.US, "%.1f", it) } ?: "?"
 
     companion object {
-        private fun toleranceFor(goal: LocalCalculationEngine.Goal): Double = when (goal) {
-            LocalCalculationEngine.Goal.WEIGHT_LOSS -> 0.03
-            LocalCalculationEngine.Goal.RECOMPOSITION -> 0.04
-            LocalCalculationEngine.Goal.MAINTENANCE,
-            LocalCalculationEngine.Goal.MUSCLE_GAIN,
-            LocalCalculationEngine.Goal.PERFORMANCE -> 0.05
-        }
         private val SYSTEM_PROMPT = """
 MyFitAI NutritionPlanAgent. Your ONLY operational responsibility is generating a complete weekly nutrition plan from the authoritative targets and context supplied by the app. Never choose/change the user's goal, interpret progress, or adapt a recorded deviation/cheat; dedicated agents own those tasks. Output ONLY JSON matching the supplied envelope schema. The `data` string must begin with the exact line `MFP1`, followed by the pipe records below. Do not omit `MFP1`, do not replace it with another header, do not use markdown, and do not add text outside records.
 ${NutritionPlanCompactContract.PROTOCOL}
-T is the base local target. Every TD line is the AUTHORITATIVE target for that specific epoch day and overrides T for that day. REC is informational only: available|planned|remaining|maxDailyPercent. Never calculate, increase or decrease recovery yourself and never compensate beyond TD. B0/B/BT order is weightKg|bodyFatPct|muscleMassKg|skeletalMuscleKg|bodyWaterPct|visceralFat and means baseline/current/recent-trend-delta. BM0/BM/BMD/BMT order is chest|waist|abdomen|shoulders|glutes|armLeft|armRight|thighLeft|thighRight|calfLeft|calfRight and means baseline/current/previous-delta/recent-trend-delta. `?` means unavailable. Body/BIA signals are contextual only: use them jointly to inform food choice, distribution and timing, never to autonomously alter calories/macros, diagnose disease, dehydration, edema or muscle loss, or infer causality from one reading. Weight alone must never drive a dietary change.
+E is the estimated maintenance expenditure (TDEE), or ? for a goal without a mandatory deficit. It is NOT the diet target: T and each TD are already adjusted for the user's chosen goal. If E is numeric, ensure the sum of meals plus caloric supplements is strictly BELOW E for every generated day; never fill all maintenance calories merely because the target tolerance permits it. T is the base local target. Every TD line is the AUTHORITATIVE target for that specific epoch day and overrides T for that day. REC is informational only: available|planned|remaining|maxDailyPercent. Never calculate, increase or decrease recovery yourself and never compensate beyond TD. B0/B/BT order is weightKg|bodyFatPct|muscleMassKg|skeletalMuscleKg|bodyWaterPct|visceralFat and means baseline/current/recent-trend-delta. BM0/BM/BMD/BMT order is chest|waist|abdomen|shoulders|glutes|armLeft|armRight|thighLeft|thighRight|calfLeft|calfRight and means baseline/current/previous-delta/recent-trend-delta. `?` means unavailable. Body/BIA signals are contextual only: use them jointly to inform food choice, distribution and timing, never to autonomously alter calories/macros, diagnose disease, dehydration, edema or muscle loss, or infer causality from one reading. Weight alone must never drive a dietary change.
 DP format is A=allergies;I=intolerances;E=excludedFoods;D=dislikedFoods;P=preferredFoods;S=dietStyle;N=notes. A, I, E and S are HARD constraints: never output an ingredient that violates them. D and P are soft preferences. Do not weaken, reinterpret or override hard constraints. The app independently validates every ingredient and rejects violations.
 Rules: generate exactly the dates in GENERATE_FROM (inclusive) through its end date, with exactly MEALS_PER_DAY meals per day. The complete record order is W, then for each requested day exactly one D followed by its M records, each meal's I records, and optional S/H records; after the final requested day emit exactly ONE V record as the final line. Never emit V inside a day or more than once. Use distinct meal slots with practical timing unless the supplied schedule requires different names. Never use `|` or line breaks inside a text field. All kcal/macros are numeric. D totals are transport hints only: the app recalculates authoritative daily kcal/protein/carbs/fat from all M records plus caloric S records. Therefore make the SUM of M+S values itself fall within the tolerance percentage supplied in T/TD for that day's TD target; do not rely on D values to satisfy the target. For every meal/supplement, kcal must remain coherent with 4*proteinG + 4*carbsG + 9*fatG within the app integrity tolerance. Count oils, dressings and caloric drinks. Ordinary foods first. Protein powder is optional and its kcal/macros count. Creatine only when SM=SPORT and always 0 kcal/P/C/F. H may give cautious hydration guidance. No punitive compensation. V notes <= 8 words. Skeleton: MFP1 -> W -> requested dates (D -> M/I/S/H) -> V exactly once.
 VARIETY: make every meal recipe different across the requested dates. Rotate protein sources, vegetables, fruit, grains and preparation methods. Do not repeat the same meal title with the same ingredient set on another day. Recurring staples such as oil, salt, spices or water are allowed; the complete recipe must not be duplicated.
