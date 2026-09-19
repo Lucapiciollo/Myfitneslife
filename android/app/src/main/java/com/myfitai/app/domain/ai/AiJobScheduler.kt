@@ -23,6 +23,7 @@ class AiJobScheduler(context: Context) {
             .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
             .setInitialDelay(initialDelayMillis.coerceAtLeast(0L), TimeUnit.MILLISECONDS)
+            .addTag(tag(type, profileId))
             .build()
         workManager.enqueueUniqueWork(name(type, profileId, jobKey), ExistingWorkPolicy.KEEP, request)
     }
@@ -33,6 +34,12 @@ class AiJobScheduler(context: Context) {
     fun cancel(type: AiJobType, profileId: Long, jobKey: String) {
         workManager.cancelUniqueWork(name(type, profileId, jobKey))
     }
+
+    fun cancelAll(type: AiJobType, profileId: Long) {
+        workManager.cancelAllWorkByTag(tag(type, profileId))
+    }
+
+    private fun tag(type: AiJobType, profileId: Long) = "ai-${type.name.lowercase()}-profile-$profileId"
 
     private fun name(type: AiJobType, profileId: Long, jobKey: String) = "ai-${type.name.lowercase()}-$profileId-$jobKey"
 }
