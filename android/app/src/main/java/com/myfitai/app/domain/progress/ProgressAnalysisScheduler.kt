@@ -34,14 +34,18 @@ class ProgressAnalysisScheduler(
     }
 
     fun cancel(profileId: Long) {
-        workManager.cancelAllWorkByTag(tag(profileId))
+        if (aiJobScheduler != null) {
+            aiJobScheduler.cancelAll(AiJobType.PROGRESS_ANALYSIS, profileId)
+        } else {
+            workManager.cancelAllWorkByTag(tag(profileId))
+        }
     }
 
     private fun enqueue(profileId: Long, nowEpochMillis: Long) {
         val due = preferences.nextDueEpochMillis(profileId) ?: return
         val delay = (due - nowEpochMillis).coerceAtLeast(0L)
         if (aiJobScheduler != null) {
-            // The common worker currently has no delayed enqueue API; cadence remains owned here.
+            // Cadence is owned here; the shared worker handles network and retry constraints.
             aiJobScheduler.enqueue(AiJobType.PROGRESS_ANALYSIS, profileId, due.toString(), delay)
             return
         }
