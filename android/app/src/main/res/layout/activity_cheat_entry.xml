@@ -108,7 +108,8 @@
 
             <com.myfitai.app.ui.widgets.SectionHeaderView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:text="Quantità" />
             <com.google.android.material.textfield.TextInputLayout android:id="@+id/quantityLayout" style="@style/Widget.MyFitAI.InputDropdown" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8">
-                <AutoCompleteTextView android:id="@+id/quantityInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="none" />
+                <AutoCompleteTextView
+                        style="@style/Widget.MyFitAI.InputDropdownText" android:id="@+id/quantityInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="none" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.myfitai.app.ui.widgets.SectionHeaderView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:text="Note (opzionale)" />
