@@ -1,13 +1,13 @@
 package com.myfitai.app.ui
 
-import android.text.InputType
 import android.view.View
-import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.textfield.TextInputLayout
 import com.myfitai.app.R
 import com.myfitai.app.ai.AiModelConfig
 import com.myfitai.app.ai.AiSettingsStore
@@ -86,23 +86,49 @@ object OpenAiCostSettingsBinder {
     }
 
     private fun showPricingEditor(activity: SettingsActivity, pricingStore: OpenAiPricingStore, pricing: OpenAiPricing, refresh: () -> Unit) {
-        val container = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(activity, 24), dp(activity, 8), dp(activity, 24), 0) }
-        val input = decimalField(activity, "Input USD / 1M token", pricing.inputUsdPerMillion)
-        val output = decimalField(activity, "Output USD / 1M token", pricing.outputUsdPerMillion)
-        val cache = decimalField(activity, "Cache input USD / 1M token", pricing.cachedInputUsdPerMillion)
-        container.addView(input); container.addView(output); container.addView(cache)
-        val dialog = MaterialAlertDialogBuilder(activity).setTitle("Prezzi OpenAI manuali").setMessage("I costi già registrati non vengono ricalcolati.").setView(container).setNegativeButton("Annulla", null).setPositiveButton("Salva", null).create()
+        val content = activity.layoutInflater.inflate(R.layout.dialog_pricing_editor, null, false)
+        val input = content.findViewById<TextInputEditText>(R.id.pricingInput)
+        val output = content.findViewById<TextInputEditText>(R.id.pricingOutput)
+        val cache = content.findViewById<TextInputEditText>(R.id.pricingCache)
+        val inputLayout = content.findViewById<TextInputLayout>(R.id.pricingInputLayout)
+        val outputLayout = content.findViewById<TextInputLayout>(R.id.pricingOutputLayout)
+        val cacheLayout = content.findViewById<TextInputLayout>(R.id.pricingCacheLayout)
+
+        outputLayout.hint = "Output USD / 1M token"
+        input.setText(pricing.inputUsdPerMillion.stripTrailingZeros().toPlainString())
+        output.setText(pricing.outputUsdPerMillion.stripTrailingZeros().toPlainString())
+        cache.setText(pricing.cachedInputUsdPerMillion.stripTrailingZeros().toPlainString())
+
+        val dialog = MaterialAlertDialogBuilder(activity)
+            .setTitle("Prezzi OpenAI manuali")
+            .setMessage("I costi già registrati non vengono ricalcolati.")
+            .setView(content)
+            .setNegativeButton("Annulla", null)
+            .setPositiveButton("Salva", null)
+            .create()
         dialog.setOnShowListener {
+            dialog.window?.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+            val scroll = content.findViewById<androidx.core.widget.NestedScrollView>(R.id.pricingEditorScroll)
+            val maxHeight = (activity.resources.displayMetrics.heightPixels * 0.45f).toInt()
+            scroll.layoutParams = scroll.layoutParams.apply { height = minOf(dp(activity, 320), maxHeight) }
             dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                val a = parseDecimal(input.text?.toString()); val b = parseDecimal(output.text?.toString()); val c = parseDecimal(cache.text?.toString())
-                if (a == null || b == null || c == null || a.signum() < 0 || b.signum() < 0 || c.signum() < 0) { Toast.makeText(activity, "Inserisci prezzi validi", Toast.LENGTH_LONG).show(); return@setOnClickListener }
-                pricingStore.setManual(pricing.model, a, b, c); dialog.dismiss(); refresh()
+                val a = parseDecimal(input.text?.toString())
+                val b = parseDecimal(output.text?.toString())
+                val c = parseDecimal(cache.text?.toString())
+                inputLayout.error = if (a == null || a.signum() < 0) "Inserisci un prezzo valido" else null
+                outputLayout.error = if (b == null || b.signum() < 0) "Inserisci un prezzo valido" else null
+                cacheLayout.error = if (c == null || c.signum() < 0) "Inserisci un prezzo valido" else null
+                if (a == null || b == null || c == null ||
+                    a.signum() < 0 || b.signum() < 0 || c.signum() < 0
+                ) return@setOnClickListener
+                pricingStore.setManual(pricing.model, a, b, c)
+                dialog.dismiss()
+                refresh()
             }
         }
         dialog.show()
     }
 
-    private fun decimalField(activity: SettingsActivity, hint: String, value: BigDecimal) = EditText(activity).apply { this.hint = hint; inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL; setText(value.stripTrailingZeros().toPlainString()) }
     private fun parseDecimal(raw: String?) = raw?.trim()?.replace(',', '.')?.toBigDecimalOrNull()
     private fun pricingLabel(p: OpenAiPricing) = "${AiModelConfig.displayName(p.model)} · ${if (p.source == OpenAiPricingStore.SOURCE_MANUAL) "prezzi manuali" else "listino ${p.effectiveDate}"}"
     private fun money(value: BigDecimal) = "$" + value.setScale(4, RoundingMode.HALF_UP).toPlainString()
