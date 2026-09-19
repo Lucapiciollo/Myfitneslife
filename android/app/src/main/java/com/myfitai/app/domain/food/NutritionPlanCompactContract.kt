@@ -70,11 +70,11 @@ V|1_or_0|notes"""
             val parts = line.split('|')
             when (parts.firstOrNull()) {
                 "W" -> {
-                    require(parts.size == 2 && weekStart == null && days.isEmpty() && currentDay == null) { "PIPE_W_INVALID" }
+                    require(parts.size >= 2 && weekStart == null && days.isEmpty() && currentDay == null) { "PIPE_W_INVALID" }
                     weekStart = parts[1].toLongStrict("PIPE_W_INVALID")
                 }
                 "D" -> {
-                    require(parts.size == 6 && weekStart != null) { "PIPE_D_INVALID" }
+                    require(parts.size >= 6 && weekStart != null) { "PIPE_D_INVALID" }
                     flushDay()
                     currentDay = DayBuilder(
                         dateEpochDay = parts[1].toLongStrict("PIPE_D_DATE_INVALID"),
@@ -85,7 +85,7 @@ V|1_or_0|notes"""
                     )
                 }
                 "M" -> {
-                    require(parts.size == 9 && currentDay != null) { "PIPE_M_INVALID" }
+                    require(parts.size >= 9 && currentDay != null) { "PIPE_M_INVALID" }
                     flushMeal()
                     currentMeal = MealBuilder(
                         type = parts[1].requiredText("PIPE_M_TYPE_INVALID"),
@@ -95,11 +95,11 @@ V|1_or_0|notes"""
                         proteinG = parts[5].toFloatStrict("PIPE_M_P_INVALID"),
                         carbsG = parts[6].toFloatStrict("PIPE_M_C_INVALID"),
                         fatG = parts[7].toFloatStrict("PIPE_M_F_INVALID"),
-                        preparation = parts[8].trim(),
+                        preparation = parts.drop(8).joinToString("|").trim(),
                     )
                 }
                 "I" -> {
-                    require(parts.size == 8 && currentMeal != null) { "PIPE_I_INVALID" }
+                    require(parts.size >= 8 && currentMeal != null) { "PIPE_I_INVALID" }
                     currentMeal!!.ingredients += NutritionPlanContract.GeneratedIngredient(
                         name = parts[1].requiredText("PIPE_I_NAME_INVALID"),
                         quantity = parts[2].toFloatStrict("PIPE_I_QTY_INVALID"),
@@ -107,11 +107,11 @@ V|1_or_0|notes"""
                         displayDose = parts[4].requiredText("PIPE_I_DISPLAY_INVALID"),
                         weightState = parts[5].trim(),
                         nutritionConfidence = parts[6].trim(),
-                        category = parts[7].trim(),
+                        category = parts.drop(7).joinToString("|").trim(),
                     )
                 }
                 "S" -> {
-                    require(parts.size == 11 && currentDay != null) { "PIPE_S_INVALID" }
+                    require(parts.size >= 11 && currentDay != null) { "PIPE_S_INVALID" }
                     flushMeal()
                     currentDay!!.supplements += NutritionPlanContract.GeneratedSupplement(
                         kind = parts[1].requiredText("PIPE_S_KIND_INVALID"),
@@ -123,7 +123,7 @@ V|1_or_0|notes"""
                         proteinG = parts[7].toFloatStrict("PIPE_S_P_INVALID"),
                         carbsG = parts[8].toFloatStrict("PIPE_S_C_INVALID"),
                         fatG = parts[9].toFloatStrict("PIPE_S_F_INVALID"),
-                        notes = parts[10].trim(),
+                        notes = parts.drop(10).joinToString("|").trim(),
                     )
                 }
                 "H" -> {

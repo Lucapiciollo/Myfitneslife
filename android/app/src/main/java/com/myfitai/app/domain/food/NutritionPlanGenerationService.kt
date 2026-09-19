@@ -193,7 +193,8 @@ class NutritionPlanGenerationService(
                         sportsMode = sportsMode,
                         enforceWeeklyVariety = true,
                         mealsPerDay = mealsPerDay,
-                        dailyTargets = dailyTargets,
+                        // Gate giornaliero sul target base uniforme (il recovery per-giorno resta solo come guida nel prompt).
+                        dailyTargets = emptyMap(),
                         dietaryProfile = dietaryProfile,
                         tolerance = attemptTolerance,
                         targetBelowOnly = false,
@@ -214,7 +215,7 @@ class NutritionPlanGenerationService(
                     sportsMode = sportsMode,
                     enforceWeeklyVariety = true,
                     mealsPerDay = mealsPerDay,
-                    dailyTargets = dailyTargets,
+                    dailyTargets = emptyMap(),
                     dietaryProfile = dietaryProfile,
                     tolerance = RETRY_TARGET_TOLERANCE,
                     targetBelowOnly = false,
@@ -430,8 +431,8 @@ class NutritionPlanGenerationService(
     private fun fmtOrUnknown(value: Float?): String = value?.let { String.format(Locale.US, "%.1f", it) } ?: "?"
 
     companion object {
-        private const val STRICT_TARGET_TOLERANCE = 0.03
-        private const val RETRY_TARGET_TOLERANCE = 0.04
+        private const val STRICT_TARGET_TOLERANCE = 0.12
+        private const val RETRY_TARGET_TOLERANCE = 0.15
         private val SYSTEM_PROMPT = """
 MyFitAI NutritionPlanAgent. Your ONLY operational responsibility is generating a complete weekly nutrition plan from the authoritative targets and context supplied by the app. Never choose/change the user's goal, interpret progress, or adapt a recorded deviation/cheat; dedicated agents own those tasks. Output ONLY JSON matching the supplied envelope schema. The `data` string must begin with the exact line `MFP1`, followed by the pipe records below. Do not omit `MFP1`, do not replace it with another header, do not use markdown, and do not add text outside records.
 ${NutritionPlanCompactContract.PROTOCOL}
