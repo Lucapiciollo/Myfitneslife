@@ -136,7 +136,13 @@ object NutritionPlanContract {
         tolerance: Double = NutritionBusinessValidator.DEFAULT_TOLERANCE,
         targetBelowOnly: Boolean = false,
         expectedFirstDate: LocalDate = expectedWeekStart,
+        // A deficit-oriented plan must never reach maintenance expenditure,
+        // even when it falls within the target's percentage tolerance.
+        maintenanceCeilingKcal: Double? = null,
     ): Result<Unit> = runCatching {
+        require(maintenanceCeilingKcal == null || (maintenanceCeilingKcal.isFinite() && maintenanceCeilingKcal > 0.0)) {
+            "MAINTENANCE_CEILING_INVALID"
+        }
         require(response.weekStartEpochDay == expectedWeekStart.toEpochDay()) { "WEEK_START_MISMATCH" }
         val expectedLastDate = expectedWeekStart.plusDays(6)
         require(!expectedFirstDate.isBefore(expectedWeekStart) && !expectedFirstDate.isAfter(expectedLastDate)) { "GENERATION_START_INVALID" }
@@ -157,6 +163,11 @@ object NutritionPlanContract {
                 belowOnly = targetBelowOnly,
             )
             require(appValidation.valid) { "TARGET_TOLERANCE_EXCEEDED:${day.dateEpochDay}" }
+            if (maintenanceCeilingKcal != null) {
+                require(day.totalKcal < maintenanceCeilingKcal) {
+                    "DEFICIT_PLAN_REACHES_MAINTENANCE:${day.dateEpochDay}"
+                }
+            }
 
             day.supplements.forEach { supplement ->
                 // Nessun vincolo sul tipo di integratore: si mantengono solo le sanity di base.
