@@ -90,6 +90,7 @@
             android:layout_marginTop="@dimen/space_12"
             android:hint="Tipo">
             <AutoCompleteTextView
+                        style="@style/Widget.MyFitAI.InputDropdownText"
                 android:id="@+id/typeInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
