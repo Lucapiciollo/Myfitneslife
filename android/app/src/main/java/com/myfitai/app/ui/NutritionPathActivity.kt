@@ -110,6 +110,8 @@ class NutritionPathActivity : BaseShellActivity() {
             }
         }
 
+        findViewById<android.view.View>(R.id.alternativesCard).visibility =
+            if (alternatives.childCount > 0) android.view.View.VISIBLE else android.view.View.GONE
         findViewById<MaterialButton>(R.id.chooseButton).apply {
             isEnabled = selectedPath != null
             text = "Usa ${label(selectedPath!!)}"
@@ -131,6 +133,7 @@ class NutritionPathActivity : BaseShellActivity() {
         GOAL_PATHS.forEach { path ->
             addAlternativeButton(alternatives, path, "")
         }
+        findViewById<android.view.View>(R.id.alternativesCard).visibility = android.view.View.VISIBLE
     }
 
     private fun addAlternativeButton(container: LinearLayout, path: String, reason: String) {
