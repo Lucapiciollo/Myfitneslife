@@ -50,7 +50,11 @@ class NutritionPathActivity : BaseShellActivity() {
             data.nutritionPathScheduler.observe(profileId, jobKey).collect { info ->
                 when (info?.state) {
                     WorkInfo.State.RUNNING, WorkInfo.State.ENQUEUED -> status("Analizzo il profilo…")
-                    WorkInfo.State.SUCCEEDED -> render(info.outputData.getString(NutritionPathAiJobHandler.KEY_PAYLOAD))
+                    WorkInfo.State.SUCCEEDED -> runCatching {
+                        render(info.outputData.getString(NutritionPathAiJobHandler.KEY_PAYLOAD))
+                    }.onFailure {
+                        showManualFallback("Il consiglio non è leggibile. Puoi scegliere manualmente senza perdere la BIA salvata.")
+                    }
                     WorkInfo.State.FAILED -> showManualFallback(
                         info.outputData.getString(AiJobWorker.KEY_ERROR)
                             ?: "Consiglio automatico non disponibile. Puoi scegliere manualmente."
@@ -131,9 +135,20 @@ class NutritionPathActivity : BaseShellActivity() {
 
     private fun addAlternativeButton(container: LinearLayout, path: String, reason: String) {
         container.addView(
-            MaterialButton(this).apply {
+            MaterialButton(this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
                 text = if (reason.isBlank()) label(path) else "${label(path)}\n$reason"
                 isAllCaps = false
+                setTextColor(getColor(R.color.text_primary))
+                strokeColor = android.content.res.ColorStateList.valueOf(getColor(R.color.divider))
+                strokeWidth = (resources.displayMetrics.density).toInt().coerceAtLeast(1)
+                backgroundTintList = android.content.res.ColorStateList.valueOf(getColor(R.color.white))
+                cornerRadius = (14 * resources.displayMetrics.density).toInt()
+                insetTop = 0
+                insetBottom = 0
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ).apply { topMargin = (8 * resources.displayMetrics.density).toInt() }
                 setOnClickListener { choose(path) }
             }
         )
