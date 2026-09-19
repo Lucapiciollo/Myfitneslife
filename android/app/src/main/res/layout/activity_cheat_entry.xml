@@ -66,6 +66,7 @@
                 android:layout_marginTop="@dimen/space_12"
                 android:hint="Descrivi cosa hai mangiato">
                 <com.google.android.material.textfield.TextInputEditText
+                style="@style/Widget.MyFitAI.InputEditText"
                     android:id="@+id/descriptionInput"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -118,6 +119,7 @@
                 android:layout_marginTop="@dimen/space_8"
                 android:hint="Es. con amici, fuori casa...">
                 <com.google.android.material.textfield.TextInputEditText
+                style="@style/Widget.MyFitAI.InputEditText"
                     android:id="@+id/notesInput"
                     android:layout_width="match_parent"
                     android:layout_height="96dp"
@@ -163,6 +165,7 @@
                         android:layout_marginTop="8dp"
                         android:hint="Es. ne ho mangiati 80 g, non tutta la confezione...">
                         <com.google.android.material.textfield.TextInputEditText
+                style="@style/Widget.MyFitAI.InputEditText"
                             android:id="@+id/clarificationInput"
                             android:layout_width="match_parent"
                             android:layout_height="88dp"
