@@ -75,6 +75,15 @@ class HomeActivity : BaseShellActivity() {
         findViewById<android.view.View>(R.id.bodyOverviewHelpButton).setOnClickListener {
             showHomeHelp("Panoramica del corpo", "Le tre card mostrano l'ultima rilevazione disponibile di peso, percentuale di grasso e massa muscolare. Il grafico mostra l'andamento del peso nel periodo selezionato.")
         }
+        findViewById<android.view.View>(R.id.weeklyExpectationHelpButton).setOnClickListener {
+            showHomeHelp(
+                "Stima teorica di perdita di grasso",
+                "Usa il TDEE stimato e le calorie dei soli giorni presenti nel piano alimentare della settimana corrente. " +
+                    "L'attività abituale è già compresa nel TDEE e non viene sommata di nuovo. " +
+                    "La conversione del deficit in kg è illustrativa, non un dato misurato né una previsione certa: " +
+                    "ritenzione idrica, glicogeno, adattamenti metabolici e composizione corporea modificano il risultato."
+            )
+        }
         findViewById<android.view.View>(R.id.recoveryHelpButton).setOnClickListener {
             showHomeHelp("Riserva di recupero", "Indica le calorie extra da distribuire nei giorni successivi quando hai consumato meno del previsto o hai registrato uno sgarro. È un supporto al riequilibrio, non una misura clinica.")
         }
@@ -131,10 +140,33 @@ class HomeActivity : BaseShellActivity() {
         )
         findViewById<TextView>(R.id.recompositionStateText).text = recompositionText(state.recompositionState)
         renderCalories(state.calories)
+        renderWeeklyExpectation(state.weeklyExpectation)
         renderRecovery(state.recovery)
         renderUpcomingMeals(state.upcomingMeals)
         renderNextMeal(state.nextMeal)
         renderNextWorkout(state.nextWorkout)
+    }
+
+    private fun renderWeeklyExpectation(result: com.myfitai.app.domain.calculation.WeeklyBodyExpectation.Result) {
+        val status = findViewById<TextView>(R.id.weeklyExpectationStatus)
+        val detail = findViewById<TextView>(R.id.weeklyExpectationDetail)
+        val caution = findViewById<TextView>(R.id.weeklyExpectationCaution)
+        val period = if (result.isFullWeek) "7 giorni del piano" else "${result.plannedDays}/7 giorni pianificati"
+        when {
+            result.available -> {
+                status.text = "≈ ${String.format(Locale.ITALIAN, "%.2f", result.expectedFatLossKgMin)}–${String.format(Locale.ITALIAN, "%.2f", result.expectedFatLossKgMax)} kg"
+                detail.text = "Grasso teorico · $period · deficit energetico ≈ ${result.theoreticalDeficitKcal} kcal"
+            }
+            result.plannedDays > 0 -> {
+                status.text = "Nessuna perdita stimabile"
+                detail.text = "$period · bilancio energetico non in deficit"
+            }
+            else -> {
+                status.text = "Dati insufficienti"
+                detail.text = "Genera un piano alimentare per visualizzare una stima indicativa."
+            }
+        }
+        caution.text = result.caution
     }
 
     private fun renderRecovery(recovery: HomeViewModel.RecoveryState) {
