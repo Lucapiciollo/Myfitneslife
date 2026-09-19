@@ -8,18 +8,28 @@ class NutritionPlanSchedulePreferences(context: Context) {
 
     data class Config(
         val enabled: Boolean,
+        val frequency: Frequency,
         val dayOfWeek: DayOfWeek,
         val timeMinutes: Int,
     )
 
+    enum class Frequency { DAILY, WEEKLY, BIWEEKLY, MONTHLY }
+
     fun get(profileId: Long): Config = Config(
         enabled = prefs.getBoolean(keyEnabled(profileId), false),
+        frequency = prefs.getString(keyFrequency(profileId), Frequency.WEEKLY.name)
+            ?.let { value -> runCatching { Frequency.valueOf(value) }.getOrDefault(Frequency.WEEKLY) }
+            ?: Frequency.WEEKLY,
         dayOfWeek = DayOfWeek.of(prefs.getInt(keyDay(profileId), DEFAULT_DAY.value).coerceIn(1, 7)),
         timeMinutes = prefs.getInt(keyTime(profileId), DEFAULT_TIME_MINUTES).coerceIn(0, 1439),
     )
 
     fun setEnabled(profileId: Long, enabled: Boolean) {
         prefs.edit().putBoolean(keyEnabled(profileId), enabled).apply()
+    }
+
+    fun setFrequency(profileId: Long, frequency: Frequency) {
+        prefs.edit().putString(keyFrequency(profileId), frequency.name).apply()
     }
 
     fun setDayOfWeek(profileId: Long, dayOfWeek: DayOfWeek) {
@@ -41,6 +51,7 @@ class NutritionPlanSchedulePreferences(context: Context) {
     }
 
     private fun keyEnabled(profileId: Long) = "auto_plan_enabled_$profileId"
+    private fun keyFrequency(profileId: Long) = "auto_plan_frequency_$profileId"
     private fun keyDay(profileId: Long) = "auto_plan_day_$profileId"
     private fun keyTime(profileId: Long) = "auto_plan_time_$profileId"
     private fun keyScheduledJob(profileId: Long) = "auto_plan_job_$profileId"

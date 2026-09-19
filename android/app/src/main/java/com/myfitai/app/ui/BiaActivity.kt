@@ -51,6 +51,7 @@ class BiaActivity : BaseShellActivity() {
     }
 
     private lateinit var dateInput: TextInputEditText
+    private lateinit var dateInputLayout: TextInputLayout
     private lateinit var timeInput: TextInputEditText
     private lateinit var newMeasurementContainer: View
     private lateinit var historyContainer: View
@@ -103,6 +104,7 @@ class BiaActivity : BaseShellActivity() {
 
     private fun bindViews() {
         dateInput = findViewById(R.id.dateInput)
+        dateInputLayout = findViewById(R.id.dateInputLayout)
         timeInput = findViewById(R.id.timeInput)
         newMeasurementContainer = findViewById(R.id.newMeasurementContainer)
         historyContainer = findViewById(R.id.historyContainer)
@@ -132,6 +134,7 @@ class BiaActivity : BaseShellActivity() {
             }
             picker.show(supportFragmentManager, "bia_date_picker")
         }
+        dateInputLayout.setEndIconOnClickListener { dateInput.performClick() }
 
         timeInput.setOnClickListener {
             val picker = MaterialTimePicker.Builder()
@@ -332,16 +335,10 @@ class BiaActivity : BaseShellActivity() {
                 values[KEY_BODY_WATER] = parseFloat(inputs.getValue(KEY_BODY_WATER).text?.toString())
                 values[KEY_BMR] = parseFloat(inputs.getValue(KEY_BMR).text?.toString())
                 bindMeasurementRows()
-                preview.measuredAtEpochMillis?.let { timestamp ->
-                    selectedDateMillis = timestamp
-                    val calendar = Calendar.getInstance().apply { timeInMillis = timestamp }
-                    selectedHour = calendar.get(Calendar.HOUR_OF_DAY)
-                    selectedMinute = calendar.get(Calendar.MINUTE)
-                }
                 renderDateTime()
                 Toast.makeText(
                     this@BiaActivity,
-                    "Valori caricati: premi Salva per registrare la BIA e visualizzare il consiglio motivato sull'obiettivo.",
+                    "Valori caricati. La data predefinita è oggi: puoi modificarla prima di salvare.",
                     Toast.LENGTH_LONG,
                 ).show()
             }
@@ -524,7 +521,9 @@ class BiaActivity : BaseShellActivity() {
     }
 
     private fun renderDateTime() {
-        dateInput.setText(SimpleDateFormat("dd/MM/yyyy", Locale.ITALIAN).format(Date(selectedDateMillis)))
+        val formattedDate = SimpleDateFormat("dd/MM/yyyy", Locale.ITALIAN).format(Date(selectedDateMillis))
+        dateInput.setText(formattedDate)
+        dateInput.contentDescription = "Data rilevazione $formattedDate"
         timeInput.setText(String.format(Locale.ITALIAN, "%02d:%02d", selectedHour, selectedMinute))
     }
 

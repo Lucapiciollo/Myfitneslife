@@ -36,7 +36,7 @@ class FoodPlanActivity : BaseShellActivity() {
 
     private val data by lazy { AppDataContainer.get(this) }
     private val viewModel: FoodPlanViewModel by viewModels {
-         FoodPlanViewModel.Factory(data.mealPlanRepository, data.activeProfileStore, data.nutritionPlanGenerationService, data.notificationScheduler, data.foodConsumptionRepository, data.aiJobScheduler)
+         FoodPlanViewModel.Factory(data.mealPlanRepository, data.activeProfileStore, data.nutritionPlanGenerationService, data.profileCalculationService, data.notificationScheduler, data.foodConsumptionRepository, data.aiJobScheduler)
     }
 
     private val mealAlternativeLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -56,6 +56,7 @@ class FoodPlanActivity : BaseShellActivity() {
         }
         findViewById<View>(R.id.cheatButton).setOnClickListener { go(CheatEntryActivity::class.java) }
         findViewById<View>(R.id.generatePlanButton).setOnClickListener { confirmPlanGeneration() }
+        findViewById<View>(R.id.dailyTotalHelpButton).setOnClickListener { showTotalsHelp() }
         renderMealCountPreference()
         weekDaySelector.setOnDaySelectedListener(viewModel::selectDay)
         lifecycleScope.launch { repeatOnLifecycle(Lifecycle.State.STARTED) { viewModel.state.collect(::render) } }
@@ -103,7 +104,7 @@ class FoodPlanActivity : BaseShellActivity() {
 
         renderGeneration(state)
         renderMeals(state.weekStart, day)
-        renderTotals(day, state.snapshot?.version, state.consumptionRecords)
+        renderTotals(day, state.snapshot?.version, state.consumptionRecords, state.baseKcal)
     }
 
     private fun renderGeneration(state: FoodPlanViewModel.State) {
@@ -170,7 +171,7 @@ class FoodPlanActivity : BaseShellActivity() {
         contentDescription = "$title: $body"
     }
 
-    private fun renderTotals(day: FoodPlanDay?, version: FoodPlanVersion?, records: List<com.myfitai.app.data.local.entity.FoodConsumptionEntity>) {
+    private fun renderTotals(day: FoodPlanDay?, version: FoodPlanVersion?, records: List<com.myfitai.app.data.local.entity.FoodConsumptionEntity>, baseKcal: Double?) {
         val totalContainer = findViewById<View>(R.id.dailyTotalContainer); val totalHeader = findViewById<View>(R.id.dailyTotalHeader)
         if (day == null) { totalContainer.visibility = View.GONE; totalHeader.visibility = View.GONE; return }
         val totals = FoodPlanMetrics.dayTotals(day)
@@ -180,8 +181,9 @@ class FoodPlanActivity : BaseShellActivity() {
         val selectedDate = LocalDate.ofEpochDay(day.dateEpochDay)
         val dayLabel = selectedDate.format(DateTimeFormatter.ofPattern("EEE d MMM", Locale.ITALIAN))
             .replaceFirstChar { it.uppercase() }
-        findViewById<TextView>(R.id.dailyTotalHeader).text = "Totale giornaliero · $dayLabel"
+        findViewById<TextView>(R.id.dailyTotalTitle).text = "Totale giornaliero · $dayLabel"
         findViewById<TextView>(R.id.dailyTotalLegend).text = "Target / piano / consumo registrato"
+        findViewById<TextView>(R.id.totalKcalBase).text = formatValue(baseKcal, "kcal")
         findViewById<TextView>(R.id.totalKcalTarget).text = formatValue(version?.targetKcal, "kcal")
         findViewById<TextView>(R.id.totalKcalPlanned).text = formatValue(totals.kcal, "kcal")
         findViewById<TextView>(R.id.totalKcalConsumed).text = formatConsumed(consumed.kcal, dayRecords.isNotEmpty(), "kcal")
@@ -200,6 +202,17 @@ class FoodPlanActivity : BaseShellActivity() {
         } else {
             "Registrati: ${consumed.recordedCount} di $expected elementi · consumati ${consumed.consumedCount}"
         }
+    }
+
+    private fun showTotalsHelp() {
+        showHelpCard(
+            "Come leggere le calorie",
+            
+                "Calorie base (TDEE): il consumo stimato per mantenere il peso considerando il tuo profilo e il livello di attivita.\n\n" +
+                    "Target: l'obiettivo giornaliero calcolato dall'app. Nel dimagrimento e inferiore alle calorie base; negli obiettivi di aumento puo essere superiore.\n\n" +
+                    "Piano: la somma dei pasti e degli eventuali integratori pianificati per il giorno.\n\n" +
+                    "Consumato: cio che hai registrato come effettivamente mangiato."
+        )
     }
 
     private fun formatValue(value: Number?, unit: String): String = value?.let {

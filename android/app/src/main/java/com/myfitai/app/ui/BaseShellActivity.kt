@@ -2,6 +2,9 @@ package com.myfitai.app.ui
 
 import android.content.Intent
 import android.graphics.Typeface
+import android.text.SpannableStringBuilder
+import android.text.Spanned
+import android.text.style.StyleSpan
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -44,6 +47,53 @@ abstract class BaseShellActivity : AppCompatActivity() {
         weekStartEpochDay?.let { intent.putExtra(FoodPlanActivity.EXTRA_WEEK_START_EPOCH_DAY, it) }
         startActivity(intent)
         return true
+    }
+
+    protected fun showHelpCard(title: String, message: String) {
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(dp(4), dp(4), dp(4), dp(4))
+        }
+        View(this).apply {
+            setBackgroundColor(getColor(R.color.accent_green))
+            content.addView(this, LinearLayout.LayoutParams(dp(4), ViewGroup.LayoutParams.MATCH_PARENT).apply {
+                marginEnd = dp(12)
+            })
+        }
+        TextView(this).apply {
+            text = formatHelpMessage(message)
+            textSize = 15f
+            setTextColor(getColor(R.color.text_primary))
+            setLineSpacing(0f, 1.18f)
+            setPadding(dp(4), dp(8), dp(8), dp(8))
+            content.addView(this, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle(title)
+            .setView(content)
+            .setPositiveButton("Ho capito", null)
+            .show()
+    }
+
+    private fun formatHelpMessage(message: String): CharSequence {
+        val paragraphs = message.trim().split(Regex("\\n\\s*\\n")).filter { it.isNotBlank() }
+        return SpannableStringBuilder().apply {
+            paragraphs.forEachIndexed { index, paragraph ->
+                val cleanParagraph = paragraph.trim().removePrefix("• ").trim()
+                val separator = cleanParagraph.indexOf(": ")
+                if (separator > 0) {
+                    val heading = cleanParagraph.substring(0, separator)
+                    val description = cleanParagraph.substring(separator + 2).trim()
+                    val headingStart = length
+                    append(heading)
+                    setSpan(StyleSpan(Typeface.BOLD), headingStart, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    append("\n").append(description)
+                } else {
+                    append(cleanParagraph)
+                }
+                if (index < paragraphs.lastIndex) append("\n\n")
+            }
+        }
     }
 
     private val tabRootBackCallback = object : OnBackPressedCallback(true) {

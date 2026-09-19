@@ -25,7 +25,7 @@ object NutritionPlanCompactContract {
 
     const val PROTOCOL = """MFP1
 W|weekStartEpochDay
-D|dateEpochDay|totalKcal|proteinG|carbsG|fatG (followed by exactly MEALS_PER_DAY M records, as supplied in the user prompt)
+D|dateEpochDay|totalKcal|proteinG|carbsG|fatG (one record for each requested date, followed by exactly MEALS_PER_DAY M records)
 M|type|title|timeMinutes|kcal|proteinG|carbsG|fatG|preparation
 I|name|quantity|unit|displayDose|weightState|nutritionConfidence|category
 S|kind|name|dose|unit|timeMinutes|kcal|proteinG|carbsG|fatG|notes
@@ -34,7 +34,15 @@ V|1_or_0|notes"""
 
     fun parseEnvelope(jsonText: String, mealsPerDay: Int = NutritionPlanContract.REQUIRED_MEALS_PER_DAY): NutritionPlanContract.Response {
         val root = JSONObject(jsonText)
-        return parsePayload(root.getString("data"), mealsPerDay)
+        return parsePayload(unwrapPayload(root.getString("data")), mealsPerDay)
+    }
+
+    private fun unwrapPayload(payload: String, depth: Int = 0): String {
+        val candidate = payload.trim()
+        if (!candidate.startsWith("{") || depth >= 2) return payload
+        return runCatching {
+            unwrapPayload(JSONObject(candidate).getString("data"), depth + 1)
+        }.getOrElse { payload }
     }
 
     fun parsePayload(payload: String, mealsPerDay: Int = NutritionPlanContract.REQUIRED_MEALS_PER_DAY): NutritionPlanContract.Response {
@@ -111,8 +119,11 @@ V|1_or_0|notes"""
                     )
                 }
                 "S" -> {
-                    require(parts.size >= 11 && currentDay != null) { "PIPE_S_INVALID" }
+                    require(parts.size >= 9 && currentDay != null) { "PIPE_S_INVALID" }
                     flushMeal()
+                    val optionalFat = parts.getOrNull(9)
+                    val fat = optionalFat?.toFloatOrNull()
+                    val notesStart = if (fat != null) 10 else 9
                     currentDay!!.supplements += NutritionPlanContract.GeneratedSupplement(
                         kind = parts[1].requiredText("PIPE_S_KIND_INVALID"),
                         name = parts[2].requiredText("PIPE_S_NAME_INVALID"),
@@ -122,8 +133,8 @@ V|1_or_0|notes"""
                         kcal = parts[6].toIntStrict("PIPE_S_KCAL_INVALID"),
                         proteinG = parts[7].toFloatStrict("PIPE_S_P_INVALID"),
                         carbsG = parts[8].toFloatStrict("PIPE_S_C_INVALID"),
-                        fatG = parts[9].toFloatStrict("PIPE_S_F_INVALID"),
-                        notes = parts.drop(10).joinToString("|").trim(),
+                        fatG = fat ?: 0f,
+                        notes = parts.drop(notesStart).joinToString("|").trim(),
                     )
                 }
                 "H" -> {

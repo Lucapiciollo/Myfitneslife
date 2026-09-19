@@ -22,6 +22,10 @@ class MetricCardView @JvmOverloads constructor(
 
     init {
         orientation = VERTICAL
+        setBackgroundResource(R.drawable.bg_card_soft)
+        val horizontalPadding = (12 * resources.displayMetrics.density).toInt()
+        val verticalPadding = (12 * resources.displayMetrics.density).toInt()
+        setPadding(horizontalPadding, verticalPadding, horizontalPadding, verticalPadding)
 
         labelView = TextView(context).apply {
             setTextColor(context.getColor(R.color.text_secondary))

@@ -25,7 +25,7 @@ object BottomNavBinder {
         mapping.forEach { (viewId, tab, target) ->
             activity.findViewById<TextView>(viewId)?.apply {
                 isSelected = tab == selected
-                val tintColor = activity.getColor(if (tab == selected) R.color.accent_green else R.color.text_secondary)
+                val tintColor = activity.getColor(if (tab == selected) R.color.white else R.color.accent_green_dark)
                 setTextColor(tintColor)
                 compoundDrawableTintList = ColorStateList.valueOf(tintColor)
                 background = if (tab == selected) activity.getDrawable(R.drawable.bg_nav_selected) else null

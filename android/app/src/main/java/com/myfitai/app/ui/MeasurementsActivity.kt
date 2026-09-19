@@ -6,6 +6,7 @@ import android.widget.TextView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.data.local.entity.BiaMeasurementEntity
@@ -33,6 +34,13 @@ class MeasurementsActivity : BaseShellActivity() {
         bindBack()
 
         findViewById<android.view.View>(R.id.newBiaButton).setOnClickListener { startActivity(Intent(this, BiaActivity::class.java)) }
+        findViewById<android.view.View>(R.id.biaHelpButton).setOnClickListener {
+            MaterialAlertDialogBuilder(this)
+                .setTitle("Dati BIA e dati insufficienti")
+                .setMessage("La BIA può contribuire al calcolo di metabolismo, target e trend corporei quando sono disponibili valori coerenti, come peso, grasso corporeo o massa muscolare.\n\nLa dicitura \"Dati insufficienti\" compare quando mancano i valori necessari oppure quando esiste una sola rilevazione: una singola misura descrive solo lo stato attuale e non permette di calcolare una variazione affidabile nel tempo. Registra altre rilevazioni in date diverse per ottenere un confronto.")
+                .setPositiveButton("Chiudi", null)
+                .show()
+        }
         findViewById<android.view.View>(R.id.biaHistoryButton).setOnClickListener {
             startActivity(Intent(this, BiaActivity::class.java).putExtra(BiaActivity.EXTRA_OPEN_HISTORY, true))
         }
@@ -72,7 +80,13 @@ class MeasurementsActivity : BaseShellActivity() {
                 it.bodyFatPercent?.let { fat -> "Grasso ${formatNumber(fat)}%" },
                 it.muscleMassKg?.let { muscle -> "Massa muscolare ${formatNumber(muscle)} kg" },
             ).joinToString(" · ")
-            "Ultima rilevazione: $date\n${details.ifBlank { "Valori parziali" }}"
+            val missingReason = when {
+                details.isBlank() -> "Dati insufficienti: nessun valore BIA utilizzabile nella rilevazione."
+                it.weightKg == null || it.bodyFatPercent == null || it.muscleMassKg == null ->
+                    "Dati parziali: per un calcolo più completo servono peso, grasso corporeo e massa muscolare."
+                else -> null
+            }
+            "Ultima rilevazione: $date\n${details.ifBlank { missingReason ?: "Dati insufficienti" }}${missingReason?.let { "\n$it" } ?: ""}"
         } ?: "Nessuna rilevazione BIA disponibile"
     }
 

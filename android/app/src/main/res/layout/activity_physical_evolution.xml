@@ -10,7 +10,12 @@
                 <Space android:layout_width="40dp" android:layout_height="1dp" />
             </LinearLayout>
             <com.myfitai.app.ui.widgets.SelectableSegmentView android:id="@+id/metricSegment" android:layout_width="match_parent" android:layout_height="44dp" />
-            <TextView android:id="@+id/metricLabel" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:text="Peso" android:textColor="@color/text_secondary" android:textSize="14sp" android:textStyle="bold" />
+            <com.google.android.material.card.MaterialCardView style="@style/Widget.MyFitAI.Card" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="@dimen/space_16">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">
+                <TextView android:id="@+id/metricLabel" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Peso" android:textColor="@color/text_secondary" android:textSize="14sp" android:textStyle="bold" />
+                <ImageButton android:id="@+id/progressMetricHelpButton" android:layout_width="40dp" android:layout_height="40dp" android:background="@android:color/transparent" android:contentDescription="Spiega il progresso" android:padding="8dp" android:src="@drawable/ic_help_outline" app:tint="@color/text_secondary" />
+            </LinearLayout>
             <TextView android:id="@+id/metricValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:text="—" android:textColor="@color/metric_value" android:textSize="32sp" android:textStyle="bold" />
             <TextView android:id="@+id/metricDelta" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:text="Dati insufficienti" android:textColor="@color/text_secondary" android:textSize="13sp" android:textStyle="bold" />
             <com.myfitai.app.ui.widgets.WeightTrendChartView android:id="@+id/evolutionChart" android:layout_width="match_parent" android:layout_height="@dimen/dashboard_chart_height" android:layout_marginTop="@dimen/space_16" />
@@ -21,7 +26,9 @@
                 <TextView android:id="@+id/dateLabel4" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:gravity="center" android:text="—" android:textColor="@color/text_muted" android:textSize="11sp" />
                 <TextView android:id="@+id/dateLabel5" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:gravity="end" android:text="—" android:textColor="@color/text_muted" android:textSize="11sp" />
             </LinearLayout>
-             <com.myfitai.app.ui.widgets.TimeRangeSelectorView android:id="@+id/timeRangeSelector" android:layout_width="wrap_content" android:layout_height="@dimen/dashboard_pill_height" android:layout_marginTop="@dimen/space_16" />
+            <com.myfitai.app.ui.widgets.TimeRangeSelectorView android:id="@+id/timeRangeSelector" android:layout_width="wrap_content" android:layout_height="@dimen/dashboard_pill_height" android:layout_marginTop="@dimen/space_16" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
                <LinearLayout
                    android:id="@+id/otherIndicatorsHeader"
                    android:layout_width="match_parent"
@@ -29,11 +36,6 @@
                    android:layout_marginTop="@dimen/space_24"
                    android:gravity="center_vertical"
                    android:orientation="horizontal">
-                   <com.myfitai.app.ui.widgets.SectionHeaderView
-                       android:layout_width="0dp"
-                       android:layout_height="wrap_content"
-                       android:layout_weight="1"
-                       android:text="Altri indicatori" />
                    <ImageButton
                        android:id="@+id/otherIndicatorsHelpButton"
                        android:layout_width="40dp"
@@ -42,17 +44,26 @@
                        android:contentDescription="Spiega altri indicatori"
                        android:src="@drawable/ic_help_outline"
                        app:tint="@color/text_secondary" />
+                   <com.myfitai.app.ui.widgets.SectionHeaderView
+                       android:layout_width="0dp"
+                       android:layout_height="wrap_content"
+                       android:layout_weight="1"
+                       android:text="Altri indicatori" />
                </LinearLayout>
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:background="@drawable/bg_card" android:orientation="vertical" android:paddingHorizontal="@dimen/space_16">
+                        <com.google.android.material.card.MaterialCardView style="@style/Widget.MyFitAI.Card" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8">
+                            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingHorizontal="@dimen/space_16">
                 <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical"><TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Grasso corporeo" android:textColor="@color/text_secondary"/><TextView android:id="@+id/otherIndicatorFatValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="—" android:textColor="@color/text_primary" android:textStyle="bold"/><TextView android:id="@+id/otherIndicatorFatDelta" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:text="—" android:textColor="@color/text_secondary"/></LinearLayout>
                 <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical"><TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Massa muscolare" android:textColor="@color/text_secondary"/><TextView android:id="@+id/otherIndicatorMuscleValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="—" android:textColor="@color/text_primary" android:textStyle="bold"/><TextView android:id="@+id/otherIndicatorMuscleDelta" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:text="—" android:textColor="@color/text_secondary"/></LinearLayout>
                 <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical"><TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Acqua corporea" android:textColor="@color/text_secondary"/><TextView android:id="@+id/otherIndicatorWaterValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="—" android:textColor="@color/text_primary" android:textStyle="bold"/><TextView android:id="@+id/otherIndicatorWaterDelta" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:text="—" android:textColor="@color/text_secondary"/></LinearLayout>
-            </LinearLayout>
+                            </LinearLayout>
+                        </com.google.android.material.card.MaterialCardView>
              <LinearLayout android:id="@+id/visualComparisonSection" android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone" />
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:background="@drawable/bg_positive_soft" android:orientation="vertical" android:padding="@dimen/space_12">
+                        <com.google.android.material.card.MaterialCardView style="@style/Widget.MyFitAI.Card" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20">
+                            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@drawable/bg_positive_soft" android:orientation="vertical" android:padding="@dimen/space_12">
                 <TextView android:id="@+id/progressSummaryTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Servono più rilevazioni" android:textColor="@color/text_primary" android:textStyle="bold" />
                 <TextView android:id="@+id/progressSummaryText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:text="I dati mostrati derivano dallo storico reale." android:textColor="@color/text_secondary" />
-            </LinearLayout>
+                            </LinearLayout>
+                        </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
     </ScrollView>
     <include layout="@layout/view_bottom_navigation" />

@@ -111,6 +111,13 @@
                  android:background="@drawable/bg_card"
                   android:padding="@dimen/space_16">
                   <com.google.android.material.button.MaterialButton android:id="@+id/analyzeNutritionPathButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Suggerisci il percorso nutrizionale" android:textAllCaps="false" />
+                                    <TextView
+                                            android:layout_width="match_parent"
+                                            android:layout_height="wrap_content"
+                                            android:layout_marginTop="@dimen/space_8"
+                                            android:text="Agenti IA disponibili: piano alimentare automatico, analisi progressi, percorso nutrizionale e review settimanale. I controlli automatici sono mostrati qui sotto."
+                                            android:textColor="@color/text_secondary"
+                                            android:textSize="12sp" />
 
                 <LinearLayout
                     android:layout_width="match_parent"

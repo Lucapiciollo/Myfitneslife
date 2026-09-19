@@ -41,42 +41,55 @@
                     android:layout_height="1dp" />
             </LinearLayout>
 
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.MyFitAI.Card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_12">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="@dimen/space_16">
+                    <TextView
+                        android:id="@+id/resultDescription"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/text_primary"
+                        android:textSize="15sp" />
+                    <TextView
+                        android:id="@+id/resultSummary"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_12"
+                        android:padding="@dimen/space_16"
+                        android:background="@drawable/bg_positive"
+                        android:textColor="@color/white"
+                        android:textSize="14sp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.MyFitAI.Card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_12">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="@dimen/space_16">
+                    <TextView
+                        android:id="@+id/modifiedHeader"
+                        style="@style/Text.MyFitAI.Section"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Pasti futuri aggiornati" />
+                    <LinearLayout
+                        android:id="@+id/modifiedMealsContainer"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_8"
+                        android:orientation="vertical" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
             <TextView
-                android:id="@+id/resultDescription"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_12"
-                android:textColor="@color/text_primary"
-                android:textSize="15sp" />
-
-            <TextView
-                android:id="@+id/resultSummary"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_12"
-                android:padding="@dimen/space_16"
-                android:background="@drawable/bg_positive"
-                android:textColor="@color/white"
-                android:textSize="14sp" />
-
-            <TextView
-                android:id="@+id/modifiedHeader"
-                style="@style/Text.MyFitAI.Section"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_20"
-                android:text="Pasti futuri aggiornati" />
-
-            <LinearLayout
-                android:id="@+id/modifiedMealsContainer"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_16"
                 android:padding="@dimen/space_12"
                 android:background="@drawable/bg_card"
                 android:text="Le modifiche riguardano solo i pasti successivi allo sgarro nella stessa giornata. I pasti passati e i giorni successivi restano invariati; se il bilanciamento richiederebbe restrizioni eccessive, l'app registra lo sgarro senza compensarlo."

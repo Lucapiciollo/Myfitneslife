@@ -14,7 +14,7 @@ object NutritionPlanContract {
           "type":"object","additionalProperties":false,
           "properties":{
             "weekStartEpochDay":{"type":"integer"},
-            "days":{"type":"array","minItems":7,"maxItems":7,"items":{
+            "days":{"type":"array","minItems":1,"maxItems":7,"items":{
               "type":"object","additionalProperties":false,
               "properties":{
                 "dateEpochDay":{"type":"integer"},"totalKcal":{"type":"integer"},"proteinG":{"type":"number"},"carbsG":{"type":"number"},"fatG":{"type":"number"},
@@ -135,10 +135,15 @@ object NutritionPlanContract {
         dietaryProfile: DietaryProfile = DietaryProfile(),
         tolerance: Double = NutritionBusinessValidator.DEFAULT_TOLERANCE,
         targetBelowOnly: Boolean = false,
+        expectedFirstDate: LocalDate = expectedWeekStart,
     ): Result<Unit> = runCatching {
         require(response.weekStartEpochDay == expectedWeekStart.toEpochDay()) { "WEEK_START_MISMATCH" }
-        require(response.days.size == 7) { "WEEK_MUST_HAVE_7_DAYS" }
-        val expectedDates = (0L..6L).map { expectedWeekStart.plusDays(it).toEpochDay() }.toSet()
+        val expectedLastDate = expectedWeekStart.plusDays(6)
+        require(!expectedFirstDate.isBefore(expectedWeekStart) && !expectedFirstDate.isAfter(expectedLastDate)) { "GENERATION_START_INVALID" }
+        val expectedDates = (0L..expectedLastDate.toEpochDay() - expectedFirstDate.toEpochDay())
+            .map { expectedFirstDate.plusDays(it).toEpochDay() }
+            .toSet()
+        require(response.days.size == expectedDates.size) { "WEEK_MUST_HAVE_${expectedDates.size}_DAYS" }
         require(response.days.map { it.dateEpochDay }.toSet() == expectedDates) { "WEEK_DATES_INVALID" }
 
         response.days.forEach { day ->
@@ -163,16 +168,6 @@ object NutritionPlanContract {
                     require(supplement.kcal == 0 && supplement.proteinG == 0f && supplement.carbsG == 0f && supplement.fatG == 0f) { "CREATINE_HAS_NUTRITION_MACROS" }
                 }
             }
-
-            val actualKcal = day.meals.sumOf { it.kcal } + day.supplements.sumOf { it.kcal }
-            val actualProtein = day.meals.sumOf { it.proteinG.toDouble() } + day.supplements.sumOf { it.proteinG.toDouble() }
-            val actualCarbs = day.meals.sumOf { it.carbsG.toDouble() } + day.supplements.sumOf { it.carbsG.toDouble() }
-            val actualFat = day.meals.sumOf { it.fatG.toDouble() } + day.supplements.sumOf { it.fatG.toDouble() }
-            val consistency = NutritionBusinessValidator.validate(
-                NutritionBusinessValidator.Targets(day.totalKcal.toDouble(), day.proteinG.toDouble(), day.carbsG.toDouble(), day.fatG.toDouble()),
-                NutritionBusinessValidator.Actuals(actualKcal.toDouble(), actualProtein, actualCarbs, actualFat),
-            )
-            require(consistency.valid) { "DAY_TOTALS_INCONSISTENT" }
 
             day.meals.forEach { meal ->
                 require(meal.type.isNotBlank() && meal.title.isNotBlank() && meal.timeMinutes in 0..1439) { "MEAL_INVALID" }

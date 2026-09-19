@@ -20,6 +20,7 @@ import com.myfitai.app.ai.AiSettingsStore
 import com.myfitai.app.ai.GeminiByokProvider
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.data.profile.MealCountPreferences
+import com.myfitai.app.data.profile.NutritionPlanSchedulePreferences
 import com.myfitai.app.domain.progress.ProgressAnalysisPreferences
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.security.AiCredentialProvider
@@ -232,12 +233,18 @@ class SettingsActivity : BaseShellActivity() {
         fun renderSchedule() {
             val config = data.nutritionPlanSchedulePreferences.get(profileId)
             enabledSwitch.isChecked = config.enabled
+            val frequencyLabel = when (config.frequency) {
+                NutritionPlanSchedulePreferences.Frequency.DAILY -> "ogni giorno"
+                NutritionPlanSchedulePreferences.Frequency.WEEKLY -> "ogni settimana il ${dayLabel(config.dayOfWeek)}"
+                NutritionPlanSchedulePreferences.Frequency.BIWEEKLY -> "ogni 2 settimane"
+                NutritionPlanSchedulePreferences.Frequency.MONTHLY -> "ogni mese"
+            }
             value.text = if (config.enabled) {
                 val hh = config.timeMinutes / 60
                 val mm = config.timeMinutes % 60
-                "Ogni ${dayLabel(config.dayOfWeek)} alle %02d:%02d · prepara la settimana successiva".format(hh, mm)
+                "$frequencyLabel alle %02d:%02d · prepara la settimana successiva".format(hh, mm)
             } else {
-                "Disattivata · tocca per scegliere giorno e ora"
+                "Disattivata · attiva per scegliere frequenza e ora"
             }
         }
 
@@ -260,7 +267,7 @@ class SettingsActivity : BaseShellActivity() {
             picker.show(supportFragmentManager, "nutrition_plan_schedule_time")
         }
 
-        row.setOnClickListener {
+        fun chooseDay() {
             val days = java.time.DayOfWeek.entries
             val labels = days.map(::dayLabel).toTypedArray()
             val current = data.nutritionPlanSchedulePreferences.get(profileId).dayOfWeek
@@ -273,6 +280,27 @@ class SettingsActivity : BaseShellActivity() {
                 .setNegativeButton("Annulla", null)
                 .show()
         }
+
+        fun chooseFrequency() {
+            val frequencies = NutritionPlanSchedulePreferences.Frequency.entries
+            val labels = arrayOf("Ogni giorno", "Ogni settimana", "Ogni 2 settimane", "Ogni mese")
+            val current = data.nutritionPlanSchedulePreferences.get(profileId).frequency
+            MaterialAlertDialogBuilder(this)
+                .setTitle("Frequenza generazione pasti")
+                .setSingleChoiceItems(labels, frequencies.indexOf(current)) { dialog, which ->
+                    data.nutritionPlanSchedulePreferences.setFrequency(profileId, frequencies[which])
+                    dialog.dismiss()
+                    if (frequencies[which] == NutritionPlanSchedulePreferences.Frequency.DAILY || frequencies[which] == NutritionPlanSchedulePreferences.Frequency.MONTHLY) {
+                        chooseTime(data.nutritionPlanSchedulePreferences.get(profileId).dayOfWeek)
+                    } else {
+                        chooseDay()
+                    }
+                }
+                .setNegativeButton("Annulla", null)
+                .show()
+        }
+
+            row.setOnClickListener { chooseFrequency() }
 
         enabledSwitch.setOnCheckedChangeListener { _, checked ->
             val current = data.nutritionPlanSchedulePreferences.get(profileId)

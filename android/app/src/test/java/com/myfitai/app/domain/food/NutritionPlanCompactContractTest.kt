@@ -40,6 +40,61 @@ class NutritionPlanCompactContractTest {
     }
 
     @Test
+    fun nestedCompactEnvelope_isUnwrappedBeforePipeValidation() {
+        val payload = """
+            MFP1
+            W|1
+            D|1|2400|160|280|70
+            M|BREAKFAST|Colazione|480|500|35|62|12|Prep
+            I|Yogurt|200|g|1 vasetto|NET|HIGH|DAIRY
+            V|1|ok
+        """.trimIndent()
+        val nested = JSONObject().put("data", payload).toString()
+        val envelope = JSONObject().put("data", nested).toString()
+
+        val response = NutritionPlanCompactContract.parseEnvelope(envelope, mealsPerDay = 1)
+
+        assertEquals(1L, response.weekStartEpochDay)
+        assertEquals("Colazione", response.days.single().meals.single().title)
+    }
+
+    @Test
+    fun supplementWithoutOptionalFatAndNotes_defaultsToZeroFat() {
+        val payload = """
+            MFP1
+            W|1
+            D|1|2400|160|280|70
+            M|BREAKFAST|Colazione|480|500|35|62|12|Prep
+            I|Yogurt|200|g|1 vasetto|NET|HIGH|DAIRY
+            S|PROTEIN_POWDER|Whey|30|g|600|120|24|2
+            V|1|ok
+        """.trimIndent()
+
+        val response = NutritionPlanCompactContract.parsePayload(payload, mealsPerDay = 1)
+
+        assertEquals(0f, response.days.single().supplements.single().fatG)
+        assertEquals("", response.days.single().supplements.single().notes)
+    }
+
+    @Test
+    fun supplementWithNotesButWithoutOptionalFat_preservesNotes() {
+        val payload = """
+            MFP1
+            W|1
+            D|1|2400|160|280|70
+            M|BREAKFAST|Colazione|480|500|35|62|12|Prep
+            I|Yogurt|200|g|1 vasetto|NET|HIGH|DAIRY
+            S|PROTEIN_POWDER|Whey|30|g|600|120|24|2|Dopo allenamento
+            V|1|ok
+        """.trimIndent()
+
+        val response = NutritionPlanCompactContract.parsePayload(payload, mealsPerDay = 1)
+
+        assertEquals(0f, response.days.single().supplements.single().fatG)
+        assertEquals("Dopo allenamento", response.days.single().supplements.single().notes)
+    }
+
+    @Test
     fun perDayValidationRecords_andPipeInHydration_areTolerated() {
         val payload = """
             MFP1

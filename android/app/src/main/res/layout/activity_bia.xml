@@ -72,7 +72,7 @@
                             android:layout_width="0dp"
                             android:layout_height="56dp"
                             android:layout_weight="1"
-                            android:hint="Data"
+                            android:hint="Data rilevazione"
                             app:endIconDrawable="@drawable/ic_calendar"
                             app:endIconMode="custom">
 
@@ -83,7 +83,10 @@
                                 android:layout_height="match_parent"
                                 android:clickable="true"
                                 android:focusable="false"
+                                android:gravity="center_vertical"
                                 android:inputType="none"
+                                android:textColor="@color/text_primary"
+                                android:textSize="16sp"
  />
                         </com.google.android.material.textfield.TextInputLayout>
 

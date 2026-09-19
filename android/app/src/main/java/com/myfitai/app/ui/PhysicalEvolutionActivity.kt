@@ -63,6 +63,14 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
                 "non sono una diagnosi e possono variare anche per motivi temporanei.",
             )
         }
+        findViewById<ImageButton>(R.id.progressMetricHelpButton).setOnClickListener {
+            showHelp(
+                "Progresso",
+                "Il valore, la variazione e il grafico mostrano l'andamento della metrica selezionata " +
+                    "usando le rilevazioni registrate nel profilo attivo. Se i dati sono insufficienti, " +
+                    "l'app evita di stimare una tendenza non affidabile.",
+            )
+        }
         bindWeeklyReviewCard()
 
         findViewById<WeightTrendChartView>(R.id.evolutionChart).showYAxisLabels()
@@ -88,7 +96,7 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
 
     private fun bindProgressAnalysisCard() {
         val summaryCard = findViewById<View>(R.id.progressSummaryTitle).parent as View
-        val root = summaryCard.parent as LinearLayout
+        val root = summaryCard.parent.parent as LinearLayout
         val insertIndex = root.indexOfChild(summaryCard)
 
         val header = LinearLayout(this).apply {
@@ -162,7 +170,7 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
 
     private fun bindWeeklyReviewCard() {
         val summaryCard = findViewById<View>(R.id.progressSummaryTitle).parent as View
-        val root = summaryCard.parent as LinearLayout
+        val root = summaryCard.parent.parent as LinearLayout
         val insertIndex = root.indexOfChild(summaryCard)
 
         val header = TextView(this).apply {
@@ -294,11 +302,7 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
     }
 
     private fun showHelp(title: String, message: String) {
-        MaterialAlertDialogBuilder(this)
-            .setTitle(title)
-            .setMessage(message)
-            .setPositiveButton("Ho capito", null)
-            .show()
+        showHelpCard(title, message)
     }
 
     private fun renderAnalysisDetails(patterns: List<ProgressAnalysisCompactContract.Pattern>) {

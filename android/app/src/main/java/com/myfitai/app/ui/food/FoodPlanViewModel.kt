@@ -10,6 +10,7 @@ import com.myfitai.app.data.local.entity.FoodConsumptionEntity
 import com.myfitai.app.domain.food.FoodPlanDay
 import com.myfitai.app.domain.food.FoodPlanSnapshot
 import com.myfitai.app.domain.food.NutritionPlanGenerationService
+import com.myfitai.app.domain.calculation.ProfileCalculationService
 import com.myfitai.app.domain.ai.AiJobScheduler
 import com.myfitai.app.domain.ai.AiJobType
 import androidx.work.WorkInfo
@@ -39,6 +40,7 @@ class FoodPlanViewModel(
     private val repository: MealPlanRepository,
     private val activeProfileStore: ActiveProfileStore,
     private val generationService: NutritionPlanGenerationService,
+    private val calculations: ProfileCalculationService,
     private val notificationScheduler: NotificationScheduler,
     private val consumptionRepository: FoodConsumptionRepository,
     private val aiJobScheduler: AiJobScheduler,
@@ -57,11 +59,16 @@ class FoodPlanViewModel(
         val hasPlan: Boolean = false,
         val generation: GenerationState = GenerationState(),
         val consumptionRecords: List<FoodConsumptionEntity> = emptyList(),
+        val baseKcal: Double? = null,
     )
 
     private val selectedWeekStart = MutableStateFlow(planWeekMonday(LocalDate.now()))
     private val selectedDayIndex = MutableStateFlow(todayIndexInWeek(selectedWeekStart.value))
     private val generationState = MutableStateFlow(GenerationState())
+    private val baseKcal = activeProfileStore.activeProfileId.flatMapLatest { profileId ->
+        if (profileId <= 0L) flowOf<Double?>(null)
+        else flow { emit(calculations.profileSnapshot(profileId)?.calculation?.tdeeKcal) }
+    }
 
     init {
         viewModelScope.launch {
@@ -89,7 +96,7 @@ class FoodPlanViewModel(
         }
     }
 
-    val state: StateFlow<State> = combine(source, selectedDayIndex, generationState) { (weekStart, snapshot, records), dayIndex, generation ->
+    val state: StateFlow<State> = combine(source, selectedDayIndex, generationState, baseKcal) { (weekStart, snapshot, records), dayIndex, generation, tdeeKcal ->
         val safeIndex = dayIndex.coerceIn(0, 6)
         State(
             weekStart = weekStart,
@@ -99,6 +106,7 @@ class FoodPlanViewModel(
             hasPlan = snapshot != null,
             generation = generation,
             consumptionRecords = records,
+            baseKcal = tdeeKcal,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), State())
 
@@ -180,6 +188,7 @@ class FoodPlanViewModel(
         private val repository: MealPlanRepository,
         private val activeProfileStore: ActiveProfileStore,
         private val generationService: NutritionPlanGenerationService,
+        private val calculations: ProfileCalculationService,
         private val notificationScheduler: NotificationScheduler,
         private val consumptionRepository: FoodConsumptionRepository,
         private val aiJobScheduler: AiJobScheduler,
@@ -187,7 +196,7 @@ class FoodPlanViewModel(
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(FoodPlanViewModel::class.java))
-            return FoodPlanViewModel(repository, activeProfileStore, generationService, notificationScheduler, consumptionRepository, aiJobScheduler) as T
+            return FoodPlanViewModel(repository, activeProfileStore, generationService, calculations, notificationScheduler, consumptionRepository, aiJobScheduler) as T
         }
     }
 }

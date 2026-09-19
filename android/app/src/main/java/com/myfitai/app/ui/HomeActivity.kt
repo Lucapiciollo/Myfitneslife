@@ -71,6 +71,19 @@ class HomeActivity : BaseShellActivity() {
         }
         findViewById<android.view.View>(R.id.nextWorkoutCard).setOnClickListener { go(WorkoutsActivity::class.java) }
         findViewById<android.view.View>(R.id.caloriesCard).setOnClickListener { showTdeeExplanation() }
+        findViewById<android.view.View>(R.id.caloriesHelpButton).setOnClickListener { showTdeeExplanation() }
+        findViewById<android.view.View>(R.id.bodyOverviewHelpButton).setOnClickListener {
+            showHomeHelp("Panoramica del corpo", "Le tre card mostrano l'ultima rilevazione disponibile di peso, percentuale di grasso e massa muscolare. Il grafico mostra l'andamento del peso nel periodo selezionato.")
+        }
+        findViewById<android.view.View>(R.id.recoveryHelpButton).setOnClickListener {
+            showHomeHelp("Riserva di recupero", "Indica le calorie extra da distribuire nei giorni successivi quando hai consumato meno del previsto o hai registrato uno sgarro. È un supporto al riequilibrio, non una misura clinica.")
+        }
+        findViewById<android.view.View>(R.id.nextMealHelpButton).setOnClickListener {
+            showHomeHelp("Prossimo pasto", "Mostra il prossimo pasto previsto dal piano alimentare di oggi, con orario, nome e calorie quando disponibili.")
+        }
+        findViewById<android.view.View>(R.id.nextWorkoutHelpButton).setOnClickListener {
+            showHomeHelp("Prossimo allenamento", "Mostra il prossimo allenamento programmato, così puoi vedere rapidamente cosa è previsto oggi o nei prossimi giorni.")
+        }
         findViewById<android.view.View>(R.id.todayMenuButton).setOnClickListener { showTodayMenu() }
         findViewById<android.view.View>(R.id.measurementsButton).setOnClickListener { go(MeasurementsActivity::class.java) }
         findViewById<TextView>(R.id.todayLabel).text = todayLabel()
@@ -234,11 +247,11 @@ class HomeActivity : BaseShellActivity() {
             appendLine("• Target calorico: ${kcal(c?.target)}")
             append("  $percentLine")
         }
-        MaterialAlertDialogBuilder(this)
-            .setTitle("Come calcoliamo le calorie")
-            .setMessage(message)
-            .setPositiveButton("Ho capito", null)
-            .show()
+        showHelpCard("Come calcoliamo le calorie", message)
+    }
+
+    private fun showHomeHelp(title: String, message: String) {
+        showHelpCard(title, message)
     }
 
     private fun renderNextMeal(next: HomeViewModel.NextMealState?) {

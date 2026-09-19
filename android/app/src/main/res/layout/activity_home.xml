@@ -88,11 +88,64 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:baselineAligned="false"
+                    android:measureWithLargestChild="true"
                     android:orientation="horizontal">
 
-                    <com.myfitai.app.ui.widgets.MetricCardView android:id="@+id/metricWeight" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" />
-                    <com.myfitai.app.ui.widgets.MetricCardView android:id="@+id/metricFat" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" />
-                    <com.myfitai.app.ui.widgets.MetricCardView android:id="@+id/metricMuscle" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" />
+                    <com.myfitai.app.ui.widgets.MetricCardView
+                        android:id="@+id/metricWeight"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginEnd="@dimen/space_4"
+                        android:layout_weight="1" />
+                    <com.myfitai.app.ui.widgets.MetricCardView
+                        android:id="@+id/metricFat"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="@dimen/space_4"
+                        android:layout_marginEnd="@dimen/space_4"
+                        android:layout_weight="1" />
+                    <com.myfitai.app.ui.widgets.MetricCardView
+                        android:id="@+id/metricMuscle"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginStart="@dimen/space_4"
+                        android:layout_weight="1" />
+                </LinearLayout>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_12"
+                    app:cardBackgroundColor="@color/white"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/divider"
+                    app:strokeWidth="1dp">
+                <LinearLayout
+                    style="@style/Widget.MyFitAI.HomeSectionContent"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+                    <ImageButton
+                        android:id="@+id/bodyOverviewHelpButton"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="@android:color/transparent"
+                        android:contentDescription="Spiega panoramica del corpo"
+                        android:padding="8dp"
+                        android:src="@drawable/ic_help_outline"
+                        app:tint="@color/text_secondary" />
+                    <com.myfitai.app.ui.widgets.SectionHeaderView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Panoramica del corpo" />
                 </LinearLayout>
 
                 <TextView
@@ -122,8 +175,43 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12" />
+                </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
 
-                <com.myfitai.app.ui.widgets.SectionHeaderView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:text="Calorie base giornaliere" />
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_12"
+                    app:cardBackgroundColor="@color/white"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/divider"
+                    app:strokeWidth="1dp">
+                <LinearLayout
+                    style="@style/Widget.MyFitAI.HomeSectionContent"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+                    <ImageButton
+                        android:id="@+id/caloriesHelpButton"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="@android:color/transparent"
+                        android:contentDescription="Spiega calorie base, TDEE e target"
+                        android:padding="8dp"
+                        android:src="@drawable/ic_help_outline"
+                        app:tint="@color/text_secondary" />
+                    <com.myfitai.app.ui.widgets.SectionHeaderView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Calorie base giornaliere" />
+                </LinearLayout>
                 <TextView
                     android:id="@+id/caloriesModeText"
                     android:layout_width="match_parent"
@@ -241,8 +329,43 @@
                     android:text="Calcolo locale in base a corpo, attività e obiettivo. Tocca per i dettagli."
                     android:textColor="@color/text_muted"
                     android:textSize="11sp" />
+                </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
 
-                <com.myfitai.app.ui.widgets.SectionHeaderView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:text="Riserva di recupero" />
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_12"
+                    app:cardBackgroundColor="@color/white"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/divider"
+                    app:strokeWidth="1dp">
+                <LinearLayout
+                    style="@style/Widget.MyFitAI.HomeSectionContent"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+                    <ImageButton
+                        android:id="@+id/recoveryHelpButton"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="@android:color/transparent"
+                        android:contentDescription="Spiega la riserva di recupero"
+                        android:padding="8dp"
+                        android:src="@drawable/ic_help_outline"
+                        app:tint="@color/text_secondary" />
+                    <com.myfitai.app.ui.widgets.SectionHeaderView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Riserva di recupero" />
+                </LinearLayout>
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -275,8 +398,43 @@
                             android:textSize="11sp" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
+                </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
 
-                <com.myfitai.app.ui.widgets.SectionHeaderView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:text="@string/dashboard_next_meal_title" />
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_12"
+                    app:cardBackgroundColor="@color/white"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/divider"
+                    app:strokeWidth="1dp">
+                <LinearLayout
+                    style="@style/Widget.MyFitAI.HomeSectionContent"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+                    <ImageButton
+                        android:id="@+id/nextMealHelpButton"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="@android:color/transparent"
+                        android:contentDescription="Spiega il prossimo pasto"
+                        android:padding="8dp"
+                        android:src="@drawable/ic_help_outline"
+                        app:tint="@color/text_secondary" />
+                    <com.myfitai.app.ui.widgets.SectionHeaderView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/dashboard_next_meal_title" />
+                </LinearLayout>
 
                 <com.myfitai.app.ui.widgets.MealCardView android:id="@+id/nextMealCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_12" />
                 <com.google.android.material.button.MaterialButton
@@ -287,23 +445,75 @@
                     android:layout_marginTop="@dimen/space_4"
                     android:text="Vedi i prossimi pasti"
                     android:textAllCaps="false" />
+                </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
 
-                <com.myfitai.app.ui.widgets.SectionHeaderView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:text="@string/dashboard_next_workout_title" />
-                <com.myfitai.app.ui.widgets.WorkoutCardView android:id="@+id/nextWorkoutCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_12" />
-
-                <com.myfitai.app.ui.widgets.SectionHeaderView
+                <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_20"
-                    android:text="Azioni rapide" />
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/measurementsButton"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="48dp"
                     android:layout_marginTop="@dimen/space_12"
-                    android:text="Aggiungi rilevazione"
-                    android:textAllCaps="false" />
+                    app:cardBackgroundColor="@color/white"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/divider"
+                    app:strokeWidth="1dp">
+                <LinearLayout
+                    style="@style/Widget.MyFitAI.HomeSectionContent"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+                    <ImageButton
+                        android:id="@+id/nextWorkoutHelpButton"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="@android:color/transparent"
+                        android:contentDescription="Spiega il prossimo allenamento"
+                        android:padding="8dp"
+                        android:src="@drawable/ic_help_outline"
+                        app:tint="@color/text_secondary" />
+                    <com.myfitai.app.ui.widgets.SectionHeaderView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/dashboard_next_workout_title" />
+                </LinearLayout>
+                <com.myfitai.app.ui.widgets.WorkoutCardView android:id="@+id/nextWorkoutCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_12" />
+                </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_12"
+                    app:cardBackgroundColor="@color/white"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:strokeColor="@color/divider"
+                    app:strokeWidth="1dp">
+                    <LinearLayout
+                        style="@style/Widget.MyFitAI.HomeSectionContent"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+                        <com.myfitai.app.ui.widgets.SectionHeaderView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Azioni rapide" />
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/measurementsButton"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="48dp"
+                            android:layout_marginTop="@dimen/space_12"
+                            android:text="Aggiungi rilevazione"
+                            android:textAllCaps="false" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
             </LinearLayout>
         </LinearLayout>
     </ScrollView>

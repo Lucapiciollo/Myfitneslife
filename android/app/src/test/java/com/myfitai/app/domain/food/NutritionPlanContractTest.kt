@@ -17,6 +17,36 @@ class NutritionPlanContractTest {
     }
 
     @Test
+    fun partialWeek_fromFridayThroughSunday_isAccepted() {
+        val friday = week.plusDays(4)
+        val partial = response().copy(days = response().days.drop(4))
+
+        assertTrue(
+            NutritionPlanContract.validateBusiness(
+                response = partial,
+                expectedWeekStart = week,
+                targets = targets,
+                expectedFirstDate = friday,
+            ).isSuccess,
+        )
+    }
+
+    @Test
+    fun partialWeek_missingSunday_isRejected() {
+        val friday = week.plusDays(4)
+        val partial = response().copy(days = response().days.drop(4).dropLast(1))
+
+        assertFalse(
+            NutritionPlanContract.validateBusiness(
+                response = partial,
+                expectedWeekStart = week,
+                targets = targets,
+                expectedFirstDate = friday,
+            ).isSuccess,
+        )
+    }
+
+    @Test
     fun dayOutsideThreePercent_isRejected() {
         val original = response()
         val badDay = original.days.first().copy(totalKcal = 2200)
@@ -168,12 +198,12 @@ class NutritionPlanContractTest {
     }
 
     @Test
-    fun wheyNotCountedIntoDayTotals_isRejected() {
+    fun wheyNotCountedIntoDayTotals_doesNotOverrideDailyTarget() {
         val changed = withFirstDaySupplements(
             response(),
             listOf(proteinPowder(kcal = 120, protein = 24f, carbs = 3f, fat = 2f)),
         )
-        assertFalse(
+        assertTrue(
             NutritionPlanContract.validateBusiness(
                 changed,
                 week,

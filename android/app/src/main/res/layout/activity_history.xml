@@ -62,14 +62,18 @@
                 android:textSize="14sp"
                 android:visibility="gone" />
 
-            <LinearLayout
-                android:id="@+id/historyRowsContainer"
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.MyFitAI.Card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_12"
-                android:background="@drawable/bg_card"
-                android:orientation="vertical"
-                android:paddingHorizontal="@dimen/space_16" />
+                android:layout_marginTop="@dimen/space_12">
+                <LinearLayout
+                    android:id="@+id/historyRowsContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingHorizontal="@dimen/space_16" />
+            </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/exportButton"

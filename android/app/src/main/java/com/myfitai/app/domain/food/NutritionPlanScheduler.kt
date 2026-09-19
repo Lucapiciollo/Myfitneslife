@@ -46,7 +46,7 @@ class NutritionPlanScheduler(
         if (!config.enabled) return
 
         val now = Instant.ofEpochMilli(nowEpochMillis).atZone(zoneId)
-        val due = nextOccurrence(now, config.dayOfWeek, config.timeMinutes, zoneId)
+        val due = nextOccurrence(now, config.frequency, config.dayOfWeek, config.timeMinutes, zoneId)
         val targetWeek = due.toLocalDate()
             .with(TemporalAdjusters.next(DayOfWeek.MONDAY))
         val dueEpochMillis = due.toInstant().toEpochMilli()
@@ -74,17 +74,33 @@ class NutritionPlanScheduler(
 
         internal fun nextOccurrence(
             now: ZonedDateTime,
+            frequency: NutritionPlanSchedulePreferences.Frequency,
             dayOfWeek: DayOfWeek,
             timeMinutes: Int,
             zoneId: ZoneId,
         ): ZonedDateTime {
             val hour = timeMinutes / 60
             val minute = timeMinutes % 60
-            var candidate = now.toLocalDate()
-                .with(TemporalAdjusters.nextOrSame(dayOfWeek))
-                .atTime(hour, minute)
-                .atZone(zoneId)
-            if (!candidate.isAfter(now)) candidate = candidate.plusWeeks(1)
+            var candidate = when (frequency) {
+                NutritionPlanSchedulePreferences.Frequency.DAILY -> now.toLocalDate().atTime(hour, minute).atZone(zoneId)
+                NutritionPlanSchedulePreferences.Frequency.WEEKLY,
+                NutritionPlanSchedulePreferences.Frequency.BIWEEKLY -> now.toLocalDate()
+                    .with(TemporalAdjusters.nextOrSame(dayOfWeek))
+                    .atTime(hour, minute)
+                    .atZone(zoneId)
+                NutritionPlanSchedulePreferences.Frequency.MONTHLY -> now.withDayOfMonth(1)
+                    .toLocalDate()
+                    .atTime(hour, minute)
+                    .atZone(zoneId)
+            }
+            if (!candidate.isAfter(now)) {
+                candidate = when (frequency) {
+                    NutritionPlanSchedulePreferences.Frequency.DAILY -> candidate.plusDays(1)
+                    NutritionPlanSchedulePreferences.Frequency.WEEKLY -> candidate.plusWeeks(1)
+                    NutritionPlanSchedulePreferences.Frequency.BIWEEKLY -> candidate.plusWeeks(2)
+                    NutritionPlanSchedulePreferences.Frequency.MONTHLY -> candidate.plusMonths(1)
+                }
+            }
             return candidate
         }
     }
