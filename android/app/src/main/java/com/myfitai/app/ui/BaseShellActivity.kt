@@ -116,6 +116,7 @@ abstract class BaseShellActivity : AppCompatActivity() {
             textSize = 15f
             isSingleLine = true
             inputType = 0
+            setBackgroundResource(R.drawable.bg_input)
             setPadding(dp(12), 0, dp(8), 0)
             setOnClickListener { showDropDown() }
             setOnItemClickListener { _, _, position, _ -> handleProfileSelection(position) }
