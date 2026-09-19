@@ -55,6 +55,37 @@ class NutritionPlanContractTest {
     }
 
     @Test
+    fun calorieCentering_prefersWithinOnePercentOfDailyTarget() {
+        val source = response()
+        val centered = source.copy(days = source.days.mapIndexed { index, day ->
+            if (index == 0) day.copy(totalKcal = 2424) else day
+        })
+        val nearUpperGuardrail = source.copy(days = source.days.mapIndexed { index, day ->
+            if (index == 0) day.copy(totalKcal = 2460) else day
+        })
+
+        assertTrue(NutritionPlanGenerationService.validatePreferredCalorieCentering(centered, targets, emptyMap()).isSuccess)
+        assertFalse(NutritionPlanGenerationService.validatePreferredCalorieCentering(nearUpperGuardrail, targets, emptyMap()).isSuccess)
+        // The last attempt retains the official 3% guardrail rather than changing calorie targets.
+        assertTrue(NutritionBusinessValidator.validate(
+            targets,
+            NutritionBusinessValidator.Actuals(2460.0, 160.0, 280.0, 70.0),
+        ).valid)
+    }
+
+    @Test
+    fun calorieCentering_usesDynamicDailyTargetRatherThanBaseTarget() {
+        val source = response()
+        val specialDay = week.plusDays(2).toEpochDay()
+        val dynamic = mapOf(specialDay to NutritionBusinessValidator.Targets(2600.0, 160.0, 280.0, 70.0))
+        assertFalse(NutritionPlanGenerationService.validatePreferredCalorieCentering(source, targets, dynamic).isSuccess)
+        val adjusted = source.copy(days = source.days.map { day ->
+            if (day.dateEpochDay == specialDay) day.copy(totalKcal = 2600) else day
+        })
+        assertTrue(NutritionPlanGenerationService.validatePreferredCalorieCentering(adjusted, targets, dynamic).isSuccess)
+    }
+
+    @Test
     fun dynamicDailyTarget_isAuthoritativeEvenWhenBaseTargetMatches() {
         val specialDay = week.plusDays(2).toEpochDay()
         val dynamicTargets = mapOf(
