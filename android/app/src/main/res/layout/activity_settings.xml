@@ -155,6 +155,7 @@
                          android:hint="Gemini API key"
                          app:endIconMode="password_toggle">
                          <com.google.android.material.textfield.TextInputEditText
+                style="@style/Widget.MyFitAI.InputEditText"
                              android:id="@+id/geminiApiKeyInput"
                              android:layout_width="match_parent"
                               android:layout_height="wrap_content"
@@ -194,6 +195,7 @@
                         app:endIconMode="password_toggle"
                         app:passwordToggleTint="@color/text_secondary">
                         <com.google.android.material.textfield.TextInputEditText
+                style="@style/Widget.MyFitAI.InputEditText"
                             android:id="@+id/openAiApiKeyInput"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
