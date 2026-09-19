@@ -58,6 +58,22 @@ class AiExecutionServiceTest {
         }
     }
 
+    @Test(expected = AiExecutionService.Failure.OutputTruncated::class)
+    fun execute_doesNotTreatTokenLimitAsSchemaError() {
+        runBlocking {
+            val provider = object : AiProvider {
+                override val type = AiProviderType.GEMINI
+                override suspend fun generateStructured(request: AiStructuredRequest) =
+                    AiRawResponse(type, "fake", "{", finishReason = "MAX_TOKENS")
+            }
+            AiExecutionService().execute(
+                provider = provider,
+                request = AiStructuredRequest("system", "user", "test_schema", schema),
+                maxSchemaRetries = 2,
+            )
+        }
+    }
+
     private class FakeProvider(private val responses: List<String>) : AiProvider {
         override val type = AiProviderType.OPENAI
         var calls = 0
