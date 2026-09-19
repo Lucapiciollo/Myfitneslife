@@ -89,13 +89,13 @@ class WeeklyReviewActivity : BaseShellActivity() {
     }
 
     private fun renderNutrition(metrics: WeeklyReviewService.LocalMetrics?) {
-        findViewById<TextView>(R.id.avgKcalValue).text = metrics?.plannedAverageKcal?.let { "$it kcal" } ?: "—"
+        findViewById<TextView>(R.id.avgKcalValue).text = NutritionEstimateFormatter.formatEstimatedKcal(metrics?.plannedAverageKcal)
         findViewById<TextView>(R.id.targetKcalValue).text = "Target: ${metrics?.targetKcal ?: "—"}"
-        findViewById<TextView>(R.id.avgProteinValue).text = metrics?.plannedAverageProteinG?.let { "${format1(it)} g" } ?: "—"
+        findViewById<TextView>(R.id.avgProteinValue).text = NutritionEstimateFormatter.formatEstimatedMacro(metrics?.plannedAverageProteinG, "g")
         findViewById<TextView>(R.id.targetProteinValue).text = "Target: ${metrics?.targetProteinG?.let(::format1) ?: "—"}"
-        findViewById<TextView>(R.id.avgCarbsValue).text = metrics?.plannedAverageCarbsG?.let { "${format1(it)} g" } ?: "—"
+        findViewById<TextView>(R.id.avgCarbsValue).text = NutritionEstimateFormatter.formatEstimatedMacro(metrics?.plannedAverageCarbsG, "g")
         findViewById<TextView>(R.id.targetCarbsValue).text = "Target: ${metrics?.targetCarbsG?.let(::format1) ?: "—"}"
-        findViewById<TextView>(R.id.avgFatValue).text = metrics?.plannedAverageFatG?.let { "${format1(it)} g" } ?: "—"
+        findViewById<TextView>(R.id.avgFatValue).text = NutritionEstimateFormatter.formatEstimatedMacro(metrics?.plannedAverageFatG, "g")
         findViewById<TextView>(R.id.targetFatValue).text = "Target: ${metrics?.targetFatG?.let(::format1) ?: "—"}"
     }
 

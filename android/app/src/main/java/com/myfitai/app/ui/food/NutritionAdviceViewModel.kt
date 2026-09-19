@@ -11,6 +11,7 @@ import com.myfitai.app.domain.ai.AiJobScheduler
 import com.myfitai.app.domain.ai.AiJobType
 import com.myfitai.app.domain.food.NutritionAdviceAiJobHandler
 import com.myfitai.app.data.profile.ActiveProfileStore
+import com.myfitai.app.ui.NutritionEstimateFormatter
 import androidx.work.WorkInfo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -95,7 +96,7 @@ class NutritionAdviceViewModel(
                     notes = buildString {
                         append("Suggerito da Chiedi all'IA. ")
                         append(suggestion.reason)
-                        append(" Stima proposta: ${suggestion.estimatedKcal} kcal, P ${suggestion.proteinG} g, C ${suggestion.carbsG} g, F ${suggestion.fatG} g.")
+                        append(" Stima proposta: ${NutritionEstimateFormatter.formatEstimatedKcal(suggestion.estimatedKcal)}, P ${NutritionEstimateFormatter.formatEstimatedMacro(suggestion.proteinG, "g")}, C ${NutritionEstimateFormatter.formatEstimatedMacro(suggestion.carbsG, "g")}, F ${NutritionEstimateFormatter.formatEstimatedMacro(suggestion.fatG, "g")}.")
                     },
                     occurredAtEpochMillis = now,
                 )

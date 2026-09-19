@@ -463,7 +463,7 @@ class NutritionPlanGenerationService(
             response: NutritionPlanContract.Response,
             baseTargets: NutritionBusinessValidator.Targets,
             dailyTargets: Map<Long, NutritionBusinessValidator.Targets>,
-        ): Result<Unit> = runCatching {
+        ): kotlin.Result<Unit> = runCatching {
             response.days.forEach { day ->
                 val target = (dailyTargets[day.dateEpochDay] ?: baseTargets).kcal
                 require(target > 0.0) { "CALORIE_TARGET_INVALID" }

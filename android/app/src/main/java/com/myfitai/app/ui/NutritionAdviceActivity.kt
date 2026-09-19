@@ -127,10 +127,10 @@ class NutritionAdviceActivity : BaseShellActivity() {
                 gravity = Gravity.CENTER_VERTICAL
             }
             row.addView(cell(suggestion.title, 2.4f, bold = true, gravity = Gravity.START))
-            row.addView(cell(suggestion.estimatedKcal.toString(), 0.9f, bold = true))
-            row.addView(cell(String.format(Locale.ITALIAN, "%.0f", suggestion.proteinG), 0.7f))
-            row.addView(cell(String.format(Locale.ITALIAN, "%.0f", suggestion.carbsG), 0.7f))
-            row.addView(cell(String.format(Locale.ITALIAN, "%.0f", suggestion.fatG), 0.7f))
+            row.addView(cell(NutritionEstimateFormatter.formatEstimatedKcal(suggestion.estimatedKcal), 0.9f, bold = true))
+            row.addView(cell(NutritionEstimateFormatter.formatEstimatedMacro(suggestion.proteinG, "g"), 0.7f))
+            row.addView(cell(NutritionEstimateFormatter.formatEstimatedMacro(suggestion.carbsG, "g"), 0.7f))
+            row.addView(cell(NutritionEstimateFormatter.formatEstimatedMacro(suggestion.fatG, "g"), 0.7f))
             body.addView(row)
 
             body.addView(TextView(this).apply {

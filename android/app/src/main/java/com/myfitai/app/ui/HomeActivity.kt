@@ -172,7 +172,7 @@ class HomeActivity : BaseShellActivity() {
             }
             val time = meal.timeMinutes?.let { String.format(Locale.ITALIAN, "%02d:%02d", it / 60, it % 60) }
             val header = listOfNotNull(dayLabel, time).joinToString(" ")
-            val kcal = meal.kcal?.let { " · $it kcal" } ?: ""
+            val kcal = meal.kcal?.let { " · ${NutritionEstimateFormatter.formatEstimatedKcal(it)}" } ?: ""
             "$header — ${meal.title}$kcal"
         }.toTypedArray()
         MaterialAlertDialogBuilder(this)
@@ -275,7 +275,7 @@ class HomeActivity : BaseShellActivity() {
             val time = next.timeMinutes?.let { String.format(Locale.ITALIAN, "%02d:%02d", it / 60, it % 60) }
             setTime(listOfNotNull(dayLabel, time).joinToString(" "))
             setTitle(next.title)
-            setKcal(next.kcal?.let { "$it kcal" } ?: next.type)
+            setKcal(next.kcal?.let { NutritionEstimateFormatter.formatEstimatedKcal(it) } ?: next.type)
             setImage(R.drawable.img_next_meal)
             contentDescription = "Prossimo pasto: ${next.title}"
         }

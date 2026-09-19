@@ -154,7 +154,7 @@ class HistoryActivity : BaseShellActivity() {
     }
 
     private fun cheatSubtitle(row: com.myfitai.app.data.local.entity.CheatEntryEntity): String {
-        val estimate = row.estimatedKcal?.let { " · stima $it kcal" }.orEmpty()
+        val estimate = row.estimatedKcal?.let { " · stima ${NutritionEstimateFormatter.formatEstimatedKcal(it)}" }.orEmpty()
         return row.description.trim().ifBlank { "Sgarro registrato" } + estimate
     }
 

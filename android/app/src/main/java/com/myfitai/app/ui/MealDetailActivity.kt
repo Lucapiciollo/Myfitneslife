@@ -86,10 +86,10 @@ class MealDetailActivity : BaseShellActivity() {
             displayMealType(meal.type),
             meal.timeMinutes?.let(::formatTime),
         ).joinToString(" · ")
-        findViewById<TextView>(R.id.statKcal).text = meal.kcal?.let { "$it kcal" } ?: "—"
-        findViewById<TextView>(R.id.statProtein).text = meal.proteinG?.let { "${formatMacro(it)}g" } ?: "—"
-        findViewById<TextView>(R.id.statCarbs).text = meal.carbsG?.let { "${formatMacro(it)}g" } ?: "—"
-        findViewById<TextView>(R.id.statFat).text = meal.fatG?.let { "${formatMacro(it)}g" } ?: "—"
+        findViewById<TextView>(R.id.statKcal).text = NutritionEstimateFormatter.formatEstimatedKcal(meal.kcal)
+        findViewById<TextView>(R.id.statProtein).text = NutritionEstimateFormatter.formatEstimatedMacro(meal.proteinG, "g")
+        findViewById<TextView>(R.id.statCarbs).text = NutritionEstimateFormatter.formatEstimatedMacro(meal.carbsG, "g")
+        findViewById<TextView>(R.id.statFat).text = NutritionEstimateFormatter.formatEstimatedMacro(meal.fatG, "g")
         findViewById<ImageView>(R.id.mealImage).setImageResource(imageFor(meal))
 
         val ingredientsContainer = findViewById<LinearLayout>(R.id.ingredientsContainer)

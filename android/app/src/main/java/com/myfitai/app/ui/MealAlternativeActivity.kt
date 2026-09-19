@@ -41,7 +41,7 @@ class MealAlternativeActivity : BaseShellActivity() {
         findViewById<TextView>(R.id.sourceMealText).text = buildString {
             append(type.ifBlank { "Pasto" })
             if (title.isNotBlank()) append(" · $title")
-            if (kcal > 0) append(" · $kcal kcal")
+            if (kcal > 0) append(" · ${NutritionEstimateFormatter.formatEstimatedKcal(kcal)}")
         }
 
         if (weekStart == Long.MIN_VALUE || day == Long.MIN_VALUE || mealId <= 0L) {
@@ -108,14 +108,10 @@ class MealAlternativeActivity : BaseShellActivity() {
                 setTypeface(typeface, Typeface.BOLD)
             })
             body.addView(TextView(this).apply {
-                text = String.format(
-                    Locale.ITALIAN,
-                    "%d kcal · Proteine %.0f g · Carboidrati %.0f g · Grassi %.0f g",
-                    alternative.kcal,
-                    alternative.proteinG,
-                    alternative.carbsG,
-                    alternative.fatG,
-                )
+                text = "${NutritionEstimateFormatter.formatEstimatedKcal(alternative.kcal)} · " +
+                    "Proteine ${NutritionEstimateFormatter.formatEstimatedMacro(alternative.proteinG, "g")} · " +
+                    "Carboidrati ${NutritionEstimateFormatter.formatEstimatedMacro(alternative.carbsG, "g")} · " +
+                    "Grassi ${NutritionEstimateFormatter.formatEstimatedMacro(alternative.fatG, "g")}"
                 setTextColor(getColor(R.color.accent_green_dark))
                 textSize = 13f
                 setTypeface(typeface, Typeface.BOLD)
