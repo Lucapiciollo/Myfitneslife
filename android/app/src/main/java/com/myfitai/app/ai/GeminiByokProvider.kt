@@ -124,7 +124,14 @@ class GeminiByokProvider(
         val candidates = root.optJSONArray("candidates") ?: return null
         for (i in 0 until candidates.length()) {
             val parts = candidates.optJSONObject(i)?.optJSONObject("content")?.optJSONArray("parts") ?: continue
-            for (j in 0 until parts.length()) parts.optJSONObject(j)?.optString("text")?.takeIf { it.isNotBlank() }?.let { return it }
+            // A complete structured response can span multiple text parts: taking only the
+            // first part silently truncates the weekly-plan envelope.
+            val text = buildString {
+                for (j in 0 until parts.length()) {
+                    parts.optJSONObject(j)?.optString("text")?.let { append(it) }
+                }
+            }
+            if (text.isNotBlank()) return text
         }
         return null
     }
