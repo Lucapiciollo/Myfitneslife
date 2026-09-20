@@ -13,6 +13,7 @@ object BottomNavBinder {
     const val EXTRA_TAB_ROOT = "myfitai_tab_root"
     const val EXTRA_INTERNAL_NAV = "myfitai_internal_nav"
     const val EXTRA_EMBEDDED_TAB = "myfitai_embedded_tab"
+    const val EXTRA_SELECTED_TAB = "myfitai_selected_tab"
 
     fun bind(activity: Activity, selected: Tab) {
         val mapping = listOf(
@@ -38,7 +39,8 @@ object BottomNavBinder {
                             return@setOnClickListener
                         }
                         activity.startActivity(
-                            Intent(activity, target)
+                            Intent(activity, TabHostActivity::class.java)
+                                .putExtra(EXTRA_SELECTED_TAB, tab.name)
                                 .putExtra(EXTRA_TAB_ROOT, true)
                                 .addFlags(
                                     Intent.FLAG_ACTIVITY_CLEAR_TOP or

@@ -24,6 +24,9 @@ class TabHostActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        currentTab = intent.getStringExtra(BottomNavBinder.EXTRA_SELECTED_TAB)
+            ?.let { name -> BottomNavBinder.Tab.entries.firstOrNull { it.name == name } }
+            ?: BottomNavBinder.Tab.HOME
         setContentView(R.layout.activity_tab_host)
         content = findViewById(R.id.tabContent)
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(android.R.id.content)) { view, insets ->
@@ -48,6 +51,15 @@ class TabHostActivity : AppCompatActivity() {
         currentTab = tab
         showTab(tab)
         BottomNavBinder.bind(this, tab)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        intent.getStringExtra(BottomNavBinder.EXTRA_SELECTED_TAB)
+            ?.let { name -> BottomNavBinder.Tab.entries.firstOrNull { it.name == name } }
+            ?.takeIf { it != currentTab }
+            ?.let { selectTab(it) }
     }
 
     fun showExitConfirmation() {

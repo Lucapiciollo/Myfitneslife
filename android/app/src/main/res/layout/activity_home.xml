@@ -156,8 +156,8 @@
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
 
-                <com.myfitai.app.ui.widgets.WeightTrendChartView
-                    android:id="@+id/weightTrendChart"
+                <com.myfitai.app.ui.widgets.BodyMeasurementTrendView
+                    android:id="@+id/bodyMeasurementTrendChart"
                     android:layout_width="match_parent"
                     android:layout_height="@dimen/dashboard_chart_height"
                     android:layout_marginTop="@dimen/space_16" />
@@ -166,7 +166,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_4"
-                    android:text="Andamento rispetto alla prima rilevazione del periodo"
+                    android:text="Variazione percentuale rispetto alla prima rilevazione di ogni misura"
                     android:textColor="@color/text_muted"
                     android:textSize="11sp" />
 

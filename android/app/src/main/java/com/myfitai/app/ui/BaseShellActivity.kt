@@ -41,7 +41,8 @@ abstract class BaseShellActivity : AppCompatActivity() {
             it.selectTab(BottomNavBinder.Tab.FOOD)
             return true
         }
-        val intent = Intent(this, FoodPlanActivity::class.java)
+        val intent = Intent(this, TabHostActivity::class.java)
+            .putExtra(BottomNavBinder.EXTRA_SELECTED_TAB, BottomNavBinder.Tab.FOOD.name)
             .putExtra(BottomNavBinder.EXTRA_TAB_ROOT, true)
             .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NO_ANIMATION)
         weekStartEpochDay?.let { intent.putExtra(FoodPlanActivity.EXTRA_WEEK_START_EPOCH_DAY, it) }
@@ -283,7 +284,14 @@ abstract class BaseShellActivity : AppCompatActivity() {
                 return
             }
         }
-        val intent = Intent(this, target)
+        val intent = Intent(this, TabHostActivity::class.java)
+        val selectedTab = when (target) {
+            HomeActivity::class.java -> BottomNavBinder.Tab.HOME
+            FoodPlanActivity::class.java -> BottomNavBinder.Tab.FOOD
+            PhysicalEvolutionActivity::class.java -> BottomNavBinder.Tab.PROGRESS
+            else -> BottomNavBinder.Tab.MORE
+        }
+        intent.putExtra(BottomNavBinder.EXTRA_SELECTED_TAB, selectedTab.name)
         if (target == HomeActivity::class.java ||
             target == FoodPlanActivity::class.java ||
             target == PhysicalEvolutionActivity::class.java ||

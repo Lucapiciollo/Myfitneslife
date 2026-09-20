@@ -22,7 +22,7 @@ import com.myfitai.app.ui.home.HomeViewModel
 import com.myfitai.app.ui.widgets.MealCardView
 import com.myfitai.app.ui.widgets.MetricCardView
 import com.myfitai.app.ui.widgets.TimeRangeSelectorView
-import com.myfitai.app.ui.widgets.WeightTrendChartView
+import com.myfitai.app.ui.widgets.BodyMeasurementTrendView
 import com.myfitai.app.ui.widgets.WorkoutCardView
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -101,7 +101,6 @@ class HomeActivity : BaseShellActivity() {
         findViewById<MetricCardView>(R.id.metricFat).setLabel(getString(R.string.dashboard_metric_fat))
         findViewById<MetricCardView>(R.id.metricMuscle).setLabel(getString(R.string.dashboard_metric_muscle))
 
-        findViewById<WeightTrendChartView>(R.id.weightTrendChart).showYAxisLabels()
         findViewById<TimeRangeSelectorView>(R.id.timeRangeSelector).apply {
             setRanges(listOf("1W", "1M", "3M", "1Y"), selectedIndex = 1)
             setOnRangeSelectedListener(viewModel::selectRange)
@@ -135,8 +134,15 @@ class HomeActivity : BaseShellActivity() {
         renderMetric(findViewById(R.id.metricFat), state.bodyFat.value, state.bodyFat.deltaFromPrevious, "%", DeltaSemantic.DOWN_IS_POSITIVE)
         renderMetric(findViewById(R.id.metricMuscle), state.muscleMass.value, state.muscleMass.deltaFromPrevious, "kg", DeltaSemantic.UP_IS_POSITIVE)
 
-        findViewById<WeightTrendChartView>(R.id.weightTrendChart).setSeries(
-            state.trendSeries.map { it.label to it.values },
+        findViewById<BodyMeasurementTrendView>(R.id.bodyMeasurementTrendChart).setNormalizedSeries(
+            state.bodyMeasurementTrendSeries.map { series ->
+                BodyMeasurementTrendView.Series(
+                    label = series.label,
+                    points = series.values.mapIndexed { index, value ->
+                        BodyMeasurementTrendView.Point(index.toString(), value)
+                    },
+                )
+            },
         )
         findViewById<TextView>(R.id.recompositionStateText).text = recompositionText(state.recompositionState)
         renderCalories(state.calories)

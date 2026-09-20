@@ -81,6 +81,7 @@ class HomeViewModel(
         val bodyFat: MetricState = MetricState(null, null),
         val muscleMass: MetricState = MetricState(null, null),
         val trendSeries: List<TrendSeries> = emptyList(),
+        val bodyMeasurementTrendSeries: List<TrendSeries> = emptyList(),
         val recompositionState: LocalCalculationEngine.RecompositionState = LocalCalculationEngine.RecompositionState.NOT_ENOUGH_DATA,
         val calories: CalorieState = CalorieState(),
         val nextWorkout: NextWorkoutState? = null,
@@ -209,6 +210,7 @@ class HomeViewModel(
         val weightSeries = filterRange(weightValues, rangeIndex).map { it.second }
         val fatSeries = filterRange(fatValues, rangeIndex).map { it.second }
         val muscleSeries = filterRange(muscleValues, rangeIndex).map { it.second }
+        val bodyMeasurementTrendSeries = bodyMeasurementTrendSeries(source, rangeIndex)
         val now = System.currentTimeMillis()
         val nextWorkout = source.workouts
             .asSequence()
@@ -229,6 +231,7 @@ class HomeViewModel(
                 TrendSeries("Grasso corporeo", fatSeries),
                 TrendSeries("Massa muscolare", muscleSeries),
             ),
+            bodyMeasurementTrendSeries = bodyMeasurementTrendSeries,
             recompositionState = LocalCalculationEngine.classifyRecomposition(fatTrend.delta, muscleTrend.delta),
             calories = calories,
             nextWorkout = nextWorkout,
@@ -355,6 +358,29 @@ class HomeViewModel(
         val current = valuesDesc.getOrNull(0)?.second
         val previous = valuesDesc.getOrNull(1)?.second
         return MetricState(current, if (current != null && previous != null) current - previous else null)
+    }
+
+    private fun bodyMeasurementTrendSeries(source: Source, rangeIndex: Int): List<TrendSeries> {
+        val metrics = listOf(
+            "Peso" to (source.bia.mapNotNull { row -> row.weightKg?.let { row.measuredAtEpochMillis to it } } +
+                source.body.mapNotNull { row -> row.weightKg?.let { row.measuredAtEpochMillis to it } }),
+            "Fianchi" to source.body.mapNotNull { row -> row.hipsCm?.let { row.measuredAtEpochMillis to it } },
+            "Vita" to source.body.mapNotNull { row -> row.waistCm?.let { row.measuredAtEpochMillis to it } },
+            "Torace" to source.body.mapNotNull { row -> row.chestCm?.let { row.measuredAtEpochMillis to it } },
+            "Addome" to source.body.mapNotNull { row -> row.abdomenCm?.let { row.measuredAtEpochMillis to it } },
+            "Spalle" to source.body.mapNotNull { row -> row.shouldersCm?.let { row.measuredAtEpochMillis to it } },
+            "Glutei" to source.body.mapNotNull { row -> row.glutesCm?.let { row.measuredAtEpochMillis to it } },
+            "Braccio sinistro" to source.body.mapNotNull { row -> row.armLeftCm?.let { row.measuredAtEpochMillis to it } },
+            "Braccio destro" to source.body.mapNotNull { row -> row.armRightCm?.let { row.measuredAtEpochMillis to it } },
+            "Coscia sinistra" to source.body.mapNotNull { row -> row.thighLeftCm?.let { row.measuredAtEpochMillis to it } },
+            "Coscia destra" to source.body.mapNotNull { row -> row.thighRightCm?.let { row.measuredAtEpochMillis to it } },
+            "Polpaccio sinistro" to source.body.mapNotNull { row -> row.calfLeftCm?.let { row.measuredAtEpochMillis to it } },
+            "Polpaccio destro" to source.body.mapNotNull { row -> row.calfRightCm?.let { row.measuredAtEpochMillis to it } },
+        )
+        return metrics.mapNotNull { (label, values) ->
+            val filtered = filterRange(values.sortedByDescending { it.first }, rangeIndex).map { it.second }
+            filtered.takeIf { it.isNotEmpty() }?.let { TrendSeries(label, it) }
+        }
     }
 
     private fun metricValues(history: List<BiaMeasurementEntity>, selector: (BiaMeasurementEntity) -> Float?): List<Pair<Long, Float>> =
