@@ -29,6 +29,7 @@ import com.myfitai.app.ui.widgets.BodyMeasurementTrendView
 import com.myfitai.app.ui.widgets.MeasurementRowView
 import com.myfitai.app.ui.widgets.SelectableSegmentView
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flatMapLatest
 import java.time.Instant
 import java.time.LocalDate
@@ -36,6 +37,7 @@ import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class BodyMeasuresActivity : BaseShellActivity() {
 
     private enum class Metric(
