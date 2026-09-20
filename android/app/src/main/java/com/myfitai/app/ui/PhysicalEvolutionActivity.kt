@@ -228,6 +228,14 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
     }
 
     private fun executeProgressAnalysis() {
+        val profileId = data.activeProfileStore.currentIdOrNull()
+        if (profileId == null) {
+            analysisResultText.visibility = View.VISIBLE
+            analysisResultText.text = "Seleziona un profilo prima di avviare l'analisi IA."
+            analysisProgress.visibility = View.GONE
+            analysisButton.isEnabled = false
+            return
+        }
         analysisButton.isEnabled = false
         analysisButton.text = "Analisi in corso…"
         analysisProgress.visibility = View.VISIBLE
@@ -236,9 +244,17 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         analysisDetailsButton.visibility = View.GONE
         analysisDetailsContainer.visibility = View.GONE
         analysisDetailsExpanded = false
-        val profileId = data.activeProfileStore.currentIdOrNull() ?: return
         val jobKey = "manual-${System.currentTimeMillis()}"
-        data.aiJobScheduler.enqueue(AiJobType.PROGRESS_ANALYSIS, profileId, jobKey)
+        val enqueueError = runCatching {
+            data.aiJobScheduler.enqueue(AiJobType.PROGRESS_ANALYSIS, profileId, jobKey)
+        }.exceptionOrNull()
+        if (enqueueError != null) {
+            analysisResultText.text = "Impossibile avviare l'analisi IA: ${enqueueError.message ?: "errore locale"}"
+            analysisProgress.visibility = View.GONE
+            analysisButton.isEnabled = true
+            analysisButton.text = "Esegui analisi ora"
+            return
+        }
         lifecycleScope.launch {
             data.aiJobScheduler.observe(AiJobType.PROGRESS_ANALYSIS, profileId, jobKey).collect { info ->
                 when (info?.state) {

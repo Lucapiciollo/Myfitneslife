@@ -50,29 +50,37 @@ abstract class BaseShellActivity : AppCompatActivity() {
     }
 
     protected fun showHelpCard(title: String, message: String) {
-        val content = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            setPadding(dp(4), dp(4), dp(4), dp(4))
+        runCatching {
+            val content = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                setPadding(dp(4), dp(4), dp(4), dp(4))
+            }
+            View(this).apply {
+                setBackgroundColor(getColor(R.color.accent_green))
+                content.addView(this, LinearLayout.LayoutParams(dp(4), ViewGroup.LayoutParams.MATCH_PARENT).apply {
+                    marginEnd = dp(12)
+                })
+            }
+            TextView(this).apply {
+                text = formatHelpMessage(message)
+                textSize = 15f
+                setTextColor(getColor(R.color.text_primary))
+                setLineSpacing(0f, 1.18f)
+                setPadding(dp(4), dp(8), dp(8), dp(8))
+                content.addView(this, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+            }
+            MaterialAlertDialogBuilder(this)
+                .setTitle(title)
+                .setView(content)
+                .setPositiveButton("Ho capito", null)
+                .show()
+        }.onFailure {
+            MaterialAlertDialogBuilder(this)
+                .setTitle(title)
+                .setMessage(message)
+                .setPositiveButton("Ho capito", null)
+                .show()
         }
-        View(this).apply {
-            setBackgroundColor(getColor(R.color.accent_green))
-            content.addView(this, LinearLayout.LayoutParams(dp(4), ViewGroup.LayoutParams.MATCH_PARENT).apply {
-                marginEnd = dp(12)
-            })
-        }
-        TextView(this).apply {
-            text = formatHelpMessage(message)
-            textSize = 15f
-            setTextColor(getColor(R.color.text_primary))
-            setLineSpacing(0f, 1.18f)
-            setPadding(dp(4), dp(8), dp(8), dp(8))
-            content.addView(this, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-        }
-        MaterialAlertDialogBuilder(this)
-            .setTitle(title)
-            .setView(content)
-            .setPositiveButton("Ho capito", null)
-            .show()
     }
 
     private fun formatHelpMessage(message: String): CharSequence {

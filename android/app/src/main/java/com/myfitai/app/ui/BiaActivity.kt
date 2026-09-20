@@ -35,6 +35,7 @@ import com.myfitai.app.ui.bia.BiaViewModel
 import com.myfitai.app.ui.widgets.MeasurementRowView
 import com.myfitai.app.ui.widgets.SelectableSegmentView
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date

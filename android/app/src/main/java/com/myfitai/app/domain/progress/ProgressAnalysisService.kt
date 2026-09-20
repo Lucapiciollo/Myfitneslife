@@ -49,12 +49,8 @@ class ProgressAnalysisService(
     suspend fun analyze(profileId: Long): Result {
         val profile = profiles.get(profileId) ?: throw AnalysisException.NeedsInput(listOf("profilo"))
         val snapshot = calculations.profileSnapshot(profileId, time.today()) ?: throw AnalysisException.NeedsInput(listOf("dati profilo"))
-        val comparableSignals = comparableSignalCount(snapshot)
         if (snapshot.latestBiaTimestamp == null) throw AnalysisException.NeedsInput(listOf("rilevazioni BIA"))
         if (snapshot.latestBodyMeasurementTimestamp == null) throw AnalysisException.NeedsInput(listOf("misure corporee"))
-        if (comparableSignals < MIN_COMPARABLE_SIGNALS) {
-            throw AnalysisException.NeedsInput(listOf("almeno due trend corporei con più rilevazioni comparabili"))
-        }
 
         val windowDays = max(MIN_ACTIVITY_WINDOW_DAYS, preferences.intervalWeeks * 7).coerceAtMost(MAX_ACTIVITY_WINDOW_DAYS)
         val zone = time.zoneId
@@ -97,16 +93,6 @@ class ProgressAnalysisService(
         return Result(response, validated.provider.name, validated.model, validated.usage, executedAt)
     }
 
-    private fun comparableSignalCount(snapshot: ProfileCalculationService.Snapshot): Int = listOf(
-        snapshot.biaMetrics.weight,
-        snapshot.biaMetrics.bodyFat,
-        snapshot.biaMetrics.muscleMass,
-        snapshot.bodyMetrics.waist,
-        snapshot.bodyMetrics.abdomen,
-        snapshot.bodyMetrics.chest,
-        snapshot.bodyMetrics.glutes,
-    ).count { it.recentTrend.count >= 2 }
-
     private fun buildPrompt(
         goal: String?,
         activity: String?,
@@ -144,7 +130,6 @@ class ProgressAnalysisService(
     private fun compact(value: String?): String = value.orEmpty().replace('|', '/').replace('\n', ' ').trim().ifBlank { "?" }
 
     companion object {
-        private const val MIN_COMPARABLE_SIGNALS = 2
         private const val MIN_ACTIVITY_WINDOW_DAYS = 28
         private const val MAX_ACTIVITY_WINDOW_DAYS = 84
         private val SYSTEM_PROMPT = """
