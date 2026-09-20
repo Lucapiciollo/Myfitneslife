@@ -46,6 +46,15 @@ data class BiaMeasurementEntity(
     val afterBathroom: Boolean,
     val noRecentWorkout: Boolean,
     val notes: String? = null,
+    val fatMassKg: Float? = null,
+    val leanMassKg: Float? = null,
+    val bodyWaterKg: Float? = null,
+    val subcutaneousFatPercent: Float? = null,
+    val boneMassKg: Float? = null,
+    val proteinPercent: Float? = null,
+    val proteinKg: Float? = null,
+    val bodyAgeYears: Int? = null,
+    val bmi: Float? = null,
 )
 
 @Entity(
