@@ -265,7 +265,8 @@ class HomeViewModel(
                 bodyFatPercent = latestBia?.bodyFatPercent?.toDouble(),
                 activityLevel = ProfileCalculationMapper.activity(profile.activityLevel),
                 goal = ProfileCalculationMapper.goal(profile.goal),
-                waistCm = latestBody?.waistCm?.toDouble(),
+                waistCm = source.body.filter { it.waistCm != null }
+                    .maxByOrNull { it.measuredAtEpochMillis }?.waistCm?.toDouble(),
             )
         )
         val tdeeInt = calculation.tdeeKcal?.let { Math.round(it).toInt() }
