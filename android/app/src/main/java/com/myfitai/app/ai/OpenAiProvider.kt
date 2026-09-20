@@ -40,7 +40,6 @@ class OpenAiProvider(
             .put("instructions", request.systemPrompt)
             .put("input", buildInput(request))
             .put("store", false)
-            .put("max_output_tokens", request.maxOutputTokens)
             .put(
                 "text",
                 JSONObject().put(
@@ -52,6 +51,10 @@ class OpenAiProvider(
                         .put("schema", schema)
                 )
             )
+
+        // Omit an application cap for long/variable-length plans; provider defaults and
+        // model hard limits still apply. Keep explicit limits for bounded short agents.
+        request.maxOutputTokens?.let { body.put("max_output_tokens", it) }
 
         val raw = HttpJsonClient.post(
             provider = type,
