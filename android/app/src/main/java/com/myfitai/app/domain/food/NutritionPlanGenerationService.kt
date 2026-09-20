@@ -75,13 +75,19 @@ class NutritionPlanGenerationService(
             ?: throw GenerationException.NeedsInput(listOf("dati profilo"))
 
         val calc = snapshot.calculation
+        val existingPlan = plans.loadLatestSnapshot(profileId, monday.toEpochDay())
+        val existingTargets = existingPlan?.version
         val goal = ProfileCalculationMapper.goal(profile.goal)
+        val resolvedTargetKcal = calc.targetKcal ?: existingTargets?.targetKcal?.toDouble()
+        val resolvedProteinG = calc.proteinG ?: existingTargets?.targetProteinG?.toDouble()
+        val resolvedCarbsG = calc.carbsG ?: existingTargets?.targetCarbsG?.toDouble()
+        val resolvedFatG = calc.fatG ?: existingTargets?.targetFatG?.toDouble()
         val missing = buildList {
             if (goal == null) add("obiettivo")
-            if (calc.targetKcal == null) add("target calorie")
-            if (calc.proteinG == null) add("proteine")
-            if (calc.carbsG == null) add("carboidrati")
-            if (calc.fatG == null) add("grassi")
+            if (resolvedTargetKcal == null) add("target calorie")
+            if (resolvedProteinG == null) add("proteine")
+            if (resolvedCarbsG == null) add("carboidrati")
+            if (resolvedFatG == null) add("grassi")
             if (snapshot.latestWeightKg == null) add("peso")
         }
         if (missing.isNotEmpty()) throw GenerationException.NeedsInput(missing)
@@ -92,7 +98,7 @@ class NutritionPlanGenerationService(
             AdaptiveNutritionTargetEngine.Input(
                 goal = resolvedGoal,
                 tdeeKcal = calc.tdeeKcal,
-                baseTargetKcal = calc.targetKcal,
+                baseTargetKcal = resolvedTargetKcal,
                 currentWeightKg = weightKg,
                 weight = snapshot.biaMetrics.weight.toAdaptiveEvidence(),
                 bodyFat = snapshot.biaMetrics.bodyFat.toAdaptiveEvidence(),
@@ -101,7 +107,7 @@ class NutritionPlanGenerationService(
                 abdomen = snapshot.bodyMetrics.abdomen.toAdaptiveEvidence(),
             )
         )
-        val finalTargetKcal = adaptive.targetKcal ?: calc.targetKcal!!
+        val finalTargetKcal = adaptive.targetKcal ?: resolvedTargetKcal!!
         val finalMacros = LocalCalculationEngine.calculateMacrosForTarget(
             targetKcal = finalTargetKcal,
             weightKg = weightKg,
