@@ -77,20 +77,26 @@ class ProfileExportService(
                 val latestPlan = plans.maxByOrNull { it.weekStartEpochDay }?.let { loadLatestSnapshot(it) }
                 val latestBia = bia.lastOrNull()
                 val latestBody = body.lastOrNull()
+                val recordedWeights = (
+                    bia.mapNotNull { row -> row.weightKg?.let { row.measuredAtEpochMillis to it } } +
+                        body.mapNotNull { row -> row.weightKg?.let { row.measuredAtEpochMillis to it } }
+                    ).sortedBy { it.first }
+                val latestWeight = recordedWeights.lastOrNull()?.second ?: profile.currentWeightKg
+                val latestWaist = body.lastOrNull { it.waistCm != null }?.waistCm
                 val ageYears = profile.birthDateEpochDay?.let { epochDay ->
                     val birth = LocalDate.ofEpochDay(epochDay)
                     if (birth.isAfter(time.today())) null else Period.between(birth, time.today()).years
                 }
                 val calculation = LocalCalculationEngine.calculate(
                     LocalCalculationEngine.Input(
-                        weightKg = (latestBia?.weightKg ?: profile.currentWeightKg)?.toDouble(),
+                        weightKg = latestWeight?.toDouble(),
                         heightCm = profile.heightCm?.toDouble(),
                         ageYears = ageYears,
                         biologicalSex = biologicalSex(profile.biologicalSex),
                         bodyFatPercent = latestBia?.bodyFatPercent?.toDouble(),
                         activityLevel = ProfileCalculationMapper.activity(profile.activityLevel),
                         goal = ProfileCalculationMapper.goal(profile.goal),
-                        waistCm = latestBody?.waistCm?.toDouble(),
+                        waistCm = latestWaist?.toDouble(),
                     )
                 )
                 val file = exportFile(profile.name, "report-profilo", "pdf")
@@ -102,7 +108,7 @@ class ProfileExportService(
                         latestBody = latestBody,
                         calculation = calculation,
                         proportions = BodyProportionEngine.analyze(latestBody, profile.heightCm),
-                        weightTrend = bia.mapNotNull { row -> row.weightKg?.let { row.measuredAtEpochMillis to it } },
+                        weightTrend = recordedWeights,
                         waistTrend = body.mapNotNull { row -> row.waistCm?.let { row.measuredAtEpochMillis to it } },
                         biaCount = bia.size,
                         bodyCount = body.size,
