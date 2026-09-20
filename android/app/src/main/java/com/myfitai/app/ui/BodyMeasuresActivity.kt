@@ -18,6 +18,8 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.data.local.entity.BodyMeasurementEntity
+import com.myfitai.app.data.local.entity.BiaMeasurementEntity
+import com.myfitai.app.domain.body.BodyWeightHistory
 import com.myfitai.app.domain.body.BodyProportionEngine
 import com.myfitai.app.domain.ai.AiJobType
 import com.myfitai.app.domain.body.BodyProportionsAiJobHandler
@@ -27,6 +29,7 @@ import com.myfitai.app.ui.widgets.BodyMeasurementTrendView
 import com.myfitai.app.ui.widgets.MeasurementRowView
 import com.myfitai.app.ui.widgets.SelectableSegmentView
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.flatMapLatest
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -61,6 +64,7 @@ class BodyMeasuresActivity : BaseShellActivity() {
     }
 
     private var measurements: List<BodyMeasurementEntity> = emptyList()
+    private var biaHistory: List<BiaMeasurementEntity> = emptyList()
     private var selectedMetric: Metric = Metric.WAIST
     private var selectedRangeIndex = 2
     private var profileHeightCm: Float? = null
@@ -140,6 +144,16 @@ class BodyMeasuresActivity : BaseShellActivity() {
                     }
                 }
                 launch {
+                    data.activeProfileStore.activeProfileId
+                        .flatMapLatest(data.biaRepository::all)
+                        .collect { readings ->
+                            biaHistory = readings
+                            renderCurrent()
+                            renderTrend()
+                            renderHistory()
+                        }
+                }
+                launch {
                     viewModel.deleted.collect {
                         Toast.makeText(this@BodyMeasuresActivity, "Misurazione eliminata dallo storico", Toast.LENGTH_SHORT).show()
                     }
@@ -160,7 +174,7 @@ class BodyMeasuresActivity : BaseShellActivity() {
         // A weight-only entry must not hide the most recent available circumferences.
         // Each row is independently sourced from its last recorded non-null value.
         val rows = listOf(
-            Triple(R.id.rowWeight, "Peso corporeo", measurements.firstNotNullOfOrNull { it.weightKg }),
+            Triple(R.id.rowWeight, "Peso corporeo", measurements.firstNotNullOfOrNull { BodyWeightHistory.weightFor(it, biaHistory)?.kg }),
             Triple(R.id.rowChest, "Torace", measurements.firstNotNullOfOrNull { it.chestCm }),
             Triple(R.id.rowWaist, "Vita", measurements.firstNotNullOfOrNull { it.waistCm }),
             Triple(R.id.rowAbdomen, "Addome", measurements.firstNotNullOfOrNull { it.abdomenCm }),
@@ -284,7 +298,11 @@ class BodyMeasuresActivity : BaseShellActivity() {
 
         val allMetricPoints = measurements
             .asReversed()
-            .mapNotNull { measurement -> selectedMetric.value(measurement)?.let { measurement to it } }
+            .mapNotNull { measurement ->
+                val value = if (selectedMetric == Metric.WEIGHT) BodyWeightHistory.weightFor(measurement, biaHistory)?.kg
+                    else selectedMetric.value(measurement)
+                value?.let { measurement to it }
+            }
 
         val current = allMetricPoints.lastOrNull()
         findViewById<TextView>(R.id.trendCurrentValue).text = current?.second?.let { if (selectedMetric.unit == "kg") formatKg(it) else formatCm(it) } ?: "—"
@@ -389,7 +407,10 @@ class BodyMeasuresActivity : BaseShellActivity() {
 
     private fun historyValues(value: BodyMeasurementEntity): String {
         val items = listOfNotNull(
-            value.weightKg?.let { "Peso corporeo ${formatKg(it)}" },
+            BodyWeightHistory.weightFor(value, biaHistory)?.let {
+                if (it.fromBia) "Peso BIA (stessa data) ${formatKg(it.kg)}"
+                else "Peso corporeo ${formatKg(it.kg)}"
+            },
             value.hipsCm?.let { "Fianchi ${formatCm(it)}" },
             value.chestCm?.let { "Torace ${formatCm(it)}" },
             value.waistCm?.let { "Vita ${formatCm(it)}" },
