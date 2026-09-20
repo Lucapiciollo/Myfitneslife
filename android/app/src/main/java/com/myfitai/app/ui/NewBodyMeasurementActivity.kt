@@ -67,8 +67,8 @@ class NewBodyMeasurementActivity : BaseShellActivity() {
                 Toast.makeText(this, "Inserisci almeno una misura", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            if (values.values.filterNotNull().any { it <= 0f || it > 300f }) {
-                Toast.makeText(this, "Controlla i valori: devono essere compresi tra 0 e 300 cm", Toast.LENGTH_LONG).show()
+            if (values.values.filterNotNull().any { !it.isFinite() || it <= 0f || it > 300f }) {
+                Toast.makeText(this, "Controlla i valori: circonferenze in cm e peso in kg devono essere maggiori di 0 e non oltre 300", Toast.LENGTH_LONG).show()
                 return@setOnClickListener
             }
 
@@ -80,6 +80,8 @@ class NewBodyMeasurementActivity : BaseShellActivity() {
                 abdomenCm = values[R.id.abdomenInput],
                 shouldersCm = values[R.id.shouldersInput],
                 glutesCm = values[R.id.glutesInput],
+                hipsCm = values[R.id.hipsInput],
+                weightKg = values[R.id.bodyWeightInput],
                 armLeftCm = values[R.id.armLeftInput],
                 armRightCm = values[R.id.armRightInput],
                 thighLeftCm = values[R.id.thighLeftInput],
@@ -110,11 +112,13 @@ class NewBodyMeasurementActivity : BaseShellActivity() {
     }
 
     private fun inputMap(): Map<Int, TextInputEditText> = listOf(
+        R.id.bodyWeightInput,
         R.id.chestInput,
         R.id.waistInput,
         R.id.abdomenInput,
         R.id.shouldersInput,
         R.id.glutesInput,
+        R.id.hipsInput,
         R.id.armLeftInput,
         R.id.armRightInput,
         R.id.thighLeftInput,
