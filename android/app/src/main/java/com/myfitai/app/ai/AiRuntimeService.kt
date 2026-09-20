@@ -42,7 +42,13 @@ class AiRuntimeService(context: Context) : AiRuntimeGateway {
                 agentPrompt = request.systemPrompt,
                 compact = compact,
             ),
-            maxOutputTokens = if (compact) minOf(request.maxOutputTokens, compactTokenCap(request.schemaName)) else request.maxOutputTokens,
+            // A full meal plan has variable length: do not impose the compact-agent cap.
+            // Other short compact tasks retain their explicit cost/size guardrail.
+            maxOutputTokens = if (compact && !request.schemaName.contains("weekly_nutrition")) {
+                request.maxOutputTokens?.let { minOf(it, compactTokenCap(request.schemaName)) }
+            } else {
+                request.maxOutputTokens
+            },
             // Gemini 3.5 Flash-Lite rejects an explicit thinkingConfig with budget 0.
             // Compact workloads already constrain output locally; omit the provider field.
             thinkingBudget = if (compact) null else request.thinkingBudget,
@@ -59,7 +65,6 @@ class AiRuntimeService(context: Context) : AiRuntimeGateway {
     }
 
     private fun compactTokenCap(schemaName: String): Int = when {
-        "weekly_nutrition" in schemaName -> 24_576
         "cheat_adjustment" in schemaName -> 2_500
         "meal_alternatives" in schemaName -> 2_200
         "nutrition_advice" in schemaName -> 900
