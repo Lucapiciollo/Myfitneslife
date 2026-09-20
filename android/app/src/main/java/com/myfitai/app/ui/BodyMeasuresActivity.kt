@@ -1,6 +1,7 @@
 package com.myfitai.app.ui
 
 import android.os.Bundle
+import android.content.Intent
 import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
@@ -338,6 +339,7 @@ class BodyMeasuresActivity : BaseShellActivity() {
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                 ).apply { bottomMargin = dp(8) }
+                setOnClickListener { openEdit(measurement) }
                 setOnLongClickListener {
                     confirmDelete(measurement)
                     true
@@ -371,7 +373,7 @@ class BodyMeasuresActivity : BaseShellActivity() {
             }
 
             card.addView(TextView(this).apply {
-                text = "Tieni premuto per eliminare"
+                text = "Tocca per modificare · Tieni premuto per eliminare"
                 setTextColor(getColor(R.color.text_muted))
                 textSize = 10f
                 setPadding(0, dp(6), 0, 0)
@@ -402,6 +404,12 @@ class BodyMeasuresActivity : BaseShellActivity() {
             value.calfRightCm?.let { "Polpaccio dx ${formatCm(it)}" },
         )
         return items.ifEmpty { listOf("Rilevazione senza valori") }.joinToString(" · ")
+    }
+
+    private fun openEdit(measurement: BodyMeasurementEntity) {
+        startActivity(Intent(this, NewBodyMeasurementActivity::class.java).apply {
+            putExtra(NewBodyMeasurementActivity.EXTRA_EDIT_ID, measurement.id)
+        })
     }
 
     private fun confirmDelete(measurement: BodyMeasurementEntity) {
