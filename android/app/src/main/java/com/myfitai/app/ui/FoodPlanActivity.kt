@@ -37,7 +37,7 @@ class FoodPlanActivity : BaseShellActivity() {
 
     private val data by lazy { AppDataContainer.get(this) }
     private val viewModel: FoodPlanViewModel by viewModels {
-         FoodPlanViewModel.Factory(data.mealPlanRepository, data.activeProfileStore, data.nutritionPlanGenerationService, data.profileCalculationService, data.notificationScheduler, data.foodConsumptionRepository, data.aiJobScheduler)
+         FoodPlanViewModel.Factory(data.mealPlanRepository, data.activeProfileStore, data.nutritionPlanGenerationService, data.profileCalculationService, data.notificationScheduler, data.foodConsumptionRepository, data.aiJobScheduler, data.userProfileRepository, data.biaRepository, data.bodyMeasurementRepository)
     }
 
     private val mealAlternativeLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -57,6 +57,7 @@ class FoodPlanActivity : BaseShellActivity() {
         }
         findViewById<View>(R.id.cheatButton).setOnClickListener { go(CheatEntryActivity::class.java) }
         findViewById<View>(R.id.generatePlanButton).setOnClickListener { confirmPlanGeneration() }
+        findViewById<View>(R.id.regenerateForGoalButton).setOnClickListener { confirmPlanGeneration() }
         bindFoodHelp()
         findViewById<View>(R.id.dailyTotalHelpButton).setOnClickListener { showTotalsHelp() }
         renderMealCountPreference()
@@ -119,10 +120,15 @@ class FoodPlanActivity : BaseShellActivity() {
             val createdAt = java.time.Instant.ofEpochMilli(snapshot.version.createdAtEpochMillis)
                 .atZone(java.time.ZoneId.systemDefault())
                 .format(DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.ITALIAN))
-            versionLabel.text = "Piano v${snapshot.version.versionNumber} · $createdAt${snapshot.version.reason?.takeIf { it.isNotBlank() }?.let { " · $it" }.orEmpty()}"
+            versionLabel.text = "Piano alimentare generato il $createdAt"
         } else versionLabel.visibility = View.GONE
 
         val empty = findViewById<TextView>(R.id.emptyPlanText)
+        val goalChangedNotice = findViewById<TextView>(R.id.goalChangedNotice)
+        val regenerateForGoalButton = findViewById<View>(R.id.regenerateForGoalButton)
+        goalChangedNotice.visibility = if (state.goalChangedSinceGeneration) View.VISIBLE else View.GONE
+        regenerateForGoalButton.visibility = if (state.goalChangedSinceGeneration) View.VISIBLE else View.GONE
+        regenerateForGoalButton.isEnabled = !state.generation.running
         val day = state.selectedDay
         empty.visibility = if (!state.hasPlan) View.VISIBLE else View.GONE
         if (state.hasPlan && day == null) { empty.visibility = View.VISIBLE; empty.text = "Nessun dato alimentare per il giorno selezionato." }
@@ -134,6 +140,11 @@ class FoodPlanActivity : BaseShellActivity() {
     }
 
     private fun renderGeneration(state: FoodPlanViewModel.State) {
+        if (state.generation.successMessage != null) {
+            data.activeProfileStore.currentIdOrNull()?.let { profileId ->
+                data.nutritionPlanUpdatePreferences.setPending(profileId, false)
+            }
+        }
         val button = findViewById<MaterialButton>(R.id.generatePlanButton)
         val statusContainer = findViewById<View>(R.id.generationStatusContainer)
         val progress = findViewById<ProgressBar>(R.id.generationProgress)

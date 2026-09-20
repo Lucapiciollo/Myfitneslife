@@ -95,6 +95,9 @@ interface MealPlanDao {
     @Query("SELECT * FROM meal_plans WHERE profileId = :profileId AND weekStartEpochDay = :weekStart LIMIT 1")
     suspend fun getPlanForWeek(profileId: Long, weekStart: Long): MealPlanEntity?
 
+    @Query("SELECT v.id FROM meal_plan_versions v INNER JOIN meal_plans p ON p.id = v.planId WHERE p.profileId = :profileId AND p.weekStartEpochDay = :weekStart ORDER BY v.versionNumber DESC, v.id DESC LIMIT 1")
+    fun observeLatestVersionIdForWeek(profileId: Long, weekStart: Long): Flow<Long?>
+
     @Query("SELECT * FROM meal_plans WHERE profileId = :profileId AND id = :planId LIMIT 1")
     suspend fun getPlan(profileId: Long, planId: Long): MealPlanEntity?
 

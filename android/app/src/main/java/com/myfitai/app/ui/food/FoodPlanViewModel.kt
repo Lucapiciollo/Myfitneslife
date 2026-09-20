@@ -6,6 +6,9 @@ import androidx.lifecycle.viewModelScope
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.repository.MealPlanRepository
 import com.myfitai.app.data.repository.FoodConsumptionRepository
+import com.myfitai.app.data.repository.UserProfileRepository
+import com.myfitai.app.data.repository.BiaRepository
+import com.myfitai.app.data.repository.BodyMeasurementRepository
 import com.myfitai.app.data.local.entity.FoodConsumptionEntity
 import com.myfitai.app.domain.food.FoodPlanDay
 import com.myfitai.app.domain.food.FoodPlanSnapshot
@@ -44,7 +47,17 @@ class FoodPlanViewModel(
     private val notificationScheduler: NotificationScheduler,
     private val consumptionRepository: FoodConsumptionRepository,
     private val aiJobScheduler: AiJobScheduler,
+    private val profileRepository: UserProfileRepository,
+    private val biaRepository: BiaRepository,
+    private val bodyMeasurementRepository: BodyMeasurementRepository,
 ) : ViewModel() {
+    private data class SourceData(
+        val weekStart: LocalDate,
+        val snapshot: FoodPlanSnapshot?,
+        val records: List<FoodConsumptionEntity>,
+        val profileUpdatedAt: Long?,
+        val latestMeasurementAt: Long?,
+    )
     data class GenerationState(
         val running: Boolean = false,
         val error: String? = null,
@@ -60,6 +73,7 @@ class FoodPlanViewModel(
         val generation: GenerationState = GenerationState(),
         val consumptionRecords: List<FoodConsumptionEntity> = emptyList(),
         val baseKcal: Double? = null,
+        val goalChangedSinceGeneration: Boolean = false,
     )
 
     private val selectedWeekStart = MutableStateFlow(planWeekMonday(LocalDate.now()))
@@ -88,15 +102,30 @@ class FoodPlanViewModel(
     }
 
     private val source = activeProfileStore.activeProfileId.flatMapLatest { profileId ->
-        if (profileId <= 0L) flowOf<Triple<LocalDate, FoodPlanSnapshot?, List<FoodConsumptionEntity>>>(Triple(selectedWeekStart.value, null, emptyList()))
+            if (profileId <= 0L) flowOf(SourceData(selectedWeekStart.value, null, emptyList(), null, null))
         else selectedWeekStart.flatMapLatest { weekStart ->
-            combine(repository.plans(profileId), consumptionRepository.all(profileId)) { _, records ->
-                Triple(weekStart, repository.loadLatestSnapshot(profileId, weekStart.toEpochDay()), records)
+            combine(
+                repository.latestSnapshot(profileId, weekStart.toEpochDay()),
+                consumptionRepository.all(profileId),
+                profileRepository.profile(profileId),
+                biaRepository.all(profileId),
+                bodyMeasurementRepository.all(profileId),
+            ) { snapshot, records, profile, bia, bodyMeasurements ->
+                SourceData(
+                    weekStart,
+                    snapshot,
+                    records,
+                    profile?.updatedAtEpochMillis,
+                    (bia.maxOfOrNull { it.measuredAtEpochMillis } ?: Long.MIN_VALUE)
+                        .coerceAtLeast(bodyMeasurements.maxOfOrNull { it.measuredAtEpochMillis } ?: Long.MIN_VALUE)
+                        .takeUnless { it == Long.MIN_VALUE },
+                )
             }
         }
     }
 
-    val state: StateFlow<State> = combine(source, selectedDayIndex, generationState, baseKcal) { (weekStart, snapshot, records), dayIndex, generation, tdeeKcal ->
+    val state: StateFlow<State> = combine(source, selectedDayIndex, generationState, baseKcal) { sourceData, dayIndex, generation, tdeeKcal ->
+        val (weekStart, snapshot, records, profileUpdatedAt, latestMeasurementAt) = sourceData
         val safeIndex = dayIndex.coerceIn(0, 6)
         State(
             weekStart = weekStart,
@@ -107,6 +136,8 @@ class FoodPlanViewModel(
             generation = generation,
             consumptionRecords = records,
             baseKcal = tdeeKcal,
+            goalChangedSinceGeneration = snapshot != null && listOfNotNull(profileUpdatedAt, latestMeasurementAt)
+                .any { it >= snapshot.version.createdAtEpochMillis },
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), State())
 
@@ -130,7 +161,12 @@ class FoodPlanViewModel(
             if (profileId == null) {
                 generationState.value = GenerationState(error = "Nessun profilo attivo")
             } else {
-                aiJobScheduler.enqueue(AiJobType.WEEKLY_PLAN, profileId, week.toEpochDay().toString())
+                aiJobScheduler.enqueue(
+                    type = AiJobType.WEEKLY_PLAN,
+                    profileId = profileId,
+                    jobKey = week.toEpochDay().toString(),
+                    replaceExisting = true,
+                )
             }
         }
     }
@@ -142,7 +178,7 @@ class FoodPlanViewModel(
         raw.startsWith("NUTRITION_INTEGRITY_INVALID") ->
             "L'IA ha prodotto un piano con valori nutrizionali incoerenti (calorie e macro non tornano) anche dopo alcuni tentativi. Riprova a generare il piano."
         raw.startsWith("TARGET_TOLERANCE_EXCEEDED") ->
-            "Il piano generato non rispetta il target nutrizionale del giorno (fuori dalla tolleranza consentita). Riprova a generare il piano."
+            "Il piano generato non rispetta il target del giorno. Dettagli: ${raw.substringAfter(':', "valori fuori tolleranza")}. Verifica anche le preferenze alimentari e riprova."
         raw.startsWith("DAY_TOTALS_INCONSISTENT") ->
             "Nel piano generato la somma dei pasti non coincide con i totali del giorno. Riprova a generare il piano."
         raw.startsWith("WEEK_MUST_HAVE_7_DAYS") || raw.startsWith("WEEK_DATES_INVALID") || raw.startsWith("WEEK_START_MISMATCH") || raw.contains("MEALS") || raw.contains("MEAL_COUNT") ->
@@ -192,11 +228,14 @@ class FoodPlanViewModel(
         private val notificationScheduler: NotificationScheduler,
         private val consumptionRepository: FoodConsumptionRepository,
         private val aiJobScheduler: AiJobScheduler,
+        private val profileRepository: UserProfileRepository,
+        private val biaRepository: BiaRepository,
+        private val bodyMeasurementRepository: BodyMeasurementRepository,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(FoodPlanViewModel::class.java))
-            return FoodPlanViewModel(repository, activeProfileStore, generationService, calculations, notificationScheduler, consumptionRepository, aiJobScheduler) as T
+            return FoodPlanViewModel(repository, activeProfileStore, generationService, calculations, notificationScheduler, consumptionRepository, aiJobScheduler, profileRepository, biaRepository, bodyMeasurementRepository) as T
         }
     }
 }

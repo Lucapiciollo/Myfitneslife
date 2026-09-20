@@ -306,7 +306,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_4"
-                    android:text="Separa più alimenti con una virgola. Allergie, intolleranze ed esclusioni sono vincoli rigidi."
+                    android:text="Separa più alimenti con una virgola. Preferenze e alimenti non graditi vengono rispettati quando possibile; allergie, intolleranze ed esclusioni sono vincoli rigidi."
                     android:textColor="@color/text_muted"
                     android:textSize="11sp" />
 

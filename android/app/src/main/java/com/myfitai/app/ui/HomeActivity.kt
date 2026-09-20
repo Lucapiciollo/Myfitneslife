@@ -69,6 +69,8 @@ class HomeActivity : BaseShellActivity() {
         requestNotificationPermissionOnce()
 
         findViewById<android.view.View>(R.id.profileButton).setOnClickListener { go(ProfileActivity::class.java) }
+        findViewById<android.view.View>(R.id.planUpdateNoticeCard).setOnClickListener { openFoodPlan() }
+        findViewById<android.view.View>(R.id.planUpdateNoticeButton).setOnClickListener { openFoodPlan() }
         findViewById<android.view.View>(R.id.nextMealCard).setOnClickListener {
             currentNextMealId?.let { mealId ->
                 startActivity(Intent(this, MealDetailActivity::class.java).putExtra(MealDetailActivity.EXTRA_MEAL_ID, mealId))
@@ -124,6 +126,17 @@ class HomeActivity : BaseShellActivity() {
     override fun onResume() {
         super.onResume()
         renderWorkoutConfiguration()
+        renderPlanUpdateNotice()
+    }
+
+    private fun renderPlanUpdateNotice() {
+        val profileId = data.activeProfileStore.currentIdOrNull()
+        findViewById<android.view.View>(R.id.planUpdateNoticeCard)?.visibility =
+            if (profileId != null && data.nutritionPlanUpdatePreferences.isPending(profileId)) {
+                android.view.View.VISIBLE
+            } else {
+                android.view.View.GONE
+            }
     }
 
     private fun renderWorkoutConfiguration() {
@@ -151,6 +164,7 @@ class HomeActivity : BaseShellActivity() {
     }
 
     private fun renderDashboard(state: HomeViewModel.DashboardState) {
+        renderPlanUpdateNotice()
         val firstName = state.profileName?.trim()?.substringBefore(' ')?.takeIf { it.isNotBlank() }
         findViewById<TextView>(R.id.greetingText).text = firstName?.let { "Ciao $it 👋" } ?: "Ciao 👋"
 

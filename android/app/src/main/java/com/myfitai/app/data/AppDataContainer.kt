@@ -5,6 +5,7 @@ import com.myfitai.app.ai.AiRuntimeService
 import com.myfitai.app.data.local.MyFitAiDatabase
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.profile.MealCountPreferences
+import com.myfitai.app.data.profile.NutritionPlanUpdatePreferences
 import com.myfitai.app.data.profile.NutritionPlanSchedulePreferences
 import com.myfitai.app.data.profile.ProfilePhotoStore
 import com.myfitai.app.data.profile.WorkoutPreferences
@@ -55,6 +56,7 @@ class AppDataContainer private constructor(context: Context) {
 
     val activeProfileStore = ActiveProfileStore(appContext)
     val mealCountPreferences = MealCountPreferences(appContext)
+    val nutritionPlanUpdatePreferences = NutritionPlanUpdatePreferences(appContext)
     val nutritionPlanSchedulePreferences = NutritionPlanSchedulePreferences(appContext)
     val profilePhotoStore = ProfilePhotoStore(appContext)
     val workoutPreferences = WorkoutPreferences(appContext)

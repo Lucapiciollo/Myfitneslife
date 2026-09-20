@@ -19,7 +19,7 @@
     <string name="profile_row_workouts">Allenamenti</string>
     <string name="profile_row_openai_key">Chiave OpenAI</string>
     <string name="profile_row_notifications">Notifiche</string>
-    <string name="profile_row_export">Esporta dati</string>
+    <string name="profile_row_export">Esporta / importa dati</string>
     <string name="profile_row_settings">Impostazioni</string>
     <string name="profile_openai_configured">Configurata</string>
     <string name="profile_openai_not_configured">Non configurata</string>

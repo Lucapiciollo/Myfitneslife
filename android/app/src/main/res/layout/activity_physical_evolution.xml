@@ -42,7 +42,7 @@
                      android:layout_width="0dp"
                      android:layout_height="wrap_content"
                      android:layout_weight="1"
-                     android:text="Altri indicatori" />
+                     android:text="Altri indicatori corporei" />
                  <ImageButton
                      android:id="@+id/otherIndicatorsHelpButton"
                      android:layout_width="40dp"
@@ -61,7 +61,7 @@
              <LinearLayout android:id="@+id/visualComparisonSection" android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone" />
                         <com.google.android.material.card.MaterialCardView style="@style/Widget.MyFitAI.Card" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20">
                             <LinearLayout style="@style/Widget.MyFitAI.HomeSectionContent" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@drawable/bg_positive_soft" android:orientation="vertical">
-                <TextView android:id="@+id/progressSummaryTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Servono più rilevazioni" android:textColor="@color/text_primary" android:textStyle="bold" />
+                <TextView android:id="@+id/progressSummaryTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Affidabilità dell’andamento" android:textColor="@color/text_primary" android:textStyle="bold" />
                 <TextView android:id="@+id/progressSummaryText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:text="I dati mostrati derivano dallo storico reale." android:textColor="@color/text_secondary" />
                             </LinearLayout>
                         </com.google.android.material.card.MaterialCardView>

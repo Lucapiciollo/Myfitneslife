@@ -35,7 +35,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:gravity="center"
-                    android:text="Esporta i tuoi dati" />
+                    android:text="Esporta / importa dati" />
                 <Space android:layout_width="40dp" android:layout_height="1dp" />
             </LinearLayout>
 
@@ -43,9 +43,27 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="L'export riguarda solo il profilo attivo. Il report PDF riassume progresso e dati del profilo; il PDF dieta contiene il piano settimanale con ingredienti, dosi e lista della spesa. JSON resta il formato consigliato per analisi con ChatGPT."
+                android:text="Puoi esportare i dati del profilo attivo oppure importare uno storico BIA. Le rilevazioni già presenti non vengono sovrascritte."
                 android:textColor="@color/text_secondary"
                 android:textSize="13sp" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/importBiaHistoryRow"
+                style="@style/Widget.MyFitAI.Card"
+                android:layout_width="match_parent"
+                android:layout_height="72dp"
+                android:layout_marginTop="16dp"
+                android:gravity="center_vertical"
+                android:clickable="true"
+                android:focusable="true">
+                <LinearLayout style="@style/Widget.MyFitAI.HomeSectionContent" android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center_vertical" android:orientation="horizontal">
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Importa storico BIA" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="15sp" />
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="Aggiunge le rilevazioni mancanti senza sovrascrivere quelle già presenti" android:textColor="@color/text_secondary" android:textSize="12sp" />
+                    </LinearLayout>
+                    <TextView android:layout_width="30dp" android:layout_height="match_parent" android:gravity="center" android:text="›" android:textColor="@color/text_primary" android:textSize="26sp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/exportJsonRow"

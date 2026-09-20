@@ -162,7 +162,11 @@ object NutritionPlanContract {
                 tolerance = tolerance,
                 belowOnly = targetBelowOnly,
             )
-            require(appValidation.valid) { "TARGET_TOLERANCE_EXCEEDED:${day.dateEpochDay}" }
+            require(appValidation.valid) {
+                "TARGET_TOLERANCE_EXCEEDED:${day.dateEpochDay}:" +
+                    "target=${expectedTargets.kcal.toInt()}/${expectedTargets.proteinG.toInt()}/${expectedTargets.carbsG.toInt()}/${expectedTargets.fatG.toInt()};" +
+                    "actual=${day.totalKcal}/${day.proteinG.toInt()}/${day.carbsG.toInt()}/${day.fatG.toInt()}"
+            }
             if (maintenanceCeilingKcal != null) {
                 require(day.totalKcal < maintenanceCeilingKcal) {
                     "DEFICIT_PLAN_REACHES_MAINTENANCE:${day.dateEpochDay}"

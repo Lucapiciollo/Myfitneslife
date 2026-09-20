@@ -137,6 +137,26 @@
                         android:textColor="@color/text_secondary"
                         android:textSize="14sp"
                         android:visibility="gone" />
+                    <TextView
+                        android:id="@+id/goalChangedNotice"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_12"
+                        android:background="@drawable/bg_card_soft"
+                        android:padding="@dimen/space_12"
+                        android:text="Hai aggiornato il profilo o aggiunto nuove misure. Puoi rigenerare il piano alimentare per aggiornarlo."
+                        android:textColor="@color/text_primary"
+                        android:textSize="13sp"
+                        android:visibility="gone" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/regenerateForGoalButton"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="46dp"
+                        android:layout_marginTop="@dimen/space_8"
+                        android:text="Rigenera alimentazione"
+                        android:textAllCaps="false"
+                        android:visibility="gone" />
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/generatePlanButton"
                         android:layout_width="match_parent"

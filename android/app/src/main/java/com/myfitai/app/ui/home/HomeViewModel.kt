@@ -151,20 +151,20 @@ class HomeViewModel(
 
     private val weeklyPlanSource = activeProfileStore.activeProfileId.flatMapLatest { profileId ->
         if (profileId <= 0L) {
-            flowOf<List<FoodPlanDay>>(emptyList())
+            flowOf<com.myfitai.app.domain.food.FoodPlanSnapshot?>(null)
         } else {
             mealPlanRepository.plans(profileId).flatMapLatest { plans ->
                 val monday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
                 val weekStart = monday.toEpochDay()
                 val plan = plans.firstOrNull { it.weekStartEpochDay == weekStart }
                 if (plan == null) {
-                    flowOf<List<FoodPlanDay>>(emptyList())
+                    flowOf<com.myfitai.app.domain.food.FoodPlanSnapshot?>(null)
                 } else {
                     // Observe versions too: regenerating a week can append a version
                     // without changing the parent meal-plan row.
                     mealPlanRepository.versions(profileId, plan.id).flatMapLatest {
                         flow {
-                            emit(mealPlanRepository.loadLatestSnapshot(profileId, weekStart)?.version?.days.orEmpty())
+                            emit(mealPlanRepository.loadLatestSnapshot(profileId, weekStart))
                         }
                     }
                 }
@@ -180,13 +180,16 @@ class HomeViewModel(
         consumedTodaySource,
     ) { source, rangeIndex, upcomingMeals, recovery, consumedKcal ->
         buildState(source, rangeIndex, upcomingMeals, recovery, consumedKcal)
-    }.combine(weeklyPlanSource) { dashboard, plannedDays ->
+    }.combine(weeklyPlanSource) { dashboard, snapshot ->
         val monday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         dashboard.copy(
+            calories = dashboard.calories.copy(
+                target = snapshot?.version?.targetKcal ?: dashboard.calories.target,
+            ),
             weeklyExpectation = WeeklyBodyExpectation.calculate(
                 maintenanceKcal = dashboard.calories.tdee,
                 weekStartEpochDay = monday.toEpochDay(),
-                plannedDays = plannedDays.map { it.dateEpochDay to it.totalKcal },
+                plannedDays = snapshot?.version?.days.orEmpty().map { it.dateEpochDay to it.totalKcal },
             ),
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DashboardState())

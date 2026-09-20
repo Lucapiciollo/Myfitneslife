@@ -13,6 +13,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.datepicker.MaterialDatePicker
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import com.google.android.material.timepicker.MaterialTimePicker
@@ -28,6 +29,7 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import java.time.temporal.TemporalAdjusters
 
 class ProfileEditActivity : BaseShellActivity() {
 
@@ -227,7 +229,8 @@ class ProfileEditActivity : BaseShellActivity() {
                     }
                 }
                 launch {
-                    viewModel.saved.collect { profileId ->
+                    viewModel.saved.collect { savedEvent ->
+                        val profileId = savedEvent.profileId
                         val recommendationJobKey = if (isCreate) data.nutritionPathTrigger.maybeEnqueue(profileId) else null
                         Toast.makeText(this@ProfileEditActivity, if (isCreate) "Profilo creato" else "Profilo salvato", Toast.LENGTH_SHORT).show()
                         if (isCreate && recommendationJobKey != null) {
@@ -236,6 +239,9 @@ class ProfileEditActivity : BaseShellActivity() {
                                 if (isBootstrap) addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                             })
                             finish()
+                        } else if (!isCreate && savedEvent.nutritionDataChanged && hasCurrentPlan(profileId)) {
+                            data.nutritionPlanUpdatePreferences.setPending(profileId, true)
+                            showPlanUpdateDialog()
                         } else if (isBootstrap) {
                             startActivity(Intent(this@ProfileEditActivity, TabHostActivity::class.java).apply {
                                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
@@ -252,6 +258,24 @@ class ProfileEditActivity : BaseShellActivity() {
                 launch { viewModel.error.collect { message -> Toast.makeText(this@ProfileEditActivity, message, Toast.LENGTH_SHORT).show() } }
             }
         }
+    }
+
+    private suspend fun hasCurrentPlan(profileId: Long): Boolean {
+        val weekStart = LocalDate.now().with(TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY)).toEpochDay()
+        return data.mealPlanRepository.getPlanForWeek(profileId, weekStart) != null
+    }
+
+    private fun showPlanUpdateDialog() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Aggiornare il piano alimentare?")
+            .setMessage("Hai aggiornato il profilo. Vuoi rigenerare il piano alimentare con i nuovi dati?")
+            .setNegativeButton("Non ora") { _, _ -> finish() }
+            .setPositiveButton("Rigenera alimentazione") { _, _ ->
+                startActivity(Intent(this, FoodPlanActivity::class.java))
+                finish()
+            }
+            .setOnCancelListener { finish() }
+            .show()
     }
 
     private fun render(profile: UserProfileEntity) {

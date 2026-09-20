@@ -5,6 +5,7 @@ import com.myfitai.app.data.local.MyFitAiDatabase
 import com.myfitai.app.data.local.entity.*
 import com.myfitai.app.domain.food.FoodSupplement
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -159,6 +160,9 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
     fun plans(profileId: Long): Flow<List<MealPlanEntity>> = db.mealPlanDao().observePlans(profileId)
     fun versions(profileId: Long, planId: Long): Flow<List<MealPlanVersionEntity>> = db.mealPlanDao().observeVersions(profileId, planId)
     suspend fun getPlanForWeek(profileId: Long, weekStartEpochDay: Long) = db.mealPlanDao().getPlanForWeek(profileId, weekStartEpochDay)
+    fun latestSnapshot(profileId: Long, weekStartEpochDay: Long): Flow<com.myfitai.app.domain.food.FoodPlanSnapshot?> =
+        db.mealPlanDao().observeLatestVersionIdForWeek(profileId, weekStartEpochDay)
+            .map { loadLatestSnapshot(profileId, weekStartEpochDay) }
 
     suspend fun createPlan(profileId: Long, weekStartEpochDay: Long, createdAtEpochMillis: Long): Long =
         db.mealPlanDao().insertPlan(

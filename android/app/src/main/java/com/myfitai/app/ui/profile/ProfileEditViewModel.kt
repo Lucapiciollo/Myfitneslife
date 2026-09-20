@@ -26,8 +26,10 @@ class ProfileEditViewModel(
     private val _saving = MutableStateFlow(false)
     val saving: StateFlow<Boolean> = _saving.asStateFlow()
 
-    private val _saved = MutableSharedFlow<Long>(extraBufferCapacity = 1)
-    val saved: SharedFlow<Long> = _saved.asSharedFlow()
+    data class SavedEvent(val profileId: Long, val nutritionDataChanged: Boolean)
+
+    private val _saved = MutableSharedFlow<SavedEvent>(extraBufferCapacity = 1)
+    val saved: SharedFlow<SavedEvent> = _saved.asSharedFlow()
 
     private val _error = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val error: SharedFlow<String> = _error.asSharedFlow()
@@ -85,8 +87,17 @@ class ProfileEditViewModel(
                     )
                     activeProfileStore.selectProfile(id, makeDefault = true)
                     _profile.value = repository.get(id)
-                    id
+                    SavedEvent(id, false)
                 } else {
+                    val normalizedGoal = goal?.trim()?.takeIf(String::isNotEmpty)
+                    val normalizedActivity = activityLevel?.trim()?.takeIf(String::isNotEmpty)
+                    val nutritionDataChanged = current.goal != normalizedGoal ||
+                        current.activityLevel != normalizedActivity ||
+                        current.birthDateEpochDay != birthDateEpochDay ||
+                        current.biologicalSex != biologicalSex ||
+                        current.heightCm != heightCm ||
+                        current.currentWeightKg != currentWeightKg ||
+                        current.dietaryPreferencesJson != dietaryPreferencesJson
                     val updated = current.copy(
                         name = name.trim(),
                         birthDateEpochDay = birthDateEpochDay,
@@ -94,8 +105,8 @@ class ProfileEditViewModel(
                         heightCm = heightCm,
                         initialWeightKg = current.initialWeightKg ?: currentWeightKg,
                         currentWeightKg = currentWeightKg,
-                        goal = goal?.trim()?.takeIf(String::isNotEmpty),
-                        activityLevel = activityLevel?.trim()?.takeIf(String::isNotEmpty),
+                        goal = normalizedGoal,
+                        activityLevel = normalizedActivity,
                         wakeTimeMinutes = wakeTimeMinutes,
                         sleepTimeMinutes = sleepTimeMinutes,
                         dietaryPreferencesJson = dietaryPreferencesJson,
@@ -103,10 +114,10 @@ class ProfileEditViewModel(
                     )
                     repository.update(updated)
                     _profile.value = updated
-                    updated.id
+                    SavedEvent(updated.id, nutritionDataChanged)
                 }
-            }.onSuccess { id ->
-                _saved.tryEmit(id)
+            }.onSuccess { event ->
+                _saved.tryEmit(event)
             }.onFailure {
                 _error.tryEmit("Impossibile salvare il profilo")
             }

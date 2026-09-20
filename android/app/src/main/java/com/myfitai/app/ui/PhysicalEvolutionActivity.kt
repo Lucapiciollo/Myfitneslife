@@ -2,6 +2,8 @@ package com.myfitai.app.ui
 
 import android.content.Intent
 import android.os.Bundle
+import android.text.SpannableStringBuilder
+import android.text.style.ForegroundColorSpan
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.ProgressBar
@@ -319,14 +321,28 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         }
         if (!keepTransientResult) {
             val summary = prefs.lastSummary(profileId)
-            val classification = prefs.lastClassification(profileId)?.let(::classificationLabel)
+            val classificationValue = prefs.lastClassification(profileId)
+            val classification = classificationValue?.let(::classificationLabel)
             val confidence = prefs.lastConfidence(profileId)?.let(::confidenceLabel)
             if (summary != null) {
                 analysisResultText.visibility = View.VISIBLE
-                analysisResultText.text = listOfNotNull(classification, confidence?.let { "confidenza $it" }).joinToString(" · ") + "\n" + summary
+                val result = SpannableStringBuilder()
+                classification?.let {
+                    val start = result.length
+                    result.append(it)
+                    result.setSpan(ForegroundColorSpan(classificationColor(classificationValue)), start, result.length, 0)
+                }
+                confidence?.let {
+                    if (result.isNotEmpty()) result.append(" · ")
+                    result.append("confidenza $it")
+                }
+                result.append("\n").append(summary)
+                analysisResultText.text = result
                 renderAnalysisDetails(prefs.lastPatterns(profileId))
             } else {
-                analysisResultText.visibility = View.GONE
+                analysisResultText.visibility = View.VISIBLE
+                analysisResultText.setTextColor(getColor(R.color.text_secondary))
+                analysisResultText.text = "Nessuna analisi IA disponibile. Tocca 'Esegui analisi ora' per ricevere una sintesi dei tuoi progressi."
                 analysisDetailsButton.visibility = View.GONE
                 analysisDetailsContainer.visibility = View.GONE
             }
@@ -399,8 +415,8 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         renderSecondary(R.id.otherIndicatorMuscleValue, R.id.otherIndicatorMuscleDelta, state.muscle, "kg")
         renderSecondary(R.id.otherIndicatorWaterValue, R.id.otherIndicatorWaterDelta, state.bodyWater, "%")
         findViewById<View>(R.id.visualComparisonSection).visibility = View.GONE
-        findViewById<TextView>(R.id.progressSummaryTitle).text = if (filtered.series.size >= 2) "Trend basato sulle rilevazioni registrate" else "Servono più rilevazioni"
-        findViewById<TextView>(R.id.progressSummaryText).text = if (filtered.series.size >= 2) "I valori mostrati derivano esclusivamente dallo storico BIA reale del profilo attivo." else "Aggiungi almeno due rilevazioni comparabili per visualizzare un andamento affidabile."
+        findViewById<TextView>(R.id.progressSummaryTitle).text = if (filtered.series.size >= 2) "Andamento basato sulle misurazioni disponibili" else "Affidabilità dell’andamento"
+        findViewById<TextView>(R.id.progressSummaryText).text = if (filtered.series.size >= 2) "I valori mostrati derivano dallo storico BIA reale del profilo attivo." else "Aggiungi almeno due misurazioni confrontabili per visualizzare un andamento affidabile."
     }
 
     private fun renderSecondary(valueId: Int, deltaId: Int, metric: ProgressMetricState, unit: String) {
@@ -438,6 +454,17 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
     private fun classificationLabel(value: String): String = runCatching {
         classificationLabel(ProgressAnalysisCompactContract.Classification.valueOf(value))
     }.getOrDefault(value)
+
+    private fun classificationColor(value: String?): Int = when (runCatching {
+        value?.let { ProgressAnalysisCompactContract.Classification.valueOf(it) }
+    }.getOrNull()) {
+        ProgressAnalysisCompactContract.Classification.POSITIVE_RECOMPOSITION,
+        ProgressAnalysisCompactContract.Classification.STABLE,
+        ProgressAnalysisCompactContract.Classification.WEIGHT_LOSS -> getColor(R.color.semantic_positive)
+        ProgressAnalysisCompactContract.Classification.WEIGHT_LOSS_WITH_MUSCLE_RISK,
+        ProgressAnalysisCompactContract.Classification.NEGATIVE_TREND -> getColor(R.color.semantic_error)
+        else -> getColor(R.color.text_secondary)
+    }
 
     private fun confidenceLabel(value: ProgressAnalysisCompactContract.Confidence): String = when (value) {
         ProgressAnalysisCompactContract.Confidence.LOW -> "bassa"

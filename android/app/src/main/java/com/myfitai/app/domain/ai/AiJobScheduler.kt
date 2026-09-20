@@ -17,7 +17,14 @@ import java.util.concurrent.TimeUnit
 class AiJobScheduler(context: Context) {
     private val workManager = WorkManager.getInstance(context.applicationContext)
 
-    fun enqueue(type: AiJobType, profileId: Long, jobKey: String, initialDelayMillis: Long = 0L, params: Data = Data.EMPTY) {
+    fun enqueue(
+        type: AiJobType,
+        profileId: Long,
+        jobKey: String,
+        initialDelayMillis: Long = 0L,
+        params: Data = Data.EMPTY,
+        replaceExisting: Boolean = false,
+    ) {
         val request = OneTimeWorkRequestBuilder<AiJobWorker>()
             .setInputData(Data.Builder().putAll(params).putString(AiJobWorker.KEY_TYPE, type.name).putLong(AiJobWorker.KEY_PROFILE_ID, profileId).putString(AiJobWorker.KEY_JOB_KEY, jobKey).build())
             .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
@@ -25,7 +32,8 @@ class AiJobScheduler(context: Context) {
             .setInitialDelay(initialDelayMillis.coerceAtLeast(0L), TimeUnit.MILLISECONDS)
             .addTag(tag(type, profileId))
             .build()
-        workManager.enqueueUniqueWork(name(type, profileId, jobKey), ExistingWorkPolicy.KEEP, request)
+        val policy = if (replaceExisting) ExistingWorkPolicy.REPLACE else ExistingWorkPolicy.KEEP
+        workManager.enqueueUniqueWork(name(type, profileId, jobKey), policy, request)
     }
 
     fun observe(type: AiJobType, profileId: Long, jobKey: String): Flow<WorkInfo?> =

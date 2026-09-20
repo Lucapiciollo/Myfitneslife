@@ -29,8 +29,8 @@ import com.myfitai.app.security.AiCredentialProvider
 import com.myfitai.app.security.SecureAiCredentialStore
 import com.myfitai.app.ui.widgets.SettingRowView
 import com.myfitai.app.domain.food.NutritionPathTrigger
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 
 class SettingsActivity : BaseShellActivity() {
     private val data by lazy { AppDataContainer.get(this) }
