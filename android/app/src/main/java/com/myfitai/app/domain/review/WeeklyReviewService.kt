@@ -73,7 +73,7 @@ class WeeklyReviewService(
     suspend fun buildLocalMetrics(profileId: Long, weekStart: LocalDate): LocalMetrics {
         val monday = monday(weekStart)
         val sunday = monday.plusDays(6)
-        if (!sunday.isBefore(time.today())) throw ReviewException.WeekNotCompleted()
+        if (time.today().isBefore(sunday)) throw ReviewException.WeekNotCompleted()
         val zone = time.zoneId
         val from = monday.atStartOfDay(zone).toInstant().toEpochMilli()
         val to = monday.plusDays(7).atStartOfDay(zone).toInstant().toEpochMilli() - 1

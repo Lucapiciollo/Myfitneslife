@@ -138,7 +138,7 @@ class WeeklyReviewViewModel(
     companion object {
         private fun lastCompletedMonday(today: LocalDate = LocalDate.now()): LocalDate {
             val currentMonday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-            return currentMonday.minusWeeks(1)
+            return if (today.dayOfWeek == DayOfWeek.SUNDAY) currentMonday else currentMonday.minusWeeks(1)
         }
     }
 }
