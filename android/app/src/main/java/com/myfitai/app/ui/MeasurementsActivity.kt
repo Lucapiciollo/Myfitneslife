@@ -11,6 +11,7 @@ import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.data.local.entity.BiaMeasurementEntity
 import com.myfitai.app.data.local.entity.BodyMeasurementEntity
+import com.myfitai.app.domain.body.BodyWeightHistory
 import com.myfitai.app.navigation.BottomNavBinder
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -26,6 +27,8 @@ import java.util.Locale
 class MeasurementsActivity : BaseShellActivity() {
     private val data by lazy { AppDataContainer.get(this) }
     private val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm", Locale.ITALIAN)
+    private var biaHistory: List<BiaMeasurementEntity> = emptyList()
+    private var latestBody: BodyMeasurementEntity? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,9 +57,11 @@ class MeasurementsActivity : BaseShellActivity() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     data.activeProfileStore.activeProfileId
-                        .flatMapLatest(data.biaRepository::latest)
+                        .flatMapLatest(data.biaRepository::all)
                         .collect {
-                            renderBia(it)
+                            biaHistory = it
+                            renderBia(it.firstOrNull())
+                            renderBody(latestBody)
                             renderDietImpact()
                         }
                 }
@@ -64,6 +69,7 @@ class MeasurementsActivity : BaseShellActivity() {
                     data.activeProfileStore.activeProfileId
                         .flatMapLatest(data.bodyMeasurementRepository::latest)
                         .collect {
+                            latestBody = it
                             renderBody(it)
                             renderDietImpact()
                         }
@@ -93,7 +99,10 @@ class MeasurementsActivity : BaseShellActivity() {
     private fun renderBody(value: BodyMeasurementEntity?) {
         findViewById<TextView>(R.id.bodyLatestText).text = value?.let {
             val details = listOfNotNull(
-                it.weightKg?.let { weight -> "Peso corporeo ${formatNumber(weight)} kg" },
+                BodyWeightHistory.weightFor(it, biaHistory)?.let { weight ->
+                    if (weight.fromBia) "Peso BIA (stessa data) ${formatNumber(weight.kg)} kg"
+                    else "Peso corporeo ${formatNumber(weight.kg)} kg"
+                },
                 it.hipsCm?.let { hips -> "Fianchi ${formatNumber(hips)} cm" },
                 it.waistCm?.let { waist -> "Vita ${formatNumber(waist)} cm" },
                 it.abdomenCm?.let { abdomen -> "Addome ${formatNumber(abdomen)} cm" },
