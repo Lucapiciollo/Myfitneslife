@@ -37,7 +37,10 @@ class BodyMeasuresActivity : BaseShellActivity() {
     private enum class Metric(
         val label: String,
         val value: (BodyMeasurementEntity) -> Float?,
+        val unit: String = "cm",
     ) {
+        WEIGHT("Peso corporeo", { it.weightKg }, "kg"),
+        HIPS("Fianchi", { it.hipsCm }),
         WAIST("Vita", { it.waistCm }),
         CHEST("Torace", { it.chestCm }),
         ABDOMEN("Addome", { it.abdomenCm }),
@@ -154,10 +157,12 @@ class BodyMeasuresActivity : BaseShellActivity() {
         findViewById<TextView>(R.id.measureDate).text = latest?.let { entityDate(it).format(dateFormatter) } ?: "Nessuna misura"
 
         val rows = listOf(
+            Triple(R.id.rowWeight, "Peso corporeo", latest?.weightKg),
             Triple(R.id.rowChest, "Torace", latest?.chestCm),
             Triple(R.id.rowWaist, "Vita", latest?.waistCm),
             Triple(R.id.rowAbdomen, "Addome", latest?.abdomenCm),
             Triple(R.id.rowShoulders, "Spalle", latest?.shouldersCm),
+            Triple(R.id.rowHips, "Fianchi", latest?.hipsCm),
             Triple(R.id.rowGlutes, "Glutei", latest?.glutesCm),
             Triple(R.id.rowArmLeft, "Braccio sx", latest?.armLeftCm),
             Triple(R.id.rowArmRight, "Braccio dx", latest?.armRightCm),
@@ -169,7 +174,7 @@ class BodyMeasuresActivity : BaseShellActivity() {
         rows.forEach { (id, label, value) ->
             findViewById<MeasurementRowView>(id).apply {
                 setLabel(label)
-                setValue(value?.let(::formatCm) ?: "—")
+                setValue(value?.let { if (id == R.id.rowWeight) formatKg(it) else formatCm(it) } ?: "—")
             }
         }
     }
@@ -279,13 +284,13 @@ class BodyMeasuresActivity : BaseShellActivity() {
             .mapNotNull { measurement -> selectedMetric.value(measurement)?.let { measurement to it } }
 
         val current = allMetricPoints.lastOrNull()
-        findViewById<TextView>(R.id.trendCurrentValue).text = current?.second?.let(::formatCm) ?: "—"
+        findViewById<TextView>(R.id.trendCurrentValue).text = current?.second?.let { if (selectedMetric.unit == "kg") formatKg(it) else formatCm(it) } ?: "—"
 
         val previousDelta = if (allMetricPoints.size >= 2) {
             allMetricPoints.last().second - allMetricPoints[allMetricPoints.lastIndex - 1].second
         } else null
         findViewById<TextView>(R.id.trendDeltaPrevious).text = previousDelta?.let {
-            "${formatSigned(it)} cm vs precedente disponibile"
+            "${formatSigned(it)} ${selectedMetric.unit} vs precedente disponibile"
         } ?: "Dati insufficienti"
 
         val anchorDate = measurements.firstOrNull()?.let(::entityDate) ?: LocalDate.now()
@@ -299,7 +304,7 @@ class BodyMeasuresActivity : BaseShellActivity() {
         val periodPoints = allMetricPoints.filter { (measurement, _) -> !entityDate(measurement).isBefore(fromDate) }
         val periodDelta = if (periodPoints.size >= 2) periodPoints.last().second - periodPoints.first().second else null
         findViewById<TextView>(R.id.trendDeltaPeriod).text = periodDelta?.let {
-            "${formatSigned(it)} cm nel periodo"
+            "${formatSigned(it)} ${selectedMetric.unit} nel periodo"
         } ?: "Dati insufficienti nel periodo"
 
         val chartPoints = periodPoints.map { (measurement, value) ->
@@ -380,6 +385,8 @@ class BodyMeasuresActivity : BaseShellActivity() {
 
     private fun historyValues(value: BodyMeasurementEntity): String {
         val items = listOfNotNull(
+            value.weightKg?.let { "Peso corporeo ${formatKg(it)}" },
+            value.hipsCm?.let { "Fianchi ${formatCm(it)}" },
             value.chestCm?.let { "Torace ${formatCm(it)}" },
             value.waistCm?.let { "Vita ${formatCm(it)}" },
             value.abdomenCm?.let { "Addome ${formatCm(it)}" },
@@ -406,6 +413,8 @@ class BodyMeasuresActivity : BaseShellActivity() {
 
     private fun entityDate(value: BodyMeasurementEntity): LocalDate =
         Instant.ofEpochMilli(value.measuredAtEpochMillis).atZone(ZoneOffset.UTC).toLocalDate()
+
+    private fun formatKg(value: Float): String = String.format(Locale.ITALIAN, "%.1f kg", value)
 
     private fun formatCm(value: Float): String = if (value % 1f == 0f) {
         "${value.toInt()} cm"
