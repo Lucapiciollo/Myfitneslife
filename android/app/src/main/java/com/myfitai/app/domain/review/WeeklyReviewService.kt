@@ -79,8 +79,12 @@ class WeeklyReviewService(
         val plan = plans.loadLatestSnapshot(profileId, monday.toEpochDay())
         val weekWorkouts = workouts.between(profileId, from, to).first()
         val weekCheats = cheats.between(profileId, from, to).first()
-        val weekBia = bia.between(profileId, from, to).first()
-        val weekBody = bodyMeasurements.between(profileId, from, to).first()
+        val allBia = bia.all(profileId).first()
+        val allBody = bodyMeasurements.all(profileId).first()
+        val weekBia = allBia.filter { it.measuredAtEpochMillis in from..to }
+        val weekBody = allBody.filter { it.measuredAtEpochMillis in from..to }
+        val previousBia = allBia.filter { it.measuredAtEpochMillis < from }
+        val previousBody = allBody.filter { it.measuredAtEpochMillis < from }
         val days = plan?.version?.days.orEmpty()
         val plannedItems = days.sumOf { it.meals.size + it.supplements.size }
         val plannedMeals = days.sumOf { it.meals.size }
@@ -97,7 +101,10 @@ class WeeklyReviewService(
             averageOrNull(days.mapNotNull { it.carbsG }), plan?.version?.targetCarbsG,
             averageOrNull(days.mapNotNull { it.fatG }), plan?.version?.targetFatG,
             weekCheats.size, weekWorkouts.count { !it.isRestDay }, weekWorkouts.count { it.isRestDay },
-            delta(weekBia.mapNotNull { it.weightKg }), delta(weekBia.mapNotNull { it.bodyFatPercent }), delta(weekBia.mapNotNull { it.muscleMassKg }), delta(weekBody.mapNotNull { it.waistCm }),
+            delta(weekBia.mapNotNull { it.weightKg }, previousBia.mapNotNull { it.weightKg }),
+            delta(weekBia.mapNotNull { it.bodyFatPercent }, previousBia.mapNotNull { it.bodyFatPercent }),
+            delta(weekBia.mapNotNull { it.muscleMassKg }, previousBia.mapNotNull { it.muscleMassKg }),
+            delta(weekBody.mapNotNull { it.waistCm }, previousBody.mapNotNull { it.waistCm }),
             consumption.plannedMealCount,
             consumption.consumedMealCount,
             consumption.skippedMealCount,
@@ -178,5 +185,9 @@ class WeeklyReviewService(
 
     private fun monday(date: LocalDate): LocalDate = date.minusDays((date.dayOfWeek.value - 1).toLong())
     private fun averageOrNull(values: List<Float>): Float? = values.takeIf { it.isNotEmpty() }?.average()?.toFloat()
-    private fun delta(values: List<Float>): Float? = if (values.size >= 2) values.last() - values.first() else null
+    private fun delta(values: List<Float>, previousValues: List<Float>): Float? = when {
+        values.size >= 2 -> values.last() - values.first()
+        values.size == 1 && previousValues.isNotEmpty() -> values.first() - previousValues.last()
+        else -> null
+    }
 }
