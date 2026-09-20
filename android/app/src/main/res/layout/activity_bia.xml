@@ -272,6 +272,15 @@
                     <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowSkeletalMuscle" android:layout_width="match_parent" android:layout_height="wrap_content" />
                     <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowBodyWater" android:layout_width="match_parent" android:layout_height="wrap_content" />
                     <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowBmr" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                    <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowFatMass" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                    <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowLeanMass" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                    <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowBodyWaterKg" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                    <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowSubcutaneousFat" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                    <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowBoneMass" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                    <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowProteinPercent" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                    <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowProteinKg" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                    <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowBodyAge" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                    <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowBmi" android:layout_width="match_parent" android:layout_height="wrap_content" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
