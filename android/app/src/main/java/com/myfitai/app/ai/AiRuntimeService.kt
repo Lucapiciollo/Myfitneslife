@@ -36,12 +36,12 @@ class AiRuntimeService(context: Context) : AiRuntimeGateway {
 
         val compact = request.schemaName.contains("_pipe_")
         val scopedRequest = request.copy(
-            systemPrompt = buildString {
-                append(GLOBAL_NUTRITION_SCOPE)
-                append('\n').append(AiResponseLanguage.ITALIAN_OUTPUT_RULE)
-                if (compact) append('\n').append(COMPACT_OUTPUT_RULE)
-                append("\n\n").append(request.systemPrompt.trim())
-            },
+            systemPrompt = AiResponseLanguage.scope(
+                globalScope = GLOBAL_NUTRITION_SCOPE,
+                compactRule = COMPACT_OUTPUT_RULE,
+                agentPrompt = request.systemPrompt,
+                compact = compact,
+            ),
             maxOutputTokens = if (compact) minOf(request.maxOutputTokens, compactTokenCap(request.schemaName)) else request.maxOutputTokens,
             // Gemini 3.5 Flash-Lite rejects an explicit thinkingConfig with budget 0.
             // Compact workloads already constrain output locally; omit the provider field.
