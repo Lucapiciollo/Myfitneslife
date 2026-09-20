@@ -84,7 +84,12 @@ class ProfileCalculationService(
 
         val latestBia = biaHistory.lastOrNull()
         val latestBody = bodyHistory.lastOrNull()
-        val weightKg = latestBia?.weightKg?.toDouble() ?: profile.currentWeightKg?.toDouble()
+        val weightObservations = (
+            biaHistory.mapNotNull { row -> row.weightKg?.let { row.measuredAtEpochMillis to it } } +
+                bodyHistory.mapNotNull { row -> row.weightKg?.let { row.measuredAtEpochMillis to it } }
+            ).sortedBy { it.first }
+        val latestRecordedWeight = weightObservations.lastOrNull()?.second
+        val weightKg = latestRecordedWeight?.toDouble() ?: profile.currentWeightKg?.toDouble()
         val ageYears = profile.birthDateEpochDay?.let { epochDay ->
             val birth = LocalDate.ofEpochDay(epochDay)
             if (birth.isAfter(today)) null else Period.between(birth, today).years
@@ -107,7 +112,7 @@ class ProfileCalculationService(
             )
         )
 
-        val weightTrend = trendOf(biaHistory.mapNotNull { row -> row.weightKg?.let { row.measuredAtEpochMillis to it.toDouble() } })
+        val weightTrend = trendOf(weightObservations.map { it.first to it.second.toDouble() })
         val bodyFatTrend = trendOf(biaHistory.mapNotNull { row -> row.bodyFatPercent?.let { row.measuredAtEpochMillis to it.toDouble() } })
         val muscleTrend = trendOf(biaHistory.mapNotNull { row -> row.muscleMassKg?.let { row.measuredAtEpochMillis to it.toDouble() } })
         val waistTrend = trendOf(bodyHistory.mapNotNull { row -> row.waistCm?.let { row.measuredAtEpochMillis to it.toDouble() } })
@@ -145,7 +150,7 @@ class ProfileCalculationService(
             recompositionState = recomposition,
             latestBiaTimestamp = latestBia?.measuredAtEpochMillis,
             latestBodyMeasurementTimestamp = latestBody?.measuredAtEpochMillis,
-            latestWeightKg = latestBia?.weightKg ?: profile.currentWeightKg,
+            latestWeightKg = latestRecordedWeight ?: profile.currentWeightKg,
             latestBodyFatPercent = latestBia?.bodyFatPercent,
             latestMuscleMassKg = latestBia?.muscleMassKg,
             latestSkeletalMuscleKg = latestBia?.skeletalMuscleKg,
