@@ -173,11 +173,27 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         val root = summaryCard.parent.parent as LinearLayout
         val insertIndex = root.indexOfChild(summaryCard)
 
-        val header = TextView(this).apply {
-            text = "Review settimanale"
-            textSize = 15f
-            setTextColor(getColor(R.color.text_primary))
-            setTypeface(typeface, android.graphics.Typeface.BOLD)
+        val header = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            addView(TextView(this@PhysicalEvolutionActivity).apply {
+                text = "Review settimanale"
+                textSize = 15f
+                setTextColor(getColor(R.color.text_primary))
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+            }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            addView(ImageButton(this@PhysicalEvolutionActivity).apply {
+                setImageResource(R.drawable.ic_help_outline)
+                background = null
+                contentDescription = "Spiega review settimanale"
+                setOnClickListener {
+                    showHelp(
+                        "Review settimanale",
+                        "Raccoglie alimentazione, allenamenti e variazioni corporee degli ultimi sette giorni. " +
+                            "La sintesi IA viene generata solo sui dati registrati e non sostituisce una valutazione professionale.",
+                    )
+                }
+            }, LinearLayout.LayoutParams(dp(40), dp(40)))
         }
         root.addView(header, insertIndex, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
             topMargin = dp(24)

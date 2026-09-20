@@ -12,6 +12,7 @@ import com.myfitai.app.data.repository.FoodConsumptionRepository
 import com.myfitai.app.data.repository.MealPlanRepository
 import com.myfitai.app.data.repository.WeeklyReviewRepository
 import com.myfitai.app.data.repository.WorkoutRepository
+import com.myfitai.app.domain.food.FoodPlanMetrics
 import com.myfitai.app.domain.personalization.PersonalResponseService
 import com.myfitai.app.domain.time.SystemTimeProvider
 import com.myfitai.app.domain.time.TimeProvider
@@ -86,6 +87,7 @@ class WeeklyReviewService(
         val previousBia = allBia.filter { it.measuredAtEpochMillis < from }
         val previousBody = allBody.filter { it.measuredAtEpochMillis < from }
         val days = plan?.version?.days.orEmpty()
+        val plannedAverage = FoodPlanMetrics.weeklyAverage(days)
         val plannedItems = days.sumOf { it.meals.size + it.supplements.size }
         val plannedMeals = days.sumOf { it.meals.size }
         val consumptionRecords = if (plan != null && foodConsumptions != null) {
@@ -96,10 +98,10 @@ class WeeklyReviewService(
         val consumption = WeeklyConsumptionMetrics.calculate(plannedMeals, plannedItems, consumptionRecords)
         return LocalMetrics(
             monday, sunday,
-            days.mapNotNull { it.totalKcal }.takeIf { it.isNotEmpty() }?.average()?.roundToInt(), plan?.version?.targetKcal,
-            averageOrNull(days.mapNotNull { it.proteinG }), plan?.version?.targetProteinG,
-            averageOrNull(days.mapNotNull { it.carbsG }), plan?.version?.targetCarbsG,
-            averageOrNull(days.mapNotNull { it.fatG }), plan?.version?.targetFatG,
+            plannedAverage.kcal?.roundToInt(), plan?.version?.targetKcal,
+            plannedAverage.proteinG?.toFloat(), plan?.version?.targetProteinG,
+            plannedAverage.carbsG?.toFloat(), plan?.version?.targetCarbsG,
+            plannedAverage.fatG?.toFloat(), plan?.version?.targetFatG,
             weekCheats.size, weekWorkouts.count { !it.isRestDay }, weekWorkouts.count { it.isRestDay },
             delta(weekBia.mapNotNull { it.weightKg }, previousBia.mapNotNull { it.weightKg }),
             delta(weekBia.mapNotNull { it.bodyFatPercent }, previousBia.mapNotNull { it.bodyFatPercent }),
@@ -184,7 +186,6 @@ class WeeklyReviewService(
     }
 
     private fun monday(date: LocalDate): LocalDate = date.minusDays((date.dayOfWeek.value - 1).toLong())
-    private fun averageOrNull(values: List<Float>): Float? = values.takeIf { it.isNotEmpty() }?.average()?.toFloat()
     private fun delta(values: List<Float>, previousValues: List<Float>): Float? = when {
         values.size >= 2 -> values.last() - values.first()
         values.size == 1 && previousValues.isNotEmpty() -> values.first() - previousValues.first()
