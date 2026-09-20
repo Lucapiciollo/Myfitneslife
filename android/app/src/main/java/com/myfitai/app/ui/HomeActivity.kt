@@ -64,7 +64,6 @@ class HomeActivity : BaseShellActivity() {
 
         findViewById<android.view.View>(R.id.profileButton).setOnClickListener { go(ProfileActivity::class.java) }
         findViewById<android.view.View>(R.id.nextMealCard).setOnClickListener {
-            if (!com.myfitai.app.ai.AiProviderAccess.requireConfigured(this)) return@setOnClickListener
             currentNextMealId?.let { mealId ->
                 startActivity(Intent(this, MealDetailActivity::class.java).putExtra(MealDetailActivity.EXTRA_MEAL_ID, mealId))
             } ?: openFoodPlan()
