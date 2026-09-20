@@ -52,7 +52,7 @@ class HomeViewModel(
     private val activeProfileStore: ActiveProfileStore,
 ) : ViewModel() {
 
-    data class MetricState(val value: Float?, val deltaFromPrevious: Float?)
+    data class MetricState(val value: Float?, val deltaFromPrevious: Float?, val sourceLabel: String? = null)
     data class TrendSeries(val label: String, val values: List<Float>)
     data class CalorieState(
         val bmr: Int? = null,
@@ -72,7 +72,7 @@ class HomeViewModel(
         val kcal: Int?,
     )
 
-    data class RecoveryState(val pendingKcal: Int = 0, val creditCount: Int = 0)
+    data class RecoveryState(val pendingKcal: Int = 0, val creditCount: Int = 0, val nextExpiry: LocalDate? = null)
 
     data class DashboardState(
         val profileName: String? = null,
@@ -220,12 +220,20 @@ class HomeViewModel(
 
         val calories = calorieState(source).copy(consumedKcal = consumedKcal)
 
+        val weightSource = when {
+            (source.bia.maxOfOrNull { it.measuredAtEpochMillis } ?: Long.MIN_VALUE) >=
+                (source.body.maxOfOrNull { it.measuredAtEpochMillis } ?: Long.MIN_VALUE) &&
+                source.bia.any { it.weightKg != null } -> "da BIA"
+            source.body.any { it.weightKg != null } -> "da misura corporea"
+            source.profile?.currentWeightKg != null -> "dal profilo"
+            else -> null
+        }
         return DashboardState(
             profileName = source.profile?.name,
             goal = source.profile?.goal,
-            weight = metricState(weightValues),
-            bodyFat = metricState(fatValues),
-            muscleMass = metricState(muscleValues),
+            weight = metricState(weightValues).copy(sourceLabel = weightSource),
+            bodyFat = metricState(fatValues).copy(sourceLabel = "da BIA".takeIf { fatValues.isNotEmpty() }),
+            muscleMass = metricState(muscleValues).copy(sourceLabel = "da BIA".takeIf { muscleValues.isNotEmpty() }),
             trendSeries = listOf(
                 TrendSeries("Peso", weightSeries),
                 TrendSeries("Grasso corporeo", fatSeries),
@@ -337,6 +345,7 @@ class HomeViewModel(
         val monday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         var pending = 0
         var credits = 0
+        var nextExpiry: LocalDate? = null
         for (entry in entries) {
             val totalKcal = entry.estimatedKcal?.takeIf { it > 0 } ?: continue
             if (recoveryRepository.wasCheatAdapted(profileId, entry.id)) continue
@@ -349,9 +358,14 @@ class HomeViewModel(
             if (remaining > 0) {
                 pending += remaining
                 credits++
+                val expiry = Instant.ofEpochMilli(entry.occurredAtEpochMillis)
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDate()
+                    .plusDays(CalorieRecoveryEngine.WINDOW_DAYS)
+                nextExpiry = listOfNotNull(nextExpiry, expiry).minOrNull()
             }
         }
-        return RecoveryState(pendingKcal = pending, creditCount = credits)
+        return RecoveryState(pendingKcal = pending, creditCount = credits, nextExpiry = nextExpiry)
     }
 
     private fun metricState(valuesDesc: List<Pair<Long, Float>>): MetricState {

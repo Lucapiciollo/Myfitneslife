@@ -19,6 +19,7 @@ class MealPlanRowView @JvmOverloads constructor(
     private val titleView: TextView
     private val kcalView: TextView
     private val descriptionView: TextView
+    private val statusView: TextView
     private val changeButton: ImageView
 
     init {
@@ -69,6 +70,14 @@ class MealPlanRowView @JvmOverloads constructor(
             textSize = 13f
         }
         textColumn.addView(descriptionView)
+        statusView = TextView(context).apply {
+            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
+                topMargin = (3 * density).toInt()
+            }
+            setTextColor(context.getColor(R.color.accent_green_dark))
+            textSize = 12f
+        }
+        textColumn.addView(statusView)
         addView(textColumn)
 
         changeButton = ImageView(context).apply {
@@ -94,6 +103,11 @@ class MealPlanRowView @JvmOverloads constructor(
 
     fun setDescription(description: String) {
         descriptionView.text = description
+    }
+
+    fun setStatus(status: String?) {
+        statusView.text = status.orEmpty()
+        statusView.visibility = if (status.isNullOrBlank()) GONE else VISIBLE
     }
 
     fun setImage(resId: Int) {

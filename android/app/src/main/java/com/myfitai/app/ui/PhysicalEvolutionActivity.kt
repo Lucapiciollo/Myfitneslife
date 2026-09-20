@@ -391,7 +391,8 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         val unit = if (metricIndex == 1) "%" else "kg"
         findViewById<TextView>(R.id.metricLabel).text = listOf("Peso", "Grasso corporeo", "Massa muscolare")[metricIndex]
         findViewById<TextView>(R.id.metricValue).text = filtered.value?.let { "${fmt(it)} $unit" } ?: "—"
-        findViewById<TextView>(R.id.metricDelta).text = filtered.delta?.let { "${signed(it)} $unit nel periodo" } ?: "Dati insufficienti"
+        val rangeLabel = listOf("1M", "3M", "6M", "1Y")[rangeIndex]
+        findViewById<TextView>(R.id.metricDelta).text = filtered.delta?.let { "${signed(it)} $unit negli ultimi $rangeLabel" } ?: "Dati insufficienti"
         findViewById<WeightTrendChartView>(R.id.evolutionChart).setData(filtered.series.map { it.value })
         renderDateLabels(filtered)
         renderSecondary(R.id.otherIndicatorFatValue, R.id.otherIndicatorFatDelta, state.bodyFat, "%")

@@ -129,6 +129,9 @@ class HomeActivity : BaseShellActivity() {
         val firstName = state.profileName?.trim()?.substringBefore(' ')?.takeIf { it.isNotBlank() }
         findViewById<TextView>(R.id.greetingText).text = firstName?.let { "Ciao $it 👋" } ?: "Ciao 👋"
 
+        findViewById<MetricCardView>(R.id.metricWeight).setLabel(getString(R.string.dashboard_metric_weight) + state.weight.sourceLabel?.let { " · $it" }.orEmpty())
+        findViewById<MetricCardView>(R.id.metricFat).setLabel(getString(R.string.dashboard_metric_fat) + state.bodyFat.sourceLabel?.let { " · $it" }.orEmpty())
+        findViewById<MetricCardView>(R.id.metricMuscle).setLabel(getString(R.string.dashboard_metric_muscle) + state.muscleMass.sourceLabel?.let { " · $it" }.orEmpty())
         renderMetric(findViewById(R.id.metricWeight), state.weight.value, state.weight.deltaFromPrevious, "kg", DeltaSemantic.NEUTRAL)
         renderMetric(findViewById(R.id.metricFat), state.bodyFat.value, state.bodyFat.deltaFromPrevious, "%", DeltaSemantic.DOWN_IS_POSITIVE)
         renderMetric(findViewById(R.id.metricMuscle), state.muscleMass.value, state.muscleMass.deltaFromPrevious, "kg", DeltaSemantic.UP_IS_POSITIVE)
@@ -180,7 +183,8 @@ class HomeActivity : BaseShellActivity() {
         if (recovery.pendingKcal > 0) {
             value.text = "${recovery.pendingKcal} kcal"
             val credits = if (recovery.creditCount == 1) "1 sgarro recente" else "${recovery.creditCount} sgarri recenti"
-            hint.text = "Da recuperare nei prossimi giorni · $credits"
+            val expiry = recovery.nextExpiry?.format(DateTimeFormatter.ofPattern("dd/MM", Locale.ITALIAN))
+            hint.text = "Da recuperare nei prossimi giorni · $credits${expiry?.let { " · primo termine $it" }.orEmpty()}"
         } else {
             value.text = "0 kcal"
             hint.text = "Nessun extra da recuperare. Sei in pari."

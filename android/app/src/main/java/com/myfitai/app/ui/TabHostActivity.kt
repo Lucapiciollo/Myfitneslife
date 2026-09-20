@@ -13,7 +13,6 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.myfitai.app.R
-import com.myfitai.app.ai.AiProviderAccess
 import com.myfitai.app.navigation.BottomNavBinder
 
 /** Single window host for the four persistent root tabs. Child screens remain normal Activities. */
@@ -46,7 +45,6 @@ class TabHostActivity : AppCompatActivity() {
     }
 
     fun selectTab(tab: BottomNavBinder.Tab) {
-        if (tab == BottomNavBinder.Tab.FOOD && !AiProviderAccess.requireConfigured(this)) return
         if (tab == currentTab) return
         currentTab = tab
         showTab(tab)

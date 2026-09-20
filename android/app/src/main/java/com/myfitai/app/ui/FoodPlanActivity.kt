@@ -22,6 +22,7 @@ import com.myfitai.app.domain.food.FoodPlanDay
 import com.myfitai.app.domain.food.FoodPlanMetrics
 import com.myfitai.app.domain.food.FoodPlanVersion
 import com.myfitai.app.domain.food.FoodConsumptionMetrics
+import com.myfitai.app.domain.food.FoodConsumptionStatus
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.ui.food.FoodPlanViewModel
 import com.myfitai.app.ui.widgets.MealPlanRowView
@@ -115,7 +116,10 @@ class FoodPlanActivity : BaseShellActivity() {
         val snapshot = state.snapshot
         if (snapshot != null) {
             versionLabel.visibility = View.VISIBLE
-            versionLabel.text = "Piano v${snapshot.version.versionNumber}${snapshot.version.reason?.takeIf { it.isNotBlank() }?.let { " · $it" }.orEmpty()}"
+            val createdAt = java.time.Instant.ofEpochMilli(snapshot.version.createdAtEpochMillis)
+                .atZone(java.time.ZoneId.systemDefault())
+                .format(DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.ITALIAN))
+            versionLabel.text = "Piano v${snapshot.version.versionNumber} · $createdAt${snapshot.version.reason?.takeIf { it.isNotBlank() }?.let { " · $it" }.orEmpty()}"
         } else versionLabel.visibility = View.GONE
 
         val empty = findViewById<TextView>(R.id.emptyPlanText)
@@ -125,7 +129,7 @@ class FoodPlanActivity : BaseShellActivity() {
         else if (!state.hasPlan) empty.text = "Nessun piano per questa settimana. Genera un piano per vedere pasti, quantità e valori nutrizionali."
 
         renderGeneration(state)
-        renderMeals(state.weekStart, day)
+        renderMeals(state.weekStart, day, state.consumptionRecords)
         renderTotals(day, state.snapshot?.version, state.consumptionRecords, state.baseKcal)
     }
 
@@ -158,13 +162,19 @@ class FoodPlanActivity : BaseShellActivity() {
         status.text = message.orEmpty()
     }
 
-    private fun renderMeals(weekStart: LocalDate, day: FoodPlanDay?) {
+    private fun renderMeals(weekStart: LocalDate, day: FoodPlanDay?, records: List<com.myfitai.app.data.local.entity.FoodConsumptionEntity>) {
         val container = findViewById<LinearLayout>(R.id.mealsContainer)
         container.removeAllViews()
-        day?.meals?.sortedBy { it.sortOrder }?.forEach { meal ->
+        day?.meals?.sortedWith(compareBy<FoodMeal> { it.timeMinutes ?: Int.MAX_VALUE }.thenBy { it.sortOrder })?.forEach { meal ->
             val changeEnabled = canChangeMeal(day.dateEpochDay, meal.timeMinutes) && meal.kcal != null
+            val status = records.firstOrNull { it.mealId == meal.id }?.status
             val row = MealPlanRowView(this).apply {
                 setTitle(displayMealType(meal.type)); setKcal(NutritionEstimateFormatter.formatEstimatedKcal(meal.kcal)); setDescription(meal.title); setImage(imageFor(meal))
+                setStatus(when (status) {
+                    FoodConsumptionStatus.CONSUMED.name -> "✓ Consumato"
+                    FoodConsumptionStatus.SKIPPED.name -> "Saltato"
+                    else -> null
+                })
                 setOnClickListener { openMeal(meal.id) }; setChangeEnabled(changeEnabled)
                 if (changeEnabled) setOnChangeClickListener { openMealAlternatives(weekStart, day, meal) }
                 contentDescription = "${displayMealType(meal.type)}: ${meal.title}"

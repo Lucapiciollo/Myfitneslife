@@ -197,7 +197,7 @@ class BodyMeasuresActivity : BaseShellActivity() {
         rows.forEach { (id, label, value) ->
             findViewById<MeasurementRowView>(id).apply {
                 setLabel(label)
-                setValue(value?.let { if (id == R.id.rowWeight) formatKg(it) else formatCm(it) } ?: "—")
+                setValue(value?.let { if (id == R.id.rowWeight) formatKg(it) else formatCm(it) } ?: "Non rilevato")
             }
         }
     }
