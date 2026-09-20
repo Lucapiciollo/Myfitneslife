@@ -5,6 +5,18 @@ package com.myfitai.app.ai
  * runtime boundary. Structural identifiers remain unchanged for pipe/schema parsers.
  */
 internal object AiResponseLanguage {
+    fun scope(
+        globalScope: String,
+        compactRule: String,
+        agentPrompt: String,
+        compact: Boolean,
+    ): String = buildString {
+        append(globalScope)
+        append('\n').append(ITALIAN_OUTPUT_RULE)
+        if (compact) append('\n').append(compactRule)
+        append("\n\n").append(agentPrompt.trim())
+    }
+
     const val ITALIAN_OUTPUT_RULE =
         "OUTPUT_LANGUAGE: it-IT. Write ALL user-visible natural-language text in Italian: " +
             "meal titles, recipes/preparation, ingredient and food names when they have an " +
