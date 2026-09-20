@@ -35,6 +35,9 @@ interface UserProfileDao {
 
 @Dao
 interface BiaMeasurementDao {
+    @Query("SELECT * FROM bia_measurements WHERE profileId = :profileId")
+    suspend fun getAll(profileId: Long): List<BiaMeasurementEntity>
+
     @Query("SELECT * FROM bia_measurements WHERE profileId = :profileId ORDER BY measuredAtEpochMillis DESC, id DESC")
     fun observeAll(profileId: Long): Flow<List<BiaMeasurementEntity>>
 
