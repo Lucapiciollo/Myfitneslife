@@ -369,7 +369,7 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         ProgressAnalysisCompactContract.PatternCode.ABDOMEN -> "Circonferenza addome"
         ProgressAnalysisCompactContract.PatternCode.LIMBS -> "Circonferenze arti"
         ProgressAnalysisCompactContract.PatternCode.TRAINING -> "Allenamento"
-        ProgressAnalysisCompactContract.PatternCode.DEVIATIONS -> "Aderenza e deviazioni"
+        ProgressAnalysisCompactContract.PatternCode.DEVIATIONS -> "Rispetto del piano e deviazioni"
         ProgressAnalysisCompactContract.PatternCode.BODY_COHERENCE -> "Coerenza complessiva dei dati corporei"
     }
 

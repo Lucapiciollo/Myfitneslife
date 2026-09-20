@@ -56,9 +56,9 @@ class WeeklyReviewActivity : BaseShellActivity() {
         findViewById<TextView>(R.id.cheatsValue).text = metrics?.cheatCount?.toString() ?: "—"
         findViewById<TextView>(R.id.workoutsValue).text = metrics?.let { "${it.workoutCount}" } ?: "—"
         findViewById<TextView>(R.id.trackingCoverageText).text = when {
-            metrics == null -> "La copertura mostra quanti elementi della settimana sono stati registrati."
-            metrics.trackingCoveragePercent == null -> "Nessun consumo registrato: l'aderenza resta n/d."
-            else -> "Copertura tracking: ${metrics.trackingCoveragePercent}% · ${metrics.consumedMealCount} pasti consumati · ${metrics.skippedMealCount} saltati."
+            metrics == null -> "Piano seguito: percentuale dei pasti segnati come consumati rispetto a quelli previsti."
+            metrics.trackingCoveragePercent == null -> "Nessun pasto consumato registrato: piano seguito n/d."
+            else -> "Pasti registrati: ${metrics.trackingCoveragePercent}% degli elementi previsti · ${metrics.consumedMealCount} consumati · ${metrics.skippedMealCount} saltati."
         }
 
         renderNutrition(metrics)
