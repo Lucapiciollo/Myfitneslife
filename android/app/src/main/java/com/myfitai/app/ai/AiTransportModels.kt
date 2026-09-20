@@ -14,7 +14,8 @@ data class AiStructuredRequest(
     val schemaJson: String,
     /** Optional provider-only schema; schemaJson remains the local canonical authority. */
     val remoteSchemaJson: String? = null,
-    val maxOutputTokens: Int = 8_000,
+    /** Null lets the provider/model decide its output budget (used for variable-length food plans). */
+    val maxOutputTokens: Int? = 8_000,
     val image: AiImageInput? = null,
     /** Optional Gemini thinking budget in tokens (0 disables thinking). Ignored by providers without thinking. */
     val thinkingBudget: Int? = null,
