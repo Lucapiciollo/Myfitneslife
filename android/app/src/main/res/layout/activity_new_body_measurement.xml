@@ -117,7 +117,7 @@
                 <com.google.android.material.textfield.TextInputEditText
                 style="@style/Widget.MyFitAI.InputEditText" android:id="@+id/shouldersInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="numberDecimal" />
             </com.google.android.material.textfield.TextInputLayout>
-            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.Input" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.Input" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:hint="Fianchi (cm)">
+            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.Input" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:hint="Fianchi (cm)">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/hipsInput"
                     style="@style/Widget.MyFitAI.InputEditText"
