@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -53,6 +54,7 @@ class BodyMeasurementsViewModel(
         calfRightCm: Float?,
         hipsCm: Float? = null,
         weightKg: Float? = null,
+        existingMeasurementId: Long? = null,
     ) {
         val profileId = activeProfileStore.currentIdOrNull() ?: run {
             _error.tryEmit("Nessun profilo attivo")
@@ -74,8 +76,13 @@ class BodyMeasurementsViewModel(
 
         viewModelScope.launch {
             runCatching {
-                repository.insert(
-                    BodyMeasurementEntity(
+                val existing = existingMeasurementId?.let { id ->
+                    repository.all(profileId).first().firstOrNull { it.id == id }
+                        ?: error("Rilevazione non disponibile per il profilo attivo")
+                }
+                val measurement = BodyMeasurementEntity(
+                        id = existing?.id ?: 0L,
+                        notes = existing?.notes,
                         profileId = profileId,
                         measuredAtEpochMillis = measuredAtEpochMillis,
                         chestCm = chestCm,
@@ -92,12 +99,12 @@ class BodyMeasurementsViewModel(
                         hipsCm = hipsCm,
                         weightKg = weightKg,
                     )
-                )
+                if (existing != null) repository.update(measurement) else repository.insert(measurement)
             }.onSuccess {
                 nutritionPathTrigger?.maybeEnqueue(profileId)
                 _saved.tryEmit(Unit)
             }.onFailure {
-                _error.tryEmit("Impossibile salvare la misurazione")
+                _error.tryEmit("Impossibile salvare o aggiornare la misurazione")
             }
         }
     }
