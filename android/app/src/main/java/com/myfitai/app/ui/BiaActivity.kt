@@ -70,6 +70,15 @@ class BiaActivity : BaseShellActivity() {
         KEY_SKELETAL_MUSCLE to null,
         KEY_BODY_WATER to null,
         KEY_BMR to null,
+        KEY_FAT_MASS to null,
+        KEY_LEAN_MASS to null,
+        KEY_BODY_WATER_KG to null,
+        KEY_SUBCUTANEOUS_FAT to null,
+        KEY_BONE_MASS to null,
+        KEY_PROTEIN_PERCENT to null,
+        KEY_PROTEIN_KG to null,
+        KEY_BODY_AGE to null,
+        KEY_BMI to null,
     )
 
     private var selectedDateMillis: Long = System.currentTimeMillis()
@@ -203,6 +212,15 @@ class BiaActivity : BaseShellActivity() {
         bindRow(R.id.rowSkeletalMuscle, KEY_SKELETAL_MUSCLE, "Muscolo scheletrico", "kg")
         bindRow(R.id.rowBodyWater, KEY_BODY_WATER, "Acqua corporea", "%")
         bindRow(R.id.rowBmr, KEY_BMR, "BMR", "kcal")
+        bindRow(R.id.rowFatMass, KEY_FAT_MASS, "Massa grassa", "kg")
+        bindRow(R.id.rowLeanMass, KEY_LEAN_MASS, "Massa magra", "kg")
+        bindRow(R.id.rowBodyWaterKg, KEY_BODY_WATER_KG, "Acqua corporea", "kg")
+        bindRow(R.id.rowSubcutaneousFat, KEY_SUBCUTANEOUS_FAT, "Grasso sottocutaneo", "%")
+        bindRow(R.id.rowBoneMass, KEY_BONE_MASS, "Massa ossea", "kg")
+        bindRow(R.id.rowProteinPercent, KEY_PROTEIN_PERCENT, "Proteine", "%")
+        bindRow(R.id.rowProteinKg, KEY_PROTEIN_KG, "Proteine", "kg")
+        bindRow(R.id.rowBodyAge, KEY_BODY_AGE, "Età corporea", "anni")
+        bindRow(R.id.rowBmi, KEY_BMI, "BMI", "")
     }
 
     private fun bindRow(viewId: Int, key: String, label: String, unit: String) {
@@ -265,6 +283,15 @@ class BiaActivity : BaseShellActivity() {
                     skeletalMuscleKg = values[KEY_SKELETAL_MUSCLE],
                     bodyWaterPercent = values[KEY_BODY_WATER],
                     bmrKcal = values[KEY_BMR],
+                    fatMassKg = values[KEY_FAT_MASS],
+                    leanMassKg = values[KEY_LEAN_MASS],
+                    bodyWaterKg = values[KEY_BODY_WATER_KG],
+                    subcutaneousFatPercent = values[KEY_SUBCUTANEOUS_FAT],
+                    boneMassKg = values[KEY_BONE_MASS],
+                    proteinPercent = values[KEY_PROTEIN_PERCENT],
+                    proteinKg = values[KEY_PROTEIN_KG],
+                    bodyAgeYears = values[KEY_BODY_AGE]?.toInt(),
+                    bmi = values[KEY_BMI],
                     fasting = findViewById<MaterialCheckBox>(R.id.checkFasting).isChecked,
                     justWokeUp = findViewById<MaterialCheckBox>(R.id.checkJustWoken).isChecked,
                     afterBathroom = findViewById<MaterialCheckBox>(R.id.checkAfterShower).isChecked,
@@ -281,6 +308,15 @@ class BiaActivity : BaseShellActivity() {
                     skeletalMuscleKg = values[KEY_SKELETAL_MUSCLE],
                     bodyWaterPercent = values[KEY_BODY_WATER],
                     bmrKcal = values[KEY_BMR],
+                    fatMassKg = values[KEY_FAT_MASS],
+                    leanMassKg = values[KEY_LEAN_MASS],
+                    bodyWaterKg = values[KEY_BODY_WATER_KG],
+                    subcutaneousFatPercent = values[KEY_SUBCUTANEOUS_FAT],
+                    boneMassKg = values[KEY_BONE_MASS],
+                    proteinPercent = values[KEY_PROTEIN_PERCENT],
+                    proteinKg = values[KEY_PROTEIN_KG],
+                    bodyAgeYears = values[KEY_BODY_AGE]?.toInt(),
+                    bmi = values[KEY_BMI],
                     fasting = findViewById<MaterialCheckBox>(R.id.checkFasting).isChecked,
                     justWokeUp = findViewById<MaterialCheckBox>(R.id.checkJustWoken).isChecked,
                     afterBathroom = findViewById<MaterialCheckBox>(R.id.checkAfterShower).isChecked,
@@ -777,6 +813,15 @@ class BiaActivity : BaseShellActivity() {
         values[KEY_SKELETAL_MUSCLE] = item.skeletalMuscleKg
         values[KEY_BODY_WATER] = item.bodyWaterPercent
         values[KEY_BMR] = item.bmrKcal
+        values[KEY_FAT_MASS] = item.fatMassKg
+        values[KEY_LEAN_MASS] = item.leanMassKg
+        values[KEY_BODY_WATER_KG] = item.bodyWaterKg
+        values[KEY_SUBCUTANEOUS_FAT] = item.subcutaneousFatPercent
+        values[KEY_BONE_MASS] = item.boneMassKg
+        values[KEY_PROTEIN_PERCENT] = item.proteinPercent
+        values[KEY_PROTEIN_KG] = item.proteinKg
+        values[KEY_BODY_AGE] = item.bodyAgeYears?.toFloat()
+        values[KEY_BMI] = item.bmi
         val date = Calendar.getInstance().apply { timeInMillis = item.measuredAtEpochMillis }
         selectedDateMillis = item.measuredAtEpochMillis
         selectedHour = date.get(Calendar.HOUR_OF_DAY)
@@ -867,5 +912,14 @@ class BiaActivity : BaseShellActivity() {
         private const val KEY_SKELETAL_MUSCLE = "skeletalMuscle"
         private const val KEY_BODY_WATER = "bodyWater"
         private const val KEY_BMR = "bmr"
+        private const val KEY_FAT_MASS = "fatMass"
+        private const val KEY_LEAN_MASS = "leanMass"
+        private const val KEY_BODY_WATER_KG = "bodyWaterKg"
+        private const val KEY_SUBCUTANEOUS_FAT = "subcutaneousFat"
+        private const val KEY_BONE_MASS = "boneMass"
+        private const val KEY_PROTEIN_PERCENT = "proteinPercent"
+        private const val KEY_PROTEIN_KG = "proteinKg"
+        private const val KEY_BODY_AGE = "bodyAge"
+        private const val KEY_BMI = "bmi"
     }
 }
