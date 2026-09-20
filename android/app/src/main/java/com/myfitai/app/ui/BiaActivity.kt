@@ -72,6 +72,8 @@ class BiaActivity : BaseShellActivity() {
     private var selectedHour: Int = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
     private var selectedMinute: Int = Calendar.getInstance().get(Calendar.MINUTE)
     private var pendingImportFile: File? = null
+    private var editingMeasurement: BiaMeasurementEntity? = null
+    private var pendingEditId: Long = 0L
     private val imageTempStore by lazy { AiImageTempStore(this) }
 
     private val galleryLauncher = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
@@ -101,7 +103,8 @@ class BiaActivity : BaseShellActivity() {
         bindPhotoImport()
         observeState()
         renderDateTime()
-        if (intent.getBooleanExtra(EXTRA_OPEN_HISTORY, false)) {
+        pendingEditId = intent.getLongExtra(EXTRA_EDIT_ID, 0L)
+        if (intent.getBooleanExtra(EXTRA_OPEN_HISTORY, false) && pendingEditId == 0L) {
             findViewById<SelectableSegmentView>(R.id.biaSegment).getChildAt(1)?.performClick()
         }
     }
@@ -225,20 +228,50 @@ class BiaActivity : BaseShellActivity() {
 
     private fun bindSave() {
         findViewById<View>(R.id.saveButton).setOnClickListener {
-            viewModel.save(
-                measuredAtEpochMillis = composeMeasurementMillis(),
-                weightKg = values[KEY_WEIGHT],
-                bodyFatPercent = values[KEY_BODY_FAT],
-                visceralFatLevel = values[KEY_VISCERAL_FAT],
-                muscleMassKg = values[KEY_MUSCLE_MASS],
-                skeletalMuscleKg = values[KEY_SKELETAL_MUSCLE],
-                bodyWaterPercent = values[KEY_BODY_WATER],
-                bmrKcal = values[KEY_BMR],
-                fasting = findViewById<MaterialCheckBox>(R.id.checkFasting).isChecked,
-                justWokeUp = findViewById<MaterialCheckBox>(R.id.checkJustWoken).isChecked,
-                afterBathroom = findViewById<MaterialCheckBox>(R.id.checkAfterShower).isChecked,
-                noRecentWorkout = findViewById<MaterialCheckBox>(R.id.checkNoWorkout).isChecked,
-            )
+            val original = editingMeasurement
+            val measuredAt = composeMeasurementMillis().let { composed ->
+                if (original != null) {
+                    val previous = Calendar.getInstance().apply { timeInMillis = original.measuredAtEpochMillis }
+                    val proposed = Calendar.getInstance().apply { timeInMillis = composed }
+                    if (previous.get(Calendar.YEAR) == proposed.get(Calendar.YEAR) &&
+                        previous.get(Calendar.DAY_OF_YEAR) == proposed.get(Calendar.DAY_OF_YEAR) &&
+                        previous.get(Calendar.HOUR_OF_DAY) == proposed.get(Calendar.HOUR_OF_DAY) &&
+                        previous.get(Calendar.MINUTE) == proposed.get(Calendar.MINUTE)
+                    ) original.measuredAtEpochMillis else composed
+                } else composed
+            }
+            if (original == null) {
+                viewModel.save(
+                    measuredAtEpochMillis = measuredAt,
+                    weightKg = values[KEY_WEIGHT],
+                    bodyFatPercent = values[KEY_BODY_FAT],
+                    visceralFatLevel = values[KEY_VISCERAL_FAT],
+                    muscleMassKg = values[KEY_MUSCLE_MASS],
+                    skeletalMuscleKg = values[KEY_SKELETAL_MUSCLE],
+                    bodyWaterPercent = values[KEY_BODY_WATER],
+                    bmrKcal = values[KEY_BMR],
+                    fasting = findViewById<MaterialCheckBox>(R.id.checkFasting).isChecked,
+                    justWokeUp = findViewById<MaterialCheckBox>(R.id.checkJustWoken).isChecked,
+                    afterBathroom = findViewById<MaterialCheckBox>(R.id.checkAfterShower).isChecked,
+                    noRecentWorkout = findViewById<MaterialCheckBox>(R.id.checkNoWorkout).isChecked,
+                )
+            } else {
+                viewModel.update(
+                    original = original,
+                    measuredAtEpochMillis = measuredAt,
+                    weightKg = values[KEY_WEIGHT],
+                    bodyFatPercent = values[KEY_BODY_FAT],
+                    visceralFatLevel = values[KEY_VISCERAL_FAT],
+                    muscleMassKg = values[KEY_MUSCLE_MASS],
+                    skeletalMuscleKg = values[KEY_SKELETAL_MUSCLE],
+                    bodyWaterPercent = values[KEY_BODY_WATER],
+                    bmrKcal = values[KEY_BMR],
+                    fasting = findViewById<MaterialCheckBox>(R.id.checkFasting).isChecked,
+                    justWokeUp = findViewById<MaterialCheckBox>(R.id.checkJustWoken).isChecked,
+                    afterBathroom = findViewById<MaterialCheckBox>(R.id.checkAfterShower).isChecked,
+                    noRecentWorkout = findViewById<MaterialCheckBox>(R.id.checkNoWorkout).isChecked,
+                )
+            }
         }
     }
 
@@ -386,6 +419,13 @@ class BiaActivity : BaseShellActivity() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     viewModel.history.collect { history ->
+                        if (pendingEditId > 0L) {
+                            val found = history.firstOrNull { it.id == pendingEditId }
+                            if (found != null) {
+                                pendingEditId = 0L
+                                editReading(found)
+                            }
+                        }
                         if (historyContainer.visibility == View.VISIBLE) renderHistory(history)
                     }
                 }
@@ -398,6 +438,14 @@ class BiaActivity : BaseShellActivity() {
                         startActivity(Intent(this@BiaActivity, NutritionPathActivity::class.java).apply {
                             recommendationJobKey?.let { putExtra(NutritionPathActivity.EXTRA_JOB_KEY, it) }
                         })
+                    }
+                }
+                launch {
+                    viewModel.updated.collect {
+                        Toast.makeText(this@BiaActivity, "Misurazione BIA aggiornata", Toast.LENGTH_SHORT).show()
+                        editingMeasurement = null
+                        resetForm()
+                        findViewById<SelectableSegmentView>(R.id.biaSegment).getChildAt(1)?.performClick()
                     }
                 }
                 launch {
@@ -457,11 +505,12 @@ class BiaActivity : BaseShellActivity() {
                 })
             }
             card.addView(TextView(this).apply {
-                text = "Tieni premuto per eliminare"
+                text = "Tocca per modificare · Tieni premuto per eliminare"
                 setTextColor(getColor(R.color.text_muted))
                 textSize = 10f
                 setPadding(0, (6 * resources.displayMetrics.density).toInt(), 0, 0)
             })
+            card.setOnClickListener { editReading(item) }
             card.setOnLongClickListener {
                 confirmDelete(item)
                 true
@@ -522,6 +571,29 @@ class BiaActivity : BaseShellActivity() {
         return conditions.takeIf { it.isNotEmpty() }?.joinToString(" · ", prefix = "Condizioni: ")
     }
 
+    private fun editReading(item: BiaMeasurementEntity) {
+        editingMeasurement = item
+        values[KEY_WEIGHT] = item.weightKg
+        values[KEY_BODY_FAT] = item.bodyFatPercent
+        values[KEY_VISCERAL_FAT] = item.visceralFatLevel
+        values[KEY_MUSCLE_MASS] = item.muscleMassKg
+        values[KEY_SKELETAL_MUSCLE] = item.skeletalMuscleKg
+        values[KEY_BODY_WATER] = item.bodyWaterPercent
+        values[KEY_BMR] = item.bmrKcal
+        val date = Calendar.getInstance().apply { timeInMillis = item.measuredAtEpochMillis }
+        selectedDateMillis = item.measuredAtEpochMillis
+        selectedHour = date.get(Calendar.HOUR_OF_DAY)
+        selectedMinute = date.get(Calendar.MINUTE)
+        findViewById<MaterialCheckBox>(R.id.checkFasting).isChecked = item.fasting
+        findViewById<MaterialCheckBox>(R.id.checkJustWoken).isChecked = item.justWokeUp
+        findViewById<MaterialCheckBox>(R.id.checkAfterShower).isChecked = item.afterBathroom
+        findViewById<MaterialCheckBox>(R.id.checkNoWorkout).isChecked = item.noRecentWorkout
+        bindMeasurementRows()
+        renderDateTime()
+        findViewById<android.widget.TextView>(R.id.saveButton).text = "Salva modifiche"
+        findViewById<SelectableSegmentView>(R.id.biaSegment).getChildAt(0)?.performClick()
+    }
+
     private fun confirmDelete(item: BiaMeasurementEntity) {
         MaterialAlertDialogBuilder(this)
             .setTitle("Elimina misurazione")
@@ -532,6 +604,8 @@ class BiaActivity : BaseShellActivity() {
     }
 
     private fun resetForm() {
+        editingMeasurement = null
+        findViewById<android.widget.TextView>(R.id.saveButton).text = "Salva"
         values.keys.forEach { values[it] = null }
         bindMeasurementRows()
         selectedDateMillis = System.currentTimeMillis()
@@ -585,6 +659,7 @@ class BiaActivity : BaseShellActivity() {
 
     companion object {
         const val EXTRA_OPEN_HISTORY = "open_bia_history"
+        const val EXTRA_EDIT_ID = "edit_bia_measurement_id"
         const val EXTRA_AI_JOB_KEY = "bia_ai_job_key"
         private const val KEY_WEIGHT = "weight"
         private const val KEY_BODY_FAT = "bodyFat"
