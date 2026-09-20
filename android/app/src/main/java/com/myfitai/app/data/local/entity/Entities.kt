@@ -68,6 +68,10 @@ data class BodyMeasurementEntity(
     val calfLeftCm: Float?,
     val calfRightCm: Float?,
     val notes: String? = null,
+    /** Hip circumference, distinct from gluteal circumference. */
+    val hipsCm: Float? = null,
+    /** Standalone weigh-in associated with this body-measurement date, not a BIA reading. */
+    val weightKg: Float? = null,
 )
 
 @Entity(
