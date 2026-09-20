@@ -68,7 +68,10 @@
                     android:background="@drawable/bg_positive_soft"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
-                    android:padding="@dimen/space_12">
+                    android:paddingStart="@dimen/space_16"
+                    android:paddingTop="@dimen/space_12"
+                    android:paddingEnd="@dimen/space_16"
+                    android:paddingBottom="@dimen/space_16">
                     <ImageView android:layout_width="22dp" android:layout_height="22dp" android:importantForAccessibility="no" android:src="@drawable/ic_check_circle" />
                     <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="@dimen/space_12" android:orientation="vertical">
                         <TextView android:id="@+id/reviewTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Review settimanale" android:textColor="@color/text_primary" android:textSize="14sp" android:textStyle="bold" />
@@ -78,7 +81,7 @@
             </com.google.android.material.card.MaterialCardView>
 
                         <com.google.android.material.card.MaterialCardView style="@style/Widget.MyFitAI.Card" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_16">
-                            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:padding="@dimen/space_12" android:orientation="vertical">
+                            <LinearLayout style="@style/Widget.MyFitAI.HomeSectionContent" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
                         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
                 <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center">
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Pasti segnati" android:textColor="@color/text_secondary" android:textSize="12sp" />
@@ -107,7 +110,7 @@
                         </com.google.android.material.card.MaterialCardView>
 
                         <com.google.android.material.card.MaterialCardView style="@style/Widget.MyFitAI.Card" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_12">
-                            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="@dimen/space_16">
+                            <LinearLayout style="@style/Widget.MyFitAI.HomeSectionContent" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
                         <com.myfitai.app.ui.widgets.SectionHeaderView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Piano nutrizionale medio" />
                         <TextView android:id="@+id/avgKcalValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:text="—" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="20sp" />
                         <TextView android:id="@+id/targetKcalValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Target: —" android:textColor="@color/text_secondary" android:textSize="13sp" />
@@ -133,21 +136,21 @@
                         </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView style="@style/Widget.MyFitAI.Card" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_12">
-                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="@dimen/space_12">
+                <LinearLayout style="@style/Widget.MyFitAI.HomeSectionContent" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
                     <com.myfitai.app.ui.widgets.SectionHeaderView android:id="@+id/bodyChangesHeader" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Variazioni osservate" />
                     <TextView android:id="@+id/bodyChangesText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:textColor="@color/text_primary" android:textSize="13sp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView style="@style/Widget.MyFitAI.Card" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_12">
-                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="@dimen/space_12">
+                <LinearLayout style="@style/Widget.MyFitAI.HomeSectionContent" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
                     <com.myfitai.app.ui.widgets.SectionHeaderView android:id="@+id/observationsHeader" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Osservazioni" />
                     <LinearLayout android:id="@+id/observationsContainer" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginTop="@dimen/space_8" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView style="@style/Widget.MyFitAI.Card" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_12">
-                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="@dimen/space_12">
+                <LinearLayout style="@style/Widget.MyFitAI.HomeSectionContent" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
                     <com.myfitai.app.ui.widgets.SectionHeaderView android:id="@+id/guidanceHeader" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Prossima settimana" />
                     <LinearLayout android:id="@+id/guidanceContainer" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginTop="@dimen/space_8" />
                 </LinearLayout>

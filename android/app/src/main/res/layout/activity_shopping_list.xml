@@ -107,11 +107,11 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_8">
                 <LinearLayout
+                    style="@style/Widget.MyFitAI.HomeSectionContent"
                     android:id="@+id/itemsContainer"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:paddingHorizontal="@dimen/space_16" />
+                    android:orientation="vertical" />
             </com.google.android.material.card.MaterialCardView>
 
             <TextView

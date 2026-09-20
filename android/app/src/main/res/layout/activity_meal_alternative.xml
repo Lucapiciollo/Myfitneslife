@@ -42,19 +42,16 @@
             </LinearLayout>
 
             <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.MyFitAI.Card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_8"
-                app:cardBackgroundColor="@color/surface_positive_soft"
-                app:cardCornerRadius="14dp"
-                app:strokeColor="@color/positive_soft_stroke"
-                app:strokeWidth="1dp">
+                android:layout_marginTop="@dimen/space_8">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="@dimen/space_16">
+                    style="@style/Widget.MyFitAI.HomeSectionContent">
 
                     <TextView
                         android:id="@+id/sourceMealText"

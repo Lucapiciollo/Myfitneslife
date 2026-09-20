@@ -75,14 +75,12 @@
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.MyFitAI.Card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_12"
-                app:cardBackgroundColor="@color/surface_primary"
-                app:cardCornerRadius="12dp"
-                app:strokeColor="@color/divider"
-                app:strokeWidth="1dp">
-                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="@dimen/space_12">
+                >
+                <LinearLayout style="@style/Widget.MyFitAI.HomeSectionContent" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
                     <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Etichetta nutrizionale (opzionale)" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="14sp" />
                     <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="Aggiungi la foto solo se il prodotto ha un'etichetta: verrà usata dall'IA per rendere più precisa la stima e non sarà salvata." android:textColor="@color/text_secondary" android:textSize="12sp" />
                     <com.google.android.material.button.MaterialButton android:id="@+id/addLabelPhotoButton" style="@style/Widget.Material3.Button.OutlinedButton" android:layout_width="match_parent" android:layout_height="48dp" android:layout_marginTop="10dp" android:text="+ Foto etichetta nutrizionale" android:textAllCaps="false" />
@@ -145,15 +143,13 @@
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/aiUnderstandingCard"
+                style="@style/Widget.MyFitAI.Card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_16"
                 android:visibility="gone"
-                app:cardBackgroundColor="@color/surface_primary"
-                app:cardCornerRadius="14dp"
-                app:strokeColor="@color/accent_green"
-                app:strokeWidth="1dp">
-                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="@dimen/space_16">
+                >
+                <LinearLayout style="@style/Widget.MyFitAI.HomeSectionContent" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
                     <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Cosa ha capito l'IA" android:textColor="@color/accent_green" android:textStyle="bold" android:textSize="15sp" />
                     <TextView android:id="@+id/aiUnderstoodFood" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:textColor="@color/text_primary" android:textSize="14sp" />
                     <TextView android:id="@+id/aiEstimate" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="14sp" />

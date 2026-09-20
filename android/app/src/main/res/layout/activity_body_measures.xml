@@ -101,7 +101,7 @@
                     </LinearLayout>
                 </LinearLayout>
                 <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:text="Variazione percentuale rispetto alla prima rilevazione di ogni misura" android:textColor="@color/text_secondary" android:textSize="12sp" />
-                <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="260dp" android:layout_marginTop="@dimen/space_12" app:cardCornerRadius="@dimen/radius_medium" app:cardElevation="0dp" app:cardBackgroundColor="@color/surface_primary">
+                <com.google.android.material.card.MaterialCardView style="@style/Widget.MyFitAI.Card" android:layout_width="match_parent" android:layout_height="260dp" android:layout_marginTop="@dimen/space_12">
                     <com.myfitai.app.ui.widgets.BodyMeasurementTrendView android:id="@+id/bodyMeasurementTrendChart" android:layout_width="match_parent" android:layout_height="match_parent" android:layout_margin="@dimen/space_8" />
                 </com.google.android.material.card.MaterialCardView>
                 <com.myfitai.app.ui.widgets.BodyMeasurementTrendSummaryView
