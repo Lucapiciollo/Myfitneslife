@@ -300,8 +300,15 @@ class BiaActivity : BaseShellActivity() {
             val result = withContext(Dispatchers.IO) {
                 runCatching {
                     val json = contentResolver.openInputStream(uri)?.use { input ->
-                        input.readNBytes(1_000_001).also { require(it.size <= 1_000_000) { "File JSON troppo grande" } }
-                            .toString(Charsets.UTF_8)
+                        val buffer = ByteArray(8192)
+                        val output = java.io.ByteArrayOutputStream()
+                        while (true) {
+                            val count = input.read(buffer)
+                            if (count < 0) break
+                            output.write(buffer, 0, count)
+                            require(output.size() <= 1_000_000) { "File JSON troppo grande" }
+                        }
+                        output.toString("UTF-8")
                     } ?: error("Impossibile aprire il file")
                     BiaHistoryImportContract.parse(json, profileId)
                 }
@@ -316,9 +323,9 @@ class BiaActivity : BaseShellActivity() {
                     .setTitle("Importa storico BIA")
                     .setMessage(
                         "Rilevazioni nel file: " + readings.size +
-                            "\\nNuove: " + newCount +
-                            "\\nDate già presenti: " + skipped +
-                            "\\n\\nLe date già presenti non verranno sovrascritte. " +
+                            "\nNuove: " + newCount +
+                            "\nDate già presenti: " + skipped +
+                            "\n\nLe date già presenti non verranno sovrascritte. " +
                             "I dati mancanti resteranno vuoti. Continuare?"
                     )
                     .setNegativeButton("Annulla", null)
