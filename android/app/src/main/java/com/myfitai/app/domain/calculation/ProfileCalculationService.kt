@@ -84,6 +84,8 @@ class ProfileCalculationService(
 
         val latestBia = biaHistory.lastOrNull()
         val latestBody = bodyHistory.lastOrNull()
+        // A standalone weigh-in or hips-only visit must not erase the last waist reading.
+        val latestAvailableWaist = bodyHistory.lastOrNull { it.waistCm != null }?.waistCm
         val weightObservations = (
             biaHistory.mapNotNull { row -> row.weightKg?.let { row.measuredAtEpochMillis to it } } +
                 bodyHistory.mapNotNull { row -> row.weightKg?.let { row.measuredAtEpochMillis to it } }
@@ -108,7 +110,7 @@ class ProfileCalculationService(
                 bodyFatPercent = latestBia?.bodyFatPercent?.toDouble(),
                 activityLevel = ProfileCalculationMapper.activity(profile.activityLevel),
                 goal = ProfileCalculationMapper.goal(profile.goal),
-                waistCm = latestBody?.waistCm?.toDouble(),
+                waistCm = latestAvailableWaist?.toDouble(),
             )
         )
 
@@ -155,7 +157,7 @@ class ProfileCalculationService(
             latestMuscleMassKg = latestBia?.muscleMassKg,
             latestSkeletalMuscleKg = latestBia?.skeletalMuscleKg,
             latestBodyWaterPercent = latestBia?.bodyWaterPercent,
-            latestWaistCm = latestBody?.waistCm,
+            latestWaistCm = latestAvailableWaist,
             biaMetrics = biaMetrics,
             bodyMetrics = bodyMetrics,
         )
