@@ -91,6 +91,9 @@ class BiaActivity : BaseShellActivity() {
         bindBack()
         bindViews()
         bindSegments()
+        findViewById<View>(R.id.addBiaFromHistoryButton).setOnClickListener {
+            findViewById<SelectableSegmentView>(R.id.biaSegment).getChildAt(0)?.performClick()
+        }
         bindDateTime()
         bindHelpCards()
         bindMeasurementRows()
