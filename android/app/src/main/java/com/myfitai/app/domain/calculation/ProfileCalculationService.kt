@@ -119,7 +119,7 @@ class ProfileCalculationService(
         val recomposition = LocalCalculationEngine.classifyRecomposition(bodyFatTrend.delta, muscleTrend.delta)
 
         val biaMetrics = BiaSnapshot(
-            weight = metricSnapshot(biaHistory.map { it.measuredAtEpochMillis to it.weightKg }),
+            weight = metricSnapshot(weightObservations.map { it.first to it.second }),
             bodyFat = metricSnapshot(biaHistory.map { it.measuredAtEpochMillis to it.bodyFatPercent }),
             muscleMass = metricSnapshot(biaHistory.map { it.measuredAtEpochMillis to it.muscleMassKg }),
             skeletalMuscle = metricSnapshot(biaHistory.map { it.measuredAtEpochMillis to it.skeletalMuscleKg }),
