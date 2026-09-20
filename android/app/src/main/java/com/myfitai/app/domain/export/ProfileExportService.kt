@@ -163,6 +163,10 @@ class ProfileExportService(
                 put("id", r.id); put("measuredAtEpochMillis", r.measuredAtEpochMillis)
                 putNullable("weightKg", r.weightKg); putNullable("bodyFatPercent", r.bodyFatPercent); putNullable("visceralFatLevel", r.visceralFatLevel)
                 putNullable("muscleMassKg", r.muscleMassKg); putNullable("skeletalMuscleKg", r.skeletalMuscleKg); putNullable("bodyWaterPercent", r.bodyWaterPercent)
+                putNullable("fatMassKg", r.fatMassKg); putNullable("leanMassKg", r.leanMassKg); putNullable("bodyWaterKg", r.bodyWaterKg)
+                putNullable("subcutaneousFatPercent", r.subcutaneousFatPercent); putNullable("boneMassKg", r.boneMassKg)
+                putNullable("proteinPercent", r.proteinPercent); putNullable("proteinKg", r.proteinKg)
+                putNullable("bodyAgeYears", r.bodyAgeYears); putNullable("bmi", r.bmi)
                 putNullable("bmrKcal", r.bmrKcal); put("fasting", r.fasting); put("justWokeUp", r.justWokeUp); put("afterBathroom", r.afterBathroom); put("noRecentWorkout", r.noRecentWorkout); putNullable("notes", r.notes)
             }) } })
             put("bodyMeasurements", JSONArray().apply { body.forEach { r -> put(JSONObject().apply {
