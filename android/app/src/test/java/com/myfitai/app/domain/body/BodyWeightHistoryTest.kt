@@ -54,7 +54,7 @@ class BodyWeightHistoryTest {
             listOf(bia("2026-09-20", 79f), bia("2026-09-18", 81f)),
             rome,
         )
-        assertEquals(81f, result!!.kg)
+        assertEquals(81f, result!!.kg, 0.001f)
         assertTrue(result.fromBia)
     }
 
@@ -64,7 +64,7 @@ class BodyWeightHistoryTest {
 
     @Test fun preservesExplicitManualWeightOverLinkedBia() {
         val result = BodyWeightHistory.weightFor(body("2026-09-18", 82f), listOf(bia("2026-09-18", 81f)), rome)
-        assertEquals(82f, result!!.kg)
+        assertEquals(82f, result!!.kg, 0.001f)
         assertFalse(result.fromBia)
     }
 
@@ -74,6 +74,6 @@ class BodyWeightHistoryTest {
             listOf(bia("2026-09-18", 80f, 7), bia("2026-09-18", 0f, 20), bia("2026-09-18", 81f, 19)),
             rome,
         )
-        assertEquals(81f, result!!.kg)
+        assertEquals(81f, result!!.kg, 0.001f)
     }
 }
