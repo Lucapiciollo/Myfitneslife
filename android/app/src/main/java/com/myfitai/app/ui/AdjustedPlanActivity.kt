@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.google.android.material.card.MaterialCardView
 import com.myfitai.app.R
 
 class AdjustedPlanActivity : BaseShellActivity() {
@@ -31,13 +32,20 @@ class AdjustedPlanActivity : BaseShellActivity() {
         val container = findViewById<LinearLayout>(R.id.modifiedMealsContainer)
         container.removeAllViews()
         modifiedMeals.forEach { label ->
-            container.addView(TextView(this).apply {
-                text = label
-                setTextColor(getColor(R.color.text_primary))
-                textSize = 14f
-                setPadding(dp(12), dp(12), dp(12), dp(12))
-                background = getDrawable(R.drawable.bg_white_card)
-            }, LinearLayout.LayoutParams(
+            val card = MaterialCardView(this).apply {
+                setCardBackgroundColor(getColor(R.color.white))
+                radius = dp(16).toFloat()
+                cardElevation = 0f
+                strokeColor = getColor(R.color.divider)
+                strokeWidth = dp(1)
+                addView(TextView(this@AdjustedPlanActivity).apply {
+                    text = label
+                    setTextColor(getColor(R.color.text_primary))
+                    textSize = 14f
+                    setPadding(dp(16), dp(12), dp(16), dp(12))
+                })
+            }
+            container.addView(card, LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT,
             ).apply { topMargin = dp(8) })

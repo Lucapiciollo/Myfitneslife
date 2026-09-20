@@ -1,4 +1,5 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -45,7 +46,12 @@
                 style="@style/Widget.MyFitAI.Card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_12">
+                android:layout_marginTop="@dimen/space_12"
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeColor="@color/divider"
+                app:strokeWidth="1dp">
                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="@dimen/space_16">
                     <TextView
                         android:id="@+id/resultDescription"
@@ -69,7 +75,12 @@
                 style="@style/Widget.MyFitAI.Card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_12">
+                android:layout_marginTop="@dimen/space_12"
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeColor="@color/divider"
+                app:strokeWidth="1dp">
                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="@dimen/space_16">
                     <TextView
                         android:id="@+id/modifiedHeader"
@@ -86,15 +97,23 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <TextView
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_12"
-                android:padding="@dimen/space_12"
-                android:background="@drawable/bg_card"
-                android:text="Le modifiche riguardano solo i pasti successivi allo sgarro nella stessa giornata. I pasti passati e i giorni successivi restano invariati; se il bilanciamento richiederebbe restrizioni eccessive, l'app registra lo sgarro senza compensarlo."
-                android:textColor="@color/text_secondary"
-                android:textSize="13sp" />
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeColor="@color/divider"
+                app:strokeWidth="1dp">
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="@dimen/space_16"
+                    android:text="Le modifiche riguardano solo i pasti successivi allo sgarro nella stessa giornata. I pasti passati e i giorni successivi restano invariati; se il bilanciamento richiederebbe restrizioni eccessive, l'app registra lo sgarro senza compensarlo."
+                    android:textColor="@color/text_secondary"
+                    android:textSize="13sp" />
+            </com.google.android.material.card.MaterialCardView>
 
             <TextView
                 android:id="@+id/okButton"
