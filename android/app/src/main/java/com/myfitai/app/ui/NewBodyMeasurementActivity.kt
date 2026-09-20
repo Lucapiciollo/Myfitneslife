@@ -1,6 +1,8 @@
 package com.myfitai.app.ui
 
 import android.os.Bundle
+import android.view.View
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.lifecycle.Lifecycle
@@ -12,6 +14,7 @@ import com.google.android.material.textfield.TextInputLayout
 import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.data.local.entity.BodyMeasurementEntity
+import com.myfitai.app.domain.body.BodyWeightHistory
 import kotlinx.coroutines.flow.first
 import com.myfitai.app.ui.body.BodyMeasurementsViewModel
 import kotlinx.coroutines.launch
@@ -78,6 +81,17 @@ class NewBodyMeasurementActivity : BaseShellActivity() {
             )
             inputMap().forEach { (key, input) ->
                 input.setText(values[key]?.let { String.format(Locale.ITALIAN, "%.1f", it) }.orEmpty())
+            }
+            val linkedWeight = BodyWeightHistory.weightFor(
+                existing,
+                data.biaRepository.all(existing.profileId).first(),
+            )
+            findViewById<TextView>(R.id.sameDateBiaWeightHint).apply {
+                visibility = if (linkedWeight?.fromBia == true) View.VISIBLE else View.GONE
+                text = linkedWeight?.takeIf { it.fromBia }?.let {
+                    "Peso BIA della stessa data: ${String.format(Locale.ITALIAN, "%.1f", it.kg)} kg. " +
+                        "È visibile nello storico; inserisci un peso manuale solo se vuoi registrarlo separatamente."
+                }.orEmpty()
             }
             findViewById<android.widget.TextView>(R.id.saveMeasurementButton).text = "Salva modifiche"
             saveButton.isEnabled = true
