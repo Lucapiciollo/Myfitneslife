@@ -11,6 +11,8 @@ import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
+import com.myfitai.app.data.local.entity.BodyMeasurementEntity
+import kotlinx.coroutines.flow.first
 import com.myfitai.app.ui.body.BodyMeasurementsViewModel
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -29,6 +31,8 @@ class NewBodyMeasurementActivity : BaseShellActivity() {
 
     private val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.ITALIAN)
     private var selectedDate: LocalDate = LocalDate.now()
+    private var editingMeasurement: BodyMeasurementEntity? = null
+    private val requestedEditId: Long by lazy { intent.getLongExtra(EXTRA_EDIT_ID, 0L) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,6 +41,47 @@ class NewBodyMeasurementActivity : BaseShellActivity() {
         bindDatePicker()
         bindSave()
         observeEvents()
+        if (requestedEditId > 0L) loadForEdit(requestedEditId)
+    }
+
+    private fun loadForEdit(id: Long) {
+        val saveButton = findViewById<android.view.View>(R.id.saveMeasurementButton)
+        saveButton.isEnabled = false
+        lifecycleScope.launch {
+            val profileId = data.activeProfileStore.currentIdOrNull()
+            val existing = profileId?.let { profile ->
+                data.bodyMeasurementRepository.all(profile).first().firstOrNull { it.id == id }
+            }
+            if (existing == null) {
+                Toast.makeText(this@NewBodyMeasurementActivity, "Misurazione non disponibile per il profilo attivo", Toast.LENGTH_LONG).show()
+                finish()
+                return@launch
+            }
+            editingMeasurement = existing
+            selectedDate = Instant.ofEpochMilli(existing.measuredAtEpochMillis)
+                .atZone(ZoneOffset.UTC).toLocalDate()
+            findViewById<TextInputEditText>(R.id.dateInput).setText(selectedDate.format(formatter))
+            val values = mapOf(
+                R.id.bodyWeightInput to existing.weightKg,
+                R.id.chestInput to existing.chestCm,
+                R.id.waistInput to existing.waistCm,
+                R.id.abdomenInput to existing.abdomenCm,
+                R.id.shouldersInput to existing.shouldersCm,
+                R.id.hipsInput to existing.hipsCm,
+                R.id.glutesInput to existing.glutesCm,
+                R.id.armLeftInput to existing.armLeftCm,
+                R.id.armRightInput to existing.armRightCm,
+                R.id.thighLeftInput to existing.thighLeftCm,
+                R.id.thighRightInput to existing.thighRightCm,
+                R.id.calfLeftInput to existing.calfLeftCm,
+                R.id.calfRightInput to existing.calfRightCm,
+            )
+            inputMap().forEach { (key, input) ->
+                input.setText(values[key]?.let { String.format(Locale.ITALIAN, "%.1f", it) }.orEmpty())
+            }
+            findViewById<android.widget.TextView>(R.id.saveMeasurementButton).text = "Salva modifiche"
+            saveButton.isEnabled = true
+        }
     }
 
     private fun bindDatePicker() {
@@ -80,7 +125,11 @@ class NewBodyMeasurementActivity : BaseShellActivity() {
                 return@setOnClickListener
             }
 
-            val measuredAt = selectedDate.atTime(LocalTime.NOON).toInstant(ZoneOffset.UTC).toEpochMilli()
+            val original = editingMeasurement
+            val measuredAt = if (original != null &&
+                Instant.ofEpochMilli(original.measuredAtEpochMillis).atZone(ZoneOffset.UTC).toLocalDate() == selectedDate
+            ) original.measuredAtEpochMillis
+            else selectedDate.atTime(LocalTime.NOON).toInstant(ZoneOffset.UTC).toEpochMilli()
             viewModel.save(
                 measuredAtEpochMillis = measuredAt,
                 chestCm = values[R.id.chestInput],
@@ -90,6 +139,7 @@ class NewBodyMeasurementActivity : BaseShellActivity() {
                 glutesCm = values[R.id.glutesInput],
                 hipsCm = values[R.id.hipsInput],
                 weightKg = values[R.id.bodyWeightInput],
+                existingMeasurementId = original?.id,
                 armLeftCm = values[R.id.armLeftInput],
                 armRightCm = values[R.id.armRightInput],
                 thighLeftCm = values[R.id.thighLeftInput],
@@ -105,7 +155,7 @@ class NewBodyMeasurementActivity : BaseShellActivity() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     viewModel.saved.collect {
-                        Toast.makeText(this@NewBodyMeasurementActivity, "Misurazione salvata nello storico", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@NewBodyMeasurementActivity, if (editingMeasurement != null) "Misurazione aggiornata" else "Misurazione salvata nello storico", Toast.LENGTH_SHORT).show()
                         setResult(RESULT_OK)
                         finish()
                     }
@@ -134,6 +184,10 @@ class NewBodyMeasurementActivity : BaseShellActivity() {
         R.id.calfLeftInput,
         R.id.calfRightInput,
     ).associateWith(::findViewById)
+
+    companion object {
+        const val EXTRA_EDIT_ID = "edit_body_measurement_id"
+    }
 
     private fun parseFloat(value: String?): Float? = value
         ?.trim()
