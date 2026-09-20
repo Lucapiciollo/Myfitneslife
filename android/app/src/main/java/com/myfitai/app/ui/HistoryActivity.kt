@@ -64,6 +64,14 @@ class HistoryActivity : BaseShellActivity() {
     }
 
     private fun render(state: HistoryViewModel.State) {
+        findViewById<com.google.android.material.button.MaterialButton>(R.id.addHistoryMeasurementButton).apply {
+            visibility = if (selectedCategory == 0 || selectedCategory == 1) View.VISIBLE else View.GONE
+            text = if (selectedCategory == 1) "Inserisci nuova BIA" else "Inserisci nuove misure"
+            setOnClickListener {
+                if (selectedCategory == 1) go(BiaActivity::class.java)
+                else go(NewBodyMeasurementActivity::class.java)
+            }
+        }
         val container = findViewById<LinearLayout>(R.id.historyRowsContainer)
         container.removeAllViews()
 
