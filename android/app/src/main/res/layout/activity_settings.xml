@@ -55,6 +55,8 @@
                  android:background="@drawable/bg_card"
                  android:orientation="vertical"
                   android:paddingHorizontal="@dimen/space_16">
+                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowAppGuide" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_help_outline" app:srLabel="Come funziona MyFitAI" />
+                  <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
                   <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowProfile" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_person" app:srLabel="Profilo" />
                   <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
                   <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowMeasurements" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_person" app:srLabel="Rilevazioni" />
@@ -107,24 +109,24 @@
                      android:layout_height="wrap_content"
                      android:paddingTop="@dimen/space_12"
                      android:paddingBottom="@dimen/space_8"
-                     android:text="Le eliminazioni riguardano solo il profilo attivo. Profilo e chiavi IA non vengono cancellati."
+                     android:text="Puoi eliminare una sola categoria oppure tutti i dati di attività del profilo attivo. Il profilo e le chiavi IA non vengono cancellati."
                      android:textColor="@color/text_secondary"
                      android:textSize="12sp" />
-                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeletePlans" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="Elimina alimentazioni" />
+                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeletePlans" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="Elimina piani alimentari salvati" />
                   <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
-                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteConsumptions" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="Elimina consumi registrati" />
+                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteConsumptions" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="Elimina pasti e consumi registrati" />
                   <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
-                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteBia" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_gear" app:srLabel="Elimina misure BIA" />
+                 <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteBia" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_gear" app:srLabel="Elimina misurazioni BIA" />
                  <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
-                 <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteBody" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_person" app:srLabel="Elimina misure corporee" />
+                 <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteBody" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_person" app:srLabel="Elimina misurazioni corporee" />
                  <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
-                 <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteWorkouts" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_gear" app:srLabel="Elimina allenamenti" />
+                 <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteWorkouts" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_gear" app:srLabel="Elimina allenamenti registrati" />
                  <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteCheats" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_add_circle" app:srLabel="Elimina sgarri registrati" />
                  <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
-                 <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteReviews" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_export" app:srLabel="Elimina review settimanali" />
+                 <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteReviews" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_export" app:srLabel="Elimina riepiloghi settimanali" />
                  <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
-                 <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteRecordedData" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_lock" app:srLabel="Elimina tutti i dati registrati" />
+                 <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteRecordedData" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_lock" app:srLabel="Elimina tutti i dati di attività" />
              </LinearLayout>
 
              <LinearLayout

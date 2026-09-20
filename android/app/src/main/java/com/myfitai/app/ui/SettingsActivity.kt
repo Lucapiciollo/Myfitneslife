@@ -6,10 +6,12 @@ import android.content.Context
 import android.view.View
 import android.view.WindowManager
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.card.MaterialCardView
 import com.google.android.material.materialswitch.MaterialSwitch
 import com.google.android.material.timepicker.MaterialTimePicker
 import com.google.android.material.timepicker.TimeFormat
@@ -156,6 +158,7 @@ class SettingsActivity : BaseShellActivity() {
         }
 
         findViewById<View>(R.id.rowProfile).setOnClickListener { go(ProfileActivity::class.java) }
+        findViewById<View>(R.id.rowAppGuide).setOnClickListener { showAppGuide() }
         findViewById<View>(R.id.rowMeasurements).setOnClickListener { go(MeasurementsActivity::class.java) }
         findViewById<View>(R.id.rowFoodPreferences).setOnClickListener { go(ProfileEditActivity::class.java) }
         findViewById<View>(R.id.rowMealCount).setOnClickListener { showMealCountDialog() }
@@ -412,43 +415,116 @@ class SettingsActivity : BaseShellActivity() {
             .show()
     }
 
+    private fun showAppGuide() {
+        val sections = listOf(
+            GuideSection("Il percorso MyFitAI", "Da dove parti e dove arrivi", "Inserisci profilo, rilevazioni, allenamenti e preferenze alimentari. L'app usa questi dati per costruire il percorso e lo aggiorna quando registri nuove informazioni."),
+            GuideSection("1. Profilo e rilevazioni", "La base del calcolo", "Peso, altezza, età, sesso biologico, massa grassa, circonferenze e livello di attività descrivono il punto di partenza. Più i dati sono recenti e coerenti, più l'interpretazione è utile."),
+            GuideSection("2. Calorie di base", "BMR e TDEE", "Il BMR è il consumo stimato a riposo. Con una massa grassa plausibile si usa Katch-McArdle: 370 + 21,6 × massa magra in kg. Altrimenti si usa Mifflin-St Jeor. Il TDEE è il BMR moltiplicato per l'attività: 1,20 sedentario, 1,375 leggero, 1,55 moderato, 1,725 molto attivo, 1,90 estremo."),
+            GuideSection("3. Obiettivo e target", "Il numero calorico di riferimento", "Il target iniziale deriva dal TDEE: ricomposizione 95%, perdita di peso 85%, mantenimento 100%, aumento massa 110%, performance 100%. Sono fattori iniziali e non promesse sul risultato."),
+            GuideSection("4. Macronutrienti", "Come vengono distribuiti i macro", "Le proteine sono 2,0 g/kg per perdita, ricomposizione e aumento massa, oppure 1,8 g/kg per mantenimento e performance. I grassi sono 0,8 g/kg, oppure 0,9 g/kg nella performance. I carboidrati ricevono le calorie rimanenti: (target - calorie di proteine e grassi) / 4."),
+            GuideSection("5. Adattamento", "Il piano impara dai trend", "Il target cambia solo con evidenze sufficienti: almeno 21 giorni e almeno due segnali tra peso, massa grassa, massa muscolare, vita e addome. Uno stallo prolungato richiede almeno 28 giorni. La correzione è graduale, a passi del 2,5%, e resta dentro limiti conservativi."),
+            GuideSection("6. Piano alimentare", "L'IA propone, l'app controlla", "L'IA propone pasti, quantità e preparazioni usando i target calcolati localmente. Prima del salvataggio l'app controlla struttura, calorie e macronutrienti. L'IA non decide autonomamente il deficit."),
+            GuideSection("7. Diario e review", "Dal piano a ciò che accade davvero", "I pasti registrati vengono confrontati con il piano per mostrare calorie e macronutrienti consumati. Le review settimanali aiutano a leggere andamento, aderenza e trend, ma una stima non diventa una misurazione certa."),
+            GuideSection("8. Sgarro e serbatoio", "Il surplus viene distribuito nella settimana", "L'IA stima calorie e macro dello sgarro. Dopo la conferma, l'eccesso entra nel serbatoio e viene distribuito sui giorni futuri. Ogni giorno può essere ridotto al massimo del 15% del target; pasti già trascorsi o bloccati restano invariati. L'eventuale residuo non distribuito viene mostrato."),
+            GuideSection("Da ricordare", "Una guida, non una diagnosi", "I risultati sono stime orientative basate sui dati inseriti. Idratazione, glicogeno, attività reale e qualità delle rilevazioni possono cambiare il risultato. Per condizioni mediche o obiettivi specifici, confrontati con un professionista."),
+        )
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(4), dp(4), dp(4), dp(4))
+            sections.forEach { addView(guideSectionCard(it)) }
+        }
+        val scroll = ScrollView(this).apply {
+            isFillViewport = true
+            addView(content)
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Come funziona MyFitAI")
+            .setView(scroll)
+            .setPositiveButton("Ho capito", null)
+            .show()
+    }
+
+    private fun guideSectionCard(section: GuideSection): MaterialCardView {
+        val card = MaterialCardView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) }
+            setCardBackgroundColor(getColor(R.color.white))
+            strokeColor = getColor(R.color.divider)
+            strokeWidth = dp(1)
+            radius = dp(14).toFloat()
+            cardElevation = 0f
+        }
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16), dp(14), dp(16), dp(14))
+        }
+        TextView(this).apply {
+            text = section.title
+            textSize = 16f
+            setTextColor(getColor(R.color.text_primary))
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            content.addView(this)
+        }
+        TextView(this).apply {
+            text = section.subtitle
+            textSize = 12f
+            setTextColor(getColor(R.color.accent_green_dark))
+            setPadding(0, dp(4), 0, dp(8))
+            content.addView(this)
+        }
+        TextView(this).apply {
+            text = section.description
+            textSize = 14f
+            setTextColor(getColor(R.color.text_secondary))
+            setLineSpacing(0f, 1.16f)
+            content.addView(this)
+        }
+        card.addView(content)
+        return card
+    }
+
+    private data class GuideSection(val title: String, val subtitle: String, val description: String)
+
     private fun bindDataDeletion() {
         val actions = listOf(
-            R.id.rowDeletePlans to DeletionAction("alimentazioni", data.dataDeletionService::deleteMealPlans),
-            R.id.rowDeleteConsumptions to DeletionAction("consumi registrati", data.dataDeletionService::deleteFoodConsumptions),
-            R.id.rowDeleteBia to DeletionAction("misure BIA", data.dataDeletionService::deleteBiaMeasurements),
-            R.id.rowDeleteBody to DeletionAction("misure corporee", data.dataDeletionService::deleteBodyMeasurements),
-            R.id.rowDeleteWorkouts to DeletionAction("allenamenti", data.dataDeletionService::deleteWorkouts),
-            R.id.rowDeleteCheats to DeletionAction("sgarri registrati", data.dataDeletionService::deleteCheatEntries),
-            R.id.rowDeleteReviews to DeletionAction("review settimanali", data.dataDeletionService::deleteWeeklyReviews),
+            R.id.rowDeletePlans to DeletionAction("piani alimentari salvati", "i piani e le giornate alimentari generate", data.dataDeletionService::deleteMealPlans),
+            R.id.rowDeleteConsumptions to DeletionAction("pasti e consumi registrati", "gli alimenti e i pasti segnati come consumati", data.dataDeletionService::deleteFoodConsumptions),
+            R.id.rowDeleteBia to DeletionAction("misurazioni BIA", "le rilevazioni BIA", data.dataDeletionService::deleteBiaMeasurements),
+            R.id.rowDeleteBody to DeletionAction("misurazioni corporee", "peso, altezza e le altre rilevazioni corporee registrate", data.dataDeletionService::deleteBodyMeasurements),
+            R.id.rowDeleteWorkouts to DeletionAction("allenamenti registrati", "le sessioni di allenamento", data.dataDeletionService::deleteWorkouts),
+            R.id.rowDeleteCheats to DeletionAction("sgarri registrati", "gli sgarri e il relativo storico", data.dataDeletionService::deleteCheatEntries),
+            R.id.rowDeleteReviews to DeletionAction("riepiloghi settimanali", "le review settimanali", data.dataDeletionService::deleteWeeklyReviews),
         )
         actions.forEach { (viewId, action) ->
-            findViewById<View>(viewId).setOnClickListener { confirmDeletion(action.label, action.delete) }
+            findViewById<View>(viewId).setOnClickListener { confirmDeletion(action, false) }
         }
         findViewById<View>(R.id.rowDeleteRecordedData).setOnClickListener {
             confirmDeletion(
-                "tutti i dati registrati (alimentazioni, misure, allenamenti, sgarri e review)",
-                data.dataDeletionService::deleteRecordedData,
+                DeletionAction(
+                    "tutti i dati di attività",
+                    "piani alimentari, pasti e consumi, misurazioni BIA e corporee, allenamenti, sgarri e riepiloghi settimanali",
+                    data.dataDeletionService::deleteRecordedData,
+                ),
+                true,
             )
         }
     }
 
-    private fun confirmDeletion(label: String, delete: suspend () -> Unit) {
+    private fun confirmDeletion(action: DeletionAction, allData: Boolean) {
         MaterialAlertDialogBuilder(this)
-            .setTitle("Eliminare $label?")
-            .setMessage("L'operazione è irreversibile per il profilo attivo. Profilo e chiavi IA resteranno disponibili.")
+            .setTitle(if (allData) "Eliminare tutti i dati di attività?" else "Eliminare ${action.label}?")
+            .setMessage("Verranno eliminati: ${action.description}.\n\nL'operazione è irreversibile per il profilo attivo. Profilo e chiavi IA resteranno disponibili.")
             .setNegativeButton("Annulla", null)
             .setPositiveButton("Elimina") { _, _ ->
                 lifecycleScope.launch {
-                    runCatching { delete() }
-                        .onSuccess { Toast.makeText(this@SettingsActivity, "$label eliminati", Toast.LENGTH_SHORT).show() }
+                    runCatching { action.delete() }
+                        .onSuccess { Toast.makeText(this@SettingsActivity, "Eliminati: ${action.label}", Toast.LENGTH_SHORT).show() }
                         .onFailure { Toast.makeText(this@SettingsActivity, "Eliminazione non riuscita", Toast.LENGTH_LONG).show() }
                 }
             }
             .show()
     }
 
-    private data class DeletionAction(val label: String, val delete: suspend () -> Unit)
+    private data class DeletionAction(val label: String, val description: String, val delete: suspend () -> Unit)
 
     private fun providerError(provider: AiCredentialProvider, error: Throwable): String {
         val label = if (provider == AiCredentialProvider.GEMINI) "Gemini" else "OpenAI"

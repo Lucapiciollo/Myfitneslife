@@ -42,7 +42,7 @@
                     android:focusable="true"
                     android:contentDescription="@string/profile_avatar_cd"
                     android:scaleType="centerCrop"
-                    android:src="@drawable/img_profile_avatar"
+                    android:src="@drawable/ic_profile_unknown"
                     app:shapeAppearanceOverlay="@style/ShapeAppearance.MyFitAI.Avatar" />
                 <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="@dimen/space_16" android:layout_weight="1" android:orientation="vertical">
                     <TextView

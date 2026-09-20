@@ -123,7 +123,7 @@ class ProfileActivity : BaseShellActivity() {
 
         val avatar = findViewById<ShapeableImageView>(R.id.profileAvatar)
         val file = profile.photoPath?.let(::File)
-        if (file?.exists() == true) avatar.setImageURI(Uri.fromFile(file)) else avatar.setImageResource(R.drawable.img_profile_avatar)
+        if (file?.exists() == true) avatar.setImageURI(Uri.fromFile(file)) else avatar.setImageResource(R.drawable.ic_profile_unknown)
     }
 
     private fun buildStats(profile: UserProfileEntity): String {

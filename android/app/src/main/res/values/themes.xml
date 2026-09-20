@@ -20,6 +20,8 @@
     <item name="colorOnPrimary">@color/white</item>
     <item name="colorSurface">@color/white</item>
     <item name="colorOnSurface">@color/text_primary</item>
+    <item name="materialAlertDialogTitleTextStyle">@style/Text.MyFitAI.DialogTitle</item>
+    <item name="materialAlertDialogBodyTextStyle">@style/Text.MyFitAI.DialogBody</item>
     <item name="shapeAppearanceOverlay">@style/ShapeAppearanceOverlay.MyFitAI.AlertDialog</item>
 </style>
 <style name="ShapeAppearanceOverlay.MyFitAI.AlertDialog" parent="">
@@ -29,6 +31,15 @@
 <style name="Text.MyFitAI.Section" parent="TextAppearance.Material3.TitleMedium"><item name="android:textColor">@color/text_primary</item><item name="android:textStyle">bold</item></style>
 <style name="Text.MyFitAI.Body" parent="TextAppearance.Material3.BodyMedium"><item name="android:textColor">@color/text_secondary</item></style>
 <style name="Text.MyFitAI.Caption" parent="TextAppearance.Material3.BodySmall"><item name="android:textColor">@color/text_muted</item></style>
+<style name="Text.MyFitAI.DialogTitle" parent="TextAppearance.Material3.HeadlineSmall">
+    <item name="android:textColor">@color/text_primary</item>
+    <item name="android:textStyle">bold</item>
+    <item name="android:gravity">center</item>
+    <item name="android:textAlignment">center</item>
+</style>
+<style name="Text.MyFitAI.DialogBody" parent="TextAppearance.Material3.BodyMedium">
+    <item name="android:textColor">@color/text_secondary</item>
+</style>
 <style name="Widget.MyFitAI.Card" parent="Widget.Material3.CardView.Filled"><item name="cardBackgroundColor">@color/white</item><item name="cardCornerRadius">@dimen/radius_medium</item><item name="cardElevation">0dp</item></style>
 <style name="Widget.MyFitAI.Dialog.Card" parent="Widget.MyFitAI.Card"><item name="cardBackgroundColor">@color/white</item><item name="strokeColor">@color/divider</item><item name="strokeWidth">1dp</item></style>
 <style name="Widget.MyFitAI.HomeSectionContent" parent="">
