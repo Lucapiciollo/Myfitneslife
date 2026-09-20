@@ -300,25 +300,27 @@ class BiaActivity : BaseShellActivity() {
     }
 
     private fun processImportUri(uri: Uri) {
+        showImportStatus("Preparazione della foto…")
         lifecycleScope.launch {
             runCatching { withContext(Dispatchers.IO) { AiImageProcessor.fromUri(this@BiaActivity, uri) } }
                 .onSuccess { importImage(it) }
-                .onFailure { Toast.makeText(this@BiaActivity, "Impossibile leggere la foto", Toast.LENGTH_LONG).show() }
+                .onFailure { showImportStatus("Impossibile leggere la foto") }
         }
     }
 
     private fun processImportFile(file: File) {
+        showImportStatus("Preparazione della foto…")
         lifecycleScope.launch {
             runCatching { withContext(Dispatchers.IO) { AiImageProcessor.fromFile(file) } }
                 .onSuccess { importImage(it) }
-                .onFailure { Toast.makeText(this@BiaActivity, "Impossibile leggere la foto", Toast.LENGTH_LONG).show() }
+                .onFailure { showImportStatus("Impossibile leggere la foto") }
                 .also { withContext(Dispatchers.IO) { imageTempStore.delete(file) } }
         }
     }
 
     private fun importImage(image: com.myfitai.app.ai.AiImageInput) {
         confirmAiRequest("La lettura IA dei valori BIA dalla foto") {
-            Toast.makeText(this, "Lettura BIA in corso…", Toast.LENGTH_SHORT).show()
+            showImportStatus("Lettura BIA in corso…")
             lifecycleScope.launch {
                 val profileId = data.activeProfileStore.currentIdOrNull()
                 if (profileId == null) {
@@ -330,18 +332,29 @@ class BiaActivity : BaseShellActivity() {
                 data.aiJobScheduler.observe(com.myfitai.app.domain.ai.AiJobType.BIA_IMPORT, profileId, key).collect { info ->
                     when (info?.state) {
                         androidx.work.WorkInfo.State.SUCCEEDED -> {
+                            showImportStatus("Importazione completata: controlla i valori prima di salvarli.")
                             val p = org.json.JSONObject(info.outputData.getString(com.myfitai.app.domain.body.BiaImportAiJobHandler.KEY_PAYLOAD).orEmpty())
                             showImportPreview(com.myfitai.app.domain.body.BiaImportContract.Preview(true, "", p.optLong("measuredAtEpochMillis").takeIf { it > 0 }, p.optDouble("weightKg").takeIf { !p.isNull("weightKg") }?.toFloat(), p.optDouble("bodyFatPercent").takeIf { !p.isNull("bodyFatPercent") }?.toFloat(), p.optDouble("visceralFatLevel").takeIf { !p.isNull("visceralFatLevel") }?.toFloat(), p.optDouble("muscleMassKg").takeIf { !p.isNull("muscleMassKg") }?.toFloat(), p.optDouble("skeletalMuscleKg").takeIf { !p.isNull("skeletalMuscleKg") }?.toFloat(), p.optDouble("bodyWaterPercent").takeIf { !p.isNull("bodyWaterPercent") }?.toFloat(), p.optDouble("bmrKcal").takeIf { !p.isNull("bmrKcal") }?.toFloat(), p.getString("confidence"), p.getString("notes")), p.getString("provider"), p.getString("model"))
                         }
                         androidx.work.WorkInfo.State.FAILED,
                         androidx.work.WorkInfo.State.CANCELLED -> {
                             val message = info.outputData.getString("error") ?: "Impossibile leggere i valori BIA dalla foto"
-                            Toast.makeText(this@BiaActivity, message, Toast.LENGTH_LONG).show()
+                            showImportStatus(message)
                         }
+                        androidx.work.WorkInfo.State.ENQUEUED,
+                        androidx.work.WorkInfo.State.RUNNING,
+                        androidx.work.WorkInfo.State.BLOCKED -> showImportStatus("Lettura BIA in corso…")
                         else -> Unit
                     }
                 }
             }
+        }
+    }
+
+    private fun showImportStatus(message: String) {
+        findViewById<TextView>(R.id.importStatusText)?.apply {
+            text = message
+            visibility = View.VISIBLE
         }
     }
 

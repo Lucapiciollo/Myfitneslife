@@ -75,6 +75,7 @@ class HomeViewModel(
     data class RecoveryState(val pendingKcal: Int = 0, val creditCount: Int = 0, val nextExpiry: LocalDate? = null)
 
     data class DashboardState(
+        val loading: Boolean = true,
         val profileName: String? = null,
         val goal: String? = null,
         val weight: MetricState = MetricState(null, null),
@@ -229,6 +230,7 @@ class HomeViewModel(
             else -> null
         }
         return DashboardState(
+            loading = false,
             profileName = source.profile?.name,
             goal = source.profile?.goal,
             weight = metricState(weightValues).copy(sourceLabel = weightSource),

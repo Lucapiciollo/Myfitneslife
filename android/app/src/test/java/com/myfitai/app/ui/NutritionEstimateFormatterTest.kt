@@ -16,7 +16,7 @@ class NutritionEstimateFormatterTest {
     }
 
     @Test
-    fun formatsMissingValueAsDash() {
-        assertEquals("—", NutritionEstimateFormatter.formatEstimatedKcal(null))
+    fun formatsMissingValueAsUnavailable() {
+        assertEquals("Dati non disponibili", NutritionEstimateFormatter.formatEstimatedKcal(null))
     }
 }

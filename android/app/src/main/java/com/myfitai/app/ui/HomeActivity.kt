@@ -132,9 +132,9 @@ class HomeActivity : BaseShellActivity() {
         findViewById<MetricCardView>(R.id.metricWeight).setLabel(getString(R.string.dashboard_metric_weight) + state.weight.sourceLabel?.let { " · $it" }.orEmpty())
         findViewById<MetricCardView>(R.id.metricFat).setLabel(getString(R.string.dashboard_metric_fat) + state.bodyFat.sourceLabel?.let { " · $it" }.orEmpty())
         findViewById<MetricCardView>(R.id.metricMuscle).setLabel(getString(R.string.dashboard_metric_muscle) + state.muscleMass.sourceLabel?.let { " · $it" }.orEmpty())
-        renderMetric(findViewById(R.id.metricWeight), state.weight.value, state.weight.deltaFromPrevious, "kg", DeltaSemantic.NEUTRAL)
-        renderMetric(findViewById(R.id.metricFat), state.bodyFat.value, state.bodyFat.deltaFromPrevious, "%", DeltaSemantic.DOWN_IS_POSITIVE)
-        renderMetric(findViewById(R.id.metricMuscle), state.muscleMass.value, state.muscleMass.deltaFromPrevious, "kg", DeltaSemantic.UP_IS_POSITIVE)
+        renderMetric(findViewById(R.id.metricWeight), state.weight.value, state.weight.deltaFromPrevious, "kg", DeltaSemantic.NEUTRAL, state.loading)
+        renderMetric(findViewById(R.id.metricFat), state.bodyFat.value, state.bodyFat.deltaFromPrevious, "%", DeltaSemantic.DOWN_IS_POSITIVE, state.loading)
+        renderMetric(findViewById(R.id.metricMuscle), state.muscleMass.value, state.muscleMass.deltaFromPrevious, "kg", DeltaSemantic.UP_IS_POSITIVE, state.loading)
 
         findViewById<BodyMeasurementTrendView>(R.id.bodyMeasurementTrendChart).setNormalizedSeries(
             state.bodyMeasurementTrendSeries.map { series ->
@@ -351,8 +351,13 @@ class HomeActivity : BaseShellActivity() {
 
     private enum class DeltaSemantic { NEUTRAL, DOWN_IS_POSITIVE, UP_IS_POSITIVE }
 
-    private fun renderMetric(view: MetricCardView, value: Float?, delta: Float?, unit: String, semantic: DeltaSemantic) {
-        view.setValue(value?.let { "${formatNumber(it)} $unit" } ?: "—")
+    private fun renderMetric(view: MetricCardView, value: Float?, delta: Float?, unit: String, semantic: DeltaSemantic, loading: Boolean) {
+        if (loading) {
+            view.setValue("Caricamento…")
+            view.setDelta("Caricamento…", MetricCardView.DeltaState.NEUTRAL)
+            return
+        }
+        view.setValue(value?.let { "${formatNumber(it)} $unit" } ?: "Non disponibile")
         if (delta == null) {
             view.setDelta("Dati insufficienti", MetricCardView.DeltaState.NEUTRAL)
             return
