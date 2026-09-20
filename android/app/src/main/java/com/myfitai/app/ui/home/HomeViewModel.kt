@@ -197,7 +197,10 @@ class HomeViewModel(
         recovery: RecoveryState,
         consumedKcal: Int,
     ): DashboardState {
-        val weightValues = metricValues(source.bia) { it.weightKg }
+        val weightValues = (
+            metricValues(source.bia) { it.weightKg } +
+                source.body.mapNotNull { row -> row.weightKg?.let { row.measuredAtEpochMillis to it } }
+            ).sortedByDescending { it.first }
             .ifEmpty { source.profile?.currentWeightKg?.let { listOf(System.currentTimeMillis() to it) }.orEmpty() }
         val fatValues = metricValues(source.bia) { it.bodyFatPercent }
         val muscleValues = metricValues(source.bia) { it.muscleMassKg }
@@ -240,7 +243,11 @@ class HomeViewModel(
         val today = LocalDate.now()
         val latestBia = source.bia.maxByOrNull { it.measuredAtEpochMillis }
         val latestBody = source.body.maxByOrNull { it.measuredAtEpochMillis }
-        val weightKg = latestBia?.weightKg?.toDouble() ?: profile.currentWeightKg?.toDouble()
+        val latestRecordedWeight = (
+            source.bia.mapNotNull { row -> row.weightKg?.let { row.measuredAtEpochMillis to it } } +
+                source.body.mapNotNull { row -> row.weightKg?.let { row.measuredAtEpochMillis to it } }
+            ).maxByOrNull { it.first }?.second
+        val weightKg = latestRecordedWeight?.toDouble() ?: profile.currentWeightKg?.toDouble()
         val ageYears = profile.birthDateEpochDay?.let { epochDay ->
             val birth = LocalDate.ofEpochDay(epochDay)
             if (birth.isAfter(today)) null else Period.between(birth, today).years
