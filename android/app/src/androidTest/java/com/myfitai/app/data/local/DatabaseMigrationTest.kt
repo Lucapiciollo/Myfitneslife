@@ -87,6 +87,38 @@ class DatabaseMigrationTest {
     }
 
     @Test
+    fun migration8To9_preservesBodyHistoryAndAddsNullableHipsAndWeight() {
+        helper.createDatabase(MyFitAiDatabase.DATABASE_NAME, 8).apply {
+            execSQL(
+                "INSERT INTO body_measurements (id, profileId, measuredAtEpochMillis, waistCm, glutesCm) " +
+                    "VALUES (1, 1, 1234567, 81.5, 97.0)"
+            )
+            close()
+        }
+
+        helper.runMigrationsAndValidate(
+            MyFitAiDatabase.DATABASE_NAME,
+            9,
+            true,
+            DatabaseMigrations.MIGRATION_8_9,
+        ).use { db ->
+            db.query("SELECT waistCm, glutesCm, hipsCm, weightKg FROM body_measurements WHERE id = 1").use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals(81.5f, cursor.getFloat(0))
+                assertEquals(97f, cursor.getFloat(1))
+                assertNull(cursor.getString(2))
+                assertNull(cursor.getString(3))
+            }
+            db.execSQL("UPDATE body_measurements SET hipsCm = 99.0, weightKg = 88.5 WHERE id = 1")
+            db.query("SELECT hipsCm, weightKg FROM body_measurements WHERE id = 1").use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals(99f, cursor.getFloat(0))
+                assertEquals(88.5f, cursor.getFloat(1))
+            }
+        }
+    }
+
+    @Test
     fun migration7To8_addsNullableAppValidationJson() {
         helper.createDatabase(MyFitAiDatabase.DATABASE_NAME, 7).close()
         helper.runMigrationsAndValidate(
