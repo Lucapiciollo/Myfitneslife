@@ -56,9 +56,9 @@ class WeeklyReviewActivity : BaseShellActivity() {
         findViewById<TextView>(R.id.cheatsValue).text = metrics?.cheatCount?.toString() ?: "—"
         findViewById<TextView>(R.id.workoutsValue).text = metrics?.let { "${it.workoutCount}" } ?: "—"
         findViewById<TextView>(R.id.trackingCoverageText).text = when {
-            metrics == null -> "Piano seguito: percentuale dei pasti segnati come consumati rispetto a quelli previsti."
-            metrics.trackingCoveragePercent == null -> "Nessun pasto consumato registrato: il piano seguito non è calcolabile."
-            else -> "Pasti registrati: ${metrics.trackingCoveragePercent}% degli elementi previsti · ${metrics.consumedMealCount} consumati · ${metrics.skippedMealCount} saltati."
+            metrics == null -> "Qui vedi quanti pasti del piano sono stati segnati come consumati."
+            metrics.trackingCoveragePercent == null -> "Nessun pasto previsto: non è possibile calcolare il dato."
+            else -> "Pasti segnati: ${metrics.consumedMealCount} di ${metrics.plannedMealCount} previsti (${metrics.adherencePercent ?: 0}%). Gli alimenti del piano non risultano segnati finché non registri il consumo."
         }
 
         renderNutrition(metrics)
