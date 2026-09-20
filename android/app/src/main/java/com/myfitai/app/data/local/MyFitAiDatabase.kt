@@ -25,7 +25,7 @@ import com.myfitai.app.data.local.entity.*
         WeeklyReviewEntity::class,
         AiUsageRecordEntity::class,
     ],
-    version = 9,
+    version = 10,
     exportSchema = true,
 )
 abstract class MyFitAiDatabase : RoomDatabase() {
@@ -191,6 +191,21 @@ object DatabaseMigrations {
         }
     }
 
+    /** Retain optional BIA metrics without changing any existing history. */
+    val MIGRATION_9_10 = object : Migration(9, 10) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE bia_measurements ADD COLUMN fatMassKg REAL")
+            db.execSQL("ALTER TABLE bia_measurements ADD COLUMN leanMassKg REAL")
+            db.execSQL("ALTER TABLE bia_measurements ADD COLUMN bodyWaterKg REAL")
+            db.execSQL("ALTER TABLE bia_measurements ADD COLUMN subcutaneousFatPercent REAL")
+            db.execSQL("ALTER TABLE bia_measurements ADD COLUMN boneMassKg REAL")
+            db.execSQL("ALTER TABLE bia_measurements ADD COLUMN proteinPercent REAL")
+            db.execSQL("ALTER TABLE bia_measurements ADD COLUMN proteinKg REAL")
+            db.execSQL("ALTER TABLE bia_measurements ADD COLUMN bodyAgeYears INTEGER")
+            db.execSQL("ALTER TABLE bia_measurements ADD COLUMN bmi REAL")
+        }
+    }
+
     val ALL: Array<Migration> = arrayOf(
         MIGRATION_1_2,
         MIGRATION_2_3,
@@ -200,5 +215,6 @@ object DatabaseMigrations {
         MIGRATION_6_7,
         MIGRATION_7_8,
         MIGRATION_8_9,
+        MIGRATION_9_10,
     )
 }
