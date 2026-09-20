@@ -156,20 +156,22 @@ class BodyMeasuresActivity : BaseShellActivity() {
         val latest = measurements.firstOrNull()
         findViewById<TextView>(R.id.measureDate).text = latest?.let { entityDate(it).format(dateFormatter) } ?: "Nessuna misura"
 
+        // A weight-only entry must not hide the most recent available circumferences.
+        // Each row is independently sourced from its last recorded non-null value.
         val rows = listOf(
-            Triple(R.id.rowWeight, "Peso corporeo", latest?.weightKg),
-            Triple(R.id.rowChest, "Torace", latest?.chestCm),
-            Triple(R.id.rowWaist, "Vita", latest?.waistCm),
-            Triple(R.id.rowAbdomen, "Addome", latest?.abdomenCm),
-            Triple(R.id.rowShoulders, "Spalle", latest?.shouldersCm),
-            Triple(R.id.rowHips, "Fianchi", latest?.hipsCm),
-            Triple(R.id.rowGlutes, "Glutei", latest?.glutesCm),
-            Triple(R.id.rowArmLeft, "Braccio sx", latest?.armLeftCm),
-            Triple(R.id.rowArmRight, "Braccio dx", latest?.armRightCm),
-            Triple(R.id.rowThighLeft, "Coscia sx", latest?.thighLeftCm),
-            Triple(R.id.rowThighRight, "Coscia dx", latest?.thighRightCm),
-            Triple(R.id.rowCalfLeft, "Polpaccio sx", latest?.calfLeftCm),
-            Triple(R.id.rowCalfRight, "Polpaccio dx", latest?.calfRightCm),
+            Triple(R.id.rowWeight, "Peso corporeo", measurements.firstNotNullOfOrNull { it.weightKg }),
+            Triple(R.id.rowChest, "Torace", measurements.firstNotNullOfOrNull { it.chestCm }),
+            Triple(R.id.rowWaist, "Vita", measurements.firstNotNullOfOrNull { it.waistCm }),
+            Triple(R.id.rowAbdomen, "Addome", measurements.firstNotNullOfOrNull { it.abdomenCm }),
+            Triple(R.id.rowShoulders, "Spalle", measurements.firstNotNullOfOrNull { it.shouldersCm }),
+            Triple(R.id.rowHips, "Fianchi", measurements.firstNotNullOfOrNull { it.hipsCm }),
+            Triple(R.id.rowGlutes, "Glutei", measurements.firstNotNullOfOrNull { it.glutesCm }),
+            Triple(R.id.rowArmLeft, "Braccio sx", measurements.firstNotNullOfOrNull { it.armLeftCm }),
+            Triple(R.id.rowArmRight, "Braccio dx", measurements.firstNotNullOfOrNull { it.armRightCm }),
+            Triple(R.id.rowThighLeft, "Coscia sx", measurements.firstNotNullOfOrNull { it.thighLeftCm }),
+            Triple(R.id.rowThighRight, "Coscia dx", measurements.firstNotNullOfOrNull { it.thighRightCm }),
+            Triple(R.id.rowCalfLeft, "Polpaccio sx", measurements.firstNotNullOfOrNull { it.calfLeftCm }),
+            Triple(R.id.rowCalfRight, "Polpaccio dx", measurements.firstNotNullOfOrNull { it.calfRightCm }),
         )
         rows.forEach { (id, label, value) ->
             findViewById<MeasurementRowView>(id).apply {
