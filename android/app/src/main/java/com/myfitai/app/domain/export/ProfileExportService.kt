@@ -161,7 +161,7 @@ class ProfileExportService(
             }) } })
             put("bodyMeasurements", JSONArray().apply { body.forEach { r -> put(JSONObject().apply {
                 put("id", r.id); put("measuredAtEpochMillis", r.measuredAtEpochMillis); putNullable("chestCm", r.chestCm); putNullable("waistCm", r.waistCm)
-                putNullable("abdomenCm", r.abdomenCm); putNullable("shouldersCm", r.shouldersCm); putNullable("glutesCm", r.glutesCm); putNullable("armLeftCm", r.armLeftCm)
+                putNullable("abdomenCm", r.abdomenCm); putNullable("shouldersCm", r.shouldersCm); putNullable("glutesCm", r.glutesCm); putNullable("hipsCm", r.hipsCm); putNullable("weightKg", r.weightKg); putNullable("armLeftCm", r.armLeftCm)
                 putNullable("armRightCm", r.armRightCm); putNullable("thighLeftCm", r.thighLeftCm); putNullable("thighRightCm", r.thighRightCm); putNullable("calfLeftCm", r.calfLeftCm); putNullable("calfRightCm", r.calfRightCm); putNullable("notes", r.notes)
             }) } })
             put("workouts", JSONArray().apply { workouts.forEach { r -> put(JSONObject().apply {
