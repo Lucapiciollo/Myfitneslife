@@ -31,8 +31,16 @@ object WeeklyConsumptionMetrics {
             recordedItemCount = records.size,
             consumedMealCount = consumedMeals,
             skippedMealCount = skippedMeals,
-            trackingCoveragePercent = (records.size * 100 / plannedItemCount).takeIf { plannedItemCount > 0 && records.isNotEmpty() },
-            adherencePercent = (consumedMeals * 100 / plannedMealCount).takeIf { plannedMealCount > 0 && records.any(::isMeal) },
+            trackingCoveragePercent = if (plannedItemCount > 0 && records.isNotEmpty()) {
+                records.size * 100 / plannedItemCount
+            } else {
+                null
+            },
+            adherencePercent = if (plannedMealCount > 0 && records.any(::isMeal)) {
+                consumedMeals * 100 / plannedMealCount
+            } else {
+                null
+            },
             consumedKcal = consumedKcal,
         )
     }

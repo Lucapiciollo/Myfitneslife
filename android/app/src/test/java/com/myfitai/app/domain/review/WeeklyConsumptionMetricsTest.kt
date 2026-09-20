@@ -49,6 +49,19 @@ class WeeklyConsumptionMetricsTest {
         assertEquals(2100, result.consumedKcal)
     }
 
+    @Test
+    fun recordsWithoutPlannedItems_doNotDivideByZero() {
+        val result = WeeklyConsumptionMetrics.calculate(
+            plannedMealCount = 0,
+            plannedItemCount = 0,
+            records = listOf(record("MEAL:1", "MEAL", "CONSUMED", 700)),
+        )
+
+        assertNull(result.trackingCoveragePercent)
+        assertNull(result.adherencePercent)
+        assertEquals(700, result.consumedKcal)
+    }
+
     private fun record(key: String, type: String, status: String, kcal: Int) = FoodConsumptionEntity(
         profileId = 1L,
         planId = 10L,
