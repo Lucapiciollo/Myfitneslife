@@ -93,6 +93,8 @@ class MeasurementsActivity : BaseShellActivity() {
     private fun renderBody(value: BodyMeasurementEntity?) {
         findViewById<TextView>(R.id.bodyLatestText).text = value?.let {
             val details = listOfNotNull(
+                it.weightKg?.let { weight -> "Peso corporeo ${formatNumber(weight)} kg" },
+                it.hipsCm?.let { hips -> "Fianchi ${formatNumber(hips)} cm" },
                 it.waistCm?.let { waist -> "Vita ${formatNumber(waist)} cm" },
                 it.abdomenCm?.let { abdomen -> "Addome ${formatNumber(abdomen)} cm" },
                 it.chestCm?.let { chest -> "Torace ${formatNumber(chest)} cm" },
