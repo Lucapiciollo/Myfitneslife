@@ -38,6 +38,7 @@ class AiRuntimeService(context: Context) : AiRuntimeGateway {
         val scopedRequest = request.copy(
             systemPrompt = buildString {
                 append(GLOBAL_NUTRITION_SCOPE)
+                append('\n').append(AiResponseLanguage.ITALIAN_OUTPUT_RULE)
                 if (compact) append('\n').append(COMPACT_OUTPUT_RULE)
                 append("\n\n").append(request.systemPrompt.trim())
             },
