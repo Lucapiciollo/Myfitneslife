@@ -188,7 +188,9 @@ class NutritionPlanGenerationService(
             ),
             schemaName = NutritionPlanCompactContract.SCHEMA_NAME,
             schemaJson = NutritionPlanCompactContract.schemaJson,
-            maxOutputTokens = 24_576,
+            // Number of generated days/meals varies; avoid a fixed output cap for plans.
+            // Provider/model hard limits still apply; truncated output is rejected.
+            maxOutputTokens = null,
             thinkingBudget = 0,
             allowSchemaFallback = true,
         )
