@@ -187,7 +187,7 @@ class WeeklyReviewService(
     private fun averageOrNull(values: List<Float>): Float? = values.takeIf { it.isNotEmpty() }?.average()?.toFloat()
     private fun delta(values: List<Float>, previousValues: List<Float>): Float? = when {
         values.size >= 2 -> values.last() - values.first()
-        values.size == 1 && previousValues.isNotEmpty() -> values.first() - previousValues.last()
+        values.size == 1 && previousValues.isNotEmpty() -> values.first() - previousValues.first()
         else -> null
     }
 }
