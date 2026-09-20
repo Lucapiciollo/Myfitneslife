@@ -29,19 +29,23 @@ class MetricCardView @JvmOverloads constructor(
 
         labelView = TextView(context).apply {
             setTextColor(context.getColor(R.color.text_secondary))
-            textSize = 12f
+            textSize = 16f
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            layoutParams = LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f)
         }
-        addView(labelView)
 
         valueView = TextView(context).apply {
-            layoutParams = LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply {
-                topMargin = (4 * resources.displayMetrics.density).toInt()
-            }
             setTextColor(context.getColor(R.color.metric_value))
-            textSize = 20f
+            textSize = 16f
             setTypeface(typeface, android.graphics.Typeface.BOLD)
         }
-        addView(valueView)
+
+        addView(LinearLayout(context).apply {
+            orientation = HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            addView(labelView)
+            addView(valueView)
+        })
 
         val deltaRow = LinearLayout(context).apply {
             orientation = HORIZONTAL
@@ -53,12 +57,13 @@ class MetricCardView @JvmOverloads constructor(
         val iconSize = (10 * resources.displayMetrics.density).toInt()
         deltaIcon = ImageView(context).apply {
             layoutParams = LayoutParams(iconSize, iconSize)
+            visibility = GONE
             importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
         }
         deltaRow.addView(deltaIcon)
         deltaView = TextView(context).apply {
             layoutParams = LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply {
-                marginStart = (2 * resources.displayMetrics.density).toInt()
+                marginStart = 0
             }
             textSize = 12f
         }

@@ -58,6 +58,7 @@ class ProfileActivity : BaseShellActivity() {
         findViewById<SettingRowView>(R.id.rowFoodPreferences).setOnClickListener { openEditor() }
         findViewById<SettingRowView>(R.id.rowDaySchedule).setOnClickListener { openEditor() }
         findViewById<SettingRowView>(R.id.rowWorkouts).setOnClickListener { go(WorkoutsActivity::class.java) }
+        updateWorkoutsRowVisibility()
         findViewById<SettingRowView>(R.id.rowNotifications).setOnClickListener { go(NotificationsActivity::class.java) }
         findViewById<SettingRowView>(R.id.rowExport).setOnClickListener { go(ExportActivity::class.java) }
         findViewById<SettingRowView>(R.id.rowSettings).setOnClickListener { go(SettingsActivity::class.java) }
@@ -69,6 +70,17 @@ class ProfileActivity : BaseShellActivity() {
             getString(if (hasKey) R.string.profile_openai_configured else R.string.profile_openai_not_configured),
             if (hasKey) R.color.accent_green else R.color.text_muted,
         )
+    }
+
+    override fun onResume() {
+        super.onResume()
+        updateWorkoutsRowVisibility()
+    }
+
+    private fun updateWorkoutsRowVisibility() {
+        val profileId = data.activeProfileStore.currentIdOrNull() ?: return
+        findViewById<SettingRowView>(R.id.rowWorkouts).visibility =
+            if (data.workoutPreferences.isEnabled(profileId)) android.view.View.VISIBLE else android.view.View.GONE
     }
 
     private fun bindProfileActions() {

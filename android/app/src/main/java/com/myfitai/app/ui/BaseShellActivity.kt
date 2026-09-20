@@ -284,6 +284,14 @@ abstract class BaseShellActivity : AppCompatActivity() {
                 return
             }
         }
+        if (target != HomeActivity::class.java &&
+            target != FoodPlanActivity::class.java &&
+            target != PhysicalEvolutionActivity::class.java &&
+            target != SettingsActivity::class.java
+        ) {
+            startActivity(Intent(this, target))
+            return
+        }
         val intent = Intent(this, TabHostActivity::class.java)
         val selectedTab = when (target) {
             HomeActivity::class.java -> BottomNavBinder.Tab.HOME

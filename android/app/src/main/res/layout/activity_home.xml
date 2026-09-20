@@ -88,29 +88,22 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:baselineAligned="false"
-                    android:measureWithLargestChild="true"
-                    android:orientation="horizontal">
+                    android:orientation="vertical">
 
                     <com.myfitai.app.ui.widgets.MetricCardView
                         android:id="@+id/metricWeight"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_marginEnd="@dimen/space_4"
-                        android:layout_weight="1" />
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content" />
                     <com.myfitai.app.ui.widgets.MetricCardView
                         android:id="@+id/metricFat"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_marginStart="@dimen/space_4"
-                        android:layout_marginEnd="@dimen/space_4"
-                        android:layout_weight="1" />
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_8" />
                     <com.myfitai.app.ui.widgets.MetricCardView
                         android:id="@+id/metricMuscle"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_marginStart="@dimen/space_4"
-                        android:layout_weight="1" />
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_8" />
                 </LinearLayout>
 
                 <com.google.android.material.card.MaterialCardView
@@ -156,6 +149,12 @@
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
 
+                <com.myfitai.app.ui.widgets.SelectableSegmentView
+                    android:id="@+id/bodyTrendMetricSelector"
+                    android:layout_width="match_parent"
+                    android:layout_height="40dp"
+                    android:layout_marginTop="@dimen/space_12" />
+
                 <com.myfitai.app.ui.widgets.BodyMeasurementTrendView
                     android:id="@+id/bodyMeasurementTrendChart"
                     android:layout_width="match_parent"
@@ -166,7 +165,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_4"
-                    android:text="Variazione percentuale rispetto alla prima rilevazione di ogni misura"
+                    android:text="Valori reali; seleziona una misura per cambiare vista"
                     android:textColor="@color/text_muted"
                     android:textSize="11sp" />
 
@@ -236,97 +235,153 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:baselineAligned="false"
+                        android:orientation="vertical"
                         android:padding="@dimen/space_16">
                         <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_weight="1"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="vertical">
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
                             <TextView
-                                android:layout_width="wrap_content"
+                                android:layout_width="0dp"
                                 android:layout_height="wrap_content"
+                                android:layout_weight="1"
                                 android:text="Metabolismo (BMR)"
                                 android:textColor="@color/text_secondary"
-                                android:textSize="12sp" />
+                                android:textSize="13sp" />
                             <TextView
                                 android:id="@+id/caloriesBmrValue"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="@dimen/space_4"
                                 android:text="—"
                                 android:textColor="@color/text_primary"
-                                android:textSize="18sp"
+                                android:textSize="17sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
                         <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_weight="1"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="vertical">
+                            android:layout_marginTop="@dimen/space_12"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
                             <TextView
-                                android:layout_width="wrap_content"
+                                android:layout_width="0dp"
                                 android:layout_height="wrap_content"
+                                android:layout_weight="1"
                                 android:text="Consumo (TDEE)"
                                 android:textColor="@color/text_secondary"
-                                android:textSize="12sp" />
+                                android:textSize="13sp" />
                             <TextView
                                 android:id="@+id/caloriesTdeeValue"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="@dimen/space_4"
                                 android:text="—"
                                 android:textColor="@color/text_primary"
-                                android:textSize="18sp"
+                                android:textSize="17sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
                         <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_weight="1"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="vertical">
+                            android:layout_marginTop="@dimen/space_12"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
                             <TextView
-                                android:layout_width="wrap_content"
+                                android:layout_width="0dp"
                                 android:layout_height="wrap_content"
+                                android:layout_weight="1"
                                 android:text="Target"
                                 android:textColor="@color/text_secondary"
-                                android:textSize="12sp" />
+                                android:textSize="13sp" />
                             <TextView
                                 android:id="@+id/caloriesTargetValue"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="@dimen/space_4"
                                 android:text="—"
                                 android:textColor="@color/accent_green"
-                                android:textSize="18sp"
+                                android:textSize="17sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
-                <TextView
-                    android:id="@+id/caloriesConsumedText"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12"
-                    android:text="Consumate oggi: 0 kcal"
-                    android:textColor="@color/text_primary"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-                <com.google.android.material.progressindicator.LinearProgressIndicator
-                    android:id="@+id/caloriesConsumedProgress"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_4"
-                    app:trackCornerRadius="4dp"
-                    app:trackThickness="8dp"
-                    app:indicatorColor="@color/accent_green"
-                    app:trackColor="@color/divider" />
+                    android:baselineAligned="false"
+                    android:orientation="horizontal">
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="@dimen/space_4"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:padding="@dimen/space_12"
+                        android:background="@drawable/bg_card_soft">
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Consumate oggi"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="12sp" />
+                        <TextView
+                            android:id="@+id/caloriesConsumedText"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/space_4"
+                            android:text="0 kcal"
+                            android:textColor="@color/text_primary"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+                        <com.google.android.material.progressindicator.LinearProgressIndicator
+                            android:id="@+id/caloriesConsumedProgress"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/space_8"
+                            app:trackCornerRadius="4dp"
+                            app:trackThickness="6dp"
+                            app:indicatorColor="@color/accent_green"
+                            app:trackColor="@color/divider" />
+                    </LinearLayout>
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/space_4"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:padding="@dimen/space_12"
+                        android:background="@drawable/bg_card_soft">
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Rimangono"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="12sp" />
+                        <TextView
+                            android:id="@+id/caloriesRemainingText"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/space_4"
+                            android:text="—"
+                            android:textColor="@color/accent_green"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+                        <com.google.android.material.progressindicator.LinearProgressIndicator
+                            android:id="@+id/caloriesRemainingProgress"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/space_8"
+                            app:trackCornerRadius="4dp"
+                            app:trackThickness="6dp"
+                            app:indicatorColor="@color/text_muted"
+                            app:trackColor="@color/divider" />
+                    </LinearLayout>
+                </LinearLayout>
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_4"
-                    android:text="Calcolo locale in base a corpo, attività e obiettivo. Tocca per i dettagli."
+                    android:text="Il target considera metabolismo, attività e obiettivo. Le barre mostrano calorie consumate e ancora disponibili nella giornata."
                     android:textColor="@color/text_muted"
                     android:textSize="11sp" />
                 </LinearLayout>
@@ -392,10 +447,10 @@
                             android:id="@+id/recoveryHintText"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="@dimen/space_4"
-                            android:text="Calorie extra da recuperare nei prossimi giorni."
+                            android:layout_marginTop="@dimen/space_8"
+                            android:text="Kcal extra ancora da distribuire nei prossimi giorni."
                             android:textColor="@color/text_muted"
-                            android:textSize="11sp" />
+                            android:textSize="12sp" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
                 </LinearLayout>
@@ -424,14 +479,14 @@
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
-                                android:text="Stima teorica di perdita di grasso" />
+                                android:text="Possibile calo teorico" />
 
                             <ImageButton
                                 android:id="@+id/weeklyExpectationHelpButton"
                                 android:layout_width="40dp"
                                 android:layout_height="40dp"
                                 android:background="@android:color/transparent"
-                                android:contentDescription="Spiega la stima teorica di perdita di grasso"
+                                android:contentDescription="Spiega il possibile calo teorico"
                                 android:padding="8dp"
                                 android:src="@drawable/ic_help_outline"
                                 app:tint="@color/text_secondary" />
@@ -460,7 +515,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/space_8"
-                            android:text="Stima indicativa, non una misurazione BIA o una promessa di risultato."
+                            android:text="Indicazione basata sul piano, non una previsione certa del peso."
                             android:textColor="@color/text_muted"
                             android:textSize="11sp" />
                     </LinearLayout>
@@ -489,7 +544,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="@string/dashboard_next_meal_title" />
+                        android:text="Prossimi pasti" />
                     <ImageButton
                         android:id="@+id/nextMealHelpButton"
                         android:layout_width="40dp"
@@ -502,6 +557,12 @@
                 </LinearLayout>
 
                 <com.myfitai.app.ui.widgets.MealCardView android:id="@+id/nextMealCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_12" />
+                <com.myfitai.app.ui.widgets.MealCardView
+                    android:id="@+id/secondNextMealCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_8"
+                    android:alpha="0.58" />
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/todayMenuButton"
                     style="@style/Widget.Material3.Button.TextButton"
@@ -514,6 +575,7 @@
                 </com.google.android.material.card.MaterialCardView>
 
                 <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/workoutSectionCard"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12"
@@ -576,6 +638,14 @@
                             android:layout_height="48dp"
                             android:layout_marginTop="@dimen/space_12"
                             android:text="Aggiungi rilevazione"
+                            android:textAllCaps="false" />
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/addExtraButton"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="48dp"
+                            android:layout_marginTop="@dimen/space_8"
+                            android:text="Inserisci extra"
                             android:textAllCaps="false" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>

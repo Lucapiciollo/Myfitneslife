@@ -21,6 +21,7 @@ import com.myfitai.app.notifications.NotificationPreferences
 import com.myfitai.app.ui.home.HomeViewModel
 import com.myfitai.app.ui.widgets.MealCardView
 import com.myfitai.app.ui.widgets.MetricCardView
+import com.myfitai.app.ui.widgets.SelectableSegmentView
 import com.myfitai.app.ui.widgets.TimeRangeSelectorView
 import com.myfitai.app.ui.widgets.BodyMeasurementTrendView
 import com.myfitai.app.ui.widgets.WorkoutCardView
@@ -30,8 +31,12 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlin.math.ceil
 
 class HomeActivity : BaseShellActivity() {
+
+    private var selectedBodyTrendIndex = 0
+    private var bodyTrendLabels: List<String> = emptyList()
 
     private val data by lazy { AppDataContainer.get(this) }
     private val viewModel: HomeViewModel by viewModels {
@@ -60,6 +65,7 @@ class HomeActivity : BaseShellActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
         bindBottom(BottomNavBinder.Tab.HOME)
+        renderWorkoutConfiguration()
         requestNotificationPermissionOnce()
 
         findViewById<android.view.View>(R.id.profileButton).setOnClickListener { go(ProfileActivity::class.java) }
@@ -67,6 +73,11 @@ class HomeActivity : BaseShellActivity() {
             currentNextMealId?.let { mealId ->
                 startActivity(Intent(this, MealDetailActivity::class.java).putExtra(MealDetailActivity.EXTRA_MEAL_ID, mealId))
             } ?: openFoodPlan()
+        }
+        findViewById<android.view.View>(R.id.secondNextMealCard).setOnClickListener {
+            currentUpcomingMeals.getOrNull(1)?.let { meal ->
+                startActivity(Intent(this, MealDetailActivity::class.java).putExtra(MealDetailActivity.EXTRA_MEAL_ID, meal.mealId))
+            }
         }
         findViewById<android.view.View>(R.id.nextWorkoutCard).setOnClickListener { go(WorkoutsActivity::class.java) }
         findViewById<android.view.View>(R.id.caloriesCard).setOnClickListener { showTdeeExplanation() }
@@ -76,11 +87,10 @@ class HomeActivity : BaseShellActivity() {
         }
         findViewById<android.view.View>(R.id.weeklyExpectationHelpButton).setOnClickListener {
             showHomeHelp(
-                "Stima teorica di perdita di grasso",
-                "Usa il TDEE stimato e le calorie dei soli giorni presenti nel piano alimentare della settimana corrente. " +
-                    "L'attività abituale è già compresa nel TDEE e non viene sommata di nuovo. " +
-                    "La conversione del deficit in kg è illustrativa, non un dato misurato né una previsione certa: " +
-                    "ritenzione idrica, glicogeno, adattamenti metabolici e composizione corporea modificano il risultato."
+                "Possibile calo teorico",
+                "Confronta il consumo giornaliero stimato con le calorie dei giorni già presenti nel piano di questa settimana. " +
+                    "Il risultato indica quanta energia potrebbe corrispondere a grasso, non quanto peso perderai davvero. " +
+                    "Acqua, glicogeno, adattamenti e composizione corporea possono cambiare il risultato."
             )
         }
         findViewById<android.view.View>(R.id.recoveryHelpButton).setOnClickListener {
@@ -94,6 +104,9 @@ class HomeActivity : BaseShellActivity() {
         }
         findViewById<android.view.View>(R.id.todayMenuButton).setOnClickListener { showTodayMenu() }
         findViewById<android.view.View>(R.id.measurementsButton).setOnClickListener { go(MeasurementsActivity::class.java) }
+        findViewById<android.view.View>(R.id.addExtraButton).setOnClickListener {
+            startActivity(Intent(this, CheatEntryActivity::class.java))
+        }
         findViewById<TextView>(R.id.todayLabel).text = todayLabel()
 
         findViewById<MetricCardView>(R.id.metricWeight).setLabel(getString(R.string.dashboard_metric_weight))
@@ -106,6 +119,18 @@ class HomeActivity : BaseShellActivity() {
         }
 
         observeDashboard()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        renderWorkoutConfiguration()
+    }
+
+    private fun renderWorkoutConfiguration() {
+        val profileId = data.activeProfileStore.currentIdOrNull() ?: return
+        val enabled = data.workoutPreferences.isEnabled(profileId)
+        findViewById<android.view.View>(R.id.workoutSectionCard)?.visibility =
+            if (enabled) android.view.View.VISIBLE else android.view.View.GONE
     }
 
     private fun requestNotificationPermissionOnce() {
@@ -136,16 +161,7 @@ class HomeActivity : BaseShellActivity() {
         renderMetric(findViewById(R.id.metricFat), state.bodyFat.value, state.bodyFat.deltaFromPrevious, "%", DeltaSemantic.DOWN_IS_POSITIVE, state.loading)
         renderMetric(findViewById(R.id.metricMuscle), state.muscleMass.value, state.muscleMass.deltaFromPrevious, "kg", DeltaSemantic.UP_IS_POSITIVE, state.loading)
 
-        findViewById<BodyMeasurementTrendView>(R.id.bodyMeasurementTrendChart).setNormalizedSeries(
-            state.bodyMeasurementTrendSeries.map { series ->
-                BodyMeasurementTrendView.Series(
-                    label = series.label,
-                    points = series.values.mapIndexed { index, value ->
-                        BodyMeasurementTrendView.Point(index.toString(), value)
-                    },
-                )
-            },
-        )
+        renderBodyTrend(state.bodyMeasurementTrendSeries)
         findViewById<TextView>(R.id.recompositionStateText).text = recompositionText(state.recompositionState)
         renderCalories(state.calories)
         renderWeeklyExpectation(state.weeklyExpectation)
@@ -155,6 +171,41 @@ class HomeActivity : BaseShellActivity() {
         renderNextWorkout(state.nextWorkout)
     }
 
+    private fun renderBodyTrend(series: List<HomeViewModel.TrendSeries>) {
+        val selector = findViewById<SelectableSegmentView>(R.id.bodyTrendMetricSelector)
+        val labels = series.map { it.label }
+        if (labels != bodyTrendLabels) {
+            bodyTrendLabels = labels
+            selectedBodyTrendIndex = selectedBodyTrendIndex.coerceIn(0, (series.size - 1).coerceAtLeast(0))
+            selector.setSegments(labels, selectedBodyTrendIndex)
+            selector.setOnSegmentSelectedListener { index ->
+                selectedBodyTrendIndex = index
+                renderBodyTrend(viewModel.state.value.bodyMeasurementTrendSeries)
+            }
+        }
+        val selected = series.getOrNull(selectedBodyTrendIndex)
+        val unit = when {
+            selected?.label == "Grasso corporeo" -> "%"
+            selected?.label == "Peso" || selected?.label?.startsWith("Massa") == true -> "kg"
+            else -> "cm"
+        }
+        findViewById<BodyMeasurementTrendView>(R.id.bodyMeasurementTrendChart).setRealSeries(
+            selected?.let { item ->
+                BodyMeasurementTrendView.Series(
+                    label = item.label,
+                    points = item.points.map { point ->
+                        BodyMeasurementTrendView.Point(
+                            label = Instant.ofEpochMilli(point.timestamp).atZone(ZoneId.systemDefault())
+                                .format(DateTimeFormatter.ofPattern("dd/MM", Locale.ITALIAN)),
+                            value = point.value,
+                        )
+                    },
+                )
+            },
+            unit,
+        )
+    }
+
     private fun renderWeeklyExpectation(result: com.myfitai.app.domain.calculation.WeeklyBodyExpectation.Result) {
         val status = findViewById<TextView>(R.id.weeklyExpectationStatus)
         val detail = findViewById<TextView>(R.id.weeklyExpectationDetail)
@@ -162,8 +213,10 @@ class HomeActivity : BaseShellActivity() {
         val period = if (result.isFullWeek) "7 giorni del piano" else "${result.plannedDays}/7 giorni pianificati"
         when {
             result.available -> {
-                status.text = "≈ ${String.format(Locale.ITALIAN, "%.2f", result.expectedFatLossKgMin)}–${String.format(Locale.ITALIAN, "%.2f", result.expectedFatLossKgMax)} kg"
-                detail.text = "Grasso teorico · $period · deficit energetico ≈ ${result.theoreticalDeficitKcal} kcal"
+                val minLoss = requireNotNull(result.expectedFatLossKgMin)
+                val maxLoss = requireNotNull(result.expectedFatLossKgMax)
+                status.text = "≈ ${formatExpectedLossRange(minLoss, maxLoss)} di grasso"
+                detail.text = "Possibile calo teorico se segui il piano · $period · deficit ≈ ${result.theoreticalDeficitKcal} kcal"
             }
             result.plannedDays > 0 -> {
                 status.text = "Nessuna perdita stimabile"
@@ -177,6 +230,18 @@ class HomeActivity : BaseShellActivity() {
         caution.text = result.caution
     }
 
+    private fun formatExpectedLossRange(minKg: Double, maxKg: Double): String {
+        val minText = formatExpectedLoss(minKg)
+        val maxText = formatExpectedLoss(maxKg)
+        return if (minText == maxText) minText else "$minText–$maxText"
+    }
+
+    private fun formatExpectedLoss(kg: Double): String = if (kg < 1.0) {
+        "${ceil(kg * 10).toInt().coerceAtLeast(1)} etti"
+    } else {
+        "${String.format(Locale.ITALIAN, "%.1f", kg)} kg"
+    }
+
     private fun renderRecovery(recovery: HomeViewModel.RecoveryState) {
         val value = findViewById<TextView>(R.id.recoveryValueText)
         val hint = findViewById<TextView>(R.id.recoveryHintText)
@@ -184,10 +249,10 @@ class HomeActivity : BaseShellActivity() {
             value.text = "${recovery.pendingKcal} kcal"
             val credits = if (recovery.creditCount == 1) "1 sgarro recente" else "${recovery.creditCount} sgarri recenti"
             val expiry = recovery.nextExpiry?.format(DateTimeFormatter.ofPattern("dd/MM", Locale.ITALIAN))
-            hint.text = "Da recuperare nei prossimi giorni · $credits${expiry?.let { " · primo termine $it" }.orEmpty()}"
+            hint.text = "Da distribuire gradualmente nei prossimi giorni · $credits${expiry?.let { " · prima scadenza $it" }.orEmpty()}. Evita compensazioni drastiche."
         } else {
             value.text = "0 kcal"
-            hint.text = "Nessun extra da recuperare. Sei in pari."
+            hint.text = "Nessun extra da distribuire: sei in pari con il recupero."
         }
     }
 
@@ -195,6 +260,18 @@ class HomeActivity : BaseShellActivity() {
         currentUpcomingMeals = meals
         findViewById<android.view.View>(R.id.todayMenuButton).visibility =
             if (meals.size >= 2) android.view.View.VISIBLE else android.view.View.GONE
+        val second = meals.getOrNull(1)
+        findViewById<MealCardView>(R.id.secondNextMealCard).apply {
+            visibility = android.view.View.VISIBLE
+            if (second == null) {
+                setTime("—")
+                setTitle("Nessun altro pasto pianificato")
+                setKcal("Apri il piano alimentare")
+                setImage(R.drawable.img_next_meal)
+            } else {
+                renderMeal(this, second)
+            }
+        }
     }
 
     private fun showTodayMenu() {
@@ -233,23 +310,36 @@ class HomeActivity : BaseShellActivity() {
         findViewById<TextView>(R.id.caloriesBmrValue).text = kcal(calories.bmr)
         findViewById<TextView>(R.id.caloriesTdeeValue).text = kcal(calories.tdee)
         findViewById<TextView>(R.id.caloriesTargetValue).text = kcal(calories.target)
-        findViewById<TextView>(R.id.caloriesConsumedText).apply {
+        findViewById<TextView>(R.id.caloriesConsumedText).text = "${calories.consumedKcal} kcal"
+        findViewById<TextView>(R.id.caloriesRemainingText).apply {
             val target = calories.target
             text = if (target != null && target > 0) {
                 val remaining = target - calories.consumedKcal
-                if (remaining >= 0) {
-                    "Consumate oggi: ${calories.consumedKcal} / $target kcal · rimangono $remaining"
-                } else {
-                    "Consumate oggi: ${calories.consumedKcal} / $target kcal · ${-remaining} oltre il target"
-                }
+                if (remaining >= 0) "$remaining kcal" else "${-remaining} oltre"
             } else {
-                "Consumate oggi: ${calories.consumedKcal} kcal"
+                "—"
             }
         }
+        val target = calories.target ?: 0
+        val consumedProgress = if (target > 0) {
+            (calories.consumedKcal * 100 / target).coerceIn(0, 100)
+        } else {
+            0
+        }
+        val remainingProgress = if (target > 0) {
+            ((target - calories.consumedKcal) * 100 / target).coerceIn(0, 100)
+        } else {
+            0
+        }
         findViewById<com.google.android.material.progressindicator.LinearProgressIndicator>(R.id.caloriesConsumedProgress).apply {
-            val target = calories.target ?: 0
             max = 100
-            progress = if (target > 0) (calories.consumedKcal * 100 / target).coerceIn(0, 100) else 0
+            progress = consumedProgress
+            setIndicatorColor(getColor(if (consumedProgress > 0) R.color.accent_green else R.color.divider))
+        }
+        findViewById<com.google.android.material.progressindicator.LinearProgressIndicator>(R.id.caloriesRemainingProgress).apply {
+            max = 100
+            progress = remainingProgress
+            setIndicatorColor(getColor(if (remainingProgress > 0) R.color.text_muted else R.color.divider))
         }
         findViewById<TextView>(R.id.caloriesModeText).apply {
             val percent = calories.energyPercent?.let { p ->
@@ -306,20 +396,24 @@ class HomeActivity : BaseShellActivity() {
                 contentDescription = "Nessun pasto pianificato. Apri il piano alimentare"
                 return@apply
             }
-            val date = LocalDate.ofEpochDay(next.dateEpochDay)
-            val today = LocalDate.now()
-            val dayLabel = when (date) {
-                today -> "Oggi"
-                today.plusDays(1) -> "Domani"
-                else -> date.format(DateTimeFormatter.ofPattern("EEE d MMM", Locale.ITALIAN))
-            }
-            val time = next.timeMinutes?.let { String.format(Locale.ITALIAN, "%02d:%02d", it / 60, it % 60) }
-            setTime(listOfNotNull(dayLabel, time).joinToString(" "))
-            setTitle(next.title)
-            setKcal(next.kcal?.let { NutritionEstimateFormatter.formatEstimatedKcal(it) } ?: next.type)
-            setImage(R.drawable.img_next_meal)
+            renderMeal(this, next)
             contentDescription = "Prossimo pasto: ${next.title}"
         }
+    }
+
+    private fun renderMeal(card: MealCardView, meal: HomeViewModel.NextMealState) {
+        val date = LocalDate.ofEpochDay(meal.dateEpochDay)
+        val today = LocalDate.now()
+        val dayLabel = when (date) {
+            today -> "Oggi"
+            today.plusDays(1) -> "Domani"
+            else -> date.format(DateTimeFormatter.ofPattern("EEE d MMM", Locale.ITALIAN))
+        }
+        val time = meal.timeMinutes?.let { String.format(Locale.ITALIAN, "%02d:%02d", it / 60, it % 60) }
+        card.setTime(listOfNotNull(dayLabel, time).joinToString(" "))
+        card.setTitle(meal.title)
+        card.setKcal(meal.kcal?.let { NutritionEstimateFormatter.formatEstimatedKcal(it) } ?: meal.type)
+        card.setImage(R.drawable.img_next_meal)
     }
 
     private fun renderNextWorkout(next: HomeViewModel.NextWorkoutState?) {
@@ -367,7 +461,7 @@ class HomeActivity : BaseShellActivity() {
             DeltaSemantic.DOWN_IS_POSITIVE -> when { delta < 0f -> MetricCardView.DeltaState.POSITIVE; delta > 0f -> MetricCardView.DeltaState.NEGATIVE; else -> MetricCardView.DeltaState.NEUTRAL }
             DeltaSemantic.UP_IS_POSITIVE -> when { delta > 0f -> MetricCardView.DeltaState.POSITIVE; delta < 0f -> MetricCardView.DeltaState.NEGATIVE; else -> MetricCardView.DeltaState.NEUTRAL }
         }
-        view.setDelta("${formatSigned(delta)} $unit", state)
+        view.setDelta("${formatNumber(kotlin.math.abs(delta))} $unit", state)
     }
 
     private fun recompositionText(state: LocalCalculationEngine.RecompositionState): String = when (state) {

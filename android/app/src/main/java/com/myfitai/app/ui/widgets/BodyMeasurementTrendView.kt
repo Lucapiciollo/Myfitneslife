@@ -9,6 +9,9 @@ import info.appdev.charting.charts.LineChart
 import info.appdev.charting.data.EntryFloat
 import info.appdev.charting.data.LineData
 import info.appdev.charting.data.LineDataSet
+import info.appdev.charting.components.AxisBase
+import info.appdev.charting.formatter.IAxisValueFormatter
+import java.util.Locale
 
 /** Grafico riutilizzabile per l'andamento delle misure corporee. */
 class BodyMeasurementTrendView @JvmOverloads constructor(
@@ -41,6 +44,44 @@ class BodyMeasurementTrendView @JvmOverloads constructor(
         chart.setBackgroundColor(Color.TRANSPARENT)
         chart.setDrawGridBackground(false)
         chart.setDrawBorders(false)
+    }
+
+    fun setRealSeries(series: Series?, unit: String) {
+        chart.xAxis.isEnabled = true
+        chart.xAxis.textColor = context.getColor(R.color.text_secondary)
+        chart.xAxis.isDrawGridLines = false
+        chart.xAxis.labelRotationAngle = -35f
+        chart.xAxis.granularity = 1f
+        chart.xAxis.setLabelCount(4, true)
+        chart.xAxis.valueFormatter = object : IAxisValueFormatter {
+            override fun getFormattedValue(value: Float, axis: AxisBase?): String {
+                return series?.points?.getOrNull(value.toInt())?.label.orEmpty()
+            }
+        }
+        chart.axisLeft.valueFormatter = object : IAxisValueFormatter {
+            override fun getFormattedValue(value: Float, axis: AxisBase?): String =
+                if (unit == "%") "%.1f%%".format(Locale.ITALIAN, value) else "%.1f".format(Locale.ITALIAN, value)
+        }
+        if (series == null || series.points.isEmpty()) {
+            chart.clear()
+            chart.invalidate()
+            return
+        }
+        val entries = series.points.mapIndexed { index, point -> EntryFloat(index.toFloat(), point.value) }.toMutableList()
+        val dataSet = LineDataSet<EntryFloat>(entries, "$unit").apply {
+            color = context.getColor(R.color.accent_green_dark)
+            lineWidth = 2.4f
+            isDrawCircles = true
+            circleRadius = 4f
+            isDrawValues = false
+            isHighlight = true
+            lineMode = LineDataSet.Mode.CUBIC_BEZIER
+            isDrawFilled = true
+            fillColor = context.getColor(R.color.accent_green)
+            fillAlpha = 42
+        }
+        chart.data = LineData(dataSet)
+        chart.invalidate()
     }
 
     fun setOnPointsChangedListener(listener: (List<Point>) -> Unit) {

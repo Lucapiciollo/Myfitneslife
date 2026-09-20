@@ -47,73 +47,77 @@
                 android:textColor="@color/text_secondary"
                 android:textSize="13sp" />
 
-            <LinearLayout
+            <com.google.android.material.card.MaterialCardView
                 android:id="@+id/exportJsonRow"
+                style="@style/Widget.MyFitAI.Card"
                 android:layout_width="match_parent"
                 android:layout_height="72dp"
                 android:layout_marginTop="16dp"
-                android:padding="14dp"
                 android:gravity="center_vertical"
-                android:background="@drawable/bg_card"
                 android:clickable="true"
                 android:focusable="true">
+                <LinearLayout style="@style/Widget.MyFitAI.HomeSectionContent" android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center_vertical" android:orientation="horizontal">
                 <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Esporta JSON" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="15sp" />
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="Completo: profilo, BIA, misure, allenamenti, piani e tutte le versioni, sgarri e review" android:textColor="@color/text_secondary" android:textSize="12sp" />
                 </LinearLayout>
                 <TextView android:layout_width="30dp" android:layout_height="match_parent" android:gravity="center" android:text="›" android:textColor="@color/text_primary" android:textSize="26sp" />
-            </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
-            <LinearLayout
+            <com.google.android.material.card.MaterialCardView
                 android:id="@+id/exportCsvRow"
+                style="@style/Widget.MyFitAI.Card"
                 android:layout_width="match_parent"
                 android:layout_height="72dp"
                 android:layout_marginTop="10dp"
-                android:padding="14dp"
                 android:gravity="center_vertical"
-                android:background="@drawable/bg_card"
                 android:clickable="true"
                 android:focusable="true">
+                <LinearLayout style="@style/Widget.MyFitAI.HomeSectionContent" android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center_vertical" android:orientation="horizontal">
                 <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Pacchetto CSV (.zip)" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="15sp" />
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="Tabelle separate; gerarchia completa dei piani inclusa in JSON nel pacchetto" android:textColor="@color/text_secondary" android:textSize="12sp" />
                 </LinearLayout>
                 <TextView android:layout_width="30dp" android:layout_height="match_parent" android:gravity="center" android:text="›" android:textColor="@color/text_primary" android:textSize="26sp" />
-            </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
-            <LinearLayout
+            <com.google.android.material.card.MaterialCardView
                 android:id="@+id/exportPdfRow"
+                style="@style/Widget.MyFitAI.Card"
                 android:layout_width="match_parent"
                 android:layout_height="80dp"
                 android:layout_marginTop="10dp"
-                android:padding="14dp"
                 android:gravity="center_vertical"
-                android:background="@drawable/bg_card"
                 android:clickable="true"
                 android:focusable="true">
+                <LinearLayout style="@style/Widget.MyFitAI.HomeSectionContent" android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center_vertical" android:orientation="horizontal">
                 <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Report profilo PDF" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="15sp" />
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="Report grafico: snapshot, BIA, misure, proporzioni, trend, alimentazione e attività" android:textColor="@color/text_secondary" android:textSize="12sp" />
                 </LinearLayout>
                 <TextView android:layout_width="30dp" android:layout_height="match_parent" android:gravity="center" android:text="›" android:textColor="@color/text_primary" android:textSize="26sp" />
-            </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
-            <LinearLayout
+            <com.google.android.material.card.MaterialCardView
                 android:id="@+id/exportWeeklyPlanPdfRow"
+                style="@style/Widget.MyFitAI.Card"
                 android:layout_width="match_parent"
                 android:layout_height="86dp"
                 android:layout_marginTop="10dp"
-                android:padding="14dp"
                 android:gravity="center_vertical"
-                android:background="@drawable/bg_card"
                 android:clickable="true"
                 android:focusable="true">
+                <LinearLayout style="@style/Widget.MyFitAI.HomeSectionContent" android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center_vertical" android:orientation="horizontal">
                 <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Dieta settimanale PDF" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="15sp" />
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="7 giorni ben impaginati con pasti, ingredienti, dosi e lista della spesa aggregata in fondo" android:textColor="@color/text_secondary" android:textSize="12sp" />
                 </LinearLayout>
                 <TextView android:layout_width="30dp" android:layout_height="match_parent" android:gravity="center" android:text="›" android:textColor="@color/text_primary" android:textSize="26sp" />
-            </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
             <ProgressBar
                 android:id="@+id/exportProgress"

@@ -35,6 +35,17 @@
             <Space android:layout_width="40dp" android:layout_height="40dp" />
         </LinearLayout>
 
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Widget.MyFitAI.Card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_12">
+        <LinearLayout
+            style="@style/Widget.MyFitAI.HomeSectionContent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
         <com.google.android.material.materialswitch.MaterialSwitch
             android:id="@+id/restDaySwitch"
             android:layout_width="match_parent"
@@ -157,5 +168,7 @@
             android:layout_marginTop="@dimen/space_20"
             android:layout_marginBottom="@dimen/space_24"
             android:text="Salva" />
+        </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
     </LinearLayout>
 </ScrollView>

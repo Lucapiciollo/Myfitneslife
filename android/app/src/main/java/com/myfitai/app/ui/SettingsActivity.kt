@@ -41,6 +41,7 @@ class SettingsActivity : BaseShellActivity() {
         bindBottom(BottomNavBinder.Tab.MORE)
         bindBack()
         bindSectionHelp()
+        bindWorkoutConfiguration()
 
         val settings = AiSettingsStore(this)
         val credentialStore = SecureAiCredentialStore(this)
@@ -181,6 +182,15 @@ class SettingsActivity : BaseShellActivity() {
         bindProgressAnalysisFrequency()
         GeminiCostSettingsBinder.bind(this, findViewById(R.id.aiSectionCard), settings)
         render()
+    }
+
+    private fun bindWorkoutConfiguration() {
+        val profileId = data.activeProfileStore.currentIdOrNull() ?: return
+        val enabledSwitch = findViewById<MaterialSwitch>(R.id.workoutsEnabledSwitch)
+        enabledSwitch.isChecked = data.workoutPreferences.isEnabled(profileId)
+        enabledSwitch.setOnCheckedChangeListener { _, checked ->
+            data.workoutPreferences.setEnabled(profileId, checked)
+        }
     }
 
     private fun bindSectionHelp() {

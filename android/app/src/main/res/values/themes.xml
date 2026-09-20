@@ -25,7 +25,7 @@
     <item name="shapeAppearanceOverlay">@style/ShapeAppearanceOverlay.MyFitAI.AlertDialog</item>
 </style>
 <style name="ShapeAppearanceOverlay.MyFitAI.AlertDialog" parent="">
-    <item name="cornerSize">24dp</item>
+    <item name="cornerSize">16dp</item>
 </style>
 <style name="Text.MyFitAI.ScreenTitle" parent="TextAppearance.Material3.HeadlineSmall"><item name="android:textColor">@color/text_primary</item><item name="android:textStyle">bold</item></style>
 <style name="Text.MyFitAI.Section" parent="TextAppearance.Material3.TitleMedium"><item name="android:textColor">@color/text_primary</item><item name="android:textStyle">bold</item></style>

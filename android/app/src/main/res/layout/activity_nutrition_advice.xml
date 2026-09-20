@@ -66,10 +66,19 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.MyFitAI.Card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_20">
+            <LinearLayout
+                style="@style/Widget.MyFitAI.HomeSectionContent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
             <com.myfitai.app.ui.widgets.SectionHeaderView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_20"
                 android:text="Cosa vuoi mangiare o sapere?" />
 
             <com.google.android.material.textfield.TextInputLayout
@@ -98,6 +107,8 @@
                 android:textStyle="bold"
                 app:cornerRadius="12dp"
                 app:backgroundTint="@color/accent_green" />
+            </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
             <LinearLayout
                 android:id="@+id/loadingRow"

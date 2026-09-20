@@ -17,6 +17,11 @@
             android:orientation="vertical"
             android:padding="@dimen/space_16">
 
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.MyFitAI.Card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_8">
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -67,9 +72,18 @@
                         android:textSize="11sp" />
                 </LinearLayout>
             </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
-            <View android:layout_width="match_parent" android:layout_height="1dp" android:layout_marginTop="@dimen/space_8" android:background="@color/divider" />
-
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.MyFitAI.Card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_12">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingHorizontal="@dimen/space_16">
             <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowPersonalData" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_person" app:srLabel="@string/profile_row_personal_data" />
             <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowGoals" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_target" app:srLabel="@string/profile_row_goals" />
             <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowFoodPreferences" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="@string/profile_row_food_preferences" />
@@ -79,6 +93,8 @@
             <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowNotifications" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_bell" app:srLabel="@string/profile_row_notifications" />
             <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowExport" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_export" app:srLabel="@string/profile_row_export" />
             <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowSettings" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_gear" app:srLabel="@string/profile_row_settings" />
+            </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
     </ScrollView>
 

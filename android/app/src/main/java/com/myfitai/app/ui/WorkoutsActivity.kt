@@ -42,6 +42,11 @@ class WorkoutsActivity : BaseShellActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (!hasWorkoutAccess()) {
+            Toast.makeText(this, "Allenamenti disabilitati nelle impostazioni", Toast.LENGTH_SHORT).show()
+            finish()
+            return
+        }
         setContentView(R.layout.activity_workouts)
         bindBottom(BottomNavBinder.Tab.HOME)
         bindBack()
@@ -55,6 +60,19 @@ class WorkoutsActivity : BaseShellActivity() {
             )
         }
         observeData()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (!isFinishing && !hasWorkoutAccess()) {
+            Toast.makeText(this, "Allenamenti disabilitati nelle impostazioni", Toast.LENGTH_SHORT).show()
+            finish()
+        }
+    }
+
+    private fun hasWorkoutAccess(): Boolean {
+        val profileId = data.activeProfileStore.currentIdOrNull()
+        return profileId != null && data.workoutPreferences.isEnabled(profileId)
     }
 
     private fun bindWeekNavigation() {

@@ -50,15 +50,16 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
-                <LinearLayout
+                <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12"
-                    android:background="@drawable/bg_card"
-                    android:orientation="vertical"
-                    android:paddingHorizontal="@dimen/space_16"
-                    android:paddingTop="@dimen/space_8"
-                    android:paddingBottom="@dimen/space_8">
+                    style="@style/Widget.MyFitAI.Card">
+                    <LinearLayout
+                        style="@style/Widget.MyFitAI.HomeSectionContent"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -143,39 +144,40 @@
  />
                         </com.google.android.material.textfield.TextInputLayout>
                     </LinearLayout>
-                </LinearLayout>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="40dp"
-                    android:layout_marginTop="@dimen/space_16"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <com.myfitai.app.ui.widgets.SectionHeaderView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Condizioni della misura" />
-                    <ImageButton
-                        android:id="@+id/biaConditionsHelpButton"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:background="@android:color/transparent"
-                        android:contentDescription="Spiega condizioni della misura"
-                        android:padding="8dp"
-                        android:src="@drawable/ic_help_outline"
-                        app:tint="@color/text_secondary" />
-                </LinearLayout>
-
-                <LinearLayout
+                <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_8"
-                    android:background="@drawable/bg_card"
-                    android:orientation="vertical"
-                    android:paddingHorizontal="@dimen/space_12"
-                    android:paddingVertical="@dimen/space_4">
+                    style="@style/Widget.MyFitAI.Card">
+                    <LinearLayout
+                        style="@style/Widget.MyFitAI.HomeSectionContent"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="40dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+                        <com.myfitai.app.ui.widgets.SectionHeaderView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Condizioni della misura" />
+                        <ImageButton
+                            android:id="@+id/biaConditionsHelpButton"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:background="@android:color/transparent"
+                            android:contentDescription="Spiega condizioni della misura"
+                            android:padding="8dp"
+                            android:src="@drawable/ic_help_outline"
+                            app:tint="@color/text_secondary" />
+                    </LinearLayout>
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -228,38 +230,40 @@
                             android:textSize="13sp"
                             app:buttonTint="@color/accent_green" />
                     </LinearLayout>
-                </LinearLayout>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="40dp"
-                    android:layout_marginTop="@dimen/space_16"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <com.myfitai.app.ui.widgets.SectionHeaderView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Risultati" />
-                    <ImageButton
-                        android:id="@+id/biaResultsHelpButton"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
-                        android:background="@android:color/transparent"
-                        android:contentDescription="Spiega risultati BIA"
-                        android:padding="8dp"
-                        android:src="@drawable/ic_help_outline"
-                        app:tint="@color/text_secondary" />
-                </LinearLayout>
-
-                <LinearLayout
+                <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_8"
-                    android:background="@drawable/bg_card"
-                    android:orientation="vertical"
-                    android:paddingHorizontal="@dimen/space_12">
+                    style="@style/Widget.MyFitAI.Card">
+                    <LinearLayout
+                        style="@style/Widget.MyFitAI.HomeSectionContent"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="40dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+                        <com.myfitai.app.ui.widgets.SectionHeaderView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Risultati" />
+                        <ImageButton
+                            android:id="@+id/biaResultsHelpButton"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:background="@android:color/transparent"
+                            android:contentDescription="Spiega risultati BIA"
+                            android:padding="8dp"
+                            android:src="@drawable/ic_help_outline"
+                            app:tint="@color/text_secondary" />
+                    </LinearLayout>
 
                     <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowWeight" android:layout_width="match_parent" android:layout_height="wrap_content" />
                     <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowBodyFat" android:layout_width="match_parent" android:layout_height="wrap_content" />
@@ -268,7 +272,8 @@
                     <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowSkeletalMuscle" android:layout_width="match_parent" android:layout_height="wrap_content" />
                     <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowBodyWater" android:layout_width="match_parent" android:layout_height="wrap_content" />
                     <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowBmr" android:layout_width="match_parent" android:layout_height="wrap_content" />
-                </LinearLayout>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
 
                 <com.google.android.material.textview.MaterialTextView
                     android:layout_width="match_parent"

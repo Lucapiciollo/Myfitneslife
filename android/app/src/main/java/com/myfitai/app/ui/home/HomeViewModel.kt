@@ -53,7 +53,8 @@ class HomeViewModel(
 ) : ViewModel() {
 
     data class MetricState(val value: Float?, val deltaFromPrevious: Float?, val sourceLabel: String? = null)
-    data class TrendSeries(val label: String, val values: List<Float>)
+    data class TrendPoint(val timestamp: Long, val value: Float)
+    data class TrendSeries(val label: String, val points: List<TrendPoint>)
     data class CalorieState(
         val bmr: Int? = null,
         val tdee: Int? = null,
@@ -237,9 +238,9 @@ class HomeViewModel(
             bodyFat = metricState(fatValues).copy(sourceLabel = "da BIA".takeIf { fatValues.isNotEmpty() }),
             muscleMass = metricState(muscleValues).copy(sourceLabel = "da BIA".takeIf { muscleValues.isNotEmpty() }),
             trendSeries = listOf(
-                TrendSeries("Peso", weightSeries),
-                TrendSeries("Grasso corporeo", fatSeries),
-                TrendSeries("Massa muscolare", muscleSeries),
+                TrendSeries("Peso", weightSeries.map { TrendPoint(0L, it) }),
+                TrendSeries("Grasso corporeo", fatSeries.map { TrendPoint(0L, it) }),
+                TrendSeries("Massa muscolare", muscleSeries.map { TrendPoint(0L, it) }),
             ),
             bodyMeasurementTrendSeries = bodyMeasurementTrendSeries,
             recompositionState = LocalCalculationEngine.classifyRecomposition(fatTrend.delta, muscleTrend.delta),
@@ -380,6 +381,9 @@ class HomeViewModel(
         val metrics = listOf(
             "Peso" to (source.bia.mapNotNull { row -> row.weightKg?.let { row.measuredAtEpochMillis to it } } +
                 source.body.mapNotNull { row -> row.weightKg?.let { row.measuredAtEpochMillis to it } }),
+            "Grasso corporeo" to source.bia.mapNotNull { row ->
+                row.bodyFatPercent?.let { row.measuredAtEpochMillis to it }
+            },
             "Fianchi" to source.body.mapNotNull { row -> row.hipsCm?.let { row.measuredAtEpochMillis to it } },
             "Vita" to source.body.mapNotNull { row -> row.waistCm?.let { row.measuredAtEpochMillis to it } },
             "Torace" to source.body.mapNotNull { row -> row.chestCm?.let { row.measuredAtEpochMillis to it } },
@@ -394,8 +398,10 @@ class HomeViewModel(
             "Polpaccio destro" to source.body.mapNotNull { row -> row.calfRightCm?.let { row.measuredAtEpochMillis to it } },
         )
         return metrics.mapNotNull { (label, values) ->
-            val filtered = filterRange(values.sortedByDescending { it.first }, rangeIndex).map { it.second }
-            filtered.takeIf { it.isNotEmpty() }?.let { TrendSeries(label, it) }
+            val filtered = filterRange(values.sortedByDescending { it.first }, rangeIndex)
+            filtered.takeIf { it.isNotEmpty() }?.let { entries ->
+                TrendSeries(label, entries.map { TrendPoint(it.first, it.second) })
+            }
         }
     }
 

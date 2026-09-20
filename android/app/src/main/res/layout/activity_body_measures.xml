@@ -66,7 +66,8 @@
                     <TextView android:id="@+id/measureDate" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Nessuna misura ancora registrata" android:textColor="@color/text_secondary" android:textSize="13sp" />
                 </LinearLayout>
 
-                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:background="@drawable/bg_card" android:orientation="vertical" android:paddingHorizontal="@dimen/space_16">
+                <com.google.android.material.card.MaterialCardView style="@style/Widget.MyFitAI.Card" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8">
+                    <LinearLayout style="@style/Widget.MyFitAI.HomeSectionContent" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
                     <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowWeight" android:layout_width="match_parent" android:layout_height="wrap_content" />
                     <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowChest" android:layout_width="match_parent" android:layout_height="wrap_content" />
                     <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowWaist" android:layout_width="match_parent" android:layout_height="wrap_content" />
@@ -80,7 +81,8 @@
                     <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowThighRight" android:layout_width="match_parent" android:layout_height="wrap_content" />
                     <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowCalfLeft" android:layout_width="match_parent" android:layout_height="wrap_content" />
                     <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowCalfRight" android:layout_width="match_parent" android:layout_height="wrap_content" />
-                </LinearLayout>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
             </LinearLayout>
 
             <LinearLayout android:id="@+id/trendContent" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">

@@ -38,6 +38,12 @@ class NewWorkoutActivity : BaseShellActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val profileId = data.activeProfileStore.currentIdOrNull()
+        if (profileId == null || !data.workoutPreferences.isEnabled(profileId)) {
+            Toast.makeText(this, "Allenamenti disabilitati nelle impostazioni", Toast.LENGTH_SHORT).show()
+            finish()
+            return
+        }
         selectedDate = intent.takeIf { it.hasExtra(EXTRA_DATE_EPOCH_DAY) }
             ?.getLongExtra(EXTRA_DATE_EPOCH_DAY, LocalDate.now().toEpochDay())
             ?.let(LocalDate::ofEpochDay)

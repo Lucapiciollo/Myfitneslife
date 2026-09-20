@@ -102,13 +102,16 @@
             android:textSize="16sp"
             android:textStyle="bold" />
 
-        <LinearLayout
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/space_8"
-            android:orientation="vertical"
-            android:background="@drawable/bg_card"
-            android:padding="@dimen/space_12">
+            style="@style/Widget.MyFitAI.Card">
+            <LinearLayout
+                style="@style/Widget.MyFitAI.HomeSectionContent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
 
             <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.Input" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Torace (cm)">
                 <com.google.android.material.textfield.TextInputEditText
@@ -138,7 +141,8 @@
                 <com.google.android.material.textfield.TextInputEditText
                 style="@style/Widget.MyFitAI.InputEditText" android:id="@+id/glutesInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="numberDecimal" />
             </com.google.android.material.textfield.TextInputLayout>
-        </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
         <TextView
             android:layout_width="match_parent"
@@ -149,13 +153,16 @@
             android:textSize="16sp"
             android:textStyle="bold" />
 
-        <LinearLayout
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/space_8"
-            android:orientation="vertical"
-            android:background="@drawable/bg_card"
-            android:padding="@dimen/space_12">
+            style="@style/Widget.MyFitAI.Card">
+            <LinearLayout
+                style="@style/Widget.MyFitAI.HomeSectionContent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
 
             <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.Input" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Braccio sx (cm)">
                 <com.google.android.material.textfield.TextInputEditText
@@ -181,7 +188,8 @@
                 <com.google.android.material.textfield.TextInputEditText
                 style="@style/Widget.MyFitAI.InputEditText" android:id="@+id/calfRightInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="numberDecimal" />
             </com.google.android.material.textfield.TextInputLayout>
-        </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/saveMeasurementButton"

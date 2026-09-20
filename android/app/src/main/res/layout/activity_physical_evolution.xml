@@ -30,29 +30,29 @@
             <com.myfitai.app.ui.widgets.TimeRangeSelectorView android:id="@+id/timeRangeSelector" android:layout_width="wrap_content" android:layout_height="@dimen/dashboard_pill_height" android:layout_marginTop="@dimen/space_16" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
-               <LinearLayout
-                   android:id="@+id/otherIndicatorsHeader"
-                   android:layout_width="match_parent"
-                   android:layout_height="wrap_content"
-                   android:layout_marginTop="@dimen/space_24"
-                   android:gravity="center_vertical"
-                   android:orientation="horizontal">
-                   <com.myfitai.app.ui.widgets.SectionHeaderView
-                       android:layout_width="0dp"
-                       android:layout_height="wrap_content"
-                       android:layout_weight="1"
-                       android:text="Altri indicatori" />
-                   <ImageButton
-                       android:id="@+id/otherIndicatorsHelpButton"
-                       android:layout_width="40dp"
-                       android:layout_height="40dp"
-                       android:background="@android:color/transparent"
-                       android:contentDescription="Spiega altri indicatori"
-                       android:src="@drawable/ic_help_outline"
-                       app:tint="@color/text_secondary" />
-               </LinearLayout>
                         <com.google.android.material.card.MaterialCardView style="@style/Widget.MyFitAI.Card" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8">
                             <LinearLayout style="@style/Widget.MyFitAI.HomeSectionContent" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+             <LinearLayout
+                 android:id="@+id/otherIndicatorsHeader"
+                 android:layout_width="match_parent"
+                 android:layout_height="wrap_content"
+                 android:gravity="center_vertical"
+                 android:orientation="horizontal">
+                 <com.myfitai.app.ui.widgets.SectionHeaderView
+                     android:layout_width="0dp"
+                     android:layout_height="wrap_content"
+                     android:layout_weight="1"
+                     android:text="Altri indicatori" />
+                 <ImageButton
+                     android:id="@+id/otherIndicatorsHelpButton"
+                     android:layout_width="40dp"
+                     android:layout_height="40dp"
+                     android:background="@android:color/transparent"
+                     android:contentDescription="Spiega altri indicatori"
+                     android:padding="8dp"
+                     android:src="@drawable/ic_help_outline"
+                     app:tint="@color/text_secondary" />
+             </LinearLayout>
                 <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical"><TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Grasso corporeo" android:textColor="@color/text_secondary"/><TextView android:id="@+id/otherIndicatorFatValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="—" android:textColor="@color/text_primary" android:textStyle="bold"/><TextView android:id="@+id/otherIndicatorFatDelta" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:text="—" android:textColor="@color/text_secondary"/></LinearLayout>
                 <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical"><TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Massa muscolare" android:textColor="@color/text_secondary"/><TextView android:id="@+id/otherIndicatorMuscleValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="—" android:textColor="@color/text_primary" android:textStyle="bold"/><TextView android:id="@+id/otherIndicatorMuscleDelta" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:text="—" android:textColor="@color/text_secondary"/></LinearLayout>
                 <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical"><TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Acqua corporea" android:textColor="@color/text_secondary"/><TextView android:id="@+id/otherIndicatorWaterValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="—" android:textColor="@color/text_primary" android:textStyle="bold"/><TextView android:id="@+id/otherIndicatorWaterDelta" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:text="—" android:textColor="@color/text_secondary"/></LinearLayout>
