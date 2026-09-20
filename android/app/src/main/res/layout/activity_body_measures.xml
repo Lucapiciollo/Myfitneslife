@@ -54,7 +54,7 @@
                 </LinearLayout>
 
                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_16" android:orientation="horizontal">
-                    <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Valori attuali (kg e cm)" android:textStyle="bold" android:textColor="@color/text_primary" android:textSize="15sp" />
+                    <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Ultimi valori disponibili (kg e cm)" android:textStyle="bold" android:textColor="@color/text_primary" android:textSize="15sp" />
                     <TextView android:id="@+id/measureDate" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Nessuna misura" android:textColor="@color/text_secondary" android:textSize="13sp" />
                 </LinearLayout>
 
