@@ -338,6 +338,15 @@
                     android:text="Inserisci nuova BIA"
                     android:textAllCaps="false" />
 
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/importBiaHistoryButton"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="@dimen/space_8"
+                    android:text="Importa storico BIA JSON"
+                    android:textAllCaps="false" />
+
                 <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/historySummary"
                     android:layout_width="match_parent"
