@@ -31,12 +31,12 @@ object WeeklyConsumptionMetrics {
             recordedItemCount = records.size,
             consumedMealCount = consumedMeals,
             skippedMealCount = skippedMeals,
-            trackingCoveragePercent = if (plannedItemCount > 0 && records.isNotEmpty()) {
+            trackingCoveragePercent = if (plannedItemCount > 0) {
                 records.size * 100 / plannedItemCount
             } else {
                 null
             },
-            adherencePercent = if (plannedMealCount > 0 && records.any(::isMeal)) {
+            adherencePercent = if (plannedMealCount > 0) {
                 consumedMeals * 100 / plannedMealCount
             } else {
                 null

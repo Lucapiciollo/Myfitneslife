@@ -7,11 +7,11 @@ import org.junit.Test
 
 class WeeklyConsumptionMetricsTest {
     @Test
-    fun noRecords_hasNoCoverageOrAdherence() {
+    fun noRecords_reportsZeroCoverageAndAdherence() {
         val result = WeeklyConsumptionMetrics.calculate(plannedMealCount = 4, plannedItemCount = 4, records = emptyList())
 
-        assertNull(result.trackingCoveragePercent)
-        assertNull(result.adherencePercent)
+        assertEquals(0, result.trackingCoveragePercent)
+        assertEquals(0, result.adherencePercent)
         assertNull(result.consumedKcal)
         assertEquals(0, result.recordedItemCount)
     }

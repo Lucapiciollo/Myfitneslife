@@ -52,12 +52,12 @@ class WeeklyReviewActivity : BaseShellActivity() {
         findViewById<View>(R.id.nextWeekButton).isEnabled = state.weekStart.plusWeeks(1).isBefore(currentMonday())
 
         val metrics = state.metrics
-        findViewById<TextView>(R.id.adherenceValue).text = metrics?.adherencePercent?.let { "$it%" } ?: "n/d"
+        findViewById<TextView>(R.id.adherenceValue).text = metrics?.adherencePercent?.let { "$it%" } ?: "—"
         findViewById<TextView>(R.id.cheatsValue).text = metrics?.cheatCount?.toString() ?: "—"
         findViewById<TextView>(R.id.workoutsValue).text = metrics?.let { "${it.workoutCount}" } ?: "—"
         findViewById<TextView>(R.id.trackingCoverageText).text = when {
             metrics == null -> "Piano seguito: percentuale dei pasti segnati come consumati rispetto a quelli previsti."
-            metrics.trackingCoveragePercent == null -> "Nessun pasto consumato registrato: piano seguito n/d."
+            metrics.trackingCoveragePercent == null -> "Nessun pasto consumato registrato: il piano seguito non è calcolabile."
             else -> "Pasti registrati: ${metrics.trackingCoveragePercent}% degli elementi previsti · ${metrics.consumedMealCount} consumati · ${metrics.skippedMealCount} saltati."
         }
 
