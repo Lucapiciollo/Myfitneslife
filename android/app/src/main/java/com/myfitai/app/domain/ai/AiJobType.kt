@@ -70,6 +70,13 @@ enum class AiJobType(
         successText = "La lettura delle proporzioni è disponibile.",
         failureTitle = "Interpretazione misure non disponibile",
     ),
+    BIA_ANALYSIS(
+        channelId = "ai_bia_analysis",
+        channelName = "Specialista BIA e sport",
+        successTitle = "Analisi sportiva BIA pronta",
+        successText = "La lettura muscolare e sportiva è disponibile.",
+        failureTitle = "Analisi BIA non disponibile",
+    ),
     BIA_IMPORT(
         channelId = "ai_bia_import",
         channelName = "Import bioimpedenza",

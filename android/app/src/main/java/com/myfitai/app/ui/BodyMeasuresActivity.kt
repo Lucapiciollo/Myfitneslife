@@ -67,7 +67,7 @@ class BodyMeasuresActivity : BaseShellActivity() {
 
     private var measurements: List<BodyMeasurementEntity> = emptyList()
     private var biaHistory: List<BiaMeasurementEntity> = emptyList()
-    private var selectedMetric: Metric = Metric.WAIST
+    private var selectedMetric: Metric = Metric.WEIGHT
     private var selectedRangeIndex = 2
     private var profileHeightCm: Float? = null
     private var latestProportionReport: BodyProportionEngine.Report? = null
@@ -139,6 +139,10 @@ class BodyMeasuresActivity : BaseShellActivity() {
                 launch {
                     viewModel.measurements.collect { values ->
                         measurements = values
+                        if (values.isNotEmpty() && values.none { measurement -> selectedMetric.value(measurement) != null }) {
+                            selectedMetric = Metric.entries.firstOrNull { metric -> values.any { metric.value(it) != null } } ?: selectedMetric
+                            findViewById<AutoCompleteTextView>(R.id.trendMetricInput).setText(selectedMetric.label, false)
+                        }
                         renderCurrent()
                         renderTrend()
                         renderHistory()
@@ -333,7 +337,27 @@ class BodyMeasuresActivity : BaseShellActivity() {
         val chartPoints = periodPoints.map { (measurement, value) ->
             BodyMeasurementTrendView.Point(entityDate(measurement).format(DateTimeFormatter.ofPattern("dd/MM", Locale.ITALIAN)), value)
         }
-        findViewById<BodyMeasurementTrendView>(R.id.bodyMeasurementTrendChart).setPoints(chartPoints)
+        val allSeries = Metric.entries.mapNotNull { metric ->
+            val points = measurements
+                .asReversed()
+                .mapNotNull { measurement ->
+                    val value = if (metric == Metric.WEIGHT) {
+                        BodyWeightHistory.weightFor(measurement, biaHistory)?.kg
+                    } else {
+                        metric.value(measurement)
+                    }
+                    value?.let { measurement to it }
+                }
+                .filter { (measurement, _) -> !entityDate(measurement).isBefore(fromDate) }
+                .map { (measurement, value) ->
+                    BodyMeasurementTrendView.Point(entityDate(measurement).format(DateTimeFormatter.ofPattern("dd/MM", Locale.ITALIAN)), value)
+                }
+            points.takeIf { it.isNotEmpty() }?.let { BodyMeasurementTrendView.Series(metric.label, it) }
+        }
+        findViewById<BodyMeasurementTrendView>(R.id.bodyMeasurementTrendChart).apply {
+            setPoints(chartPoints)
+            setNormalizedSeries(allSeries)
+        }
     }
 
     private fun renderHistory() {

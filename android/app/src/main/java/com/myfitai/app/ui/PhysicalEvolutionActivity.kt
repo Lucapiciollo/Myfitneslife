@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit
 class PhysicalEvolutionActivity : BaseShellActivity() {
     private val data by lazy { AppDataContainer.get(this) }
     private val viewModel: PhysicalEvolutionViewModel by viewModels {
-        PhysicalEvolutionViewModel.Factory(data.biaRepository, data.activeProfileStore)
+        PhysicalEvolutionViewModel.Factory(data.biaRepository, data.bodyMeasurementRepository, data.activeProfileStore)
     }
     private var metricIndex = 0
     private var rangeIndex = 1

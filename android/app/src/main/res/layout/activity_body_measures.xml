@@ -76,7 +76,7 @@
             </LinearLayout>
 
             <LinearLayout android:id="@+id/trendContent" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
-                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:text="Andamento misura" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="17sp" />
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:text="Andamento di tutte le misure" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="17sp" />
                 <com.google.android.material.textfield.TextInputLayout
                     style="@style/Widget.MyFitAI.InputDropdown"
                     android:layout_width="match_parent"
@@ -100,6 +100,7 @@
                         <TextView android:id="@+id/trendDeltaPeriod" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:text="Dati insufficienti" android:textColor="@color/text_secondary" android:textSize="12sp" />
                     </LinearLayout>
                 </LinearLayout>
+                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:text="Variazione percentuale rispetto alla prima rilevazione di ogni misura" android:textColor="@color/text_secondary" android:textSize="12sp" />
                 <com.google.android.material.card.MaterialCardView android:layout_width="match_parent" android:layout_height="260dp" android:layout_marginTop="@dimen/space_12" app:cardCornerRadius="@dimen/radius_medium" app:cardElevation="0dp" app:cardBackgroundColor="@color/surface_primary">
                     <com.myfitai.app.ui.widgets.BodyMeasurementTrendView android:id="@+id/bodyMeasurementTrendChart" android:layout_width="match_parent" android:layout_height="match_parent" android:layout_margin="@dimen/space_8" />
                 </com.google.android.material.card.MaterialCardView>

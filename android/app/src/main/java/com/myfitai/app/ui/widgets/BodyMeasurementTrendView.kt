@@ -17,6 +17,7 @@ class BodyMeasurementTrendView @JvmOverloads constructor(
 ) : FrameLayout(context, attrs) {
 
     data class Point(val label: String, val value: Float)
+    data class Series(val label: String, val points: List<Point>)
 
     private val chart = LineChart(context)
     private var points: List<Point> = emptyList()
@@ -25,7 +26,9 @@ class BodyMeasurementTrendView @JvmOverloads constructor(
     init {
         addView(chart, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
         chart.description.isEnabled = false
-        chart.legend.isEnabled = false
+        chart.legend.isEnabled = true
+        chart.legend.textColor = context.getColor(R.color.text_secondary)
+        chart.legend.textSize = 10f
         chart.axisRight.isEnabled = false
         chart.axisLeft.isEnabled = true
         chart.axisLeft.textColor = context.getColor(R.color.text_secondary)
@@ -57,7 +60,8 @@ class BodyMeasurementTrendView @JvmOverloads constructor(
         val dataSet = LineDataSet<EntryFloat>(entries, "measurement").apply {
             color = context.getColor(R.color.accent_green_dark)
             lineWidth = 2.4f
-            isDrawCircles = false
+            isDrawCircles = true
+            circleRadius = 4f
             isDrawValues = false
             isHighlight = true
             lineMode = LineDataSet.Mode.CUBIC_BEZIER
@@ -68,5 +72,33 @@ class BodyMeasurementTrendView @JvmOverloads constructor(
         chart.data = LineData(dataSet)
         chart.invalidate()
         onPointsChanged?.invoke(points)
+    }
+
+    fun setNormalizedSeries(series: List<Series>) {
+        val colors = listOf(
+            R.color.accent_green_dark,
+            R.color.accent_orange,
+            R.color.accent_blue,
+            R.color.semantic_positive,
+            R.color.text_primary,
+        )
+        val dataSets = series.mapIndexedNotNull { index, item ->
+            val baseline = item.points.firstOrNull()?.value?.takeIf { it != 0f } ?: return@mapIndexedNotNull null
+            val entries = item.points.mapIndexed { pointIndex, point ->
+                EntryFloat(pointIndex.toFloat(), ((point.value / baseline) - 1f) * 100f)
+            }.toMutableList()
+            LineDataSet<EntryFloat>(entries, item.label).apply {
+                color = context.getColor(colors[index % colors.size])
+                lineWidth = 2f
+                isDrawCircles = true
+                circleRadius = 3f
+                isDrawValues = false
+                isHighlight = false
+                lineMode = LineDataSet.Mode.CUBIC_BEZIER
+                isDrawFilled = false
+            }
+        }
+        chart.data = LineData(dataSets.toMutableList() as MutableList<info.appdev.charting.interfaces.datasets.ILineDataSet<EntryFloat>>)
+        chart.invalidate()
     }
 }

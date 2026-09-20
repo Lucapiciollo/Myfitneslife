@@ -58,6 +58,7 @@ object AiJobNotifier {
             AiJobType.CHEAT_UNDERSTANDING -> Intent(context, CheatEntryActivity::class.java)
             AiJobType.CHEAT_ADJUSTMENT -> Intent(context, CheatEntryActivity::class.java)
             AiJobType.BODY_PROPORTIONS -> Intent(context, BodyMeasuresActivity::class.java)
+            AiJobType.BIA_ANALYSIS -> Intent(context, BiaActivity::class.java).putExtra(BiaActivity.EXTRA_OPEN_HISTORY, true)
             AiJobType.BIA_IMPORT -> Intent(context, BiaActivity::class.java).putExtra(BiaActivity.EXTRA_AI_JOB_KEY, jobKey)
         }
         val pending = PendingIntent.getActivity(context, notificationId(profileId, jobKey), intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)

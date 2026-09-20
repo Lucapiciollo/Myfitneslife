@@ -29,6 +29,8 @@ import com.myfitai.app.domain.food.CheatUnderstandingAiJobHandler
 import com.myfitai.app.domain.food.CheatAdjustmentAiJobHandler
 import com.myfitai.app.domain.body.BodyProportionsAiJobHandler
 import com.myfitai.app.domain.body.BiaImportAiJobHandler
+import com.myfitai.app.domain.body.BiaAnalysisAiJobHandler
+import com.myfitai.app.domain.body.BiaAnalysisService
 import com.myfitai.app.domain.review.WeeklyReviewAiJobHandler
 import com.myfitai.app.domain.ai.AiJobRegistry
 import com.myfitai.app.domain.ai.AiJobScheduler
@@ -90,6 +92,7 @@ class AppDataContainer private constructor(context: Context) {
 
     val aiRuntimeService = AiRuntimeService(appContext)
     val bodyProportionAnalysisService = BodyProportionAnalysisService(aiRuntimeService)
+    val biaAnalysisService = BiaAnalysisService(aiRuntimeService)
     val biaImportService = BiaImportService(aiRuntimeService)
     val planReviewService = PlanReviewService(aiRuntimeService)
 
@@ -182,6 +185,7 @@ class AppDataContainer private constructor(context: Context) {
             AiJobType.CHEAT_UNDERSTANDING to CheatUnderstandingAiJobHandler(cheatAdjustmentService, aiImageJobStore),
             AiJobType.CHEAT_ADJUSTMENT to CheatAdjustmentAiJobHandler(cheatAdjustmentService),
             AiJobType.BODY_PROPORTIONS to BodyProportionsAiJobHandler(bodyProportionAnalysisService),
+            AiJobType.BIA_ANALYSIS to BiaAnalysisAiJobHandler(biaAnalysisService),
             AiJobType.BIA_IMPORT to BiaImportAiJobHandler(biaImportService, aiImageJobStore),
         ))
     }

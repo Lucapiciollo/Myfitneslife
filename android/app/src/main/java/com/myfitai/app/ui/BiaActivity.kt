@@ -30,6 +30,8 @@ import com.myfitai.app.data.local.entity.BiaMeasurementEntity
 import com.myfitai.app.domain.body.AiImageProcessor
 import com.myfitai.app.domain.body.AiImageTempStore
 import com.myfitai.app.domain.body.BiaImportContract
+import com.myfitai.app.domain.ai.AiJobType
+import com.myfitai.app.domain.body.BiaAnalysisAiJobHandler
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.ui.bia.BiaViewModel
 import com.myfitai.app.ui.widgets.MeasurementRowView
@@ -104,6 +106,7 @@ class BiaActivity : BaseShellActivity() {
         bindMeasurementRows()
         bindSave()
         bindPhotoImport()
+        findViewById<View>(R.id.analyzeBiaButton).setOnClickListener { analyzeBiaWithAi(it) }
         observeState()
         renderDateTime()
         pendingEditId = intent.getLongExtra(EXTRA_EDIT_ID, 0L)
@@ -468,6 +471,7 @@ class BiaActivity : BaseShellActivity() {
 
     private fun renderHistory(history: List<BiaMeasurementEntity>) {
         historyList.removeAllViews()
+        findViewById<View>(R.id.analyzeBiaButton).isEnabled = history.any { hasAnalysisValue(it) }
         if (history.isEmpty()) {
             historySummary.text = "Nessuna misurazione BIA salvata per questo profilo."
             return
@@ -522,6 +526,99 @@ class BiaActivity : BaseShellActivity() {
             historyList.addView(card)
         }
     }
+
+    private fun analyzeBiaWithAi(button: View) {
+        val history = viewModel.history.value
+        val latest = history.firstOrNull() ?: return
+        val current = linkedMapOf<String, Float>().apply {
+            latest.weightKg?.let { put("weightKg", it) }
+            latest.bodyFatPercent?.let { put("bodyFatPercent", it) }
+            latest.visceralFatLevel?.let { put("visceralFatLevel", it) }
+            latest.muscleMassKg?.let { put("muscleMassKg", it) }
+            latest.skeletalMuscleKg?.let { put("skeletalMuscleKg", it) }
+            latest.bodyWaterPercent?.let { put("bodyWaterPercent", it) }
+        }
+        if (current.isEmpty()) return
+
+        val previousDelta = linkedMapOf<String, Float>().apply {
+            fun addDelta(key: String, currentValue: Float?, selector: (BiaMeasurementEntity) -> Float?) {
+                val previous = history.drop(1).firstNotNullOfOrNull(selector)
+                if (currentValue != null && previous != null) put(key, currentValue - previous)
+            }
+            addDelta("weightKg", latest.weightKg) { it.weightKg }
+            addDelta("bodyFatPercent", latest.bodyFatPercent) { it.bodyFatPercent }
+            addDelta("muscleMassKg", latest.muscleMassKg) { it.muscleMassKg }
+            addDelta("skeletalMuscleKg", latest.skeletalMuscleKg) { it.skeletalMuscleKg }
+        }
+
+        val report = org.json.JSONObject()
+            .put("measurementCount", history.size)
+            .put("current", jsonValues(current))
+            .put("previousDelta", jsonValues(previousDelta))
+            .toString()
+        confirmAiRequest("L'analisi IA dello stato muscolare e dei valori BIA") {
+            button.isEnabled = false
+            val profileId = data.activeProfileStore.currentIdOrNull() ?: return@confirmAiRequest
+            val jobKey = System.currentTimeMillis().toString()
+            data.aiJobScheduler.enqueue(
+                AiJobType.BIA_ANALYSIS,
+                profileId,
+                jobKey,
+                params = androidx.work.Data.Builder().putString(BiaAnalysisAiJobHandler.KEY_REPORT, report).build(),
+            )
+            lifecycleScope.launch {
+                data.aiJobScheduler.observe(AiJobType.BIA_ANALYSIS, profileId, jobKey).collect { info ->
+                    when (info?.state) {
+                        androidx.work.WorkInfo.State.SUCCEEDED -> {
+                            val payload = org.json.JSONObject(info.outputData.getString(BiaAnalysisAiJobHandler.KEY_PAYLOAD).orEmpty())
+                            val doingWell = jsonLines(payload, "doingWell")
+                            val improve = jsonLines(payload, "improve")
+                            val message = buildString {
+                                appendLine(payload.optString("summary"))
+                                appendLine()
+                                appendLine("Stato della muscolatura")
+                                appendLine(payload.optString("muscleStatus"))
+                                if (doingWell.isNotEmpty()) {
+                                    appendLine()
+                                    appendLine("Cosa va bene")
+                                    doingWell.forEach { appendLine("• $it") }
+                                }
+                                if (improve.isNotEmpty()) {
+                                    appendLine()
+                                    appendLine("Dove migliorare")
+                                    improve.forEach { appendLine("• $it") }
+                                }
+                            }
+                            MaterialAlertDialogBuilder(this@BiaActivity)
+                                .setTitle("Analisi sportiva BIA")
+                                .setMessage(message.trim())
+                                .setPositiveButton("Chiudi", null)
+                                .show()
+                            button.isEnabled = true
+                        }
+                        androidx.work.WorkInfo.State.FAILED, androidx.work.WorkInfo.State.CANCELLED -> button.isEnabled = true
+                        else -> Unit
+                    }
+                }
+            }
+        }
+    }
+
+    private fun jsonValues(values: Map<String, Float>): org.json.JSONArray = org.json.JSONArray().apply {
+        values.forEach { (key, value) -> put(org.json.JSONObject().put("key", key).put("value", value)) }
+    }
+
+    private fun jsonLines(payload: org.json.JSONObject, key: String): List<String> {
+        val values = payload.optJSONArray(key) ?: return emptyList()
+        return buildList { for (index in 0 until values.length()) add(values.optString(index)) }
+    }
+
+    private fun hasAnalysisValue(item: BiaMeasurementEntity): Boolean = listOf(
+        item.weightKg,
+        item.bodyFatPercent,
+        item.muscleMassKg,
+        item.skeletalMuscleKg,
+    ).any { it != null }
 
     private fun buildSummary(history: List<BiaMeasurementEntity>, latest: BiaMeasurementEntity): String {
         val lines = mutableListOf("${history.size} misurazioni salvate")

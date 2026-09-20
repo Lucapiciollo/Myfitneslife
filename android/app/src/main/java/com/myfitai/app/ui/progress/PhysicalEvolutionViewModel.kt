@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.repository.BiaRepository
+import com.myfitai.app.data.repository.BodyMeasurementRepository
 import com.myfitai.app.domain.progress.ProgressSeriesEngine
 import com.myfitai.app.domain.progress.ProgressSeriesPoint
 import kotlinx.coroutines.flow.SharingStarted
@@ -29,13 +30,18 @@ data class PhysicalEvolutionState(
 
 class PhysicalEvolutionViewModel(
     bia: BiaRepository,
+    bodyMeasurements: BodyMeasurementRepository,
     activeProfileStore: ActiveProfileStore,
 ) : ViewModel() {
     val state: StateFlow<PhysicalEvolutionState> = activeProfileStore.activeProfileId.flatMapLatest { profileId ->
-        if (profileId <= 0L) flowOf(emptyList()) else bia.all(profileId)
-    }.map { rows ->
+        if (profileId <= 0L) {
+            kotlinx.coroutines.flow.flowOf(emptyList<com.myfitai.app.data.local.entity.BiaMeasurementEntity>() to emptyList<com.myfitai.app.data.local.entity.BodyMeasurementEntity>())
+        } else {
+            kotlinx.coroutines.flow.combine(bia.all(profileId), bodyMeasurements.all(profileId)) { biaRows, bodyRows -> biaRows to bodyRows }
+        }
+    }.map { (biaRows, bodyRows) ->
         fun metric(selector: (com.myfitai.app.data.local.entity.BiaMeasurementEntity) -> Float?): ProgressMetricState {
-            val points = rows.mapNotNull { r -> selector(r)?.let { ProgressPoint(r.measuredAtEpochMillis, it) } }
+            val points = biaRows.mapNotNull { row -> selector(row)?.let { ProgressPoint(row.measuredAtEpochMillis, it) } }
                 .sortedBy { it.timestamp }
             return ProgressMetricState(
                 value = points.lastOrNull()?.value,
@@ -43,8 +49,16 @@ class PhysicalEvolutionViewModel(
                 series = points,
             )
         }
+        val weightPoints = (biaRows.mapNotNull { row -> row.weightKg?.let { ProgressPoint(row.measuredAtEpochMillis, it) } } +
+            bodyRows.mapNotNull { row -> row.weightKg?.let { ProgressPoint(row.measuredAtEpochMillis, it) } })
+            .distinctBy { it.timestamp to it.value }
+            .sortedBy { it.timestamp }
         PhysicalEvolutionState(
-            weight = metric { it.weightKg },
+            weight = metric { it.weightKg }.copy(
+                value = weightPoints.lastOrNull()?.value,
+                delta = if (weightPoints.size >= 2) weightPoints.last().value - weightPoints.first().value else null,
+                series = weightPoints,
+            ),
             bodyFat = metric { it.bodyFatPercent },
             muscle = metric { it.muscleMassKg },
             bodyWater = metric { it.bodyWaterPercent },
@@ -65,8 +79,12 @@ class PhysicalEvolutionViewModel(
         )
     }
 
-    class Factory(private val bia: BiaRepository, private val activeProfileStore: ActiveProfileStore) : ViewModelProvider.Factory {
+    class Factory(
+        private val bia: BiaRepository,
+        private val bodyMeasurements: BodyMeasurementRepository,
+        private val activeProfileStore: ActiveProfileStore,
+    ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T = PhysicalEvolutionViewModel(bia, activeProfileStore) as T
+        override fun <T : ViewModel> create(modelClass: Class<T>): T = PhysicalEvolutionViewModel(bia, bodyMeasurements, activeProfileStore) as T
     }
 }
