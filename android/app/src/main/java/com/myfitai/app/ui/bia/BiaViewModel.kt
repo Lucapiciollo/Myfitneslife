@@ -53,12 +53,21 @@ class BiaViewModel(
         justWokeUp: Boolean,
         afterBathroom: Boolean,
         noRecentWorkout: Boolean,
+        fatMassKg: Float? = null,
+        leanMassKg: Float? = null,
+        bodyWaterKg: Float? = null,
+        subcutaneousFatPercent: Float? = null,
+        boneMassKg: Float? = null,
+        proteinPercent: Float? = null,
+        proteinKg: Float? = null,
+        bodyAgeYears: Int? = null,
+        bmi: Float? = null,
     ) {
         val profileId = activeProfileStore.currentIdOrNull() ?: run {
             _error.tryEmit("Nessun profilo attivo")
             return
         }
-        val values = listOf(weightKg, bodyFatPercent, visceralFatLevel, muscleMassKg, skeletalMuscleKg, bodyWaterPercent, bmrKcal)
+        val values = listOf(weightKg, bodyFatPercent, visceralFatLevel, muscleMassKg, skeletalMuscleKg, bodyWaterPercent, bmrKcal, fatMassKg, leanMassKg, bodyWaterKg, subcutaneousFatPercent, boneMassKg, proteinPercent, proteinKg, bmi)
         if (values.all { it == null }) {
             _error.tryEmit("Inserisci almeno un valore BIA")
             return
@@ -69,6 +78,10 @@ class BiaViewModel(
         }
         if (bodyFatPercent != null && bodyFatPercent > 100f) {
             _error.tryEmit("La percentuale di grasso deve essere compresa tra 0 e 100")
+            return
+        }
+        if (listOf(subcutaneousFatPercent, proteinPercent).filterNotNull().any { it > 100f }) {
+            _error.tryEmit("Le percentuali devono essere comprese tra 0 e 100")
             return
         }
         if (bodyWaterPercent != null && bodyWaterPercent > 100f) {
@@ -97,6 +110,15 @@ class BiaViewModel(
                         justWokeUp = justWokeUp,
                         afterBathroom = afterBathroom,
                         noRecentWorkout = noRecentWorkout,
+                        fatMassKg = fatMassKg,
+                        leanMassKg = leanMassKg,
+                        bodyWaterKg = bodyWaterKg,
+                        subcutaneousFatPercent = subcutaneousFatPercent,
+                        boneMassKg = boneMassKg,
+                        proteinPercent = proteinPercent,
+                        proteinKg = proteinKg,
+                        bodyAgeYears = bodyAgeYears,
+                        bmi = bmi,
                     )
                 )
             }.onSuccess {
@@ -126,13 +148,22 @@ class BiaViewModel(
         justWokeUp: Boolean,
         afterBathroom: Boolean,
         noRecentWorkout: Boolean,
+        fatMassKg: Float? = null,
+        leanMassKg: Float? = null,
+        bodyWaterKg: Float? = null,
+        subcutaneousFatPercent: Float? = null,
+        boneMassKg: Float? = null,
+        proteinPercent: Float? = null,
+        proteinKg: Float? = null,
+        bodyAgeYears: Int? = null,
+        bmi: Float? = null,
     ) {
         val profileId = activeProfileStore.currentIdOrNull()
         if (profileId == null || original.profileId != profileId) {
             _error.tryEmit("La rilevazione non appartiene al profilo attivo")
             return
         }
-        val values = listOf(weightKg, bodyFatPercent, visceralFatLevel, muscleMassKg, skeletalMuscleKg, bodyWaterPercent, bmrKcal)
+        val values = listOf(weightKg, bodyFatPercent, visceralFatLevel, muscleMassKg, skeletalMuscleKg, bodyWaterPercent, bmrKcal, fatMassKg, leanMassKg, bodyWaterKg, subcutaneousFatPercent, boneMassKg, proteinPercent, proteinKg, bmi)
         if (values.all { it == null }) {
             _error.tryEmit("Inserisci almeno un valore BIA")
             return
@@ -140,6 +171,7 @@ class BiaViewModel(
         if (values.filterNotNull().any { !it.isFinite() || it <= 0f } ||
             bodyFatPercent != null && bodyFatPercent > 100f ||
             bodyWaterPercent != null && bodyWaterPercent > 100f ||
+            listOf(subcutaneousFatPercent, proteinPercent).filterNotNull().any { it > 100f } ||
             bmrKcal != null && bmrKcal > 10_000f
         ) {
             _error.tryEmit("Controlla i valori BIA")
@@ -163,6 +195,15 @@ class BiaViewModel(
                         justWokeUp = justWokeUp,
                         afterBathroom = afterBathroom,
                         noRecentWorkout = noRecentWorkout,
+                        fatMassKg = fatMassKg,
+                        leanMassKg = leanMassKg,
+                        bodyWaterKg = bodyWaterKg,
+                        subcutaneousFatPercent = subcutaneousFatPercent,
+                        boneMassKg = boneMassKg,
+                        proteinPercent = proteinPercent,
+                        proteinKg = proteinKg,
+                        bodyAgeYears = bodyAgeYears,
+                        bmi = bmi,
                     )
                 )
             }.onSuccess {
