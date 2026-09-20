@@ -51,6 +51,8 @@ class BodyMeasurementsViewModel(
         thighRightCm: Float?,
         calfLeftCm: Float?,
         calfRightCm: Float?,
+        hipsCm: Float? = null,
+        weightKg: Float? = null,
     ) {
         val profileId = activeProfileStore.currentIdOrNull() ?: run {
             _error.tryEmit("Nessun profilo attivo")
@@ -59,13 +61,13 @@ class BodyMeasurementsViewModel(
 
         val values = listOf(
             chestCm, waistCm, abdomenCm, shouldersCm, glutesCm,
-            armLeftCm, armRightCm, thighLeftCm, thighRightCm, calfLeftCm, calfRightCm,
+            armLeftCm, armRightCm, thighLeftCm, thighRightCm, calfLeftCm, calfRightCm, hipsCm, weightKg,
         )
         if (values.all { it == null }) {
             _error.tryEmit("Inserisci almeno una misura")
             return
         }
-        if (values.filterNotNull().any { it <= 0f || it > 300f }) {
+        if (values.filterNotNull().any { !it.isFinite() || it <= 0f || it > 300f }) {
             _error.tryEmit("Controlla i valori inseriti")
             return
         }
@@ -87,6 +89,8 @@ class BodyMeasurementsViewModel(
                         thighRightCm = thighRightCm,
                         calfLeftCm = calfLeftCm,
                         calfRightCm = calfRightCm,
+                        hipsCm = hipsCm,
+                        weightKg = weightKg,
                     )
                 )
             }.onSuccess {
