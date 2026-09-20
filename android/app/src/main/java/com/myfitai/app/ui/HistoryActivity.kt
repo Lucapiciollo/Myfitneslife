@@ -11,6 +11,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
+import com.myfitai.app.domain.body.BodyWeightHistory
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.ui.history.HistoryViewModel
 import com.myfitai.app.ui.widgets.HistoryRowView
@@ -80,7 +81,7 @@ class HistoryActivity : BaseShellActivity() {
                 addRow(container, index,
                     icon = R.drawable.ic_setting_person,
                     title = "Misure ${formatInstantDate(row.measuredAtEpochMillis)}",
-                    subtitle = measurementSubtitle(row),
+                    subtitle = measurementSubtitle(row, state.bia),
                     onClick = {
                         startActivity(Intent(this, NewBodyMeasurementActivity::class.java).apply {
                             putExtra(NewBodyMeasurementActivity.EXTRA_EDIT_ID, row.id)
@@ -151,9 +152,15 @@ class HistoryActivity : BaseShellActivity() {
         }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
     }
 
-    private fun measurementSubtitle(row: com.myfitai.app.data.local.entity.BodyMeasurementEntity): String {
+    private fun measurementSubtitle(
+        row: com.myfitai.app.data.local.entity.BodyMeasurementEntity,
+        biaHistory: List<com.myfitai.app.data.local.entity.BiaMeasurementEntity>,
+    ): String {
         val values = listOfNotNull(
-            row.weightKg?.let { "Peso corporeo ${formatNumber(it)} kg" },
+            BodyWeightHistory.weightFor(row, biaHistory)?.let {
+                if (it.fromBia) "Peso BIA (stessa data) ${formatNumber(it.kg)} kg"
+                else "Peso corporeo ${formatNumber(it.kg)} kg"
+            },
             row.hipsCm?.let { "Fianchi ${formatNumber(it)} cm" },
             row.waistCm?.let { "Vita ${formatNumber(it)} cm" },
             row.chestCm?.let { "Torace ${formatNumber(it)} cm" },
