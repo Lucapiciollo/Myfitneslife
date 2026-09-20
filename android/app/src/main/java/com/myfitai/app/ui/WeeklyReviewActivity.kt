@@ -89,6 +89,17 @@ class WeeklyReviewActivity : BaseShellActivity() {
     }
 
     private fun renderNutrition(metrics: WeeklyReviewService.LocalMetrics?) {
+        if (metrics != null && !metrics.hasPlan) {
+            findViewById<TextView>(R.id.avgKcalValue).text = "Nessun piano"
+            findViewById<TextView>(R.id.targetKcalValue).text = "Nessun piano associato a questa settimana"
+            findViewById<TextView>(R.id.avgProteinValue).text = "—"
+            findViewById<TextView>(R.id.targetProteinValue).text = "Target: —"
+            findViewById<TextView>(R.id.avgCarbsValue).text = "—"
+            findViewById<TextView>(R.id.targetCarbsValue).text = "Target: —"
+            findViewById<TextView>(R.id.avgFatValue).text = "—"
+            findViewById<TextView>(R.id.targetFatValue).text = "Target: —"
+            return
+        }
         findViewById<TextView>(R.id.avgKcalValue).text = NutritionEstimateFormatter.formatEstimatedKcal(metrics?.plannedAverageKcal)
         findViewById<TextView>(R.id.targetKcalValue).text = "Target: ${metrics?.targetKcal ?: "—"}"
         findViewById<TextView>(R.id.avgProteinValue).text = NutritionEstimateFormatter.formatEstimatedMacro(metrics?.plannedAverageProteinG, "g")
