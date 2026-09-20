@@ -74,6 +74,7 @@ class BiaActivity : BaseShellActivity() {
     private var pendingImportFile: File? = null
     private var editingMeasurement: BiaMeasurementEntity? = null
     private var pendingEditId: Long = 0L
+    private var openingExistingForEdit = false
     private val imageTempStore by lazy { AiImageTempStore(this) }
 
     private val galleryLauncher = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
@@ -94,6 +95,7 @@ class BiaActivity : BaseShellActivity() {
         bindViews()
         bindSegments()
         findViewById<View>(R.id.addBiaFromHistoryButton).setOnClickListener {
+            resetForm()
             findViewById<SelectableSegmentView>(R.id.biaSegment).getChildAt(0)?.performClick()
         }
         bindDateTime()
@@ -123,6 +125,7 @@ class BiaActivity : BaseShellActivity() {
         val segment = findViewById<SelectableSegmentView>(R.id.biaSegment)
         segment.setSegments(listOf("Nuova misurazione", "Storico"), selectedIndex = 0)
         segment.setOnSegmentSelectedListener { index ->
+            if (index == 0 && editingMeasurement != null && !openingExistingForEdit) resetForm()
             newMeasurementContainer.visibility = if (index == 0) View.VISIBLE else View.GONE
             historyContainer.visibility = if (index == 1) View.VISIBLE else View.GONE
             if (index == 1) renderHistory(viewModel.history.value)
@@ -591,7 +594,9 @@ class BiaActivity : BaseShellActivity() {
         bindMeasurementRows()
         renderDateTime()
         findViewById<android.widget.TextView>(R.id.saveButton).text = "Salva modifiche"
+        openingExistingForEdit = true
         findViewById<SelectableSegmentView>(R.id.biaSegment).getChildAt(0)?.performClick()
+        openingExistingForEdit = false
     }
 
     private fun confirmDelete(item: BiaMeasurementEntity) {
