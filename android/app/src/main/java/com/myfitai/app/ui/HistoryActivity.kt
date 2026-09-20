@@ -145,6 +145,8 @@ class HistoryActivity : BaseShellActivity() {
 
     private fun measurementSubtitle(row: com.myfitai.app.data.local.entity.BodyMeasurementEntity): String {
         val values = listOfNotNull(
+            row.weightKg?.let { "Peso corporeo ${formatNumber(it)} kg" },
+            row.hipsCm?.let { "Fianchi ${formatNumber(it)} cm" },
             row.waistCm?.let { "Vita ${formatNumber(it)} cm" },
             row.chestCm?.let { "Torace ${formatNumber(it)} cm" },
             row.abdomenCm?.let { "Addome ${formatNumber(it)} cm" },
