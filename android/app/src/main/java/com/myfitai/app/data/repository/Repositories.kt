@@ -22,6 +22,24 @@ class BiaRepository(private val db: MyFitAiDatabase) {
     fun all(profileId: Long): Flow<List<BiaMeasurementEntity>> = db.biaMeasurementDao().observeAll(profileId)
     fun latest(profileId: Long): Flow<BiaMeasurementEntity?> = db.biaMeasurementDao().observeLatest(profileId)
     fun between(profileId: Long, from: Long, to: Long) = db.biaMeasurementDao().observeBetween(profileId, from, to)
+    /** One transaction; date-level duplicates are skipped, never overwritten. */
+    suspend fun importMissing(profileId: Long, readings: List<BiaMeasurementEntity>): Pair<Int, Int> = db.withTransaction {
+        require(profileId > 0 && readings.all { it.profileId == profileId })
+        val dao = db.biaMeasurementDao()
+        val known = dao.getAll(profileId).mapTo(hashSetOf()) {
+            com.myfitai.app.domain.body.BiaHistoryImportContract.dayKey(it.measuredAtEpochMillis)
+        }
+        var inserted = 0
+        var skipped = 0
+        readings.forEach { reading ->
+            if (known.add(com.myfitai.app.domain.body.BiaHistoryImportContract.dayKey(reading.measuredAtEpochMillis))) {
+                dao.insert(reading.copy(id = 0L))
+                inserted++
+            } else skipped++
+        }
+        inserted to skipped
+    }
+
     suspend fun insert(value: BiaMeasurementEntity) = db.biaMeasurementDao().insert(value)
     suspend fun update(value: BiaMeasurementEntity) = db.biaMeasurementDao().update(value)
     suspend fun delete(value: BiaMeasurementEntity) = db.biaMeasurementDao().delete(value)
