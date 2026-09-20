@@ -30,6 +30,7 @@ import com.myfitai.app.data.local.entity.BiaMeasurementEntity
 import com.myfitai.app.domain.body.AiImageProcessor
 import com.myfitai.app.domain.body.AiImageTempStore
 import com.myfitai.app.domain.body.BiaImportContract
+import com.myfitai.app.domain.body.BiaHistoryImportContract
 import com.myfitai.app.domain.ai.AiJobType
 import com.myfitai.app.domain.body.BiaAnalysisAiJobHandler
 import com.myfitai.app.navigation.BottomNavBinder
@@ -80,6 +81,10 @@ class BiaActivity : BaseShellActivity() {
     private var openingExistingForEdit = false
     private val imageTempStore by lazy { AiImageTempStore(this) }
 
+    private val historyJsonLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) importHistoryJson(uri)
+    }
+
     private val galleryLauncher = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) processImportUri(uri)
     }
@@ -106,6 +111,9 @@ class BiaActivity : BaseShellActivity() {
         bindMeasurementRows()
         bindSave()
         bindPhotoImport()
+        findViewById<View>(R.id.importBiaHistoryButton).setOnClickListener {
+            historyJsonLauncher.launch("application/json")
+        }
         findViewById<View>(R.id.analyzeBiaButton).setOnClickListener { analyzeBiaWithAi(it) }
         observeState()
         renderDateTime()
@@ -278,6 +286,65 @@ class BiaActivity : BaseShellActivity() {
                     afterBathroom = findViewById<MaterialCheckBox>(R.id.checkAfterShower).isChecked,
                     noRecentWorkout = findViewById<MaterialCheckBox>(R.id.checkNoWorkout).isChecked,
                 )
+            }
+        }
+    }
+
+    private fun importHistoryJson(uri: Uri) {
+        val profileId = data.activeProfileStore.currentIdOrNull()
+        if (profileId == null) {
+            Toast.makeText(this, "Seleziona prima un profilo", Toast.LENGTH_LONG).show()
+            return
+        }
+        lifecycleScope.launch {
+            val result = withContext(Dispatchers.IO) {
+                runCatching {
+                    val json = contentResolver.openInputStream(uri)?.use { input ->
+                        input.readNBytes(1_000_001).also { require(it.size <= 1_000_000) { "File JSON troppo grande" } }
+                            .toString(Charsets.UTF_8)
+                    } ?: error("Impossibile aprire il file")
+                    BiaHistoryImportContract.parse(json, profileId)
+                }
+            }
+            result.onSuccess { readings ->
+                val known = viewModel.history.value.mapTo(hashSetOf()) {
+                    BiaHistoryImportContract.dayKey(it.measuredAtEpochMillis)
+                }
+                val newCount = readings.count { BiaHistoryImportContract.dayKey(it.measuredAtEpochMillis) !in known }
+                val skipped = readings.size - newCount
+                MaterialAlertDialogBuilder(this@BiaActivity)
+                    .setTitle("Importa storico BIA")
+                    .setMessage(
+                        "Rilevazioni nel file: " + readings.size +
+                            "\\nNuove: " + newCount +
+                            "\\nDate già presenti: " + skipped +
+                            "\\n\\nLe date già presenti non verranno sovrascritte. " +
+                            "I dati mancanti resteranno vuoti. Continuare?"
+                    )
+                    .setNegativeButton("Annulla", null)
+                    .setPositiveButton("Importa") { _, _ ->
+                        lifecycleScope.launch {
+                            val imported = withContext(Dispatchers.IO) {
+                                runCatching { data.biaRepository.importMissing(profileId, readings) }
+                            }
+                            imported.onSuccess { (added, duplicates) ->
+                                Toast.makeText(
+                                    this@BiaActivity,
+                                    "Importate " + added + " BIA · " + duplicates + " date già presenti",
+                                    Toast.LENGTH_LONG,
+                                ).show()
+                            }.onFailure {
+                                Toast.makeText(this@BiaActivity, "Importazione non riuscita: " + (it.message ?: "Errore"), Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    }
+                    .show()
+            }.onFailure {
+                MaterialAlertDialogBuilder(this@BiaActivity)
+                    .setTitle("File BIA non valido")
+                    .setMessage(it.message ?: "Controlla il formato JSON")
+                    .setPositiveButton("Chiudi", null)
+                    .show()
             }
         }
     }
@@ -673,6 +740,15 @@ class BiaActivity : BaseShellActivity() {
         item.skeletalMuscleKg?.let { "Scheletrico ${formatValue(it, "kg")}" },
         item.bodyWaterPercent?.let { "Acqua ${formatValue(it, "%")}" },
         item.bmrKcal?.let { "BMR ${formatValue(it, "kcal")}" },
+        item.fatMassKg?.let { "Grasso ${formatValue(it, "kg")}" },
+        item.leanMassKg?.let { "Massa magra ${formatValue(it, "kg")}" },
+        item.bodyWaterKg?.let { "Acqua ${formatValue(it, "kg")}" },
+        item.subcutaneousFatPercent?.let { "Sottocutaneo ${formatValue(it, "%")}" },
+        item.boneMassKg?.let { "Ossa ${formatValue(it, "kg")}" },
+        item.proteinPercent?.let { "Proteine ${formatValue(it, "%")}" },
+        item.proteinKg?.let { "Proteine ${formatValue(it, "kg")}" },
+        item.bodyAgeYears?.let { "Età corporea " + it },
+        item.bmi?.let { "BMI " + formatNumber(it) },
     ).joinToString(" · ").ifBlank { "Valori parziali" }
 
     private fun buildConditionLine(item: BiaMeasurementEntity): String? {
