@@ -52,10 +52,18 @@
                         <LinearLayout android:id="@+id/markerCalf" style="@style/Widget.MyFitAI.BodyMarker" app:layout_constraintHorizontal_bias="0.70" app:layout_constraintVertical_bias="0.80" app:layout_constraintTop_toTopOf="parent" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintEnd_toEndOf="parent"><View style="@style/Widget.MyFitAI.BodyMarkerDot" /><TextView style="@style/Widget.MyFitAI.BodyMarkerLabel" android:text="Polpaccio" /></LinearLayout>
                     </androidx.constraintlayout.widget.ConstraintLayout>
                 </LinearLayout>
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_4"
+                    android:gravity="center"
+                    android:text="Diagramma di riferimento: i punti indicano la zona della misura."
+                    android:textColor="@color/text_muted"
+                    android:textSize="11sp" />
 
                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_16" android:orientation="horizontal">
                     <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Ultimi valori disponibili (kg e cm)" android:textStyle="bold" android:textColor="@color/text_primary" android:textSize="15sp" />
-                    <TextView android:id="@+id/measureDate" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Nessuna misura" android:textColor="@color/text_secondary" android:textSize="13sp" />
+                    <TextView android:id="@+id/measureDate" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Nessuna misura ancora registrata" android:textColor="@color/text_secondary" android:textSize="13sp" />
                 </LinearLayout>
 
                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:background="@drawable/bg_card" android:orientation="vertical" android:paddingHorizontal="@dimen/space_16">

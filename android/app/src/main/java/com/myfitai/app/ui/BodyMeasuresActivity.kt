@@ -175,7 +175,7 @@ class BodyMeasuresActivity : BaseShellActivity() {
 
     private fun renderCurrent() {
         val latest = measurements.firstOrNull()
-        findViewById<TextView>(R.id.measureDate).text = latest?.let { entityDate(it).format(dateFormatter) } ?: "Nessuna misura"
+        findViewById<TextView>(R.id.measureDate).text = latest?.let { entityDate(it).format(dateFormatter) } ?: "Nessuna misura ancora registrata"
 
         // A weight-only entry must not hide the most recent available circumferences.
         // Each row is independently sourced from its last recorded non-null value.
