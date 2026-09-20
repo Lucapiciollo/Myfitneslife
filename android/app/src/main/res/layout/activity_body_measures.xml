@@ -54,15 +54,17 @@
                 </LinearLayout>
 
                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_16" android:orientation="horizontal">
-                    <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Valori attuali (cm)" android:textStyle="bold" android:textColor="@color/text_primary" android:textSize="15sp" />
+                    <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Valori attuali (kg e cm)" android:textStyle="bold" android:textColor="@color/text_primary" android:textSize="15sp" />
                     <TextView android:id="@+id/measureDate" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Nessuna misura" android:textColor="@color/text_secondary" android:textSize="13sp" />
                 </LinearLayout>
 
                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:background="@drawable/bg_card" android:orientation="vertical" android:paddingHorizontal="@dimen/space_16">
+                    <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowWeight" android:layout_width="match_parent" android:layout_height="wrap_content" />
                     <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowChest" android:layout_width="match_parent" android:layout_height="wrap_content" />
                     <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowWaist" android:layout_width="match_parent" android:layout_height="wrap_content" />
                     <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowAbdomen" android:layout_width="match_parent" android:layout_height="wrap_content" />
                     <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowShoulders" android:layout_width="match_parent" android:layout_height="wrap_content" />
+                    <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowHips" android:layout_width="match_parent" android:layout_height="wrap_content" />
                     <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowGlutes" android:layout_width="match_parent" android:layout_height="wrap_content" />
                     <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowArmLeft" android:layout_width="match_parent" android:layout_height="wrap_content" />
                     <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowArmRight" android:layout_width="match_parent" android:layout_height="wrap_content" />
