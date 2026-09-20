@@ -81,7 +81,11 @@ class HistoryActivity : BaseShellActivity() {
                     icon = R.drawable.ic_setting_person,
                     title = "Misure ${formatInstantDate(row.measuredAtEpochMillis)}",
                     subtitle = measurementSubtitle(row),
-                    onClick = { go(BodyMeasuresActivity::class.java) },
+                    onClick = {
+                        startActivity(Intent(this, NewBodyMeasurementActivity::class.java).apply {
+                            putExtra(NewBodyMeasurementActivity.EXTRA_EDIT_ID, row.id)
+                        })
+                    },
                 )
             }
             1 -> state.bia.forEachIndexed { index, row ->
@@ -89,7 +93,11 @@ class HistoryActivity : BaseShellActivity() {
                     icon = R.drawable.ic_nav_progress,
                     title = "BIA ${formatInstantDate(row.measuredAtEpochMillis)}",
                     subtitle = biaSubtitle(row),
-                    onClick = { go(BiaActivity::class.java) },
+                    onClick = {
+                        startActivity(Intent(this, BiaActivity::class.java).apply {
+                            putExtra(BiaActivity.EXTRA_EDIT_ID, row.id)
+                        })
+                    },
                 )
             }
             2 -> state.plans.forEachIndexed { index, snapshot ->
