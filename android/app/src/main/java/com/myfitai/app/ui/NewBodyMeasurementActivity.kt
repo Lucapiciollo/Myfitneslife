@@ -62,7 +62,15 @@ class NewBodyMeasurementActivity : BaseShellActivity() {
 
     private fun bindSave() {
         findViewById<android.view.View>(R.id.saveMeasurementButton).setOnClickListener {
-            val values = inputMap().mapValues { (_, input) -> parseFloat(input.text?.toString()) }
+            val inputs = inputMap()
+            if (inputs.values.any { input ->
+                    val raw = input.text?.toString().orEmpty().trim()
+                    raw.isNotEmpty() && parseFloat(raw) == null
+                }) {
+                Toast.makeText(this, "Controlla i numeri inseriti: usa valori come 86,5", Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+            val values = inputs.mapValues { (_, input) -> parseFloat(input.text?.toString()) }
             if (values.values.all { it == null }) {
                 Toast.makeText(this, "Inserisci almeno una misura", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
