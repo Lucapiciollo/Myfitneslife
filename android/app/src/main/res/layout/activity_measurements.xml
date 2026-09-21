@@ -56,59 +56,19 @@
                  android:layout_marginTop="@dimen/space_8"
                  android:orientation="horizontal">
 
-              <com.google.android.material.card.MaterialCardView
+              <com.myfitai.app.ui.widgets.MeasurementActionCardView
+                  android:id="@+id/biaCard"
+                  android:layout_width="0dp"
+                   android:layout_height="match_parent"
+                   android:layout_weight="1"
+                   android:layout_marginEnd="@dimen/space_6" />
+
+              <com.myfitai.app.ui.widgets.MeasurementActionCardView
+                  android:id="@+id/bodyCard"
                   android:layout_width="0dp"
                   android:layout_height="match_parent"
-                 android:layout_weight="1"
-                 android:layout_marginEnd="@dimen/space_6"
-                 style="@style/Widget.MyFitAI.Card">
-                 <LinearLayout
-                     style="@style/Widget.MyFitAI.HomeSectionContent"
-                     android:layout_width="match_parent"
-                     android:layout_height="match_parent"
-                     android:orientation="vertical">
-                  <FrameLayout
-                     android:layout_width="match_parent"
-                     android:layout_height="wrap_content">
-                     <com.myfitai.app.ui.widgets.SectionHeaderView
-                         android:layout_width="match_parent"
-                         android:layout_height="wrap_content"
-                         android:paddingEnd="40dp"
-                         android:text="BIA" />
-                     <ImageButton
-                         android:id="@+id/biaHelpButton"
-                         android:layout_width="40dp"
-                         android:layout_height="40dp"
-                         android:layout_gravity="top|end"
-                         android:background="@android:color/transparent"
-                         android:contentDescription="Spiega dati BIA e dati insufficienti"
-                         android:padding="8dp"
-                         android:src="@drawable/ic_help_outline"
-                         app:tint="@color/text_secondary" />
-                 </FrameLayout>
-                <TextView android:id="@+id/biaLatestText" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Nessuna rilevazione BIA disponibile" android:textColor="@color/text_secondary" android:textSize="13sp" />
-                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_12" android:orientation="horizontal">
-                      <com.google.android.material.button.MaterialButton android:id="@+id/newBiaButton" style="@style/Widget.MyFitAI.Button.Primary" android:layout_width="0dp" android:layout_height="48dp" android:layout_weight="1" android:gravity="center" android:contentDescription="Nuova rilevazione BIA" android:tooltipText="Nuova rilevazione BIA" android:text="" app:icon="@drawable/ic_add_circle" app:iconGravity="textStart" app:iconPadding="0dp" app:iconTint="@color/white" />
-                     <Space android:layout_width="@dimen/space_6" android:layout_height="1dp" />
-                      <com.google.android.material.button.MaterialButton android:id="@+id/biaHistoryButton" style="@style/Widget.MyFitAI.Button.Outlined" android:layout_width="0dp" android:layout_height="48dp" android:layout_weight="1" android:gravity="center" android:contentDescription="Storico rilevazioni BIA" android:tooltipText="Storico rilevazioni BIA" android:text="" app:icon="@drawable/ic_history" app:iconGravity="textStart" app:iconPadding="0dp" />
-                 </LinearLayout>
-                 </LinearLayout>
-             </com.google.android.material.card.MaterialCardView>
-
-              <com.google.android.material.card.MaterialCardView style="@style/Widget.MyFitAI.Card" android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:layout_marginStart="@dimen/space_6">
-                  <LinearLayout style="@style/Widget.MyFitAI.HomeSectionContent" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical">
-                  <FrameLayout android:layout_width="match_parent" android:layout_height="wrap_content">
-                      <com.myfitai.app.ui.widgets.SectionHeaderView android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingEnd="40dp" android:text="Misure" />
-                      <ImageButton android:id="@+id/bodyHelpButton" android:layout_width="40dp" android:layout_height="40dp" android:layout_gravity="top|end" android:background="@android:color/transparent" android:contentDescription="Spiega misure corporee" android:padding="8dp" android:src="@drawable/ic_help_outline" app:tint="@color/text_secondary" />
-                  </FrameLayout>
-                 <TextView android:id="@+id/bodyLatestText" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Nessuna misura corporea disponibile" android:textColor="@color/text_secondary" android:textSize="13sp" />
-                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_12" android:orientation="horizontal">
-                      <com.google.android.material.button.MaterialButton android:id="@+id/newBodyButton" style="@style/Widget.MyFitAI.Button.Primary" android:layout_width="0dp" android:layout_height="48dp" android:layout_weight="1" android:gravity="center" android:contentDescription="Nuova misura corporea" android:tooltipText="Nuova misura corporea" android:text="" app:icon="@drawable/ic_add_circle" app:iconGravity="textStart" app:iconPadding="0dp" app:iconTint="@color/white" />
-                     <Space android:layout_width="@dimen/space_6" android:layout_height="1dp" />
-                      <com.google.android.material.button.MaterialButton android:id="@+id/bodyHistoryButton" style="@style/Widget.MyFitAI.Button.Outlined" android:layout_width="0dp" android:layout_height="48dp" android:layout_weight="1" android:gravity="center" android:contentDescription="Storico misure corporee" android:tooltipText="Storico misure corporee" android:text="" app:icon="@drawable/ic_history" app:iconGravity="textStart" app:iconPadding="0dp" />
-                 </LinearLayout>
-                 </LinearLayout>
-             </com.google.android.material.card.MaterialCardView>
+                  android:layout_weight="1"
+                  android:layout_marginStart="@dimen/space_6" />
              </LinearLayout>
 
              <com.google.android.material.card.MaterialCardView style="@style/Widget.MyFitAI.Card" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_12" android:layout_marginBottom="@dimen/space_16">

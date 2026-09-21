@@ -23,4 +23,7 @@
     <string name="profile_row_settings">Impostazioni</string>
     <string name="profile_openai_configured">Configurata</string>
     <string name="profile_openai_not_configured">Non configurata</string>
+    <string name="food_plan_historical_banner">Piano storico in sola lettura · le modifiche del profilo non rigenerano questa settimana</string>
+    <string name="food_plan_empty_current">Nessun piano per questa settimana. Genera un piano per vedere pasti, quantità e valori nutrizionali.</string>
+    <string name="food_plan_empty_history">Nessun piano salvato per questa settimana storica.</string>
 </resources>

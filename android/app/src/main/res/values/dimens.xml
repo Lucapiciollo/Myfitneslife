@@ -1,10 +1,12 @@
 <resources>
-    <dimen name="space_2">2dp</dimen><dimen name="space_4">4dp</dimen><dimen name="space_6">6dp</dimen>
+    <dimen name="space_1">1dp</dimen><dimen name="space_2">2dp</dimen><dimen name="space_4">4dp</dimen><dimen name="space_6">6dp</dimen>
     <dimen name="space_8">8dp</dimen><dimen name="space_10">10dp</dimen><dimen name="space_12">12dp</dimen>
     <dimen name="space_16">16dp</dimen><dimen name="space_20">20dp</dimen><dimen name="space_24">24dp</dimen>
     <dimen name="space_28">28dp</dimen><dimen name="space_32">32dp</dimen><dimen name="space_40">40dp</dimen>
     <dimen name="radius_small">10dp</dimen><dimen name="radius_medium">14dp</dimen><dimen name="radius_large">22dp</dimen>
+    <dimen name="radius_card">20dp</dimen><dimen name="radius_screen_header">18dp</dimen>
+    <dimen name="elevation_card">2dp</dimen>
     <dimen name="radius_pill">16dp</dimen>
-    <dimen name="control_min_height">48dp</dimen><dimen name="bottom_nav_height">68dp</dimen>
+    <dimen name="control_min_height">48dp</dimen><dimen name="screen_header_height">56dp</dimen><dimen name="profile_header_height">54dp</dimen><dimen name="bottom_nav_height">68dp</dimen>
     <dimen name="dashboard_chart_height">140dp</dimen><dimen name="dashboard_thumbnail_size">72dp</dimen><dimen name="dashboard_pill_height">32dp</dimen>
 </resources>

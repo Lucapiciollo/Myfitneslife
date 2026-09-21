@@ -122,6 +122,7 @@ class FoodPlanActivity : BaseShellActivity() {
         weekDaySelector.setOnDaySelectedListener(viewModel::selectDay)
 
         val versionLabel = findViewById<TextView>(R.id.planVersionLabel)
+        val historicalBanner = findViewById<TextView>(R.id.historicalPlanBanner)
         val snapshot = state.snapshot
         if (snapshot != null) {
             versionLabel.visibility = View.VISIBLE
@@ -130,6 +131,7 @@ class FoodPlanActivity : BaseShellActivity() {
                 .format(DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.ITALIAN))
             versionLabel.text = "Piano alimentare generato il $createdAt"
         } else versionLabel.visibility = View.GONE
+        historicalBanner.visibility = if (!currentWeek && state.hasPlan) View.VISIBLE else View.GONE
 
         val empty = findViewById<TextView>(R.id.emptyPlanText)
         val goalChangedNotice = findViewById<TextView>(R.id.goalChangedNotice)
@@ -142,7 +144,7 @@ class FoodPlanActivity : BaseShellActivity() {
         dayMealsCard.visibility = if (!state.hasPlan || day?.meals.isNullOrEmpty()) View.GONE else View.VISIBLE
         empty.visibility = if (!state.hasPlan) View.VISIBLE else View.GONE
         if (state.hasPlan && day == null) { empty.visibility = View.VISIBLE; empty.text = "Nessun dato alimentare per il giorno selezionato." }
-        else if (!state.hasPlan) empty.text = "Nessun piano per questa settimana. Genera un piano per vedere pasti, quantità e valori nutrizionali."
+        else if (!state.hasPlan) empty.text = if (currentWeek) getString(R.string.food_plan_empty_current) else getString(R.string.food_plan_empty_history)
 
         renderGeneration(state, currentWeek)
         renderMeals(state.weekStart, day, state.consumptionRecords)

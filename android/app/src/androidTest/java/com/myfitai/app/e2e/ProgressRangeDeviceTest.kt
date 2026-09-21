@@ -28,12 +28,9 @@ class ProgressRangeDeviceTest {
         assertTrue(device.wait(Until.hasObject(By.text("SEED_6_MONTHS")), 5_000))
         device.findObject(By.text("SEED_6_MONTHS")).click()
         assertTrue(waitForSeed())
-        device.pressHome()
-        instrumentation.startActivitySync(Intent(context, com.myfitai.app.ui.SplashActivity::class.java).apply {
+        instrumentation.startActivitySync(Intent(context, com.myfitai.app.ui.PhysicalEvolutionActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
         })
-        assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/navProgress")), 15_000))
-        device.findObject(By.res("com.myfitai.app:id/navProgress")).click()
         assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/timeRangeSelector")), 5_000))
     }
 

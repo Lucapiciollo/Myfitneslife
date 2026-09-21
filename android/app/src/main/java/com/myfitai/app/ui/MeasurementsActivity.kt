@@ -17,6 +17,7 @@ import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.data.local.entity.BiaMeasurementEntity
 import com.myfitai.app.data.local.entity.BodyMeasurementEntity
 import com.myfitai.app.navigation.BottomNavBinder
+import com.myfitai.app.ui.widgets.MeasurementActionCardView
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
@@ -40,26 +41,36 @@ class MeasurementsActivity : BaseShellActivity() {
         bindBottom(BottomNavBinder.Tab.MORE)
         bindBack()
 
-        findViewById<android.view.View>(R.id.newBiaButton).setOnClickListener { startActivity(Intent(this, BiaActivity::class.java)) }
-        findViewById<android.view.View>(R.id.biaHelpButton).setOnClickListener {
-            MaterialAlertDialogBuilder(this)
+        findViewById<MeasurementActionCardView>(R.id.biaCard).apply {
+            setTitle("BIA")
+            setHelp("Spiega dati BIA e dati insufficienti") {
+            MaterialAlertDialogBuilder(this@MeasurementsActivity)
                 .setTitle("Dati BIA e dati insufficienti")
                 .setMessage("La BIA può contribuire al calcolo di metabolismo, target e trend corporei quando sono disponibili valori coerenti, come peso, grasso corporeo o massa muscolare.\n\nLa dicitura \"Dati insufficienti\" compare quando mancano i valori necessari oppure quando esiste una sola rilevazione: una singola misura descrive solo lo stato attuale e non permette di calcolare una variazione affidabile nel tempo. Registra altre rilevazioni in date diverse per ottenere un confronto.")
                 .setPositiveButton("Chiudi", null)
                 .show()
+            }
+            setAddAction("Nuova rilevazione BIA") {
+            startActivity(Intent(this@MeasurementsActivity, BiaActivity::class.java))
+            }
+            setHistoryAction("Storico rilevazioni BIA") {
+            startActivity(Intent(this@MeasurementsActivity, BiaActivity::class.java).putExtra(BiaActivity.EXTRA_OPEN_HISTORY, true))
+            }
         }
-        findViewById<android.view.View>(R.id.biaHistoryButton).setOnClickListener {
-            startActivity(Intent(this, BiaActivity::class.java).putExtra(BiaActivity.EXTRA_OPEN_HISTORY, true))
-        }
-        findViewById<android.view.View>(R.id.bodyHelpButton).setOnClickListener {
+        findViewById<MeasurementActionCardView>(R.id.bodyCard).apply {
+            setTitle("Misure")
+            setHelp("Spiega misure corporee") {
             showHelpCard(
                 "Misure corporee",
                 "Registra circonferenze e peso nella stessa rilevazione. Usa lo storico per confrontare i valori nel tempo: la singola misura descrive lo stato del giorno, mentre il trend richiede più date confrontabili.",
             )
-        }
-        findViewById<android.view.View>(R.id.newBodyButton).setOnClickListener { startActivity(Intent(this, BodyMeasuresActivity::class.java)) }
-        findViewById<android.view.View>(R.id.bodyHistoryButton).setOnClickListener {
-            startActivity(Intent(this, BodyMeasuresActivity::class.java).putExtra(BodyMeasuresActivity.EXTRA_OPEN_HISTORY, true))
+            }
+            setAddAction("Nuova misura corporea") {
+            startActivity(Intent(this@MeasurementsActivity, BodyMeasuresActivity::class.java))
+            }
+            setHistoryAction("Storico misure corporee") {
+            startActivity(Intent(this@MeasurementsActivity, BodyMeasuresActivity::class.java).putExtra(BodyMeasuresActivity.EXTRA_OPEN_HISTORY, true))
+            }
         }
         findViewById<android.view.View>(R.id.allHistoryButton).setOnClickListener { startActivity(Intent(this, HistoryActivity::class.java)) }
 
@@ -89,15 +100,15 @@ class MeasurementsActivity : BaseShellActivity() {
     }
 
     private fun renderBia(value: BiaMeasurementEntity?) {
-        findViewById<TextView>(R.id.biaLatestText).text = value?.let {
+        findViewById<MeasurementActionCardView>(R.id.biaCard).setLatest(value?.let {
             "Ultima rilevazione: ${formatDate(it.measuredAtEpochMillis)}"
-        } ?: "Nessuna rilevazione BIA disponibile"
+        } ?: "Nessuna rilevazione BIA disponibile")
     }
 
     private fun renderBody(value: BodyMeasurementEntity?) {
-        findViewById<TextView>(R.id.bodyLatestText).text = value?.let {
+        findViewById<MeasurementActionCardView>(R.id.bodyCard).setLatest(value?.let {
             "Ultima rilevazione: ${formatDate(it.measuredAtEpochMillis)}"
-        } ?: "Nessuna misura corporea disponibile"
+        } ?: "Nessuna misura corporea disponibile")
     }
 
     private suspend fun renderDietImpact() {

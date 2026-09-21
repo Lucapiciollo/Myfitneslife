@@ -22,14 +22,26 @@
                  <ImageButton android:id="@+id/nextWeekButton" android:layout_width="40dp" android:layout_height="40dp" android:background="@android:color/transparent" android:padding="8dp" android:rotation="180" android:src="@drawable/ic_arrow_back_white" android:contentDescription="Settimana successiva" app:tint="@color/text_primary" />
              </LinearLayout>
 
-            <TextView
-                android:id="@+id/planVersionLabel"
+             <TextView
+                 android:id="@+id/planVersionLabel"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 android:textColor="@color/text_muted"
                 android:textSize="12sp"
-                android:visibility="gone" />
+                 android:visibility="gone" />
+
+             <TextView
+                 android:id="@+id/historicalPlanBanner"
+                 android:layout_width="match_parent"
+                 android:layout_height="wrap_content"
+                 android:layout_marginTop="@dimen/space_8"
+                 android:background="@drawable/bg_card_soft"
+                 android:padding="@dimen/space_12"
+                 android:text="@string/food_plan_historical_banner"
+                 android:textColor="@color/text_secondary"
+                 android:textSize="12sp"
+                 android:visibility="gone" />
 
             <com.myfitai.app.ui.widgets.WeekDaySelectorView
                 android:id="@+id/weekDaySelector"
@@ -60,11 +72,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_12"
-                app:cardBackgroundColor="@color/white"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="0dp"
-                app:strokeColor="@color/divider"
-                app:strokeWidth="1dp">
+                 style="@style/Widget.MyFitAI.Card">
                 <LinearLayout
                     style="@style/Widget.MyFitAI.HomeSectionContent"
                     android:layout_width="match_parent"
@@ -104,11 +112,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_12"
-                app:cardBackgroundColor="@color/white"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="0dp"
-                app:strokeColor="@color/divider"
-                app:strokeWidth="1dp">
+                 style="@style/Widget.MyFitAI.Card">
                 <LinearLayout
                     style="@style/Widget.MyFitAI.HomeSectionContent"
                     android:layout_width="match_parent"
@@ -143,7 +147,7 @@
                         android:gravity="start"
                         android:textAlignment="viewStart"
                         android:padding="@dimen/space_12"
-                        android:text="Nessun piano per questa settimana. Genera un piano per vedere pasti, quantità e valori nutrizionali."
+                 android:text="@string/food_plan_empty_current"
                         android:textColor="@color/text_secondary"
                         android:textSize="14sp"
                         android:visibility="gone" />
@@ -207,11 +211,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_12"
-                app:cardBackgroundColor="@color/white"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="0dp"
-                app:strokeColor="@color/divider"
-                app:strokeWidth="1dp">
+                 style="@style/Widget.MyFitAI.Card">
                 <LinearLayout
                     style="@style/Widget.MyFitAI.HomeSectionContent"
                     android:layout_width="match_parent"
@@ -273,11 +273,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_12"
-                app:cardBackgroundColor="@color/white"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="0dp"
-                app:strokeColor="@color/divider"
-                app:strokeWidth="1dp">
+                 style="@style/Widget.MyFitAI.Card">
                 <LinearLayout
                     style="@style/Widget.MyFitAI.HomeSectionContent"
                     android:layout_width="match_parent"
@@ -369,11 +365,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_12"
-                app:cardBackgroundColor="@color/white"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="0dp"
-                app:strokeColor="@color/divider"
-                app:strokeWidth="1dp">
+                 style="@style/Widget.MyFitAI.Card">
                 <LinearLayout
                     style="@style/Widget.MyFitAI.HomeSectionContent"
                     android:layout_width="match_parent"

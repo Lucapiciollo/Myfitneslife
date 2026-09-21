@@ -104,9 +104,7 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
     }
 
     private fun bindProgressAnalysisCard() {
-        val summaryCard = findViewById<View>(R.id.progressSummaryTitle).parent as View
-        val root = summaryCard.parent.parent as LinearLayout
-        val insertIndex = root.indexOfChild(summaryCard)
+        val root = findViewById<LinearLayout>(R.id.dynamicProgressCards)
 
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -178,16 +176,14 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         cardContent.addView(analysisDetailsContainer, marginTopParams(6))
         cardContent.addView(analysisProgress, LinearLayout.LayoutParams(dp(32), dp(32)).apply { topMargin = dp(10) })
         cardContent.addView(analysisButton, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(48)).apply { topMargin = dp(12) })
-        root.addView(card, insertIndex + 1, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+        root.addView(card, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
             topMargin = dp(8)
         })
         renderProgressAnalysisStatus()
     }
 
     private fun bindWeeklyReviewCard() {
-        val summaryCard = findViewById<View>(R.id.progressSummaryTitle).parent as View
-        val root = summaryCard.parent.parent as LinearLayout
-        val insertIndex = root.indexOfChild(summaryCard)
+        val root = findViewById<LinearLayout>(R.id.dynamicProgressCards)
 
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -248,7 +244,7 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(48)).apply {
             topMargin = dp(12)
         })
-        root.addView(card, insertIndex + 1, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+        root.addView(card, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
             topMargin = dp(8)
         })
         reviewHeader.visibility = View.GONE

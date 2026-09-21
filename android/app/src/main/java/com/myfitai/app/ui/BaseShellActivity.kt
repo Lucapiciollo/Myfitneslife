@@ -142,7 +142,10 @@ abstract class BaseShellActivity : AppCompatActivity() {
             setBackgroundColor(getColor(R.color.bg_primary))
         }
         profileHeader = buildProfileHeader().also { header ->
-            shell.addView(header, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(54)))
+            shell.addView(header, LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                resources.getDimensionPixelSize(R.dimen.profile_header_height),
+            ))
         }
         shell.addView(content, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
         super.setContentView(shell)

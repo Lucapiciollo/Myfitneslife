@@ -11,7 +11,7 @@
             </LinearLayout>
              <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_16" android:text="Evoluzione fisica" android:textColor="@color/text_primary" android:textSize="16sp" android:textStyle="bold" />
              <com.myfitai.app.ui.widgets.SelectableSegmentView android:id="@+id/metricSegment" android:layout_width="match_parent" android:layout_height="44dp" android:layout_marginTop="@dimen/space_8" />
-            <com.google.android.material.card.MaterialCardView style="@style/Widget.MyFitAI.Card" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20">
+              <com.google.android.material.card.MaterialCardView style="@style/Widget.MyFitAI.Card" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20">
                 <LinearLayout style="@style/Widget.MyFitAI.HomeSectionContent" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">
                 <TextView android:id="@+id/metricLabel" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Peso" android:textColor="@color/text_secondary" android:textSize="14sp" android:textStyle="bold" />
@@ -65,7 +65,12 @@
                 <TextView android:id="@+id/progressSummaryTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Affidabilità dell’andamento" android:textColor="@color/text_primary" android:textStyle="bold" />
                 <TextView android:id="@+id/progressSummaryText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:text="I dati mostrati derivano dallo storico reale." android:textColor="@color/text_secondary" />
                             </LinearLayout>
-                        </com.google.android.material.card.MaterialCardView>
+              </com.google.android.material.card.MaterialCardView>
+              <LinearLayout
+                  android:id="@+id/dynamicProgressCards"
+                  android:layout_width="match_parent"
+                  android:layout_height="wrap_content"
+                  android:orientation="vertical" />
         </LinearLayout>
     </ScrollView>
     <include layout="@layout/view_bottom_navigation" />
