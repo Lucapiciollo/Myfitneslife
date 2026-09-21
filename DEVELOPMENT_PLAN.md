@@ -125,6 +125,7 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 - [x] Export JSON / CSV ZIP / PDF profilo / PDF piano settimanale.
 - [x] Consumi inclusi negli export JSON e CSV ZIP.
 - [x] Backup JSON completo locale tramite Storage Access Framework: `Salva backup su disco` e `Importa backup da disco`; il restore crea un nuovo profilo e rimappa gli ID Room di piani, versioni, pasti e consumi senza sovrascrivere i dati esistenti.
+- [x] Prima riorganizzazione UX: aggiunto hub `Configurazione alimentazione` per pasti/generazione automatica/percorso nutrizionale, collegato direttamente da Alimentazione; Impostazioni mantiene il ruolo amministrativo e di configurazione generale.
 - [ ] QA runtime completo degli export più recenti.
 
 ### Sicurezza OpenAI BYOK

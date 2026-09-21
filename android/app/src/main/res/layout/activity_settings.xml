@@ -71,8 +71,8 @@
                   <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
                   <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowFoodPreferences" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="Preferenze alimentari" />
                  <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
-                 <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowMealCount" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="Pasti al giorno" />
-                 <TextView android:id="@+id/mealCountValue" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingStart="@dimen/space_16" android:paddingBottom="@dimen/space_8" android:text="Pasti al giorno" android:textColor="@color/text_secondary" android:textSize="12sp" />
+                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowMealCount" android:visibility="gone" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="Pasti al giorno" />
+                  <TextView android:id="@+id/mealCountValue" android:visibility="gone" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingStart="@dimen/space_16" android:paddingBottom="@dimen/space_8" android:text="Pasti al giorno" android:textColor="@color/text_secondary" android:textSize="12sp" />
                  <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
                  <LinearLayout
                      android:layout_width="match_parent"
@@ -220,7 +220,7 @@
                       android:layout_width="match_parent"
                       android:layout_height="wrap_content"
                       android:orientation="vertical">
-                  <com.google.android.material.button.MaterialButton android:id="@+id/analyzeNutritionPathButton" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Suggerisci il percorso nutrizionale" android:textAllCaps="false" />
+                   <com.google.android.material.button.MaterialButton android:id="@+id/analyzeNutritionPathButton" android:visibility="gone" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Suggerisci il percorso nutrizionale" android:textAllCaps="false" />
                                     <TextView
                                             android:layout_width="match_parent"
                                             android:layout_height="wrap_content"

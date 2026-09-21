@@ -162,7 +162,6 @@ class SettingsActivity : BaseShellActivity() {
         findViewById<View>(R.id.rowAppGuide).setOnClickListener { showAppGuide() }
         findViewById<View>(R.id.rowMeasurements).setOnClickListener { go(MeasurementsActivity::class.java) }
         findViewById<View>(R.id.rowFoodPreferences).setOnClickListener { go(ProfileEditActivity::class.java) }
-        findViewById<View>(R.id.rowMealCount).setOnClickListener { showMealCountDialog() }
         findViewById<SettingRowView>(R.id.rowUnits).apply {
             setTrailingBadge("Metrico", R.color.text_secondary)
             isClickable = false
@@ -178,8 +177,6 @@ class SettingsActivity : BaseShellActivity() {
         findViewById<View>(R.id.rowExport).setOnClickListener { go(ExportActivity::class.java) }
 
         bindDataDeletion()
-        bindNutritionPlanSchedule()
-        bindProgressAnalysisFrequency()
         GeminiCostSettingsBinder.bind(this, findViewById(R.id.aiSectionCard), settings)
         render()
     }

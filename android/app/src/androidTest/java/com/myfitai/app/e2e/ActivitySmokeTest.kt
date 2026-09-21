@@ -20,6 +20,7 @@ import com.myfitai.app.ui.HomeActivity
 import com.myfitai.app.ui.MeasurementsActivity
 import com.myfitai.app.ui.NewBodyMeasurementActivity
 import com.myfitai.app.ui.NutritionPathActivity
+import com.myfitai.app.ui.NutritionPlanSettingsActivity
 import com.myfitai.app.ui.NewWorkoutActivity
 import com.myfitai.app.ui.NotificationsActivity
 import com.myfitai.app.ui.PhysicalEvolutionActivity
@@ -80,6 +81,7 @@ class ActivitySmokeTest {
         smoke(NewWorkoutActivity::class.java, NewWorkoutActivity.EXTRA_DATE_EPOCH_DAY to LocalDate.now().toEpochDay())
         smoke(NewBodyMeasurementActivity::class.java)
         smoke(NutritionPathActivity::class.java)
+        smoke(NutritionPlanSettingsActivity::class.java)
         smoke(FoodPlanActivity::class.java)
         smoke(ShoppingListActivity::class.java)
         smoke(WeeklyReviewActivity::class.java)

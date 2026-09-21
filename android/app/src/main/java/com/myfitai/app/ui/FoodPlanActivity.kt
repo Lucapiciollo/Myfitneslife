@@ -57,6 +57,7 @@ class FoodPlanActivity : BaseShellActivity() {
         }
         findViewById<View>(R.id.cheatButton).setOnClickListener { go(CheatEntryActivity::class.java) }
         findViewById<View>(R.id.generatePlanButton).setOnClickListener { confirmPlanGeneration() }
+        findViewById<View>(R.id.planSettingsButton).setOnClickListener { startActivity(Intent(this, NutritionPlanSettingsActivity::class.java)) }
         findViewById<View>(R.id.regenerateForGoalButton).setOnClickListener { confirmPlanGeneration() }
         bindFoodHelp()
         findViewById<View>(R.id.dailyTotalHelpButton).setOnClickListener { showTotalsHelp() }

@@ -52,6 +52,7 @@
         <activity android:name=".ui.AdjustedPlanActivity" />
         <activity android:name=".ui.CheatEntryActivity" />
         <activity android:name=".ui.FoodPlanActivity" android:launchMode="singleTop" />
+        <activity android:name=".ui.NutritionPlanSettingsActivity" />
         <activity android:name=".ui.NewWorkoutActivity" />
         <activity android:name=".ui.WorkoutsActivity" />
         <activity android:name=".ui.NewBodyMeasurementActivity" />
