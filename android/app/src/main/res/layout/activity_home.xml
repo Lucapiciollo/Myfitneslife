@@ -25,8 +25,8 @@
                 android:orientation="vertical"
                 android:background="@color/dashboard_header_bg"
                 android:paddingHorizontal="@dimen/space_20"
-                android:paddingTop="@dimen/space_24"
-                android:paddingBottom="@dimen/space_32">
+                 android:paddingTop="@dimen/space_16"
+                 android:paddingBottom="@dimen/space_20">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -56,10 +56,10 @@
                     android:id="@+id/greetingText"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_16"
+                     android:layout_marginTop="@dimen/space_10"
                     android:text="@string/dashboard_greeting"
                     android:textColor="@color/white"
-                    android:textSize="24sp"
+                     android:textSize="22sp"
                     android:textStyle="bold" />
                 <TextView
                     android:id="@+id/todayLabel"
@@ -80,10 +80,10 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="-22dp"
+                 android:layout_marginTop="-16dp"
                 android:background="@drawable/bg_sheet_top_rounded"
                 android:orientation="vertical"
-                android:padding="@dimen/space_20">
+                 android:padding="@dimen/space_16">
 
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/planUpdateNoticeCard"
@@ -126,26 +126,11 @@
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <LinearLayout
+                <com.myfitai.app.ui.widgets.DashboardMetricsPanel
+                    android:id="@+id/dashboardMetricsPanel"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical">
-
-                    <com.myfitai.app.ui.widgets.MetricCardView
-                        android:id="@+id/metricWeight"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content" />
-                    <com.myfitai.app.ui.widgets.MetricCardView
-                        android:id="@+id/metricFat"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/space_8" />
-                    <com.myfitai.app.ui.widgets.MetricCardView
-                        android:id="@+id/metricMuscle"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/space_8" />
-                </LinearLayout>
+                    android:layout_marginTop="@dimen/space_4" />
 
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
