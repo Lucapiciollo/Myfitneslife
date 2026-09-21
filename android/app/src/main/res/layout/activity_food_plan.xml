@@ -56,6 +56,7 @@
                  android:textAllCaps="false" />
 
             <com.google.android.material.card.MaterialCardView
+                android:id="@+id/dayMealsCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_12"
@@ -139,7 +140,8 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/space_12"
-                        android:gravity="center"
+                        android:gravity="start"
+                        android:textAlignment="viewStart"
                         android:padding="@dimen/space_12"
                         android:text="Nessun piano per questa settimana. Genera un piano per vedere pasti, quantità e valori nutrizionali."
                         android:textColor="@color/text_secondary"

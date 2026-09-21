@@ -50,11 +50,15 @@ class MealCardView @JvmOverloads constructor(
             }
             setTextColor(context.getColor(R.color.text_secondary))
             textSize = 13f
+            gravity = android.view.Gravity.START
+            textAlignment = TEXT_ALIGNMENT_TEXT_START
         }
         textColumn.addView(titleView)
         kcalView = TextView(context).apply {
             setTextColor(context.getColor(R.color.text_secondary))
             textSize = 13f
+            gravity = android.view.Gravity.START
+            textAlignment = TEXT_ALIGNMENT_TEXT_START
         }
         textColumn.addView(kcalView)
         addView(textColumn)

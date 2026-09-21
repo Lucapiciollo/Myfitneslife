@@ -53,11 +53,15 @@ class MealPlanRowView @JvmOverloads constructor(
             setTextColor(context.getColor(R.color.text_primary))
             textSize = 15f
             setTypeface(typeface, android.graphics.Typeface.BOLD)
+            gravity = android.view.Gravity.START
+            textAlignment = TEXT_ALIGNMENT_TEXT_START
         }
         titleRow.addView(titleView)
         kcalView = TextView(context).apply {
             setTextColor(context.getColor(R.color.text_primary))
             textSize = 13f
+            gravity = android.view.Gravity.END
+            textAlignment = TEXT_ALIGNMENT_TEXT_END
         }
         titleRow.addView(kcalView)
         textColumn.addView(titleRow)
@@ -68,6 +72,8 @@ class MealPlanRowView @JvmOverloads constructor(
             }
             setTextColor(context.getColor(R.color.text_secondary))
             textSize = 13f
+            gravity = android.view.Gravity.START
+            textAlignment = TEXT_ALIGNMENT_TEXT_START
         }
         textColumn.addView(descriptionView)
         statusView = TextView(context).apply {

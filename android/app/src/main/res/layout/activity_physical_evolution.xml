@@ -4,13 +4,13 @@
     android:orientation="vertical" android:background="@color/bg_primary">
     <ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:fillViewport="true">
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="@dimen/space_16">
-            <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="56dp" android:gravity="center_vertical" android:background="@drawable/bg_screen_header" android:paddingHorizontal="8dp">
                 <TextView android:id="@+id/backButton" android:layout_width="40dp" android:layout_height="40dp" android:gravity="center" android:text="‹" android:textSize="30sp" android:textColor="@color/text_primary" />
-                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Evoluzione fisica" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="17sp" />
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Evoluzione fisica" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="18sp" />
                 <Space android:layout_width="40dp" android:layout_height="1dp" />
             </LinearLayout>
-             <com.myfitai.app.ui.widgets.SelectableSegmentView android:id="@+id/metricSegment" android:layout_width="match_parent" android:layout_height="44dp" />
-             <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_16" android:text="Sintesi del corpo" android:textColor="@color/text_primary" android:textSize="16sp" android:textStyle="bold" />
+             <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_16" android:text="Evoluzione fisica" android:textColor="@color/text_primary" android:textSize="16sp" android:textStyle="bold" />
+             <com.myfitai.app.ui.widgets.SelectableSegmentView android:id="@+id/metricSegment" android:layout_width="match_parent" android:layout_height="44dp" android:layout_marginTop="@dimen/space_8" />
             <com.google.android.material.card.MaterialCardView style="@style/Widget.MyFitAI.Card" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20">
                 <LinearLayout style="@style/Widget.MyFitAI.HomeSectionContent" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">
@@ -31,8 +31,7 @@
             <com.myfitai.app.ui.widgets.TimeRangeSelectorView android:id="@+id/timeRangeSelector" android:layout_width="wrap_content" android:layout_height="@dimen/dashboard_pill_height" android:layout_marginTop="@dimen/space_16" />
                 </LinearLayout>
              </com.google.android.material.card.MaterialCardView>
-             <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:text="Review e letture" android:textColor="@color/text_primary" android:textSize="16sp" android:textStyle="bold" />
-                        <com.google.android.material.card.MaterialCardView style="@style/Widget.MyFitAI.Card" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8">
+                         <com.google.android.material.card.MaterialCardView style="@style/Widget.MyFitAI.Card" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8">
                             <LinearLayout style="@style/Widget.MyFitAI.HomeSectionContent" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
              <LinearLayout
                  android:id="@+id/otherIndicatorsHeader"
@@ -60,7 +59,7 @@
                 <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical"><TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:text="Acqua corporea" android:textColor="@color/text_secondary"/><TextView android:id="@+id/otherIndicatorWaterValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="—" android:textColor="@color/text_primary" android:textStyle="bold"/><TextView android:id="@+id/otherIndicatorWaterDelta" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:text="—" android:textColor="@color/text_secondary"/></LinearLayout>
                             </LinearLayout>
                         </com.google.android.material.card.MaterialCardView>
-             <LinearLayout android:id="@+id/visualComparisonSection" android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone" />
+              <LinearLayout android:id="@+id/visualComparisonSection" android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone" />
                         <com.google.android.material.card.MaterialCardView style="@style/Widget.MyFitAI.Card" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20">
                             <LinearLayout style="@style/Widget.MyFitAI.HomeSectionContent" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@drawable/bg_positive_soft" android:orientation="vertical">
                 <TextView android:id="@+id/progressSummaryTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Affidabilità dell’andamento" android:textColor="@color/text_primary" android:textStyle="bold" />

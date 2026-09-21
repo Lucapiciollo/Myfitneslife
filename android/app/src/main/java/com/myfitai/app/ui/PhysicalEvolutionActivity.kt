@@ -14,6 +14,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.card.MaterialCardView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
@@ -28,6 +29,8 @@ import com.myfitai.app.ui.widgets.SelectableSegmentView
 import com.myfitai.app.ui.widgets.TimeRangeSelectorView
 import com.myfitai.app.ui.widgets.WeightTrendChartView
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -50,6 +53,10 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
     private lateinit var analysisDetailsContainer: LinearLayout
     private lateinit var analysisProgress: ProgressBar
     private lateinit var analysisButton: MaterialButton
+    private lateinit var analysisHeader: View
+    private lateinit var analysisCard: View
+    private lateinit var reviewHeader: View
+    private lateinit var reviewCard: View
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -126,15 +133,22 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
                 }
             }, LinearLayout.LayoutParams(dp(40), dp(40)))
         }
-        root.addView(header, insertIndex, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
-            topMargin = dp(24)
-        })
+        analysisHeader = header
 
-        val card = LinearLayout(this).apply {
+        val card = MaterialCardView(this).apply {
+            setCardBackgroundColor(getColor(R.color.white))
+            radius = dp(20).toFloat()
+            strokeWidth = dp(1)
+            setStrokeColor(getColor(R.color.divider))
+            cardElevation = dp(2).toFloat()
+        }
+        analysisCard = card
+        val cardContent = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundResource(R.drawable.bg_card)
             setPadding(dp(16), dp(14), dp(16), dp(14))
         }
+        card.addView(cardContent)
+        cardContent.addView(header)
         analysisLastText = bodyText()
         analysisNextText = bodyText()
         analysisResultText = bodyText().apply { visibility = View.GONE }
@@ -157,13 +171,13 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
             isAllCaps = false
             setOnClickListener { confirmManualProgressAnalysis() }
         }
-        card.addView(analysisLastText)
-        card.addView(analysisNextText, marginTopParams(4))
-        card.addView(analysisResultText, marginTopParams(10))
-        card.addView(analysisDetailsButton, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(44)).apply { topMargin = dp(8) })
-        card.addView(analysisDetailsContainer, marginTopParams(6))
-        card.addView(analysisProgress, LinearLayout.LayoutParams(dp(32), dp(32)).apply { topMargin = dp(10) })
-        card.addView(analysisButton, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(48)).apply { topMargin = dp(12) })
+        cardContent.addView(analysisLastText, marginTopParams(8))
+        cardContent.addView(analysisNextText, marginTopParams(4))
+        cardContent.addView(analysisResultText, marginTopParams(10))
+        cardContent.addView(analysisDetailsButton, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(44)).apply { topMargin = dp(8) })
+        cardContent.addView(analysisDetailsContainer, marginTopParams(6))
+        cardContent.addView(analysisProgress, LinearLayout.LayoutParams(dp(32), dp(32)).apply { topMargin = dp(10) })
+        cardContent.addView(analysisButton, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(48)).apply { topMargin = dp(12) })
         root.addView(card, insertIndex + 1, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
             topMargin = dp(8)
         })
@@ -197,30 +211,37 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
                 }
             }, LinearLayout.LayoutParams(dp(40), dp(40)))
         }
-        root.addView(header, insertIndex, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
-            topMargin = dp(24)
-        })
+        reviewHeader = header
 
-        val card = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setBackgroundResource(R.drawable.bg_card)
-            setPadding(dp(16), dp(14), dp(16), dp(14))
+        val card = MaterialCardView(this).apply {
+            setCardBackgroundColor(getColor(R.color.white))
+            radius = dp(20).toFloat()
+            strokeWidth = dp(1)
+            setStrokeColor(getColor(R.color.divider))
+            cardElevation = dp(2).toFloat()
             isClickable = true
             isFocusable = true
             setOnClickListener { startActivity(Intent(this@PhysicalEvolutionActivity, WeeklyReviewActivity::class.java)) }
         }
-        card.addView(TextView(this).apply {
+        reviewCard = card
+        val cardContent = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16), dp(14), dp(16), dp(14))
+        }
+        card.addView(cardContent)
+        cardContent.addView(header)
+        cardContent.addView(TextView(this).apply {
             text = "Gli ultimi 7 giorni, in un unico punto"
             textSize = 14f
             setTextColor(getColor(R.color.text_primary))
             setTypeface(typeface, android.graphics.Typeface.BOLD)
         })
-        card.addView(TextView(this).apply {
+        cardContent.addView(TextView(this).apply {
             text = "Controlla alimentazione, allenamenti, variazioni corporee e sintesi IA della settimana."
             textSize = 13f
             setTextColor(getColor(R.color.text_secondary))
         }, marginTopParams(6))
-        card.addView(MaterialButton(this).apply {
+        cardContent.addView(MaterialButton(this).apply {
             text = "Apri review"
             isAllCaps = false
             setOnClickListener { startActivity(Intent(this@PhysicalEvolutionActivity, WeeklyReviewActivity::class.java)) }
@@ -230,6 +251,17 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         root.addView(card, insertIndex + 1, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
             topMargin = dp(8)
         })
+        reviewHeader.visibility = View.GONE
+        reviewCard.visibility = View.GONE
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                data.activeProfileStore.activeProfileId.collectLatest { profileId ->
+                    val hasReview = profileId > 0L && data.weeklyReviewRepository.all(profileId).first().isNotEmpty()
+                    reviewHeader.visibility = if (hasReview) View.VISIBLE else View.GONE
+                    reviewCard.visibility = if (hasReview) View.VISIBLE else View.GONE
+                }
+            }
+        }
     }
 
     private fun confirmManualProgressAnalysis() {
@@ -298,6 +330,8 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
     private fun renderProgressAnalysisStatus(keepTransientResult: Boolean = false) {
         val profileId = data.activeProfileStore.currentIdOrNull()
         if (profileId == null) {
+            analysisHeader.visibility = View.GONE
+            analysisCard.visibility = View.GONE
             analysisLastText.text = "Ultima esecuzione: profilo non disponibile"
             analysisNextText.text = "Esecuzione automatica: non pianificata"
             analysisButton.isEnabled = false
@@ -307,6 +341,9 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         }
         val prefs = data.progressAnalysisPreferences
         val last = prefs.lastSuccessEpochMillis(profileId)
+        val hasAnalysis = !prefs.lastSummary(profileId).isNullOrBlank()
+        analysisHeader.visibility = if (hasAnalysis) View.VISIBLE else View.GONE
+        analysisCard.visibility = if (hasAnalysis) View.VISIBLE else View.GONE
         analysisLastText.text = if (last == null) {
             "Ultima esecuzione: mai"
         } else {

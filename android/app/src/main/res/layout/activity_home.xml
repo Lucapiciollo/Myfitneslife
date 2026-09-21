@@ -161,26 +161,25 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-                    <com.myfitai.app.ui.widgets.SectionHeaderView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Panoramica del corpo" />
+                 <FrameLayout
+                     android:layout_width="match_parent"
+                     android:layout_height="wrap_content">
+                     <com.myfitai.app.ui.widgets.SectionHeaderView
+                         android:layout_width="match_parent"
+                         android:layout_height="wrap_content"
+                         android:paddingEnd="40dp"
+                         android:text="Panoramica del corpo" />
                     <ImageButton
                         android:id="@+id/bodyOverviewHelpButton"
                         android:layout_width="40dp"
                         android:layout_height="40dp"
-                        android:background="@android:color/transparent"
+                         android:layout_gravity="top|end"
+                         android:background="@android:color/transparent"
                         android:contentDescription="Spiega panoramica del corpo"
                         android:padding="8dp"
                         android:src="@drawable/ic_help_outline"
                         app:tint="@color/text_secondary" />
-                </LinearLayout>
+                 </FrameLayout>
 
                 <TextView
                     android:id="@+id/recompositionStateText"
@@ -190,11 +189,21 @@
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
 
-                <com.myfitai.app.ui.widgets.SelectableSegmentView
-                    android:id="@+id/bodyTrendMetricSelector"
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.MyFitAI.InputDropdown"
                     android:layout_width="match_parent"
-                    android:layout_height="40dp"
-                    android:layout_marginTop="@dimen/space_12" />
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_12"
+                    android:hint="Misura mostrata"
+                    app:endIconMode="dropdown_menu">
+                    <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                        android:id="@+id/bodyTrendMetricSelector"
+                        style="@style/Widget.MyFitAI.InputDropdownText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="none"
+                        android:contentDescription="Seleziona la misura del grafico" />
+                </com.google.android.material.textfield.TextInputLayout>
 
                 <com.myfitai.app.ui.widgets.BodyMeasurementTrendView
                     android:id="@+id/bodyMeasurementTrendChart"
@@ -232,26 +241,25 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-                    <com.myfitai.app.ui.widgets.SectionHeaderView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Calorie base giornaliere" />
+                 <FrameLayout
+                     android:layout_width="match_parent"
+                     android:layout_height="wrap_content">
+                     <com.myfitai.app.ui.widgets.SectionHeaderView
+                         android:layout_width="match_parent"
+                         android:layout_height="wrap_content"
+                         android:paddingEnd="40dp"
+                         android:text="Calorie base giornaliere" />
                     <ImageButton
                         android:id="@+id/caloriesHelpButton"
                         android:layout_width="40dp"
                         android:layout_height="40dp"
-                        android:background="@android:color/transparent"
+                         android:layout_gravity="top|end"
+                         android:background="@android:color/transparent"
                         android:contentDescription="Spiega calorie base, TDEE e target"
                         android:padding="8dp"
                         android:src="@drawable/ic_help_outline"
                         app:tint="@color/text_secondary" />
-                </LinearLayout>
+                 </FrameLayout>
                 <TextView
                     android:id="@+id/caloriesModeText"
                     android:layout_width="match_parent"
@@ -442,26 +450,25 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-                    <com.myfitai.app.ui.widgets.SectionHeaderView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Riserva di recupero" />
+                 <FrameLayout
+                     android:layout_width="match_parent"
+                     android:layout_height="wrap_content">
+                     <com.myfitai.app.ui.widgets.SectionHeaderView
+                         android:layout_width="match_parent"
+                         android:layout_height="wrap_content"
+                         android:paddingEnd="40dp"
+                         android:text="Riserva di recupero" />
                     <ImageButton
                         android:id="@+id/recoveryHelpButton"
                         android:layout_width="40dp"
                         android:layout_height="40dp"
-                        android:background="@android:color/transparent"
+                         android:layout_gravity="top|end"
+                         android:background="@android:color/transparent"
                         android:contentDescription="Spiega la riserva di recupero"
                         android:padding="8dp"
                         android:src="@drawable/ic_help_outline"
                         app:tint="@color/text_secondary" />
-                </LinearLayout>
+                 </FrameLayout>
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -576,26 +583,25 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-                    <com.myfitai.app.ui.widgets.SectionHeaderView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Prossimi pasti" />
+                 <FrameLayout
+                     android:layout_width="match_parent"
+                     android:layout_height="wrap_content">
+                     <com.myfitai.app.ui.widgets.SectionHeaderView
+                         android:layout_width="match_parent"
+                         android:layout_height="wrap_content"
+                         android:paddingEnd="40dp"
+                         android:text="Prossimi pasti" />
                     <ImageButton
                         android:id="@+id/nextMealHelpButton"
                         android:layout_width="40dp"
                         android:layout_height="40dp"
-                        android:background="@android:color/transparent"
+                         android:layout_gravity="top|end"
+                         android:background="@android:color/transparent"
                         android:contentDescription="Spiega il prossimo pasto"
                         android:padding="8dp"
                         android:src="@drawable/ic_help_outline"
                         app:tint="@color/text_secondary" />
-                </LinearLayout>
+                 </FrameLayout>
 
                 <com.myfitai.app.ui.widgets.MealCardView android:id="@+id/nextMealCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_12" />
                 <com.myfitai.app.ui.widgets.MealCardView
@@ -630,26 +636,25 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-                    <com.myfitai.app.ui.widgets.SectionHeaderView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/dashboard_next_workout_title" />
+                 <FrameLayout
+                     android:layout_width="match_parent"
+                     android:layout_height="wrap_content">
+                     <com.myfitai.app.ui.widgets.SectionHeaderView
+                         android:layout_width="match_parent"
+                         android:layout_height="wrap_content"
+                         android:paddingEnd="40dp"
+                         android:text="@string/dashboard_next_workout_title" />
                     <ImageButton
                         android:id="@+id/nextWorkoutHelpButton"
                         android:layout_width="40dp"
                         android:layout_height="40dp"
-                        android:background="@android:color/transparent"
+                         android:layout_gravity="top|end"
+                         android:background="@android:color/transparent"
                         android:contentDescription="Spiega il prossimo allenamento"
                         android:padding="8dp"
                         android:src="@drawable/ic_help_outline"
                         app:tint="@color/text_secondary" />
-                </LinearLayout>
+                 </FrameLayout>
                 <com.myfitai.app.ui.widgets.WorkoutCardView android:id="@+id/nextWorkoutCard" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_12" />
                 </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>

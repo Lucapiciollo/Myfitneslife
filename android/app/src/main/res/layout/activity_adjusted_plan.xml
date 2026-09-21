@@ -17,9 +17,9 @@
             android:orientation="vertical"
             android:padding="@dimen/space_16">
 
-            <LinearLayout
+            <LinearLayout style="@style/Widget.MyFitAI.ScreenHeader"
                 android:layout_width="match_parent"
-                android:layout_height="48dp"
+                android:layout_height="56dp"
                 android:gravity="center_vertical">
                 <TextView
                     android:id="@+id/backButton"

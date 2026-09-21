@@ -11,6 +11,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.myfitai.app.data.local.MyFitAiDatabase
 import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.data.profile.ActiveProfileStore
+import com.myfitai.app.data.profile.WorkoutPreferences
 import com.myfitai.app.ui.BiaActivity
 import com.myfitai.app.ui.BodyMeasuresActivity
 import com.myfitai.app.ui.ExportActivity
@@ -64,6 +65,8 @@ class ActivitySmokeTest {
             ))
         }
         ActiveProfileStore(context).selectProfile(profileId)
+        // The smoke suite must not depend on a persisted Settings toggle from a previous test run.
+        WorkoutPreferences(context).setEnabled(profileId, WorkoutPreferences.DEFAULT_ENABLED)
     }
 
     @Test

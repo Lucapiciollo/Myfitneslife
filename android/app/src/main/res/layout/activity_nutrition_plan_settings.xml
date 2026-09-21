@@ -3,18 +3,21 @@
     android:orientation="vertical" android:background="@color/bg_primary">
     <ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:fillViewport="true">
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="@dimen/space_16">
-            <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="56dp" android:gravity="center_vertical" android:background="@drawable/bg_screen_header" android:paddingHorizontal="8dp">
                 <TextView android:id="@+id/backButton" android:layout_width="40dp" android:layout_height="40dp" android:gravity="center" android:text="‹" android:textSize="30sp" android:textColor="@color/text_primary" />
-                <TextView style="@style/Text.MyFitAI.ScreenTitle" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Configurazione alimentazione" />
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Configurazione alimentazione" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="18sp" />
                 <Space android:layout_width="40dp" android:layout_height="1dp" />
             </LinearLayout>
             <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:text="Qui configuri come viene organizzato e generato il tuo piano. Le impostazioni non cambiano i dati storici." android:textColor="@color/text_secondary" android:textSize="13sp" />
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_16" android:background="@drawable/bg_card" android:orientation="vertical" android:padding="@dimen/space_16">
+            <com.google.android.material.card.MaterialCardView style="@style/Widget.MyFitAI.Card" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_16">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="@dimen/space_16">
                 <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Struttura dei pasti" android:textColor="@color/text_primary" android:textSize="16sp" android:textStyle="bold" />
                 <TextView android:id="@+id/mealCountValue" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:textColor="@color/text_secondary" android:textSize="13sp" />
                 <com.google.android.material.button.MaterialButton android:id="@+id/mealCountButton" style="@style/Widget.MyFitAI.Button.Outlined" android:layout_width="match_parent" android:layout_height="48dp" android:layout_marginTop="@dimen/space_10" android:text="Modifica pasti al giorno" android:textAllCaps="false" />
-            </LinearLayout>
-            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_12" android:background="@drawable/bg_card" android:orientation="vertical" android:padding="@dimen/space_16">
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+            <com.google.android.material.card.MaterialCardView style="@style/Widget.MyFitAI.Card" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_12">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="@dimen/space_16">
                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical">
                     <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
                         <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Generazione automatica" android:textColor="@color/text_primary" android:textSize="16sp" android:textStyle="bold" />
@@ -24,7 +27,8 @@
                 </LinearLayout>
                 <com.google.android.material.button.MaterialButton android:id="@+id/scheduleButton" style="@style/Widget.MyFitAI.Button.Outlined" android:layout_width="match_parent" android:layout_height="48dp" android:layout_marginTop="@dimen/space_10" android:text="Modifica frequenza e ora" android:textAllCaps="false" />
                 <com.google.android.material.button.MaterialButton android:id="@+id/nutritionPathButton" style="@style/Widget.MyFitAI.Button.Outlined" android:layout_width="match_parent" android:layout_height="48dp" android:layout_marginTop="@dimen/space_8" android:text="Suggerisci il percorso nutrizionale" android:textAllCaps="false" />
-            </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
     </ScrollView>
 </LinearLayout>

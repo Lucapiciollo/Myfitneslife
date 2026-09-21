@@ -14,10 +14,12 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.card.MaterialCardView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.domain.food.FoodMeal
+import com.myfitai.app.domain.food.FoodSupplement
 import com.myfitai.app.domain.food.FoodPlanDay
 import com.myfitai.app.domain.food.FoodPlanMetrics
 import com.myfitai.app.domain.food.FoodPlanVersion
@@ -66,6 +68,10 @@ class FoodPlanActivity : BaseShellActivity() {
         lifecycleScope.launch { repeatOnLifecycle(Lifecycle.State.STARTED) { viewModel.state.collect(::render) } }
     }
 
+    fun selectWeekFromNavigation(weekStartEpochDay: Long) {
+        viewModel.selectWeek(weekStartEpochDay)
+    }
+
     private fun bindFoodHelp() {
         findViewById<View>(R.id.weekActionsHelpButton).setOnClickListener {
             showHelpCard(
@@ -107,6 +113,7 @@ class FoodPlanActivity : BaseShellActivity() {
 
     private fun render(state: FoodPlanViewModel.State) {
         val weekEnd = state.weekStart.plusDays(6)
+        val currentWeek = state.weekStart == LocalDate.now().with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY))
         findViewById<TextView>(R.id.weekRangeLabel).text = formatWeekRange(state.weekStart, weekEnd)
         weekDaySelector.setDays((0..6).map { offset ->
             val date = state.weekStart.plusDays(offset.toLong())
@@ -127,20 +134,22 @@ class FoodPlanActivity : BaseShellActivity() {
         val empty = findViewById<TextView>(R.id.emptyPlanText)
         val goalChangedNotice = findViewById<TextView>(R.id.goalChangedNotice)
         val regenerateForGoalButton = findViewById<View>(R.id.regenerateForGoalButton)
-        goalChangedNotice.visibility = if (state.goalChangedSinceGeneration) View.VISIBLE else View.GONE
-        regenerateForGoalButton.visibility = if (state.goalChangedSinceGeneration) View.VISIBLE else View.GONE
+        goalChangedNotice.visibility = if (currentWeek && state.goalChangedSinceGeneration) View.VISIBLE else View.GONE
+        regenerateForGoalButton.visibility = if (currentWeek && state.goalChangedSinceGeneration) View.VISIBLE else View.GONE
         regenerateForGoalButton.isEnabled = !state.generation.running
         val day = state.selectedDay
+        val dayMealsCard = findViewById<View>(R.id.dayMealsCard)
+        dayMealsCard.visibility = if (!state.hasPlan || day?.meals.isNullOrEmpty()) View.GONE else View.VISIBLE
         empty.visibility = if (!state.hasPlan) View.VISIBLE else View.GONE
         if (state.hasPlan && day == null) { empty.visibility = View.VISIBLE; empty.text = "Nessun dato alimentare per il giorno selezionato." }
         else if (!state.hasPlan) empty.text = "Nessun piano per questa settimana. Genera un piano per vedere pasti, quantità e valori nutrizionali."
 
-        renderGeneration(state)
+        renderGeneration(state, currentWeek)
         renderMeals(state.weekStart, day, state.consumptionRecords)
         renderTotals(day, state.snapshot?.version, state.consumptionRecords, state.baseKcal)
     }
 
-    private fun renderGeneration(state: FoodPlanViewModel.State) {
+    private fun renderGeneration(state: FoodPlanViewModel.State, currentWeek: Boolean) {
         if (state.generation.successMessage != null) {
             data.activeProfileStore.currentIdOrNull()?.let { profileId ->
                 data.nutritionPlanUpdatePreferences.setPending(profileId, false)
@@ -151,7 +160,8 @@ class FoodPlanActivity : BaseShellActivity() {
         val progress = findViewById<ProgressBar>(R.id.generationProgress)
         val status = findViewById<TextView>(R.id.generationStatusText)
         val generation = state.generation
-        button.isEnabled = !generation.running
+        button.visibility = if (currentWeek) View.VISIBLE else View.GONE
+        button.isEnabled = currentWeek && !generation.running
         button.text = when { generation.running -> "Generazione in corso…"; state.hasPlan -> "Rigenera piano con IA"; else -> "Genera piano con IA" }
         if (state.hasPlan && !generation.running) {
             button.backgroundTintList = ColorStateList.valueOf(getColor(R.color.surface_primary))
@@ -169,7 +179,7 @@ class FoodPlanActivity : BaseShellActivity() {
             generation.successMessage != null -> listOfNotNull(generation.successMessage, generation.usageMessage).joinToString("\n")
             else -> null
         }
-        statusContainer.visibility = if (message != null) View.VISIBLE else View.GONE
+        statusContainer.visibility = if (currentWeek && message != null) View.VISIBLE else View.GONE
         progress.visibility = if (generation.running) View.VISIBLE else View.GONE
         status.text = message.orEmpty()
     }
@@ -194,19 +204,92 @@ class FoodPlanActivity : BaseShellActivity() {
             container.addView(row, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(8) })
         }
         day?.supplements?.takeIf { it.isNotEmpty() }?.let { supplements ->
-            container.addView(infoRow("Integrazione", supplements.joinToString("\n") { s ->
-                val timePrefix = s.timeMinutes?.let { "%02d:%02d · ".format(it / 60, it % 60) }.orEmpty()
-                val dosePart = "${s.name} ${formatMacro(s.dose)} ${s.unit}"
-                val energyPart = if (s.kcal > 0 || s.proteinG > 0f || s.carbsG > 0f || s.fatG > 0f) {
-                    " · ${NutritionEstimateFormatter.formatEstimatedKcal(s.kcal)} · Proteine ${NutritionEstimateFormatter.formatEstimatedMacro(s.proteinG, "g")} · Carboidrati ${NutritionEstimateFormatter.formatEstimatedMacro(s.carbsG, "g")} · Grassi ${NutritionEstimateFormatter.formatEstimatedMacro(s.fatG, "g")}"
-                } else {
-                    ""
-                }
-                "$timePrefix$dosePart$energyPart"
-            }))
+            container.addView(supplementsCard(supplements), LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { topMargin = dp(12) })
         }
         day?.hydrationNote?.takeIf { it.isNotBlank() }?.let { container.addView(infoRow("Idratazione", it)) }
     }
+
+    private fun supplementsCard(supplements: List<FoodSupplement>): MaterialCardView = MaterialCardView(this).apply {
+        setCardBackgroundColor(getColor(R.color.white))
+        radius = dp(16).toFloat()
+        strokeWidth = dp(1)
+        setStrokeColor(getColor(R.color.divider))
+        cardElevation = 0f
+        val content = LinearLayout(this@FoodPlanActivity).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16), dp(12), dp(16), dp(12))
+        }
+        addView(content)
+        content.addView(TextView(this@FoodPlanActivity).apply {
+            text = "Integrazione"
+            textSize = 16f
+            setTextColor(getColor(R.color.text_primary))
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+        })
+        content.addView(TextView(this@FoodPlanActivity).apply {
+            text = "Dose, orario e valori nutrizionali"
+            textSize = 12f
+            setTextColor(getColor(R.color.text_secondary))
+        }, marginTopParams(2))
+
+        supplements.forEachIndexed { index, supplement ->
+            if (index > 0) content.addView(View(this@FoodPlanActivity).apply {
+                setBackgroundColor(getColor(R.color.divider))
+            }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(1)).apply { topMargin = dp(4) })
+            content.addView(supplementRow(supplement), marginTopParams(4))
+        }
+    }
+
+    private fun supplementRow(supplement: FoodSupplement): LinearLayout = LinearLayout(this).apply {
+        orientation = LinearLayout.HORIZONTAL
+        gravity = android.view.Gravity.CENTER_VERTICAL
+        setPadding(0, dp(6), 0, dp(6))
+        val timing = supplement.timeMinutes?.let { "%02d:%02d".format(it / 60, it % 60) }
+        val details = listOfNotNull(
+            "${formatMacro(supplement.dose)} ${supplement.unit}",
+            timing,
+            supplement.notes?.takeIf { it.isNotBlank() },
+        ).joinToString(" · ")
+        addView(LinearLayout(this@FoodPlanActivity).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(TextView(this@FoodPlanActivity).apply {
+                text = supplement.name
+                textSize = 14f
+                setTextColor(getColor(R.color.text_primary))
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+            })
+            addView(TextView(this@FoodPlanActivity).apply {
+                text = details
+                textSize = 12f
+                setTextColor(getColor(R.color.text_secondary))
+            }, marginTopParams(2))
+        }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        addView(LinearLayout(this@FoodPlanActivity).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = android.view.Gravity.END
+            addView(TextView(this@FoodPlanActivity).apply {
+                text = NutritionEstimateFormatter.formatEstimatedKcal(supplement.kcal)
+                textSize = 14f
+                setTextColor(getColor(R.color.text_primary))
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+                gravity = android.view.Gravity.END
+            })
+            addView(TextView(this@FoodPlanActivity).apply {
+                text = "P ${NutritionEstimateFormatter.formatEstimatedMacro(supplement.proteinG, "g")} · C ${NutritionEstimateFormatter.formatEstimatedMacro(supplement.carbsG, "g")} · G ${NutritionEstimateFormatter.formatEstimatedMacro(supplement.fatG, "g")}"
+                textSize = 11f
+                setTextColor(getColor(R.color.text_secondary))
+                gravity = android.view.Gravity.END
+            }, marginTopParams(2))
+        }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+    }
+
+    private fun marginTopParams(top: Int) = LinearLayout.LayoutParams(
+        LinearLayout.LayoutParams.MATCH_PARENT,
+        LinearLayout.LayoutParams.WRAP_CONTENT,
+    ).apply { topMargin = dp(top) }
 
     private fun infoRow(title: String, body: String) = TextView(this).apply {
         text = "$title\n$body"

@@ -132,8 +132,8 @@ class AiWorkflowIntegrationTest {
 
         val result = services().cheat.registerAndAdapt(input, understanding)
         assertEquals(before + 1, db.cheatEntryDao().observeAll(profileId).first().size)
-        assertFalse(result.adapted)
-        assertTrue(result.newVersionId == null)
+        assertTrue("The confirmed deviation should adapt eligible future meals", result.adapted)
+        assertTrue("The adaptation must append an immutable plan version", result.newVersionId != null)
     }
 
     @Test

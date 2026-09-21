@@ -2,6 +2,11 @@ package com.myfitai.app.ui
 
 import android.content.Intent
 import android.os.Bundle
+import android.graphics.Typeface
+import android.view.Gravity
+import android.view.View
+import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -11,7 +16,6 @@ import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.data.local.entity.BiaMeasurementEntity
 import com.myfitai.app.data.local.entity.BodyMeasurementEntity
-import com.myfitai.app.domain.body.BodyWeightHistory
 import com.myfitai.app.navigation.BottomNavBinder
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -47,6 +51,12 @@ class MeasurementsActivity : BaseShellActivity() {
         findViewById<android.view.View>(R.id.biaHistoryButton).setOnClickListener {
             startActivity(Intent(this, BiaActivity::class.java).putExtra(BiaActivity.EXTRA_OPEN_HISTORY, true))
         }
+        findViewById<android.view.View>(R.id.bodyHelpButton).setOnClickListener {
+            showHelpCard(
+                "Misure corporee",
+                "Registra circonferenze e peso nella stessa rilevazione. Usa lo storico per confrontare i valori nel tempo: la singola misura descrive lo stato del giorno, mentre il trend richiede più date confrontabili.",
+            )
+        }
         findViewById<android.view.View>(R.id.newBodyButton).setOnClickListener { startActivity(Intent(this, BodyMeasuresActivity::class.java)) }
         findViewById<android.view.View>(R.id.bodyHistoryButton).setOnClickListener {
             startActivity(Intent(this, BodyMeasuresActivity::class.java).putExtra(BodyMeasuresActivity.EXTRA_OPEN_HISTORY, true))
@@ -80,35 +90,13 @@ class MeasurementsActivity : BaseShellActivity() {
 
     private fun renderBia(value: BiaMeasurementEntity?) {
         findViewById<TextView>(R.id.biaLatestText).text = value?.let {
-            val date = formatDate(it.measuredAtEpochMillis)
-            val details = listOfNotNull(
-                it.weightKg?.let { weight -> "Peso ${formatNumber(weight)} kg" },
-                it.bodyFatPercent?.let { fat -> "Grasso ${formatNumber(fat)}%" },
-                it.muscleMassKg?.let { muscle -> "Massa muscolare ${formatNumber(muscle)} kg" },
-            ).joinToString(" · ")
-            val missingReason = when {
-                details.isBlank() -> "Dati insufficienti: nessun valore BIA utilizzabile nella rilevazione."
-                it.weightKg == null || it.bodyFatPercent == null || it.muscleMassKg == null ->
-                    "Dati parziali: per un calcolo più completo servono peso, grasso corporeo e massa muscolare."
-                else -> null
-            }
-            "Ultima rilevazione: $date\n${details.ifBlank { missingReason ?: "Dati insufficienti" }}${missingReason?.let { "\n$it" } ?: ""}"
+            "Ultima rilevazione: ${formatDate(it.measuredAtEpochMillis)}"
         } ?: "Nessuna rilevazione BIA disponibile"
     }
 
     private fun renderBody(value: BodyMeasurementEntity?) {
         findViewById<TextView>(R.id.bodyLatestText).text = value?.let {
-            val details = listOfNotNull(
-                BodyWeightHistory.weightFor(it, biaHistory)?.let { weight ->
-                    if (weight.fromBia) "Peso BIA (stessa data) ${formatNumber(weight.kg)} kg"
-                    else "Peso corporeo ${formatNumber(weight.kg)} kg"
-                },
-                it.hipsCm?.let { hips -> "Fianchi ${formatNumber(hips)} cm" },
-                it.waistCm?.let { waist -> "Vita ${formatNumber(waist)} cm" },
-                it.abdomenCm?.let { abdomen -> "Addome ${formatNumber(abdomen)} cm" },
-                it.chestCm?.let { chest -> "Torace ${formatNumber(chest)} cm" },
-            ).joinToString(" · ")
-            "Ultima rilevazione: ${formatDate(it.measuredAtEpochMillis)}\n${details.ifBlank { "Valori parziali" }}"
+            "Ultima rilevazione: ${formatDate(it.measuredAtEpochMillis)}"
         } ?: "Nessuna misura corporea disponibile"
     }
 
@@ -117,14 +105,20 @@ class MeasurementsActivity : BaseShellActivity() {
         val bia = data.biaRepository.latest(profileId).first()
         val body = data.bodyMeasurementRepository.latest(profileId).first()
 
-        fun used(available: Boolean) = if (available) "✓ utilizzato" else "— non disponibile"
-        findViewById<TextView>(R.id.dietImpactText).text = buildString {
-            appendLine("Dati che possono influenzare i target:")
-            appendLine("Peso: ${used(bia?.weightKg != null)}")
-            appendLine("Grasso corporeo: ${used(bia?.bodyFatPercent != null)}")
-            appendLine("Massa muscolare: ${used(bia?.muscleMassKg != null)}")
-            appendLine("Vita: ${used(body?.waistCm != null)}")
-            append("Addome: ${used(body?.abdomenCm != null)}")
+        val rows = findViewById<LinearLayout>(R.id.dietImpactRows)
+        rows.removeAllViews()
+        listOf(
+            "Peso" to (bia?.weightKg != null),
+            "Grasso corporeo" to (bia?.bodyFatPercent != null),
+            "Massa muscolare" to (bia?.muscleMassKg != null),
+            "Vita" to (body?.waistCm != null),
+            "Addome" to (body?.abdomenCm != null),
+        ).forEachIndexed { index, (label, available) ->
+            if (index > 0) rows.addView(View(this).apply {
+                setBackgroundColor(getColor(R.color.divider))
+                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(1))
+            })
+            rows.addView(impactRow(label, available))
         }
 
         val today = LocalDate.now()
@@ -158,6 +152,32 @@ class MeasurementsActivity : BaseShellActivity() {
             append("Acqua, grasso viscerale, muscolo scheletrico e altre circonferenze restano indicatori di contesto/monitoraggio.")
         }
     }
+
+    private fun impactRow(label: String, available: Boolean): LinearLayout = LinearLayout(this).apply {
+        gravity = Gravity.CENTER_VERTICAL
+        orientation = LinearLayout.HORIZONTAL
+        setPadding(0, dp(10), 0, dp(10))
+
+        addView(ImageView(this@MeasurementsActivity).apply {
+            setImageResource(if (available) R.drawable.ic_check_circle else R.drawable.ic_help_outline)
+            alpha = if (available) 1f else 0.55f
+            contentDescription = if (available) "$label utilizzato" else "$label non disponibile"
+        }, LinearLayout.LayoutParams(dp(24), dp(24)).apply { marginEnd = dp(10) })
+        addView(TextView(this@MeasurementsActivity).apply {
+            text = label
+            textSize = 14f
+            setTextColor(getColor(R.color.text_primary))
+            setTypeface(typeface, Typeface.BOLD)
+        }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        addView(TextView(this@MeasurementsActivity).apply {
+            text = if (available) "Utilizzato" else "Non disponibile"
+            textSize = 12f
+            setTextColor(getColor(if (available) R.color.semantic_positive else R.color.text_secondary))
+            gravity = Gravity.END
+        }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+    }
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     private data class AdaptiveReason(val decisionLabel: String, val reasonLabel: String, val windowDays: Int?)
 

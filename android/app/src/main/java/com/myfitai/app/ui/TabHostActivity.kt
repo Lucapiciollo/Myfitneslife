@@ -14,6 +14,7 @@ import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.myfitai.app.R
 import com.myfitai.app.navigation.BottomNavBinder
+import java.time.LocalDate
 
 /** Single window host for the four persistent root tabs. Child screens remain normal Activities. */
 class TabHostActivity : AppCompatActivity() {
@@ -51,6 +52,9 @@ class TabHostActivity : AppCompatActivity() {
         BottomNavBinder.bind(this, tab)
     }
 
+    fun currentFoodPlanActivity(): FoodPlanActivity? =
+        if (::activityManager.isInitialized) activityManager.getActivity(BottomNavBinder.Tab.FOOD.name) as? FoodPlanActivity else null
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
@@ -58,6 +62,9 @@ class TabHostActivity : AppCompatActivity() {
             ?.let { name -> BottomNavBinder.Tab.entries.firstOrNull { it.name == name } }
             ?.takeIf { it != currentTab }
             ?.let { selectTab(it) }
+        intent.getLongExtra(FoodPlanActivity.EXTRA_WEEK_START_EPOCH_DAY, Long.MIN_VALUE)
+            .takeIf { it != Long.MIN_VALUE }
+            ?.let { currentFoodPlanActivity()?.selectWeekFromNavigation(it) }
     }
 
     fun showExitConfirmation() {
@@ -70,11 +77,18 @@ class TabHostActivity : AppCompatActivity() {
     }
 
     private fun showTab(tab: BottomNavBinder.Tab) {
+        val childIntent = Intent(this, tab.activityClass())
+            .putExtra(BottomNavBinder.EXTRA_EMBEDDED_TAB, true)
+            .putExtra(BottomNavBinder.EXTRA_TAB_ROOT, true)
+        if (tab == BottomNavBinder.Tab.FOOD && intent.hasExtra(FoodPlanActivity.EXTRA_WEEK_START_EPOCH_DAY)) {
+            childIntent.putExtra(
+                FoodPlanActivity.EXTRA_WEEK_START_EPOCH_DAY,
+                intent.getLongExtra(FoodPlanActivity.EXTRA_WEEK_START_EPOCH_DAY, LocalDate.now().toEpochDay()),
+            )
+        }
         val child = activityManager.startActivity(
             tab.name,
-            Intent(this, tab.activityClass())
-                .putExtra(BottomNavBinder.EXTRA_EMBEDDED_TAB, true)
-                .putExtra(BottomNavBinder.EXTRA_TAB_ROOT, true),
+            childIntent,
         ) ?: return
         child.decorView.findViewById<View>(R.id.bottomNav)?.visibility = View.GONE
         content.removeAllViews()

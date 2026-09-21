@@ -36,9 +36,10 @@ abstract class BaseShellActivity : AppCompatActivity() {
     private var isTabRoot = false
 
     protected fun openFoodPlan(weekStartEpochDay: Long? = null): Boolean {
-        if (!AiProviderAccess.requireConfigured(this)) return false
+        if (weekStartEpochDay == null && !AiProviderAccess.requireConfigured(this)) return false
         (parent as? TabHostActivity)?.let {
             it.selectTab(BottomNavBinder.Tab.FOOD)
+            weekStartEpochDay?.let { week -> it.currentFoodPlanActivity()?.selectWeekFromNavigation(week) }
             return true
         }
         val intent = Intent(this, TabHostActivity::class.java)
@@ -135,6 +136,7 @@ abstract class BaseShellActivity : AppCompatActivity() {
 
     override fun setContentView(layoutResID: Int) {
         val content = layoutInflater.inflate(layoutResID, null, false)
+        normalizeScreenHeader(content)
         val shell = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(getColor(R.color.bg_primary))
@@ -153,15 +155,48 @@ abstract class BaseShellActivity : AppCompatActivity() {
         observeGlobalProfiles()
     }
 
+    /** Applies the same centered, colored header to every regular screen that has a back button. */
+    private fun normalizeScreenHeader(content: View) {
+        if (this is MealDetailActivity || this is NotificationsActivity) return
+        val root = content as? ViewGroup ?: return
+        val header = findHeaderWithBackButton(root) ?: return
+        header.layoutParams = header.layoutParams?.apply { height = dp(56) }
+        header.setBackgroundResource(R.drawable.bg_screen_header)
+        header.setPadding(dp(8), 0, dp(8), 0)
+        if (header is LinearLayout) header.gravity = Gravity.CENTER_VERTICAL
+
+        for (index in 0 until header.childCount) {
+            val child = header.getChildAt(index)
+            if (child is TextView && child.id != R.id.backButton && child.text.isNotBlank()) {
+                child.setTextColor(getColor(R.color.text_primary))
+                child.textSize = 18f
+                child.setTypeface(child.typeface, Typeface.BOLD)
+                child.gravity = Gravity.CENTER
+            }
+        }
+    }
+
+    private fun findHeaderWithBackButton(group: ViewGroup): ViewGroup? {
+        for (index in 0 until group.childCount) {
+            val child = group.getChildAt(index)
+            if (child is ViewGroup) {
+                val directBack = (0 until child.childCount).any { child.getChildAt(it).id == R.id.backButton }
+                if (directBack) return child
+                findHeaderWithBackButton(child)?.let { return it }
+            }
+        }
+        return null
+    }
+
     private fun buildProfileHeader(): View = LinearLayout(this).apply {
         orientation = LinearLayout.HORIZONTAL
         gravity = Gravity.CENTER_VERTICAL
         setPadding(dp(16), dp(6), dp(12), dp(6))
-        setBackgroundColor(getColor(R.color.surface_primary))
+        setBackgroundColor(getColor(R.color.admin_header_bg))
 
         addView(TextView(this@BaseShellActivity).apply {
             text = "Profilo"
-            setTextColor(getColor(R.color.text_secondary))
+            setTextColor(getColor(R.color.text_primary))
             textSize = 12f
             setTypeface(typeface, Typeface.BOLD)
         }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
@@ -170,13 +205,13 @@ abstract class BaseShellActivity : AppCompatActivity() {
 
         profileSwitcher = AutoCompleteTextView(this@BaseShellActivity).apply {
             hint = "Seleziona profilo"
-            setBackgroundResource(R.drawable.bg_input)
+            background = null
             setTextColor(getColor(R.color.text_primary))
-            setHintTextColor(getColor(R.color.text_muted))
+            setHintTextColor(getColor(R.color.surface_soft))
             textSize = 15f
             isSingleLine = true
             inputType = 0
-            setBackgroundResource(R.drawable.bg_input)
+            background = null
             setPadding(dp(12), 0, dp(8), 0)
             setOnClickListener { showDropDown() }
             setOnItemClickListener { _, _, position, _ -> handleProfileSelection(position) }

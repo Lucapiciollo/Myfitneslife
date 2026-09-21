@@ -80,6 +80,7 @@ class BodyMeasuresActivity : BaseShellActivity() {
         bindBack()
 
         findViewById<View>(R.id.saveButton).setOnClickListener { go(NewBodyMeasurementActivity::class.java) }
+        findViewById<View>(R.id.addBodyFromHistoryButton).setOnClickListener { go(NewBodyMeasurementActivity::class.java) }
         bindTabs()
         bindMetricSelector()
         bindRangeSelector()

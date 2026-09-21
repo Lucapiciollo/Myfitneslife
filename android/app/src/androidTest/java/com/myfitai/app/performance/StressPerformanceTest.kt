@@ -50,6 +50,8 @@ class StressPerformanceTest {
         store.clear()
         plans = MealPlanRepository(db)
         profileIds = (0 until 5).map { index -> db.userProfileDao().insert(profile("Stress $index")) }
+        // ProfileExportService reads the active profile from the shared process store.
+        store.selectProfile(profileIds.first())
         seedHistory()
     }
 

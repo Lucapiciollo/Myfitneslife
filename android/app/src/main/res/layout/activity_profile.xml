@@ -17,22 +17,22 @@
             android:orientation="vertical"
             android:padding="@dimen/space_16">
 
-            <com.google.android.material.card.MaterialCardView
-                style="@style/Widget.MyFitAI.Card"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_8">
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="56dp"
+                android:layout_marginBottom="@dimen/space_8"
+                android:background="@drawable/bg_screen_header"
                 android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingBottom="@dimen/space_12">
-                <TextView android:id="@+id/backButton" android:layout_width="40dp" android:layout_height="40dp" android:gravity="center" android:text="‹" android:textColor="@color/text_primary" android:textSize="32sp" />
-                <TextView android:id="@+id/title" style="@style/Text.MyFitAI.ScreenTitle" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Profili" />
+                android:paddingHorizontal="8dp">
+                <TextView android:id="@+id/backButton" android:layout_width="40dp" android:layout_height="40dp" android:gravity="center" android:text="‹" android:textColor="@color/text_primary" android:textSize="30sp" />
+                <TextView android:id="@+id/title" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Profili" android:textColor="@color/text_primary" android:textSize="18sp" android:textStyle="bold" />
                 <Space android:layout_width="40dp" android:layout_height="40dp" />
             </LinearLayout>
 
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.MyFitAI.Card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -89,10 +89,8 @@
             <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowFoodPreferences" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="@string/profile_row_food_preferences" />
             <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDaySchedule" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_clock" app:srLabel="@string/profile_row_day_schedule" />
             <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowWorkouts" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_workout" app:srLabel="@string/profile_row_workouts" />
-            <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowOpenAiKey" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_key" app:srLabel="@string/profile_row_openai_key" />
             <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowNotifications" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_bell" app:srLabel="@string/profile_row_notifications" />
             <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowExport" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_export" app:srLabel="@string/profile_row_export" />
-            <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowSettings" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_gear" app:srLabel="@string/profile_row_settings" />
             </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>

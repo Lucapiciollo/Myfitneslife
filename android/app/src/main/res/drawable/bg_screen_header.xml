@@ -1,0 +1,4 @@
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/admin_header_bg" />
+    <corners android:bottomLeftRadius="18dp" android:bottomRightRadius="18dp" />
+</shape>

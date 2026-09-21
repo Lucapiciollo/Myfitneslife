@@ -44,6 +44,7 @@ class ExportNavigationUiTest {
         openExport()
         assertTrue(device.hasObject(By.res("com.myfitai.app:id/exportCsvRow")))
         assertTrue(device.hasObject(By.res("com.myfitai.app:id/exportPdfRow")))
+        scrollTo("exportWeeklyPlanPdfRow")
         assertTrue(device.hasObject(By.res("com.myfitai.app:id/exportWeeklyPlanPdfRow")))
     }
 

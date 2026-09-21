@@ -21,7 +21,8 @@ import com.myfitai.app.notifications.NotificationPreferences
 import com.myfitai.app.ui.home.HomeViewModel
 import com.myfitai.app.ui.widgets.MealCardView
 import com.myfitai.app.ui.widgets.MetricCardView
-import com.myfitai.app.ui.widgets.SelectableSegmentView
+import com.google.android.material.textfield.MaterialAutoCompleteTextView
+import android.widget.ArrayAdapter
 import com.myfitai.app.ui.widgets.TimeRangeSelectorView
 import com.myfitai.app.ui.widgets.BodyMeasurementTrendView
 import com.myfitai.app.ui.widgets.WorkoutCardView
@@ -186,13 +187,14 @@ class HomeActivity : BaseShellActivity() {
     }
 
     private fun renderBodyTrend(series: List<HomeViewModel.TrendSeries>) {
-        val selector = findViewById<SelectableSegmentView>(R.id.bodyTrendMetricSelector)
+        val selector = findViewById<MaterialAutoCompleteTextView>(R.id.bodyTrendMetricSelector)
         val labels = series.map { it.label }
         if (labels != bodyTrendLabels) {
             bodyTrendLabels = labels
             selectedBodyTrendIndex = selectedBodyTrendIndex.coerceIn(0, (series.size - 1).coerceAtLeast(0))
-            selector.setSegments(labels, selectedBodyTrendIndex)
-            selector.setOnSegmentSelectedListener { index ->
+            selector.setAdapter(ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, labels))
+            selector.setText(labels.getOrNull(selectedBodyTrendIndex).orEmpty(), false)
+            selector.setOnItemClickListener { _, _, index, _ ->
                 selectedBodyTrendIndex = index
                 renderBodyTrend(viewModel.state.value.bodyMeasurementTrendSeries)
             }
