@@ -62,7 +62,7 @@ object NutritionIntegrityValidator {
                 tolerance = tolerance,
                 belowOnly = belowOnly,
             )
-            if (!targetResult.valid) errors += issue("TARGET_DAY_OUT_OF_RANGE", "Il giorno non rispetta il target dinamico", dayEpochDay = day.dateEpochDay)
+            if (!targetResult.kcal.valid) errors += issue("TARGET_DAY_KCAL_OUT_OF_RANGE", "Le calorie del giorno non rispettano il target dinamico", dayEpochDay = day.dateEpochDay)
             if (day.meals.size != mealsPerDay) errors += issue("MEAL_COUNT_INVALID", "Il numero di pasti non coincide con il profilo", dayEpochDay = day.dateEpochDay, expected = mealsPerDay.toDouble(), actual = day.meals.size.toDouble())
 
             day.meals.forEach { meal -> validateItem(meal.kcal, meal.proteinG, meal.carbsG, meal.fatG, day.dateEpochDay, meal.title, errors, macroKcalToleranceRatio) }
@@ -73,9 +73,9 @@ object NutritionIntegrityValidator {
             val mealCarbs = day.meals.sumOf { it.carbsG.toDouble() } + day.supplements.sumOf { it.carbsG.toDouble() }
             val mealFat = day.meals.sumOf { it.fatG.toDouble() } + day.supplements.sumOf { it.fatG.toDouble() }
             if (mealKcal != day.totalKcal) errors += issue("DAY_MEALS_KCAL_MISMATCH", "La somma dei pasti non coincide con il totale giornaliero", day.dateEpochDay, expected = mealKcal.toDouble(), actual = day.totalKcal.toDouble())
-            if (abs(mealProtein - day.proteinG) > MACRO_TOLERANCE) errors += issue("DAY_MEALS_PROTEIN_MISMATCH", "La somma delle proteine non coincide con il totale giornaliero", day.dateEpochDay, expected = mealProtein, actual = day.proteinG.toDouble())
-            if (abs(mealCarbs - day.carbsG) > MACRO_TOLERANCE) errors += issue("DAY_MEALS_CARBS_MISMATCH", "La somma dei carboidrati non coincide con il totale giornaliero", day.dateEpochDay, expected = mealCarbs, actual = day.carbsG.toDouble())
-            if (abs(mealFat - day.fatG) > MACRO_TOLERANCE) errors += issue("DAY_MEALS_FAT_MISMATCH", "La somma dei grassi non coincide con il totale giornaliero", day.dateEpochDay, expected = mealFat, actual = day.fatG.toDouble())
+            if (abs(mealProtein - day.proteinG) > MACRO_TOLERANCE) warnings += issue("DAY_MEALS_PROTEIN_ESTIMATE_MISMATCH", "La somma delle proteine stimate differisce dal totale dichiarato", day.dateEpochDay, severity = Severity.WARNING, expected = mealProtein, actual = day.proteinG.toDouble())
+            if (abs(mealCarbs - day.carbsG) > MACRO_TOLERANCE) warnings += issue("DAY_MEALS_CARBS_ESTIMATE_MISMATCH", "La somma dei carboidrati stimati differisce dal totale dichiarato", day.dateEpochDay, severity = Severity.WARNING, expected = mealCarbs, actual = day.carbsG.toDouble())
+            if (abs(mealFat - day.fatG) > MACRO_TOLERANCE) warnings += issue("DAY_MEALS_FAT_ESTIMATE_MISMATCH", "La somma dei grassi stimati differisce dal totale dichiarato", day.dateEpochDay, severity = Severity.WARNING, expected = mealFat, actual = day.fatG.toDouble())
             day.meals.flatMap { it.ingredients }.filter { it.nutritionConfidence.isBlank() || it.nutritionConfidence.equals("UNKNOWN", true) }.forEach {
                 warnings += issue("INGREDIENT_NUTRITION_NOT_VERIFIABLE", "Fonte nutrizionale ingrediente non verificabile", day.dateEpochDay)
             }
@@ -86,10 +86,10 @@ object NutritionIntegrityValidator {
     private fun validateItem(kcal: Int, protein: Float, carbs: Float, fat: Float, day: Long, title: String, errors: MutableList<NutritionValidationIssue>, kcalToleranceRatio: Double = KCAL_TOLERANCE_RATIO) {
         val expected = protein * 4.0 + carbs * 4.0 + fat * 9.0
         val tolerance = max(KCAL_MIN_TOLERANCE, kcal * kcalToleranceRatio)
-        if (abs(expected - kcal) > tolerance) errors += issue("MACRO_CALORIE_INCONSISTENCY", "Le calorie dichiarate non sono coerenti con i macro", day, title, expected, kcal.toDouble(), if (kcal == 0) null else abs(expected - kcal) / kcal * 100.0)
+        if (abs(expected - kcal) > tolerance) errors += issue("MACRO_CALORIE_INCONSISTENCY", "Le calorie dichiarate non sono coerenti con i macro stimati", day, title, severity = Severity.WARNING, expected = expected, actual = kcal.toDouble(), deviationPercent = if (kcal == 0) null else abs(expected - kcal) / kcal * 100.0)
     }
 
-    private fun issue(code: String, message: String, dayEpochDay: Long? = null, mealTitle: String? = null, expected: Double? = null, actual: Double? = null, deviationPercent: Double? = null) = NutritionValidationIssue(code, Severity.ERROR, message, dayEpochDay, mealTitle, expected, actual, deviationPercent)
+    private fun issue(code: String, message: String, dayEpochDay: Long? = null, mealTitle: String? = null, severity: Severity = Severity.ERROR, expected: Double? = null, actual: Double? = null, deviationPercent: Double? = null) = NutritionValidationIssue(code, severity, message, dayEpochDay, mealTitle, expected, actual, deviationPercent)
 }
 
 private fun NutritionValidationIssue.toJson() = JSONObject().apply {

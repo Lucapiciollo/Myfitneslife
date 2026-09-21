@@ -141,7 +141,7 @@ class NutritionPlanContractTest {
     @Test
     fun agentValidation_doesNotOverrideAppValidation() {
         val original = response().copy(agentValidation = NutritionPlanContract.AgentValidation(true, "looks valid"))
-        val badDay = original.days.first().copy(proteinG = 120f)
+        val badDay = original.days.first().copy(totalKcal = original.days.first().totalKcal + 500)
         val changed = original.copy(days = listOf(badDay) + original.days.drop(1))
         assertFalse(NutritionPlanContract.validateBusiness(changed, week, targets).isSuccess)
     }

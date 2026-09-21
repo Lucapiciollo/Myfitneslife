@@ -156,16 +156,15 @@ object NutritionPlanContract {
             require(mealsPerDay in SUPPORTED_MEALS_PER_DAY) { "MEAL_COUNT_NOT_SUPPORTED" }
             require(day.meals.size == mealsPerDay) { "DAY_MUST_HAVE_${mealsPerDay}_MEALS" }
             val expectedTargets = dailyTargets[day.dateEpochDay] ?: targets
-            val appValidation = NutritionBusinessValidator.validate(
+            val calorieValidation = NutritionBusinessValidator.validate(
                 expectedTargets,
                 NutritionBusinessValidator.Actuals(day.totalKcal.toDouble(), day.proteinG.toDouble(), day.carbsG.toDouble(), day.fatG.toDouble()),
                 tolerance = tolerance,
                 belowOnly = targetBelowOnly,
             )
-            require(appValidation.valid) {
+            require(calorieValidation.kcal.valid) {
                 "TARGET_TOLERANCE_EXCEEDED:${day.dateEpochDay}:" +
-                    "target=${expectedTargets.kcal.toInt()}/${expectedTargets.proteinG.toInt()}/${expectedTargets.carbsG.toInt()}/${expectedTargets.fatG.toInt()};" +
-                    "actual=${day.totalKcal}/${day.proteinG.toInt()}/${day.carbsG.toInt()}/${day.fatG.toInt()}"
+                    "target=${expectedTargets.kcal.toInt()};actual=${day.totalKcal}"
             }
             if (maintenanceCeilingKcal != null) {
                 require(day.totalKcal < maintenanceCeilingKcal) {

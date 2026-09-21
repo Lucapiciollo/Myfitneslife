@@ -176,7 +176,7 @@ class FoodPlanViewModel(
     private fun friendlyGenerationError(raw: String?): String = when {
         raw.isNullOrBlank() -> "Generazione non riuscita. Riprova a generare il piano."
         raw.startsWith("NUTRITION_INTEGRITY_INVALID") ->
-            "L'IA ha prodotto un piano con valori nutrizionali incoerenti (calorie e macro non tornano) anche dopo alcuni tentativi. Riprova a generare il piano."
+            "L'IA ha prodotto un piano con calorie o struttura incoerenti anche dopo alcuni tentativi. Riprova a generare il piano."
         raw.startsWith("TARGET_TOLERANCE_EXCEEDED") ->
             "Il piano generato non rispetta il target del giorno. Dettagli: ${raw.substringAfter(':', "valori fuori tolleranza")}. Verifica anche le preferenze alimentari e riprova."
         raw.startsWith("DAY_TOTALS_INCONSISTENT") ->
