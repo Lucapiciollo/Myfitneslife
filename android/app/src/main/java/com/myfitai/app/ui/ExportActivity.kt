@@ -25,6 +25,12 @@ class ExportActivity : BaseShellActivity() {
     private val biaHistoryJsonLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) importBiaHistoryJson(uri)
     }
+    private val backupCreateLauncher = registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        if (uri != null) saveBackup(uri)
+    }
+    private val backupOpenLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) importBackup(uri)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -33,10 +39,39 @@ class ExportActivity : BaseShellActivity() {
         bindBack()
 
         findViewById<View>(R.id.importBiaHistoryRow).setOnClickListener { biaHistoryJsonLauncher.launch("application/json") }
+        findViewById<View>(R.id.saveBackupRow).setOnClickListener { backupCreateLauncher.launch("myfitai-backup.json") }
+        findViewById<View>(R.id.importBackupRow).setOnClickListener { backupOpenLauncher.launch(arrayOf("application/json", "text/json", "text/plain")) }
         findViewById<View>(R.id.exportJsonRow).setOnClickListener { export(ProfileExportService.Format.JSON) }
         findViewById<View>(R.id.exportCsvRow).setOnClickListener { export(ProfileExportService.Format.CSV_ZIP) }
         findViewById<View>(R.id.exportPdfRow).setOnClickListener { export(ProfileExportService.Format.PDF) }
         findViewById<View>(R.id.exportWeeklyPlanPdfRow).setOnClickListener { export(ProfileExportService.Format.WEEKLY_PLAN_PDF) }
+    }
+
+    private fun saveBackup(uri: Uri) {
+        lifecycleScope.launch {
+            runCatching {
+                val exported = withContext(Dispatchers.IO) { service.export(ProfileExportService.Format.JSON) }
+                withContext(Dispatchers.IO) {
+                    contentResolver.openOutputStream(uri)?.use { output -> exported.file.inputStream().use { input -> input.copyTo(output) } }
+                        ?: error("Impossibile salvare il backup")
+                }
+            }.onSuccess { Toast.makeText(this@ExportActivity, "Backup salvato su disco", Toast.LENGTH_LONG).show() }
+                .onFailure { Toast.makeText(this@ExportActivity, "Backup non salvato: ${it.message}", Toast.LENGTH_LONG).show() }
+        }
+    }
+
+    private fun importBackup(uri: Uri) {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Importa backup completo?")
+            .setMessage("Verrà creato un nuovo profilo con i dati del file. I dati esistenti non verranno sovrascritti.")
+            .setNegativeButton("Annulla", null)
+            .setPositiveButton("Importa") { _, _ ->
+                lifecycleScope.launch {
+                    runCatching { withContext(Dispatchers.IO) { data.profileBackupService.restore(uri) } }
+                        .onSuccess { name -> Toast.makeText(this@ExportActivity, "Backup importato: $name", Toast.LENGTH_LONG).show(); recreate() }
+                        .onFailure { Toast.makeText(this@ExportActivity, "Importazione non riuscita: ${it.message}", Toast.LENGTH_LONG).show() }
+                }
+            }.show()
     }
 
     private fun export(format: ProfileExportService.Format) {

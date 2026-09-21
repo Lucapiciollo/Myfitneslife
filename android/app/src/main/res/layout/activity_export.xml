@@ -63,7 +63,41 @@
                     </LinearLayout>
                     <TextView android:layout_width="30dp" android:layout_height="match_parent" android:gravity="center" android:text="›" android:textColor="@color/text_primary" android:textSize="26sp" />
                 </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+             </com.google.android.material.card.MaterialCardView>
+
+             <com.google.android.material.card.MaterialCardView
+                 android:id="@+id/saveBackupRow"
+                 style="@style/Widget.MyFitAI.Card"
+                 android:layout_width="match_parent"
+                 android:layout_height="72dp"
+                 android:layout_marginTop="10dp"
+                 android:clickable="true"
+                 android:focusable="true">
+                 <LinearLayout style="@style/Widget.MyFitAI.HomeSectionContent" android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center_vertical" android:orientation="horizontal">
+                     <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Salva backup su disco" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="15sp" />
+                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="Salva tutti i dati del profilo in un file JSON ripristinabile" android:textColor="@color/text_secondary" android:textSize="12sp" />
+                     </LinearLayout>
+                     <TextView android:layout_width="30dp" android:layout_height="match_parent" android:gravity="center" android:text="›" android:textColor="@color/text_primary" android:textSize="26sp" />
+                 </LinearLayout>
+             </com.google.android.material.card.MaterialCardView>
+
+             <com.google.android.material.card.MaterialCardView
+                 android:id="@+id/importBackupRow"
+                 style="@style/Widget.MyFitAI.Card"
+                 android:layout_width="match_parent"
+                 android:layout_height="72dp"
+                 android:layout_marginTop="10dp"
+                 android:clickable="true"
+                 android:focusable="true">
+                 <LinearLayout style="@style/Widget.MyFitAI.HomeSectionContent" android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center_vertical" android:orientation="horizontal">
+                     <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Importa backup da disco" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="15sp" />
+                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="Crea un nuovo profilo dai dati del file JSON" android:textColor="@color/text_secondary" android:textSize="12sp" />
+                     </LinearLayout>
+                     <TextView android:layout_width="30dp" android:layout_height="match_parent" android:gravity="center" android:text="›" android:textColor="@color/text_primary" android:textSize="26sp" />
+                 </LinearLayout>
+             </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/exportJsonRow"

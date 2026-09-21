@@ -14,6 +14,7 @@ import com.myfitai.app.domain.body.BodyProportionAnalysisService
 import com.myfitai.app.domain.body.BiaImportService
 import com.myfitai.app.domain.calculation.ProfileCalculationService
 import com.myfitai.app.domain.export.ProfileExportService
+import com.myfitai.app.domain.export.ProfileBackupService
 import com.myfitai.app.domain.food.CheatAdjustmentService
 import com.myfitai.app.domain.food.FoodConsumptionService
 import com.myfitai.app.domain.food.MealAlternativeService
@@ -199,6 +200,7 @@ class AppDataContainer private constructor(context: Context) {
         db = db,
         activeProfileStore = activeProfileStore,
     )
+    val profileBackupService = ProfileBackupService(appContext, db, activeProfileStore)
 
     companion object {
         @Volatile private var instance: AppDataContainer? = null
