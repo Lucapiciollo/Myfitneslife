@@ -63,9 +63,10 @@ class MeasurementActionCardView @JvmOverloads constructor(
 
         latestText = TextView(context).apply {
             setTextColor(context.getColor(R.color.text_secondary))
-            textSize = 13f
+            textSize = 12f
+            maxLines = 2
         }
-        content.addView(latestText, marginTop(4))
+        content.addView(latestText, marginTop(2))
 
         val actions = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
         addButton = MaterialButton(context).apply {
@@ -87,6 +88,7 @@ class MeasurementActionCardView @JvmOverloads constructor(
             tooltipText = "Storico rilevazioni"
             icon = context.getDrawable(R.drawable.ic_history)
             iconGravity = MaterialButton.ICON_GRAVITY_TEXT_START
+            iconTint = android.content.res.ColorStateList.valueOf(context.getColor(R.color.accent_green_dark))
             gravity = Gravity.CENTER
             backgroundTintList = android.content.res.ColorStateList.valueOf(context.getColor(R.color.surface_primary))
             strokeColor = android.content.res.ColorStateList.valueOf(context.getColor(R.color.accent_green))
@@ -95,7 +97,7 @@ class MeasurementActionCardView @JvmOverloads constructor(
         }
         actions.addView(addButton)
         actions.addView(historyButton)
-        content.addView(actions, marginTop(12))
+        content.addView(actions, marginTop(8))
     }
 
     fun setTitle(value: String) {
