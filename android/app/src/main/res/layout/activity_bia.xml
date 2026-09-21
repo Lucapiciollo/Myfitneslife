@@ -21,8 +21,10 @@
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:gravity="center_vertical">
+                android:layout_height="56dp"
+                android:gravity="center_vertical"
+                android:background="@drawable/bg_screen_header"
+                android:paddingHorizontal="@dimen/space_8">
 
                 <androidx.appcompat.widget.AppCompatImageButton
                     android:id="@+id/backButton"
@@ -33,16 +35,26 @@
                     android:padding="10dp"
                     android:src="@drawable/ic_arrow_back" />
 
-                <Space
+                <TextView
                     android:layout_width="0dp"
-                    android:layout_height="1dp"
-                    android:layout_weight="1" />
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="Bioimpedenziometria"
+                    android:textColor="@color/text_primary"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <Space
+                    android:layout_width="40dp"
+                    android:layout_height="40dp" />
             </LinearLayout>
 
             <com.myfitai.app.ui.widgets.BiaSegmentView
                 android:id="@+id/biaSegment"
                 android:layout_width="match_parent"
-                android:layout_height="44dp" />
+                android:layout_height="44dp"
+                android:layout_marginTop="@dimen/space_8" />
 
             <LinearLayout
                 android:id="@+id/newMeasurementContainer"

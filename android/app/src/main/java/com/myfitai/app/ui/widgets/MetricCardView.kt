@@ -77,7 +77,10 @@ class MetricCardView @JvmOverloads constructor(
 
     fun setCompactStyle() {
         background = null
-        setPadding(0, 0, 0, 0)
+        setPadding(0, dp(2), 0, dp(2))
+        labelView.textSize = 13f
+        valueView.textSize = 14f
+        deltaView.textSize = 11f
     }
 
     fun setValue(value: String) {
@@ -101,4 +104,6 @@ class MetricCardView @JvmOverloads constructor(
             }
         )
     }
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 }
