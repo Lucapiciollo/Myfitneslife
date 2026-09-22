@@ -1,0 +1,3 @@
+<resources>
+    <integer name="motion_screen_enter_ms">220</integer>
+</resources>

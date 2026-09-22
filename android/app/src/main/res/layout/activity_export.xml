@@ -15,20 +15,25 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:clipToPadding="false"
+            android:paddingHorizontal="@dimen/space_16"
+            android:paddingTop="@dimen/space_8"
+            android:paddingBottom="@dimen/space_24">
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="48dp"
+                android:layout_height="@dimen/screen_header_height"
+                android:background="@drawable/bg_screen_header"
                 android:gravity="center_vertical">
-                <TextView
+                <ImageButton
                     android:id="@+id/backButton"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
-                    android:gravity="center"
-                    android:text="‹"
-                    android:textSize="30sp"
-                    android:textColor="@color/text_primary" />
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Indietro"
+                    android:padding="8dp"
+                    android:src="@drawable/ic_arrow_back"
+                    app:tint="@color/text_primary" />
                 <TextView
                     style="@style/Text.MyFitAI.ScreenTitle"
                     android:layout_width="0dp"
@@ -42,134 +47,83 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="@dimen/space_12"
                 android:text="Puoi esportare i dati del profilo attivo oppure importare uno storico BIA. Le rilevazioni già presenti non vengono sovrascritte."
                 android:textColor="@color/text_secondary"
                 android:textSize="13sp" />
 
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/importBiaHistoryRow"
-                style="@style/Widget.MyFitAI.Card"
+            <com.myfitai.app.ui.widgets.SettingListCardView
                 android:layout_width="match_parent"
-                android:layout_height="72dp"
-                android:layout_marginTop="16dp"
-                android:gravity="center_vertical"
-                android:clickable="true"
-                android:focusable="true">
-                <LinearLayout style="@style/Widget.MyFitAI.HomeSectionContent" android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center_vertical" android:orientation="horizontal">
-                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Importa storico BIA" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="15sp" />
-                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="Aggiunge le rilevazioni mancanti senza sovrascrivere quelle già presenti" android:textColor="@color/text_secondary" android:textSize="12sp" />
-                    </LinearLayout>
-                    <TextView android:layout_width="30dp" android:layout_height="match_parent" android:gravity="center" android:text="›" android:textColor="@color/text_primary" android:textSize="26sp" />
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_12">
+                <LinearLayout
+                    style="@style/Widget.MyFitAI.HomeSectionContent"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+                    <com.myfitai.app.ui.widgets.SettingRowView
+                        android:id="@+id/importBiaHistoryRow"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:srIcon="@drawable/ic_setting_export"
+                        app:srLabel="Importa storico BIA"
+                        app:srDescription="Aggiunge le rilevazioni mancanti senza sovrascrivere quelle già presenti" />
+                    <com.myfitai.app.ui.widgets.SettingRowView
+                        android:id="@+id/saveBackupRow"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:srIcon="@drawable/ic_setting_export"
+                        app:srLabel="Salva backup su disco"
+                        app:srDescription="Salva tutti i dati del profilo in un file JSON ripristinabile" />
+                    <com.myfitai.app.ui.widgets.SettingRowView
+                        android:id="@+id/importBackupRow"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:srIcon="@drawable/ic_setting_export"
+                        app:srLabel="Importa backup da disco"
+                        app:srDescription="Crea un nuovo profilo dai dati del file JSON" />
                 </LinearLayout>
-             </com.google.android.material.card.MaterialCardView>
+            </com.myfitai.app.ui.widgets.SettingListCardView>
 
-             <com.google.android.material.card.MaterialCardView
-                 android:id="@+id/saveBackupRow"
-                 style="@style/Widget.MyFitAI.Card"
-                 android:layout_width="match_parent"
-                 android:layout_height="72dp"
-                 android:layout_marginTop="10dp"
-                 android:clickable="true"
-                 android:focusable="true">
-                 <LinearLayout style="@style/Widget.MyFitAI.HomeSectionContent" android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center_vertical" android:orientation="horizontal">
-                     <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Salva backup su disco" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="15sp" />
-                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="Salva tutti i dati del profilo in un file JSON ripristinabile" android:textColor="@color/text_secondary" android:textSize="12sp" />
-                     </LinearLayout>
-                     <TextView android:layout_width="30dp" android:layout_height="match_parent" android:gravity="center" android:text="›" android:textColor="@color/text_primary" android:textSize="26sp" />
-                 </LinearLayout>
-             </com.google.android.material.card.MaterialCardView>
-
-             <com.google.android.material.card.MaterialCardView
-                 android:id="@+id/importBackupRow"
-                 style="@style/Widget.MyFitAI.Card"
-                 android:layout_width="match_parent"
-                 android:layout_height="72dp"
-                 android:layout_marginTop="10dp"
-                 android:clickable="true"
-                 android:focusable="true">
-                 <LinearLayout style="@style/Widget.MyFitAI.HomeSectionContent" android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center_vertical" android:orientation="horizontal">
-                     <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Importa backup da disco" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="15sp" />
-                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="Crea un nuovo profilo dai dati del file JSON" android:textColor="@color/text_secondary" android:textSize="12sp" />
-                     </LinearLayout>
-                     <TextView android:layout_width="30dp" android:layout_height="match_parent" android:gravity="center" android:text="›" android:textColor="@color/text_primary" android:textSize="26sp" />
-                 </LinearLayout>
-             </com.google.android.material.card.MaterialCardView>
-
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/exportJsonRow"
-                style="@style/Widget.MyFitAI.Card"
+            <com.myfitai.app.ui.widgets.SettingListCardView
                 android:layout_width="match_parent"
-                android:layout_height="72dp"
-                android:layout_marginTop="16dp"
-                android:gravity="center_vertical"
-                android:clickable="true"
-                android:focusable="true">
-                <LinearLayout style="@style/Widget.MyFitAI.HomeSectionContent" android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center_vertical" android:orientation="horizontal">
-                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Esporta JSON" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="15sp" />
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="Completo: profilo, BIA, misure, allenamenti, piani e tutte le versioni, sgarri e review" android:textColor="@color/text_secondary" android:textSize="12sp" />
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_12">
+                <LinearLayout
+                    style="@style/Widget.MyFitAI.HomeSectionContent"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+                    <com.myfitai.app.ui.widgets.SettingRowView
+                        android:id="@+id/exportJsonRow"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:srIcon="@drawable/ic_setting_export"
+                        app:srLabel="Esporta JSON"
+                        app:srDescription="Completo: profilo, BIA, misure, allenamenti, piani e tutte le versioni, sgarri e review" />
+                    <com.myfitai.app.ui.widgets.SettingRowView
+                        android:id="@+id/exportCsvRow"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:srIcon="@drawable/ic_setting_export"
+                        app:srLabel="Pacchetto CSV (.zip)"
+                        app:srDescription="Tabelle separate; gerarchia completa dei piani inclusa in JSON nel pacchetto" />
+                    <com.myfitai.app.ui.widgets.SettingRowView
+                        android:id="@+id/exportPdfRow"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:srIcon="@drawable/ic_setting_export"
+                        app:srLabel="Report profilo PDF"
+                        app:srDescription="Report grafico: snapshot, BIA, misure, proporzioni, trend, alimentazione e attività" />
+                    <com.myfitai.app.ui.widgets.SettingRowView
+                        android:id="@+id/exportWeeklyPlanPdfRow"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:srIcon="@drawable/ic_setting_export"
+                        app:srLabel="Dieta settimanale PDF"
+                        app:srDescription="7 giorni ben impaginati con pasti, ingredienti, dosi e lista della spesa aggregata in fondo" />
                 </LinearLayout>
-                <TextView android:layout_width="30dp" android:layout_height="match_parent" android:gravity="center" android:text="›" android:textColor="@color/text_primary" android:textSize="26sp" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/exportCsvRow"
-                style="@style/Widget.MyFitAI.Card"
-                android:layout_width="match_parent"
-                android:layout_height="72dp"
-                android:layout_marginTop="10dp"
-                android:gravity="center_vertical"
-                android:clickable="true"
-                android:focusable="true">
-                <LinearLayout style="@style/Widget.MyFitAI.HomeSectionContent" android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center_vertical" android:orientation="horizontal">
-                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Pacchetto CSV (.zip)" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="15sp" />
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="Tabelle separate; gerarchia completa dei piani inclusa in JSON nel pacchetto" android:textColor="@color/text_secondary" android:textSize="12sp" />
-                </LinearLayout>
-                <TextView android:layout_width="30dp" android:layout_height="match_parent" android:gravity="center" android:text="›" android:textColor="@color/text_primary" android:textSize="26sp" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/exportPdfRow"
-                style="@style/Widget.MyFitAI.Card"
-                android:layout_width="match_parent"
-                android:layout_height="80dp"
-                android:layout_marginTop="10dp"
-                android:gravity="center_vertical"
-                android:clickable="true"
-                android:focusable="true">
-                <LinearLayout style="@style/Widget.MyFitAI.HomeSectionContent" android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center_vertical" android:orientation="horizontal">
-                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Report profilo PDF" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="15sp" />
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="Report grafico: snapshot, BIA, misure, proporzioni, trend, alimentazione e attività" android:textColor="@color/text_secondary" android:textSize="12sp" />
-                </LinearLayout>
-                <TextView android:layout_width="30dp" android:layout_height="match_parent" android:gravity="center" android:text="›" android:textColor="@color/text_primary" android:textSize="26sp" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/exportWeeklyPlanPdfRow"
-                style="@style/Widget.MyFitAI.Card"
-                android:layout_width="match_parent"
-                android:layout_height="86dp"
-                android:layout_marginTop="10dp"
-                android:gravity="center_vertical"
-                android:clickable="true"
-                android:focusable="true">
-                <LinearLayout style="@style/Widget.MyFitAI.HomeSectionContent" android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center_vertical" android:orientation="horizontal">
-                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Dieta settimanale PDF" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="15sp" />
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="7 giorni ben impaginati con pasti, ingredienti, dosi e lista della spesa aggregata in fondo" android:textColor="@color/text_secondary" android:textSize="12sp" />
-                </LinearLayout>
-                <TextView android:layout_width="30dp" android:layout_height="match_parent" android:gravity="center" android:text="›" android:textColor="@color/text_primary" android:textSize="26sp" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+            </com.myfitai.app.ui.widgets.SettingListCardView>
 
             <ProgressBar
                 android:id="@+id/exportProgress"

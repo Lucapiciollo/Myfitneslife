@@ -10,6 +10,7 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
+        android:clipToPadding="false"
         android:fillViewport="true">
 
         <LinearLayout
@@ -17,17 +18,23 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="@dimen/space_16">
+             android:paddingHorizontal="@dimen/space_16"
+             android:paddingTop="@dimen/space_8"
+             android:paddingBottom="@dimen/space_24">
 
-            <LinearLayout android:layout_width="match_parent" android:layout_height="56dp" android:gravity="center_vertical" android:background="@drawable/bg_screen_header" android:paddingHorizontal="8dp">
-                <TextView android:id="@+id/backButton" android:layout_width="40dp" android:layout_height="40dp" android:gravity="center" android:text="‹" android:textSize="30sp" android:textColor="@color/text_primary" />
-                <TextView android:id="@+id/title" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:gravity="center" android:text="Impostazioni" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="18sp" />
+             <LinearLayout android:layout_width="match_parent" android:layout_height="@dimen/screen_header_height" android:gravity="center_vertical" android:background="@drawable/bg_screen_header" android:paddingHorizontal="@dimen/space_8">
+                 <ImageButton android:id="@+id/backButton" android:layout_width="40dp" android:layout_height="40dp" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Indietro" android:padding="8dp" android:src="@drawable/ic_arrow_back" app:tint="@color/text_primary" />
+                 <TextView android:id="@+id/title" style="@style/Text.MyFitAI.ScreenTitle" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:gravity="center" android:text="Impostazioni" />
                 <Space android:layout_width="40dp" android:layout_height="1dp" />
             </LinearLayout>
 
-             <com.google.android.material.card.MaterialCardView
-                 android:id="@+id/generalSectionCard"
-                 style="@style/Widget.MyFitAI.Card"
+              <com.google.android.material.card.MaterialCardView
+                  android:id="@+id/generalSectionCard"
+                  style="@style/Widget.MyFitAI.Card"
+                  app:cardBackgroundColor="@color/surface_primary"
+                  app:cardElevation="0dp"
+                  app:strokeColor="@color/divider"
+                  app:strokeWidth="1dp"
                  android:layout_width="match_parent"
                  android:layout_height="wrap_content"
                  android:layout_marginTop="@dimen/space_8"
@@ -60,17 +67,17 @@
                          app:tint="@color/text_secondary" />
                  </LinearLayout>
                  <LinearLayout
-                     style="@style/Widget.MyFitAI.HomeSectionContent"
+                     style="@style/Widget.MyFitAI.WhiteCardContent"
                      android:layout_width="match_parent"
                      android:layout_height="wrap_content"
                      android:orientation="vertical">
-                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowAppGuide" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_help_outline" app:srLabel="Come funziona MyFitAI" />
+                   <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowAppGuide" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_help_outline" app:srLabel="Come funziona MyFitAI" app:srDescription="@string/settings_desc_guide" />
                   <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
-                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowProfile" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_person" app:srLabel="Profilo" />
+                   <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowProfile" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_person" app:srLabel="Profilo" app:srDescription="@string/settings_desc_profile" />
                   <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
-                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowMeasurements" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_person" app:srLabel="Rilevazioni" />
+                   <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowMeasurements" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_person" app:srLabel="Rilevazioni" app:srDescription="@string/settings_desc_measurements" />
                   <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
-                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowFoodPreferences" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="Preferenze alimentari" />
+                   <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowFoodPreferences" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="Preferenze alimentari" app:srDescription="@string/settings_desc_food" />
                  <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
                   <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowMealCount" android:visibility="gone" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="Pasti al giorno" />
                   <TextView android:id="@+id/mealCountValue" android:visibility="gone" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingStart="@dimen/space_16" android:paddingBottom="@dimen/space_8" android:text="Pasti al giorno" android:textColor="@color/text_secondary" android:textSize="12sp" />
@@ -108,16 +115,20 @@
                  <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowUnits" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_gear" app:srLabel="Unità di misura" />
                  <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
-                 <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowPrivacy" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_lock" app:srLabel="Privacy e dati" />
+                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowPrivacy" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_lock" app:srLabel="Privacy e dati" app:srDescription="@string/settings_desc_privacy" />
                  <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
-                 <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowExport" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_export" app:srLabel="Esporta / importa dati" />
+                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowExport" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_export" app:srLabel="Esporta / importa dati" app:srDescription="@string/settings_desc_export" />
                  </LinearLayout>
                  </LinearLayout>
              </com.google.android.material.card.MaterialCardView>
 
-             <com.google.android.material.card.MaterialCardView
-                 android:id="@+id/dataSectionCard"
-                 style="@style/Widget.MyFitAI.Card"
+              <com.google.android.material.card.MaterialCardView
+                  android:id="@+id/dataSectionCard"
+                  style="@style/Widget.MyFitAI.Card"
+                  app:cardBackgroundColor="@color/surface_primary"
+                  app:cardElevation="0dp"
+                  app:strokeColor="@color/divider"
+                  app:strokeWidth="1dp"
                  android:layout_width="match_parent"
                  android:layout_height="wrap_content"
                  android:layout_marginTop="@dimen/space_8"
@@ -150,7 +161,7 @@
                          app:tint="@color/text_secondary" />
                  </LinearLayout>
                  <LinearLayout
-                     style="@style/Widget.MyFitAI.HomeSectionContent"
+                     style="@style/Widget.MyFitAI.WhiteCardContent"
                      android:layout_width="match_parent"
                      android:layout_height="wrap_content"
                      android:orientation="vertical">
@@ -162,27 +173,31 @@
                      android:text="Puoi eliminare una sola categoria oppure tutti i dati di attività del profilo attivo. Il profilo e le chiavi IA non vengono cancellati."
                      android:textColor="@color/text_secondary"
                      android:textSize="12sp" />
-                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeletePlans" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="Elimina piani alimentari salvati" />
+                   <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeletePlans" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="Elimina piani alimentari salvati" app:srDescription="@string/settings_desc_delete_plans" />
                   <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
-                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteConsumptions" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="Elimina pasti e consumi registrati" />
+                   <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteConsumptions" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="Elimina pasti e consumi registrati" app:srDescription="@string/settings_desc_delete_consumptions" />
                   <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
-                 <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteBia" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_gear" app:srLabel="Elimina misurazioni BIA" />
+                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteBia" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_gear" app:srLabel="Elimina misurazioni BIA" app:srDescription="@string/settings_desc_delete_bia" />
                  <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
-                 <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteBody" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_person" app:srLabel="Elimina misurazioni corporee" />
+                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteBody" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_person" app:srLabel="Elimina misurazioni corporee" app:srDescription="@string/settings_desc_delete_body" />
                  <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
-                 <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteWorkouts" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_gear" app:srLabel="Elimina allenamenti registrati" />
+                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteWorkouts" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_gear" app:srLabel="Elimina allenamenti registrati" app:srDescription="@string/settings_desc_delete_workouts" />
                  <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
-                 <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteCheats" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_add_circle" app:srLabel="Elimina sgarri registrati" />
+                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteCheats" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_add_circle" app:srLabel="Elimina sgarri registrati" app:srDescription="@string/settings_desc_delete_cheats" />
                  <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
-                 <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteReviews" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_export" app:srLabel="Elimina riepiloghi settimanali" />
+                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteReviews" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_export" app:srLabel="Elimina riepiloghi settimanali" app:srDescription="@string/settings_desc_delete_reviews" />
                  <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
-                 <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteRecordedData" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_lock" app:srLabel="Elimina tutti i dati di attività" />
+                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteRecordedData" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_lock" app:srLabel="Elimina tutti i dati di attività" app:srDescription="@string/settings_desc_delete_all" />
                  </LinearLayout>
                  </LinearLayout>
              </com.google.android.material.card.MaterialCardView>
 
-              <com.google.android.material.card.MaterialCardView
-                 style="@style/Widget.MyFitAI.Card"
+               <com.google.android.material.card.MaterialCardView
+                  style="@style/Widget.MyFitAI.Card"
+                  app:cardBackgroundColor="@color/surface_primary"
+                  app:cardElevation="0dp"
+                  app:strokeColor="@color/divider"
+                  app:strokeWidth="1dp"
                  android:layout_width="match_parent"
                  android:layout_height="wrap_content"
                  android:layout_marginTop="@dimen/space_8"
@@ -217,7 +232,7 @@
                   </LinearLayout>
                   <LinearLayout
                       android:id="@+id/aiSectionCard"
-                      style="@style/Widget.MyFitAI.HomeSectionContent"
+                      style="@style/Widget.MyFitAI.WhiteCardContent"
                       android:layout_width="match_parent"
                       android:layout_height="wrap_content"
                       android:orientation="vertical">

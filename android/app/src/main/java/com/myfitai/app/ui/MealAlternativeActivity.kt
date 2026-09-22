@@ -113,9 +113,10 @@ class MealAlternativeActivity : BaseShellActivity() {
                     "Carboidrati ${NutritionEstimateFormatter.formatEstimatedMacro(alternative.carbsG, "g")} · " +
                     "Grassi ${NutritionEstimateFormatter.formatEstimatedMacro(alternative.fatG, "g")}"
                 setTextColor(getColor(R.color.accent_green_dark))
-                textSize = 13f
-                setTypeface(typeface, Typeface.BOLD)
-                setPadding(0, dp(6), 0, 0)
+                 textSize = 13f
+                 setTypeface(typeface, Typeface.BOLD)
+                 setBackgroundColor(getColor(R.color.surface_secondary))
+                 setPadding(dp(8), dp(6), dp(8), dp(6))
             })
             body.addView(TextView(this).apply {
                 text = alternative.ingredients.joinToString(" · ") { it.displayDose }

@@ -14,6 +14,6 @@ class SectionHeaderView @JvmOverloads constructor(
     init {
         setTextColor(context.getColor(R.color.text_primary))
         setTypeface(typeface, Typeface.BOLD)
-        textSize = 17f
+        textSize = 16f
     }
 }

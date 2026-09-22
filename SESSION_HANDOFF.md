@@ -108,6 +108,7 @@ Not verified in the latest delta:
 - Photo-flow QA passed on `SM-A546B - 16`: `LabelImageFlowTest` (`3/3`) verified invalid-image rejection, JPEG conversion, resize and cleanup; `CheatEntryE2ETest` (`2/2`) verified the label-photo dialog is reachable without opening the camera
 - Full `connectedDebugAndroidTest` on `SM-A546B - 16` executed `62` tests: `60 PASS`, `2 FAIL` only in `BottomNavigationUiTest` due to the known legacy `LocalActivityManager`/nested DecorView accessibility issue (`UiAutomator` timeout and `StackOverflowError`); no failures occurred in the newly covered UI, export, notification, or photo flows
 - Full `connectedDebugAndroidTest` rerun after the BottomNavigation test seam: `62/62 PASS` on `SM-A546B - 16`
+- A subsequent full suite exposed a real persisted-database compatibility issue: a version-10 database from an intermediate build lacked the optional extended BIA columns while the current DAO expected them. Added idempotent `MIGRATION_10_11`, installed the debug APK in place without clearing data, passed `DatabaseMigrationTest` `6/6`, and reran the full connected suite at `63/63 PASS`
 - Provider-neutral AI verification passed: `:app:testDebugUnitTest` and `AiWorkflowIntegrationTest` (`6/6`) passed with fake runtime provider; no API keys were accessed or logged
 - Keep all user-facing strings in resources when touching additional screens
 
@@ -138,9 +139,50 @@ After the measurement pass, the remaining UI review queue is:
 - Deterministic notification scheduling/receiver coverage is now verified; remaining notification risk is real background delivery/permission behavior, alongside photo import/camera paths and the full connected suite
 - Photo conversion/lifecycle and sgarro photo-dialog coverage are verified; real Photo Picker/camera capture remains explicitly unverified
 - BottomNavigation residual resolved in test infrastructure only: `TabHostActivity.currentTabActivity()` exposes the embedded root to instrumentation assertions; production navigation behavior was not changed
-- Real Gemini/OpenAI HTTP runtime and provider parity remain intentionally open because they require personal credentials to be entered manually; never automate, read, log, or commit those credentials
+- Gemini HTTP runtime is now verified on the physical device: manual BYOK configuration was already present, `myfitai_provider_verification` returned structured JSON with `finishReason=STOP`, weekly-plan generation used `myfitai_weekly_nutrition_pipe_v1` in JSON-only mode, usage metadata was received, the initial invalid output was rejected locally, the retry passed validation, and the plan was persisted and visible in the weekly UI. OpenAI HTTP runtime and real provider parity are intentionally deferred for a later phase; never automate, read, log, or commit credentials
 - Secure manual-runtime path is confirmed: enter a key only in `SettingsActivity`, use `Verifica e salva`, run the target provider flow on the device, then use `Sostituisci`/`Elimina`; keys are read just-in-time from `SecureAiCredentialStore` and must never enter chat, logs, tests, exports, or navigation arguments
 - Physical-device prerequisite verified: the debug QA seeder created an active local profile on `SM-A546B`, `SplashActivity` reopened `TabHostActivity`, and the `Altro` tab reached `Impostazioni` with the protected provider fields available for manual key entry; no key was inserted or read by automation
+- Current device result: Gemini is active as `Gemini BYOK`, the weekly plan for `21–27 Settembre 2026` is visible with generated version date `22/09/2026`, and the persisted meal cards are rendered. No API key value was inspected or logged
+
+## Release Readiness Review
+
+- `:app:assembleRelease`: PASS with Gradle `8.14.3`; release lint passed.
+- Release signing: BLOCKED for distribution. `:app:signingReport` reports `Config: null` for the release variant, so the generated release APK is not signed with a distribution keystore. Configure signing only through a protected local/CI keystore before publishing; never commit keystore files or passwords.
+- Manifest security: `android:allowBackup="false"`, `android:fullBackupContent="false"`, non-exported production provider/receivers, and debug-only QA activities are present.
+- Credential security: Keystore/AES-GCM storage, hidden saved-key UI, `FLAG_SECURE`, sanitized provider telemetry and no plaintext credential path were confirmed by source review and existing device tests.
+- Current verified device baseline: `63/63` connected tests on `SM-A546B - 16`, migration `10->11` covered by `DatabaseMigrationTest` `6/6`, Gemini real weekly-plan runtime verified, OpenAI intentionally deferred.
+- Remaining release QA gaps: real Photo Picker/camera capture, OS-level notification delivery/tap, rotation/landscape/font-scale visual coverage, 1Y chart rendering, post-run memory profiling, and real OpenAI provider parity.
+
+## Next UI Reorganization
+
+The remaining graphic pass will use the Home as a reference for hierarchy and spacing while preserving the approved screen-specific compositions and all existing behavior.
+
+Priority order:
+
+1. `PhysicalEvolutionActivity`: completed the first pilot. Removed the duplicated screen title, aligned the header and card hierarchy with Home, kept metric/range/chart IDs unchanged, separated indicator rows with dividers, and preserved dynamic AI cards and all existing state handling. `ProgressRangeDeviceTest` passed on `SM-A546B - 16` with `1M/3M/6M/1Y` and metric switching.
+2. `ProfileActivity` and `HistoryActivity`: completed the second pilot. Profile now uses the standard icon header and Home spacing, while History uses the standard header, separated segment control, surfaced empty state, and shared primary export button style. Existing IDs, profile/photo actions, history categories and navigation were preserved. Targeted device run passed `3/3` (`ActivitySmokeTest`, `MeasurementHistoryDeviceTest`, `ProfileEditDeviceTest`).
+3. `WorkoutsActivity` and `NewWorkoutActivity`: align week navigation, summary card, workout rows and primary action.
+4. `ExportActivity` and `NotificationsActivity`: align action-card hierarchy and states without flattening the notification-specific visual composition.
+5. Remaining nutrition/detail screens: review `FoodPlanActivity`, `MealDetailActivity`, `AdjustedPlanActivity`, `NutritionAdviceActivity` and `NutritionPathActivity` for the same token/header/state consistency.
+
+The remaining UI reorganization groups are now implemented on the current working tree:
+
+- Workouts/NewWorkout: standard shell gutter, 56dp header, shared title/button styles and tighter card hierarchy.
+- Export: standard shell gutter/header and normalized action-card spacing.
+- Nutrition operational screens: Advice, adjusted plan, meal alternatives, nutrition settings, FoodPlan, ShoppingList, CheatEntry and WeeklyReview now use the shared shell spacing/header/button treatment where their specific compositions allow it.
+- Meal detail and notification reminder retain their dedicated hero/full-screen compositions intentionally; only shared behavior remains unchanged.
+- Verification after the full UI pass: `:app:assembleDebug`, `:app:testDebugUnitTest`, targeted device flows `9/9 PASS`, and full `connectedDebugAndroidTest` `63/63 PASS` on `SM-A546B - 16`.
+- Final global UI pass: remaining base, measurement, AI, nutrition, review, export, workout, profile and history layouts were normalized to the shared MyFitAI visual system. `MealDetailActivity` keeps its meal hero and `NotificationsActivity` keeps its full-screen reminder composition, with shared surfaces/CTA semantics refined. Final build/test verification remains green: debug/release assemble, unit tests and `63/63` connected tests.
+- Visual system refinement: shared card elevation reduced to tonal/border-led surfaces, primary/outlined buttons standardized with stable minimum heights, bottom navigation spacing increased, and `BaseShellActivity` now applies a short 220ms fade/translate entrance to screen content. No animation was added to business operations or AI jobs.
+- Visual hierarchy correction after direct device review: green is now reserved for primary actions, selected controls and status accents; secondary headers use the Home navy with light text; cards and positive/AI panels use white, warm-neutral or very-light semantic surfaces. This addresses the previous issue where screens still read as green cards instead of following the Home composition.
+- Profile visual correction: `ProfileActivity` and `ProfileEditActivity` now force white title/back contrast on the navy Home-style header; `SettingRowView` uses neutral icon tiles, semibold labels and muted chevrons instead of flat green-accented rows. The current debug APK is installed in place without clearing data; bootstrap remains open until profile data is entered manually.
+- ProfileEdit compact pass: added compact form card/input styles and reduced vertical density to match Home; debug APK installed in place without clearing data. A final connected suite attempt was interrupted when `SM-A546B` disconnected during `SixMonthHistoryExportTest` after 53/63 tests; the export failure is inconclusive and not attributed to UI changes. Device must reconnect before rerunning the final suite.
+- Global compact pattern pass: compact input/dropdown defaults (44dp, 14sp, reduced horizontal padding), compact section content, 16sp section headers, tighter setting/metric rows and neutral white form cards are now shared across the app. Debug APK installed in place and left open on `ProfileEditActivity`; no data was cleared. Final full-suite rerun is intentionally deferred until visual approval of this pass.
+- List pattern pass: `SettingRowView` now supports a compact secondary description, neutral icon tile, semibold title and muted chevron. Profile and Settings/Gestione dati rows were populated with the shared title + short-description structure matching the first Home action rows; mock data and debug install were preserved.
+- Global white-card pass: all shared soft card surfaces used by Alimentazione, Progresso, Review, Piano adattato, storico, workout and measurement summaries now resolve to white Home-style cards with neutral borders. The three main tabs also use the compact shared card-content token; green remains reserved for actions, selection and semantic indicators.
+- The final debug APK was installed in place on `SM-A546B`; complete device suite passed after the global visual changes. Advanced landscape, expanded-window and font-scale visual comparison remain unverified; release signing remains a separate distribution blocker.
+
+For each group: preserve IDs/routes/ViewModels/Room/AI jobs, compare against the approved mock on device, run the relevant instrumentation tests, then update this handoff only with verified results.
 
 ## Git Continuity
 

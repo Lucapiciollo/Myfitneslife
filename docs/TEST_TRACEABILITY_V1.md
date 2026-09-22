@@ -11,7 +11,7 @@ Status values are `PASS`, `STATIC REVIEW ONLY`, `NOT RUN`, and `FAIL`. `PASS` me
 | NORMAL/SPORT classifier | PASS | PASS | NOT RUN | NOT RUN | PASS | PASS | STATIC REVIEW ONLY |
 | Workouts | PASS | PASS | PASS (QA seeded device) | NOT RUN | STATIC REVIEW ONLY | PASS | PASS |
 | Nutrition targets | PASS | STATIC REVIEW ONLY | NOT RUN | NOT RUN | PASS | PASS | PASS |
-| Weekly diet structure | PASS | PASS | PASS (QA seeded device/fake runtime) | NOT RUN (Gemini BYOK key absent) | PASS (missing-key block) | PASS | PASS |
+| Weekly diet structure | PASS | PASS | PASS (QA seeded device/fake runtime + Gemini real plan) | PASS (generated plan visible on device) | PASS (missing-key block) | PASS | PASS |
 | Whey/protein powder | PASS | PASS | NOT RUN | NOT RUN | PASS | PASS | PASS |
 | Creatine | PASS | PASS | NOT RUN | NOT RUN | PASS | PASS | PASS |
 | Hydration note | PASS | PASS | NOT RUN | NOT RUN | PASS | PASS | PASS |
@@ -34,8 +34,8 @@ Status values are `PASS`, `STATIC REVIEW ONLY`, `NOT RUN`, and `FAIL`. `PASS` me
 
 ## Known Traceability Holes
 
-- OpenAI real provider remains untested. Firebase Gemini is configured and reachable on the device, but both diet and cheat requests returned temporary `high demand` responses before a structured payload was received.
-- Real device UI-to-provider error path for diet generation and cheat analysis is verified; real Gemini response, cheat preview, confirmation, and future-meal adaptation remain unverified.
+- OpenAI real provider remains untested by decision. Gemini weekly-plan runtime is verified on the device, including structured response, usage metadata, local validation, retry and persistence; cheat analysis, preview, confirmation and future-meal adaptation remain unverified with a real provider.
+- Real device UI-to-provider error handling for diet generation and cheat analysis is verified; only Gemini weekly-plan success is currently certified for a real provider.
 - No executable Activity/UI test suite; bottom tabs have manual device evidence only.
 - No OS camera/gallery picker runtime test; label-photo processor and temp-file lifecycle are covered.
 - No Android alarm delivery/notification tap test.

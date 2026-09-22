@@ -9,24 +9,27 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
+        android:clipToPadding="false"
         android:fillViewport="true">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="@dimen/space_16">
+             android:paddingHorizontal="@dimen/space_16"
+             android:paddingTop="@dimen/space_8"
+             android:paddingBottom="@dimen/space_24">
 
-            <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:gravity="center_vertical">
+             <LinearLayout android:layout_width="match_parent" android:layout_height="56dp" android:background="@drawable/bg_screen_header" android:gravity="center_vertical" android:paddingHorizontal="@dimen/space_8">
                 <ImageButton
                     android:id="@+id/backButton"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
-                    android:background="@android:color/transparent"
+                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="Indietro"
                     android:padding="8dp"
                     android:src="@drawable/ic_arrow_back" />
-                <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Misure corporee" android:textStyle="bold" android:textSize="20sp" android:textColor="@color/text_primary" />
+                 <TextView style="@style/Text.MyFitAI.ScreenTitle" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Misure corporee" />
                 <Space android:layout_width="40dp" android:layout_height="40dp" />
             </LinearLayout>
 
@@ -68,7 +71,7 @@
                 </LinearLayout>
 
                 <com.google.android.material.card.MaterialCardView style="@style/Widget.MyFitAI.Card" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8">
-                    <LinearLayout style="@style/Widget.MyFitAI.HomeSectionContent" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+                    <LinearLayout style="@style/Widget.MyFitAI.TabCardContent" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
                     <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowWeight" android:layout_width="match_parent" android:layout_height="wrap_content" />
                     <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowChest" android:layout_width="match_parent" android:layout_height="wrap_content" />
                     <com.myfitai.app.ui.widgets.MeasurementRowView android:id="@+id/rowWaist" android:layout_width="match_parent" android:layout_height="wrap_content" />
@@ -87,7 +90,7 @@
             </LinearLayout>
 
             <LinearLayout android:id="@+id/trendContent" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
-                <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:text="Andamento di tutte le misure" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="17sp" />
+                 <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:text="Andamento di tutte le misure" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="16sp" />
                 <com.google.android.material.textfield.TextInputLayout
                     style="@style/Widget.MyFitAI.InputDropdown"
                     android:layout_width="match_parent"
@@ -120,7 +123,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_10"
-                    android:background="@drawable/bg_card_soft"
+                    android:background="@color/surface_primary"
                     android:padding="@dimen/space_12"
                     android:text="Dati insufficienti\nServono almeno due rilevazioni nel periodo per descrivere un andamento affidabile."
                     android:textColor="@color/text_secondary"
@@ -129,7 +132,7 @@
             </LinearLayout>
 
              <LinearLayout android:id="@+id/historyContent" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
-                 <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:text="Storico misurazioni" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="17sp" />
+                  <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:text="Storico misurazioni" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="16sp" />
                  <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:text="Ogni rilevazione viene mantenuta nello storico del profilo attivo." android:textColor="@color/text_secondary" android:textSize="13sp" />
                   <com.google.android.material.button.MaterialButton android:id="@+id/addBodyFromHistoryButton" style="@style/Widget.MyFitAI.Button.Primary" android:layout_width="match_parent" android:layout_height="48dp" android:layout_marginTop="@dimen/space_12" android:gravity="center" android:contentDescription="Nuova misura corporea" android:tooltipText="Nuova misura corporea" android:text="" app:icon="@drawable/ic_add_circle" app:iconGravity="textStart" app:iconPadding="0dp" app:iconTint="@color/white" />
                  <LinearLayout android:id="@+id/historyList" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_12" android:orientation="vertical" />

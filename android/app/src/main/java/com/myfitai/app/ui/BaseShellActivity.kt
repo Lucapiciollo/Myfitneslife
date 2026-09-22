@@ -141,14 +141,24 @@ abstract class BaseShellActivity : AppCompatActivity() {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(getColor(R.color.bg_primary))
         }
-        profileHeader = buildProfileHeader().also { header ->
-            shell.addView(header, LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                resources.getDimensionPixelSize(R.dimen.profile_header_height),
-            ))
+        if (this is HomeActivity) {
+            profileHeader = buildProfileHeader().also { header ->
+                shell.addView(header, LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    resources.getDimensionPixelSize(R.dimen.profile_header_height),
+                ))
+            }
         }
         shell.addView(content, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
         super.setContentView(shell)
+        content.alpha = 0f
+        content.translationY = resources.getDimension(R.dimen.motion_screen_offset)
+        content.animate()
+            .alpha(1f)
+            .translationY(0f)
+            .setDuration(resources.getInteger(R.integer.motion_screen_enter_ms).toLong())
+            .setInterpolator(android.view.animation.DecelerateInterpolator())
+            .start()
         ViewCompat.setOnApplyWindowInsetsListener(shell) { view, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             view.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
@@ -175,6 +185,9 @@ abstract class BaseShellActivity : AppCompatActivity() {
                 child.textSize = 18f
                 child.setTypeface(child.typeface, Typeface.BOLD)
                 child.gravity = Gravity.CENTER
+            }
+            if (child is ImageView && child.id == R.id.backButton) {
+                child.imageTintList = android.content.res.ColorStateList.valueOf(getColor(R.color.text_primary))
             }
         }
     }

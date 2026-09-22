@@ -66,7 +66,7 @@ class HistoryRowView @JvmOverloads constructor(
         val chevron = TextView(context).apply {
             text = "›"
             setTextColor(context.getColor(R.color.text_muted))
-            textSize = 18f
+            textSize = 15f
         }
         addView(chevron)
     }

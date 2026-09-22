@@ -140,7 +140,7 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 - [x] Provider Gemini diretto con structured output, schema canonico e immagini in memoria.
 - [x] Firebase AI Logic non è usato nel runtime Gemini; Firebase generico resta configurabile.
 - [x] OpenAI e Gemini condividono il credential store cifrato e la stessa interfaccia `AiProvider`.
-- [ ] Verifica runtime provider Gemini e parità reale Gemini/OpenAI: la copertura provider-neutral con fake runtime è verde; la verifica HTTP reale resta `NOT RUN` finché le chiavi personali non vengono inserite manualmente nel device, senza essere esposte o automatizzate.
+- [ ] Verifica runtime provider OpenAI e parità reale Gemini/OpenAI: la copertura provider-neutral con fake runtime è verde e Gemini è stato verificato via HTTP reale sul device; OpenAI e il confronto reale tra provider restano `NOT RUN` finché una chiave OpenAI personale non viene inserita manualmente nel device, senza essere esposta o automatizzata.
 - [x] Generazione piano Gemini verificata sul device: modello `gemini-3.5-flash-lite`, HTTP 200, usageMetadata ricevuto, fallback JSON-only, parsing/business validation locale e piano persistito; un primo output è stato respinto per `DAY_TOTALS_INCONSISTENT` e il retry è riuscito.
 - [x] Validazione nutrizionale di integrità integrata sulla base Room v7: controllo indipendente di macro↔kcal per pasto e supplemento, somma pasti↔totale giorno, target giornalieri, numero pasti e ingredienti non verificabili; gli errori bloccano la persistenza e il risultato autorevole viene salvato come `appValidationJson` sulla versione piano con migration Room `7->8`. Test unitari e migration device `4/4 PASS`.
 - [x] Prima slice infrastruttura AI comune sulla base corrente: `AiJobType`, `AiJobHandler`, `AiJobRegistry`, `AiJobScheduler`, `AiJobWorker` e notifica/deep-link condivisi. `NutritionPath` migrata dal worker dedicato al registry comune con retry per errori temporanei; `ProgressAnalysisWorker` resta invariato fino alla migrazione dedicata.
@@ -160,6 +160,7 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 - [x] Navigazione Alimentazione bloccata con dialog e link Settings quando il provider attivo non è configurato.
 - [x] Cataloghi modelli Gemini/OpenAI selezionabili e pricing locale associato al modello attivo.
 - [x] Tracking locale usage/costi Gemini e OpenAI con token cached/thinking/reasoning e snapshot del listino.
+- [x] DB v11: migratione di riparazione idempotente per database v10 creati da build intermedie senza le colonne BIA opzionali estese.
 
 ## QA E VERIFICA
 
@@ -167,9 +168,15 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 - `:app:assembleDebug` e `:app:assembleRelease` verdi sull'HEAD remoto allineato, con Gradle 9.6.0, Java 17 e Android SDK locale.
 - `:app:testDebugUnitTest` verde sul nuovo HEAD, inclusi pricing IA, quality engine BIA e interpretazione trend.
 - `:app:connectedDebugAndroidTest` verde: 56/56 test su `SM-A546B - 16`, inclusi smoke Activity, bottom navigation, QaSeeder, Progress, Settings, Export, notifiche, migration/usage runtime, sessione profilo attivo, E2E consumo pasto, gate sgarro, workflow AI deterministici e formati export inclusi PDF piano.
-- Full connected suite sull'HEAD corrente: `62/62 PASS` su `SM-A546B - 16`; `BottomNavigationUiTest` è stato stabilizzato facendo asserzioni sulle Activity root embedded tramite il test seam del `TabHostActivity`, senza modificare la navigazione utente.
+- Full connected suite sull'HEAD corrente: `63/63 PASS` su `SM-A546B - 16`; include il test di migration v10->11. `BottomNavigationUiTest` è stato stabilizzato facendo asserzioni sulle Activity root embedded tramite il test seam del `TabHostActivity`, senza modificare la navigazione utente.
 - Il nuovo HEAD remoto aggiunge test unitari per pricing IA, usage e trend BIA; la suite aggiornata è stata rieseguita e risulta verde.
 - `:app:assembleRelease` verde; il source set debug-only non entra nella build release.
+- Release-readiness review: build release e lint verdi, ma la variante release non ha una configurazione di firma (`signingReport: Config null`); l'APK release non è quindi distribuibile finché non viene configurato un keystore protetto.
+- Riorganizzazione grafica estesa verificata: PhysicalEvolution, Profile, History, Workouts, NewWorkout, Export, Advice, AdjustedPlan, MealAlternative, NutritionPlanSettings, FoodPlan, ShoppingList, CheatEntry e WeeklyReview riallineati a shell/header/card/spacing condivisi; le composizioni full-screen della notifica e hero del dettaglio pasto restano specifiche per fedeltà visiva.
+- Dopo il pass UI esteso: `:app:assembleDebug`, `:app:testDebugUnitTest`, test mirati `9/9 PASS`, suite connected completa `63/63 PASS` e `:app:assembleRelease` verdi su `SM-A546B - 16` / Gradle `8.14.3`.
+- Pass grafico globale completato su tutte le Activity: shell/header, spacing, card, input, CTA, stati vuoti e gerarchie ora seguono i token condivisi; sono state preservate le composizioni specifiche di onboarding, notifica full-screen e hero del dettaglio pasto. Verifica finale dopo tutte le modifiche: `:app:assembleDebug`, `:app:assembleRelease`, `:app:testDebugUnitTest` e `63/63 PASS` connected su `SM-A546B - 16`.
+- Direzione UI spettacolare consolidata senza migrazione a Compose: Home come riferimento, design token condivisi, card tonali con bordi sottili, CTA coerenti, bottom navigation alleggerita e micro-animazione d'ingresso comune sulle Activity `BaseShellActivity`; comportamento e contratti invariati.
+- Revisione gerarchica richiesta dopo QA visiva: le superfici verdi non funzionali sono state rimosse; header secondari ora usano il navy della Home con testo chiaro, contenuti e card sono bianchi/tonali, pannelli AI lavanda chiari, stati positivi verde appena accennato; il verde pieno resta per CTA, selezioni e indicatori. Card runtime e drawable condivisi aggiornati, non solo i layout.
 - Dopo l'integrazione della pipeline AI comune, build pulita, unit test, APK debug/release e AndroidTest packaging risultano verdi; connected suite completa rieseguita con fixture weekly-plan/advice allineati ai target dinamici e chiusa a `56/56 PASS`.
 - Settings device test dopo il refactor BYOK: 2/2 PASS su `SM-A546B - 16`.
 - Le prove precedenti Firebase sono storiche e non rappresentano il provider finale: il runtime attuale è Gemini BYOK diretto.
@@ -197,11 +204,12 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 - [x] Fixture foto etichetta verificata: conversione JPEG in memoria, ridimensionamento, rifiuto immagini invalide e cleanup dei file temporanei; import completo da Photo Picker/fotocamera reale resta non certificato.
 - [x] E2E UI export verificato per JSON, CSV ZIP, PDF profilo e PDF piano con dataset QA completo; la foto etichetta reale resta aperta.
 - [ ] E2E UI completo di profilo, dieta, sgarro, review, export e foto.
-- [ ] Test runtime provider Gemini/OpenAI, notifiche Android e stress performance.
+- [ ] Test runtime provider OpenAI e parità reale Gemini/OpenAI, notifiche Android e stress performance; Gemini runtime reale è già verificato nel punto dedicato sopra.
 - [x] Rieseguire la suite connected completa dopo il gate Alimentazione e la nuova UI delle credenziali: 55/55 PASS su `SM-A546B - 16`.
 - [x] Testare Gemini BYOK reale su device con API key personale inserita manualmente; risposta strutturata, usageMetadata e persistenza piano verificate senza esporre la chiave.
 - [x] Risolvere output non parsabile del weekly-plan Gemini in JSON-only; il flusso ora registra usageMetadata e mantiene la business validation locale. Il costo monetario effettivo resta verificabile solo tramite Google Cloud Billing.
 - [x] Diagnosi parser weekly-plan completata sul device: output troncato (`JSONException: End of input`, categoria `TRUNCATED_JSON`), `finishReason=MAX_TOKENS`; nessun repair automatico e nessuna persistenza di output invalido.
+- [x] Compatibilita database verificata sul device: la suite ha rilevato un database v10 creato da una build intermedia senza colonne BIA estese; aggiunta migration idempotente v10->11, test migration `6/6 PASS` e suite connected completa `63/63 PASS` dopo installazione in-place senza cancellazione dati.
 
 ## Branching
 - `develop`: sviluppo corrente.

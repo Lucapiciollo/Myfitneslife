@@ -3,6 +3,7 @@ package com.myfitai.app.ui.widgets
 import android.content.Context
 import android.util.AttributeSet
 import android.view.Gravity
+import android.graphics.drawable.GradientDrawable
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -15,36 +16,61 @@ class SettingRowView @JvmOverloads constructor(
 ) : LinearLayout(context, attrs) {
 
     private val trailingText: TextView
+    private val descriptionView: TextView
 
     init {
         orientation = HORIZONTAL
         gravity = Gravity.CENTER_VERTICAL
-        val paddingV = (12 * resources.displayMetrics.density).toInt()
+        val paddingV = (7 * resources.displayMetrics.density).toInt()
         setPadding(0, paddingV, 0, paddingV)
+        background = null
         isClickable = true
         isFocusable = true
 
         val a = context.obtainStyledAttributes(attrs, R.styleable.SettingRowView)
         val iconRes = a.getResourceId(R.styleable.SettingRowView_srIcon, 0)
         val label = a.getString(R.styleable.SettingRowView_srLabel).orEmpty()
+        val description = a.getString(R.styleable.SettingRowView_srDescription).orEmpty()
         a.recycle()
 
         val iconSize = (22 * resources.displayMetrics.density).toInt()
         val icon = ImageView(context).apply {
-            layoutParams = LayoutParams(iconSize, iconSize)
+            layoutParams = LayoutParams((28 * resources.displayMetrics.density).toInt(), (28 * resources.displayMetrics.density).toInt())
+            setPadding(dp(5), dp(5), dp(5), dp(5))
+            background = GradientDrawable().apply {
+                shape = GradientDrawable.RECTANGLE
+                cornerRadius = dp(11).toFloat()
+                setColor(context.getColor(R.color.surface_secondary))
+            }
             if (iconRes != 0) setImageResource(iconRes)
+            imageTintList = android.content.res.ColorStateList.valueOf(context.getColor(R.color.text_secondary))
         }
         addView(icon)
 
-        val labelView = TextView(context).apply {
+        val textColumn = LinearLayout(context).apply {
+            orientation = VERTICAL
             layoutParams = LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f).apply {
                 marginStart = (16 * resources.displayMetrics.density).toInt()
             }
+        }
+        val labelView = TextView(context).apply {
             text = label
             setTextColor(context.getColor(R.color.text_primary))
-            textSize = 15f
+            textSize = 14f
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
         }
-        addView(labelView)
+        textColumn.addView(labelView)
+        descriptionView = TextView(context).apply {
+            text = description
+            visibility = if (description.isBlank()) GONE else VISIBLE
+            setTextColor(context.getColor(R.color.text_secondary))
+            textSize = 11f
+            maxLines = 2
+            ellipsize = android.text.TextUtils.TruncateAt.END
+            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply { topMargin = dp(1) }
+        }
+        textColumn.addView(descriptionView)
+        addView(textColumn)
 
         trailingText = TextView(context).apply {
             layoutParams = LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT)
@@ -60,4 +86,11 @@ class SettingRowView @JvmOverloads constructor(
         trailingText.setTextColor(context.getColor(colorRes))
         trailingText.textSize = 13f
     }
+
+    fun setDescription(value: String?) {
+        descriptionView.text = value.orEmpty()
+        descriptionView.visibility = if (value.isNullOrBlank()) GONE else VISIBLE
+    }
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 }

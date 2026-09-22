@@ -9,14 +9,17 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
+        android:clipToPadding="false"
         android:fillViewport="true">
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="@dimen/space_16">
+             android:paddingHorizontal="@dimen/space_16"
+             android:paddingTop="@dimen/space_8"
+             android:paddingBottom="@dimen/space_24">
 
-            <LinearLayout android:layout_width="match_parent" android:layout_height="48dp" android:orientation="horizontal" android:gravity="center_vertical">
+             <LinearLayout android:layout_width="match_parent" android:layout_height="56dp" android:orientation="horizontal" android:gravity="center_vertical" android:background="@drawable/bg_screen_header" android:paddingHorizontal="@dimen/space_8">
                  <ImageButton android:id="@+id/prevWeekButton" android:layout_width="40dp" android:layout_height="40dp" android:background="@android:color/transparent" android:padding="8dp" android:src="@drawable/ic_arrow_back_white" android:contentDescription="Settimana precedente" app:tint="@color/text_primary" />
                  <TextView android:id="@+id/weekRangeLabel" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="15sp" />
                  <ImageButton android:id="@+id/nextWeekButton" android:layout_width="40dp" android:layout_height="40dp" android:background="@android:color/transparent" android:padding="8dp" android:rotation="180" android:src="@drawable/ic_arrow_back_white" android:contentDescription="Settimana successiva" app:tint="@color/text_primary" />
@@ -36,7 +39,7 @@
                  android:layout_width="match_parent"
                  android:layout_height="wrap_content"
                  android:layout_marginTop="@dimen/space_8"
-                 android:background="@drawable/bg_card_soft"
+                 android:background="@color/surface_primary"
                  android:padding="@dimen/space_12"
                  android:text="@string/food_plan_historical_banner"
                  android:textColor="@color/text_secondary"
@@ -47,7 +50,7 @@
                 android:id="@+id/weekDaySelector"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_8" />
+                 android:layout_marginTop="@dimen/space_12" />
 
              <TextView
                  android:id="@+id/mealCountHint"
@@ -74,7 +77,7 @@
                 android:layout_marginTop="@dimen/space_12"
                  style="@style/Widget.MyFitAI.Card">
                 <LinearLayout
-                    style="@style/Widget.MyFitAI.HomeSectionContent"
+                    style="@style/Widget.MyFitAI.WhiteCardContent"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
@@ -114,7 +117,7 @@
                 android:layout_marginTop="@dimen/space_12"
                  style="@style/Widget.MyFitAI.Card">
                 <LinearLayout
-                    style="@style/Widget.MyFitAI.HomeSectionContent"
+                    style="@style/Widget.MyFitAI.WhiteCardContent"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
@@ -156,7 +159,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/space_12"
-                        android:background="@drawable/bg_card_soft"
+                        android:background="@color/surface_primary"
                         android:padding="@dimen/space_12"
                         android:text="Hai aggiornato il profilo o aggiunto nuove misure. Puoi rigenerare il piano alimentare per aggiornarlo."
                         android:textColor="@color/text_primary"
@@ -213,7 +216,7 @@
                 android:layout_marginTop="@dimen/space_12"
                  style="@style/Widget.MyFitAI.Card">
                 <LinearLayout
-                    style="@style/Widget.MyFitAI.HomeSectionContent"
+                    style="@style/Widget.MyFitAI.WhiteCardContent"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
@@ -275,7 +278,7 @@
                 android:layout_marginTop="@dimen/space_12"
                  style="@style/Widget.MyFitAI.Card">
                 <LinearLayout
-                    style="@style/Widget.MyFitAI.HomeSectionContent"
+                    style="@style/Widget.MyFitAI.WhiteCardContent"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
@@ -367,7 +370,7 @@
                 android:layout_marginTop="@dimen/space_12"
                  style="@style/Widget.MyFitAI.Card">
                 <LinearLayout
-                    style="@style/Widget.MyFitAI.HomeSectionContent"
+                    style="@style/Widget.MyFitAI.WhiteCardContent"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">

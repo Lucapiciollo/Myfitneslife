@@ -40,7 +40,7 @@ class MealCardView @JvmOverloads constructor(
         }
         timeView = TextView(context).apply {
             setTextColor(context.getColor(R.color.text_primary))
-            textSize = 20f
+            textSize = 16f
             setTypeface(typeface, android.graphics.Typeface.BOLD)
         }
         textColumn.addView(timeView)

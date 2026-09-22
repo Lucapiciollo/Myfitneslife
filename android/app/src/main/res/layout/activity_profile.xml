@@ -9,36 +9,40 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
+        android:clipToPadding="false"
         android:fillViewport="true">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="@dimen/space_16">
+            android:paddingHorizontal="@dimen/space_16"
+            android:paddingTop="@dimen/space_8"
+            android:paddingBottom="@dimen/space_24">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
-                android:layout_marginBottom="@dimen/space_8"
                 android:background="@drawable/bg_screen_header"
                 android:gravity="center_vertical"
                 android:paddingHorizontal="8dp">
-                <TextView android:id="@+id/backButton" android:layout_width="40dp" android:layout_height="40dp" android:gravity="center" android:text="‹" android:textColor="@color/text_primary" android:textSize="30sp" />
-                <TextView android:id="@+id/title" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Profili" android:textColor="@color/text_primary" android:textSize="18sp" android:textStyle="bold" />
+                 <ImageButton android:id="@+id/backButton" android:layout_width="40dp" android:layout_height="40dp" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Indietro" android:padding="8dp" android:src="@drawable/ic_arrow_back" app:tint="@color/text_primary" />
+                 <TextView android:id="@+id/title" style="@style/Text.MyFitAI.ScreenTitle" android:textColor="@color/text_primary" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Profili" />
                 <Space android:layout_width="40dp" android:layout_height="40dp" />
             </LinearLayout>
 
-            <com.google.android.material.card.MaterialCardView
-                style="@style/Widget.MyFitAI.Card"
+             <com.google.android.material.card.MaterialCardView
+                 style="@style/Widget.MyFitAI.Card"
+                 app:cardBackgroundColor="@color/white"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
             <LinearLayout
+                style="@style/Widget.MyFitAI.HomeSectionContent"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:paddingVertical="@dimen/space_12">
+                android:paddingTop="@dimen/space_4">
                 <com.google.android.material.imageview.ShapeableImageView
                     android:id="@+id/profileAvatar"
                     android:layout_width="72dp"
@@ -74,25 +78,24 @@
             </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <com.google.android.material.card.MaterialCardView
-                style="@style/Widget.MyFitAI.Card"
+            <com.myfitai.app.ui.widgets.SettingListCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_12">
             <LinearLayout
+                style="@style/Widget.MyFitAI.HomeSectionContent"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingHorizontal="@dimen/space_16">
-            <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowPersonalData" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_person" app:srLabel="@string/profile_row_personal_data" />
-            <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowGoals" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_target" app:srLabel="@string/profile_row_goals" />
-            <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowFoodPreferences" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="@string/profile_row_food_preferences" />
-            <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDaySchedule" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_clock" app:srLabel="@string/profile_row_day_schedule" />
-            <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowWorkouts" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_workout" app:srLabel="@string/profile_row_workouts" />
-            <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowNotifications" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_bell" app:srLabel="@string/profile_row_notifications" />
-            <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowExport" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_export" app:srLabel="@string/profile_row_export" />
+                android:orientation="vertical">
+            <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowPersonalData" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_person" app:srLabel="@string/profile_row_personal_data" app:srDescription="@string/profile_desc_personal_data" />
+            <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowGoals" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_target" app:srLabel="@string/profile_row_goals" app:srDescription="@string/profile_desc_goals" />
+            <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowFoodPreferences" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="@string/profile_row_food_preferences" app:srDescription="@string/profile_desc_food_preferences" />
+            <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDaySchedule" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_clock" app:srLabel="@string/profile_row_day_schedule" app:srDescription="@string/profile_desc_day_schedule" />
+            <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowWorkouts" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_workout" app:srLabel="@string/profile_row_workouts" app:srDescription="@string/profile_desc_workouts" />
+            <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowNotifications" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_bell" app:srLabel="@string/profile_row_notifications" app:srDescription="@string/profile_desc_notifications" />
+            <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowExport" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_export" app:srLabel="@string/profile_row_export" app:srDescription="@string/profile_desc_export" />
             </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+             </com.myfitai.app.ui.widgets.SettingListCardView>
         </LinearLayout>
     </ScrollView>
 

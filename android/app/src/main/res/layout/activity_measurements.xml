@@ -9,27 +9,32 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
+        android:clipToPadding="false"
         android:fillViewport="true">
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="@dimen/space_16">
+             android:paddingHorizontal="@dimen/space_16"
+             android:paddingTop="@dimen/space_8"
+             android:paddingBottom="@dimen/space_24">
 
              <LinearLayout
                  android:layout_width="match_parent"
                  android:layout_height="56dp"
                  android:gravity="center_vertical"
-                 android:background="@drawable/bg_screen_header"
+                     android:background="@drawable/bg_screen_header"
                  android:paddingHorizontal="8dp">
                 <TextView
                     android:id="@+id/backButton"
                     android:layout_width="40dp"
                      android:layout_height="40dp"
                      android:gravity="center"
-                     android:text="‹"
-                     android:textColor="@color/text_primary"
-                     android:textSize="30sp" />
+                     android:background="?attr/selectableItemBackgroundBorderless"
+                     android:contentDescription="Indietro"
+                     android:padding="8dp"
+                     android:src="@drawable/ic_arrow_back"
+                     app:tint="@color/text_primary" />
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -37,8 +42,7 @@
                     android:gravity="center"
                     android:text="Rilevazioni"
                     android:textColor="@color/text_primary"
-                     android:textSize="18sp"
-                     android:textStyle="bold" />
+                     style="@style/Text.MyFitAI.ScreenTitle" />
                 <View android:layout_width="40dp" android:layout_height="1dp" />
             </LinearLayout>
 

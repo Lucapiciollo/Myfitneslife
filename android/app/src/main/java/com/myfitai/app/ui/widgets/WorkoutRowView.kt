@@ -25,8 +25,8 @@ class WorkoutRowView @JvmOverloads constructor(
         orientation = HORIZONTAL
         gravity = android.view.Gravity.CENTER_VERTICAL
         val density = resources.displayMetrics.density
-        setPadding((12 * density).toInt(), (12 * density).toInt(), (12 * density).toInt(), (12 * density).toInt())
-        background = context.getDrawable(R.drawable.bg_card)
+        setPadding(0, (8 * density).toInt(), 0, (8 * density).toInt())
+        background = null
 
         val thumbnailSize = (44 * density).toInt()
         photoThumbnail = ShapeableImageView(context).apply {
@@ -57,7 +57,7 @@ class WorkoutRowView @JvmOverloads constructor(
         }
         titleView = TextView(context).apply {
             setTextColor(context.getColor(R.color.text_primary))
-            textSize = 15f
+            textSize = 14f
             setTypeface(typeface, android.graphics.Typeface.BOLD)
         }
         textColumn.addView(titleView)
@@ -66,7 +66,7 @@ class WorkoutRowView @JvmOverloads constructor(
                 topMargin = (2 * density).toInt()
             }
             setTextColor(context.getColor(R.color.text_secondary))
-            textSize = 12f
+            textSize = 11f
         }
         textColumn.addView(subtitleView)
         addView(textColumn)

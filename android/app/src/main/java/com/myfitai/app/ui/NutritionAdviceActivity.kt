@@ -117,10 +117,10 @@ class NutritionAdviceActivity : BaseShellActivity() {
                 strokeColor = getColor(R.color.divider)
                 strokeWidth = dp(1)
             }
-            val body = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(dp(12), dp(10), dp(12), dp(10))
-            }
+             val body = LinearLayout(this).apply {
+                 orientation = LinearLayout.VERTICAL
+                 setPadding(dp(16), dp(14), dp(16), dp(14))
+             }
 
             val row = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL

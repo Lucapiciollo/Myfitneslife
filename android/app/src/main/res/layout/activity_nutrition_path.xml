@@ -17,13 +17,33 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="@dimen/space_16">
+            android:paddingHorizontal="@dimen/space_16"
+            android:paddingTop="@dimen/space_8"
+            android:paddingBottom="@dimen/space_24">
 
-            <TextView
-                style="@style/Text.MyFitAI.ScreenTitle"
+            <LinearLayout
+                style="@style/Widget.MyFitAI.ScreenHeader"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Percorso nutrizionale" />
+                android:layout_height="@dimen/screen_header_height"
+                android:gravity="center_vertical">
+                <ImageButton
+                    android:id="@+id/backButton"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Indietro"
+                    android:padding="8dp"
+                    android:src="@drawable/ic_arrow_back"
+                    app:tint="@color/text_primary" />
+                <TextView
+                    style="@style/Text.MyFitAI.ScreenTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="Percorso nutrizionale" />
+                <Space android:layout_width="40dp" android:layout_height="1dp" />
+            </LinearLayout>
 
             <TextView
                 android:id="@+id/currentGoalText"

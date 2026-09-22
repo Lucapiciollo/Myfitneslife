@@ -122,25 +122,27 @@
                 app:shapeAppearanceOverlay="@style/ShapeAppearance.MyFitAI.Thumbnail" />
         </LinearLayout>
 
-        <TextView
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/openMealButton"
+            style="@style/Widget.Material3.Button.TextButton"
             android:layout_width="match_parent"
             android:layout_height="52dp"
             android:layout_marginTop="@dimen/space_16"
-            android:gravity="center"
             android:background="@drawable/bg_frosted_pill"
             android:text="Apri pasto"
             android:textColor="@color/text_primary"
-            android:textStyle="bold" />
+            android:textStyle="bold"
+            android:textAllCaps="false" />
 
-        <TextView
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/snoozeButton"
+            style="@style/Widget.Material3.Button.TextButton"
             android:layout_width="match_parent"
             android:layout_height="48dp"
             android:layout_marginTop="@dimen/space_8"
-            android:gravity="center"
             android:background="@drawable/bg_frosted_pill_soft"
             android:text="Posticipa 10 min"
-            android:textColor="@color/white" />
+            android:textColor="@color/white"
+            android:textAllCaps="false" />
     </LinearLayout>
 </FrameLayout>

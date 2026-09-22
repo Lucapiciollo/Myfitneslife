@@ -9,27 +9,32 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
+        android:clipToPadding="false"
         android:fillViewport="true">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="@dimen/space_16">
+            android:paddingHorizontal="@dimen/space_16"
+            android:paddingTop="@dimen/space_8"
+            android:paddingBottom="@dimen/space_24">
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="48dp"
+                android:layout_height="@dimen/screen_header_height"
+                android:background="@drawable/bg_screen_header"
                 android:gravity="center_vertical">
 
                 <TextView
                     android:id="@+id/backButton"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
-                    android:gravity="center"
-                    android:text="‹"
-                    android:textColor="@color/text_primary"
-                    android:textSize="30sp" />
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Indietro"
+                    android:padding="8dp"
+                    android:src="@drawable/ic_arrow_back"
+                    app:tint="@color/text_primary" />
 
                 <TextView
                     android:layout_width="0dp"
@@ -37,8 +42,7 @@
                     android:layout_weight="1"
                     android:text="Alternative IA"
                     android:textColor="@color/text_primary"
-                    android:textSize="22sp"
-                    android:textStyle="bold" />
+                    style="@style/Text.MyFitAI.ScreenTitle" />
             </LinearLayout>
 
             <com.google.android.material.card.MaterialCardView

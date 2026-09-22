@@ -47,7 +47,7 @@ class MeasurementActionCardView @JvmOverloads constructor(
         titleView = TextView(context).apply {
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             setTextColor(context.getColor(R.color.text_primary))
-            textSize = 17f
+             textSize = 16f
             setTypeface(typeface, Typeface.BOLD)
         }
         header.addView(titleView)

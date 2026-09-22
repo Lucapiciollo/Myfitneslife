@@ -25,7 +25,7 @@ import com.myfitai.app.data.local.entity.*
         WeeklyReviewEntity::class,
         AiUsageRecordEntity::class,
     ],
-    version = 10,
+    version = 11,
     exportSchema = true,
 )
 abstract class MyFitAiDatabase : RoomDatabase() {
@@ -206,6 +206,34 @@ object DatabaseMigrations {
         }
     }
 
+    /** Repairs databases created at version 10 by an intermediate build missing optional BIA columns. */
+    val MIGRATION_10_11 = object : Migration(10, 11) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            val existingColumns = mutableSetOf<String>()
+            db.query("PRAGMA table_info(bia_measurements)").use { cursor ->
+                val nameIndex = cursor.getColumnIndex("name")
+                while (cursor.moveToNext()) existingColumns += cursor.getString(nameIndex)
+            }
+
+            listOf(
+                "fatMassKg REAL",
+                "leanMassKg REAL",
+                "bodyWaterKg REAL",
+                "subcutaneousFatPercent REAL",
+                "boneMassKg REAL",
+                "proteinPercent REAL",
+                "proteinKg REAL",
+                "bodyAgeYears INTEGER",
+                "bmi REAL",
+            ).forEach { definition ->
+                val columnName = definition.substringBefore(' ')
+                if (columnName !in existingColumns) {
+                    db.execSQL("ALTER TABLE bia_measurements ADD COLUMN $definition")
+                }
+            }
+        }
+    }
+
     val ALL: Array<Migration> = arrayOf(
         MIGRATION_1_2,
         MIGRATION_2_3,
@@ -216,5 +244,6 @@ object DatabaseMigrations {
         MIGRATION_7_8,
         MIGRATION_8_9,
         MIGRATION_9_10,
+        MIGRATION_10_11,
     )
 }

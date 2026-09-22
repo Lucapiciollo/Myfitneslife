@@ -9,6 +9,7 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
+        android:clipToPadding="false"
         android:fillViewport="true">
         <LinearLayout
             android:layout_width="match_parent"
@@ -44,12 +45,14 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="@dimen/space_16">
+                android:paddingHorizontal="@dimen/space_16"
+                android:paddingTop="@dimen/space_16"
+                android:paddingBottom="@dimen/space_24">
 
-                <TextView android:id="@+id/mealTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="@color/text_primary" android:textSize="19sp" android:textStyle="bold" />
+                 <TextView android:id="@+id/mealTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="@color/text_primary" android:textSize="18sp" android:textStyle="bold" />
                 <TextView android:id="@+id/mealSubtitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_2" android:textColor="@color/text_secondary" android:textSize="13sp" />
 
-                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_16" android:orientation="horizontal">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_16" android:background="@drawable/bg_card_soft" android:orientation="horizontal" android:paddingVertical="@dimen/space_12">
                     <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical" android:gravity="center">
                         <TextView android:id="@+id/statKcal" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="16sp" />
                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Calorie" android:textColor="@color/text_secondary" android:textSize="12sp" />
@@ -74,7 +77,7 @@
                     style="@style/Widget.MyFitAI.Card"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_8">
+                     android:layout_marginTop="@dimen/space_12">
                     <LinearLayout
                         android:id="@+id/ingredientsContainer"
                         style="@style/Widget.MyFitAI.HomeSectionContent"
@@ -87,7 +90,7 @@
                     style="@style/Widget.MyFitAI.Card"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_8">
+                     android:layout_marginTop="@dimen/space_12">
                     <TextView
                         android:id="@+id/preparationContainer"
                         android:layout_width="match_parent"
@@ -111,6 +114,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/consumedButton"
+                    style="@style/Widget.MyFitAI.Button.Primary"
                     android:layout_width="match_parent"
                     android:layout_height="52dp"
                     android:layout_marginTop="@dimen/space_20"
@@ -119,13 +123,11 @@
                     android:textStyle="bold"
                     android:visibility="gone"
                     app:icon="@drawable/ic_check"
-                    app:iconGravity="textStart"
-                    app:cornerRadius="12dp"
-                    app:backgroundTint="@color/accent_green" />
+                    app:iconGravity="textStart" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/skippedButton"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    style="@style/Widget.MyFitAI.Button.Outlined"
                     android:layout_width="match_parent"
                     android:layout_height="48dp"
                     android:layout_marginTop="@dimen/space_8"
