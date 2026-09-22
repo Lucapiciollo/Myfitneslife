@@ -77,6 +77,8 @@ Physical-device QA was subsequently completed on `SM-A546B - 16` / `RZCX924RQMV`
 - Body-measurement header, segments, front/back diagram, current values, and bottom navigation were visible
 - `NewBodyMeasurementDeviceTest` passed on the physical Samsung: the form opened through instrumentation, date/peso/`Circonferenze` were present, the scroll reached `Arti`, and `Salva misurazione` was present
 - The form test captured top/bottom screenshots in the app QA artifacts directory without saving data
+- `MeasurementHistoryDeviceTest` passed on the physical Samsung with the six-month QA fixture
+- BIA history and body-measurement history both exposed populated cards, `historyList`, and the shared edit/delete instruction; screenshots were captured in the QA artifacts directory
 - No `FATAL EXCEPTION` or `AndroidRuntime` app crash was observed in the captured logcat
 - Screenshot artifacts captured locally: `qa-bia-fixed-final.png`, `qa-body-measures-device.png` when available in the workspace
 
@@ -92,7 +94,7 @@ Not verified in the latest delta:
 `BaseShellActivity` already normalizes most regular screen headers to 56dp and applies `bg_screen_header`. BIA now has a visible title, aligned segment spacing, side-by-side date/time inputs, a readable first tab, a one-line date, and a vertical conditions checklist. The following work remains:
 
 - Align form card spacing, section hierarchy, empty/loading/error states, help affordances, and history cards
-- Verify that BIA history and body-measurement history expose equivalent visual affordances without changing behavior
+- Verify whether the remaining BIA/body-history spacing and summary differences require a visual-only consolidation; functional history coverage now exists on device
 - Review `NewBodyMeasurementActivity` and the BIA form for the same header, input, card, and primary-action hierarchy; the new-measurement form now has device smoke/screenshot coverage
 - Keep all user-facing strings in resources when touching additional screens
 
