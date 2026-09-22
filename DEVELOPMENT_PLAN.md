@@ -140,7 +140,7 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 - [x] Provider Gemini diretto con structured output, schema canonico e immagini in memoria.
 - [x] Firebase AI Logic non è usato nel runtime Gemini; Firebase generico resta configurabile.
 - [x] OpenAI e Gemini condividono il credential store cifrato e la stessa interfaccia `AiProvider`.
-- [ ] Verifica runtime provider Gemini e parità reale Gemini/OpenAI.
+- [ ] Verifica runtime provider Gemini e parità reale Gemini/OpenAI: la copertura provider-neutral con fake runtime è verde; la verifica HTTP reale resta da eseguire solo con chiavi personali inserite manualmente e mai esposte.
 - [x] Generazione piano Gemini verificata sul device: modello `gemini-3.5-flash-lite`, HTTP 200, usageMetadata ricevuto, fallback JSON-only, parsing/business validation locale e piano persistito; un primo output è stato respinto per `DAY_TOTALS_INCONSISTENT` e il retry è riuscito.
 - [x] Validazione nutrizionale di integrità integrata sulla base Room v7: controllo indipendente di macro↔kcal per pasto e supplemento, somma pasti↔totale giorno, target giornalieri, numero pasti e ingredienti non verificabili; gli errori bloccano la persistenza e il risultato autorevole viene salvato come `appValidationJson` sulla versione piano con migration Room `7->8`. Test unitari e migration device `4/4 PASS`.
 - [x] Prima slice infrastruttura AI comune sulla base corrente: `AiJobType`, `AiJobHandler`, `AiJobRegistry`, `AiJobScheduler`, `AiJobWorker` e notifica/deep-link condivisi. `NutritionPath` migrata dal worker dedicato al registry comune con retry per errori temporanei; `ProgressAnalysisWorker` resta invariato fino alla migrazione dedicata.

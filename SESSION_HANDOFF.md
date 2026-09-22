@@ -108,6 +108,7 @@ Not verified in the latest delta:
 - Photo-flow QA passed on `SM-A546B - 16`: `LabelImageFlowTest` (`3/3`) verified invalid-image rejection, JPEG conversion, resize and cleanup; `CheatEntryE2ETest` (`2/2`) verified the label-photo dialog is reachable without opening the camera
 - Full `connectedDebugAndroidTest` on `SM-A546B - 16` executed `62` tests: `60 PASS`, `2 FAIL` only in `BottomNavigationUiTest` due to the known legacy `LocalActivityManager`/nested DecorView accessibility issue (`UiAutomator` timeout and `StackOverflowError`); no failures occurred in the newly covered UI, export, notification, or photo flows
 - Full `connectedDebugAndroidTest` rerun after the BottomNavigation test seam: `62/62 PASS` on `SM-A546B - 16`
+- Provider-neutral AI verification passed: `:app:testDebugUnitTest` and `AiWorkflowIntegrationTest` (`6/6`) passed with fake runtime provider; no API keys were accessed or logged
 - Keep all user-facing strings in resources when touching additional screens
 
 ## Next Target
@@ -137,6 +138,7 @@ After the measurement pass, the remaining UI review queue is:
 - Deterministic notification scheduling/receiver coverage is now verified; remaining notification risk is real background delivery/permission behavior, alongside photo import/camera paths and the full connected suite
 - Photo conversion/lifecycle and sgarro photo-dialog coverage are verified; real Photo Picker/camera capture remains explicitly unverified
 - BottomNavigation residual resolved in test infrastructure only: `TabHostActivity.currentTabActivity()` exposes the embedded root to instrumentation assertions; production navigation behavior was not changed
+- Real Gemini/OpenAI HTTP runtime and provider parity remain intentionally open because they require personal credentials to be entered manually; never automate, read, log, or commit those credentials
 
 ## Git Continuity
 
