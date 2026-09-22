@@ -127,7 +127,7 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 - [x] Backup JSON completo locale tramite Storage Access Framework: `Salva backup su disco` e `Importa backup da disco`; il restore crea un nuovo profilo e rimappa gli ID Room di piani, versioni, pasti e consumi senza sovrascrivere i dati esistenti.
 - [x] Prima riorganizzazione UX: aggiunto hub `Configurazione alimentazione` per pasti/generazione automatica/percorso nutrizionale, collegato direttamente da Alimentazione; Impostazioni mantiene il ruolo amministrativo e di configurazione generale.
 - [x] Progresso riorganizzato visivamente per gerarchia: sezione `Sintesi del corpo` sopra andamento e sezione `Review e letture` prima delle card IA dinamiche, mantenendo le Activity esistenti e i dati invariati.
-- [ ] QA runtime completo degli export più recenti.
+- [x] QA runtime completo degli export più recenti: JSON, CSV ZIP, PDF profilo e PDF piano verificati su `SM-A546B - 16` tramite `ExportFormatsE2ETest` e `ExportNavigationUiTest`.
 
 ### Sicurezza OpenAI BYOK
 - [x] Android Keystore come root of trust.
