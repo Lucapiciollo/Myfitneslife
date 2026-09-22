@@ -98,6 +98,8 @@ Not verified in the latest delta:
 - Align form card spacing, section hierarchy, empty/loading/error states, help affordances, and history cards
 - Review remaining empty-state and summary-copy differences; populated history card spacing and hierarchy are now consolidated and device-tested
 - Review `NewBodyMeasurementActivity` and the BIA form for the same header, input, card, and primary-action hierarchy; the new-measurement form now has device smoke/screenshot coverage
+- `SettingsSecurityUiTest` passed `2/2` on the physical Samsung without reading or changing credentials
+- `SettingsDeviceVisualTest` passed on the physical Samsung: `FLAG_SECURE`, visible general/data/AI cards, provider status, and provider switch were verified; no Settings redesign was required from this QA pass
 - Keep all user-facing strings in resources when touching additional screens
 
 ## Next Target
