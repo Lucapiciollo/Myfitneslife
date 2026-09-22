@@ -533,39 +533,38 @@ class BiaActivity : BaseShellActivity() {
             val card = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 setBackgroundResource(R.drawable.bg_card)
-                val p = (16 * resources.displayMetrics.density).toInt()
-                setPadding(p, p, p, p)
+                setPadding(dp(16), dp(12), dp(16), dp(12))
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT,
-                ).apply { bottomMargin = (10 * resources.displayMetrics.density).toInt() }
+                ).apply { bottomMargin = dp(8) }
             }
 
             card.addView(TextView(this).apply {
                 text = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.ITALIAN).format(Date(item.measuredAtEpochMillis))
                 setTextColor(getColor(R.color.text_primary))
                 setTypeface(typeface, Typeface.BOLD)
-                textSize = 14f
+                textSize = 15f
             })
             card.addView(TextView(this).apply {
                 text = buildMeasurementLine(item)
                 setTextColor(getColor(R.color.text_secondary))
-                textSize = 13f
-                setPadding(0, (6 * resources.displayMetrics.density).toInt(), 0, 0)
+                textSize = 12f
+                setPadding(0, dp(5), 0, 0)
             })
             buildConditionLine(item)?.let { conditions ->
                 card.addView(TextView(this).apply {
                     text = conditions
                     setTextColor(getColor(R.color.text_muted))
-                    textSize = 11f
-                    setPadding(0, (6 * resources.displayMetrics.density).toInt(), 0, 0)
+                    textSize = 12f
+                    setPadding(0, dp(6), 0, 0)
                 })
             }
             card.addView(TextView(this).apply {
                 text = "Tocca per modificare · Tieni premuto per eliminare"
                 setTextColor(getColor(R.color.text_muted))
                 textSize = 10f
-                setPadding(0, (6 * resources.displayMetrics.density).toInt(), 0, 0)
+                setPadding(0, dp(6), 0, 0)
             })
             card.setOnClickListener { editReading(item) }
             card.setOnLongClickListener {
@@ -826,6 +825,8 @@ class BiaActivity : BaseShellActivity() {
         if (value % 1f == 0f) value.toInt().toString() else String.format(Locale.ITALIAN, "%.1f", value)
 
     private fun formatSigned(value: Float): String = String.format(Locale.ITALIAN, "%+.1f", value)
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     companion object {
         const val EXTRA_OPEN_HISTORY = "open_bia_history"
