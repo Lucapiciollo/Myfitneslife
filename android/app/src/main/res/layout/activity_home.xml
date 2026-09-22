@@ -90,7 +90,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:visibility="gone"
-                    app:cardBackgroundColor="@color/surface_positive_soft"
+                    app:cardBackgroundColor="@color/surface_primary"
                     app:cardCornerRadius="16dp"
                     app:cardElevation="0dp"
                     app:strokeColor="@color/semantic_error"
