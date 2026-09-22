@@ -105,6 +105,7 @@ Not verified in the latest delta:
 - Consolidated connected UI regression pass on `SM-A546B - 16`: `ActivitySmokeTest`, `SettingsSecurityUiTest` (`2/2`), `ProfileEditDeviceTest`, `MeasurementHistoryDeviceTest`, and `FoodReviewScreensDeviceTest` all passed
 - Export QA completed on `SM-A546B - 16`: `ExportFormatsE2ETest` (`2/2`) verified CSV ZIP, PDF profile, and weekly-plan PDF; `ExportNavigationUiTest` (`2/2`) verified export navigation and JSON generation
 - Notification QA passed on `SM-A546B - 16`: `NotificationSchedulerTest` (`4/4`) verified future meal/review scheduling, cancellation/reschedule, and snooze behavior; `ReminderReceiverTest` (`2/2`) verified notification channels and receiver output
+- Photo-flow QA passed on `SM-A546B - 16`: `LabelImageFlowTest` (`3/3`) verified invalid-image rejection, JPEG conversion, resize and cleanup; `CheatEntryE2ETest` (`2/2`) verified the label-photo dialog is reachable without opening the camera
 - Keep all user-facing strings in resources when touching additional screens
 
 ## Next Target
@@ -132,6 +133,7 @@ After the measurement pass, the remaining UI review queue is:
 - Next QA focus after the UI coverage pass: export flows, local notifications, photo import/camera paths, and the full connected suite
 - Export is no longer pending in `DEVELOPMENT_PLAN.md`; next QA focus is local notifications, photo import/camera paths, and the full connected suite
 - Deterministic notification scheduling/receiver coverage is now verified; remaining notification risk is real background delivery/permission behavior, alongside photo import/camera paths and the full connected suite
+- Photo conversion/lifecycle and sgarro photo-dialog coverage are verified; real Photo Picker/camera capture remains explicitly unverified
 
 ## Git Continuity
 
