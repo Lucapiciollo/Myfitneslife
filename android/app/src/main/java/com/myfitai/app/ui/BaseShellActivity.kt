@@ -168,12 +168,21 @@ abstract class BaseShellActivity : AppCompatActivity() {
         observeGlobalProfiles()
     }
 
-    /** Applies the same centered, colored header to every regular screen that has a back button. */
+    /**
+     * Keeps navigation on detail screens without repeating section titles in the main tabs.
+     * The Home, Food and Progress tabs already have their own content hierarchy.
+     */
     private fun normalizeScreenHeader(content: View) {
         if (this is MealDetailActivity || this is NotificationsActivity) return
         val root = content as? ViewGroup ?: return
         val header = findHeaderWithBackButton(root) ?: return
-        header.layoutParams = header.layoutParams?.apply { height = dp(56) }
+        if (this is HomeActivity || this is FoodPlanActivity || this is PhysicalEvolutionActivity) {
+            header.visibility = View.GONE
+            return
+        }
+
+        // Detail screens retain the back action and a compact, neutral navigation label.
+        header.layoutParams = header.layoutParams?.apply { height = dp(44) }
         header.setBackgroundResource(R.drawable.bg_screen_header)
         header.setPadding(dp(8), 0, dp(8), 0)
         if (header is LinearLayout) header.gravity = Gravity.CENTER_VERTICAL
@@ -182,7 +191,7 @@ abstract class BaseShellActivity : AppCompatActivity() {
             val child = header.getChildAt(index)
             if (child is TextView && child.id != R.id.backButton && child.text.isNotBlank()) {
                 child.setTextColor(getColor(R.color.text_primary))
-                child.textSize = 18f
+                child.textSize = 16f
                 child.setTypeface(child.typeface, Typeface.BOLD)
                 child.gravity = Gravity.CENTER
             }
