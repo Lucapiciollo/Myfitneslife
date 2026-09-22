@@ -12,7 +12,7 @@ The authoritative implementation plan remains `DEVELOPMENT_PLAN.md`. This handof
 
 ## Snapshot
 
-- Date: 2026-09-21
+- Date: 2026-09-22
 - App: Android Views/XML, not Jetpack Compose
 - Canonical UI mock: `assets/MOCK_APPROVATO_MYFITAI_V2_COMPLETO.png`
 - Visual theme: warm near-white background, white surfaces, MyFitAI green, charcoal text
@@ -31,12 +31,14 @@ The following UI pilots are already implemented and committed in the current his
 - Home dashboard compact metrics panel
 - Route cleanup that removed redundant Profile entries and preserved historical plan navigation
 
-The latest uncommitted UI delta covered by this handoff is:
+The latest UI delta covered by this handoff is:
 
 - `MetricCardView.setCompactStyle()` now uses dp padding and smaller compact typography
 - `activity_bia.xml` now has a 56dp shared-style header with the title `Bioimpedenziometria`
 - `activity_bia.xml` segmented control has the same top spacing used by the body-measurement screen
 - `activity_body_measures.xml` segmented control has aligned top spacing
+- BIA date and time inputs are now side by side, matching the approved BIA composition
+- BIA measurement conditions are now a single vertical checklist instead of two split rows
 
 Files in the latest delta:
 
@@ -55,17 +57,25 @@ Using Gradle 8.14.3 and device `RZCX924RQMV`:
 - `git diff --check`: PASS
 - Debug APK installation on the device: PASS
 
+The latest BIA layout delta was additionally checked with:
+
+- `:app:assembleDebug`: PASS
+- `:app:testDebugUnitTest`: PASS
+- `git diff --check`: PASS
+
+The connected test was attempted again after the BIA layout change, but ADB reported no connected devices. The latest BIA change is therefore not yet certified by device smoke or screenshot comparison.
+
 The direct `adb shell am start` check for the internal activities was rejected because those activities are intentionally not exported. This is expected and not an app defect. Instrumentation reaches them correctly.
 
 Not verified in the latest delta:
 
 - Pixel-level screenshot comparison for the final BIA/body-measurement change
-- Full connected test suite after this final three-file delta
+- Full connected test suite after the latest BIA layout delta
 - Runtime functional editing/saving/import flows for BIA and body measurements
 
 ## Current UI Audit Findings
 
-`BaseShellActivity` already normalizes most regular screen headers to 56dp and applies `bg_screen_header`. Before the latest delta, BIA still had an empty 48dp local header, while body measurements had a separate 48dp title header. The latest change makes the visible title and segment spacing consistent, but the following work remains:
+`BaseShellActivity` already normalizes most regular screen headers to 56dp and applies `bg_screen_header`. BIA now has a visible title, aligned segment spacing, side-by-side date/time inputs, and a vertical conditions checklist. The following work remains:
 
 - Compare BIA and body-measurement screens on the physical device against the approved mock/concept
 - Align form card spacing, section hierarchy, empty/loading/error states, help affordances, and history cards
@@ -75,16 +85,17 @@ Not verified in the latest delta:
 
 ## Next Target
 
-1. Run `git fetch --all --prune` and confirm the working tree is clean except intentionally untracked local artifacts.
-2. Read `DEVELOPMENT_PLAN.md`, then inspect the BIA/body-measurement mock regions and current layouts.
-3. Finish the UI second pass for:
+1. Connect an Android device or emulator and run the BIA/body-measurement smoke and screenshot checks.
+2. Run `git fetch --all --prune` and confirm the working tree is clean except intentionally untracked local artifacts.
+3. Read `DEVELOPMENT_PLAN.md`, then inspect the BIA/body-measurement mock regions and current layouts.
+4. Finish the UI second pass for:
    - `android/app/src/main/res/layout/activity_bia.xml`
    - `android/app/src/main/res/layout/activity_body_measures.xml`
    - `android/app/src/main/res/layout/activity_new_body_measurement.xml`
    - the corresponding Activity/widget code only where presentation changes are required
-4. Preserve all existing IDs, routes, ViewModels, Room calls, AI job scheduling, import preview, edit/delete behavior, and history semantics.
-5. Build, run relevant unit/instrumentation tests, install on a connected device, and capture screenshots before declaring the pass complete.
-6. Update `DEVELOPMENT_PLAN.md` only for behavior or QA that is genuinely verified.
+5. Preserve all existing IDs, routes, ViewModels, Room calls, AI job scheduling, import preview, edit/delete behavior, and history semantics.
+6. Build, run relevant unit/instrumentation tests, install on a connected device, and capture screenshots before declaring the pass complete.
+7. Update `DEVELOPMENT_PLAN.md` only for behavior or QA that is genuinely verified.
 
 After the measurement pass, the remaining UI review queue is:
 

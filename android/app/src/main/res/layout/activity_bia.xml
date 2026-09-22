@@ -101,12 +101,13 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:gravity="center_vertical"
-                        android:orientation="vertical">
+                        android:orientation="horizontal">
 
                         <com.google.android.material.textfield.TextInputLayout
                             style="@style/Widget.MyFitAI.Input"
                             android:id="@+id/dateInputLayout"
-                            android:layout_width="match_parent"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
                             android:layout_height="64dp"
                             android:hint="Data rilevazione"
                             app:endIconDrawable="@drawable/ic_calendar"
@@ -126,17 +127,13 @@
  />
                         </com.google.android.material.textfield.TextInputLayout>
 
-                        <View
-                            android:layout_width="match_parent"
-                            android:layout_height="1dp"
-                            android:layout_marginVertical="@dimen/space_8"
-                            android:background="@color/divider" />
-
                         <com.google.android.material.textfield.TextInputLayout
                             style="@style/Widget.MyFitAI.Input"
                             android:id="@+id/timeInputLayout"
-                            android:layout_width="match_parent"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
                             android:layout_height="64dp"
+                            android:layout_marginStart="@dimen/space_8"
                             android:hint="Ora"
                             app:endIconDrawable="@drawable/ic_setting_clock"
                             app:endIconMode="custom">
@@ -194,13 +191,12 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal">
+                        android:orientation="vertical">
 
                         <com.google.android.material.checkbox.MaterialCheckBox
                             android:id="@+id/checkFasting"
-                            android:layout_width="0dp"
+                            android:layout_width="match_parent"
                             android:layout_height="44dp"
-                            android:layout_weight="1"
                             android:gravity="center_vertical"
                             android:text="A digiuno"
                             android:textSize="13sp"
@@ -208,25 +204,16 @@
 
                         <com.google.android.material.checkbox.MaterialCheckBox
                             android:id="@+id/checkJustWoken"
-                            android:layout_width="0dp"
+                            android:layout_width="match_parent"
                             android:layout_height="44dp"
-                            android:layout_weight="1"
                             android:gravity="center_vertical"
                             android:text="Appena sveglio"
                             android:textSize="13sp"
                             app:buttonTint="@color/accent_green" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal">
-
                         <com.google.android.material.checkbox.MaterialCheckBox
                             android:id="@+id/checkAfterShower"
-                            android:layout_width="0dp"
+                            android:layout_width="match_parent"
                             android:layout_height="44dp"
-                            android:layout_weight="1"
                             android:gravity="center_vertical"
                             android:text="Dopo bagno"
                             android:textSize="13sp"
@@ -234,9 +221,8 @@
 
                         <com.google.android.material.checkbox.MaterialCheckBox
                             android:id="@+id/checkNoWorkout"
-                            android:layout_width="0dp"
+                            android:layout_width="match_parent"
                             android:layout_height="44dp"
-                            android:layout_weight="1"
                             android:gravity="center_vertical"
                             android:text="No allenamento"
                             android:textSize="13sp"
