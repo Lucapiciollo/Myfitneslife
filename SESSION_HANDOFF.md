@@ -139,6 +139,7 @@ After the measurement pass, the remaining UI review queue is:
 - Photo conversion/lifecycle and sgarro photo-dialog coverage are verified; real Photo Picker/camera capture remains explicitly unverified
 - BottomNavigation residual resolved in test infrastructure only: `TabHostActivity.currentTabActivity()` exposes the embedded root to instrumentation assertions; production navigation behavior was not changed
 - Real Gemini/OpenAI HTTP runtime and provider parity remain intentionally open because they require personal credentials to be entered manually; never automate, read, log, or commit those credentials
+- Secure manual-runtime path is confirmed: enter a key only in `SettingsActivity`, use `Verifica e salva`, run the target provider flow on the device, then use `Sostituisci`/`Elimina`; keys are read just-in-time from `SecureAiCredentialStore` and must never enter chat, logs, tests, exports, or navigation arguments
 
 ## Git Continuity
 
