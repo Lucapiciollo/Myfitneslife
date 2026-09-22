@@ -100,6 +100,7 @@ Not verified in the latest delta:
 - Review `NewBodyMeasurementActivity` and the BIA form for the same header, input, card, and primary-action hierarchy; the new-measurement form now has device smoke/screenshot coverage
 - `SettingsSecurityUiTest` passed `2/2` on the physical Samsung without reading or changing credentials
 - `SettingsDeviceVisualTest` passed on the physical Samsung: `FLAG_SECURE`, visible general/data/AI cards, provider status, and provider switch were verified; no Settings redesign was required from this QA pass
+- `ProfileEditDeviceTest` passed on the physical Samsung without saving changes: title, personal-data fields, height/weight fields, dietary preferences, and the primary save action were verified; top/bottom screenshots were captured in QA artifacts
 - Keep all user-facing strings in resources when touching additional screens
 
 ## Next Target
@@ -118,7 +119,7 @@ Not verified in the latest delta:
 After the measurement pass, the remaining UI review queue is:
 
 - `SettingsActivity`
-- `ProfileEditActivity`
+- `ProfileEditActivity` now has device smoke/screenshot coverage; visual redesign remains optional unless a concrete mismatch is found
 - `MealDetailActivity`
 - `ShoppingListActivity`
 - `WeeklyReviewActivity`
