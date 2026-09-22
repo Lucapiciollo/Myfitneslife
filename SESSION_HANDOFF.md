@@ -104,6 +104,7 @@ Not verified in the latest delta:
 - `FoodReviewScreensDeviceTest` passed on the physical Samsung with the QA fixture: meal detail tabs/actions, shopping-list week/filter/status/export controls, and weekly-review metrics/tracking/generation controls were verified without provider calls or destructive changes
 - Consolidated connected UI regression pass on `SM-A546B - 16`: `ActivitySmokeTest`, `SettingsSecurityUiTest` (`2/2`), `ProfileEditDeviceTest`, `MeasurementHistoryDeviceTest`, and `FoodReviewScreensDeviceTest` all passed
 - Export QA completed on `SM-A546B - 16`: `ExportFormatsE2ETest` (`2/2`) verified CSV ZIP, PDF profile, and weekly-plan PDF; `ExportNavigationUiTest` (`2/2`) verified export navigation and JSON generation
+- Notification QA passed on `SM-A546B - 16`: `NotificationSchedulerTest` (`4/4`) verified future meal/review scheduling, cancellation/reschedule, and snooze behavior; `ReminderReceiverTest` (`2/2`) verified notification channels and receiver output
 - Keep all user-facing strings in resources when touching additional screens
 
 ## Next Target
@@ -130,6 +131,7 @@ After the measurement pass, the remaining UI review queue is:
 - complete end-to-end visual/functional QA across profile, diet, cheat, review, export, and photo flows
 - Next QA focus after the UI coverage pass: export flows, local notifications, photo import/camera paths, and the full connected suite
 - Export is no longer pending in `DEVELOPMENT_PLAN.md`; next QA focus is local notifications, photo import/camera paths, and the full connected suite
+- Deterministic notification scheduling/receiver coverage is now verified; remaining notification risk is real background delivery/permission behavior, alongside photo import/camera paths and the full connected suite
 
 ## Git Continuity
 
