@@ -101,6 +101,7 @@ Not verified in the latest delta:
 - `SettingsSecurityUiTest` passed `2/2` on the physical Samsung without reading or changing credentials
 - `SettingsDeviceVisualTest` passed on the physical Samsung: `FLAG_SECURE`, visible general/data/AI cards, provider status, and provider switch were verified; no Settings redesign was required from this QA pass
 - `ProfileEditDeviceTest` passed on the physical Samsung without saving changes: title, personal-data fields, height/weight fields, dietary preferences, and the primary save action were verified; top/bottom screenshots were captured in QA artifacts
+- `FoodReviewScreensDeviceTest` passed on the physical Samsung with the QA fixture: meal detail tabs/actions, shopping-list week/filter/status/export controls, and weekly-review metrics/tracking/generation controls were verified without provider calls or destructive changes
 - Keep all user-facing strings in resources when touching additional screens
 
 ## Next Target
@@ -120,6 +121,7 @@ After the measurement pass, the remaining UI review queue is:
 
 - `SettingsActivity`
 - `ProfileEditActivity` now has device smoke/screenshot coverage; visual redesign remains optional unless a concrete mismatch is found
+- `MealDetailActivity`, `ShoppingListActivity`, and `WeeklyReviewActivity` now have combined device coverage; no production UI change was required in this pass
 - `MealDetailActivity`
 - `ShoppingListActivity`
 - `WeeklyReviewActivity`
