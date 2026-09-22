@@ -107,6 +107,7 @@ Not verified in the latest delta:
 - Notification QA passed on `SM-A546B - 16`: `NotificationSchedulerTest` (`4/4`) verified future meal/review scheduling, cancellation/reschedule, and snooze behavior; `ReminderReceiverTest` (`2/2`) verified notification channels and receiver output
 - Photo-flow QA passed on `SM-A546B - 16`: `LabelImageFlowTest` (`3/3`) verified invalid-image rejection, JPEG conversion, resize and cleanup; `CheatEntryE2ETest` (`2/2`) verified the label-photo dialog is reachable without opening the camera
 - Full `connectedDebugAndroidTest` on `SM-A546B - 16` executed `62` tests: `60 PASS`, `2 FAIL` only in `BottomNavigationUiTest` due to the known legacy `LocalActivityManager`/nested DecorView accessibility issue (`UiAutomator` timeout and `StackOverflowError`); no failures occurred in the newly covered UI, export, notification, or photo flows
+- Full `connectedDebugAndroidTest` rerun after the BottomNavigation test seam: `62/62 PASS` on `SM-A546B - 16`
 - Keep all user-facing strings in resources when touching additional screens
 
 ## Next Target
@@ -135,7 +136,7 @@ After the measurement pass, the remaining UI review queue is:
 - Export is no longer pending in `DEVELOPMENT_PLAN.md`; next QA focus is local notifications, photo import/camera paths, and the full connected suite
 - Deterministic notification scheduling/receiver coverage is now verified; remaining notification risk is real background delivery/permission behavior, alongside photo import/camera paths and the full connected suite
 - Photo conversion/lifecycle and sgarro photo-dialog coverage are verified; real Photo Picker/camera capture remains explicitly unverified
-- Full-suite residual is isolated to the existing BottomNavigationUiTest infrastructure issue; do not introduce risky navigation/DecorView workarounds without a separate plan
+- BottomNavigation residual resolved in test infrastructure only: `TabHostActivity.currentTabActivity()` exposes the embedded root to instrumentation assertions; production navigation behavior was not changed
 
 ## Git Continuity
 

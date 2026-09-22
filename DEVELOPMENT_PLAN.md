@@ -167,7 +167,7 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 - `:app:assembleDebug` e `:app:assembleRelease` verdi sull'HEAD remoto allineato, con Gradle 9.6.0, Java 17 e Android SDK locale.
 - `:app:testDebugUnitTest` verde sul nuovo HEAD, inclusi pricing IA, quality engine BIA e interpretazione trend.
 - `:app:connectedDebugAndroidTest` verde: 56/56 test su `SM-A546B - 16`, inclusi smoke Activity, bottom navigation, QaSeeder, Progress, Settings, Export, notifiche, migration/usage runtime, sessione profilo attivo, E2E consumo pasto, gate sgarro, workflow AI deterministici e formati export inclusi PDF piano.
-- Full connected suite sull'HEAD corrente: `62` test eseguiti su `SM-A546B - 16`, `60 PASS`, `2 FAIL` limitati a `BottomNavigationUiTest` per timeout UiAutomator/`StackOverflowError` nel legacy `LocalActivityManager`/DecorView embedding; gli altri test hanno completato.
+- Full connected suite sull'HEAD corrente: `62/62 PASS` su `SM-A546B - 16`; `BottomNavigationUiTest` è stato stabilizzato facendo asserzioni sulle Activity root embedded tramite il test seam del `TabHostActivity`, senza modificare la navigazione utente.
 - Il nuovo HEAD remoto aggiunge test unitari per pricing IA, usage e trend BIA; la suite aggiornata è stata rieseguita e risulta verde.
 - `:app:assembleRelease` verde; il source set debug-only non entra nella build release.
 - Dopo l'integrazione della pipeline AI comune, build pulita, unit test, APK debug/release e AndroidTest packaging risultano verdi; connected suite completa rieseguita con fixture weekly-plan/advice allineati ai target dinamici e chiusa a `56/56 PASS`.

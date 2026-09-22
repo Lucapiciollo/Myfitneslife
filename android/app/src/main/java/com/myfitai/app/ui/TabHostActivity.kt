@@ -55,6 +55,10 @@ class TabHostActivity : AppCompatActivity() {
     fun currentFoodPlanActivity(): FoodPlanActivity? =
         if (::activityManager.isInitialized) activityManager.getActivity(BottomNavBinder.Tab.FOOD.name) as? FoodPlanActivity else null
 
+    /** Exposes the embedded root only for instrumentation assertions; navigation remains host-owned. */
+    fun currentTabActivity(): Activity? =
+        if (::activityManager.isInitialized) activityManager.getActivity(currentTab.name) else null
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
