@@ -31,6 +31,12 @@ class BiaSegmentView @JvmOverloads constructor(
         // Keep Storico as the second item because BiaActivity already opens getChildAt(1)
         // when reached from the "Apri storico BIA" shortcut.
         super.setSegments(listOf("Nuova misurazione", "Storico", "Andamento"), selectedIndex.coerceIn(0, 2))
+        (getChildAt(0) as? android.view.View)?.layoutParams =
+            (getChildAt(0).layoutParams as? LayoutParams)?.apply { weight = 1.4f }
+        (getChildAt(1) as? android.view.View)?.layoutParams =
+            (getChildAt(1).layoutParams as? LayoutParams)?.apply { weight = 0.8f }
+        (getChildAt(2) as? android.view.View)?.layoutParams =
+            (getChildAt(2).layoutParams as? LayoutParams)?.apply { weight = 0.8f }
         ensureTrendBinder()
     }
 

@@ -119,12 +119,16 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="match_parent"
                                 android:clickable="true"
-                                android:focusable="false"
-                                android:gravity="center_vertical"
-                                android:inputType="none"
-                                android:textColor="@color/text_primary"
-                                android:textSize="16sp"
- />
+                                 android:focusable="false"
+                                 android:gravity="center_vertical"
+                                 android:inputType="none"
+                                 android:includeFontPadding="false"
+                                 android:maxLines="1"
+                                 android:singleLine="true"
+                                 android:ellipsize="end"
+                                 android:textColor="@color/text_primary"
+                                 android:textSize="14sp"
+  />
                         </com.google.android.material.textfield.TextInputLayout>
 
                         <com.google.android.material.textfield.TextInputLayout

@@ -39,12 +39,15 @@ The latest UI delta covered by this handoff is:
 - `activity_body_measures.xml` segmented control has aligned top spacing
 - BIA date and time inputs are now side by side, matching the approved BIA composition
 - BIA measurement conditions are now a single vertical checklist instead of two split rows
+- BIA segmented control now gives `Nuova misurazione` enough width to remain readable on the physical Samsung
+- BIA date input is constrained to one line so a full date such as `22/09/2026` is not clipped
 
 Files in the latest delta:
 
 - `android/app/src/main/java/com/myfitai/app/ui/widgets/MetricCardView.kt`
 - `android/app/src/main/res/layout/activity_bia.xml`
 - `android/app/src/main/res/layout/activity_body_measures.xml`
+- `android/app/src/main/java/com/myfitai/app/ui/widgets/BiaSegmentView.kt`
 
 ## Verification Completed
 
@@ -65,19 +68,27 @@ The latest BIA layout delta was additionally checked with:
 
 The connected test was attempted again after the BIA layout change, but ADB reported no connected devices. The latest BIA change is therefore not yet certified by device smoke or screenshot comparison.
 
+Physical-device QA was subsequently completed on `SM-A546B - 16` / `RZCX924RQMV` after installing the latest debug APK and seeding the six-month QA dataset through the debug seeder:
+
+- `QaSeederDeviceTest`: PASS
+- Real navigation reached `MeasurementsActivity`, `BiaActivity`, and `BodyMeasuresActivity`
+- BIA screenshot verified the full `Nuova misurazione` tab label and one-line `22/09/2026` date
+- BIA data/time remained side by side and the four measurement conditions remained a vertical checklist
+- Body-measurement header, segments, front/back diagram, current values, and bottom navigation were visible
+- No `FATAL EXCEPTION` or `AndroidRuntime` app crash was observed in the captured logcat
+- Screenshot artifacts captured locally: `qa-bia-fixed-final.png`, `qa-body-measures-device.png` when available in the workspace
+
 The direct `adb shell am start` check for the internal activities was rejected because those activities are intentionally not exported. This is expected and not an app defect. Instrumentation reaches them correctly.
 
 Not verified in the latest delta:
 
-- Pixel-level screenshot comparison for the final BIA/body-measurement change
 - Full connected test suite after the latest BIA layout delta
 - Runtime functional editing/saving/import flows for BIA and body measurements
 
 ## Current UI Audit Findings
 
-`BaseShellActivity` already normalizes most regular screen headers to 56dp and applies `bg_screen_header`. BIA now has a visible title, aligned segment spacing, side-by-side date/time inputs, and a vertical conditions checklist. The following work remains:
+`BaseShellActivity` already normalizes most regular screen headers to 56dp and applies `bg_screen_header`. BIA now has a visible title, aligned segment spacing, side-by-side date/time inputs, a readable first tab, a one-line date, and a vertical conditions checklist. The following work remains:
 
-- Compare BIA and body-measurement screens on the physical device against the approved mock/concept
 - Align form card spacing, section hierarchy, empty/loading/error states, help affordances, and history cards
 - Verify that BIA history and body-measurement history expose equivalent visual affordances without changing behavior
 - Review `NewBodyMeasurementActivity` and the BIA form for the same header, input, card, and primary-action hierarchy
@@ -85,17 +96,16 @@ Not verified in the latest delta:
 
 ## Next Target
 
-1. Connect an Android device or emulator and run the BIA/body-measurement smoke and screenshot checks.
-2. Run `git fetch --all --prune` and confirm the working tree is clean except intentionally untracked local artifacts.
-3. Read `DEVELOPMENT_PLAN.md`, then inspect the BIA/body-measurement mock regions and current layouts.
-4. Finish the UI second pass for:
+1. Run `git fetch --all --prune` and confirm the working tree is clean except intentionally untracked local artifacts.
+2. Read `DEVELOPMENT_PLAN.md`, then inspect the BIA/body-measurement mock regions and current layouts.
+3. Finish the UI second pass for:
    - `android/app/src/main/res/layout/activity_bia.xml`
    - `android/app/src/main/res/layout/activity_body_measures.xml`
    - `android/app/src/main/res/layout/activity_new_body_measurement.xml`
    - the corresponding Activity/widget code only where presentation changes are required
-5. Preserve all existing IDs, routes, ViewModels, Room calls, AI job scheduling, import preview, edit/delete behavior, and history semantics.
-6. Build, run relevant unit/instrumentation tests, install on a connected device, and capture screenshots before declaring the pass complete.
-7. Update `DEVELOPMENT_PLAN.md` only for behavior or QA that is genuinely verified.
+4. Preserve all existing IDs, routes, ViewModels, Room calls, AI job scheduling, import preview, edit/delete behavior, and history semantics.
+5. Build, run relevant unit/instrumentation tests, install on a connected device, and capture screenshots before declaring the pass complete.
+6. Update `DEVELOPMENT_PLAN.md` only for behavior or QA that is genuinely verified.
 
 After the measurement pass, the remaining UI review queue is:
 
