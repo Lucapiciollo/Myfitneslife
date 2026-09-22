@@ -75,6 +75,8 @@ Physical-device QA was subsequently completed on `SM-A546B - 16` / `RZCX924RQMV`
 - BIA screenshot verified the full `Nuova misurazione` tab label and one-line `22/09/2026` date
 - BIA data/time remained side by side and the four measurement conditions remained a vertical checklist
 - Body-measurement header, segments, front/back diagram, current values, and bottom navigation were visible
+- `NewBodyMeasurementDeviceTest` passed on the physical Samsung: the form opened through instrumentation, date/peso/`Circonferenze` were present, the scroll reached `Arti`, and `Salva misurazione` was present
+- The form test captured top/bottom screenshots in the app QA artifacts directory without saving data
 - No `FATAL EXCEPTION` or `AndroidRuntime` app crash was observed in the captured logcat
 - Screenshot artifacts captured locally: `qa-bia-fixed-final.png`, `qa-body-measures-device.png` when available in the workspace
 
@@ -91,7 +93,7 @@ Not verified in the latest delta:
 
 - Align form card spacing, section hierarchy, empty/loading/error states, help affordances, and history cards
 - Verify that BIA history and body-measurement history expose equivalent visual affordances without changing behavior
-- Review `NewBodyMeasurementActivity` and the BIA form for the same header, input, card, and primary-action hierarchy
+- Review `NewBodyMeasurementActivity` and the BIA form for the same header, input, card, and primary-action hierarchy; the new-measurement form now has device smoke/screenshot coverage
 - Keep all user-facing strings in resources when touching additional screens
 
 ## Next Target
