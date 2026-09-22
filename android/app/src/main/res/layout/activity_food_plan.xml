@@ -67,15 +67,40 @@
                  android:layout_width="match_parent"
                  android:layout_height="46dp"
                  android:layout_marginTop="@dimen/space_8"
-                 android:text="Configura alimentazione"
-                 android:textAllCaps="false" />
+                  android:text="Configura alimentazione"
+                  android:textAllCaps="false" />
 
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/dayMealsCard"
+             <TextView
+                 android:id="@+id/emptyPlanText"
+                 android:layout_width="match_parent"
+                 android:layout_height="wrap_content"
+                 android:layout_marginTop="@dimen/space_12"
+                 android:gravity="start"
+                 android:textAlignment="viewStart"
+                 android:padding="@dimen/space_12"
+                 android:text="@string/food_plan_empty_current"
+                 android:textColor="@color/text_secondary"
+                 android:textSize="14sp"
+                 android:visibility="gone" />
+
+             <com.google.android.material.button.MaterialButton
+                 android:id="@+id/generatePlanButton"
+                 android:layout_width="match_parent"
+                 android:layout_height="48dp"
+                 android:layout_marginTop="@dimen/space_12"
+                 android:text="Genera piano con IA"
+                 android:textAllCaps="false"
+                 android:textStyle="bold"
+                 app:backgroundTint="@color/accent_green"
+                 app:cornerRadius="12dp" />
+
+             <com.google.android.material.card.MaterialCardView
+                 android:id="@+id/dayMealsCard"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_12"
-                 style="@style/Widget.MyFitAI.Card">
+                 android:layout_height="wrap_content"
+                 android:layout_marginTop="@dimen/space_12"
+                 android:visibility="gone"
+                  style="@style/Widget.MyFitAI.Card">
                 <LinearLayout
                     style="@style/Widget.MyFitAI.WhiteCardContent"
                     android:layout_width="match_parent"
@@ -111,11 +136,13 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_12"
-                 style="@style/Widget.MyFitAI.Card">
+             <com.google.android.material.card.MaterialCardView
+                 android:id="@+id/planStateCard"
+                 android:layout_width="match_parent"
+                 android:layout_height="wrap_content"
+                 android:layout_marginTop="@dimen/space_12"
+                 android:visibility="gone"
+                  style="@style/Widget.MyFitAI.Card">
                 <LinearLayout
                     style="@style/Widget.MyFitAI.WhiteCardContent"
                     android:layout_width="match_parent"
@@ -143,18 +170,6 @@
                             app:tint="@color/text_secondary" />
                     </LinearLayout>
                     <TextView
-                        android:id="@+id/emptyPlanText"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/space_12"
-                        android:gravity="start"
-                        android:textAlignment="viewStart"
-                        android:padding="@dimen/space_12"
-                 android:text="@string/food_plan_empty_current"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="14sp"
-                        android:visibility="gone" />
-                    <TextView
                         android:id="@+id/goalChangedNotice"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -174,16 +189,6 @@
                         android:text="Rigenera alimentazione"
                         android:textAllCaps="false"
                         android:visibility="gone" />
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/generatePlanButton"
-                        android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:layout_marginTop="@dimen/space_12"
-                        android:text="Genera piano con IA"
-                        android:textAllCaps="false"
-                        android:textStyle="bold"
-                        app:backgroundTint="@color/accent_green"
-                        app:cornerRadius="12dp" />
                     <LinearLayout
                         android:id="@+id/generationStatusContainer"
                         android:layout_width="match_parent"
@@ -210,11 +215,13 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <com.google.android.material.card.MaterialCardView
+             <com.google.android.material.card.MaterialCardView
+                 android:id="@+id/weekActionsCard"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_12"
-                 style="@style/Widget.MyFitAI.Card">
+                 android:layout_height="wrap_content"
+                 android:layout_marginTop="@dimen/space_12"
+                 android:visibility="gone"
+                  style="@style/Widget.MyFitAI.Card">
                 <LinearLayout
                     style="@style/Widget.MyFitAI.WhiteCardContent"
                     android:layout_width="match_parent"
@@ -272,11 +279,13 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <com.google.android.material.card.MaterialCardView
+             <com.google.android.material.card.MaterialCardView
+                 android:id="@+id/dailyTotalCard"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_12"
-                 style="@style/Widget.MyFitAI.Card">
+                 android:layout_height="wrap_content"
+                 android:layout_marginTop="@dimen/space_12"
+                 android:visibility="gone"
+                  style="@style/Widget.MyFitAI.Card">
                 <LinearLayout
                     style="@style/Widget.MyFitAI.WhiteCardContent"
                     android:layout_width="match_parent"
@@ -364,11 +373,13 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_12"
-                 style="@style/Widget.MyFitAI.Card">
+             <com.google.android.material.card.MaterialCardView
+                 android:id="@+id/nutritionEstimateCard"
+                 android:layout_width="match_parent"
+                 android:layout_height="wrap_content"
+                 android:layout_marginTop="@dimen/space_12"
+                 android:visibility="gone"
+                  style="@style/Widget.MyFitAI.Card">
                 <LinearLayout
                     style="@style/Widget.MyFitAI.WhiteCardContent"
                     android:layout_width="match_parent"

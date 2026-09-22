@@ -141,10 +141,22 @@ class FoodPlanActivity : BaseShellActivity() {
         regenerateForGoalButton.isEnabled = !state.generation.running
         val day = state.selectedDay
         val dayMealsCard = findViewById<View>(R.id.dayMealsCard)
-        dayMealsCard.visibility = if (!state.hasPlan || day?.meals.isNullOrEmpty()) View.GONE else View.VISIBLE
+        val hasDayContent = day != null && (day.meals.isNotEmpty() || day.supplements.isNotEmpty() || !day.hydrationNote.isNullOrBlank())
+        dayMealsCard.visibility = if (state.hasPlan && hasDayContent) View.VISIBLE else View.GONE
         empty.visibility = if (!state.hasPlan) View.VISIBLE else View.GONE
-        if (state.hasPlan && day == null) { empty.visibility = View.VISIBLE; empty.text = "Nessun dato alimentare per il giorno selezionato." }
-        else if (!state.hasPlan) empty.text = if (currentWeek) getString(R.string.food_plan_empty_current) else getString(R.string.food_plan_empty_history)
+        if (!state.hasPlan) {
+            empty.text = if (currentWeek) getString(R.string.food_plan_empty_current) else getString(R.string.food_plan_empty_history)
+        }
+
+        val planStateCard = findViewById<View>(R.id.planStateCard)
+        val weekActionsCard = findViewById<View>(R.id.weekActionsCard)
+        val dailyTotalCard = findViewById<View>(R.id.dailyTotalCard)
+        val nutritionEstimateCard = findViewById<View>(R.id.nutritionEstimateCard)
+        val generatedContentVisibility = if (state.hasPlan) View.VISIBLE else View.GONE
+        planStateCard.visibility = generatedContentVisibility
+        weekActionsCard.visibility = generatedContentVisibility
+        dailyTotalCard.visibility = generatedContentVisibility
+        nutritionEstimateCard.visibility = generatedContentVisibility
 
         renderGeneration(state, currentWeek)
         renderMeals(state.weekStart, day, state.consumptionRecords)
