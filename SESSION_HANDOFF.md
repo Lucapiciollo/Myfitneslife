@@ -102,6 +102,7 @@ Not verified in the latest delta:
 - `SettingsDeviceVisualTest` passed on the physical Samsung: `FLAG_SECURE`, visible general/data/AI cards, provider status, and provider switch were verified; no Settings redesign was required from this QA pass
 - `ProfileEditDeviceTest` passed on the physical Samsung without saving changes: title, personal-data fields, height/weight fields, dietary preferences, and the primary save action were verified; top/bottom screenshots were captured in QA artifacts
 - `FoodReviewScreensDeviceTest` passed on the physical Samsung with the QA fixture: meal detail tabs/actions, shopping-list week/filter/status/export controls, and weekly-review metrics/tracking/generation controls were verified without provider calls or destructive changes
+- Consolidated connected UI regression pass on `SM-A546B - 16`: `ActivitySmokeTest`, `SettingsSecurityUiTest` (`2/2`), `ProfileEditDeviceTest`, `MeasurementHistoryDeviceTest`, and `FoodReviewScreensDeviceTest` all passed
 - Keep all user-facing strings in resources when touching additional screens
 
 ## Next Target
@@ -126,6 +127,7 @@ After the measurement pass, the remaining UI review queue is:
 - `ShoppingListActivity`
 - `WeeklyReviewActivity`
 - complete end-to-end visual/functional QA across profile, diet, cheat, review, export, and photo flows
+- Next QA focus after the UI coverage pass: export flows, local notifications, photo import/camera paths, and the full connected suite
 
 ## Git Continuity
 
