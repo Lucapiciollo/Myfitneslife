@@ -25,7 +25,7 @@ import com.myfitai.app.data.local.entity.*
         WeeklyReviewEntity::class,
         AiUsageRecordEntity::class,
     ],
-    version = 11,
+    version = 12,
     exportSchema = true,
 )
 abstract class MyFitAiDatabase : RoomDatabase() {
@@ -234,6 +234,23 @@ object DatabaseMigrations {
         }
     }
 
+    /** Repairs v11 databases created by an intermediate build without optional body columns. */
+    val MIGRATION_11_12 = object : Migration(11, 12) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            val existingColumns = mutableSetOf<String>()
+            db.query("PRAGMA table_info(body_measurements)").use { cursor ->
+                val nameIndex = cursor.getColumnIndex("name")
+                while (cursor.moveToNext()) existingColumns += cursor.getString(nameIndex)
+            }
+            listOf("hipsCm REAL", "weightKg REAL").forEach { definition ->
+                val columnName = definition.substringBefore(' ')
+                if (columnName !in existingColumns) {
+                    db.execSQL("ALTER TABLE body_measurements ADD COLUMN $definition")
+                }
+            }
+        }
+    }
+
     val ALL: Array<Migration> = arrayOf(
         MIGRATION_1_2,
         MIGRATION_2_3,
@@ -245,5 +262,6 @@ object DatabaseMigrations {
         MIGRATION_8_9,
         MIGRATION_9_10,
         MIGRATION_10_11,
+        MIGRATION_11_12,
     )
 }

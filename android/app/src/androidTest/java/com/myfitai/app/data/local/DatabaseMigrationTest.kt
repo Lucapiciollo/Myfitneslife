@@ -178,4 +178,27 @@ class DatabaseMigrationTest {
             }
         }
     }
+
+    @Test
+    fun migration11To12_isIdempotentForOptionalBodyColumns() {
+        helper.createDatabase(MyFitAiDatabase.DATABASE_NAME, 11).apply {
+            execSQL("ALTER TABLE body_measurements DROP COLUMN hipsCm")
+            execSQL("ALTER TABLE body_measurements DROP COLUMN weightKg")
+            close()
+        }
+
+        helper.runMigrationsAndValidate(
+            MyFitAiDatabase.DATABASE_NAME,
+            12,
+            true,
+            DatabaseMigrations.MIGRATION_11_12,
+        ).use { db ->
+            db.query("PRAGMA table_info(body_measurements)").use { cursor ->
+                val columns = buildSet {
+                    while (cursor.moveToNext()) add(cursor.getString(cursor.getColumnIndexOrThrow("name")))
+                }
+                assertTrue(columns.containsAll(setOf("hipsCm", "weightKg")))
+            }
+        }
+    }
 }
