@@ -57,16 +57,14 @@ object AiModelSelectionBinder {
             isClickable = true
             isFocusable = true
             setPadding(0, dp(activity, 4), 0, dp(activity, 12))
+            setBackgroundColor(activity.getColor(R.color.white))
         }
         val titleView = TextView(activity).apply {
+            setTextAppearance(R.style.Text_MyFitAI_SettingsLabel)
             text = title
-            textSize = 15f
-            setTextColor(activity.getColor(R.color.text_primary))
-            setTypeface(typeface, android.graphics.Typeface.BOLD)
         }
         val valueView = TextView(activity).apply {
-            textSize = 12f
-            setTextColor(activity.getColor(R.color.text_secondary))
+            setTextAppearance(R.style.Text_MyFitAI_SettingsStatus)
         }
         fun render() {
             val model = current()

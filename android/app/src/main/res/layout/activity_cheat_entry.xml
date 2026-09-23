@@ -33,7 +33,13 @@
                     android:padding="8dp"
                     android:src="@drawable/ic_arrow_back"
                     app:tint="@color/text_primary" />
-                <Space android:layout_width="0dp" android:layout_height="1dp" android:layout_weight="1" />
+                 <TextView
+                     style="@style/Text.MyFitAI.ScreenTitle"
+                     android:layout_width="0dp"
+                     android:layout_height="wrap_content"
+                     android:layout_weight="1"
+                     android:gravity="center"
+                     android:text="Registra sgarro" />
             </LinearLayout>
 
             <com.myfitai.app.ui.widgets.SelectableSegmentView
@@ -73,13 +79,13 @@
             </com.google.android.material.chip.ChipGroup>
 
             <com.google.android.material.textfield.TextInputLayout
-                style="@style/Widget.MyFitAI.Input"
+                 style="@style/Widget.MyFitAI.InputCompact"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_12"
                 android:hint="Descrivi cosa hai mangiato">
                 <com.google.android.material.textfield.TextInputEditText
-                style="@style/Widget.MyFitAI.InputEditText"
+                 style="@style/Widget.MyFitAI.InputEditTextCompact"
                     android:id="@+id/descriptionInput"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -96,11 +102,11 @@
                 android:layout_marginTop="@dimen/space_12"
                 >
                 <LinearLayout style="@style/Widget.MyFitAI.HomeSectionContent" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
-                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Etichetta nutrizionale (opzionale)" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="14sp" />
-                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="Aggiungi la foto solo se il prodotto ha un'etichetta: verrà usata dall'IA per rendere più precisa la stima e non sarà salvata." android:textColor="@color/text_secondary" android:textSize="12sp" />
-                    <com.google.android.material.button.MaterialButton android:id="@+id/addLabelPhotoButton" style="@style/Widget.Material3.Button.OutlinedButton" android:layout_width="match_parent" android:layout_height="48dp" android:layout_marginTop="10dp" android:text="+ Foto etichetta nutrizionale" android:textAllCaps="false" />
+                    <TextView style="@style/Text.MyFitAI.Section" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Etichetta nutrizionale (opzionale)" />
+                    <TextView style="@style/Text.MyFitAI.Body" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" android:text="Aggiungi la foto solo se il prodotto ha un'etichetta: verrà usata dall'IA per rendere più precisa la stima e non sarà salvata." />
+                    <com.google.android.material.button.MaterialButton android:id="@+id/addLabelPhotoButton" style="@style/Widget.MyFitAI.Button.Outlined" android:layout_width="match_parent" android:layout_height="48dp" android:layout_marginTop="10dp" android:text="+ Foto etichetta nutrizionale" android:textAllCaps="false" />
                     <LinearLayout android:id="@+id/labelPhotoStatusRow" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:gravity="center_vertical" android:visibility="gone">
-                        <TextView android:id="@+id/labelPhotoStatus" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Etichetta pronta ✓" android:textColor="@color/accent_green" android:textSize="12sp" android:textStyle="bold" />
+                        <TextView android:id="@+id/labelPhotoStatus" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Etichetta pronta ✓" android:textColor="@color/semantic_positive" android:textSize="12sp" android:textStyle="bold" />
                         <TextView android:id="@+id/removeLabelPhotoButton" android:layout_width="wrap_content" android:layout_height="40dp" android:gravity="center" android:paddingHorizontal="10dp" android:text="Rimuovi" android:textColor="@color/text_secondary" android:textSize="12sp" />
                     </LinearLayout>
                 </LinearLayout>
@@ -110,7 +116,7 @@
                 style="@style/Widget.MyFitAI.Card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_20">
+                android:layout_marginTop="@dimen/space_12">
             <LinearLayout
                 style="@style/Widget.MyFitAI.HomeSectionContent"
                 android:layout_width="match_parent"
@@ -135,7 +141,7 @@
                 style="@style/Widget.MyFitAI.Card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_20">
+                android:layout_marginTop="@dimen/space_12">
                 <LinearLayout
                     style="@style/Widget.MyFitAI.HomeSectionContent"
                     android:layout_width="match_parent"
@@ -147,12 +153,12 @@
                         android:text="Quantità" />
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/quantityLayout"
-                        style="@style/Widget.MyFitAI.InputDropdown"
+                        style="@style/Widget.MyFitAI.InputDropdownCompact"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/space_8">
                         <AutoCompleteTextView
-                            style="@style/Widget.MyFitAI.InputDropdownText"
+                            style="@style/Widget.MyFitAI.InputDropdownTextCompact"
                             android:id="@+id/quantityInput"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
@@ -176,13 +182,13 @@
                         android:layout_height="wrap_content"
                         android:text="Note (opzionale)" />
                     <com.google.android.material.textfield.TextInputLayout
-                        style="@style/Widget.MyFitAI.Input"
+                        style="@style/Widget.MyFitAI.InputReadableCompact"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/space_8"
                         android:hint="Es. con amici, fuori casa...">
                         <com.google.android.material.textfield.TextInputEditText
-                            style="@style/Widget.MyFitAI.InputEditText"
+                            style="@style/Widget.MyFitAI.InputEditTextReadableCompact"
                             android:id="@+id/notesInput"
                             android:layout_width="match_parent"
                             android:layout_height="96dp"
@@ -195,14 +201,13 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/analyzeButton"
+                style="@style/Widget.MyFitAI.Button.Primary"
                 android:layout_width="match_parent"
                 android:layout_height="52dp"
-                android:layout_marginTop="@dimen/space_20"
+                android:layout_marginTop="@dimen/space_12"
                 android:text="Fai capire lo sgarro all'IA"
                 android:textAllCaps="false"
-                android:textStyle="bold"
-                app:cornerRadius="12dp"
-                app:backgroundTint="@color/accent_green" />
+                android:textStyle="bold" />
 
             <ProgressBar android:id="@+id/progress" android:layout_width="32dp" android:layout_height="32dp" android:layout_gravity="center_horizontal" android:layout_marginTop="@dimen/space_12" android:visibility="gone" />
             <TextView android:id="@+id/statusText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:gravity="center" android:textColor="@color/text_secondary" android:textSize="13sp" android:visibility="gone" />
@@ -216,19 +221,19 @@
                 android:visibility="gone"
                 >
                 <LinearLayout style="@style/Widget.MyFitAI.HomeSectionContent" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
-                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Cosa ha capito l'IA" android:textColor="@color/accent_green" android:textStyle="bold" android:textSize="15sp" />
-                    <TextView android:id="@+id/aiUnderstoodFood" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:textColor="@color/text_primary" android:textSize="14sp" />
-                    <TextView android:id="@+id/aiEstimate" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:textColor="@color/text_primary" android:textStyle="bold" android:textSize="14sp" />
-                    <TextView android:id="@+id/aiEstimateNotes" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" android:textColor="@color/text_secondary" android:textSize="12sp" />
-                    <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:text="Non ha capito bene? Spiega meglio e fai rivalutare prima di confermare." android:textColor="@color/text_secondary" android:textSize="12sp" />
+                    <TextView style="@style/Text.MyFitAI.Section" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Cosa ha capito l'IA" />
+                    <TextView style="@style/Text.MyFitAI.Body" android:id="@+id/aiUnderstoodFood" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" />
+                    <TextView style="@style/Text.MyFitAI.SettingsLabel" android:id="@+id/aiEstimate" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" />
+                    <TextView style="@style/Text.MyFitAI.SettingsDescription" android:id="@+id/aiEstimateNotes" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="6dp" />
+                    <TextView style="@style/Text.MyFitAI.SettingsDescription" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:text="Non ha capito bene? Spiega meglio e fai rivalutare prima di confermare." />
                     <com.google.android.material.textfield.TextInputLayout
-                        style="@style/Widget.MyFitAI.Input"
+                        style="@style/Widget.MyFitAI.InputReadableCompact"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
                         android:hint="Es. ne ho mangiati 80 g, non tutta la confezione...">
                         <com.google.android.material.textfield.TextInputEditText
-                style="@style/Widget.MyFitAI.InputEditText"
+                style="@style/Widget.MyFitAI.InputEditTextReadableCompact"
                             android:id="@+id/clarificationInput"
                             android:layout_width="match_parent"
                             android:layout_height="88dp"
@@ -238,7 +243,7 @@
                     </com.google.android.material.textfield.TextInputLayout>
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/reevaluateButton"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        style="@style/Widget.MyFitAI.Button.Outlined"
                         android:layout_width="match_parent"
                         android:layout_height="48dp"
                         android:layout_marginTop="10dp"
@@ -252,8 +257,7 @@
                         android:text="Ha capito · Conferma e salva"
                         android:textAllCaps="false"
                         android:textStyle="bold"
-                        app:cornerRadius="12dp"
-                        app:backgroundTint="@color/accent_green" />
+                         style="@style/Widget.MyFitAI.Button.Primary" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>

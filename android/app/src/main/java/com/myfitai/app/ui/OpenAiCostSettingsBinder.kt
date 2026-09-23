@@ -28,17 +28,15 @@ object OpenAiCostSettingsBinder {
             isClickable = true
             isFocusable = true
             setPadding(0, dp(activity, 4), 0, dp(activity, 12))
+            setBackgroundColor(activity.getColor(R.color.white))
         }
         val title = TextView(activity).apply {
+            setTextAppearance(R.style.Text_MyFitAI_SettingsLabel)
             text = "Costi OpenAI"
-            textSize = 15f
-            setTextColor(activity.getColor(R.color.text_primary))
-            setTypeface(typeface, android.graphics.Typeface.BOLD)
         }
         val value = TextView(activity).apply {
+            setTextAppearance(R.style.Text_MyFitAI_SettingsStatus)
             text = "Calcolo della spesa registrata da MyFitAI…"
-            textSize = 12f
-            setTextColor(activity.getColor(R.color.text_secondary))
         }
         row.addView(title)
         row.addView(value, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(activity, 3) })

@@ -18,6 +18,7 @@ import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.ui.food.MealDetailViewModel
 import com.myfitai.app.ui.widgets.IngredientRowView
 import com.myfitai.app.ui.widgets.SelectableSegmentView
+import com.google.android.material.card.MaterialCardView
 import kotlinx.coroutines.launch
 import java.util.Locale
 
@@ -33,6 +34,7 @@ class MealDetailActivity : BaseShellActivity() {
         setContentView(R.layout.activity_meal_detail)
         bindBack()
         bindBottom(BottomNavBinder.Tab.FOOD)
+        normalizeMealCards()
         bindTabs()
         findViewById<View>(R.id.consumedButton).setOnClickListener {
             if (viewModel.state.value.consumption == null) viewModel.setStatus(FoodConsumptionStatus.CONSUMED)
@@ -53,14 +55,27 @@ class MealDetailActivity : BaseShellActivity() {
         viewModel.load(data.activeProfileStore.currentIdOrNull() ?: -1L, mealId)
     }
 
+    private fun normalizeMealCards() {
+        listOf(R.id.ingredientsCard, R.id.preparationCard).forEach { id ->
+            findViewById<MaterialCardView>(id).apply {
+                setCardBackgroundColor(getColor(R.color.white))
+                strokeColor = getColor(R.color.divider)
+                strokeWidth = dp(1)
+                cardElevation = 0f
+            }
+        }
+    }
+
     private fun bindTabs() {
         val ingredientsContainer = findViewById<View>(R.id.ingredientsContainer)
         val preparationContainer = findViewById<View>(R.id.preparationContainer)
+        val preparationCard = findViewById<View>(R.id.preparationCard)
         findViewById<SelectableSegmentView>(R.id.detailSegment).apply {
             setSegments(listOf("Ingredienti", "Preparazione"), selectedIndex = 0)
             setOnSegmentSelectedListener { index ->
                 ingredientsContainer.visibility = if (index == 0) View.VISIBLE else View.GONE
                 preparationContainer.visibility = if (index == 1) View.VISIBLE else View.GONE
+                preparationCard.visibility = if (index == 1) View.VISIBLE else View.GONE
             }
         }
     }
@@ -70,15 +85,20 @@ class MealDetailActivity : BaseShellActivity() {
         if (state.loading) {
             errorView.visibility = View.VISIBLE
             errorView.text = "Caricamento pasto…"
+            findViewById<View>(R.id.ingredientsCard).visibility = View.GONE
+            findViewById<View>(R.id.preparationCard).visibility = View.GONE
             return
         }
         val meal = state.meal
         if (meal == null) {
             errorView.visibility = View.VISIBLE
             errorView.text = state.error ?: "Pasto non disponibile"
+            findViewById<View>(R.id.ingredientsCard).visibility = View.GONE
+            findViewById<View>(R.id.preparationCard).visibility = View.GONE
             return
         }
         errorView.visibility = View.GONE
+        findViewById<View>(R.id.ingredientsCard).visibility = View.VISIBLE
         renderConsumption(state)
 
         findViewById<TextView>(R.id.mealTitle).text = meal.title

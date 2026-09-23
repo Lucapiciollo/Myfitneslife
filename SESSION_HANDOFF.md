@@ -12,7 +12,7 @@ The authoritative implementation plan remains `DEVELOPMENT_PLAN.md`. This handof
 
 ## Snapshot
 
-- Date: 2026-09-22
+- Date: 2026-09-23
 - App: Android Views/XML, not Jetpack Compose
 - Canonical UI mock: `assets/MOCK_APPROVATO_MYFITAI_V2_COMPLETO.png`
 - Visual theme: warm near-white background, white surfaces, MyFitAI green, charcoal text
@@ -41,6 +41,10 @@ The latest UI delta covered by this handoff is:
 - BIA measurement conditions are now a single vertical checklist instead of two split rows
 - BIA segmented control now gives `Nuova misurazione` enough width to remain readable on the physical Samsung
 - BIA date input is constrained to one line so a full date such as `22/09/2026` is not clipped
+- BIA history summary and analysis action now stay hidden when the active profile has no BIA readings; the history tab exposes an explicit empty state
+- `NewBodyMeasurementActivity` uses compact input tokens consistently across date, weight, circumferences, and limb fields
+- `BodyMeasuresActivity` uses the shared MyFitAI dropdown row for trend metric selection
+- `MeasurementsActivity` hides the diet-impact card when the active profile has neither BIA nor body measurements
 
 Files in the latest delta:
 
@@ -57,6 +61,11 @@ Using Gradle 8.14.3 and device `RZCX924RQMV`:
 - `:app:testDebugUnitTest`: PASS
 - `:app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.myfitai.app.e2e.ActivitySmokeTest`: PASS
 - `ActivitySmokeTest` reached `BiaActivity` and `BodyMeasuresActivity` without lifecycle/content-view crashes
+- `NewBodyMeasurementDeviceTest`: PASS after the compact form and empty-state updates
+- `MeasurementHistoryDeviceTest`: PASS after the compact form and empty-state updates
+- Full `:app:connectedDebugAndroidTest`: `63/63 PASS` on `SM-A546B - 16` after the measurement UI updates
+- `MyFitAiDatabaseTest`: `12/12 PASS` with isolated in-memory Room coverage for BIA/body-measurement updates; IDs and profile scope remain stable while edited values replace the previous values
+- A subsequent isolated `NewBodyMeasurementDeviceTest` run briefly failed in the Samsung instrumentation runner after the initial assertions and top screenshot, while waiting for `Arti` after one swipe; no app exception was logged and the test result was incomplete (`INSTRUMENTATION_FAILED`). The immediate rerun passed, so no layout change was made for this transient device-runner failure.
 - `git diff --check`: PASS
 - Debug APK installation on the device: PASS
 
@@ -66,7 +75,7 @@ The latest BIA layout delta was additionally checked with:
 - `:app:testDebugUnitTest`: PASS
 - `git diff --check`: PASS
 
-The connected test was attempted again after the BIA layout change, but ADB reported no connected devices. The latest BIA change is therefore not yet certified by device smoke or screenshot comparison.
+The connected test was attempted again after the BIA layout change, but ADB reported no connected devices. The latest BIA change was subsequently certified by the targeted history/form tests and `ActivitySmokeTest` listed above.
 
 Physical-device QA was subsequently completed on `SM-A546B - 16` / `RZCX924RQMV` after installing the latest debug APK and seeding the six-month QA dataset through the debug seeder:
 
@@ -88,8 +97,20 @@ The direct `adb shell am start` check for the internal activities was rejected b
 
 Not verified in the latest delta:
 
-- Full connected test suite after the latest BIA layout delta
 - Runtime functional editing/saving/import flows for BIA and body measurements
+- Compact/landscape/expanded-window and extreme font-scale visual comparison remain unverified
+- Non-destructive edit-route test was added to open BIA/body records by their active-profile IDs and verify `Salva modifiche` / `Modifica misurazione` without saving; the final run was not certified because the Samsung disconnected from ADB (`RZCX924RQMV` not found) during the connected test.
+- BIA visual normalization applied: date, conditions and results cards now force white Home-style surfaces with neutral border and zero elevation at runtime; history summary uses the same white card drawable; date/time fields use compact input tokens and history cards have zero elevation. `:app:assembleDebug`, `:app:testDebugUnitTest`, APK debug install and `ActivitySmokeTest` passed on `SM-A546B - 16` after this change.
+- BIA surface audit extended to the acquisition flow: import-preview fields and single-value edit dialog now use compact white input tokens; dynamic BIA trend metric selector and trend note now use white bordered surfaces instead of default/soft green-toned Material surfaces. `BiaDeviceVisualTest` passed `1/1` again on `SM-A546B - 16`, scanning the three card IDs, date/time fields, conditions/results and bottom CTA across top/bottom scroll positions. The log confirms both screenshots were captured, but Android did not expose the app-specific files to `adb pull/find` after the test.
+- BIA field readability fix verified: `InputReadableCompact`/`InputEditTextReadableCompact` use 48dp minimum height and preserve font padding for floating-label fields; applied to date/time, import preview and value dialog so internal values are not clipped. Debug build, unit tests and `BiaDeviceVisualTest` `1/1 PASS` on `SM-A546B - 16` after the fix.
+- Collection-flow normalization extended beyond BIA: global compact input minimum raised to 48dp; `BodyMeasuresActivity` current/trend cards and trend note are forced white with neutral borders/zero elevation; `NewBodyMeasurementActivity` recursively normalizes all form cards to white/neutral/zero elevation. After the change, `BiaDeviceVisualTest`, `ActivitySmokeTest` and `NewBodyMeasurementDeviceTest` all passed on `SM-A546B - 16`.
+- Fixed cross-process active-profile refresh timing: `ActiveProfileStore.refreshFromPersistence()` now runs before child Activity initialization in `BaseShellActivity.onCreate()`. The non-destructive edit-route test now synchronizes seeded profile IDs, scrolls through both forms, and passes; full connected suite is `67/67 PASS` on `SM-A546B - 16` after the collection-flow changes.
+- `ProfileExportService.export()` now refreshes the persisted active profile before reading it, preventing temporary Room stress fixtures from seeing a stale process-wide session. `StressPerformanceTest` passed in isolation and the subsequent full connected suite passed `67/67` on `SM-A546B - 16`.
+- Collection density pass completed: all compact text fields/dropdowns now reserve 48dp for floating labels and internal values; Rilevazioni action cards, Misure current/trend/proportion cards and Nuova/Modifica misura form cards are normalized to white neutral surfaces with zero elevation and controlled wrapping. Targeted tests and full connected suite passed `67/67` on `SM-A546B - 16`.
+- Sgarro visual pass completed: `CheatEntryActivity` now normalizes every runtime MaterialCardView/TextInputLayout to white neutral surfaces, compacts the nutrition-label/when/quantity/note sections, uses shared typography tokens for IA content, and keeps green only for CTA/positive status. `CheatEntryE2ETest`, `ActivitySmokeTest` and `FoodReviewScreensDeviceTest` passed on `SM-A546B - 16` after the change.
+- Settings visual pass completed: static and dynamically injected provider/model/cost rows normalize card/input surfaces to white with neutral borders and zero elevation; API key fields use readable 48dp tokens, dynamic rows use Settings typography, and security behavior remains unchanged. `SettingsDeviceVisualTest` and `SettingsSecurityUiTest` (`2/2`) passed on `SM-A546B - 16`.
+- Next nutrition UI pass completed for `CheatEntryActivity`: the nutrition-label card and IA understanding card are explicitly white/neutral at runtime, `Quando`/`Quantità`/`Note` fields use compact/readable tokens, IA copy uses shared typography styles, and green remains only on CTA/positive status. `CheatEntryE2ETest`, `ActivitySmokeTest` and `FoodReviewScreensDeviceTest` passed on `SM-A546B - 16`.
+- Meal detail/shopping/review pass completed: meal macro panel and shopping empty state use white neutral cards, meal ingredient/preparation cards and shopping items have compact spacing, weekly review status/dynamic cards are forced white with neutral borders/zero elevation, and the review CTA uses the shared primary button token. `FoodReviewScreensDeviceTest` and `ActivitySmokeTest` passed on `SM-A546B - 16`.
 
 ## Current UI Audit Findings
 

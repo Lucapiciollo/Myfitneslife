@@ -114,6 +114,7 @@ abstract class BaseShellActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         super.onCreate(savedInstanceState)
+        shellData.activeProfileStore.refreshFromPersistence()
         isTabRoot = isRootTabIntent(intent)
         onBackPressedDispatcher.addCallback(this, tabRootBackCallback)
     }
@@ -126,6 +127,7 @@ abstract class BaseShellActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        shellData.activeProfileStore.refreshFromPersistence()
         isTabRoot = isRootTabIntent(intent)
     }
 
@@ -265,7 +267,7 @@ abstract class BaseShellActivity : AppCompatActivity() {
                         shellProfiles = profiles
                         profileHeader?.visibility = if (profiles.isEmpty()) View.GONE else View.VISIBLE
                         val labels = profiles.map { it.name } + "+ Nuovo profilo"
-                        profileSwitcher?.setAdapter(ArrayAdapter(this@BaseShellActivity, android.R.layout.simple_dropdown_item_1line, labels))
+                        profileSwitcher?.setAdapter(ArrayAdapter(this@BaseShellActivity, R.layout.item_dropdown_myfitai, labels))
                         renderActiveProfile()
                     }
                 }

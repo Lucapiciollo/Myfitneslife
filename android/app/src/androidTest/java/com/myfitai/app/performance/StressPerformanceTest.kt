@@ -81,6 +81,9 @@ class StressPerformanceTest {
         val shopping = ShoppingListEngine.aggregate(snapshot)
         timings["shopping_list_ms"] = elapsed(shoppingStart)
 
+        // The process-wide store can be refreshed by other instrumentation fixtures.
+        // Reassert the fixture profile before exercising the export service.
+        store.selectProfile(profileId, makeDefault = false)
         val export = ProfileExportService(context = ApplicationProvider.getApplicationContext(), db = db, activeProfileStore = store, time = time)
         timings["json_export_ms"] = measure { export.export(ProfileExportService.Format.JSON) }
         timings["csv_zip_export_ms"] = measure { export.export(ProfileExportService.Format.CSV_ZIP) }

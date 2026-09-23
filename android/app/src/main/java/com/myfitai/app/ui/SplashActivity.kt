@@ -7,6 +7,7 @@ import androidx.lifecycle.lifecycleScope
 import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class SplashActivity : AppCompatActivity() {
@@ -25,8 +26,11 @@ class SplashActivity : AppCompatActivity() {
         if (isFinishing || isDestroyed || navigationExecuted) return
 
         val defaultId = data.activeProfileStore.defaultIdOrNull()
-        val defaultProfile = defaultId?.let { data.userProfileRepository.get(it) }
-        val fallbackProfile = defaultProfile ?: data.userProfileRepository.getFirst()
+        val activeId = data.activeProfileStore.currentIdOrNull()
+        val profiles = data.userProfileRepository.profiles.first()
+        val fallbackProfile = activeId?.let { data.userProfileRepository.get(it) }
+            ?: defaultId?.let { data.userProfileRepository.get(it) }
+            ?: profiles.firstOrNull()
 
         navigationExecuted = true
         if (fallbackProfile == null) {

@@ -85,6 +85,52 @@ class MyFitAiDatabaseTest {
     }
 
     @Test
+    fun biaMeasurement_updateKeepsIdentityAndReplacesValues() = runBlocking {
+        val profileId = db.userProfileDao().insert(profile("BIA update"))
+        val dao = db.biaMeasurementDao()
+        val id = dao.insert(bia(profileId, 1000L, 89f).copy(bodyFatPercent = 18f))
+
+        dao.update(
+            bia(profileId, 2000L, 88f).copy(
+                id = id,
+                bodyFatPercent = 17f,
+                fasting = true,
+            ),
+        )
+
+        val saved = dao.observeAll(profileId).first().single()
+        assertEquals(id, saved.id)
+        assertEquals(profileId, saved.profileId)
+        assertEquals(2000L, saved.measuredAtEpochMillis)
+        assertEquals(88f, saved.weightKg)
+        assertEquals(17f, saved.bodyFatPercent)
+        assertTrue(saved.fasting)
+    }
+
+    @Test
+    fun bodyMeasurement_updateKeepsIdentityAndReplacesValues() = runBlocking {
+        val profileId = db.userProfileDao().insert(profile("Misure update"))
+        val dao = db.bodyMeasurementDao()
+        val id = dao.insert(measure(profileId, 1000L, 90f).copy(chestCm = 104f, notes = "prima"))
+
+        dao.update(
+            measure(profileId, 2000L, 88f).copy(
+                id = id,
+                chestCm = 102f,
+                notes = "seconda",
+            ),
+        )
+
+        val saved = dao.observeAll(profileId).first().single()
+        assertEquals(id, saved.id)
+        assertEquals(profileId, saved.profileId)
+        assertEquals(2000L, saved.measuredAtEpochMillis)
+        assertEquals(88f, saved.waistCm)
+        assertEquals(102f, saved.chestCm)
+        assertEquals("seconda", saved.notes)
+    }
+
+    @Test
     fun workoutHistory_isIsolatedByProfile_andRangeAscending() = runBlocking {
         val profile1Id = db.userProfileDao().insert(profile("Workout uno"))
         val profile2Id = db.userProfileDao().insert(profile("Workout due"))

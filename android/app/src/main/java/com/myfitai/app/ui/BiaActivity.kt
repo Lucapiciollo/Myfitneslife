@@ -20,6 +20,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.checkbox.MaterialCheckBox
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.card.MaterialCardView
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import com.google.android.material.timepicker.MaterialTimePicker
@@ -105,6 +106,7 @@ class BiaActivity : BaseShellActivity() {
         bindBottom(BottomNavBinder.Tab.MORE)
         bindBack()
         bindViews()
+        normalizeBiaCards()
         bindSegments()
         findViewById<View>(R.id.addBiaFromHistoryButton).setOnClickListener {
             resetForm()
@@ -116,9 +118,10 @@ class BiaActivity : BaseShellActivity() {
         bindSave()
         bindPhotoImport()
         findViewById<View>(R.id.analyzeBiaButton).setOnClickListener { analyzeBiaWithAi(it) }
+        pendingEditId = intent.getLongExtra(EXTRA_EDIT_ID, 0L)
         observeState()
         renderDateTime()
-        pendingEditId = intent.getLongExtra(EXTRA_EDIT_ID, 0L)
+        if (pendingEditId > 0L) loadPendingEdit()
         if (intent.getBooleanExtra(EXTRA_OPEN_HISTORY, false) && pendingEditId == 0L) {
             findViewById<SelectableSegmentView>(R.id.biaSegment).getChildAt(1)?.performClick()
         }
@@ -132,6 +135,33 @@ class BiaActivity : BaseShellActivity() {
         historyContainer = findViewById(R.id.historyContainer)
         historyList = findViewById(R.id.historyList)
         historySummary = findViewById(R.id.historySummary)
+    }
+
+    private fun normalizeBiaCards() {
+        listOf(R.id.biaDateCard, R.id.biaConditionsCard, R.id.biaResultsCard).forEach { id ->
+            findViewById<MaterialCardView>(id).apply {
+                setCardBackgroundColor(getColor(R.color.white))
+                strokeColor = getColor(R.color.divider)
+                strokeWidth = dp(1)
+                cardElevation = 0f
+                (getChildAt(0) as? View)?.setBackgroundColor(getColor(R.color.white))
+            }
+        }
+        historySummary.setBackgroundResource(R.drawable.bg_card)
+    }
+
+    private fun loadPendingEdit() {
+        val editId = pendingEditId
+        lifecycleScope.launch {
+            val profileId = data.activeProfileStore.currentIdOrNull() ?: return@launch
+            val history = data.biaRepository.all(profileId).first()
+            val item = history.firstOrNull { it.id == editId }
+            if (item == null) return@launch
+            if (pendingEditId == editId) {
+                pendingEditId = 0L
+                editReading(item)
+            }
+        }
     }
 
     private fun bindSegments() {
@@ -523,8 +553,14 @@ class BiaActivity : BaseShellActivity() {
         findViewById<View>(R.id.analyzeBiaButton).isEnabled = history.any { hasAnalysisValue(it) }
         if (history.isEmpty()) {
             historySummary.text = "Nessuna misurazione BIA salvata per questo profilo."
+            historySummary.visibility = View.GONE
+            findViewById<View>(R.id.historyEmptyText).visibility = View.VISIBLE
+            findViewById<View>(R.id.analyzeBiaButton).visibility = View.GONE
             return
         }
+        historySummary.visibility = View.VISIBLE
+        findViewById<View>(R.id.historyEmptyText).visibility = View.GONE
+        findViewById<View>(R.id.analyzeBiaButton).visibility = View.VISIBLE
 
         val latest = history.first()
         historySummary.text = buildSummary(history, latest)
@@ -533,6 +569,7 @@ class BiaActivity : BaseShellActivity() {
             val card = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 setBackgroundResource(R.drawable.bg_card)
+                elevation = 0f
                 setPadding(dp(16), dp(12), dp(16), dp(12))
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
@@ -567,6 +604,7 @@ class BiaActivity : BaseShellActivity() {
                 setPadding(0, dp(6), 0, 0)
             })
             card.setOnClickListener { editReading(item) }
+            card.contentDescription = "Modifica rilevazione BIA"
             card.setOnLongClickListener {
                 confirmDelete(item)
                 true
@@ -644,7 +682,10 @@ class BiaActivity : BaseShellActivity() {
                                 .show()
                             button.isEnabled = true
                         }
-                        androidx.work.WorkInfo.State.FAILED, androidx.work.WorkInfo.State.CANCELLED -> button.isEnabled = true
+                        androidx.work.WorkInfo.State.FAILED, androidx.work.WorkInfo.State.CANCELLED -> {
+                            button.isEnabled = true
+                            Toast.makeText(this@BiaActivity, "Analisi BIA non riuscita. Riprova.", Toast.LENGTH_LONG).show()
+                        }
                         else -> Unit
                     }
                 }
@@ -757,7 +798,10 @@ class BiaActivity : BaseShellActivity() {
         findViewById<MaterialCheckBox>(R.id.checkNoWorkout).isChecked = item.noRecentWorkout
         bindMeasurementRows()
         renderDateTime()
-        findViewById<android.widget.TextView>(R.id.saveButton).text = "Salva modifiche"
+        findViewById<android.widget.TextView>(R.id.saveButton).apply {
+            text = "Salva modifiche"
+            contentDescription = "Salva modifiche"
+        }
         openingExistingForEdit = true
         findViewById<SelectableSegmentView>(R.id.biaSegment).getChildAt(0)?.performClick()
         openingExistingForEdit = false
@@ -774,7 +818,10 @@ class BiaActivity : BaseShellActivity() {
 
     private fun resetForm() {
         editingMeasurement = null
-        findViewById<android.widget.TextView>(R.id.saveButton).text = "Salva"
+        findViewById<android.widget.TextView>(R.id.saveButton).apply {
+            text = "Salva"
+            contentDescription = "Salva"
+        }
         values.keys.forEach { values[it] = null }
         bindMeasurementRows()
         selectedDateMillis = System.currentTimeMillis()

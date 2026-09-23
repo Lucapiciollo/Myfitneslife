@@ -26,6 +26,7 @@ import com.myfitai.app.domain.body.BodyProportionsAiJobHandler
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.ui.body.BodyMeasurementsViewModel
 import com.myfitai.app.ui.widgets.BodyMeasurementTrendView
+import com.myfitai.app.ui.widgets.BodyMeasurementTrendSummaryView
 import com.myfitai.app.ui.widgets.MeasurementRowView
 import com.myfitai.app.ui.widgets.SelectableSegmentView
 import kotlinx.coroutines.launch
@@ -78,6 +79,7 @@ class BodyMeasuresActivity : BaseShellActivity() {
         setContentView(R.layout.activity_body_measures)
         bindBottom(BottomNavBinder.Tab.MORE)
         bindBack()
+        normalizeMeasurementCards()
 
         findViewById<View>(R.id.saveButton).setOnClickListener { go(NewBodyMeasurementActivity::class.java) }
         findViewById<View>(R.id.addBodyFromHistoryButton).setOnClickListener { go(NewBodyMeasurementActivity::class.java) }
@@ -100,6 +102,19 @@ class BodyMeasuresActivity : BaseShellActivity() {
         }
     }
 
+    private fun normalizeMeasurementCards() {
+        listOf(R.id.currentMeasuresCard, R.id.bodyTrendChartCard).forEach { id ->
+            findViewById<MaterialCardView>(id).apply {
+                setCardBackgroundColor(getColor(R.color.white))
+                strokeColor = getColor(R.color.divider)
+                strokeWidth = dp(1)
+                cardElevation = 0f
+            }
+        }
+        findViewById<BodyMeasurementTrendSummaryView>(R.id.bodyTrendNote)
+            .setBackgroundResource(R.drawable.bg_card)
+    }
+
     private fun bindTabs() {
         val topSegment = findViewById<SelectableSegmentView>(R.id.measureSegment)
         val measureContent = findViewById<View>(R.id.measureContent)
@@ -117,7 +132,7 @@ class BodyMeasuresActivity : BaseShellActivity() {
     private fun bindMetricSelector() {
         val input = findViewById<AutoCompleteTextView>(R.id.trendMetricInput)
         val labels = Metric.entries.map { it.label }
-        input.setAdapter(ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, labels))
+        input.setAdapter(ArrayAdapter(this, R.layout.item_dropdown_myfitai, labels))
         input.setText(selectedMetric.label, false)
         input.setOnItemClickListener { _, _, position, _ ->
             selectedMetric = Metric.entries[position]
@@ -176,6 +191,8 @@ class BodyMeasuresActivity : BaseShellActivity() {
 
     private fun renderCurrent() {
         val latest = measurements.firstOrNull()
+        findViewById<View>(R.id.currentMeasuresHeader).visibility = if (latest == null) View.GONE else View.VISIBLE
+        findViewById<View>(R.id.currentMeasuresCard).visibility = if (latest == null) View.GONE else View.VISIBLE
         findViewById<TextView>(R.id.measureDate).text = latest?.let { entityDate(it).format(dateFormatter) } ?: "Nessuna misura ancora registrata"
 
         // A weight-only entry must not hide the most recent available circumferences.
@@ -296,7 +313,28 @@ class BodyMeasuresActivity : BaseShellActivity() {
             val reportJson = org.json.JSONObject().put("status", report.status.name).put("maxAsymmetry", report.maxAsymmetryPercent ?: org.json.JSONObject.NULL).put("availableMeasurements", report.availableMeasurements).put("note", report.note).put("ratios", org.json.JSONArray().apply { report.ratios.forEach { put(org.json.JSONObject().put("key", it.key).put("label", it.label).put("value", it.value).put("description", it.description)) } }).put("asymmetries", org.json.JSONArray().apply { report.asymmetries.forEach { put(org.json.JSONObject().put("key", it.key).put("label", it.label).put("percent", it.percent).put("largerSide", it.largerSide ?: org.json.JSONObject.NULL)) } }).toString()
             val jobKey = "${System.currentTimeMillis()}"
             data.aiJobScheduler.enqueue(AiJobType.BODY_PROPORTIONS, profileId, jobKey, params = androidx.work.Data.Builder().putString(BodyProportionsAiJobHandler.KEY_REPORT, reportJson).build())
-            lifecycleScope.launch { data.aiJobScheduler.observe(AiJobType.BODY_PROPORTIONS, profileId, jobKey).collect { info -> if (info?.state == androidx.work.WorkInfo.State.SUCCEEDED) { val p = org.json.JSONObject(info.outputData.getString(BodyProportionsAiJobHandler.KEY_PAYLOAD).orEmpty()); MaterialAlertDialogBuilder(this@BodyMeasuresActivity).setTitle("Analisi proporzioni").setMessage(p.getString("summary")).setPositiveButton("Chiudi", null).show(); button.isEnabled = true; button.text = "Interpreta con IA" } } }
+            lifecycleScope.launch {
+                data.aiJobScheduler.observe(AiJobType.BODY_PROPORTIONS, profileId, jobKey).collect { info ->
+                    when (info?.state) {
+                        androidx.work.WorkInfo.State.SUCCEEDED -> {
+                            val p = org.json.JSONObject(info.outputData.getString(BodyProportionsAiJobHandler.KEY_PAYLOAD).orEmpty())
+                            MaterialAlertDialogBuilder(this@BodyMeasuresActivity)
+                                .setTitle("Analisi proporzioni")
+                                .setMessage(p.getString("summary"))
+                                .setPositiveButton("Chiudi", null)
+                                .show()
+                            button.isEnabled = true
+                            button.text = "Interpreta con IA"
+                        }
+                        androidx.work.WorkInfo.State.FAILED, androidx.work.WorkInfo.State.CANCELLED -> {
+                            button.isEnabled = true
+                            button.text = "Interpreta con IA"
+                            Toast.makeText(this@BodyMeasuresActivity, "Analisi non riuscita. Riprova.", Toast.LENGTH_LONG).show()
+                        }
+                        else -> Unit
+                    }
+                }
+            }
         }
     }
 
@@ -359,6 +397,13 @@ class BodyMeasuresActivity : BaseShellActivity() {
             setPoints(chartPoints)
             setNormalizedSeries(allSeries)
         }
+        findViewById<BodyMeasurementTrendSummaryView>(R.id.bodyTrendNote).apply {
+            text = if (periodPoints.size >= 2) {
+                "Andamento calcolato sulle rilevazioni disponibili nel periodo selezionato."
+            } else {
+                "Dati insufficienti\nServono almeno due rilevazioni nel periodo per descrivere un andamento affidabile."
+            }
+        }
     }
 
     private fun renderHistory() {
@@ -385,6 +430,7 @@ class BodyMeasuresActivity : BaseShellActivity() {
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                 ).apply { bottomMargin = dp(8) }
                 setOnClickListener { openEdit(measurement) }
+                contentDescription = "Modifica misura corporea"
                 setOnLongClickListener {
                     confirmDelete(measurement)
                     true

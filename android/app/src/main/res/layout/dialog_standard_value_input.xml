@@ -3,18 +3,16 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:background="@color/white"
-    android:paddingHorizontal="@dimen/space_20"
-    android:paddingTop="@dimen/space_8">
+    style="@style/Widget.MyFitAI.Dialog.Content">
 
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/valueInputLayout"
-        style="@style/Widget.MyFitAI.Input"
+        style="@style/Widget.MyFitAI.InputReadableCompact"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
         <com.google.android.material.textfield.TextInputEditText
-                style="@style/Widget.MyFitAI.InputEditText"
+                style="@style/Widget.MyFitAI.InputEditTextReadableCompact"
             android:id="@+id/valueInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

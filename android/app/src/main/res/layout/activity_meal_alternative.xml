@@ -26,8 +26,8 @@
                 android:background="@drawable/bg_screen_header"
                 android:gravity="center_vertical">
 
-                <TextView
-                    android:id="@+id/backButton"
+                 <ImageButton
+                     android:id="@+id/backButton"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
                     android:background="?attr/selectableItemBackgroundBorderless"

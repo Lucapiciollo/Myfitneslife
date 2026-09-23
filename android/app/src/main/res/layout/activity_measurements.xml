@@ -25,12 +25,11 @@
                  android:gravity="center_vertical"
                      android:background="@drawable/bg_screen_header"
                  android:paddingHorizontal="8dp">
-                <TextView
-                    android:id="@+id/backButton"
+                 <ImageButton
+                     android:id="@+id/backButton"
                     android:layout_width="40dp"
                      android:layout_height="40dp"
-                     android:gravity="center"
-                     android:background="?attr/selectableItemBackgroundBorderless"
+                      android:background="?attr/selectableItemBackgroundBorderless"
                      android:contentDescription="Indietro"
                      android:padding="8dp"
                      android:src="@drawable/ic_arrow_back"
@@ -46,8 +45,8 @@
                 <View android:layout_width="40dp" android:layout_height="1dp" />
             </LinearLayout>
 
-            <TextView
-                android:layout_width="match_parent"
+                 <TextView
+                     android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_12"
                 android:text="Registra e gestisci i dati corporei che alimentano i tuoi progressi."
@@ -75,7 +74,7 @@
                   android:layout_marginStart="@dimen/space_6" />
              </LinearLayout>
 
-             <com.google.android.material.card.MaterialCardView style="@style/Widget.MyFitAI.Card" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_12" android:layout_marginBottom="@dimen/space_16">
+              <com.google.android.material.card.MaterialCardView android:id="@+id/dietImpactCard" style="@style/Widget.MyFitAI.Card" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_12" android:layout_marginBottom="@dimen/space_16">
                 <LinearLayout style="@style/Widget.MyFitAI.HomeSectionContent" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
                 <com.myfitai.app.ui.widgets.SectionHeaderView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Impatto sul piano alimentare" />
                  <LinearLayout android:id="@+id/dietImpactRows" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" />
@@ -85,7 +84,7 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/allHistoryButton"
-                style="@style/Widget.Material3.Button.OutlinedButton"
+                style="@style/Widget.MyFitAI.Button.Outlined"
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
                 android:layout_marginTop="@dimen/space_24"

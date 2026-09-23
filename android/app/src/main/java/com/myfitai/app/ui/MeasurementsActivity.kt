@@ -12,6 +12,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.card.MaterialCardView
 import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.data.local.entity.BiaMeasurementEntity
@@ -40,6 +41,7 @@ class MeasurementsActivity : BaseShellActivity() {
         setContentView(R.layout.activity_measurements)
         bindBottom(BottomNavBinder.Tab.MORE)
         bindBack()
+        normalizeMeasurementCards()
 
         findViewById<MeasurementActionCardView>(R.id.biaCard).apply {
             setTitle("BIA")
@@ -105,6 +107,21 @@ class MeasurementsActivity : BaseShellActivity() {
         } ?: "Nessuna rilevazione BIA disponibile")
     }
 
+    private fun normalizeMeasurementCards() {
+        findViewById<MaterialCardView>(R.id.dietImpactCard).apply {
+            setCardBackgroundColor(getColor(R.color.white))
+            strokeColor = getColor(R.color.divider)
+            strokeWidth = dp(1)
+            cardElevation = 0f
+        }
+        listOf(R.id.biaCard, R.id.bodyCard).forEach { id ->
+            findViewById<View>(id).apply {
+                elevation = 0f
+                setBackgroundColor(getColor(R.color.white))
+            }
+        }
+    }
+
     private fun renderBody(value: BodyMeasurementEntity?) {
         findViewById<MeasurementActionCardView>(R.id.bodyCard).setLatest(value?.let {
             "Ultima rilevazione: ${formatDate(it.measuredAtEpochMillis)}"
@@ -112,12 +129,22 @@ class MeasurementsActivity : BaseShellActivity() {
     }
 
     private suspend fun renderDietImpact() {
-        val profileId = data.activeProfileStore.currentIdOrNull() ?: return
+        val profileId = data.activeProfileStore.currentIdOrNull()
+        if (profileId == null) {
+            findViewById<View>(R.id.dietImpactCard).visibility = View.GONE
+            return
+        }
         val bia = data.biaRepository.latest(profileId).first()
         val body = data.bodyMeasurementRepository.latest(profileId).first()
 
+        if (bia == null && body == null) {
+            findViewById<View>(R.id.dietImpactCard).visibility = View.GONE
+            return
+        }
+
         val rows = findViewById<LinearLayout>(R.id.dietImpactRows)
         rows.removeAllViews()
+        findViewById<View>(R.id.dietImpactCard).visibility = View.VISIBLE
         listOf(
             "Peso" to (bia?.weightKg != null),
             "Grasso corporeo" to (bia?.bodyFatPercent != null),

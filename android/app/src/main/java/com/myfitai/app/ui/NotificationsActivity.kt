@@ -23,6 +23,8 @@ class NotificationsActivity : BaseShellActivity() {
         val mealType = intent.getStringExtra(ReminderReceiver.EXTRA_MEAL_TYPE).orEmpty().ifBlank { "Pasto" }
         val mealTitle = intent.getStringExtra(ReminderReceiver.EXTRA_MEAL_TITLE).orEmpty().ifBlank { "Apri il piano per i dettagli" }
         val profileId = intent.getLongExtra(ReminderReceiver.EXTRA_PROFILE_ID, -1L)
+        val snoozeMinutes = 10
+        findViewById<TextView>(R.id.snoozeButton).text = "Posticipa $snoozeMinutes min"
 
         renderReminder(mealType, mealTitle)
 
@@ -40,9 +42,9 @@ class NotificationsActivity : BaseShellActivity() {
                     mealType = mealType,
                     mealTitle = mealTitle,
                     profileId = profileId,
-                    delayMinutes = 10,
+                    delayMinutes = snoozeMinutes,
                 )
-                Toast.makeText(this, "Promemoria posticipato di 10 minuti", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Promemoria posticipato di $snoozeMinutes minuti", Toast.LENGTH_SHORT).show()
             }
             finish()
         }

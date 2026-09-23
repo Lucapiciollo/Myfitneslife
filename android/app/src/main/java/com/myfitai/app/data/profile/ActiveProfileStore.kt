@@ -30,6 +30,14 @@ class ActiveProfileStore(context: Context) {
 
     fun currentIdOrNull(): Long? = sharedActiveProfileId.value.takeIf { it != NO_PROFILE }
 
+    /** Re-reads the persisted session when another app-process component changed it. */
+    fun refreshFromPersistence() {
+        val persisted = prefs.getLong(KEY_ACTIVE_PROFILE_ID, NO_PROFILE)
+        if (persisted != NO_PROFILE && persisted != sharedActiveProfileId.value) {
+            sharedActiveProfileId.value = persisted
+        }
+    }
+
     fun defaultIdOrNull(): Long? = prefs.getLong(KEY_DEFAULT_PROFILE_ID, NO_PROFILE).takeIf { it != NO_PROFILE }
 
     fun setActiveProfile(profileId: Long) {

@@ -9,6 +9,7 @@ import android.widget.AutoCompleteTextView
 import com.google.android.material.textfield.TextInputEditText
 import android.widget.ProgressBar
 import android.widget.TextView
+import android.content.res.ColorStateList
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -19,6 +20,8 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.chip.ChipGroup
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.card.MaterialCardView
+import com.google.android.material.textfield.TextInputLayout
 import com.google.android.material.timepicker.MaterialTimePicker
 import com.google.android.material.timepicker.TimeFormat
 import com.myfitai.app.R
@@ -69,6 +72,7 @@ class CheatEntryActivity : BaseShellActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_cheat_entry)
         bindBack()
+        normalizeCheatSurfaces()
 
         findViewById<SelectableSegmentView>(R.id.modeSegment)
             .setSegments(listOf("Rapido", "Dettagliato"), selectedIndex = 0)
@@ -89,6 +93,28 @@ class CheatEntryActivity : BaseShellActivity() {
                 viewModel.state.collect(::renderState)
             }
         }
+    }
+
+    private fun normalizeCheatSurfaces() {
+        fun visit(view: View) {
+            when (view) {
+                is MaterialCardView -> {
+                    view.setCardBackgroundColor(getColor(R.color.white))
+                    view.strokeColor = getColor(R.color.divider)
+                    view.strokeWidth = dp(1)
+                    view.cardElevation = 0f
+                }
+                is TextInputLayout -> {
+                    view.boxBackgroundColor = getColor(R.color.white)
+                    view.boxStrokeColor = getColor(R.color.myfitai_input_stroke)
+                    view.hintTextColor = ColorStateList.valueOf(getColor(R.color.myfitai_input_hint))
+                }
+            }
+            if (view is android.view.ViewGroup) {
+                for (index in 0 until view.childCount) visit(view.getChildAt(index))
+            }
+        }
+        visit(findViewById(android.R.id.content))
     }
 
     private fun bindLabelPhoto() {
@@ -332,4 +358,6 @@ class CheatEntryActivity : BaseShellActivity() {
         labelImage = null
         super.onDestroy()
     }
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 }

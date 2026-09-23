@@ -11,6 +11,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
+import com.google.android.material.card.MaterialCardView
 import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.data.local.entity.BodyMeasurementEntity
@@ -41,6 +42,8 @@ class NewBodyMeasurementActivity : BaseShellActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_new_body_measurement)
         bindBack()
+        normalizeFormCards()
+        findViewById<TextView>(R.id.title).text = if (requestedEditId > 0L) "Modifica misurazione" else "Nuova misurazione"
         bindDatePicker()
         bindSave()
         observeEvents()
@@ -93,9 +96,28 @@ class NewBodyMeasurementActivity : BaseShellActivity() {
                         "È visibile nello storico; inserisci un peso manuale solo se vuoi registrarlo separatamente."
                 }.orEmpty()
             }
-            findViewById<android.widget.TextView>(R.id.saveMeasurementButton).text = "Salva modifiche"
+            findViewById<android.widget.TextView>(R.id.saveMeasurementButton).apply {
+                text = "Salva modifiche"
+                contentDescription = "Salva modifiche"
+            }
             saveButton.isEnabled = true
         }
+    }
+
+    private fun normalizeFormCards() {
+        val root = findViewById<View>(android.R.id.content)
+        fun walk(view: View) {
+            if (view is MaterialCardView) {
+                view.setCardBackgroundColor(getColor(R.color.white))
+                view.strokeColor = getColor(R.color.divider)
+                view.strokeWidth = (resources.displayMetrics.density).toInt()
+                view.cardElevation = 0f
+            }
+            if (view is android.view.ViewGroup) {
+                for (index in 0 until view.childCount) walk(view.getChildAt(index))
+            }
+        }
+        walk(root)
     }
 
     private fun bindDatePicker() {

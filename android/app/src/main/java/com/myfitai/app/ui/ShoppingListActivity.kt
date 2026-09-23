@@ -11,6 +11,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.card.MaterialCardView
 import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.domain.shopping.ShoppingListStateStore
@@ -44,6 +45,12 @@ class ShoppingListActivity : BaseShellActivity() {
         setContentView(R.layout.activity_shopping_list)
         bindBack()
         bindBottom(BottomNavBinder.Tab.FOOD)
+        findViewById<MaterialCardView>(R.id.itemsCard).apply {
+            setCardBackgroundColor(getColor(R.color.white))
+            strokeColor = getColor(R.color.divider)
+            strokeWidth = dp(1)
+            cardElevation = 0f
+        }
 
         findViewById<SelectableSegmentView>(R.id.viewModeSegment).apply {
             setSegments(listOf("Settimana", "Categorie"), selectedIndex = 0)
@@ -97,6 +104,8 @@ class ShoppingListActivity : BaseShellActivity() {
 
         val container = findViewById<LinearLayout>(R.id.itemsContainer)
         container.removeAllViews()
+        findViewById<View>(R.id.itemsCard).visibility = if (visible.isEmpty()) View.GONE else View.VISIBLE
+        findViewById<View>(R.id.exportButton).isEnabled = visible.isNotEmpty()
         if (visible.isEmpty()) return
 
         if (state.viewMode == ShoppingListViewModel.ViewMode.CATEGORY) {

@@ -13,6 +13,7 @@ import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.materialswitch.MaterialSwitch
+import com.google.android.material.textfield.TextInputLayout
 import com.google.android.material.timepicker.MaterialTimePicker
 import com.google.android.material.timepicker.TimeFormat
 import com.myfitai.app.R
@@ -40,6 +41,7 @@ class SettingsActivity : BaseShellActivity() {
         setContentView(R.layout.activity_settings)
         bindBottom(BottomNavBinder.Tab.MORE)
         bindBack()
+        normalizeSettingsSurfaces()
         bindSectionHelp()
         bindWorkoutConfiguration()
 
@@ -177,8 +179,34 @@ class SettingsActivity : BaseShellActivity() {
         findViewById<View>(R.id.rowExport).setOnClickListener { go(ExportActivity::class.java) }
 
         bindDataDeletion()
+        bindNutritionPlanSchedule()
+        bindProgressAnalysisFrequency()
         GeminiCostSettingsBinder.bind(this, findViewById(R.id.aiSectionCard), settings)
         render()
+    }
+
+    private fun normalizeSettingsSurfaces() {
+        fun visit(view: View) {
+            when (view) {
+                is MaterialCardView -> {
+                    view.setCardBackgroundColor(getColor(R.color.white))
+                    view.strokeColor = getColor(R.color.divider)
+                    view.strokeWidth = dp(1)
+                    view.cardElevation = 0f
+                }
+                is TextInputLayout -> {
+                    view.boxBackgroundColor = getColor(R.color.white)
+                    view.boxStrokeColor = getColor(R.color.myfitai_input_stroke)
+                    view.boxStrokeWidth = dp(1)
+                    view.boxStrokeWidthFocused = dp(2)
+                    view.hintTextColor = android.content.res.ColorStateList.valueOf(getColor(R.color.myfitai_input_hint))
+                }
+            }
+            if (view is android.view.ViewGroup) {
+                for (index in 0 until view.childCount) visit(view.getChildAt(index))
+            }
+        }
+        visit(findViewById(android.R.id.content))
     }
 
     private fun bindWorkoutConfiguration() {
@@ -437,18 +465,26 @@ class SettingsActivity : BaseShellActivity() {
         )
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
+            setBackgroundColor(getColor(R.color.white))
             setPadding(dp(4), dp(4), dp(4), dp(4))
             sections.forEach { addView(guideSectionCard(it)) }
         }
         val scroll = ScrollView(this).apply {
             isFillViewport = true
+            setBackgroundColor(getColor(R.color.white))
             addView(content)
         }
-        MaterialAlertDialogBuilder(this)
+        val dialog = MaterialAlertDialogBuilder(this)
             .setTitle("Come funziona MyFitAI")
             .setView(scroll)
             .setPositiveButton("Ho capito", null)
-            .show()
+            .create()
+        dialog.setOnShowListener {
+            dialog.window?.setBackgroundDrawableResource(R.drawable.bg_dialog_card)
+            dialog.findViewById<View>(com.google.android.material.R.id.buttonPanel)?.setBackgroundColor(getColor(R.color.white))
+            dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE)?.setTextColor(getColor(R.color.accent_green_dark))
+        }
+        dialog.show()
     }
 
     private fun guideSectionCard(section: GuideSection): MaterialCardView {
@@ -462,6 +498,7 @@ class SettingsActivity : BaseShellActivity() {
         }
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
+            setBackgroundColor(getColor(R.color.white))
             setPadding(dp(16), dp(14), dp(16), dp(14))
         }
         TextView(this).apply {

@@ -88,6 +88,10 @@ class MealAlternativeActivity : BaseShellActivity() {
     }
 
     private fun renderAlternatives(items: List<MealAlternativeContract.Alternative>) {
+        if (items.isEmpty()) {
+            showError("Nessuna alternativa disponibile per questo pasto.")
+            return
+        }
         val container = findViewById<LinearLayout>(R.id.alternativesContainer)
         container.removeAllViews()
         items.forEachIndexed { index, alternative ->
@@ -183,6 +187,8 @@ class MealAlternativeActivity : BaseShellActivity() {
     }
 
     private fun showError(message: String) {
+        findViewById<View>(R.id.loadingRow).visibility = View.GONE
+        findViewById<View>(R.id.alternativesContainer).visibility = View.GONE
         findViewById<TextView>(R.id.statusText).apply {
             visibility = View.VISIBLE
             text = message

@@ -165,10 +165,11 @@ class ProfileActivity : BaseShellActivity() {
 
     private fun showPhotoMenu() {
         val profile = currentProfile ?: return
-        val options = if (profile.photoPath.isNullOrBlank()) arrayOf("Scatta foto", "Scegli dalla galleria", "Annulla")
-        else arrayOf("Scatta foto", "Scegli dalla galleria", "Rimuovi foto", "Annulla")
+        val options = if (profile.photoPath.isNullOrBlank()) arrayOf("Scatta foto", "Scegli dalla galleria")
+        else arrayOf("Scatta foto", "Scegli dalla galleria", "Rimuovi foto")
         MaterialAlertDialogBuilder(this)
             .setTitle("Foto profilo")
+            .setNegativeButton("Annulla", null)
             .setItems(options) { dialog, which ->
                 when (options[which]) {
                     "Scatta foto" -> launchCamera(profile.id)

@@ -48,7 +48,13 @@ class WorkoutsActivity : BaseShellActivity() {
             return
         }
         setContentView(R.layout.activity_workouts)
-        bindBottom(BottomNavBinder.Tab.HOME)
+        findViewById<com.google.android.material.card.MaterialCardView>(R.id.workoutSummaryCard).apply {
+            setCardBackgroundColor(getColor(R.color.white))
+            cardElevation = 0f
+            strokeWidth = dp(1)
+            strokeColor = getColor(R.color.divider)
+        }
+        bindBottom(BottomNavBinder.Tab.MORE)
         bindBack()
         bindWeekNavigation()
         bindWeek()

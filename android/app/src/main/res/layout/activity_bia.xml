@@ -62,11 +62,12 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_12"
-                    style="@style/Widget.MyFitAI.Card">
+                 <com.google.android.material.card.MaterialCardView
+                     android:id="@+id/biaDateCard"
+                     android:layout_width="match_parent"
+                     android:layout_height="wrap_content"
+                     android:layout_marginTop="@dimen/space_12"
+                     style="@style/Widget.MyFitAI.Card">
                     <LinearLayout
                         style="@style/Widget.MyFitAI.TabCardContent"
                         android:layout_width="match_parent"
@@ -104,20 +105,20 @@
                         android:orientation="horizontal">
 
                         <com.google.android.material.textfield.TextInputLayout
-                            style="@style/Widget.MyFitAI.Input"
+                            style="@style/Widget.MyFitAI.InputReadableCompact"
                             android:id="@+id/dateInputLayout"
                             android:layout_width="0dp"
                             android:layout_weight="1"
-                            android:layout_height="64dp"
+                            android:layout_height="wrap_content"
                             android:hint="Data rilevazione"
                             app:endIconDrawable="@drawable/ic_calendar"
                             app:endIconMode="custom">
 
                             <com.google.android.material.textfield.TextInputEditText
-                style="@style/Widget.MyFitAI.InputEditText"
+                style="@style/Widget.MyFitAI.InputEditTextReadableCompact"
                                 android:id="@+id/dateInput"
                                 android:layout_width="match_parent"
-                                android:layout_height="match_parent"
+                                android:layout_height="wrap_content"
                                 android:clickable="true"
                                  android:focusable="false"
                                  android:gravity="center_vertical"
@@ -132,26 +133,26 @@
                         </com.google.android.material.textfield.TextInputLayout>
 
                         <com.google.android.material.textfield.TextInputLayout
-                            style="@style/Widget.MyFitAI.Input"
+                             style="@style/Widget.MyFitAI.InputReadableCompact"
                             android:id="@+id/timeInputLayout"
                             android:layout_width="0dp"
                             android:layout_weight="1"
-                            android:layout_height="64dp"
+                            android:layout_height="wrap_content"
                             android:layout_marginStart="@dimen/space_8"
                             android:hint="Ora"
                             app:endIconDrawable="@drawable/ic_setting_clock"
                             app:endIconMode="custom">
 
                             <com.google.android.material.textfield.TextInputEditText
-                style="@style/Widget.MyFitAI.InputEditText"
+                style="@style/Widget.MyFitAI.InputEditTextReadableCompact"
                                 android:id="@+id/timeInput"
                                 android:layout_width="match_parent"
-                                android:layout_height="match_parent"
+                                android:layout_height="wrap_content"
                                 android:clickable="true"
                                 android:focusable="false"
                                 android:gravity="center_vertical"
                                 android:inputType="none"
-                                android:minHeight="64dp"
+                                android:minHeight="48dp"
                                 android:textColor="@color/text_primary"
                                 android:textSize="16sp"
  />
@@ -160,8 +161,9 @@
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="match_parent"
+                 <com.google.android.material.card.MaterialCardView
+                     android:id="@+id/biaConditionsCard"
+                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_8"
                     style="@style/Widget.MyFitAI.Card">
@@ -235,8 +237,9 @@
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="match_parent"
+                 <com.google.android.material.card.MaterialCardView
+                     android:id="@+id/biaResultsCard"
+                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_8"
                     style="@style/Widget.MyFitAI.Card">
@@ -303,7 +306,7 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/importPhotoButton"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        style="@style/Widget.MyFitAI.Button.Outlined"
                         android:layout_width="0dp"
                         android:layout_height="48dp"
                         android:layout_weight="1"
@@ -340,33 +343,45 @@
                 android:orientation="vertical"
                 android:visibility="gone">
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/addBiaFromHistoryButton"
+                 <com.google.android.material.button.MaterialButton
+                     android:id="@+id/addBiaFromHistoryButton"
                     style="@style/Widget.MyFitAI.Button.Primary"
                     android:layout_width="match_parent"
                     android:layout_height="48dp"
                     android:layout_marginTop="@dimen/space_12"
-                    android:text="Inserisci nuova BIA"
-                    android:textAllCaps="false" />
+                     android:text="Inserisci nuova BIA"
+                     android:textAllCaps="false" />
 
-                <com.google.android.material.textview.MaterialTextView
-                    android:id="@+id/historySummary"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_12"
-                    android:background="@color/surface_primary"
-                    android:padding="@dimen/space_16"
-                    android:textColor="@color/text_primary"
-                    android:textSize="14sp" />
+                 <com.google.android.material.textview.MaterialTextView
+                     android:id="@+id/historyEmptyText"
+                     android:layout_width="match_parent"
+                     android:layout_height="wrap_content"
+                     android:layout_marginTop="@dimen/space_12"
+                     android:text="Nessuna misurazione BIA salvata per questo profilo."
+                     android:textColor="@color/text_secondary"
+                     android:textSize="14sp"
+                     android:visibility="gone" />
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/analyzeBiaButton"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
+                  <com.google.android.material.textview.MaterialTextView
+                     android:id="@+id/historySummary"
+                     android:layout_width="match_parent"
+                     android:layout_height="wrap_content"
+                     android:layout_marginTop="@dimen/space_12"
+                      android:background="@drawable/bg_card"
+                     android:padding="@dimen/space_16"
+                     android:textColor="@color/text_primary"
+                     android:textSize="14sp"
+                     android:visibility="gone" />
+
+                 <com.google.android.material.button.MaterialButton
+                     android:id="@+id/analyzeBiaButton"
+                    style="@style/Widget.MyFitAI.Button.Outlined"
                     android:layout_width="match_parent"
                     android:layout_height="48dp"
                     android:layout_marginTop="@dimen/space_8"
-                    android:text="Analisi sportiva BIA"
-                    android:textAllCaps="false" />
+                     android:text="Analisi sportiva BIA"
+                     android:textAllCaps="false"
+                     android:visibility="gone" />
 
                 <LinearLayout
                     android:id="@+id/historyList"

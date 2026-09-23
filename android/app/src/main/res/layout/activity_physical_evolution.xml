@@ -51,11 +51,11 @@
                 android:layout_height="44dp"
                 android:layout_marginTop="@dimen/space_12" />
 
-            <com.google.android.material.card.MaterialCardView
-                style="@style/Widget.MyFitAI.Card"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_12">
+              <com.google.android.material.card.MaterialCardView
+                  style="@style/Widget.MyFitAI.Card"
+                 android:layout_width="match_parent"
+                 android:layout_height="wrap_content"
+                 android:layout_marginTop="@dimen/space_12">
                 <LinearLayout
                     style="@style/Widget.MyFitAI.WhiteCardContent"
                     android:layout_width="match_parent"
@@ -130,11 +130,13 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <com.google.android.material.card.MaterialCardView
-                style="@style/Widget.MyFitAI.Card"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_12">
+              <com.google.android.material.card.MaterialCardView
+                  android:id="@+id/otherIndicatorsCard"
+                 style="@style/Widget.MyFitAI.Card"
+                 android:layout_width="match_parent"
+                 android:layout_height="wrap_content"
+                 android:layout_marginTop="@dimen/space_12"
+                 android:visibility="gone">
                 <LinearLayout
                     style="@style/Widget.MyFitAI.WhiteCardContent"
                     android:layout_width="match_parent"
@@ -193,8 +195,9 @@
                 android:layout_height="wrap_content"
                 android:visibility="gone" />
 
-            <com.google.android.material.card.MaterialCardView
-                style="@style/Widget.MyFitAI.Card"
+             <com.google.android.material.card.MaterialCardView
+                 android:id="@+id/progressSummaryCard"
+                 style="@style/Widget.MyFitAI.Card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_12">
@@ -202,8 +205,7 @@
                     style="@style/Widget.MyFitAI.WhiteCardContent"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@color/surface_primary"
-                    android:orientation="vertical">
+                     android:orientation="vertical">
                     <TextView android:id="@+id/progressSummaryTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Affidabilità dell’andamento" android:textColor="@color/text_primary" android:textStyle="bold" />
                     <TextView android:id="@+id/progressSummaryText" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:text="I dati mostrati derivano dallo storico reale." android:textColor="@color/text_secondary" />
                 </LinearLayout>

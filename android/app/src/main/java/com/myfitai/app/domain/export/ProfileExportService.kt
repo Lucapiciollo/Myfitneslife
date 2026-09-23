@@ -44,6 +44,7 @@ class ProfileExportService(
     private val appContext = context.applicationContext
 
     suspend fun export(format: Format): ExportedFile {
+        activeProfileStore.refreshFromPersistence()
         val profileId = activeProfileStore.currentIdOrNull() ?: error("Nessun profilo attivo")
         val profile = db.userProfileDao().get(profileId) ?: error("Profilo non disponibile")
         val bia = db.biaMeasurementDao().observeAll(profileId).first().sortedBy { it.measuredAtEpochMillis }

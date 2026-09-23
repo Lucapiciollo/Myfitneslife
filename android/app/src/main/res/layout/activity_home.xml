@@ -116,7 +116,7 @@
                             android:textSize="13sp" />
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/planUpdateNoticeButton"
-                            style="@style/Widget.MaterialComponents.Button.TextButton"
+                            style="@style/Widget.MyFitAI.Button.Text"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_gravity="end"
@@ -597,7 +597,7 @@
                     android:alpha="0.58" />
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/todayMenuButton"
-                    style="@style/Widget.Material3.Button.TextButton"
+                    style="@style/Widget.MyFitAI.Button.Text"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_4"
@@ -664,7 +664,7 @@
                             android:text="Azioni rapide" />
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/measurementsButton"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            style="@style/Widget.MyFitAI.Button.Outlined"
                             android:layout_width="match_parent"
                             android:layout_height="48dp"
                             android:layout_marginTop="@dimen/space_12"
@@ -672,7 +672,7 @@
                             android:textAllCaps="false" />
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/addExtraButton"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            style="@style/Widget.MyFitAI.Button.Outlined"
                             android:layout_width="match_parent"
                             android:layout_height="48dp"
                             android:layout_marginTop="@dimen/space_8"

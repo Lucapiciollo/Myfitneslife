@@ -27,14 +27,14 @@ class MeasurementActionCardView @JvmOverloads constructor(
         radius = context.resources.getDimension(R.dimen.radius_card)
         strokeWidth = context.resources.getDimensionPixelSize(R.dimen.space_1)
         setStrokeColor(context.getColor(R.color.divider))
-        cardElevation = context.resources.getDimension(R.dimen.elevation_card)
+        cardElevation = 0f
 
         val content = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(
-                context.resources.getDimensionPixelSize(R.dimen.space_16),
                 context.resources.getDimensionPixelSize(R.dimen.space_12),
-                context.resources.getDimensionPixelSize(R.dimen.space_16),
+                context.resources.getDimensionPixelSize(R.dimen.space_12),
+                context.resources.getDimensionPixelSize(R.dimen.space_12),
                 context.resources.getDimensionPixelSize(R.dimen.space_16),
             )
         }
@@ -47,7 +47,7 @@ class MeasurementActionCardView @JvmOverloads constructor(
         titleView = TextView(context).apply {
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             setTextColor(context.getColor(R.color.text_primary))
-             textSize = 16f
+             textSize = 15f
             setTypeface(typeface, Typeface.BOLD)
         }
         header.addView(titleView)
@@ -65,6 +65,7 @@ class MeasurementActionCardView @JvmOverloads constructor(
             setTextColor(context.getColor(R.color.text_secondary))
             textSize = 12f
             maxLines = 2
+            ellipsize = android.text.TextUtils.TruncateAt.END
         }
         content.addView(latestText, marginTop(2))
 

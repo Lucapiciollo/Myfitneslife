@@ -15,6 +15,7 @@ import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.domain.review.WeeklyReviewService
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.ui.review.WeeklyReviewViewModel
+import com.google.android.material.card.MaterialCardView
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -31,6 +32,7 @@ class WeeklyReviewActivity : BaseShellActivity() {
         setContentView(R.layout.activity_weekly_review)
         bindBack()
         bindBottom(BottomNavBinder.Tab.PROGRESS)
+        normalizeReviewCards()
 
         findViewById<View>(R.id.prevWeekButton).setOnClickListener { viewModel.previousWeek() }
         findViewById<View>(R.id.nextWeekButton).setOnClickListener { viewModel.nextWeek() }
@@ -43,6 +45,22 @@ class WeeklyReviewActivity : BaseShellActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.state.collect(::render)
+            }
+        }
+    }
+
+    private fun normalizeReviewCards() {
+        val ids = listOf(
+            R.id.reviewStatusCard,
+            R.id.observationsCard,
+            R.id.guidanceCard,
+        )
+        ids.forEach { id ->
+            findViewById<MaterialCardView>(id).apply {
+                setCardBackgroundColor(getColor(R.color.white))
+                strokeColor = getColor(R.color.divider)
+                strokeWidth = dp(1)
+                cardElevation = 0f
             }
         }
     }
@@ -73,6 +91,8 @@ class WeeklyReviewActivity : BaseShellActivity() {
         renderTextList(R.id.guidanceContainer, content?.nextWeekGuidance.orEmpty())
         findViewById<View>(R.id.observationsHeader).visibility = if (content?.observations.isNullOrEmpty()) View.GONE else View.VISIBLE
         findViewById<View>(R.id.guidanceHeader).visibility = if (content?.nextWeekGuidance.isNullOrEmpty()) View.GONE else View.VISIBLE
+        findViewById<View>(R.id.observationsCard).visibility = if (content?.observations.isNullOrEmpty()) View.GONE else View.VISIBLE
+        findViewById<View>(R.id.guidanceCard).visibility = if (content?.nextWeekGuidance.isNullOrEmpty()) View.GONE else View.VISIBLE
 
         val button = findViewById<MaterialButton>(R.id.generateReviewButton)
         button.isEnabled = !state.loading && !state.generating

@@ -127,6 +127,7 @@ class HistoryActivity : BaseShellActivity() {
         val isEmpty = container.childCount == 0
         empty.visibility = if (isEmpty) View.VISIBLE else View.GONE
         container.visibility = if (isEmpty) View.GONE else View.VISIBLE
+        findViewById<View>(R.id.historyRowsCard).visibility = if (isEmpty) View.GONE else View.VISIBLE
         if (state.profileId == null) empty.text = "Nessun profilo attivo." else if (isEmpty) empty.text = "Nessun dato disponibile per questa categoria."
     }
 

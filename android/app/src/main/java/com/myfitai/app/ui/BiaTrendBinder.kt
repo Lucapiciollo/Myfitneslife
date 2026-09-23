@@ -3,6 +3,7 @@ package com.myfitai.app.ui
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.content.res.ColorStateList
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.myfitai.app.R
@@ -48,7 +49,16 @@ class BiaTrendBinder(
         setPadding(0, dp(16), 0, 0)
     }
 
-    private val metricButton = MaterialButton(activity).apply { isAllCaps = false }
+    private val metricButton = MaterialButton(activity).apply {
+        isAllCaps = false
+        minHeight = dp(44)
+        cornerRadius = dp(12)
+        strokeWidth = dp(1)
+        strokeColor = ColorStateList.valueOf(activity.getColor(R.color.divider))
+        backgroundTintList = ColorStateList.valueOf(activity.getColor(R.color.white))
+        setTextColor(activity.getColor(R.color.text_primary))
+        setPadding(dp(12), 0, dp(12), 0)
+    }
     private val currentText = text(15f, true)
     private val previousText = text(13f, false)
     private val periodText = text(13f, false)
@@ -58,7 +68,7 @@ class BiaTrendBinder(
     private val trendNote = TextView(activity).apply {
         textSize = 13f
         setTextColor(activity.getColor(R.color.text_secondary))
-        setBackgroundResource(R.drawable.bg_card_soft)
+        setBackgroundResource(R.drawable.bg_card)
         setPadding(dp(14), dp(12), dp(14), dp(12))
     }
 

@@ -47,12 +47,12 @@
                     android:layout_height="1dp" />
             </LinearLayout>
 
-            <com.google.android.material.card.MaterialCardView
+             <com.google.android.material.card.MaterialCardView
                 style="@style/Widget.MyFitAI.Card"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_12"
-                app:cardBackgroundColor="@color/white"
+                 android:layout_width="match_parent"
+                 android:layout_height="wrap_content"
+                   android:layout_marginTop="@dimen/space_12"
+                 app:cardBackgroundColor="@color/white"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="0dp"
                 app:strokeColor="@color/divider"
@@ -76,12 +76,14 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <com.google.android.material.card.MaterialCardView
+             <com.google.android.material.card.MaterialCardView
+                 android:id="@+id/modifiedMealsCard"
                 style="@style/Widget.MyFitAI.Card"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_12"
-                app:cardBackgroundColor="@color/white"
+                 android:layout_height="wrap_content"
+                 android:layout_marginTop="@dimen/space_12"
+                 android:visibility="gone"
+                 app:cardBackgroundColor="@color/white"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="0dp"
                 app:strokeColor="@color/divider"
@@ -104,9 +106,10 @@
 
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_12"
-                app:cardBackgroundColor="@color/white"
+                  android:layout_height="wrap_content"
+                  android:layout_marginTop="@dimen/space_12"
+                  android:visibility="gone"
+                  app:cardBackgroundColor="@color/white"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="0dp"
                 app:strokeColor="@color/divider"
@@ -120,14 +123,14 @@
                     android:textSize="13sp" />
             </com.google.android.material.card.MaterialCardView>
 
-            <TextView
-                android:id="@+id/okButton"
+             <com.google.android.material.button.MaterialButton
+                 android:id="@+id/okButton"
+                 style="@style/Widget.MyFitAI.Button.Primary"
                 android:layout_width="match_parent"
                 android:layout_height="52dp"
                  android:layout_marginTop="@dimen/space_16"
                 android:gravity="center"
-                 style="@style/Widget.MyFitAI.Button.Primary"
-                android:text="Vedi piano"
+                 android:text="Vedi piano"
                 android:textAllCaps="false" />
         </LinearLayout>
     </ScrollView>

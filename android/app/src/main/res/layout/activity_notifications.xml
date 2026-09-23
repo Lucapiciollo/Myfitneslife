@@ -80,7 +80,7 @@
                     android:layout_weight="1"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="@dimen/space_8"
-                    android:text="MyFitnessAI"
+                     android:text="MyFitAI"
                     android:textColor="@color/text_primary"
                     android:textStyle="bold"
                     android:textSize="13sp" />

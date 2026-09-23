@@ -42,7 +42,8 @@ class NutritionPlanSettingsActivity : BaseShellActivity() {
     }
     private fun chooseFrequency(id: Long) {
         val values = NutritionPlanSchedulePreferences.Frequency.entries
-        MaterialAlertDialogBuilder(this).setTitle("Frequenza piano").setSingleChoiceItems(values.map { it.name.lowercase() }.toTypedArray(), values.indexOf(data.nutritionPlanSchedulePreferences.get(id).frequency)) { dialog, which -> data.nutritionPlanSchedulePreferences.setFrequency(id, values[which]); dialog.dismiss(); chooseTime(id) }.setNegativeButton("Annulla", null).show()
+        val labels = arrayOf("Ogni giorno", "Ogni settimana", "Ogni 2 settimane", "Ogni mese")
+        MaterialAlertDialogBuilder(this).setTitle("Frequenza piano").setSingleChoiceItems(labels, values.indexOf(data.nutritionPlanSchedulePreferences.get(id).frequency)) { dialog, which -> data.nutritionPlanSchedulePreferences.setFrequency(id, values[which]); dialog.dismiss(); chooseTime(id) }.setNegativeButton("Annulla", null).show()
     }
     private fun chooseTime(id: Long) {
         val current = data.nutritionPlanSchedulePreferences.get(id)

@@ -30,8 +30,9 @@
                 android:src="@drawable/ic_arrow_back_white"
                 app:tint="@color/text_primary" />
 
-            <TextView
-                android:layout_width="0dp"
+             <TextView
+                 android:id="@+id/title"
+                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:gravity="center"
@@ -46,7 +47,7 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/dateLayout"
-            style="@style/Widget.MyFitAI.Input"
+             style="@style/Widget.MyFitAI.InputCompact"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/space_16"
@@ -56,7 +57,7 @@
             app:endIconContentDescription="Scegli data">
 
             <com.google.android.material.textfield.TextInputEditText
-                style="@style/Widget.MyFitAI.InputEditText"
+                 style="@style/Widget.MyFitAI.InputEditTextCompact"
                 android:id="@+id/dateInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -66,14 +67,14 @@
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
-            style="@style/Widget.MyFitAI.Input"
+             style="@style/Widget.MyFitAI.InputCompact"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/space_16"
             android:hint="Peso corporeo (kg)">
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/bodyWeightInput"
-                style="@style/Widget.MyFitAI.InputEditText"
+                 style="@style/Widget.MyFitAI.InputEditTextCompact"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="numberDecimal" />
@@ -116,33 +117,33 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
-            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.Input" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Torace (cm)">
+            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.InputCompact" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Torace (cm)">
                 <com.google.android.material.textfield.TextInputEditText
-                style="@style/Widget.MyFitAI.InputEditText" android:id="@+id/chestInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="numberDecimal" />
+                style="@style/Widget.MyFitAI.InputEditTextCompact" android:id="@+id/chestInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="numberDecimal" />
             </com.google.android.material.textfield.TextInputLayout>
-            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.Input" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:hint="Vita (cm)">
+            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.InputCompact" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:hint="Vita (cm)">
                 <com.google.android.material.textfield.TextInputEditText
-                style="@style/Widget.MyFitAI.InputEditText" android:id="@+id/waistInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="numberDecimal" />
+                style="@style/Widget.MyFitAI.InputEditTextCompact" android:id="@+id/waistInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="numberDecimal" />
             </com.google.android.material.textfield.TextInputLayout>
-            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.Input" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:hint="Addome (cm)">
+            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.InputCompact" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:hint="Addome (cm)">
                 <com.google.android.material.textfield.TextInputEditText
-                style="@style/Widget.MyFitAI.InputEditText" android:id="@+id/abdomenInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="numberDecimal" />
+                style="@style/Widget.MyFitAI.InputEditTextCompact" android:id="@+id/abdomenInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="numberDecimal" />
             </com.google.android.material.textfield.TextInputLayout>
-            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.Input" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:hint="Spalle (cm)">
+            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.InputCompact" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:hint="Spalle (cm)">
                 <com.google.android.material.textfield.TextInputEditText
-                style="@style/Widget.MyFitAI.InputEditText" android:id="@+id/shouldersInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="numberDecimal" />
+                style="@style/Widget.MyFitAI.InputEditTextCompact" android:id="@+id/shouldersInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="numberDecimal" />
             </com.google.android.material.textfield.TextInputLayout>
-            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.Input" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:hint="Fianchi (cm)">
+            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.InputCompact" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:hint="Fianchi (cm)">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/hipsInput"
-                    style="@style/Widget.MyFitAI.InputEditText"
+                    style="@style/Widget.MyFitAI.InputEditTextCompact"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="numberDecimal" />
             </com.google.android.material.textfield.TextInputLayout>
-            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.Input" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:hint="Glutei (cm)">
+            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.InputCompact" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:hint="Glutei (cm)">
                 <com.google.android.material.textfield.TextInputEditText
-                style="@style/Widget.MyFitAI.InputEditText" android:id="@+id/glutesInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="numberDecimal" />
+                style="@style/Widget.MyFitAI.InputEditTextCompact" android:id="@+id/glutesInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="numberDecimal" />
             </com.google.android.material.textfield.TextInputLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
@@ -167,29 +168,29 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
-            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.Input" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Braccio sx (cm)">
+            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.InputCompact" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Braccio sx (cm)">
                 <com.google.android.material.textfield.TextInputEditText
-                style="@style/Widget.MyFitAI.InputEditText" android:id="@+id/armLeftInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="numberDecimal" />
+                style="@style/Widget.MyFitAI.InputEditTextCompact" android:id="@+id/armLeftInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="numberDecimal" />
             </com.google.android.material.textfield.TextInputLayout>
-            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.Input" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:hint="Braccio dx (cm)">
+            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.InputCompact" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:hint="Braccio dx (cm)">
                 <com.google.android.material.textfield.TextInputEditText
-                style="@style/Widget.MyFitAI.InputEditText" android:id="@+id/armRightInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="numberDecimal" />
+                style="@style/Widget.MyFitAI.InputEditTextCompact" android:id="@+id/armRightInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="numberDecimal" />
             </com.google.android.material.textfield.TextInputLayout>
-            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.Input" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:hint="Coscia sx (cm)">
+            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.InputCompact" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:hint="Coscia sx (cm)">
                 <com.google.android.material.textfield.TextInputEditText
-                style="@style/Widget.MyFitAI.InputEditText" android:id="@+id/thighLeftInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="numberDecimal" />
+                style="@style/Widget.MyFitAI.InputEditTextCompact" android:id="@+id/thighLeftInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="numberDecimal" />
             </com.google.android.material.textfield.TextInputLayout>
-            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.Input" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:hint="Coscia dx (cm)">
+            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.InputCompact" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:hint="Coscia dx (cm)">
                 <com.google.android.material.textfield.TextInputEditText
-                style="@style/Widget.MyFitAI.InputEditText" android:id="@+id/thighRightInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="numberDecimal" />
+                style="@style/Widget.MyFitAI.InputEditTextCompact" android:id="@+id/thighRightInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="numberDecimal" />
             </com.google.android.material.textfield.TextInputLayout>
-            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.Input" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:hint="Polpaccio sx (cm)">
+            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.InputCompact" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:hint="Polpaccio sx (cm)">
                 <com.google.android.material.textfield.TextInputEditText
-                style="@style/Widget.MyFitAI.InputEditText" android:id="@+id/calfLeftInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="numberDecimal" />
+                style="@style/Widget.MyFitAI.InputEditTextCompact" android:id="@+id/calfLeftInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="numberDecimal" />
             </com.google.android.material.textfield.TextInputLayout>
-            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.Input" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:hint="Polpaccio dx (cm)">
+            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.InputCompact" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:hint="Polpaccio dx (cm)">
                 <com.google.android.material.textfield.TextInputEditText
-                style="@style/Widget.MyFitAI.InputEditText" android:id="@+id/calfRightInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="numberDecimal" />
+                style="@style/Widget.MyFitAI.InputEditTextCompact" android:id="@+id/calfRightInput" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="numberDecimal" />
             </com.google.android.material.textfield.TextInputLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>

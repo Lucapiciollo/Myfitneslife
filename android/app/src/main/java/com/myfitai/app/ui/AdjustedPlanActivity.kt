@@ -28,6 +28,7 @@ class AdjustedPlanActivity : BaseShellActivity() {
             if (adapted) "Il surplus è stato inserito nel serbatoio e distribuito gradualmente sui giorni futuri della settimana." else "Il piano non è stato modificato."
         }
         findViewById<TextView>(R.id.modifiedHeader).visibility = if (modifiedMeals.isEmpty()) View.GONE else View.VISIBLE
+        findViewById<View>(R.id.modifiedMealsCard).visibility = if (modifiedMeals.isEmpty()) View.GONE else View.VISIBLE
 
         val container = findViewById<LinearLayout>(R.id.modifiedMealsContainer)
         container.removeAllViews()

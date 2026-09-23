@@ -153,7 +153,8 @@ class FoodPlanActivity : BaseShellActivity() {
         val dailyTotalCard = findViewById<View>(R.id.dailyTotalCard)
         val nutritionEstimateCard = findViewById<View>(R.id.nutritionEstimateCard)
         val generatedContentVisibility = if (state.hasPlan) View.VISIBLE else View.GONE
-        planStateCard.visibility = generatedContentVisibility
+        val hasPlanStateMessage = state.goalChangedSinceGeneration || state.generation.running || state.generation.error != null || state.generation.successMessage != null
+        planStateCard.visibility = if (hasPlanStateMessage) View.VISIBLE else View.GONE
         weekActionsCard.visibility = generatedContentVisibility
         dailyTotalCard.visibility = generatedContentVisibility
         nutritionEstimateCard.visibility = generatedContentVisibility
@@ -173,6 +174,7 @@ class FoodPlanActivity : BaseShellActivity() {
         val statusContainer = findViewById<View>(R.id.generationStatusContainer)
         val progress = findViewById<ProgressBar>(R.id.generationProgress)
         val status = findViewById<TextView>(R.id.generationStatusText)
+        val stateDot = findViewById<View>(R.id.planStateDot)
         val generation = state.generation
         button.visibility = if (currentWeek) View.VISIBLE else View.GONE
         button.isEnabled = currentWeek && !generation.running
@@ -191,8 +193,18 @@ class FoodPlanActivity : BaseShellActivity() {
             generation.running -> "Il piano viene generato e validato localmente prima del salvataggio."
             generation.error != null -> generation.error
             generation.successMessage != null -> listOfNotNull(generation.successMessage, generation.usageMessage).joinToString("\n")
+            state.goalChangedSinceGeneration -> "I dati del profilo sono cambiati: puoi rigenerare il piano per aggiornarlo."
             else -> null
         }
+        stateDot.background = getDrawable(
+            when {
+                generation.error != null -> R.drawable.bg_status_dot_error
+                generation.running -> R.drawable.bg_status_dot_warning
+                generation.successMessage != null -> R.drawable.bg_status_dot_success
+                state.goalChangedSinceGeneration -> R.drawable.bg_status_dot_warning
+                else -> R.drawable.bg_status_dot_neutral
+            }
+        )
         statusContainer.visibility = if (currentWeek && message != null) View.VISIBLE else View.GONE
         progress.visibility = if (generation.running) View.VISIBLE else View.GONE
         status.text = message.orEmpty()

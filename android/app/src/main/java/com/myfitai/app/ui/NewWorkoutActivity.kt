@@ -64,7 +64,7 @@ class NewWorkoutActivity : BaseShellActivity() {
         val restSwitch = findViewById<MaterialSwitch>(R.id.restDaySwitch)
 
         val types = listOf("Pesi", "Cardio", "Mobilità", "Sport", "Altro")
-        typeInput.setAdapter(ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, types))
+        typeInput.setAdapter(ArrayAdapter(this, R.layout.item_dropdown_myfitai, types))
         typeInput.setText(types.first(), false)
 
         fun renderDateTime() {

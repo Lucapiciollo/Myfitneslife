@@ -76,11 +76,13 @@
                 android:background="@drawable/bg_card_soft"
                 android:visibility="gone" />
 
-            <com.google.android.material.card.MaterialCardView
-                style="@style/Widget.MyFitAI.Card"
+             <com.google.android.material.card.MaterialCardView
+                 android:id="@+id/historyRowsCard"
+                 style="@style/Widget.MyFitAI.Card"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_12">
+                 android:layout_height="wrap_content"
+                 android:layout_marginTop="@dimen/space_12"
+                 android:visibility="gone">
                 <LinearLayout
                     style="@style/Widget.MyFitAI.HomeSectionContent"
                     android:id="@+id/historyRowsContainer"

@@ -338,8 +338,8 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         val prefs = data.progressAnalysisPreferences
         val last = prefs.lastSuccessEpochMillis(profileId)
         val hasAnalysis = !prefs.lastSummary(profileId).isNullOrBlank()
-        analysisHeader.visibility = if (hasAnalysis) View.VISIBLE else View.GONE
-        analysisCard.visibility = if (hasAnalysis) View.VISIBLE else View.GONE
+        analysisHeader.visibility = View.VISIBLE
+        analysisCard.visibility = View.VISIBLE
         analysisLastText.text = if (last == null) {
             "Ultima esecuzione: mai"
         } else {
@@ -450,6 +450,7 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         findViewById<View>(R.id.visualComparisonSection).visibility = View.GONE
         findViewById<TextView>(R.id.progressSummaryTitle).text = if (filtered.series.size >= 2) "Andamento basato sulle misurazioni disponibili" else "Affidabilità dell’andamento"
         findViewById<TextView>(R.id.progressSummaryText).text = if (filtered.series.size >= 2) "I valori mostrati derivano dallo storico BIA reale del profilo attivo." else "Aggiungi almeno due misurazioni confrontabili per visualizzare un andamento affidabile."
+        findViewById<View>(R.id.otherIndicatorsCard).visibility = if (state.bodyFat.value == null && state.muscle.value == null && state.bodyWater.value == null) View.GONE else View.VISIBLE
     }
 
     private fun renderSecondary(valueId: Int, deltaId: Int, metric: ProgressMetricState, unit: String) {
