@@ -63,16 +63,14 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    style="@style/Widget.MyFitAI.HomeSectionContent">
+                    style="@style/Widget.MyFitAI.WhiteCardContent">
 
                     <TextView
                         android:id="@+id/recommendationPath"
+                        style="@style/Text.MyFitAI.Section"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Analisi in corso…"
-                        android:textColor="@color/accent_green_dark"
-                        android:textSize="20sp"
-                        android:textStyle="bold" />
+                        android:text="Analisi in corso…" />
 
                     <TextView
                         android:id="@+id/recommendationReason"
@@ -117,10 +115,9 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    style="@style/Widget.MyFitAI.HomeSectionContent">
+                    style="@style/Widget.MyFitAI.WhiteCardContent">
 
-                    <TextView
-                        style="@style/Text.MyFitAI.Section"
+                    <com.myfitai.app.ui.widgets.SectionHeaderView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Altri percorsi disponibili" />

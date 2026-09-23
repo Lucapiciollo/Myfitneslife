@@ -139,15 +139,21 @@ internal object PdfExportRenderer {
                 "BMR BIA" to input.latestBia?.bmrKcal?.let { "${it.toInt()} kcal" }.orDash(),
             ), rowHeight = 25f)
 
-            drawCard(canvas, 308f, 150f, 247f, 225f)
-            text(canvas, "Misure corporee", 326f, 180f, 14f, TEXT, true)
-            drawRows(canvas, 326f, 215f, 211f, listOf(
+            drawCard(canvas, 40f, 150f, 515f, 225f)
+            text(canvas, "Misure corporee", 58f, 180f, 14f, TEXT, true)
+            drawRows(canvas, 58f, 215f, 211f, listOf(
                 "Torace" to formatCm(input.latestBody?.chestCm),
                 "Vita" to formatCm(input.latestBody?.waistCm),
                 "Addome" to formatCm(input.latestBody?.abdomenCm),
                 "Spalle" to formatCm(input.latestBody?.shouldersCm),
+                "Glutei" to formatCm(input.latestBody?.glutesCm),
+            ), rowHeight = 25f)
+            drawRows(canvas, 326f, 215f, 211f, listOf(
+                "Fianchi" to formatCm(input.latestBody?.hipsCm),
                 "Braccio sx/dx" to pairCm(input.latestBody?.armLeftCm, input.latestBody?.armRightCm),
                 "Coscia sx/dx" to pairCm(input.latestBody?.thighLeftCm, input.latestBody?.thighRightCm),
+                "Polpaccio sx/dx" to pairCm(input.latestBody?.calfLeftCm, input.latestBody?.calfRightCm),
+                "Peso rilevazione" to formatKg(input.latestBody?.weightKg),
             ), rowHeight = 25f)
 
             drawCard(canvas, 40f, 400f, 515f, 235f)

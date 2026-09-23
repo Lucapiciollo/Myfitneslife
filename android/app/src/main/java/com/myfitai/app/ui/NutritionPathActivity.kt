@@ -1,6 +1,9 @@
 package com.myfitai.app.ui
 
 import android.os.Bundle
+import android.graphics.Typeface
+import android.view.Gravity
+import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.lifecycle.lifecycleScope
@@ -137,25 +140,63 @@ class NutritionPathActivity : BaseShellActivity() {
     }
 
     private fun addAlternativeButton(container: LinearLayout, path: String, reason: String) {
-        container.addView(
-            MaterialButton(this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
-                text = if (reason.isBlank()) label(path) else "${label(path)}\n$reason"
-                isAllCaps = false
-                setTextColor(getColor(R.color.text_primary))
-                strokeColor = android.content.res.ColorStateList.valueOf(getColor(R.color.divider))
-                strokeWidth = (resources.displayMetrics.density).toInt().coerceAtLeast(1)
-                backgroundTintList = android.content.res.ColorStateList.valueOf(getColor(R.color.white))
-                cornerRadius = (14 * resources.displayMetrics.density).toInt()
-                insetTop = 0
-                insetBottom = 0
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            isClickable = true
+            isFocusable = true
+            val backgroundAttributes = intArrayOf(android.R.attr.selectableItemBackground)
+            val backgroundTypedArray = obtainStyledAttributes(backgroundAttributes)
+            background = backgroundTypedArray.getDrawable(0)
+            backgroundTypedArray.recycle()
+            setPadding(dp(4), dp(10), dp(4), dp(10))
+            contentDescription = "Scegli ${label(path)}"
+            setOnClickListener { choose(path) }
+        }
+        val textColumn = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        textColumn.addView(TextView(this).apply {
+            text = label(path)
+            setTextColor(getColor(R.color.text_primary))
+            textSize = 14f
+            setTypeface(typeface, Typeface.BOLD)
+        })
+        if (reason.isNotBlank()) {
+            textColumn.addView(TextView(this).apply {
+                text = reason
+                setTextColor(getColor(R.color.text_secondary))
+                textSize = 11f
+                maxLines = 2
+                ellipsize = android.text.TextUtils.TruncateAt.END
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT,
-                ).apply { topMargin = (8 * resources.displayMetrics.density).toInt() }
-                setOnClickListener { choose(path) }
-            }
-        )
+                ).apply { topMargin = dp(2) }
+            })
+        }
+        row.addView(textColumn)
+        row.addView(TextView(this).apply {
+            text = "›"
+            setTextColor(getColor(R.color.text_muted))
+            textSize = 18f
+            gravity = Gravity.CENTER
+            layoutParams = LinearLayout.LayoutParams(dp(28), dp(28))
+        })
+        if (container.childCount > 0) {
+            container.addView(View(this).apply {
+                setBackgroundColor(getColor(R.color.divider))
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    dp(1),
+                )
+            })
+        }
+        container.addView(row)
     }
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     private fun choose(path: String?) {
         if (path == null) return
