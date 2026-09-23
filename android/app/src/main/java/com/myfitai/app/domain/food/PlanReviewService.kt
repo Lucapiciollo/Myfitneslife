@@ -4,6 +4,7 @@ import com.myfitai.app.ai.AiRuntimeGateway
 import com.myfitai.app.ai.AiStructuredRequest
 import com.myfitai.app.domain.calculation.NutritionBusinessValidator
 import com.myfitai.app.domain.calculation.ProfileCalculationService
+import com.myfitai.app.domain.ai.AiUserContext
 import java.time.LocalDate
 import java.util.Locale
 
@@ -33,6 +34,8 @@ class PlanReviewService(
         val sportsMode: SportsNutritionClassifier.Mode,
         val snapshot: ProfileCalculationService.Snapshot,
         val workouts: List<WorkoutSignal>,
+        val userContext: String = "",
+        val calculationContext: String = "",
     )
 
     suspend fun review(
@@ -63,6 +66,8 @@ class PlanReviewService(
         plan: NutritionPlanContract.Response,
         context: Context,
     ): String = buildString {
+        if (context.userContext.isNotBlank()) appendLine("U:${context.userContext.replace('\n', ' ').replace('\r', ' ')}")
+        if (context.calculationContext.isNotBlank()) appendLine("LC:${context.calculationContext.replace('\n', ' ').replace('\r', ' ')}")
         appendLine("W|${context.monday.toEpochDay()}")
         appendLine("T|${context.targets.kcal.toInt()}|${f(context.targets.proteinG)}|${f(context.targets.carbsG)}|${f(context.targets.fatG)}")
         appendLine("P|${c(context.goal)}|${c(context.activityLevel)}|${context.wakeTimeMinutes ?: "-"}|${context.sleepTimeMinutes ?: "-"}|${context.sportsMode.name}")
@@ -102,6 +107,7 @@ class PlanReviewService(
     companion object {
         private val SYSTEM_PROMPT = """
 Independent MyFitAI nutrition-plan quality reviewer. The app already validated hard structure, arithmetic, daily totals, target tolerance and ingredient hard constraints; DO NOT redo arithmetic, recalculate targets, change deficit/macros, or generate a replacement plan. Review only qualitative quality from the compact input: meal timing vs wake/sleep/workouts, protein/macro distribution, genuine weekly variety from ingredient sets, cautious digestive load, training/rest coherence, fruit/vegetable variety, and consistency with BC body trends. BC is observational only: no diagnosis and no causal claims. Do not reject solely for pizza/sushi/gelato when compatible with the plan.
+${AiUserContext.INPUT_DESCRIPTION}
 DP format is A=allergies;I=intolerances;E=excludedFoods;D=dislikedFoods;P=preferredFoods;S=dietStyle;N=free-text food preferences and requirements. A/I/E/S are hard constraints already enforced locally. D/P are soft preferences. N is user-authored planning input: evaluate whether concrete requests in it, including frequency goals such as a requested number of pizzas or gelati per week, are reasonably reflected in the plan. Do not treat a request as a reason to reject a plan when it is compatible with the authoritative daily targets, but report a material omission as a review issue when the request could have been satisfied. Never ask the review agent to change calories or macros.
 Output ONLY JSON envelope whose data follows:
 ${PlanReviewCompactContract.PROTOCOL}

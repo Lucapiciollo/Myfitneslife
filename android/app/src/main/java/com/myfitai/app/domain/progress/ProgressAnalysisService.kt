@@ -10,6 +10,7 @@ import com.myfitai.app.data.repository.WorkoutRepository
 import com.myfitai.app.domain.calculation.ProfileCalculationService
 import com.myfitai.app.domain.time.SystemTimeProvider
 import com.myfitai.app.domain.time.TimeProvider
+import com.myfitai.app.domain.ai.AiUserContext
 import kotlinx.coroutines.flow.first
 import java.util.Locale
 import kotlin.math.max
@@ -64,6 +65,8 @@ class ProgressAnalysisService(
             userPrompt = buildPrompt(
                 goal = profile.goal,
                 activity = profile.activityLevel,
+                userContext = AiUserContext.profileLine(profile, time.today(), snapshot.latestWeightKg),
+                calculationContext = AiUserContext.calculationLine(snapshot.calculation),
                 snapshot = snapshot,
                 workoutCount = periodWorkouts.count { !it.isRestDay },
                 restCount = periodWorkouts.count { it.isRestDay },
@@ -96,12 +99,16 @@ class ProgressAnalysisService(
     private fun buildPrompt(
         goal: String?,
         activity: String?,
+        userContext: String,
+        calculationContext: String,
         snapshot: ProfileCalculationService.Snapshot,
         workoutCount: Int,
         restCount: Int,
         cheatCount: Int,
         windowDays: Int,
     ): String = buildString {
+        appendLine("U:$userContext")
+        appendLine("LC:$calculationContext")
         appendLine("P:${compact(goal)}|${compact(activity)}")
         val b = snapshot.biaMetrics
         appendLine("B0:${values(b.weight.baseline, b.bodyFat.baseline, b.muscleMass.baseline, b.skeletalMuscle.baseline, b.bodyWater.baseline, b.visceralFat.baseline)}")
@@ -135,6 +142,7 @@ class ProgressAnalysisService(
         private val SYSTEM_PROMPT = """
 MyFitAI ProgressAnalysisAgent. Interpret only supplied historical signals; never calculate or change calorie/macro targets and never generate a diet. Output ONLY the compact protocol below in the JSON data envelope.
 ${ProgressAnalysisCompactContract.PROTOCOL}
+${AiUserContext.INPUT_DESCRIPTION}
 Input: P=goal|activity. B0/B/BT order weightKg|bodyFatPct|muscleMassKg|skeletalMuscleKg|bodyWaterPct|visceralFat and means baseline/current/recent trend delta. BM0/BM/BMT order chest|waist|abdomen|shoulders|glutes|armLeft|armRight|thighLeft|thighRight|calfLeft|calfRight. A=workouts|restDays|registeredDeviations|windowDays. `?`=unavailable. RS is the local recomposition classification and is context, not proof.
 Classify from multiple coherent signals, not weight alone. PR=positive recomposition, ST=stable, WL=weight loss without clear muscle-risk signal, MR=weight loss with possible muscle-risk signal, NT=negative trend, ID=insufficient/inconsistent data. P codes: WT weight, BF body fat, MU muscle, WA waist, AB abdomen, LM limb measures, TR training, DV registered deviations, BC cross-signal body coherence. Direction F/U/X=favorable/unfavorable/uncertain. Confidence L/M/H.
 BIA and circumferences are estimates/observations: distinguish association from causality, never diagnose disease/dehydration/edema/muscle loss, and lower confidence when signals conflict. Registered deviations are not proof of total adherence or intake. Do not infer consumption from planned meals. Max 6 P records. S <=18 words, factual and useful. V=1 unless the supplied data are internally unusable; notes <=8 words. No markdown, no text outside records.

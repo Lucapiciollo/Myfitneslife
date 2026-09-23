@@ -22,4 +22,16 @@ class BiaImportContractTest {
         """.trimIndent())
         assertTrue(BiaImportContract.validate(preview).isSuccess)
     }
+
+    @Test
+    fun extendedMetrics_arePreservedAndValidated() {
+        val preview = BiaImportContract.parse("""
+            {"isBiaDocument":true,"rejectionReason":"","confidence":"HIGH","notes":"Fitdays","fatMassKg":18.5,"leanMassKg":72.1,"bodyWaterKg":52.9,"subcutaneousFatPercent":14.6,"boneMassKg":4.8,"proteinPercent":15.9,"proteinKg":14.4,"bodyAgeYears":42,"bmi":26.5}
+        """.trimIndent())
+
+        assertTrue(BiaImportContract.validate(preview).isSuccess)
+        assertEquals(72.1f, preview.leanMassKg!!, 0.01f)
+        assertEquals(52.9f, preview.bodyWaterKg!!, 0.01f)
+        assertEquals(15.9f, preview.proteinPercent!!, 0.01f)
+    }
 }

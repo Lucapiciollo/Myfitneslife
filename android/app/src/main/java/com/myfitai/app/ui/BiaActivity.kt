@@ -400,7 +400,33 @@ class BiaActivity : BaseShellActivity() {
                         androidx.work.WorkInfo.State.SUCCEEDED -> {
                             showImportStatus("Importazione completata: controlla i valori prima di salvarli.")
                             val p = org.json.JSONObject(info.outputData.getString(com.myfitai.app.domain.body.BiaImportAiJobHandler.KEY_PAYLOAD).orEmpty())
-                            showImportPreview(com.myfitai.app.domain.body.BiaImportContract.Preview(true, "", p.optLong("measuredAtEpochMillis").takeIf { it > 0 }, p.optDouble("weightKg").takeIf { !p.isNull("weightKg") }?.toFloat(), p.optDouble("bodyFatPercent").takeIf { !p.isNull("bodyFatPercent") }?.toFloat(), p.optDouble("visceralFatLevel").takeIf { !p.isNull("visceralFatLevel") }?.toFloat(), p.optDouble("muscleMassKg").takeIf { !p.isNull("muscleMassKg") }?.toFloat(), p.optDouble("skeletalMuscleKg").takeIf { !p.isNull("skeletalMuscleKg") }?.toFloat(), p.optDouble("bodyWaterPercent").takeIf { !p.isNull("bodyWaterPercent") }?.toFloat(), p.optDouble("bmrKcal").takeIf { !p.isNull("bmrKcal") }?.toFloat(), p.getString("confidence"), p.getString("notes")), p.getString("provider"), p.getString("model"))
+                            showImportPreview(
+                                BiaImportContract.Preview(
+                                    isBiaDocument = true,
+                                    rejectionReason = "",
+                                    measuredAtEpochMillis = p.optLong("measuredAtEpochMillis").takeIf { it > 0 },
+                                    weightKg = p.floatOrNull("weightKg"),
+                                    bodyFatPercent = p.floatOrNull("bodyFatPercent"),
+                                    visceralFatLevel = p.floatOrNull("visceralFatLevel"),
+                                    muscleMassKg = p.floatOrNull("muscleMassKg"),
+                                    skeletalMuscleKg = p.floatOrNull("skeletalMuscleKg"),
+                                    bodyWaterPercent = p.floatOrNull("bodyWaterPercent"),
+                                    bmrKcal = p.floatOrNull("bmrKcal"),
+                                    confidence = p.getString("confidence"),
+                                    notes = p.getString("notes"),
+                                    fatMassKg = p.floatOrNull("fatMassKg"),
+                                    leanMassKg = p.floatOrNull("leanMassKg"),
+                                    bodyWaterKg = p.floatOrNull("bodyWaterKg"),
+                                    subcutaneousFatPercent = p.floatOrNull("subcutaneousFatPercent"),
+                                    boneMassKg = p.floatOrNull("boneMassKg"),
+                                    proteinPercent = p.floatOrNull("proteinPercent"),
+                                    proteinKg = p.floatOrNull("proteinKg"),
+                                    bodyAgeYears = p.floatOrNull("bodyAgeYears"),
+                                    bmi = p.floatOrNull("bmi"),
+                                ),
+                                p.getString("provider"),
+                                p.getString("model"),
+                            )
                         }
                         androidx.work.WorkInfo.State.FAILED,
                         androidx.work.WorkInfo.State.CANCELLED -> {
@@ -438,6 +464,15 @@ class BiaActivity : BaseShellActivity() {
             KEY_SKELETAL_MUSCLE to content.findViewById<TextInputEditText>(R.id.biaImportSkeletalMuscle),
             KEY_BODY_WATER to content.findViewById<TextInputEditText>(R.id.biaImportBodyWater),
             KEY_BMR to content.findViewById<TextInputEditText>(R.id.biaImportBmr),
+            KEY_FAT_MASS to content.findViewById<TextInputEditText>(R.id.biaImportFatMass),
+            KEY_LEAN_MASS to content.findViewById<TextInputEditText>(R.id.biaImportLeanMass),
+            KEY_BODY_WATER_KG to content.findViewById<TextInputEditText>(R.id.biaImportBodyWaterKg),
+            KEY_SUBCUTANEOUS_FAT to content.findViewById<TextInputEditText>(R.id.biaImportSubcutaneousFat),
+            KEY_BONE_MASS to content.findViewById<TextInputEditText>(R.id.biaImportBoneMass),
+            KEY_PROTEIN_PERCENT to content.findViewById<TextInputEditText>(R.id.biaImportProteinPercent),
+            KEY_PROTEIN_KG to content.findViewById<TextInputEditText>(R.id.biaImportProteinKg),
+            KEY_BODY_AGE to content.findViewById<TextInputEditText>(R.id.biaImportBodyAge),
+            KEY_BMI to content.findViewById<TextInputEditText>(R.id.biaImportBmi),
         )
 
         inputs.getValue(KEY_WEIGHT).setText(preview.weightKg?.let(::formatNumber).orEmpty())
@@ -447,6 +482,15 @@ class BiaActivity : BaseShellActivity() {
         inputs.getValue(KEY_SKELETAL_MUSCLE).setText(preview.skeletalMuscleKg?.let(::formatNumber).orEmpty())
         inputs.getValue(KEY_BODY_WATER).setText(preview.bodyWaterPercent?.let(::formatNumber).orEmpty())
         inputs.getValue(KEY_BMR).setText(preview.bmrKcal?.let(::formatNumber).orEmpty())
+        inputs.getValue(KEY_FAT_MASS).setText(preview.fatMassKg?.let(::formatNumber).orEmpty())
+        inputs.getValue(KEY_LEAN_MASS).setText(preview.leanMassKg?.let(::formatNumber).orEmpty())
+        inputs.getValue(KEY_BODY_WATER_KG).setText(preview.bodyWaterKg?.let(::formatNumber).orEmpty())
+        inputs.getValue(KEY_SUBCUTANEOUS_FAT).setText(preview.subcutaneousFatPercent?.let(::formatNumber).orEmpty())
+        inputs.getValue(KEY_BONE_MASS).setText(preview.boneMassKg?.let(::formatNumber).orEmpty())
+        inputs.getValue(KEY_PROTEIN_PERCENT).setText(preview.proteinPercent?.let(::formatNumber).orEmpty())
+        inputs.getValue(KEY_PROTEIN_KG).setText(preview.proteinKg?.let(::formatNumber).orEmpty())
+        inputs.getValue(KEY_BODY_AGE).setText(preview.bodyAgeYears?.let(::formatNumber).orEmpty())
+        inputs.getValue(KEY_BMI).setText(preview.bmi?.let(::formatNumber).orEmpty())
 
         meta.text = buildString {
             append("Provider ").append(provider).append(" · ").append(model)
@@ -478,11 +522,31 @@ class BiaActivity : BaseShellActivity() {
                 values[KEY_SKELETAL_MUSCLE] = parseFloat(inputs.getValue(KEY_SKELETAL_MUSCLE).text?.toString())
                 values[KEY_BODY_WATER] = parseFloat(inputs.getValue(KEY_BODY_WATER).text?.toString())
                 values[KEY_BMR] = parseFloat(inputs.getValue(KEY_BMR).text?.toString())
+                values[KEY_FAT_MASS] = parseFloat(inputs.getValue(KEY_FAT_MASS).text?.toString())
+                values[KEY_LEAN_MASS] = parseFloat(inputs.getValue(KEY_LEAN_MASS).text?.toString())
+                values[KEY_BODY_WATER_KG] = parseFloat(inputs.getValue(KEY_BODY_WATER_KG).text?.toString())
+                values[KEY_SUBCUTANEOUS_FAT] = parseFloat(inputs.getValue(KEY_SUBCUTANEOUS_FAT).text?.toString())
+                values[KEY_BONE_MASS] = parseFloat(inputs.getValue(KEY_BONE_MASS).text?.toString())
+                values[KEY_PROTEIN_PERCENT] = parseFloat(inputs.getValue(KEY_PROTEIN_PERCENT).text?.toString())
+                values[KEY_PROTEIN_KG] = parseFloat(inputs.getValue(KEY_PROTEIN_KG).text?.toString())
+                values[KEY_BODY_AGE] = parseFloat(inputs.getValue(KEY_BODY_AGE).text?.toString())
+                values[KEY_BMI] = parseFloat(inputs.getValue(KEY_BMI).text?.toString())
+                preview.measuredAtEpochMillis?.let { timestamp ->
+                    Calendar.getInstance().apply { timeInMillis = timestamp }.also { detected ->
+                        selectedDateMillis = detected.timeInMillis
+                        selectedHour = detected.get(Calendar.HOUR_OF_DAY)
+                        selectedMinute = detected.get(Calendar.MINUTE)
+                    }
+                }
                 bindMeasurementRows()
                 renderDateTime()
                 Toast.makeText(
                     this@BiaActivity,
-                    "Valori caricati. La data predefinita è oggi: puoi modificarla prima di salvare.",
+                    if (preview.measuredAtEpochMillis != null) {
+                        "Valori e data rilevata caricati. Controllali prima di salvare."
+                    } else {
+                        "Valori caricati. La data non è stata rilevata: controllala prima di salvare."
+                    },
                     Toast.LENGTH_LONG,
                 ).show()
             }
@@ -499,6 +563,9 @@ class BiaActivity : BaseShellActivity() {
         }
         dialog.show()
     }
+
+    private fun org.json.JSONObject.floatOrNull(key: String): Float? =
+        if (has(key) && !isNull(key)) optDouble(key).toFloat().takeIf { it.isFinite() } else null
 
     private fun observeState() {
         lifecycleScope.launch {
@@ -623,6 +690,16 @@ class BiaActivity : BaseShellActivity() {
             latest.muscleMassKg?.let { put("muscleMassKg", it) }
             latest.skeletalMuscleKg?.let { put("skeletalMuscleKg", it) }
             latest.bodyWaterPercent?.let { put("bodyWaterPercent", it) }
+            latest.bmrKcal?.let { put("bmrKcal", it) }
+            latest.fatMassKg?.let { put("fatMassKg", it) }
+            latest.leanMassKg?.let { put("leanMassKg", it) }
+            latest.bodyWaterKg?.let { put("bodyWaterKg", it) }
+            latest.subcutaneousFatPercent?.let { put("subcutaneousFatPercent", it) }
+            latest.boneMassKg?.let { put("boneMassKg", it) }
+            latest.proteinPercent?.let { put("proteinPercent", it) }
+            latest.proteinKg?.let { put("proteinKg", it) }
+            latest.bodyAgeYears?.let { put("bodyAgeYears", it.toFloat()) }
+            latest.bmi?.let { put("bmi", it) }
         }
         if (current.isEmpty()) return
 
@@ -635,6 +712,15 @@ class BiaActivity : BaseShellActivity() {
             addDelta("bodyFatPercent", latest.bodyFatPercent) { it.bodyFatPercent }
             addDelta("muscleMassKg", latest.muscleMassKg) { it.muscleMassKg }
             addDelta("skeletalMuscleKg", latest.skeletalMuscleKg) { it.skeletalMuscleKg }
+            addDelta("bodyWaterPercent", latest.bodyWaterPercent) { it.bodyWaterPercent }
+            addDelta("fatMassKg", latest.fatMassKg) { it.fatMassKg }
+            addDelta("leanMassKg", latest.leanMassKg) { it.leanMassKg }
+            addDelta("bodyWaterKg", latest.bodyWaterKg) { it.bodyWaterKg }
+            addDelta("subcutaneousFatPercent", latest.subcutaneousFatPercent) { it.subcutaneousFatPercent }
+            addDelta("boneMassKg", latest.boneMassKg) { it.boneMassKg }
+            addDelta("proteinPercent", latest.proteinPercent) { it.proteinPercent }
+            addDelta("proteinKg", latest.proteinKg) { it.proteinKg }
+            addDelta("bmi", latest.bmi) { it.bmi }
         }
 
         val report = org.json.JSONObject()

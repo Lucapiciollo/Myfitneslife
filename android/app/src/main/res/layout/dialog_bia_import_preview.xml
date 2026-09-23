@@ -172,6 +172,42 @@
                 android:maxLines="1" />
             </com.google.android.material.textfield.TextInputLayout>
 
+            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.InputReadableCompact" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:hint="Massa grassa (kg)">
+                <com.google.android.material.textfield.TextInputEditText style="@style/Widget.MyFitAI.InputEditTextReadableCompact" android:id="@+id/biaImportFatMass" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="numberDecimal" android:maxLines="1" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.InputReadableCompact" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:hint="Massa magra (kg)">
+                <com.google.android.material.textfield.TextInputEditText style="@style/Widget.MyFitAI.InputEditTextReadableCompact" android:id="@+id/biaImportLeanMass" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="numberDecimal" android:maxLines="1" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.InputReadableCompact" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:hint="Acqua corporea (kg)">
+                <com.google.android.material.textfield.TextInputEditText style="@style/Widget.MyFitAI.InputEditTextReadableCompact" android:id="@+id/biaImportBodyWaterKg" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="numberDecimal" android:maxLines="1" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.InputReadableCompact" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:hint="Grasso sottocutaneo (%)">
+                <com.google.android.material.textfield.TextInputEditText style="@style/Widget.MyFitAI.InputEditTextReadableCompact" android:id="@+id/biaImportSubcutaneousFat" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="numberDecimal" android:maxLines="1" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.InputReadableCompact" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:hint="Massa ossea (kg)">
+                <com.google.android.material.textfield.TextInputEditText style="@style/Widget.MyFitAI.InputEditTextReadableCompact" android:id="@+id/biaImportBoneMass" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="numberDecimal" android:maxLines="1" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.InputReadableCompact" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:hint="Proteine (%)">
+                <com.google.android.material.textfield.TextInputEditText style="@style/Widget.MyFitAI.InputEditTextReadableCompact" android:id="@+id/biaImportProteinPercent" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="numberDecimal" android:maxLines="1" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.InputReadableCompact" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:hint="Proteine (kg)">
+                <com.google.android.material.textfield.TextInputEditText style="@style/Widget.MyFitAI.InputEditTextReadableCompact" android:id="@+id/biaImportProteinKg" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="numberDecimal" android:maxLines="1" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.InputReadableCompact" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:hint="Età corporea (anni)">
+                <com.google.android.material.textfield.TextInputEditText style="@style/Widget.MyFitAI.InputEditTextReadableCompact" android:id="@+id/biaImportBodyAge" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="numberDecimal" android:maxLines="1" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.InputReadableCompact" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:hint="BMI">
+                <com.google.android.material.textfield.TextInputEditText style="@style/Widget.MyFitAI.InputEditTextReadableCompact" android:id="@+id/biaImportBmi" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="numberDecimal" android:maxLines="1" />
+            </com.google.android.material.textfield.TextInputLayout>
+
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

@@ -8,6 +8,7 @@ import com.myfitai.app.domain.ai.AiJobOutcome
 import com.myfitai.app.domain.ai.AiJobWorker
 import com.myfitai.app.ai.AiRuntimeGateway
 import com.myfitai.app.domain.calculation.ProfileCalculationService
+import com.myfitai.app.domain.ai.AiUserContext
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -21,6 +22,7 @@ class NutritionPathAiJobHandler(
         val snapshot = calculations.profileSnapshot(profileId) ?: return AiJobOutcome.Failure("Dati profilo non disponibili")
         val request = AiStructuredRequest(
             systemPrompt = """NutritionPathAgent. Consiglia il goal tecnico iniziale tra RECOMPOSITION, WEIGHT_LOSS, MAINTENANCE, MUSCLE_GAIN e PERFORMANCE.
+${AiUserContext.INPUT_DESCRIPTION}
 Scope solo alimentazione/fitness, nessuna diagnosi e nessuna modifica autonoma a calorie o macro: i numeri restano responsabilità del motore locale.
 Usa esclusivamente i dati disponibili. La BIA e le circonferenze sono opzionali: se mancano non inventare body fat, massa muscolare o altri valori e riduci la confidence.
 Non usare BMI/peso da soli come criterio assoluto. Considera congiuntamente età/sesso/altezza/peso disponibili, attività e segnali corporei disponibili.
@@ -28,6 +30,8 @@ Se i dati sono limitati puoi comunque dare una raccomandazione prudente e altern
 Il goal eventualmente già salvato è solo contesto storico e non deve obbligare la raccomandazione.
 Suggerisci un percorso e massimo due alternative. Testi in italiano. Protocollo: ${NutritionPathContract.PROTOCOL}""".trimIndent(),
             userPrompt = buildString {
+                appendLine("U:${AiUserContext.profileLine(profile, java.time.LocalDate.now(), snapshot.latestWeightKg)}")
+                appendLine("LC:${AiUserContext.calculationLine(snapshot.calculation)}")
                 appendLine("P:${profile.biologicalSex ?: "?"}|${profile.birthDateEpochDay ?: "?"}|${profile.heightCm ?: "?"}|${profile.currentWeightKg ?: "?"}|${profile.activityLevel ?: "?"}|${profile.goal ?: "?"}")
                 appendLine("BIA:${snapshot.latestBiaTimestamp ?: "?"}|${snapshot.latestWeightKg ?: "?"}|${snapshot.latestBodyFatPercent ?: "?"}|${snapshot.latestMuscleMassKg ?: "?"}")
                 appendLine("BODY:${snapshot.latestBodyMeasurementTimestamp ?: "?"}|${snapshot.latestWaistCm ?: "?"}")

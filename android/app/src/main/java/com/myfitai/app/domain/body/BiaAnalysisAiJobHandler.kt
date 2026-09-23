@@ -4,14 +4,22 @@ import androidx.work.Data
 import com.myfitai.app.domain.ai.AiJobHandler
 import com.myfitai.app.domain.ai.AiJobOutcome
 import com.myfitai.app.domain.ai.AiJobWorker
+import com.myfitai.app.domain.ai.AiUserContext
+import com.myfitai.app.data.repository.UserProfileRepository
+import java.time.LocalDate
 import org.json.JSONObject
 
-class BiaAnalysisAiJobHandler(private val service: BiaAnalysisService) : AiJobHandler {
+class BiaAnalysisAiJobHandler(
+    private val service: BiaAnalysisService,
+    private val profiles: UserProfileRepository,
+) : AiJobHandler {
     override suspend fun execute(profileId: Long, jobKey: String, params: Data): AiJobOutcome = try {
         val root = JSONObject(params.getString(KEY_REPORT).orEmpty())
         val current = decodeValues(root.getJSONArray("current"))
         val deltas = decodeValues(root.getJSONArray("previousDelta"))
-        val result = service.analyze(BiaAnalysisService.Report(current, deltas, root.getInt("measurementCount")))
+        val profile = profiles.get(profileId) ?: error("Profilo non disponibile")
+        val userContext = AiUserContext.profileLine(profile, LocalDate.now(), current["weightKg"])
+        val result = service.analyze(BiaAnalysisService.Report(current, deltas, root.getInt("measurementCount")), userContext)
         val payload = JSONObject()
             .put("summary", result.summary)
             .put("muscleStatus", result.muscleStatus)

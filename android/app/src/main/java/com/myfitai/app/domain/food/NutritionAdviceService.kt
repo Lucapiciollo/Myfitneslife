@@ -9,6 +9,7 @@ import com.myfitai.app.data.repository.MealPlanRepository
 import com.myfitai.app.data.repository.UserProfileRepository
 import com.myfitai.app.domain.time.SystemTimeProvider
 import com.myfitai.app.domain.time.TimeProvider
+import com.myfitai.app.domain.ai.AiUserContext
 import kotlinx.coroutines.flow.first
 import java.util.Locale
 
@@ -52,7 +53,7 @@ class NutritionAdviceService(
 
         val request = AiStructuredRequest(
             systemPrompt = SYSTEM_PROMPT,
-            userPrompt = buildPrompt(normalized, dietaryProfile, snapshot, todayPlan, deviations, minuteOfDay, mealWindow(minuteOfDay)),
+            userPrompt = buildPrompt(normalized, profile, dietaryProfile, snapshot, todayPlan, deviations, minuteOfDay, mealWindow(minuteOfDay)),
             schemaName = NutritionAdviceContract.SCHEMA_NAME,
             schemaJson = NutritionAdviceContract.schemaJson,
             maxOutputTokens = 1_100,
@@ -87,6 +88,7 @@ class NutritionAdviceService(
 
     private fun buildPrompt(
         question: String,
+        profile: com.myfitai.app.data.local.entity.UserProfileEntity,
         dietaryProfile: DietaryProfile,
         snapshot: FoodPlanSnapshot?,
         todayPlan: FoodPlanDay?,
@@ -94,6 +96,7 @@ class NutritionAdviceService(
         minuteOfDay: Int,
         mealWindow: String,
     ): String = buildString {
+        appendLine("U:${AiUserContext.profileLine(profile, time.today())}")
         appendLine("Q:${clean(question)}")
         appendLine("N:$minuteOfDay;$mealWindow")
         appendLine("DP:${clean(dietaryProfile.toPromptCompact())}")
@@ -138,6 +141,6 @@ class NutritionAdviceService(
             "meal", "food"
         )
 
-        private const val SYSTEM_PROMPT = """Nutrition advice only. Out of scope includes goal selection, deficit/surplus decisions, body-progress interpretation, BIA interpretation, and deviation/cheat compensation; for any of those use S=0 and exact answer "Posso rispondere solo a richieste di consiglio alimentare e nutrizionale.", no options. In scope: use app context only; M rows are planned, not consumed; D rows are recorded deviations. DP uses A=allergies, I=intolerances, E=excluded foods, D=disliked, P=preferred, S=diet style, N=notes. A/I/E/S are HARD constraints and must never be violated; D/P are soft preferences. Every O record MUST list in foodsCsv every food or ingredient implied by the option, comma-separated, so the app can independently reject hard-constraint violations. No diagnosis, invented conditions, fasting or punitive restriction. Return exactly 5 options, each with whole-meal kcal/P/C/F. If Q names a desired food, keep all options centered on it only when it does not violate a hard constraint; otherwise explain the conflict and suggest compliant alternatives. For generic requests use N meal window strongly, then target fit, balance, calorie impact, practicality. Answer <=120 chars; title <=45; reason <=70; assumptions only if essential <=80. No moral food labels. Plan changes only after app confirmation."""
+        private val SYSTEM_PROMPT = """Nutrition advice only. ${AiUserContext.INPUT_DESCRIPTION} Out of scope includes goal selection, deficit/surplus decisions, body-progress interpretation, BIA interpretation, and deviation/cheat compensation; for any of those use S=0 and exact answer "Posso rispondere solo a richieste di consiglio alimentare e nutrizionale.", no options. In scope: use app context only; M rows are planned, not consumed; D rows are recorded deviations. DP uses A=allergies, I=intolerances, E=excluded foods, D=disliked, P=preferred, S=diet style, N=notes. A/I/E/S are HARD constraints and must never be violated; D/P are soft preferences. Every O record MUST list in foodsCsv every food or ingredient implied by the option, comma-separated, so the app can independently reject hard-constraint violations. No diagnosis, invented conditions, fasting or punitive restriction. Return exactly 5 options, each with whole-meal kcal/P/C/F. If Q names a desired food, keep all options centered on it only when it does not violate a hard constraint; otherwise explain the conflict and suggest compliant alternatives. For generic requests use N meal window strongly, then target fit, balance, calorie impact, practicality. Answer <=120 chars; title <=45; reason <=70; assumptions only if essential <=80. No moral food labels. Plan changes only after app confirmation."""
     }
 }

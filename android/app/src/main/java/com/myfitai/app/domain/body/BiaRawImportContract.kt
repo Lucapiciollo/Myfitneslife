@@ -71,10 +71,24 @@ object BiaMeasurementNormalizer {
         val directWaterPercent = find(rows, percentUnits) { it.matchesAny("contenuto d acqua", "acqua corporea", "body water", "total body water", "tbw") }
         val waterKg = find(rows, setOf("kg", "l", "liter", "litre", "litri")) { it.matchesAny("contenuto d acqua", "acqua corporea", "body water", "total body water", "tbw") }
         val bmrKcal = find(rows, setOf("kcal", "kcal/day", "kcal/d", "?")) { it.matchesAny("tasso metabolico basale", "metabolismo basale", "basal metabolic rate", "bmr") }
+        val directLeanMassKg = find(rows, setOf("kg")) { it.matchesAny("peso corporeo senza grasso", "massa magra", "fat free mass", "fat-free mass", "lean body mass", "lean mass", "ffm") }
+        val boneMassKg = find(rows, setOf("kg")) { it.matchesAny("massa ossea", "peso osseo", "bone mass", "bone mineral mass") }
+        val subcutaneousFatPercent = find(rows, percentUnits) { it.matchesAny("grasso sottocutaneo", "subcutaneous fat", "subcutaneous fat rate") }
+        val directProteinPercent = find(rows, percentUnits) { it.matchesAny("quantita di proteine", "proteine", "protein percentage", "protein rate", "protein") }
+        val directProteinKg = find(rows, setOf("kg")) { it.matchesAny("quantita di proteine", "proteine", "protein mass", "protein") }
+        val bodyAgeYears = findAnyUnit(rows) { it.matchesAny("eta corporea", "eta metabolica", "body age", "metabolic age") }
+        val bmi = findAnyUnit(rows) { it.matchesAny("bmi", "indice di massa corporea", "body mass index") }
 
         val derived = linkedSetOf<String>()
         val bodyFatPercent = directBodyFatPercent ?: derivePercent(fatMassKg, weightKg)?.also { derived += "bodyFatPercent" }
         val bodyWaterPercent = directWaterPercent ?: derivePercent(waterKg, weightKg)?.also { derived += "bodyWaterPercent" }
+        val resolvedFatMassKg = fatMassKg ?: deriveMass(bodyFatPercent, weightKg)?.also { derived += "fatMassKg" }
+        val leanMassKg = directLeanMassKg ?: if (weightKg != null && resolvedFatMassKg != null) {
+            (weightKg - resolvedFatMassKg).takeIf { it > 0f }?.also { derived += "leanMassKg" }
+        } else null
+        val resolvedWaterKg = waterKg ?: deriveMass(bodyWaterPercent, weightKg)?.also { derived += "bodyWaterKg" }
+        val proteinPercent = directProteinPercent ?: derivePercent(directProteinKg, weightKg)?.also { derived += "proteinPercent" }
+        val proteinKg = directProteinKg ?: deriveMass(proteinPercent, weightKg)?.also { derived += "proteinKg" }
         val notes = buildList {
             document.source?.let { add("Sorgente: $it.") }
             if (derived.isNotEmpty()) add("Derivati: ${derived.joinToString()}.")
@@ -82,8 +96,27 @@ object BiaMeasurementNormalizer {
 
         return Result(
             BiaImportContract.Preview(
-                true, "", parseDate(document.measuredAtText), weightKg, bodyFatPercent, visceralFat,
-                muscleMassKg, skeletalMuscleKg, bodyWaterPercent, bmrKcal, document.confidence, notes,
+                isBiaDocument = true,
+                rejectionReason = "",
+                measuredAtEpochMillis = parseDate(document.measuredAtText),
+                weightKg = weightKg,
+                bodyFatPercent = bodyFatPercent,
+                visceralFatLevel = visceralFat,
+                muscleMassKg = muscleMassKg,
+                skeletalMuscleKg = skeletalMuscleKg,
+                bodyWaterPercent = bodyWaterPercent,
+                bmrKcal = bmrKcal,
+                confidence = document.confidence,
+                notes = notes,
+                fatMassKg = resolvedFatMassKg,
+                leanMassKg = leanMassKg,
+                bodyWaterKg = resolvedWaterKg,
+                subcutaneousFatPercent = subcutaneousFatPercent,
+                boneMassKg = boneMassKg,
+                proteinPercent = proteinPercent,
+                proteinKg = proteinKg,
+                bodyAgeYears = bodyAgeYears,
+                bmi = bmi,
             ),
             derived, document.source,
         )
@@ -100,6 +133,11 @@ object BiaMeasurementNormalizer {
     private fun derivePercent(part: Float?, total: Float?): Float? {
         if (part == null || total == null || part <= 0f || total <= 0f) return null
         return (part / total * 100f).takeIf { it in 0f..100f }
+    }
+
+    private fun deriveMass(percent: Float?, total: Float?): Float? {
+        if (percent == null || total == null || percent !in 0f..100f || total <= 0f) return null
+        return (percent / 100f * total).takeIf { it > 0f }
     }
 
     private fun parseDate(value: String?): Long? {

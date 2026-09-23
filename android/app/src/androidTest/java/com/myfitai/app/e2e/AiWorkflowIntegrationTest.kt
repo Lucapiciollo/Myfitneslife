@@ -78,6 +78,8 @@ class AiWorkflowIntegrationTest {
         assertTrue("mealCounts=${snapshot.version.days.map { it.meals.size }}", snapshot.version.days.all { it.meals.size == 5 })
         assertTrue("hydration=${snapshot.version.days.map { it.hydrationNote }}", snapshot.version.days.all { it.hydrationNote != null })
         assertTrue("schemas=${gateway.requests.map { it.schemaName }}", gateway.requests.any { it.schemaName == "myfitai_weekly_nutrition_pipe_v1" })
+        assertTrue(gateway.requests.first { it.schemaName == "myfitai_weekly_nutrition_pipe_v1" }.userPrompt.lineSequence().any { it.startsWith("U:") })
+        assertTrue(gateway.requests.first { it.schemaName == "myfitai_weekly_nutrition_pipe_v1" }.userPrompt.lineSequence().any { it.startsWith("LC:") })
     }
 
     @Test
@@ -115,6 +117,7 @@ class AiWorkflowIntegrationTest {
         assertTrue("advice suggestions=${result.suggestions}", result.suggestions.all { it.estimatedKcal > 0 })
         assertEquals(before, after)
         assertTrue(gateway.requests.any { it.schemaName == "myfitai_nutrition_advice_pipe_v1" })
+        assertTrue(gateway.requests.last { it.schemaName == "myfitai_nutrition_advice_pipe_v1" }.userPrompt.lineSequence().any { it.startsWith("U:") })
     }
 
     @Test
@@ -146,6 +149,7 @@ class AiWorkflowIntegrationTest {
         assertEquals(week.toEpochDay(), result.entity.weekStartEpochDay)
         assertNotNull(db.weeklyReviewDao().getForWeek(store.currentIdOrNull()!!, week.toEpochDay()))
         assertTrue(result.entity.structuredJson.orEmpty().contains("localMetrics"))
+        assertTrue(gateway.requests.last { it.schemaName == "myfitai_weekly_review_pipe_v1" }.userPrompt.lineSequence().any { it.startsWith("U:") })
     }
 
     @Test
@@ -207,7 +211,7 @@ class AiWorkflowIntegrationTest {
             mealAlternative = MealAlternativeService(gateway, profiles, plans, store, time),
             advice = NutritionAdviceService(gateway, profiles, plans, cheats, store, time),
             cheat = CheatAdjustmentService(gateway, plans, cheats, profiles, store, time),
-            review = WeeklyReviewService(gateway, reviews, plans, workouts, cheats, bia, body, personal, store, time, consumptions),
+            review = WeeklyReviewService(gateway, reviews, plans, workouts, cheats, bia, body, personal, store, time, consumptions, profiles),
         )
     }
 

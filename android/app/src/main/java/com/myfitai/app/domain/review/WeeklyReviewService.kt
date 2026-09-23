@@ -12,6 +12,8 @@ import com.myfitai.app.data.repository.FoodConsumptionRepository
 import com.myfitai.app.data.repository.MealPlanRepository
 import com.myfitai.app.data.repository.WeeklyReviewRepository
 import com.myfitai.app.data.repository.WorkoutRepository
+import com.myfitai.app.data.repository.UserProfileRepository
+import com.myfitai.app.domain.ai.AiUserContext
 import com.myfitai.app.domain.food.FoodPlanMetrics
 import com.myfitai.app.domain.personalization.PersonalResponseService
 import com.myfitai.app.domain.time.SystemTimeProvider
@@ -34,6 +36,7 @@ class WeeklyReviewService(
     private val activeProfileStore: ActiveProfileStore,
     private val time: TimeProvider = SystemTimeProvider,
     private val foodConsumptions: FoodConsumptionRepository? = null,
+    private val profiles: UserProfileRepository? = null,
 ) {
     data class LocalMetrics(
         val weekStart: LocalDate, val weekEnd: LocalDate,
@@ -127,9 +130,10 @@ class WeeklyReviewService(
         val monday = monday(weekStart)
         val metrics = buildLocalMetrics(profileId, monday)
         val historyContext = personalResponse.promptContext(lookbackDays = 56)
+        val userContext = profiles?.get(profileId)?.let { AiUserContext.profileLine(it, time.today()) }.orEmpty()
         val request = AiStructuredRequest(
             systemPrompt = SYSTEM_PROMPT,
-            userPrompt = buildPrompt(metrics, historyContext),
+            userPrompt = buildPrompt(metrics, historyContext, userContext),
             schemaName = WeeklyReviewContract.SCHEMA_NAME,
             schemaJson = WeeklyReviewContract.schemaJson,
             maxOutputTokens = 700,
@@ -171,7 +175,8 @@ class WeeklyReviewService(
         return Result(stored, response, metrics, validated.provider.name, validated.model)
     }
 
-    private fun buildPrompt(m: LocalMetrics, historyContext: String): String = buildString {
+    private fun buildPrompt(m: LocalMetrics, historyContext: String, userContext: String): String = buildString {
+        if (userContext.isNotBlank()) appendLine("U:${userContext.replace('\n', ' ').replace('\r', ' ')}")
         appendLine("W:${m.weekStart.toEpochDay()}")
         appendLine("P:${m.plannedAverageKcal ?: "?"};${m.plannedAverageProteinG ?: "?"};${m.plannedAverageCarbsG ?: "?"};${m.plannedAverageFatG ?: "?"}")
         appendLine("T:${m.targetKcal ?: "?"};${m.targetProteinG ?: "?"};${m.targetCarbsG ?: "?"};${m.targetFatG ?: "?"}")
@@ -182,7 +187,7 @@ class WeeklyReviewService(
     }
 
     companion object {
-        private const val SYSTEM_PROMPT = """Weekly nutrition review from recorded facts only. P=planned averages, T=authoritative targets, E=deviations/workouts/rest, C=locally calculated meal tracking and consumption, D=observed body deltas. Never infer unrecorded consumption or adherence. Body changes are associative observations, never causes. No diagnosis/treatment. Next-week guidance practical, nutrition-only, never overrides T. Summary <=25 words; each O/G <=18 words; O 1..6; G 1..5."""
+        private val SYSTEM_PROMPT = """Weekly nutrition review from recorded facts only. ${AiUserContext.INPUT_DESCRIPTION} P=planned averages, T=authoritative targets, E=deviations/workouts/rest, C=locally calculated meal tracking and consumption, D=observed body deltas. Never infer unrecorded consumption or adherence. Body changes are associative observations, never causes. No diagnosis/treatment. Next-week guidance practical, nutrition-only, never overrides T. Summary <=25 words; each O/G <=18 words; O 1..6; G 1..5."""
     }
 
     private fun monday(date: LocalDate): LocalDate = date.minusDays((date.dayOfWeek.value - 1).toLong())

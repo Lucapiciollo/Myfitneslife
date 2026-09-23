@@ -23,6 +23,7 @@ import com.myfitai.app.domain.calculation.ProfileCalculationService
 import com.myfitai.app.domain.personalization.PersonalResponseService
 import com.myfitai.app.domain.time.SystemTimeProvider
 import com.myfitai.app.domain.time.TimeProvider
+import com.myfitai.app.domain.ai.AiUserContext
 import kotlinx.coroutines.flow.first
 import java.time.Instant
 import java.time.LocalDate
@@ -279,6 +280,8 @@ class NutritionPlanGenerationService(
                     dietaryPreferences = dietaryProfile.toPromptCompact(),
                     sportsMode = sportsMode,
                     snapshot = snapshot,
+                    userContext = AiUserContext.profileLine(profile, time.today(), snapshot.latestWeightKg),
+                    calculationContext = AiUserContext.calculationLine(snapshot.calculation),
                     workouts = weekWorkouts.map { w ->
                         val dt = Instant.ofEpochMilli(w.startedAtEpochMillis).atZone(zone)
                         PlanReviewService.WorkoutSignal(
@@ -396,6 +399,8 @@ class NutritionPlanGenerationService(
         appendLine("MEALS_PER_DAY:$mealsPerDay")
         appendLine("GENERATE_FROM:${generationStart.toEpochDay()}|${monday.plusDays(6).toEpochDay()}")
         appendLine("SM:${sportsMode.name}")
+        appendLine("U:${AiUserContext.profileLine(profile, time.today(), snapshot.latestWeightKg)}")
+        appendLine("LC:${AiUserContext.calculationLine(snapshot.calculation)}")
         appendLine("P:${compact(profile.goal)}|${compact(profile.activityLevel)}|${profile.wakeTimeMinutes ?: "?"}|${profile.sleepTimeMinutes ?: "?"}")
         appendLine("DP:${dietaryProfile.toPromptCompact()}")
 
@@ -484,6 +489,7 @@ class NutritionPlanGenerationService(
 
         private val SYSTEM_PROMPT = """
 MyFitAI NutritionPlanAgent. Your ONLY operational responsibility is generating a complete weekly nutrition plan from the authoritative targets and context supplied by the app. Never choose/change the user's goal, interpret progress, or adapt a recorded deviation/cheat; dedicated agents own those tasks. Output ONLY JSON matching the supplied envelope schema. The `data` string must begin with the exact line `MFP1`, followed by the pipe records below. Do not omit `MFP1`, do not replace it with another header, do not use markdown, and do not add text outside records.
+${AiUserContext.INPUT_DESCRIPTION}
 ${NutritionPlanCompactContract.PROTOCOL}
 E is the estimated maintenance expenditure (TDEE), or ? for a goal without a mandatory deficit. It is NOT the diet target: T and each TD are already adjusted for the user's chosen goal. If E is numeric, ensure the sum of meals plus caloric supplements is strictly BELOW E for every generated day; never fill all maintenance calories merely because the target tolerance permits it. T is the base local target. Every TD line is the AUTHORITATIVE target for that specific epoch day and overrides T for that day. CENTER the actual daily sum of meals and caloric supplements on that day's TD kcal AND protein/carbs/fat targets, ideally within 1% where practicable. The ±3% in T/TD is ONLY the app's outer acceptance margin for rounding and food composition, NOT bonus calories or a range to saturate. Do not systematically aim at its upper bound. The goal-specific deficit or surplus is already included in TD: never apply a second calorie adjustment. REC is informational only: available|planned|remaining|maxDailyPercent. Never calculate, increase or decrease recovery yourself and never compensate beyond TD. B0/B/BT order is weightKg|bodyFatPct|muscleMassKg|skeletalMuscleKg|bodyWaterPct|visceralFat and means baseline/current/recent-trend-delta. BM0/BM/BMD/BMT order is chest|waist|abdomen|shoulders|glutes|armLeft|armRight|thighLeft|thighRight|calfLeft|calfRight and means baseline/current/previous-delta/recent-trend-delta. `?` means unavailable. Body/BIA signals are contextual only: use them jointly to inform food choice, distribution and timing, never to autonomously alter calories/macros, diagnose disease, dehydration, edema or muscle loss, or infer causality from one reading. Weight alone must never drive a dietary change.
 DP format is A=allergies;I=intolerances;E=excludedFoods;D=dislikedFoods;P=preferredFoods;S=dietStyle;N=free-text food preferences. A, I, E and S are HARD constraints: never output an ingredient that violates them. D, P and N are SOFT preferences only. Read them and follow them when possible, but never change, stretch or bypass the authoritative calorie and macro targets to satisfy them. Requests in N, including quantities, frequency goals and weekly objectives such as "pizza once per week" or "gelato twice per week", are suggestions rather than mandatory requirements. Include or distribute them only when they fit naturally within the daily TD targets; otherwise reduce, replace or omit them and keep the targets exact. Do not weaken, reinterpret or override hard constraints. The app independently validates every ingredient and rejects violations.

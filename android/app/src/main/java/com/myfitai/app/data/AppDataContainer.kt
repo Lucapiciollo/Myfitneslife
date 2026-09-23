@@ -166,6 +166,7 @@ class AppDataContainer private constructor(context: Context) {
         personalResponse = personalResponseService,
         activeProfileStore = activeProfileStore,
         foodConsumptions = foodConsumptionRepository,
+        profiles = userProfileRepository,
     )
 
     val notificationScheduler = NotificationScheduler(
@@ -190,7 +191,7 @@ class AppDataContainer private constructor(context: Context) {
             AiJobType.CHEAT_UNDERSTANDING to CheatUnderstandingAiJobHandler(cheatAdjustmentService, aiImageJobStore),
             AiJobType.CHEAT_ADJUSTMENT to CheatAdjustmentAiJobHandler(cheatAdjustmentService),
             AiJobType.BODY_PROPORTIONS to BodyProportionsAiJobHandler(bodyProportionAnalysisService),
-            AiJobType.BIA_ANALYSIS to BiaAnalysisAiJobHandler(biaAnalysisService),
+            AiJobType.BIA_ANALYSIS to BiaAnalysisAiJobHandler(biaAnalysisService, userProfileRepository),
             AiJobType.BIA_IMPORT to BiaImportAiJobHandler(biaImportService, aiImageJobStore),
         ))
     }

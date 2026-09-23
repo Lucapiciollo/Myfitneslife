@@ -3,6 +3,7 @@ package com.myfitai.app.domain.body
 import com.myfitai.app.ai.AiCompactEnvelope
 import com.myfitai.app.ai.AiRuntimeService
 import com.myfitai.app.ai.AiStructuredRequest
+import com.myfitai.app.domain.ai.AiUserContext
 
 class BiaAnalysisService(private val aiRuntime: AiRuntimeService) {
     data class Report(
@@ -19,13 +20,13 @@ class BiaAnalysisService(private val aiRuntime: AiRuntimeService) {
         val validation: String,
     )
 
-    suspend fun analyze(report: Report): Interpretation {
+    suspend fun analyze(report: Report, userContext: String = ""): Interpretation {
         require(report.current.isNotEmpty()) { "INSUFFICIENT_DATA" }
         var parsed: Interpretation? = null
         val response = aiRuntime.execute(
             request = AiStructuredRequest(
                 systemPrompt = SYSTEM_PROMPT,
-                userPrompt = buildPrompt(report),
+                userPrompt = buildPrompt(report, userContext),
                 schemaName = "myfitai_bia_analysis_pipe_v1",
                 schemaJson = AiCompactEnvelope.schemaJson,
                 maxOutputTokens = 500,
@@ -38,7 +39,8 @@ class BiaAnalysisService(private val aiRuntime: AiRuntimeService) {
         return parsed ?: parse(response.jsonText).also { validate(it).getOrThrow() }
     }
 
-    private fun buildPrompt(report: Report): String = buildString {
+    private fun buildPrompt(report: Report, userContext: String): String = buildString {
+        if (userContext.isNotBlank()) appendLine("U:$userContext")
         append("BIA|").append(report.measurementCount).appendLine()
         report.current.forEach { (key, value) -> appendLine("V|$key|$value") }
         report.previousDelta.forEach { (key, value) -> appendLine("D|$key|$value") }
@@ -76,6 +78,7 @@ class BiaAnalysisService(private val aiRuntime: AiRuntimeService) {
     companion object {
         private const val SYSTEM_PROMPT = """
 MyFitAI specialist in bioimpedance and sports body composition. Use only the supplied values and deltas. Read the data as a sports professional: explain muscle status, body-composition context, what is already positive, and where to improve through training, recovery, and nutrition. Distinguish measured facts from cautious interpretation. Never diagnose, infer causes, invent missing values, prescribe medical treatment, or compare with aesthetic ideals. A single measurement describes status, not a trend. Output ONLY JSON envelope with data:
+${AiUserContext.INPUT_DESCRIPTION}
 BA1
 S|brief overall summary
 M|brief muscle status
