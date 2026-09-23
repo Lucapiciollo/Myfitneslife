@@ -40,16 +40,17 @@ internal object PdfExportRenderer {
     private const val MARGIN = 40f
     private const val CONTENT_RIGHT = PAGE_WIDTH - MARGIN
 
-    private val BG = Color.rgb(13, 17, 23)
-    private val PANEL = Color.rgb(22, 27, 34)
-    private val PANEL_2 = Color.rgb(31, 38, 48)
-    private val TEXT = Color.rgb(245, 247, 250)
-    private val MUTED = Color.rgb(152, 162, 179)
-    private val ACCENT = Color.rgb(126, 231, 135)
-    private val ACCENT_2 = Color.rgb(88, 166, 255)
-    private val WARNING = Color.rgb(242, 204, 96)
-    private val DANGER = Color.rgb(255, 123, 114)
-    private val LINE = Color.rgb(48, 54, 61)
+    // Stessi token cromatici del tema light dell'app (values/colors.xml).
+    private val BG = Color.rgb(247, 248, 244)
+    private val PANEL = Color.WHITE
+    private val PANEL_2 = Color.rgb(243, 244, 241)
+    private val TEXT = Color.rgb(24, 32, 28)
+    private val MUTED = Color.rgb(89, 99, 93)
+    private val ACCENT = Color.rgb(32, 182, 83)
+    private val ACCENT_2 = Color.rgb(74, 143, 216)
+    private val WARNING = Color.rgb(217, 154, 34)
+    private val DANGER = Color.rgb(217, 76, 70)
+    private val LINE = Color.rgb(216, 226, 217)
 
     data class ProfileReportInput(
         val profile: UserProfileEntity,
@@ -327,25 +328,19 @@ internal object PdfExportRenderer {
             pageNumber++
         }
 
-        // Due giorni per pagina quando possibile, mantenendo blocchi leggibili.
-        var index = 0
-        while (index < days.size) {
-            val page = startPage(document, pageNumber)
-            val canvas = page.canvas
-            val first = days[index]
-            val second = days.getOrNull(index + 1)
-            drawHeader(canvas, "Dieta settimanale", dateRange)
-
-            val firstBottom = drawCompactDayCard(canvas, first, 150f, 295f)
-            var consumedSecond = false
-            if (second != null && firstBottom <= 455f) {
-                val secondBottom = drawCompactDayCard(canvas, second, max(firstBottom + 18f, 445f), 295f)
-                consumedSecond = secondBottom <= 785f
+        // Una giornata per pagina, con pagine di continuazione quando il contenuto
+        // non entra. Nessun pasto viene scartato per rispettare un'altezza fissa.
+        days.forEach { day ->
+            val mealPages = paginateMeals(day.meals.sortedBy(FoodMeal::sortOrder))
+            mealPages.forEachIndexed { partIndex, meals ->
+                val page = startPage(document, pageNumber)
+                val canvas = page.canvas
+                drawHeader(canvas, "Dieta settimanale", dateRange)
+                drawDayCard(canvas, day, meals, 150f, partIndex > 0)
+                drawFooter(canvas, pageNumber, "Dieta settimanale")
+                document.finishPage(page)
+                pageNumber++
             }
-            drawFooter(canvas, pageNumber, "Dieta settimanale")
-            document.finishPage(page)
-            pageNumber++
-            index += if (consumedSecond) 2 else 1
         }
 
         // Lista spesa: categorie e checkbox, con paginazione automatica.
@@ -371,7 +366,8 @@ internal object PdfExportRenderer {
         }
 
         groups.forEach { (category, items) ->
-            val required = 48f + items.size * 25f
+            val itemLines = items.associateWith { wrapLines(it.name, 135f, 9.5f, false) }
+            val required = 48f + items.sumOf { max(25, itemLines.getValue(it).size * 12 + 8) }
             if (columnBottom[column] + required > 775f) {
                 column++
                 if (column > 1) finishShoppingPage()
@@ -385,9 +381,11 @@ internal object PdfExportRenderer {
             var rowY = y + 52f
             items.forEach { item ->
                 drawCheckbox(canvas, x + 16f, rowY - 10f)
-                text(canvas, ellipsize(item.name, 150f, 9.5f), x + 42f, rowY, 9.5f, TEXT)
+                itemLines.getValue(item).forEachIndexed { lineIndex, line ->
+                    text(canvas, line, x + 42f, rowY + lineIndex * 12f, 9.5f, TEXT)
+                }
                 text(canvas, item.displayQuantity(), x + columnWidth - 16f, rowY, 9.5f, TEXT, true, alignRight = true)
-                rowY += 25f
+                rowY += max(25, itemLines.getValue(item).size * 12 + 8).toFloat()
             }
             columnBottom[column] += required + 12f
         }
@@ -399,41 +397,48 @@ internal object PdfExportRenderer {
         document.close()
     }
 
-    private fun drawCompactDayCard(canvas: Canvas, day: FoodPlanDay, top: Float, maxHeight: Float): Float {
-        val meals = day.meals.sortedBy(FoodMeal::sortOrder)
-        val estimated = 58f + meals.sumOf { meal ->
-            val ingredientText = meal.ingredients.sortedBy { it.sortOrder }.joinToString(" - ") { ingredient ->
-                val dose = ingredient.displayDose?.takeIf { it.isNotBlank() }
-                    ?: "${formatNumber(ingredient.quantity)} ${ingredient.unit}"
-                "${ingredient.name} $dose"
+    internal fun paginateMeals(meals: List<FoodMeal>, availableHeight: Float = 555f): List<List<FoodMeal>> {
+        if (meals.isEmpty()) return listOf(emptyList())
+        val pages = mutableListOf<MutableList<FoodMeal>>()
+        var current = mutableListOf<FoodMeal>()
+        var used = 0f
+        meals.forEach { meal ->
+            val required = mealBlockHeight(meal)
+            if (current.isNotEmpty() && used + required > availableHeight) {
+                pages += current
+                current = mutableListOf()
+                used = 0f
             }
-            40 + wrapLines(ingredientText, 410f, 8.5f, false).take(2).size * 12
-        }.toFloat()
-        val height = estimated.coerceAtMost(maxHeight)
-        drawCard(canvas, 40f, top, 515f, height)
+            current += meal
+            used += required
+        }
+        if (current.isNotEmpty()) pages += current
+        return pages
+    }
 
+    private fun drawDayCard(canvas: Canvas, day: FoodPlanDay, meals: List<FoodMeal>, top: Float, continuation: Boolean) {
+        val height = 62f + meals.sumOfFloat(::mealBlockHeight)
+        drawCard(canvas, 40f, top, 515f, height)
         val date = LocalDate.ofEpochDay(day.dateEpochDay)
         val dayName = date.format(DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.ITALIAN))
             .replaceFirstChar { it.titlecase(Locale.ITALIAN) }
-        text(canvas, dayName, 58f, top + 28f, 13f, TEXT, true)
+        text(canvas, if (continuation) "$dayName - continua" else dayName, 58f, top + 28f, 13f, TEXT, true)
         text(canvas, day.totalKcal?.let { "$it kcal" }.orDash(), 535f, top + 28f, 9f, ACCENT, true, alignRight = true)
 
         var y = top + 56f
         meals.forEach { meal ->
-            if (y > top + height - 28f) return@forEach
             val time = meal.timeMinutes?.let { String.format(Locale.ITALIAN, "%02d:%02d", it / 60, it % 60) }.orDash()
             text(canvas, time, 58f, y, 8.5f, ACCENT_2, true)
             text(canvas, meal.type.uppercase(Locale.ITALIAN), 108f, y, 7.8f, MUTED, true)
-            text(canvas, ellipsize(meal.title, 205f, 9.2f, true), 182f, y, 9.2f, TEXT, true)
             text(canvas, meal.kcal?.let { "$it kcal" }.orDash(), 535f, y, 8.2f, ACCENT, alignRight = true)
             y += 15f
 
-            val ingredientText = meal.ingredients.sortedBy { it.sortOrder }.joinToString(" - ") { ingredient ->
-                val dose = ingredient.displayDose?.takeIf { it.isNotBlank() }
-                    ?: "${formatNumber(ingredient.quantity)} ${ingredient.unit}"
-                "${ingredient.name} $dose"
+            wrapLines(meal.title, 427f, 9.2f, true).forEach { line ->
+                text(canvas, line, 108f, y, 9.2f, TEXT, true)
+                y += 12f
             }
-            wrapLines(ingredientText, 405f, 8.2f, false).take(2).forEach { line ->
+
+            wrapLines(ingredientText(meal), 427f, 8.2f, false).forEach { line ->
                 text(canvas, line, 108f, y, 8.2f, MUTED)
                 y += 11f
             }
@@ -448,7 +453,25 @@ internal object PdfExportRenderer {
             }
             y += 7f
         }
-        return top + height
+    }
+
+    private fun mealBlockHeight(meal: FoodMeal): Float {
+        val titleLines = max(1, wrapLines(meal.title, 427f, 9.2f, true).size)
+        val ingredientLines = wrapLines(ingredientText(meal), 427f, 8.2f, false).size
+        val hasMacros = meal.proteinG != null || meal.carbsG != null || meal.fatG != null
+        return 22f + titleLines * 12f + ingredientLines * 11f + (if (hasMacros) 14f else 0f) + 7f
+    }
+
+    private fun ingredientText(meal: FoodMeal): String = meal.ingredients
+        .sortedBy { it.sortOrder }
+        .joinToString(" - ") { ingredient ->
+            val dose = ingredient.displayDose?.takeIf { it.isNotBlank() }
+                ?: "${formatNumber(ingredient.quantity)} ${ingredient.unit}"
+            "${ingredient.name} $dose"
+        }
+
+    private inline fun <T> Iterable<T>.sumOfFloat(selector: (T) -> Float): Float = fold(0f) { sum, item ->
+        sum + selector(item)
     }
 
     private fun drawRows(
@@ -530,6 +553,12 @@ internal object PdfExportRenderer {
     private fun drawCard(canvas: Canvas, x: Float, y: Float, width: Float, height: Float, color: Int = PANEL) {
         val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color; style = Paint.Style.FILL }
         canvas.drawRoundRect(RectF(x, y, x + width, y + height), 12f, 12f, paint)
+        val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            this.color = LINE
+            style = Paint.Style.STROKE
+            strokeWidth = 1f
+        }
+        canvas.drawRoundRect(RectF(x, y, x + width, y + height), 12f, 12f, stroke)
     }
 
     private fun drawMetricCard(
@@ -587,27 +616,33 @@ internal object PdfExportRenderer {
         }
         val lines = mutableListOf<String>()
         var current = ""
-        value.trim().split(Regex("\\s+")).forEach { word ->
-            val candidate = if (current.isBlank()) word else "$current $word"
-            if (paint.measureText(candidate) <= width || current.isBlank()) current = candidate
-            else {
-                lines += current
-                current = word
+        value.trim().split(Regex("\\s+")).forEach { sourceWord ->
+            splitLongWord(sourceWord, paint, width).forEach { word ->
+                val candidate = if (current.isBlank()) word else "$current $word"
+                if (paint.measureText(candidate) <= width || current.isBlank()) current = candidate
+                else {
+                    lines += current
+                    current = word
+                }
             }
         }
         if (current.isNotBlank()) lines += current
         return lines
     }
 
-    private fun ellipsize(value: String, width: Float, size: Float, bold: Boolean = false): String {
-        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            textSize = size
-            typeface = if (bold) android.graphics.Typeface.DEFAULT_BOLD else android.graphics.Typeface.DEFAULT
+    private fun splitLongWord(word: String, paint: Paint, width: Float): List<String> {
+        if (paint.measureText(word) <= width) return listOf(word)
+        val chunks = mutableListOf<String>()
+        var current = ""
+        word.forEach { character ->
+            val candidate = current + character
+            if (current.isNotEmpty() && paint.measureText(candidate) > width) {
+                chunks += current
+                current = character.toString()
+            } else current = candidate
         }
-        if (paint.measureText(value) <= width) return value
-        var result = value
-        while (result.isNotEmpty() && paint.measureText("$result…") > width) result = result.dropLast(1)
-        return if (result.isBlank()) "…" else "$result…"
+        if (current.isNotEmpty()) chunks += current
+        return chunks
     }
 
     private fun buildProfileSummary(input: ProfileReportInput): String {
