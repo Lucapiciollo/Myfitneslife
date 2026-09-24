@@ -19,6 +19,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.domain.progress.ProgressAnalysisCompactContract
+import com.myfitai.app.domain.progress.ProgressAnalysisRequirements
 import com.myfitai.app.domain.progress.ProgressAnalysisService
 import com.myfitai.app.domain.ai.AiJobType
 import com.myfitai.app.navigation.BottomNavBinder
@@ -53,6 +54,7 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
     private lateinit var analysisDetailsContainer: LinearLayout
     private lateinit var analysisProgress: ProgressBar
     private lateinit var analysisButton: MaterialButton
+    private lateinit var analysisRequirementsText: TextView
     private lateinit var analysisHeader: View
     private lateinit var analysisCard: View
     private lateinit var reviewHeader: View
@@ -165,7 +167,13 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         analysisButton = MaterialButton(this).apply {
             text = "Esegui analisi ora"
             isAllCaps = false
+            isEnabled = false
             setOnClickListener { confirmManualProgressAnalysis() }
+        }
+        analysisRequirementsText = bodyText().apply {
+            visibility = View.GONE
+            textSize = 11f
+            setTextColor(getColor(R.color.text_muted))
         }
         cardContent.addView(analysisLastText, marginTopParams(8))
         cardContent.addView(analysisNextText, marginTopParams(4))
@@ -174,6 +182,7 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         cardContent.addView(analysisDetailsContainer, marginTopParams(6))
         cardContent.addView(analysisProgress, LinearLayout.LayoutParams(dp(32), dp(32)).apply { topMargin = dp(10) })
         cardContent.addView(analysisButton, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(48)).apply { topMargin = dp(12) })
+        cardContent.addView(analysisRequirementsText, marginTopParams(6))
         root.addView(card, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
             topMargin = dp(8)
         })
@@ -317,6 +326,7 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
     }
 
     private fun renderProgressAnalysisStatus(keepTransientResult: Boolean = false) {
+        refreshProgressAnalysisRequirements()
         val profileId = data.activeProfileStore.currentIdOrNull()
         if (profileId == null) {
             analysisHeader.visibility = View.GONE
@@ -371,6 +381,25 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
                 analysisResultText.text = "Nessuna analisi IA disponibile. Tocca 'Esegui analisi ora' per ricevere una sintesi dei tuoi progressi."
                 analysisDetailsButton.visibility = View.GONE
                 analysisDetailsContainer.visibility = View.GONE
+            }
+        }
+    }
+
+    private fun refreshProgressAnalysisRequirements() {
+        lifecycleScope.launch {
+            val profileId = data.activeProfileStore.currentIdOrNull()
+            val missing = if (profileId == null) {
+                listOf("un profilo attivo")
+            } else {
+                val snapshot = data.profileCalculationService.profileSnapshot(profileId, java.time.LocalDate.now())
+                ProgressAnalysisRequirements.missing(snapshot)
+            }
+            analysisButton.isEnabled = missing.isEmpty() && analysisProgress.visibility != View.VISIBLE
+            if (missing.isEmpty()) {
+                analysisRequirementsText.visibility = View.GONE
+            } else {
+                analysisRequirementsText.visibility = View.VISIBLE
+                analysisRequirementsText.text = ProgressAnalysisRequirements.message(missing)
             }
         }
     }

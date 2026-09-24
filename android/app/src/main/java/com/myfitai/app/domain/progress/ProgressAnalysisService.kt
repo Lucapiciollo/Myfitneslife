@@ -50,8 +50,8 @@ class ProgressAnalysisService(
     suspend fun analyze(profileId: Long): Result {
         val profile = profiles.get(profileId) ?: throw AnalysisException.NeedsInput(listOf("profilo"))
         val snapshot = calculations.profileSnapshot(profileId, time.today()) ?: throw AnalysisException.NeedsInput(listOf("dati profilo"))
-        if (snapshot.latestBiaTimestamp == null) throw AnalysisException.NeedsInput(listOf("rilevazioni BIA"))
-        if (snapshot.latestBodyMeasurementTimestamp == null) throw AnalysisException.NeedsInput(listOf("misure corporee"))
+        val missing = ProgressAnalysisRequirements.missing(snapshot)
+        if (missing.isNotEmpty()) throw AnalysisException.NeedsInput(missing)
 
         val windowDays = max(MIN_ACTIVITY_WINDOW_DAYS, preferences.intervalWeeks * 7).coerceAtMost(MAX_ACTIVITY_WINDOW_DAYS)
         val zone = time.zoneId

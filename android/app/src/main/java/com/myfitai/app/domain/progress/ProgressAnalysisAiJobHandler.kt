@@ -10,7 +10,7 @@ class ProgressAnalysisAiJobHandler(private val service: ProgressAnalysisService)
         val result = service.analyze(profileId)
         AiJobOutcome.Success(Data.Builder().putString(AiJobWorker.KEY_PROVIDER, "${result.provider} · ${result.model}").build())
     } catch (error: ProgressAnalysisService.AnalysisException.NeedsInput) {
-        AiJobOutcome.Failure("Completa prima: ${error.fields.joinToString()}")
+        AiJobOutcome.Failure(ProgressAnalysisRequirements.message(error.fields))
     } catch (error: ProgressAnalysisService.AnalysisException.InvalidAiOutput) {
         AiJobOutcome.Failure("Risultato IA non valido: nessun dato salvato")
     }
