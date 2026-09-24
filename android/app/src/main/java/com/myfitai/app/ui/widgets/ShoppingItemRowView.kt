@@ -25,8 +25,7 @@ class ShoppingItemRowView @JvmOverloads constructor(
         orientation = HORIZONTAL
         gravity = android.view.Gravity.CENTER_VERTICAL
         val density = resources.displayMetrics.density
-        val paddingV = (8 * density).toInt()
-        setPadding(0, paddingV, 0, paddingV)
+        setPadding(0, (8 * density).toInt(), 0, (8 * density).toInt())
 
         checkBox = MaterialCheckBox(context).apply {
             layoutParams = LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT)
@@ -56,6 +55,8 @@ class ShoppingItemRowView @JvmOverloads constructor(
         quantityView = TextView(context).apply {
             setTextColor(context.getColor(R.color.text_secondary))
             textSize = 14f
+            gravity = android.view.Gravity.END
+            textAlignment = TextView.TEXT_ALIGNMENT_VIEW_END
         }
         addView(quantityView)
     }

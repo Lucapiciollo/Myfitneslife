@@ -201,4 +201,89 @@ class DatabaseMigrationTest {
             }
         }
     }
+
+    @Test
+    fun migration12To13_repairsIncompleteOptionalBiaAndBodyColumns() {
+        helper.createDatabase(MyFitAiDatabase.DATABASE_NAME, 12).apply {
+            execSQL("ALTER TABLE bia_measurements DROP COLUMN fatMassKg")
+            execSQL("ALTER TABLE bia_measurements DROP COLUMN bmi")
+            execSQL("ALTER TABLE body_measurements DROP COLUMN hipsCm")
+            execSQL("ALTER TABLE body_measurements DROP COLUMN weightKg")
+            close()
+        }
+
+        helper.runMigrationsAndValidate(
+            MyFitAiDatabase.DATABASE_NAME,
+            13,
+            true,
+            DatabaseMigrations.MIGRATION_12_13,
+        ).use { db ->
+            db.query("PRAGMA table_info(bia_measurements)").use { cursor ->
+                val columns = buildSet {
+                    while (cursor.moveToNext()) add(cursor.getString(cursor.getColumnIndexOrThrow("name")))
+                }
+                assertTrue(columns.containsAll(setOf("fatMassKg", "bmi")))
+            }
+            db.query("PRAGMA table_info(body_measurements)").use { cursor ->
+                val columns = buildSet {
+                    while (cursor.moveToNext()) add(cursor.getString(cursor.getColumnIndexOrThrow("name")))
+                }
+                assertTrue(columns.containsAll(setOf("hipsCm", "weightKg")))
+            }
+        }
+    }
+
+    @Test
+    fun migration13To14_repairsCurrentDatabaseWithMissingOptionalColumns() {
+        helper.createDatabase(MyFitAiDatabase.DATABASE_NAME, 13).apply {
+            execSQL("ALTER TABLE body_measurements DROP COLUMN hipsCm")
+            execSQL("ALTER TABLE body_measurements DROP COLUMN weightKg")
+            execSQL("ALTER TABLE bia_measurements DROP COLUMN fatMassKg")
+            execSQL("ALTER TABLE bia_measurements DROP COLUMN bmi")
+            close()
+        }
+
+        helper.runMigrationsAndValidate(
+            MyFitAiDatabase.DATABASE_NAME,
+            14,
+            true,
+            DatabaseMigrations.MIGRATION_13_14,
+        ).use { db ->
+            db.query("PRAGMA table_info(bia_measurements)").use { cursor ->
+                val columns = buildSet {
+                    while (cursor.moveToNext()) add(cursor.getString(cursor.getColumnIndexOrThrow("name")))
+                }
+                assertTrue(columns.containsAll(setOf("fatMassKg", "bmi")))
+            }
+            db.query("PRAGMA table_info(body_measurements)").use { cursor ->
+                val columns = buildSet {
+                    while (cursor.moveToNext()) add(cursor.getString(cursor.getColumnIndexOrThrow("name")))
+                }
+                assertTrue(columns.containsAll(setOf("hipsCm", "weightKg")))
+            }
+        }
+    }
+
+    @Test
+    fun migration14To15_repairsCurrentDatabaseWithMissingOptionalColumns() {
+        helper.createDatabase(MyFitAiDatabase.DATABASE_NAME, 14).apply {
+            execSQL("ALTER TABLE body_measurements DROP COLUMN hipsCm")
+            execSQL("ALTER TABLE body_measurements DROP COLUMN weightKg")
+            close()
+        }
+
+        helper.runMigrationsAndValidate(
+            MyFitAiDatabase.DATABASE_NAME,
+            15,
+            true,
+            DatabaseMigrations.MIGRATION_14_15,
+        ).use { db ->
+            db.query("PRAGMA table_info(body_measurements)").use { cursor ->
+                val columns = buildSet {
+                    while (cursor.moveToNext()) add(cursor.getString(cursor.getColumnIndexOrThrow("name")))
+                }
+                assertTrue(columns.containsAll(setOf("hipsCm", "weightKg")))
+            }
+        }
+    }
 }

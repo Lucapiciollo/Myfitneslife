@@ -23,8 +23,7 @@ class IngredientRowView @JvmOverloads constructor(
         orientation = HORIZONTAL
         gravity = android.view.Gravity.CENTER_VERTICAL
         val density = resources.displayMetrics.density
-        val paddingV = (10 * density).toInt()
-        setPadding(0, paddingV, 0, paddingV)
+        setPadding(0, (8 * density).toInt(), 0, (8 * density).toInt())
 
         iconView = ShapeableImageView(context).apply {
             val size = (32 * density).toInt()
@@ -46,6 +45,8 @@ class IngredientRowView @JvmOverloads constructor(
         quantityView = TextView(context).apply {
             setTextColor(context.getColor(R.color.text_secondary))
             textSize = 14f
+            gravity = android.view.Gravity.END
+            textAlignment = TextView.TEXT_ALIGNMENT_VIEW_END
         }
         addView(quantityView)
     }

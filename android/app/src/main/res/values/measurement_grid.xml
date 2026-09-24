@@ -1,0 +1,4 @@
+<resources>
+    <integer name="measurement_grid_columns">2</integer>
+    <integer name="measurement_group_columns">1</integer>
+</resources>

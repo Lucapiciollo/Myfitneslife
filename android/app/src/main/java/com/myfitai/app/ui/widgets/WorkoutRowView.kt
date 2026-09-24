@@ -25,6 +25,7 @@ class WorkoutRowView @JvmOverloads constructor(
         orientation = HORIZONTAL
         gravity = android.view.Gravity.CENTER_VERTICAL
         val density = resources.displayMetrics.density
+        minimumHeight = (48 * density).toInt()
         setPadding(0, (8 * density).toInt(), 0, (8 * density).toInt())
         background = null
 
@@ -56,17 +57,14 @@ class WorkoutRowView @JvmOverloads constructor(
             }
         }
         titleView = TextView(context).apply {
-            setTextColor(context.getColor(R.color.text_primary))
-            textSize = 14f
-            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            setTextAppearance(R.style.Text_MyFitAI_SettingsLabel)
         }
         textColumn.addView(titleView)
         subtitleView = TextView(context).apply {
             layoutParams = LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply {
                 topMargin = (2 * density).toInt()
             }
-            setTextColor(context.getColor(R.color.text_secondary))
-            textSize = 11f
+            setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
         }
         textColumn.addView(subtitleView)
         addView(textColumn)

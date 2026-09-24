@@ -12,6 +12,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.imageview.ShapeableImageView
+import com.myfitai.app.notifications.NotificationPreferences
 import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.data.local.entity.UserProfileEntity
@@ -50,15 +51,48 @@ class ProfileActivity : BaseShellActivity() {
     }
 
     private fun bindSettingsNavigation() {
-        val openEditor = { go(ProfileEditActivity::class.java) }
+        val openEditor = { openReprofileWizard() }
         findViewById<SettingRowView>(R.id.rowPersonalData).setOnClickListener { openEditor() }
         findViewById<SettingRowView>(R.id.rowGoals).setOnClickListener { openEditor() }
         findViewById<SettingRowView>(R.id.rowFoodPreferences).setOnClickListener { openEditor() }
         findViewById<SettingRowView>(R.id.rowDaySchedule).setOnClickListener { openEditor() }
         findViewById<SettingRowView>(R.id.rowWorkouts).setOnClickListener { go(WorkoutsActivity::class.java) }
         updateWorkoutsRowVisibility()
-        findViewById<SettingRowView>(R.id.rowNotifications).setOnClickListener { go(NotificationsActivity::class.java) }
+        findViewById<SettingRowView>(R.id.rowNotifications).setOnClickListener { showNotificationSettings() }
         findViewById<SettingRowView>(R.id.rowExport).setOnClickListener { go(ExportActivity::class.java) }
+    }
+
+    private fun showNotificationSettings() {
+        val content = layoutInflater.inflate(R.layout.dialog_notification_settings, null)
+        val prefs = NotificationPreferences(this)
+        val mealSwitch = content.findViewById<com.google.android.material.materialswitch.MaterialSwitch>(R.id.mealRemindersSwitch)
+        val reviewSwitch = content.findViewById<com.google.android.material.materialswitch.MaterialSwitch>(R.id.weeklyReviewSwitch)
+        val aiSwitch = content.findViewById<com.google.android.material.materialswitch.MaterialSwitch>(R.id.aiBackgroundUpdatesSwitch)
+        val leadInput = content.findViewById<com.google.android.material.textfield.MaterialAutoCompleteTextView>(R.id.mealLeadInput)
+        val leadMinutes = resources.getIntArray(R.array.notification_lead_minutes)
+        val leadLabels = resources.getStringArray(R.array.notification_lead_labels)
+        val selectedLead = leadMinutes.indexOf(prefs.mealLeadMinutes).coerceAtLeast(0)
+
+        mealSwitch.isChecked = prefs.mealRemindersEnabled
+        reviewSwitch.isChecked = prefs.weeklyReviewEnabled
+        aiSwitch.isChecked = prefs.aiBackgroundUpdatesEnabled
+        leadInput.setAdapter(android.widget.ArrayAdapter(this, R.layout.item_dropdown_myfitai, leadLabels.toList()))
+        leadInput.setText(leadLabels[selectedLead.coerceAtMost(leadLabels.lastIndex)], false)
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.notifications_dialog_title)
+            .setView(content)
+            .setNegativeButton(R.string.action_cancel, null)
+            .setPositiveButton(R.string.action_save) { _, _ ->
+                prefs.mealRemindersEnabled = mealSwitch.isChecked
+                prefs.weeklyReviewEnabled = reviewSwitch.isChecked
+                prefs.aiBackgroundUpdatesEnabled = aiSwitch.isChecked
+                prefs.mealLeadMinutes = leadMinutes.getOrElse(leadLabels.indexOf(leadInput.text.toString())) { prefs.mealLeadMinutes }
+                lifecycleScope.launch {
+                    runCatching { data.notificationScheduler.refresh() }
+                }
+            }
+            .show()
     }
 
     override fun onResume() {
@@ -74,8 +108,8 @@ class ProfileActivity : BaseShellActivity() {
 
     private fun bindProfileActions() {
         findViewById<TextView>(R.id.profileName).setOnClickListener { showProfileMenu(it) }
-        findViewById<TextView>(R.id.profileStats).setOnClickListener { go(ProfileEditActivity::class.java) }
-        findViewById<TextView>(R.id.profileGoal).setOnClickListener { go(ProfileEditActivity::class.java) }
+        findViewById<TextView>(R.id.profileStats).setOnClickListener { openReprofileWizard() }
+        findViewById<TextView>(R.id.profileGoal).setOnClickListener { openReprofileWizard() }
         findViewById<ShapeableImageView>(R.id.profileAvatar).setOnClickListener { showPhotoMenu() }
     }
 
@@ -93,8 +127,8 @@ class ProfileActivity : BaseShellActivity() {
                 return@launch
             }
 
-            startActivity(Intent(this@ProfileActivity, ProfileEditActivity::class.java).apply {
-                putExtra(ProfileEditActivity.EXTRA_BOOTSTRAP, true)
+            startActivity(Intent(this@ProfileActivity, OnboardingWizardActivity::class.java).apply {
+                putExtra(OnboardingWizardActivity.EXTRA_BOOTSTRAP, true)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
             })
             finish()
@@ -114,6 +148,12 @@ class ProfileActivity : BaseShellActivity() {
                     }
                 }
             }
+        }
+    }
+
+    private fun openReprofileWizard() {
+        currentProfile?.id?.let { id ->
+            startActivity(Intent(this, OnboardingWizardActivity::class.java).putExtra(OnboardingWizardActivity.EXTRA_PROFILE_ID, id))
         }
     }
 
@@ -148,7 +188,7 @@ class ProfileActivity : BaseShellActivity() {
         popup.menu.add(0, addId, profiles.size + 1, "+ Aggiungi profilo")
         popup.setOnMenuItemClickListener { item ->
             if (item.itemId == addId) {
-                startActivity(Intent(this, ProfileEditActivity::class.java).putExtra(ProfileEditActivity.EXTRA_CREATE, true))
+                startActivity(Intent(this, OnboardingWizardActivity::class.java).putExtra(OnboardingWizardActivity.EXTRA_NEW_PROFILE, true))
             } else {
                 profiles.getOrNull(item.itemId - 1)?.let { profile ->
                     data.activeProfileStore.selectProfile(profile.id, makeDefault = true)

@@ -16,6 +16,7 @@ import com.myfitai.app.ui.NutritionPathActivity
 import com.myfitai.app.ui.PhysicalEvolutionActivity
 import com.myfitai.app.ui.TabHostActivity
 import com.myfitai.app.navigation.BottomNavBinder
+import com.myfitai.app.notifications.NotificationPreferences
 import com.myfitai.app.ui.FoodPlanActivity
 import com.myfitai.app.ui.WeeklyReviewActivity
 import com.myfitai.app.ui.NutritionAdviceActivity
@@ -35,6 +36,7 @@ object AiJobNotifier {
     }
 
     private fun notify(context: Context, type: AiJobType, profileId: Long, jobKey: String, title: String, text: String) {
+        if (!NotificationPreferences(context).aiBackgroundUpdatesEnabled) return
         if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
         if (Build.VERSION.SDK_INT >= 26) {
             val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager

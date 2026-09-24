@@ -72,6 +72,8 @@ class HomeActivity : BaseShellActivity() {
         findViewById<android.view.View>(R.id.profileButton).setOnClickListener { go(ProfileActivity::class.java) }
         findViewById<android.view.View>(R.id.planUpdateNoticeCard).setOnClickListener { openFoodPlan() }
         findViewById<android.view.View>(R.id.planUpdateNoticeButton).setOnClickListener { openFoodPlan() }
+        findViewById<android.view.View>(R.id.aiConfigurationNoticeCard).setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java)) }
+        findViewById<android.view.View>(R.id.aiConfigurationNoticeButton).setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java)) }
         findViewById<android.view.View>(R.id.nextMealCard).setOnClickListener {
             currentNextMealId?.let { mealId ->
                 startActivity(Intent(this, MealDetailActivity::class.java).putExtra(MealDetailActivity.EXTRA_MEAL_ID, mealId))
@@ -128,6 +130,7 @@ class HomeActivity : BaseShellActivity() {
         super.onResume()
         renderWorkoutConfiguration()
         renderPlanUpdateNotice()
+        renderAiConfigurationNotice()
     }
 
     private fun renderPlanUpdateNotice() {
@@ -138,6 +141,11 @@ class HomeActivity : BaseShellActivity() {
             } else {
                 android.view.View.GONE
             }
+    }
+
+    private fun renderAiConfigurationNotice() {
+        findViewById<android.view.View>(R.id.aiConfigurationNoticeCard)?.visibility =
+            if (com.myfitai.app.ai.AiProviderAccess.isConfigured(this)) android.view.View.GONE else android.view.View.VISIBLE
     }
 
     private fun renderWorkoutConfiguration() {
@@ -166,6 +174,7 @@ class HomeActivity : BaseShellActivity() {
 
     private fun renderDashboard(state: HomeViewModel.DashboardState) {
         renderPlanUpdateNotice()
+        renderAiConfigurationNotice()
         val firstName = state.profileName?.trim()?.substringBefore(' ')?.takeIf { it.isNotBlank() }
         findViewById<TextView>(R.id.greetingText).text = firstName?.let { "Ciao $it 👋" } ?: "Ciao 👋"
 

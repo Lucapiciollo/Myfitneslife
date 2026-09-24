@@ -26,6 +26,7 @@ class HistoryRowView @JvmOverloads constructor(
         isFocusable = true
         val density = resources.displayMetrics.density
         val paddingV = (12 * density).toInt()
+        minimumHeight = (56 * density).toInt()
         setPadding(0, paddingV, 0, paddingV)
 
         val iconCircle = FrameLayout(context).apply {
@@ -48,17 +49,14 @@ class HistoryRowView @JvmOverloads constructor(
             }
         }
         titleView = TextView(context).apply {
-            setTextColor(context.getColor(R.color.text_primary))
-            textSize = 14f
-            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            setTextAppearance(R.style.Text_MyFitAI_SettingsLabel)
         }
         textColumn.addView(titleView)
         subtitleView = TextView(context).apply {
             layoutParams = LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply {
                 topMargin = (2 * density).toInt()
             }
-            setTextColor(context.getColor(R.color.text_secondary))
-            textSize = 12f
+            setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
         }
         textColumn.addView(subtitleView)
         addView(textColumn)

@@ -28,6 +28,7 @@ import com.myfitai.app.domain.food.FoodConsumptionStatus
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.ui.food.FoodPlanViewModel
 import com.myfitai.app.ui.widgets.MealPlanRowView
+import com.myfitai.app.ui.widgets.KeyValueRowView
 import com.myfitai.app.ui.widgets.WeekDaySelectorView
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -275,17 +276,14 @@ class FoodPlanActivity : BaseShellActivity() {
         setPadding(0, dp(6), 0, dp(6))
         val timing = supplement.timeMinutes?.let { "%02d:%02d".format(it / 60, it % 60) }
         val details = listOfNotNull(
-            "${formatMacro(supplement.dose)} ${supplement.unit}",
             timing,
             supplement.notes?.takeIf { it.isNotBlank() },
         ).joinToString(" · ")
         addView(LinearLayout(this@FoodPlanActivity).apply {
             orientation = LinearLayout.VERTICAL
-            addView(TextView(this@FoodPlanActivity).apply {
-                text = supplement.name
-                textSize = 14f
-                setTextColor(getColor(R.color.text_primary))
-                setTypeface(typeface, android.graphics.Typeface.BOLD)
+            addView(KeyValueRowView(this@FoodPlanActivity).apply {
+                setKey(supplement.name)
+                setValue("${formatMacro(supplement.dose)} ${supplement.unit}")
             })
             addView(TextView(this@FoodPlanActivity).apply {
                 text = details

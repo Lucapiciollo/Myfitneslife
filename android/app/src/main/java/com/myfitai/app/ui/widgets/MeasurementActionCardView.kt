@@ -46,9 +46,7 @@ class MeasurementActionCardView @JvmOverloads constructor(
         }
         titleView = TextView(context).apply {
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-            setTextColor(context.getColor(R.color.text_primary))
-             textSize = 15f
-            setTypeface(typeface, Typeface.BOLD)
+            setTextAppearance(R.style.Text_MyFitAI_SettingsLabel)
         }
         header.addView(titleView)
         helpButton = ImageButton(context).apply {
@@ -62,8 +60,7 @@ class MeasurementActionCardView @JvmOverloads constructor(
         content.addView(header)
 
         latestText = TextView(context).apply {
-            setTextColor(context.getColor(R.color.text_secondary))
-            textSize = 12f
+            setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
             maxLines = 2
             ellipsize = android.text.TextUtils.TruncateAt.END
         }

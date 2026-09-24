@@ -28,6 +28,31 @@
     <string name="profile_desc_workouts">Allenamenti e giorni di riposo</string>
     <string name="profile_desc_notifications">Promemoria e notifiche locali</string>
     <string name="profile_desc_export">Esporta o importa i tuoi dati</string>
+    <string name="action_cancel">Annulla</string>
+    <string name="action_save">Salva</string>
+    <string name="notifications_dialog_title">Notifiche</string>
+    <string name="notifications_dialog_description">Scegli quali promemoria locali ricevere e con quanto anticipo.</string>
+    <string name="notifications_meal_reminders">Promemoria pasti</string>
+    <string name="notifications_weekly_review">Review settimanale</string>
+    <string name="notifications_ai_background">Aggiornamenti IA in background</string>
+    <string name="notifications_ai_background_description">Notifica quando una dieta, analisi, review o altro job IA termina.</string>
+    <string name="notifications_lead_time">Anticipo promemoria pasti</string>
+    <string-array name="notification_lead_labels">
+        <item>Al momento del pasto</item>
+        <item>5 minuti prima</item>
+        <item>10 minuti prima</item>
+        <item>15 minuti prima</item>
+        <item>30 minuti prima</item>
+        <item>60 minuti prima</item>
+    </string-array>
+    <integer-array name="notification_lead_minutes">
+        <item>0</item>
+        <item>5</item>
+        <item>10</item>
+        <item>15</item>
+        <item>30</item>
+        <item>60</item>
+    </integer-array>
     <string name="settings_desc_guide">Panoramica del percorso e dei calcoli locali</string>
     <string name="settings_desc_profile">Dati personali, obiettivo e preferenze</string>
     <string name="settings_desc_measurements">BIA, misure corporee e storico</string>
@@ -47,4 +72,60 @@
     <string name="food_plan_historical_banner">Piano storico in sola lettura · le modifiche del profilo non rigenerano questa settimana</string>
     <string name="food_plan_empty_current">Nessun piano per questa settimana. Genera un piano per vedere pasti, quantità e valori nutrizionali.</string>
     <string name="food_plan_empty_history">Nessun piano salvato per questa settimana storica.</string>
+    <string name="measurement_group_arms">Braccia</string>
+    <string name="measurement_group_thighs">Cosce</string>
+    <string name="measurement_group_calves">Polpacci</string>
+    <string name="measurement_side_left">SX (cm)</string>
+    <string name="measurement_side_right">DX (cm)</string>
+    <string name="action_back">Indietro</string>
+    <string name="action_previous">Indietro</string>
+    <string name="action_next">Continua</string>
+    <string name="onboarding_wizard_title">Configura MyFitAI</string>
+    <string name="onboarding_progress_label">Configurazione iniziale</string>
+    <string name="onboarding_step_count">Passo %1$d di %2$d</string>
+    <string name="onboarding_step_profile">Il tuo profilo</string>
+    <string name="onboarding_step_profile_description">Questi dati servono per i calcoli locali e per personalizzare il percorso.</string>
+    <string name="onboarding_step_meals">Pasti e giornata</string>
+    <string name="onboarding_step_meals_description">Scegli quanti pasti vuoi vedere nel piano e indica i tuoi orari di riferimento.</string>
+    <string name="onboarding_step_schedule">Piano settimanale e notifiche</string>
+    <string name="onboarding_step_schedule_description">Il primo percorso automatico usa una frequenza settimanale. Le notifiche restano facoltative.</string>
+    <string name="onboarding_step_ai">Intelligenza artificiale</string>
+    <string name="onboarding_step_ai_description">Le chiavi sono opzionali. Se ne esiste già una, viene mantenuta senza richiederla nuovamente.</string>
+    <string name="onboarding_finish">Salva e continua</string>
+    <string name="onboarding_saved">Configurazione salvata</string>
+    <string name="onboarding_save_error">Impossibile completare la configurazione. Controlla i dati e riprova.</string>
+    <string name="profile_name_hint">Nome profilo</string>
+    <string name="profile_birth_date_hint">Data di nascita</string>
+    <string name="profile_birth_date_title">Data di nascita</string>
+    <string name="profile_sex_hint">Sesso biologico</string>
+    <string name="profile_height_hint">Altezza (cm)</string>
+    <string name="profile_weight_hint">Peso (kg)</string>
+    <string name="profile_activity_hint">Livello di attività</string>
+    <string name="profile_goal_hint">Obiettivo (opzionale)</string>
+    <string name="profile_wake_hint">Sveglia</string>
+    <string name="profile_sleep_hint">Sonno</string>
+    <string name="onboarding_meal_count_hint">Pasti al giorno</string>
+    <string name="onboarding_meal_count_description">Il numero scelto viene usato dal validatore del piano alimentare.</string>
+    <string name="onboarding_notifications_label">Abilita notifiche pasti e review</string>
+    <string name="onboarding_notifications_description">Puoi cambiare questa scelta in Profilo e nelle Impostazioni in qualsiasi momento.</string>
+    <string name="onboarding_plan_day_hint">Giorno del piano settimanale</string>
+    <string name="onboarding_plan_time_hint">Ora di generazione</string>
+    <string name="onboarding_weekly_plan_ready">Piano automatico settimanale: %1$s alle %2$s. La generazione usa il provider IA configurato.</string>
+    <string name="onboarding_weekly_plan_waiting_ai">Piano settimanale pronto per essere attivato quando configurerai un provider IA.</string>
+    <string name="onboarding_provider_hint">Provider</string>
+    <string name="onboarding_api_key_hint">API key (opzionale)</string>
+    <string name="onboarding_ai_optional_description">La chiave viene verificata prima del salvataggio e memorizzata solo cifrata tramite Android Keystore. Non viene mai mostrata o esportata.</string>
+    <string name="onboarding_ai_both_configured">Gemini e OpenAI sono già configurati. Le chiavi esistenti verranno mantenute.</string>
+    <string name="onboarding_ai_gemini_configured">Gemini è già configurato. La chiave esistente verrà mantenuta.</string>
+    <string name="onboarding_ai_openai_configured">OpenAI è già configurato. La chiave esistente verrà mantenuta.</string>
+    <string name="onboarding_ai_not_configured">Nessun provider IA configurato. Puoi continuare e configurarlo più avanti.</string>
+    <string name="validation_required_name">Inserisci un nome</string>
+    <string name="validation_required_birth_date">Inserisci la data di nascita</string>
+    <string name="validation_required_sex">Seleziona il sesso biologico</string>
+    <string name="validation_invalid_height">Inserisci altezza tra 80 e 250 cm</string>
+    <string name="validation_invalid_weight">Inserisci un peso tra 20 e 400 kg</string>
+    <string name="validation_required_activity">Seleziona il livello di attività</string>
+    <string name="home_ai_not_configured_title">Configura il provider IA</string>
+    <string name="home_ai_not_configured_message">Il profilo e i calcoli locali sono disponibili. Per generare il piano alimentare e usare le analisi IA, configura Gemini o OpenAI.</string>
+    <string name="home_ai_not_configured_action">Apri configurazione IA</string>
 </resources>

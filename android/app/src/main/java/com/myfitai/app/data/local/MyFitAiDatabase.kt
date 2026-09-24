@@ -25,7 +25,7 @@ import com.myfitai.app.data.local.entity.*
         WeeklyReviewEntity::class,
         AiUsageRecordEntity::class,
     ],
-    version = 12,
+    version = 15,
     exportSchema = true,
 )
 abstract class MyFitAiDatabase : RoomDatabase() {
@@ -251,6 +251,72 @@ object DatabaseMigrations {
         }
     }
 
+    /** Repairs current-version databases whose optional BIA/body columns are incomplete. */
+    val MIGRATION_12_13 = object : Migration(12, 13) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            addMissingColumns(db, "bia_measurements", listOf(
+                "fatMassKg REAL",
+                "leanMassKg REAL",
+                "bodyWaterKg REAL",
+                "subcutaneousFatPercent REAL",
+                "boneMassKg REAL",
+                "proteinPercent REAL",
+                "proteinKg REAL",
+                "bodyAgeYears INTEGER",
+                "bmi REAL",
+            ))
+            addMissingColumns(db, "body_measurements", listOf("hipsCm REAL", "weightKg REAL"))
+        }
+    }
+
+    /** Repairs v13 databases that were marked current before optional columns were complete. */
+    val MIGRATION_13_14 = object : Migration(13, 14) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            addMissingColumns(db, "bia_measurements", listOf(
+                "fatMassKg REAL",
+                "leanMassKg REAL",
+                "bodyWaterKg REAL",
+                "subcutaneousFatPercent REAL",
+                "boneMassKg REAL",
+                "proteinPercent REAL",
+                "proteinKg REAL",
+                "bodyAgeYears INTEGER",
+                "bmi REAL",
+            ))
+            addMissingColumns(db, "body_measurements", listOf("hipsCm REAL", "weightKg REAL"))
+        }
+    }
+
+    /** Final repair for devices that already recorded version 14 with an incomplete schema. */
+    val MIGRATION_14_15 = object : Migration(14, 15) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            addMissingColumns(db, "bia_measurements", listOf(
+                "fatMassKg REAL",
+                "leanMassKg REAL",
+                "bodyWaterKg REAL",
+                "subcutaneousFatPercent REAL",
+                "boneMassKg REAL",
+                "proteinPercent REAL",
+                "proteinKg REAL",
+                "bodyAgeYears INTEGER",
+                "bmi REAL",
+            ))
+            addMissingColumns(db, "body_measurements", listOf("hipsCm REAL", "weightKg REAL"))
+        }
+    }
+
+    private fun addMissingColumns(db: SupportSQLiteDatabase, table: String, definitions: List<String>) {
+        val existing = mutableSetOf<String>()
+        db.query("PRAGMA table_info($table)").use { cursor ->
+            val nameIndex = cursor.getColumnIndex("name")
+            while (cursor.moveToNext()) existing += cursor.getString(nameIndex)
+        }
+        definitions.forEach { definition ->
+            val column = definition.substringBefore(' ')
+            if (column !in existing) db.execSQL("ALTER TABLE $table ADD COLUMN $definition")
+        }
+    }
+
     val ALL: Array<Migration> = arrayOf(
         MIGRATION_1_2,
         MIGRATION_2_3,
@@ -263,5 +329,8 @@ object DatabaseMigrations {
         MIGRATION_9_10,
         MIGRATION_10_11,
         MIGRATION_11_12,
+        MIGRATION_12_13,
+        MIGRATION_13_14,
+        MIGRATION_14_15,
     )
 }

@@ -21,8 +21,8 @@ class SettingRowView @JvmOverloads constructor(
     init {
         orientation = HORIZONTAL
         gravity = Gravity.CENTER_VERTICAL
-        val paddingV = (7 * resources.displayMetrics.density).toInt()
-        setPadding(0, paddingV, 0, paddingV)
+        minimumHeight = dp(48)
+        setPadding(0, dp(8), 0, dp(8))
         background = null
         isClickable = true
         isFocusable = true
@@ -55,16 +55,13 @@ class SettingRowView @JvmOverloads constructor(
         }
         val labelView = TextView(context).apply {
             text = label
-            setTextColor(context.getColor(R.color.text_primary))
-            textSize = 14f
-            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            setTextAppearance(R.style.Text_MyFitAI_SettingsLabel)
         }
         textColumn.addView(labelView)
         descriptionView = TextView(context).apply {
             text = description
             visibility = if (description.isBlank()) GONE else VISIBLE
-            setTextColor(context.getColor(R.color.text_secondary))
-            textSize = 11f
+            setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
             maxLines = 2
             ellipsize = android.text.TextUtils.TruncateAt.END
             layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply { topMargin = dp(1) }

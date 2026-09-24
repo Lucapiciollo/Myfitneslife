@@ -29,15 +29,13 @@ class MetricCardView @JvmOverloads constructor(
 
         labelView = TextView(context).apply {
             setTextColor(context.getColor(R.color.text_secondary))
-             textSize = 13f
-            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            setTextAppearance(R.style.Text_MyFitAI_KeyValueKey)
             layoutParams = LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f)
         }
 
         valueView = TextView(context).apply {
             setTextColor(context.getColor(R.color.metric_value))
-             textSize = 14f
-            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            setTextAppearance(R.style.Text_MyFitAI_KeyValueValue)
         }
 
         addView(LinearLayout(context).apply {
@@ -65,7 +63,7 @@ class MetricCardView @JvmOverloads constructor(
             layoutParams = LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply {
                 marginStart = 0
             }
-            textSize = 12f
+            setTextAppearance(R.style.Text_MyFitAI_StatusValue)
         }
         deltaRow.addView(deltaView)
         addView(deltaRow)
@@ -78,9 +76,9 @@ class MetricCardView @JvmOverloads constructor(
     fun setCompactStyle() {
         background = null
         setPadding(0, dp(2), 0, dp(2))
-        labelView.textSize = 13f
-        valueView.textSize = 14f
-        deltaView.textSize = 11f
+         labelView.setTextAppearance(R.style.Text_MyFitAI_KeyValueKey)
+         valueView.setTextAppearance(R.style.Text_MyFitAI_KeyValueValue)
+         deltaView.setTextAppearance(R.style.Text_MyFitAI_StatusValue)
     }
 
     fun setValue(value: String) {

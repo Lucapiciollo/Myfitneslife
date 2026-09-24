@@ -6,7 +6,7 @@ import android.util.AttributeSet
 import com.google.android.material.textview.MaterialTextView
 import com.myfitai.app.R
 
-/** Titolo di sezione riutilizzabile (16-18sp SemiBold/Bold, colore testo primario). */
+/** Titolo di sezione riutilizzabile con gerarchia tipografica condivisa. */
 class SectionHeaderView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
@@ -15,5 +15,6 @@ class SectionHeaderView @JvmOverloads constructor(
         setTextColor(context.getColor(R.color.text_primary))
         setTypeface(typeface, Typeface.BOLD)
         textSize = 16f
+        includeFontPadding = true
     }
 }

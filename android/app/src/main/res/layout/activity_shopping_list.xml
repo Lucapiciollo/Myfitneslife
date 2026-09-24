@@ -45,7 +45,7 @@
                 android:id="@+id/versionLabel"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center"
+                android:gravity="start"
                 android:textColor="@color/text_muted"
                 android:textSize="12sp"
                 android:visibility="gone" />
@@ -98,7 +98,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_24"
-                android:gravity="center"
+                 android:gravity="start"
                   android:padding="@dimen/space_12"
                   android:background="@drawable/bg_card"
                 android:textColor="@color/text_secondary"

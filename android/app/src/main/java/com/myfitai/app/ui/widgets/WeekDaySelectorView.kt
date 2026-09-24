@@ -39,6 +39,9 @@ class WeekDaySelectorView @JvmOverloads constructor(
                 }
                 setPadding(0, (6 * density).toInt(), 0, (6 * density).toInt())
                 isClickable = true
+                isFocusable = true
+                minimumHeight = (48 * density).toInt()
+                contentDescription = "${day.abbreviation} ${day.dayNumber}"
                 setOnClickListener {
                     select(index)
                     onDaySelected?.invoke(index)

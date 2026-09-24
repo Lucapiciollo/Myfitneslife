@@ -20,8 +20,7 @@ class MeasurementRowView @JvmOverloads constructor(
     init {
         orientation = HORIZONTAL
         gravity = android.view.Gravity.CENTER_VERTICAL
-        val paddingV = (11 * resources.displayMetrics.density).toInt()
-        setPadding(0, paddingV, 0, paddingV)
+        setPadding(0, dp(8), 0, dp(8))
 
         val density = resources.displayMetrics.density
         iconView = ImageView(context).apply {
@@ -36,16 +35,13 @@ class MeasurementRowView @JvmOverloads constructor(
 
         labelView = TextView(context).apply {
             layoutParams = LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f)
-            setTextColor(context.getColor(R.color.text_secondary))
-            textSize = 14f
+            setTextAppearance(R.style.Text_MyFitAI_KeyValueKey)
         }
         addView(labelView)
 
         valueView = TextView(context).apply {
             layoutParams = LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT)
-            setTextColor(context.getColor(R.color.text_primary))
-            textSize = 14f
-            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            setTextAppearance(R.style.Text_MyFitAI_KeyValueValue)
         }
         addView(valueView)
     }
@@ -61,4 +57,6 @@ class MeasurementRowView @JvmOverloads constructor(
     fun setValue(value: String) {
         valueView.text = value
     }
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 }

@@ -1,5 +1,8 @@
 # MyFitAI — HANDOFF OBBLIGATORIO PER AGENTI
 
+## Demo QA — vincolo operativo
+Non rimuovere mai l'app demo né i suoi dati/profili seedati durante build, installazione o QA. Usare esclusivamente installazioni debug in-place (`adb install -r` / `:app:installDebug`) e non eseguire `adb uninstall`, `pm clear`, reset del database o operazioni equivalenti salvo richiesta esplicita dell'utente.
+
 ## Fonte di verità sul piano lavori
 Prima di qualsiasi modifica leggere `DEVELOPMENT_PLAN.md`.
 

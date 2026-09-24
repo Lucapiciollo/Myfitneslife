@@ -64,6 +64,7 @@
         <activity android:name=".ui.TabHostActivity" android:launchMode="singleTop" />
         <activity android:name=".ui.ProfileActivity" />
         <activity android:name=".ui.OnboardingActivity" android:launchMode="singleTop" />
+        <activity android:name=".ui.OnboardingWizardActivity" android:launchMode="singleTop" />
         <activity
             android:name=".ui.SplashActivity"
             android:exported="true"

@@ -13,6 +13,10 @@ class NotificationPreferences(context: Context) : NotificationSettings {
         get() = prefs.getBoolean(KEY_REVIEW_ENABLED, true)
         set(value) = prefs.edit().putBoolean(KEY_REVIEW_ENABLED, value).apply()
 
+    var aiBackgroundUpdatesEnabled: Boolean
+        get() = prefs.getBoolean(KEY_AI_BACKGROUND_ENABLED, true)
+        set(value) = prefs.edit().putBoolean(KEY_AI_BACKGROUND_ENABLED, value).apply()
+
     override var mealLeadMinutes: Int
         get() = prefs.getInt(KEY_MEAL_LEAD, 15).coerceIn(0, 120)
         set(value) = prefs.edit().putInt(KEY_MEAL_LEAD, value.coerceIn(0, 120)).apply()
@@ -32,6 +36,7 @@ class NotificationPreferences(context: Context) : NotificationSettings {
         private const val PREFS = "myfitai_notifications"
         private const val KEY_MEALS_ENABLED = "meal_reminders_enabled"
         private const val KEY_REVIEW_ENABLED = "weekly_review_enabled"
+        private const val KEY_AI_BACKGROUND_ENABLED = "ai_background_updates_enabled"
         private const val KEY_MEAL_LEAD = "meal_lead_minutes"
         private const val KEY_PERMISSION_PROMPTED = "permission_prompted"
         private const val KEY_REQUEST_CODES = "scheduled_request_codes"

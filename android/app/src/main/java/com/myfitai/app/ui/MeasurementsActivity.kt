@@ -19,6 +19,7 @@ import com.myfitai.app.data.local.entity.BiaMeasurementEntity
 import com.myfitai.app.data.local.entity.BodyMeasurementEntity
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.ui.widgets.MeasurementActionCardView
+import com.myfitai.app.ui.widgets.StatusRowView
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
@@ -191,28 +192,11 @@ class MeasurementsActivity : BaseShellActivity() {
         }
     }
 
-    private fun impactRow(label: String, available: Boolean): LinearLayout = LinearLayout(this).apply {
-        gravity = Gravity.CENTER_VERTICAL
-        orientation = LinearLayout.HORIZONTAL
-        setPadding(0, dp(10), 0, dp(10))
-
-        addView(ImageView(this@MeasurementsActivity).apply {
-            setImageResource(if (available) R.drawable.ic_check_circle else R.drawable.ic_help_outline)
-            alpha = if (available) 1f else 0.55f
-            contentDescription = if (available) "$label utilizzato" else "$label non disponibile"
-        }, LinearLayout.LayoutParams(dp(24), dp(24)).apply { marginEnd = dp(10) })
-        addView(TextView(this@MeasurementsActivity).apply {
-            text = label
-            textSize = 14f
-            setTextColor(getColor(R.color.text_primary))
-            setTypeface(typeface, Typeface.BOLD)
-        }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-        addView(TextView(this@MeasurementsActivity).apply {
-            text = if (available) "Utilizzato" else "Non disponibile"
-            textSize = 12f
-            setTextColor(getColor(if (available) R.color.semantic_positive else R.color.text_secondary))
-            gravity = Gravity.END
-        }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+    private fun impactRow(label: String, available: Boolean): StatusRowView = StatusRowView(this).apply {
+        setLabel(label)
+        setState(if (available) "Utilizzato" else "Non disponibile")
+        setStatus(if (available) StatusRowView.Status.POSITIVE else StatusRowView.Status.NEUTRAL)
+        contentDescription = if (available) "$label utilizzato" else "$label non disponibile"
     }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()

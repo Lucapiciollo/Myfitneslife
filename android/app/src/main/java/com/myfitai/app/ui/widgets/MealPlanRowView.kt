@@ -28,6 +28,7 @@ class MealPlanRowView @JvmOverloads constructor(
         isClickable = true
         isFocusable = true
         val density = resources.displayMetrics.density
+        minimumHeight = (80 * density).toInt()
         setPadding((12 * density).toInt(), (12 * density).toInt(), (8 * density).toInt(), (12 * density).toInt())
         background = context.getDrawable(R.drawable.bg_card)
 
@@ -50,16 +51,13 @@ class MealPlanRowView @JvmOverloads constructor(
         }
         titleView = TextView(context).apply {
             layoutParams = LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f)
-            setTextColor(context.getColor(R.color.text_primary))
-            textSize = 15f
-            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            setTextAppearance(R.style.Text_MyFitAI_SettingsLabel)
             gravity = android.view.Gravity.START
             textAlignment = TEXT_ALIGNMENT_TEXT_START
         }
         titleRow.addView(titleView)
         kcalView = TextView(context).apply {
-            setTextColor(context.getColor(R.color.text_primary))
-            textSize = 13f
+            setTextAppearance(R.style.Text_MyFitAI_KeyValueValue)
             gravity = android.view.Gravity.END
             textAlignment = TEXT_ALIGNMENT_TEXT_END
         }
@@ -70,8 +68,7 @@ class MealPlanRowView @JvmOverloads constructor(
             layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
                 topMargin = (4 * density).toInt()
             }
-            setTextColor(context.getColor(R.color.text_secondary))
-            textSize = 13f
+            setTextAppearance(R.style.Text_MyFitAI_Body)
             gravity = android.view.Gravity.START
             textAlignment = TEXT_ALIGNMENT_TEXT_START
         }
@@ -80,8 +77,8 @@ class MealPlanRowView @JvmOverloads constructor(
             layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
                 topMargin = (3 * density).toInt()
             }
+            setTextAppearance(R.style.Text_MyFitAI_StatusValue)
             setTextColor(context.getColor(R.color.accent_green_dark))
-            textSize = 12f
         }
         textColumn.addView(statusView)
         addView(textColumn)

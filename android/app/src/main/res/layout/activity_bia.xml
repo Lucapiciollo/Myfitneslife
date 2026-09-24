@@ -200,39 +200,31 @@
                         android:orientation="vertical">
 
                         <com.google.android.material.checkbox.MaterialCheckBox
+                            style="@style/Widget.MyFitAI.MeasurementCheck"
                             android:id="@+id/checkFasting"
                             android:layout_width="match_parent"
-                            android:layout_height="44dp"
-                            android:gravity="center_vertical"
-                            android:text="A digiuno"
-                            android:textSize="13sp"
-                            app:buttonTint="@color/accent_green" />
+                            android:layout_height="wrap_content"
+                            android:text="A digiuno" />
 
                         <com.google.android.material.checkbox.MaterialCheckBox
+                            style="@style/Widget.MyFitAI.MeasurementCheck"
                             android:id="@+id/checkJustWoken"
                             android:layout_width="match_parent"
-                            android:layout_height="44dp"
-                            android:gravity="center_vertical"
-                            android:text="Appena sveglio"
-                            android:textSize="13sp"
-                            app:buttonTint="@color/accent_green" />
+                            android:layout_height="wrap_content"
+                            android:text="Appena sveglio" />
                         <com.google.android.material.checkbox.MaterialCheckBox
+                            style="@style/Widget.MyFitAI.MeasurementCheck"
                             android:id="@+id/checkAfterShower"
                             android:layout_width="match_parent"
-                            android:layout_height="44dp"
-                            android:gravity="center_vertical"
-                            android:text="Dopo bagno"
-                            android:textSize="13sp"
-                            app:buttonTint="@color/accent_green" />
+                            android:layout_height="wrap_content"
+                            android:text="Dopo bagno" />
 
                         <com.google.android.material.checkbox.MaterialCheckBox
+                            style="@style/Widget.MyFitAI.MeasurementCheck"
                             android:id="@+id/checkNoWorkout"
                             android:layout_width="match_parent"
-                            android:layout_height="44dp"
-                            android:gravity="center_vertical"
-                            android:text="No allenamento"
-                            android:textSize="13sp"
-                            app:buttonTint="@color/accent_green" />
+                            android:layout_height="wrap_content"
+                            android:text="No allenamento" />
                     </LinearLayout>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>

@@ -178,7 +178,7 @@ class NutritionAdviceActivity : BaseShellActivity() {
         value: String,
         weight: Float,
         bold: Boolean = false,
-        gravity: Int = Gravity.CENTER,
+        gravity: Int = Gravity.END,
         secondary: Boolean = false,
     ): TextView = TextView(this).apply {
         text = value

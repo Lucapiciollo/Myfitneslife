@@ -17,6 +17,7 @@ import com.myfitai.app.ai.GeminiUsageTracker
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
 import java.math.RoundingMode
+import com.myfitai.app.ui.widgets.KeyValueRowView
 
 object GeminiCostSettingsBinder {
     fun bind(activity: SettingsActivity, card: LinearLayout, settings: AiSettingsStore) {
@@ -24,36 +25,24 @@ object GeminiCostSettingsBinder {
         AiModelSelectionBinder.bind(activity, card, settings)
         val tracker = GeminiUsageTracker(activity)
         val pricingStore = GeminiPricingStore(activity)
-        val row = LinearLayout(activity).apply {
-            orientation = LinearLayout.VERTICAL
+        val row = KeyValueRowView(activity).apply {
             isClickable = true
             isFocusable = true
-            setPadding(0, dp(activity, 4), 0, dp(activity, 12))
-            setBackgroundColor(activity.getColor(R.color.white))
         }
-        val title = TextView(activity).apply {
-            setTextAppearance(R.style.Text_MyFitAI_SettingsLabel)
-            text = "Costi Gemini"
-        }
-        val value = TextView(activity).apply {
-            setTextAppearance(R.style.Text_MyFitAI_SettingsStatus)
-            text = "Calcolo della spesa registrata da MyFitAI…"
-        }
-        row.addView(title)
-        row.addView(value, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(activity, 3) })
+        row.setKey("Costi Gemini")
+        row.setValue("Calcolo…")
 
         fun currentModel(): String = settings.selectedGeminiModel
         fun refresh() {
             activity.lifecycleScope.launch {
                 val summary = runCatching { tracker.summary() }.getOrNull()
                 val pricing = pricingStore.pricingFor(currentModel())
-                value.text = if (summary == null) "Spesa non disponibile · ${pricingLabel(pricing)}"
-                else "Oggi ${money(summary.todayUsd)} · mese ${money(summary.monthUsd)} · totale ${money(summary.totalUsd)}\n${summary.requestCount} richieste · ${pricingLabel(pricing)}"
+                row.setValue(if (summary == null) "Non disponibile · ${pricingLabel(pricing)}" else "${money(summary.monthUsd)} / mese")
             }
         }
         row.setOnClickListener { showCostDialog(activity, tracker, pricingStore, currentModel(), ::refresh) }
         card.addView(row, 0)
-        card.addView(View(activity).apply { setBackgroundColor(activity.getColor(R.color.divider)) }, 1, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1).apply { bottomMargin = dp(activity, 12) })
+        card.addView(View(activity).apply { setBackgroundColor(activity.getColor(R.color.divider)) }, 1, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1).apply { bottomMargin = dp(activity, 8) })
         refresh()
     }
 

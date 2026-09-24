@@ -160,7 +160,11 @@ class SettingsActivity : BaseShellActivity() {
             render()
         }
 
-        findViewById<View>(R.id.rowProfile).setOnClickListener { go(ProfileActivity::class.java) }
+        findViewById<View>(R.id.rowProfile).setOnClickListener {
+            data.activeProfileStore.currentIdOrNull()?.let { profileId ->
+                startActivity(android.content.Intent(this, OnboardingWizardActivity::class.java).putExtra(OnboardingWizardActivity.EXTRA_PROFILE_ID, profileId))
+            }
+        }
         findViewById<View>(R.id.rowAppGuide).setOnClickListener { showAppGuide() }
         findViewById<View>(R.id.rowMeasurements).setOnClickListener { go(MeasurementsActivity::class.java) }
         findViewById<View>(R.id.rowFoodPreferences).setOnClickListener { go(ProfileEditActivity::class.java) }
@@ -256,7 +260,8 @@ class SettingsActivity : BaseShellActivity() {
         val card = findViewById<LinearLayout>(R.id.aiSectionCard)
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(0, dp(4), 0, dp(12))
+            minimumHeight = dp(48)
+            setPadding(0, dp(8), 0, dp(8))
         }
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -264,20 +269,15 @@ class SettingsActivity : BaseShellActivity() {
         }
         val title = TextView(this).apply {
             text = "Generazione automatica piano"
-            textSize = 15f
-            setTextColor(getColor(R.color.text_primary))
-            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            setTextAppearance(R.style.Text_MyFitAI_SettingsLabel)
         }
         val enabledSwitch = MaterialSwitch(this)
         header.addView(title, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
         header.addView(enabledSwitch)
-        val value = TextView(this).apply {
-            textSize = 12f
-            setTextColor(getColor(R.color.text_secondary))
-        }
+        val value = TextView(this).apply { setTextAppearance(R.style.Text_MyFitAI_SettingsDescription) }
         row.addView(header)
         row.addView(value, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
-            topMargin = dp(3)
+            topMargin = dp(2)
         })
 
         fun dayLabel(day: java.time.DayOfWeek): String = when (day) {
@@ -390,17 +390,15 @@ class SettingsActivity : BaseShellActivity() {
             orientation = LinearLayout.VERTICAL
             isClickable = true
             isFocusable = true
-            setPadding(0, dp(4), 0, dp(12))
+            minimumHeight = dp(48)
+            setPadding(0, dp(8), 0, dp(8))
         }
         val title = TextView(this).apply {
             text = "Analisi progressi automatica"
-            textSize = 15f
-            setTextColor(getColor(R.color.text_primary))
-            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            setTextAppearance(R.style.Text_MyFitAI_SettingsLabel)
         }
         val value = TextView(this).apply {
-            textSize = 12f
-            setTextColor(getColor(R.color.text_secondary))
+            setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
         }
         fun renderValue() {
             val weeks = data.progressAnalysisPreferences.intervalWeeks
@@ -408,7 +406,7 @@ class SettingsActivity : BaseShellActivity() {
         }
         renderValue()
         row.addView(title)
-        row.addView(value, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(3) })
+        row.addView(value, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(2) })
         row.setOnClickListener {
             val values = ProgressAnalysisPreferences.SUGGESTED_INTERVALS
             val labels = values.map { weeks ->

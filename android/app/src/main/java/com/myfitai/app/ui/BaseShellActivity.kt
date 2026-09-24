@@ -195,7 +195,8 @@ abstract class BaseShellActivity : AppCompatActivity() {
                 child.setTextColor(getColor(R.color.text_primary))
                 child.textSize = 16f
                 child.setTypeface(child.typeface, Typeface.BOLD)
-                child.gravity = Gravity.CENTER
+                child.gravity = Gravity.START or Gravity.CENTER_VERTICAL
+                child.textAlignment = View.TEXT_ALIGNMENT_VIEW_START
             }
             if (child is ImageView && child.id == R.id.backButton) {
                 child.imageTintList = android.content.res.ColorStateList.valueOf(getColor(R.color.text_primary))
@@ -286,7 +287,7 @@ abstract class BaseShellActivity : AppCompatActivity() {
 
     private fun handleProfileSelection(position: Int) {
         if (position == shellProfiles.size) {
-            startActivity(Intent(this, ProfileEditActivity::class.java).putExtra(ProfileEditActivity.EXTRA_CREATE, true))
+            startActivity(Intent(this, OnboardingWizardActivity::class.java).putExtra(OnboardingWizardActivity.EXTRA_NEW_PROFILE, true))
             renderActiveProfile()
             return
         }

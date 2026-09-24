@@ -1,0 +1,12 @@
+<com.google.android.material.textfield.TextInputLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/onboardingDropdownLayout"
+    style="@style/Widget.MyFitAI.InputDropdownCompact"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+    <AutoCompleteTextView
+        android:id="@+id/onboardingDropdownInput"
+        style="@style/Widget.MyFitAI.InputDropdownTextCompact"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:inputType="none" />
+</com.google.android.material.textfield.TextInputLayout>

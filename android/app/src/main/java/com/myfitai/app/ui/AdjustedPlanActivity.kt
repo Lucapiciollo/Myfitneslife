@@ -6,6 +6,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import com.google.android.material.card.MaterialCardView
 import com.myfitai.app.R
+import com.myfitai.app.ui.widgets.StatusRowView
 
 class AdjustedPlanActivity : BaseShellActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,11 +40,11 @@ class AdjustedPlanActivity : BaseShellActivity() {
                 cardElevation = 0f
                 strokeColor = getColor(R.color.divider)
                 strokeWidth = dp(1)
-                addView(TextView(this@AdjustedPlanActivity).apply {
-                    text = label
-                    setTextColor(getColor(R.color.text_primary))
-                    textSize = 14f
-                    setPadding(dp(16), dp(12), dp(16), dp(12))
+                addView(StatusRowView(this@AdjustedPlanActivity).apply {
+                    setLabel(label)
+                    setState("Pasto futuro")
+                    setStatus(StatusRowView.Status.POSITIVE)
+                    setPadding(dp(16), dp(4), dp(16), dp(4))
                 })
             }
             container.addView(card, LinearLayout.LayoutParams(

@@ -16,6 +16,7 @@ import com.myfitai.app.domain.review.WeeklyReviewService
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.ui.review.WeeklyReviewViewModel
 import com.google.android.material.card.MaterialCardView
+import com.myfitai.app.ui.widgets.StatusRowView
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -147,11 +148,10 @@ class WeeklyReviewActivity : BaseShellActivity() {
         val container = findViewById<LinearLayout>(containerId)
         container.removeAllViews()
         values.forEach { value ->
-            container.addView(TextView(this).apply {
-                text = "• $value"
-                textSize = 13f
-                setTextColor(getColor(R.color.text_primary))
-                setPadding(0, dp(6), 0, dp(6))
+            container.addView(StatusRowView(this).apply {
+                setLabel(value)
+                setState("")
+                setStatus(StatusRowView.Status.NEUTRAL)
             })
         }
     }

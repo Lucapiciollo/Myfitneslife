@@ -111,9 +111,7 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
             gravity = android.view.Gravity.CENTER_VERTICAL
             val title = TextView(this@PhysicalEvolutionActivity).apply {
                 text = "Analisi progressi IA"
-                textSize = 15f
-                setTextColor(getColor(R.color.text_primary))
-                setTypeface(typeface, android.graphics.Typeface.BOLD)
+                setTextAppearance(R.style.Text_MyFitAI_SettingsLabel)
             }
             addView(title, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
             addView(ImageButton(this@PhysicalEvolutionActivity).apply {
@@ -138,7 +136,7 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
             radius = dp(20).toFloat()
             strokeWidth = dp(1)
             setStrokeColor(getColor(R.color.divider))
-            cardElevation = dp(2).toFloat()
+             cardElevation = 0f
         }
         analysisCard = card
         val cardContent = LinearLayout(this).apply {
@@ -190,9 +188,7 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
             gravity = android.view.Gravity.CENTER_VERTICAL
             addView(TextView(this@PhysicalEvolutionActivity).apply {
                 text = "Review settimanale"
-                textSize = 15f
-                setTextColor(getColor(R.color.text_primary))
-                setTypeface(typeface, android.graphics.Typeface.BOLD)
+                 setTextAppearance(R.style.Text_MyFitAI_SettingsLabel)
             }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
             addView(ImageButton(this@PhysicalEvolutionActivity).apply {
                 setImageResource(R.drawable.ic_help_outline)
@@ -214,7 +210,7 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
             radius = dp(20).toFloat()
             strokeWidth = dp(1)
             setStrokeColor(getColor(R.color.divider))
-            cardElevation = dp(2).toFloat()
+             cardElevation = 0f
             isClickable = true
             isFocusable = true
             setOnClickListener { startActivity(Intent(this@PhysicalEvolutionActivity, WeeklyReviewActivity::class.java)) }
@@ -228,14 +224,11 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         cardContent.addView(header)
         cardContent.addView(TextView(this).apply {
             text = "Gli ultimi 7 giorni, in un unico punto"
-            textSize = 14f
-            setTextColor(getColor(R.color.text_primary))
-            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            setTextAppearance(R.style.Text_MyFitAI_SettingsLabel)
         })
         cardContent.addView(TextView(this).apply {
             text = "Controlla alimentazione, allenamenti, variazioni corporee e sintesi IA della settimana."
-            textSize = 13f
-            setTextColor(getColor(R.color.text_secondary))
+            setTextAppearance(R.style.Text_MyFitAI_Body)
         }, marginTopParams(6))
         cardContent.addView(MaterialButton(this).apply {
             text = "Apri review"
@@ -470,8 +463,7 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
     }
 
     private fun bodyText() = TextView(this).apply {
-        textSize = 13f
-        setTextColor(getColor(R.color.text_secondary))
+        setTextAppearance(R.style.Text_MyFitAI_Body)
     }
 
     private fun marginTopParams(top: Int) = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(top) }

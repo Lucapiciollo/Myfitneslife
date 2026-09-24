@@ -119,7 +119,7 @@ class MealAlternativeActivity : BaseShellActivity() {
                 setTextColor(getColor(R.color.accent_green_dark))
                  textSize = 13f
                  setTypeface(typeface, Typeface.BOLD)
-                 setBackgroundColor(getColor(R.color.surface_secondary))
+                 setBackgroundResource(R.drawable.bg_card)
                  setPadding(dp(8), dp(6), dp(8), dp(6))
             })
             body.addView(TextView(this).apply {

@@ -33,8 +33,9 @@ class TimeRangeSelectorView @JvmOverloads constructor(
                     (16 * resources.displayMetrics.density).toInt(), 0,
                     (16 * resources.displayMetrics.density).toInt(), 0,
                 )
-                minHeight = (32 * resources.displayMetrics.density).toInt()
-                minimumHeight = (32 * resources.displayMetrics.density).toInt()
+                minHeight = (48 * resources.displayMetrics.density).toInt()
+                minimumHeight = (48 * resources.displayMetrics.density).toInt()
+                contentDescription = "Intervallo $label"
                 setTextColor(
                     android.content.res.ColorStateList(
                         arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),

@@ -39,24 +39,20 @@ class MealCardView @JvmOverloads constructor(
             }
         }
         timeView = TextView(context).apply {
-            setTextColor(context.getColor(R.color.text_primary))
-            textSize = 16f
-            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            setTextAppearance(R.style.Text_MyFitAI_ScreenTitle)
         }
         textColumn.addView(timeView)
         titleView = TextView(context).apply {
             layoutParams = LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply {
                 topMargin = (2 * density).toInt()
             }
-            setTextColor(context.getColor(R.color.text_secondary))
-            textSize = 13f
+            setTextAppearance(R.style.Text_MyFitAI_Body)
             gravity = android.view.Gravity.START
             textAlignment = TEXT_ALIGNMENT_TEXT_START
         }
         textColumn.addView(titleView)
         kcalView = TextView(context).apply {
-            setTextColor(context.getColor(R.color.text_secondary))
-            textSize = 13f
+            setTextAppearance(R.style.Text_MyFitAI_Body)
             gravity = android.view.Gravity.START
             textAlignment = TEXT_ALIGNMENT_TEXT_START
         }

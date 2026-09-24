@@ -36,6 +36,7 @@ import com.myfitai.app.domain.body.BiaAnalysisAiJobHandler
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.ui.bia.BiaViewModel
 import com.myfitai.app.ui.widgets.MeasurementRowView
+import com.myfitai.app.ui.widgets.KeyValueRowView
 import com.myfitai.app.ui.widgets.SelectableSegmentView
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
@@ -644,11 +645,9 @@ class BiaActivity : BaseShellActivity() {
                 ).apply { bottomMargin = dp(8) }
             }
 
-            card.addView(TextView(this).apply {
-                text = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.ITALIAN).format(Date(item.measuredAtEpochMillis))
-                setTextColor(getColor(R.color.text_primary))
-                setTypeface(typeface, Typeface.BOLD)
-                textSize = 15f
+            card.addView(KeyValueRowView(this).apply {
+                setKey("Data rilevazione")
+                setValue(SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.ITALIAN).format(Date(item.measuredAtEpochMillis)))
             })
             card.addView(TextView(this).apply {
                 text = buildMeasurementLine(item)

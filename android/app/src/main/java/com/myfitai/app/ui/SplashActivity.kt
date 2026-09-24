@@ -35,8 +35,8 @@ class SplashActivity : AppCompatActivity() {
         navigationExecuted = true
         if (fallbackProfile == null) {
             data.activeProfileStore.clear()
-            startActivity(Intent(this, ProfileEditActivity::class.java).apply {
-                putExtra(ProfileEditActivity.EXTRA_BOOTSTRAP, true)
+            startActivity(Intent(this, OnboardingWizardActivity::class.java).apply {
+                putExtra(OnboardingWizardActivity.EXTRA_BOOTSTRAP, true)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
             })
         } else {

@@ -10,6 +10,7 @@ import com.myfitai.app.ai.AiModelConfig
 import com.myfitai.app.ai.AiSettingsStore
 import com.myfitai.app.ai.GeminiPricingStore
 import com.myfitai.app.ai.OpenAiPricingStore
+import com.myfitai.app.ui.widgets.KeyValueRowView
 
 object AiModelSelectionBinder {
     fun bind(activity: SettingsActivity, card: LinearLayout, settings: AiSettingsStore) {
@@ -52,26 +53,15 @@ object AiModelSelectionBinder {
         priceLabel: (String) -> String,
         select: (String) -> Unit,
     ) {
-        val row = LinearLayout(activity).apply {
-            orientation = LinearLayout.VERTICAL
+        val row = KeyValueRowView(activity).apply {
             isClickable = true
             isFocusable = true
-            setPadding(0, dp(activity, 4), 0, dp(activity, 12))
-            setBackgroundColor(activity.getColor(R.color.white))
-        }
-        val titleView = TextView(activity).apply {
-            setTextAppearance(R.style.Text_MyFitAI_SettingsLabel)
-            text = title
-        }
-        val valueView = TextView(activity).apply {
-            setTextAppearance(R.style.Text_MyFitAI_SettingsStatus)
         }
         fun render() {
             val model = current()
-            valueView.text = "${AiModelConfig.displayName(model)} · ${priceLabel(model)}"
+            row.setKey(title)
+            row.setValue("${AiModelConfig.displayName(model)} · ${priceLabel(model)}")
         }
-        row.addView(titleView)
-        row.addView(valueView, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(activity, 3) })
         row.setOnClickListener {
             val selectedModel = current()
             val labels = models.map { model ->
@@ -91,7 +81,7 @@ object AiModelSelectionBinder {
                 .show()
         }
         card.addView(row, 0)
-        card.addView(View(activity).apply { setBackgroundColor(activity.getColor(R.color.divider)) }, 1, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1).apply { bottomMargin = dp(activity, 12) })
+        card.addView(View(activity).apply { setBackgroundColor(activity.getColor(R.color.divider)) }, 1, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1).apply { bottomMargin = dp(activity, 8) })
         render()
     }
 
