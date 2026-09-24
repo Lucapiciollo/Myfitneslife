@@ -194,15 +194,17 @@ object DatabaseMigrations {
     /** Retain optional BIA metrics without changing any existing history. */
     val MIGRATION_9_10 = object : Migration(9, 10) {
         override fun migrate(db: SupportSQLiteDatabase) {
-            db.execSQL("ALTER TABLE bia_measurements ADD COLUMN fatMassKg REAL")
-            db.execSQL("ALTER TABLE bia_measurements ADD COLUMN leanMassKg REAL")
-            db.execSQL("ALTER TABLE bia_measurements ADD COLUMN bodyWaterKg REAL")
-            db.execSQL("ALTER TABLE bia_measurements ADD COLUMN subcutaneousFatPercent REAL")
-            db.execSQL("ALTER TABLE bia_measurements ADD COLUMN boneMassKg REAL")
-            db.execSQL("ALTER TABLE bia_measurements ADD COLUMN proteinPercent REAL")
-            db.execSQL("ALTER TABLE bia_measurements ADD COLUMN proteinKg REAL")
-            db.execSQL("ALTER TABLE bia_measurements ADD COLUMN bodyAgeYears INTEGER")
-            db.execSQL("ALTER TABLE bia_measurements ADD COLUMN bmi REAL")
+            addMissingColumns(db, "bia_measurements", listOf(
+                "fatMassKg REAL",
+                "leanMassKg REAL",
+                "bodyWaterKg REAL",
+                "subcutaneousFatPercent REAL",
+                "boneMassKg REAL",
+                "proteinPercent REAL",
+                "proteinKg REAL",
+                "bodyAgeYears INTEGER",
+                "bmi REAL",
+            ))
         }
     }
 

@@ -136,6 +136,39 @@ class DatabaseMigrationTest {
     }
 
     @Test
+    fun migration9To10_isIdempotentForPartiallyAddedOptionalBiaColumns() {
+        helper.createDatabase(MyFitAiDatabase.DATABASE_NAME, 9).apply {
+            execSQL("ALTER TABLE bia_measurements ADD COLUMN fatMassKg REAL")
+            execSQL("ALTER TABLE bia_measurements ADD COLUMN leanMassKg REAL")
+            close()
+        }
+
+        helper.runMigrationsAndValidate(
+            MyFitAiDatabase.DATABASE_NAME,
+            10,
+            true,
+            DatabaseMigrations.MIGRATION_9_10,
+        ).use { db ->
+            db.query("PRAGMA table_info(bia_measurements)").use { cursor ->
+                val columns = buildSet {
+                    while (cursor.moveToNext()) add(cursor.getString(cursor.getColumnIndexOrThrow("name")))
+                }
+                assertTrue(columns.containsAll(setOf(
+                    "fatMassKg",
+                    "leanMassKg",
+                    "bodyWaterKg",
+                    "subcutaneousFatPercent",
+                    "boneMassKg",
+                    "proteinPercent",
+                    "proteinKg",
+                    "bodyAgeYears",
+                    "bmi",
+                )))
+            }
+        }
+    }
+
+    @Test
     fun migration10To11_isIdempotentForOptionalBiaColumns() {
         helper.createDatabase(MyFitAiDatabase.DATABASE_NAME, 10).apply {
             listOf(
