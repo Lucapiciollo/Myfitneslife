@@ -67,7 +67,7 @@ class BiaViewModel(
             _error.tryEmit("Nessun profilo attivo")
             return
         }
-        val values = listOf(weightKg, bodyFatPercent, visceralFatLevel, muscleMassKg, skeletalMuscleKg, bodyWaterPercent, bmrKcal, fatMassKg, leanMassKg, bodyWaterKg, subcutaneousFatPercent, boneMassKg, proteinPercent, proteinKg, bmi)
+        val values = listOf(weightKg, bodyFatPercent, visceralFatLevel, muscleMassKg, skeletalMuscleKg, bodyWaterPercent, bmrKcal, fatMassKg, leanMassKg, bodyWaterKg, subcutaneousFatPercent, boneMassKg, proteinPercent, proteinKg, bodyAgeYears?.toFloat(), bmi)
         if (values.all { it == null }) {
             _error.tryEmit("Inserisci almeno un valore BIA")
             return
