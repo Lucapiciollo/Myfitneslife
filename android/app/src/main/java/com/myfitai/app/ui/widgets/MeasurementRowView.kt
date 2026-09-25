@@ -20,12 +20,12 @@ class MeasurementRowView @JvmOverloads constructor(
     init {
         orientation = HORIZONTAL
         gravity = android.view.Gravity.CENTER_VERTICAL
-        setPadding(0, dp(8), 0, dp(8))
+        val rowPadding = resources.getDimensionPixelSize(R.dimen.space_8)
+        setPadding(0, rowPadding, 0, rowPadding)
 
-        val density = resources.displayMetrics.density
         iconView = ImageView(context).apply {
-            layoutParams = LayoutParams((10 * density).toInt(), (10 * density).toInt()).apply {
-                marginEnd = (10 * density).toInt()
+            layoutParams = LayoutParams(resources.getDimensionPixelSize(R.dimen.space_2), resources.getDimensionPixelSize(R.dimen.space_2)).apply {
+                marginEnd = resources.getDimensionPixelSize(R.dimen.space_8)
             }
             setBackgroundResource(R.drawable.bg_body_marker)
             visibility = GONE
@@ -57,6 +57,4 @@ class MeasurementRowView @JvmOverloads constructor(
     fun setValue(value: String) {
         valueView.text = value
     }
-
-    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 }

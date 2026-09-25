@@ -1,7 +1,6 @@
 package com.myfitai.app.ui.widgets
 
 import android.content.Context
-import android.graphics.Typeface
 import android.util.AttributeSet
 import android.view.Gravity
 import android.widget.LinearLayout
@@ -28,19 +27,20 @@ class WeekDaySelectorView @JvmOverloads constructor(
         removeAllViews()
         columns.clear()
         this.selectedIndex = selectedIndex
-        val density = resources.displayMetrics.density
         days.forEachIndexed { index, day ->
             val column = LinearLayout(context).apply {
                 orientation = VERTICAL
                 gravity = Gravity.CENTER
                 layoutParams = LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f).apply {
-                    marginStart = (2 * density).toInt()
-                    marginEnd = (2 * density).toInt()
+                    val columnGap = resources.getDimensionPixelSize(R.dimen.space_2)
+                    marginStart = columnGap
+                    marginEnd = columnGap
                 }
-                setPadding(0, (6 * density).toInt(), 0, (6 * density).toInt())
+                val verticalPadding = resources.getDimensionPixelSize(R.dimen.space_6)
+                setPadding(0, verticalPadding, 0, verticalPadding)
                 isClickable = true
                 isFocusable = true
-                minimumHeight = (48 * density).toInt()
+                minimumHeight = resources.getDimensionPixelSize(R.dimen.control_min_height)
                 contentDescription = "${day.abbreviation} ${day.dayNumber}"
                 setOnClickListener {
                     select(index)
@@ -50,18 +50,17 @@ class WeekDaySelectorView @JvmOverloads constructor(
             column.addView(
                 TextView(context).apply {
                     text = day.abbreviation
-                    textSize = 11f
+                    setTextAppearance(R.style.Text_MyFitAI_Micro)
                     gravity = Gravity.CENTER
                 }
             )
             column.addView(
                 TextView(context).apply {
                     text = day.dayNumber
-                    textSize = 14f
-                    setTypeface(typeface, Typeface.BOLD)
+                    setTextAppearance(R.style.Text_MyFitAI_BodyEmphasis)
                     gravity = Gravity.CENTER
                     layoutParams = LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply {
-                        topMargin = (2 * density).toInt()
+                        topMargin = resources.getDimensionPixelSize(R.dimen.space_2)
                     }
                 }
             )

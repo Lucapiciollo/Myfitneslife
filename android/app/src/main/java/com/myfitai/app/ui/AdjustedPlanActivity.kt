@@ -36,21 +36,23 @@ class AdjustedPlanActivity : BaseShellActivity() {
         modifiedMeals.forEach { label ->
             val card = MaterialCardView(this).apply {
                 setCardBackgroundColor(getColor(R.color.white))
-                radius = dp(16).toFloat()
+                radius = resources.getDimension(R.dimen.radius_card)
                 cardElevation = 0f
                 strokeColor = getColor(R.color.divider)
-                strokeWidth = dp(1)
+                strokeWidth = resources.getDimensionPixelSize(R.dimen.space_1)
                 addView(StatusRowView(this@AdjustedPlanActivity).apply {
                     setLabel(label)
                     setState("Pasto futuro")
                     setStatus(StatusRowView.Status.POSITIVE)
-                    setPadding(dp(16), dp(4), dp(16), dp(4))
+                    val horizontalPadding = resources.getDimensionPixelSize(R.dimen.space_16)
+                    val verticalPadding = resources.getDimensionPixelSize(R.dimen.space_4)
+                    setPadding(horizontalPadding, verticalPadding, horizontalPadding, verticalPadding)
                 })
             }
             container.addView(card, LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT,
-            ).apply { topMargin = dp(8) })
+            ).apply { topMargin = resources.getDimensionPixelSize(R.dimen.space_8) })
         }
 
         findViewById<View>(R.id.okButton).setOnClickListener {
@@ -58,8 +60,6 @@ class AdjustedPlanActivity : BaseShellActivity() {
             finish()
         }
     }
-
-    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     companion object {
         const val EXTRA_DESCRIPTION = "cheat_description"

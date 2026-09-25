@@ -23,18 +23,18 @@
              android:paddingBottom="@dimen/space_24">
 
              <LinearLayout style="@style/Widget.MyFitAI.ScreenHeader">
-                 <ImageButton android:id="@+id/backButton" android:layout_width="40dp" android:layout_height="40dp" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Indietro" android:padding="8dp" android:src="@drawable/ic_arrow_back" app:tint="@color/text_primary" />
+                 <ImageButton android:id="@+id/backButton" android:layout_width="@dimen/screen_header_icon_size" android:layout_height="@dimen/screen_header_icon_size" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Indietro" android:padding="@dimen/space_8" android:src="@drawable/ic_arrow_back" app:tint="@color/text_primary" />
                  <TextView android:id="@+id/title" style="@style/Text.MyFitAI.ScreenTitle" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:gravity="center" android:text="Impostazioni" />
-                <Space android:layout_width="40dp" android:layout_height="1dp" />
+                 <Space android:layout_width="@dimen/screen_header_icon_size" android:layout_height="1dp" />
             </LinearLayout>
 
               <com.google.android.material.card.MaterialCardView
                   android:id="@+id/generalSectionCard"
                   style="@style/Widget.MyFitAI.Card"
                   app:cardBackgroundColor="@color/surface_primary"
-                  app:cardElevation="0dp"
+                  app:cardElevation="@dimen/elevation_card"
                   app:strokeColor="@color/divider"
-                  app:strokeWidth="1dp"
+                   app:strokeWidth="@dimen/border_width_default"
                  android:layout_width="match_parent"
                  android:layout_height="wrap_content"
                  android:layout_marginTop="@dimen/space_8"
@@ -45,7 +45,7 @@
                      android:orientation="vertical">
                  <LinearLayout
                      android:layout_width="match_parent"
-                     android:layout_height="40dp"
+                      android:layout_height="@dimen/settings_section_header_height"
                      android:gravity="center_vertical"
                      android:orientation="horizontal"
                      android:paddingStart="@dimen/space_16"
@@ -56,13 +56,13 @@
                          android:layout_height="wrap_content"
                          android:layout_weight="1"
                          android:text="Generale" />
-                     <ImageButton
-                         android:id="@+id/generalSectionHelpButton"
-                         android:layout_width="40dp"
-                         android:layout_height="40dp"
+                      <ImageButton
+                          android:id="@+id/generalSectionHelpButton"
+                          android:layout_width="@dimen/screen_header_icon_size"
+                          android:layout_height="@dimen/screen_header_icon_size"
                          android:background="@android:color/transparent"
                          android:contentDescription="Spiega impostazioni generali"
-                         android:padding="8dp"
+                          android:padding="@dimen/space_8"
                          android:src="@drawable/ic_help_outline"
                          app:tint="@color/text_secondary" />
                  </LinearLayout>
@@ -72,15 +72,15 @@
                      android:layout_height="wrap_content"
                      android:orientation="vertical">
                    <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowAppGuide" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_help_outline" app:srLabel="Come funziona MyFitAI" app:srDescription="@string/settings_desc_guide" />
-                  <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                   <View android:layout_width="match_parent" android:layout_height="@dimen/border_width_default" android:background="@color/divider" />
                    <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowProfile" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_person" app:srLabel="Profilo" app:srDescription="@string/settings_desc_profile" />
-                  <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                   <View android:layout_width="match_parent" android:layout_height="@dimen/border_width_default" android:background="@color/divider" />
                    <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowMeasurements" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_person" app:srLabel="Rilevazioni" app:srDescription="@string/settings_desc_measurements" />
-                  <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                   <View android:layout_width="match_parent" android:layout_height="@dimen/border_width_default" android:background="@color/divider" />
                    <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowFoodPreferences" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="Preferenze alimentari" app:srDescription="@string/settings_desc_food" />
-                 <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                  <View android:layout_width="match_parent" android:layout_height="@dimen/border_width_default" android:background="@color/divider" />
                   <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowMealCount" android:visibility="gone" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="Pasti al giorno" />
-                  <TextView android:id="@+id/mealCountValue" android:visibility="gone" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingStart="@dimen/space_16" android:paddingBottom="@dimen/space_8" android:text="Pasti al giorno" android:textColor="@color/text_secondary" android:textSize="12sp" />
+                   <TextView android:id="@+id/mealCountValue" style="@style/Text.MyFitAI.Caption" android:visibility="gone" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingStart="@dimen/space_16" android:paddingBottom="@dimen/space_8" android:text="Pasti al giorno" />
                   <LinearLayout
                      android:layout_width="match_parent"
                      android:layout_height="wrap_content"
@@ -92,19 +92,17 @@
                          android:layout_height="wrap_content"
                          android:layout_weight="1"
                          android:orientation="vertical">
-                         <TextView
-                             android:layout_width="wrap_content"
-                             android:layout_height="wrap_content"
-                             android:text="Abilita allenamenti"
-                             android:textColor="@color/text_primary"
-                             android:textSize="15sp" />
-                         <TextView
-                             android:layout_width="wrap_content"
-                             android:layout_height="wrap_content"
-                             android:layout_marginTop="@dimen/space_2"
-                             android:text="Mostra e abilita la struttura degli allenamenti"
-                             android:textColor="@color/text_secondary"
-                             android:textSize="12sp" />
+                           <TextView
+                               style="@style/Text.MyFitAI.SettingsLabel"
+                               android:layout_width="wrap_content"
+                              android:layout_height="wrap_content"
+                              android:text="Abilita allenamenti" />
+                          <TextView
+                              style="@style/Text.MyFitAI.SettingsDescription"
+                              android:layout_width="wrap_content"
+                              android:layout_height="wrap_content"
+                              android:layout_marginTop="@dimen/space_2"
+                              android:text="Mostra e abilita la struttura degli allenamenti" />
                      </LinearLayout>
                       <com.google.android.material.materialswitch.MaterialSwitch
                           android:id="@+id/workoutsEnabledSwitch"
@@ -112,11 +110,11 @@
                          android:layout_width="wrap_content"
                          android:layout_height="wrap_content" />
                  </LinearLayout>
-                 <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                  <View android:layout_width="match_parent" android:layout_height="@dimen/border_width_default" android:background="@color/divider" />
                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowUnits" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_gear" app:srLabel="Unità di misura" />
-                 <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                  <View android:layout_width="match_parent" android:layout_height="@dimen/border_width_default" android:background="@color/divider" />
                   <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowPrivacy" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_lock" app:srLabel="Privacy e dati" app:srDescription="@string/settings_desc_privacy" />
-                 <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                  <View android:layout_width="match_parent" android:layout_height="@dimen/border_width_default" android:background="@color/divider" />
                   <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowExport" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_export" app:srLabel="Esporta / importa dati" app:srDescription="@string/settings_desc_export" />
                  </LinearLayout>
                  </LinearLayout>
@@ -126,9 +124,9 @@
                   android:id="@+id/dataSectionCard"
                   style="@style/Widget.MyFitAI.Card"
                   app:cardBackgroundColor="@color/surface_primary"
-                  app:cardElevation="0dp"
+                  app:cardElevation="@dimen/elevation_card"
                   app:strokeColor="@color/divider"
-                  app:strokeWidth="1dp"
+                   app:strokeWidth="@dimen/border_width_default"
                  android:layout_width="match_parent"
                  android:layout_height="wrap_content"
                  android:layout_marginTop="@dimen/space_8"
@@ -139,7 +137,7 @@
                      android:orientation="vertical">
                  <LinearLayout
                      android:layout_width="match_parent"
-                     android:layout_height="40dp"
+                      android:layout_height="@dimen/settings_section_header_height"
                      android:gravity="center_vertical"
                      android:orientation="horizontal"
                      android:paddingStart="@dimen/space_16"
@@ -150,13 +148,13 @@
                          android:layout_height="wrap_content"
                          android:layout_weight="1"
                          android:text="Gestione dati" />
-                     <ImageButton
-                         android:id="@+id/dataSectionHelpButton"
-                         android:layout_width="40dp"
-                         android:layout_height="40dp"
+                      <ImageButton
+                          android:id="@+id/dataSectionHelpButton"
+                          android:layout_width="@dimen/screen_header_icon_size"
+                          android:layout_height="@dimen/screen_header_icon_size"
                          android:background="@android:color/transparent"
                          android:contentDescription="Spiega gestione dati"
-                         android:padding="8dp"
+                          android:padding="@dimen/space_8"
                          android:src="@drawable/ic_help_outline"
                          app:tint="@color/text_secondary" />
                  </LinearLayout>
@@ -165,28 +163,27 @@
                      android:layout_width="match_parent"
                      android:layout_height="wrap_content"
                      android:orientation="vertical">
-                 <TextView
-                     android:layout_width="match_parent"
-                     android:layout_height="wrap_content"
-                     android:paddingTop="@dimen/space_12"
-                     android:paddingBottom="@dimen/space_8"
-                     android:text="Puoi eliminare una sola categoria oppure tutti i dati di attività del profilo attivo. Il profilo e le chiavi IA non vengono cancellati."
-                     android:textColor="@color/text_secondary"
-                     android:textSize="12sp" />
+                  <TextView
+                      style="@style/Text.MyFitAI.SettingsDescription"
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:paddingTop="@dimen/space_12"
+                      android:paddingBottom="@dimen/space_8"
+                      android:text="Puoi eliminare una sola categoria oppure tutti i dati di attività del profilo attivo. Il profilo e le chiavi IA non vengono cancellati." />
                    <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeletePlans" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="Elimina piani alimentari salvati" app:srDescription="@string/settings_desc_delete_plans" />
-                  <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                  <View android:layout_width="match_parent" android:layout_height="@dimen/border_width_default" android:background="@color/divider" />
                    <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteConsumptions" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="Elimina pasti e consumi registrati" app:srDescription="@string/settings_desc_delete_consumptions" />
-                  <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                  <View android:layout_width="match_parent" android:layout_height="@dimen/border_width_default" android:background="@color/divider" />
                   <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteBia" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_gear" app:srLabel="Elimina misurazioni BIA" app:srDescription="@string/settings_desc_delete_bia" />
-                 <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                  <View android:layout_width="match_parent" android:layout_height="@dimen/border_width_default" android:background="@color/divider" />
                   <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteBody" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_person" app:srLabel="Elimina misurazioni corporee" app:srDescription="@string/settings_desc_delete_body" />
-                 <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                  <View android:layout_width="match_parent" android:layout_height="@dimen/border_width_default" android:background="@color/divider" />
                   <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteWorkouts" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_gear" app:srLabel="Elimina allenamenti registrati" app:srDescription="@string/settings_desc_delete_workouts" />
-                 <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                  <View android:layout_width="match_parent" android:layout_height="@dimen/border_width_default" android:background="@color/divider" />
                   <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteCheats" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_add_circle" app:srLabel="Elimina sgarri registrati" app:srDescription="@string/settings_desc_delete_cheats" />
-                 <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                  <View android:layout_width="match_parent" android:layout_height="@dimen/border_width_default" android:background="@color/divider" />
                   <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteReviews" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_export" app:srLabel="Elimina riepiloghi settimanali" app:srDescription="@string/settings_desc_delete_reviews" />
-                 <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/divider" />
+                  <View android:layout_width="match_parent" android:layout_height="@dimen/border_width_default" android:background="@color/divider" />
                   <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteRecordedData" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_lock" app:srLabel="Elimina tutti i dati di attività" app:srDescription="@string/settings_desc_delete_all" />
                  </LinearLayout>
                  </LinearLayout>
@@ -195,9 +192,9 @@
                <com.google.android.material.card.MaterialCardView
                   style="@style/Widget.MyFitAI.Card"
                   app:cardBackgroundColor="@color/surface_primary"
-                  app:cardElevation="0dp"
+                  app:cardElevation="@dimen/elevation_card"
                   app:strokeColor="@color/divider"
-                  app:strokeWidth="1dp"
+                   app:strokeWidth="@dimen/border_width_default"
                  android:layout_width="match_parent"
                  android:layout_height="wrap_content"
                  android:layout_marginTop="@dimen/space_8"
@@ -209,7 +206,7 @@
                       android:orientation="vertical">
                   <LinearLayout
                       android:layout_width="match_parent"
-                      android:layout_height="40dp"
+                      android:layout_height="@dimen/settings_section_header_height"
                       android:gravity="center_vertical"
                       android:orientation="horizontal"
                       android:paddingStart="@dimen/space_16"
@@ -217,18 +214,17 @@
                       <com.myfitai.app.ui.widgets.SectionHeaderView
                           android:id="@+id/aiSectionHeader"
                           android:layout_width="0dp"
-                          android:layout_height="wrap_content"
-                          android:layout_weight="1"
-                          android:includeFontPadding="false"
-                          android:textSize="14sp"
-                          android:text="Intelligenza artificiale" />
-                      <ImageButton
+                           android:layout_height="wrap_content"
+                           android:layout_weight="1"
+                           android:includeFontPadding="false"
+                           android:text="Intelligenza artificiale" />
+                   <ImageButton
                           android:id="@+id/aiSectionHelpButton"
-                          android:layout_width="40dp"
-                          android:layout_height="40dp"
+                          android:layout_width="@dimen/screen_header_icon_size"
+                          android:layout_height="@dimen/screen_header_icon_size"
                           android:background="@android:color/transparent"
                           android:contentDescription="Spiega intelligenza artificiale"
-                          android:padding="8dp"
+                          android:padding="@dimen/space_8"
                           android:src="@drawable/ic_help_outline"
                           app:tint="@color/text_secondary" />
                   </LinearLayout>
@@ -239,13 +235,13 @@
                       android:layout_height="wrap_content"
                       android:orientation="vertical">
                    <com.google.android.material.button.MaterialButton android:id="@+id/analyzeNutritionPathButton" android:visibility="gone" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Suggerisci il percorso nutrizionale" android:textAllCaps="false" />
-                                    <TextView
-                                            android:layout_width="match_parent"
+                                     <TextView
+                                             style="@style/Text.MyFitAI.SettingsDescription"
+                                             android:layout_width="match_parent"
                                             android:layout_height="wrap_content"
                                             android:layout_marginTop="@dimen/space_8"
                                             android:text="Agenti IA disponibili: piano alimentare automatico, analisi progressi, percorso nutrizionale e review settimanale. I controlli automatici sono mostrati qui sotto."
-                                            android:textColor="@color/text_secondary"
-                                            android:textSize="12sp" />
+                                             />
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -278,13 +274,12 @@
                         android:text="Gemini Developer API diretta. Se disattivato, verrà usato OpenAI." />
                 </LinearLayout>
 
-                 <TextView android:id="@+id/activeProviderText"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_12"
-                    android:text="Provider non configurato"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="13sp" />
+                  <TextView android:id="@+id/activeProviderText"
+                     style="@style/Text.MyFitAI.BodyCompact"
+                     android:layout_width="match_parent"
+                     android:layout_height="wrap_content"
+                     android:layout_marginTop="@dimen/space_12"
+                     android:text="Provider non configurato" />
 
                  <LinearLayout
                     android:id="@+id/geminiKeyContainer"
@@ -329,7 +324,7 @@
                                   android:id="@+id/pasteGeminiKeyButton"
                                   style="@style/Widget.MyFitAI.SettingsButton.Outlined"
                                   android:layout_width="0dp"
-                                  android:layout_height="44dp"
+                                  android:layout_height="@dimen/control_compact_min_height"
                                   android:layout_marginEnd="@dimen/space_4"
                                   android:layout_weight="1"
                                   android:text="Incolla" />
@@ -337,7 +332,7 @@
                                   android:id="@+id/saveGeminiKeyButton"
                                   style="@style/Widget.MyFitAI.SettingsButton.Primary"
                                   android:layout_width="0dp"
-                                  android:layout_height="44dp"
+                                  android:layout_height="@dimen/control_compact_min_height"
                                   android:layout_marginStart="@dimen/space_4"
                                   android:layout_weight="1"
                                   android:text="Verifica e salva" />
@@ -351,7 +346,7 @@
                                   android:id="@+id/replaceGeminiKeyButton"
                                   style="@style/Widget.MyFitAI.SettingsButton.Outlined"
                                   android:layout_width="0dp"
-                                  android:layout_height="44dp"
+                                  android:layout_height="@dimen/control_compact_min_height"
                                   android:layout_marginEnd="@dimen/space_4"
                                   android:layout_weight="1"
                                   android:text="Sostituisci" />
@@ -359,7 +354,7 @@
                                   android:id="@+id/deleteGeminiKeyButton"
                                   style="@style/Widget.MyFitAI.SettingsButton.Outlined"
                                   android:layout_width="0dp"
-                                  android:layout_height="44dp"
+                                  android:layout_height="@dimen/control_compact_min_height"
                                   android:layout_marginStart="@dimen/space_4"
                                   android:layout_weight="1"
                                   android:text="Elimina" />
@@ -414,7 +409,7 @@
                                 android:id="@+id/pasteOpenAiKeyButton"
                                 style="@style/Widget.MyFitAI.SettingsButton.Outlined"
                                 android:layout_width="0dp"
-                                android:layout_height="44dp"
+                                android:layout_height="@dimen/control_compact_min_height"
                                 android:layout_marginEnd="@dimen/space_4"
                                 android:layout_weight="1"
                                 android:text="Incolla"
@@ -423,7 +418,7 @@
                                 android:id="@+id/saveOpenAiKeyButton"
                                 style="@style/Widget.MyFitAI.SettingsButton.Primary"
                                 android:layout_width="0dp"
-                                android:layout_height="44dp"
+                                android:layout_height="@dimen/control_compact_min_height"
                                 android:layout_marginStart="@dimen/space_4"
                                 android:layout_weight="1"
                                 android:text="Verifica e salva"
@@ -438,7 +433,7 @@
                                 android:id="@+id/replaceOpenAiKeyButton"
                                 style="@style/Widget.MyFitAI.SettingsButton.Outlined"
                                 android:layout_width="0dp"
-                                android:layout_height="44dp"
+                                android:layout_height="@dimen/control_compact_min_height"
                                 android:layout_marginEnd="@dimen/space_4"
                                 android:layout_weight="1"
                                 android:text="Sostituisci"
@@ -447,7 +442,7 @@
                                 android:id="@+id/deleteOpenAiKeyButton"
                                 style="@style/Widget.MyFitAI.SettingsButton.Outlined"
                                 android:layout_width="0dp"
-                                android:layout_height="44dp"
+                                android:layout_height="@dimen/control_compact_min_height"
                                 android:layout_marginStart="@dimen/space_4"
                                 android:layout_weight="1"
                                 android:text="Rimuovi"
@@ -456,13 +451,12 @@
                     </LinearLayout>
                 </LinearLayout>
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_8"
-                         android:text="Le chiavi non vengono mai salvate in chiaro, esportate, inserite nei log o incluse nei backup. Firebase AI Logic non viene usato per Gemini."
-                    android:textColor="@color/text_secondary"
-                    android:textSize="11sp" />
+                  <TextView
+                     style="@style/Text.MyFitAI.SettingsDescription"
+                     android:layout_width="match_parent"
+                     android:layout_height="wrap_content"
+                     android:layout_marginTop="@dimen/space_8"
+                         android:text="Le chiavi non vengono mai salvate in chiaro, esportate, inserite nei log o incluse nei backup. Firebase AI Logic non viene usato per Gemini." />
                           </LinearLayout>
                           </LinearLayout>
                   </com.google.android.material.card.MaterialCardView>

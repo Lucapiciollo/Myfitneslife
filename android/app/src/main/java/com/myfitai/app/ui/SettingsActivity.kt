@@ -195,14 +195,14 @@ class SettingsActivity : BaseShellActivity() {
                 is MaterialCardView -> {
                     view.setCardBackgroundColor(getColor(R.color.white))
                     view.strokeColor = getColor(R.color.divider)
-                    view.strokeWidth = dp(1)
+                    view.strokeWidth = resources.getDimensionPixelSize(R.dimen.space_1)
                     view.cardElevation = 0f
                 }
                 is TextInputLayout -> {
                     view.boxBackgroundColor = getColor(R.color.white)
                     view.boxStrokeColor = getColor(R.color.myfitai_input_stroke)
-                    view.boxStrokeWidth = dp(1)
-                    view.boxStrokeWidthFocused = dp(2)
+                    view.boxStrokeWidth = resources.getDimensionPixelSize(R.dimen.space_1)
+                    view.boxStrokeWidthFocused = resources.getDimensionPixelSize(R.dimen.space_2)
                     view.hintTextColor = android.content.res.ColorStateList.valueOf(getColor(R.color.myfitai_input_hint))
                 }
             }
@@ -260,8 +260,9 @@ class SettingsActivity : BaseShellActivity() {
         val card = findViewById<LinearLayout>(R.id.aiSectionCard)
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            minimumHeight = dp(48)
-            setPadding(0, dp(8), 0, dp(8))
+            minimumHeight = resources.getDimensionPixelSize(R.dimen.control_min_height)
+            val verticalPadding = resources.getDimensionPixelSize(R.dimen.space_8)
+            setPadding(0, verticalPadding, 0, verticalPadding)
         }
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -277,7 +278,7 @@ class SettingsActivity : BaseShellActivity() {
         val value = TextView(this).apply { setTextAppearance(R.style.Text_MyFitAI_SettingsDescription) }
         row.addView(header)
         row.addView(value, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
-            topMargin = dp(2)
+            topMargin = resources.getDimensionPixelSize(R.dimen.space_2)
         })
 
         fun dayLabel(day: java.time.DayOfWeek): String = when (day) {
@@ -380,7 +381,7 @@ class SettingsActivity : BaseShellActivity() {
         card.addView(
             View(this).apply { setBackgroundColor(getColor(R.color.divider)) },
             1,
-            LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1).apply { bottomMargin = dp(12) },
+            LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, resources.getDimensionPixelSize(R.dimen.space_1)).apply { bottomMargin = resources.getDimensionPixelSize(R.dimen.space_12) },
         )
     }
 
@@ -390,8 +391,9 @@ class SettingsActivity : BaseShellActivity() {
             orientation = LinearLayout.VERTICAL
             isClickable = true
             isFocusable = true
-            minimumHeight = dp(48)
-            setPadding(0, dp(8), 0, dp(8))
+            minimumHeight = resources.getDimensionPixelSize(R.dimen.control_min_height)
+            val verticalPadding = resources.getDimensionPixelSize(R.dimen.space_8)
+            setPadding(0, verticalPadding, 0, verticalPadding)
         }
         val title = TextView(this).apply {
             text = "Analisi progressi automatica"
@@ -406,7 +408,7 @@ class SettingsActivity : BaseShellActivity() {
         }
         renderValue()
         row.addView(title)
-        row.addView(value, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(2) })
+        row.addView(value, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = resources.getDimensionPixelSize(R.dimen.space_2) })
         row.setOnClickListener {
             val values = ProgressAnalysisPreferences.SUGGESTED_INTERVALS
             val labels = values.map { weeks ->
@@ -429,7 +431,7 @@ class SettingsActivity : BaseShellActivity() {
                 .show()
         }
         card.addView(row, 0)
-        card.addView(View(this).apply { setBackgroundColor(getColor(R.color.divider)) }, 1, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1).apply { bottomMargin = dp(12) })
+        card.addView(View(this).apply { setBackgroundColor(getColor(R.color.divider)) }, 1, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, resources.getDimensionPixelSize(R.dimen.space_1)).apply { bottomMargin = resources.getDimensionPixelSize(R.dimen.space_12) })
     }
 
     private fun showMealCountDialog() {
@@ -464,7 +466,8 @@ class SettingsActivity : BaseShellActivity() {
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(getColor(R.color.white))
-            setPadding(dp(4), dp(4), dp(4), dp(4))
+            val contentInset = resources.getDimensionPixelSize(R.dimen.space_4)
+            setPadding(contentInset, contentInset, contentInset, contentInset)
             sections.forEach { addView(guideSectionCard(it)) }
         }
         val scroll = ScrollView(this).apply {
@@ -487,36 +490,35 @@ class SettingsActivity : BaseShellActivity() {
 
     private fun guideSectionCard(section: GuideSection): MaterialCardView {
         val card = MaterialCardView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) }
+            layoutParams = LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = resources.getDimensionPixelSize(R.dimen.space_10) }
             setCardBackgroundColor(getColor(R.color.white))
             strokeColor = getColor(R.color.divider)
-            strokeWidth = dp(1)
-            radius = dp(14).toFloat()
+            strokeWidth = resources.getDimensionPixelSize(R.dimen.space_1)
+            radius = resources.getDimension(R.dimen.radius_medium)
             cardElevation = 0f
         }
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(getColor(R.color.white))
-            setPadding(dp(16), dp(14), dp(16), dp(14))
+            val horizontalPadding = resources.getDimensionPixelSize(R.dimen.card_content_padding)
+            val verticalPadding = resources.getDimensionPixelSize(R.dimen.space_14)
+            setPadding(horizontalPadding, verticalPadding, horizontalPadding, verticalPadding)
         }
         TextView(this).apply {
             text = section.title
-            textSize = 16f
-            setTextColor(getColor(R.color.text_primary))
-            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            setTextAppearance(R.style.Text_MyFitAI_Section)
             content.addView(this)
         }
         TextView(this).apply {
             text = section.subtitle
-            textSize = 12f
+            setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
             setTextColor(getColor(R.color.accent_green_dark))
-            setPadding(0, dp(4), 0, dp(8))
+            setPadding(0, resources.getDimensionPixelSize(R.dimen.space_4), 0, resources.getDimensionPixelSize(R.dimen.space_8))
             content.addView(this)
         }
         TextView(this).apply {
             text = section.description
-            textSize = 14f
-            setTextColor(getColor(R.color.text_secondary))
+            setTextAppearance(R.style.Text_MyFitAI_Body)
             setLineSpacing(0f, 1.16f)
             content.addView(this)
         }
@@ -611,7 +613,6 @@ class SettingsActivity : BaseShellActivity() {
         (getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).clearPrimaryClip()
     }
 
-    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     /**
      * Sanitized verification telemetry: records ONLY provider + HTTP status + failure category.

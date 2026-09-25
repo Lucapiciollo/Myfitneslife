@@ -41,7 +41,8 @@ class ProgressAnalysisPreferences(context: Context) {
             })
             .putString(key(profileId, "provider"), provider)
             .putString(key(profileId, "model"), model)
-            .apply()
+            .commit()
+            .also { check(it) { "Unable to persist progress-analysis result" } }
     }
 
     fun nextDueEpochMillis(profileId: Long): Long? = lastSuccessEpochMillis(profileId)?.plus(intervalMillis())
@@ -55,6 +56,8 @@ class ProgressAnalysisPreferences(context: Context) {
                 .forEach { remove(key(profileId, it)) }
         }.apply()
     }
+
+    internal fun intervalMillisForTesting(): Long = intervalMillis()
 
     private fun decodePattern(raw: String): ProgressAnalysisCompactContract.Pattern? {
         val parts = raw.split(',')

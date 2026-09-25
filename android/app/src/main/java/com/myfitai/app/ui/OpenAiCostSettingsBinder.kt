@@ -41,7 +41,7 @@ object OpenAiCostSettingsBinder {
         }
         row.setOnClickListener { showCostDialog(activity, tracker, pricingStore, currentModel(), ::refresh) }
         card.addView(row, 0)
-        card.addView(View(activity).apply { setBackgroundColor(activity.getColor(R.color.divider)) }, 1, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1).apply { bottomMargin = dp(activity, 8) })
+        card.addView(View(activity).apply { setBackgroundColor(activity.getColor(R.color.divider)) }, 1, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, activity.resources.getDimensionPixelSize(R.dimen.space_1)).apply { bottomMargin = activity.resources.getDimensionPixelSize(R.dimen.space_8) })
         refresh()
     }
 
@@ -97,7 +97,7 @@ object OpenAiCostSettingsBinder {
             dialog.window?.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
             val scroll = content.findViewById<androidx.core.widget.NestedScrollView>(R.id.pricingEditorScroll)
             val maxHeight = (activity.resources.displayMetrics.heightPixels * 0.45f).toInt()
-            scroll.layoutParams = scroll.layoutParams.apply { height = minOf(dp(activity, 320), maxHeight) }
+            scroll.layoutParams = scroll.layoutParams.apply { height = minOf(activity.resources.getDimensionPixelSize(R.dimen.settings_pricing_editor_max_height), maxHeight) }
             dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                 val a = parseDecimal(input.text?.toString())
                 val b = parseDecimal(output.text?.toString())
@@ -119,5 +119,4 @@ object OpenAiCostSettingsBinder {
     private fun parseDecimal(raw: String?) = raw?.trim()?.replace(',', '.')?.toBigDecimalOrNull()
     private fun pricingLabel(p: OpenAiPricing) = "${AiModelConfig.displayName(p.model)} · ${if (p.source == OpenAiPricingStore.SOURCE_MANUAL) "prezzi manuali" else "listino ${p.effectiveDate}"}"
     private fun money(value: BigDecimal) = "$" + value.setScale(4, RoundingMode.HALF_UP).toPlainString()
-    private fun dp(activity: SettingsActivity, value: Int) = (value * activity.resources.displayMetrics.density).toInt()
 }

@@ -107,7 +107,7 @@ class BodyMeasuresActivity : BaseShellActivity() {
             findViewById<MaterialCardView>(id).apply {
                 setCardBackgroundColor(getColor(R.color.white))
                 strokeColor = getColor(R.color.divider)
-                strokeWidth = dp(1)
+                strokeWidth = resources.getDimensionPixelSize(R.dimen.space_1)
                 cardElevation = 0f
             }
         }
@@ -230,39 +230,35 @@ class BodyMeasuresActivity : BaseShellActivity() {
             cardElevation = 0f
             setCardBackgroundColor(getColor(R.color.white))
             strokeColor = getColor(R.color.divider)
-            strokeWidth = dp(1)
+            strokeWidth = resources.getDimensionPixelSize(R.dimen.space_1)
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT,
-            ).apply { topMargin = dp(16) }
+            ).apply { topMargin = resources.getDimensionPixelSize(R.dimen.space_16) }
         }
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(16), dp(16), dp(16), dp(16))
+            val cardPadding = resources.getDimensionPixelSize(R.dimen.card_content_padding)
+            setPadding(cardPadding, cardPadding, cardPadding, cardPadding)
         }
         content.addView(TextView(this).apply {
             text = "Proporzioni corporee"
-            setTextColor(getColor(R.color.text_primary))
-            textSize = 17f
-            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            setTextAppearance(R.style.Text_MyFitAI_CardTitle)
         })
         content.addView(TextView(this).apply {
             id = View.generateViewId().also { proportionStatusId = it }
-            setTextColor(getColor(R.color.text_primary))
-            textSize = 15f
-            setPadding(0, dp(10), 0, 0)
+            setTextAppearance(R.style.Text_MyFitAI_KeyValueValue)
+            setPadding(0, resources.getDimensionPixelSize(R.dimen.space_10), 0, 0)
         })
         content.addView(TextView(this).apply {
             id = View.generateViewId().also { proportionDetailsId = it }
-            setTextColor(getColor(R.color.text_secondary))
-            textSize = 13f
-            setPadding(0, dp(8), 0, 0)
+            setTextAppearance(R.style.Text_MyFitAI_Body)
+            setPadding(0, resources.getDimensionPixelSize(R.dimen.space_8), 0, 0)
         })
         content.addView(TextView(this).apply {
             id = View.generateViewId().also { proportionNoteId = it }
-            setTextColor(getColor(R.color.text_muted))
-            textSize = 11f
-            setPadding(0, dp(8), 0, 0)
+            setTextAppearance(R.style.Text_MyFitAI_Micro)
+            setPadding(0, resources.getDimensionPixelSize(R.dimen.space_8), 0, 0)
         })
         content.addView(MaterialButton(this).apply {
             id = View.generateViewId().also { proportionAiButtonId = it }
@@ -271,8 +267,8 @@ class BodyMeasuresActivity : BaseShellActivity() {
             setOnClickListener { analyzeProportionsWithAi(this) }
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                dp(48),
-            ).apply { topMargin = dp(12) }
+                resources.getDimensionPixelSize(R.dimen.button_secondary_min_height),
+            ).apply { topMargin = resources.getDimensionPixelSize(R.dimen.space_12) }
         })
         card.addView(content)
         container.addView(card)
@@ -413,9 +409,9 @@ class BodyMeasuresActivity : BaseShellActivity() {
         if (measurements.isEmpty()) {
             container.addView(TextView(this).apply {
                 text = "Nessuna misurazione salvata per questo profilo."
-                setTextColor(getColor(R.color.text_secondary))
-                textSize = 14f
-                setPadding(0, dp(12), 0, dp(12))
+                setTextAppearance(R.style.Text_MyFitAI_Body)
+                val verticalPadding = resources.getDimensionPixelSize(R.dimen.space_12)
+                setPadding(0, verticalPadding, 0, verticalPadding)
             })
             return
         }
@@ -423,12 +419,14 @@ class BodyMeasuresActivity : BaseShellActivity() {
         measurements.forEachIndexed { index, measurement ->
             val card = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
-                setPadding(dp(16), dp(12), dp(16), dp(12))
+                val horizontalPadding = resources.getDimensionPixelSize(R.dimen.space_16)
+                val verticalPadding = resources.getDimensionPixelSize(R.dimen.space_12)
+                setPadding(horizontalPadding, verticalPadding, horizontalPadding, verticalPadding)
                 background = getDrawable(R.drawable.bg_card)
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT,
-                ).apply { bottomMargin = dp(8) }
+                ).apply { bottomMargin = resources.getDimensionPixelSize(R.dimen.space_8) }
                 setOnClickListener { openEdit(measurement) }
                 contentDescription = "Modifica misura corporea"
                 setOnLongClickListener {
@@ -439,16 +437,13 @@ class BodyMeasuresActivity : BaseShellActivity() {
 
             card.addView(TextView(this).apply {
                 text = entityDate(measurement).format(dateFormatter)
-                setTextColor(getColor(R.color.text_primary))
-                textSize = 15f
-                setTypeface(typeface, android.graphics.Typeface.BOLD)
+                setTextAppearance(R.style.Text_MyFitAI_SettingsLabel)
             })
 
             card.addView(TextView(this).apply {
                 text = historyValues(measurement)
-                setTextColor(getColor(R.color.text_secondary))
-                textSize = 12f
-                setPadding(0, dp(5), 0, 0)
+                setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
+                setPadding(0, resources.getDimensionPixelSize(R.dimen.space_5), 0, 0)
             })
 
             val waistDelta = measurement.waistCm?.let { current ->
@@ -457,17 +452,16 @@ class BodyMeasuresActivity : BaseShellActivity() {
             if (waistDelta != null) {
                 card.addView(TextView(this).apply {
                     text = "Vita ${formatSigned(waistDelta)} cm rispetto al valore precedente disponibile"
+                    setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
                     setTextColor(getColor(if (waistDelta <= 0f) R.color.semantic_positive else R.color.text_secondary))
-                    textSize = 12f
-                    setPadding(0, dp(6), 0, 0)
+                    setPadding(0, resources.getDimensionPixelSize(R.dimen.space_6), 0, 0)
                 })
             }
 
             card.addView(TextView(this).apply {
                 text = "Tocca per modificare · Tieni premuto per eliminare"
-                setTextColor(getColor(R.color.text_muted))
-                textSize = 10f
-                setPadding(0, dp(6), 0, 0)
+                setTextAppearance(R.style.Text_MyFitAI_Micro)
+                setPadding(0, resources.getDimensionPixelSize(R.dimen.space_6), 0, 0)
             })
             container.addView(card)
         }
@@ -533,8 +527,6 @@ class BodyMeasuresActivity : BaseShellActivity() {
     )
 
     private fun formatPercent(value: Float): String = String.format(Locale.ITALIAN, "%.1f%%", value)
-
-    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     companion object {
         const val EXTRA_OPEN_HISTORY = "open_body_history"

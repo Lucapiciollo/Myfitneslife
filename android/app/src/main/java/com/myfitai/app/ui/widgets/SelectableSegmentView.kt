@@ -20,7 +20,8 @@ open class SelectableSegmentView @JvmOverloads constructor(
         isSingleSelection = true
         isSelectionRequired = true
         setBackgroundResource(R.drawable.bg_segment_track)
-        setPadding(dp(4), dp(4), dp(4), dp(4))
+        val trackInset = resources.getDimensionPixelSize(R.dimen.space_4)
+        setPadding(trackInset, trackInset, trackInset, trackInset)
         clipToPadding = false
     }
 
@@ -33,16 +34,17 @@ open class SelectableSegmentView @JvmOverloads constructor(
                 id = android.view.View.generateViewId()
                 text = label
                 contentDescription = label
-                textSize = 13f
+                setTextAppearance(R.style.Text_MyFitAI_BodyEmphasis)
                 isAllCaps = false
                 maxLines = 1
                 gravity = Gravity.CENTER
-                cornerRadius = dp(10)
+                cornerRadius = resources.getDimensionPixelSize(R.dimen.radius_small)
                 strokeWidth = 0
                 insetTop = 0
                 insetBottom = 0
-                minHeight = 0
-                setPadding(dp(8), 0, dp(8), 0)
+                minHeight = resources.getDimensionPixelSize(R.dimen.control_min_height)
+                val horizontalPadding = resources.getDimensionPixelSize(R.dimen.space_8)
+                setPadding(horizontalPadding, 0, horizontalPadding, 0)
                 layoutParams = LayoutParams(0, LayoutParams.MATCH_PARENT, 1f)
                 setTextColor(
                     ColorStateList(
@@ -69,6 +71,4 @@ open class SelectableSegmentView @JvmOverloads constructor(
     open fun setOnSegmentSelectedListener(listener: (Int) -> Unit) {
         onSegmentSelected = listener
     }
-
-    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 }

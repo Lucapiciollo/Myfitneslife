@@ -1,7 +1,6 @@
 package com.myfitai.app.ui.widgets
 
 import android.content.Context
-import android.graphics.Typeface
 import android.util.AttributeSet
 import com.google.android.material.textview.MaterialTextView
 import com.myfitai.app.R
@@ -12,9 +11,6 @@ class SectionHeaderView @JvmOverloads constructor(
     attrs: AttributeSet? = null,
 ) : MaterialTextView(context, attrs) {
     init {
-        setTextColor(context.getColor(R.color.text_primary))
-        setTypeface(typeface, Typeface.BOLD)
-        textSize = 14f
-        includeFontPadding = false
+        setTextAppearance(R.style.Text_MyFitAI_Section)
     }
 }

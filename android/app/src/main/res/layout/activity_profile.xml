@@ -22,13 +22,13 @@
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="56dp"
+                android:layout_height="@dimen/screen_header_height"
                 android:background="@drawable/bg_screen_header"
                 android:gravity="center_vertical"
-                android:paddingHorizontal="8dp">
-                 <ImageButton android:id="@+id/backButton" android:layout_width="40dp" android:layout_height="40dp" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Indietro" android:padding="8dp" android:src="@drawable/ic_arrow_back" app:tint="@color/text_primary" />
+                android:paddingHorizontal="@dimen/space_8">
+                 <ImageButton android:id="@+id/backButton" android:layout_width="@dimen/icon_button_size" android:layout_height="@dimen/icon_button_size" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Indietro" android:padding="@dimen/space_8" android:src="@drawable/ic_arrow_back" app:tint="@color/text_primary" />
                  <TextView android:id="@+id/title" style="@style/Text.MyFitAI.ScreenTitle" android:textColor="@color/text_primary" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Profilo" />
-                <Space android:layout_width="40dp" android:layout_height="40dp" />
+                <Space android:layout_width="@dimen/icon_button_size" android:layout_height="@dimen/icon_button_size" />
             </LinearLayout>
 
              <com.google.android.material.card.MaterialCardView
@@ -45,8 +45,8 @@
                 android:paddingTop="@dimen/space_4">
                 <com.google.android.material.imageview.ShapeableImageView
                     android:id="@+id/profileAvatar"
-                    android:layout_width="72dp"
-                    android:layout_height="72dp"
+                    android:layout_width="@dimen/profile_avatar_size"
+                    android:layout_height="@dimen/profile_avatar_size"
                     android:clickable="true"
                     android:focusable="true"
                     android:contentDescription="@string/profile_avatar_cd"
@@ -62,10 +62,9 @@
                         android:focusable="true"
                         android:text="Profilo"
                         android:textColor="@color/text_primary"
-                        android:textSize="18sp"
-                        android:textStyle="bold" />
-                    <TextView android:id="@+id/profileStats" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_2" android:text="Dati profilo" android:textColor="@color/text_secondary" android:textSize="13sp" />
-                    <TextView android:id="@+id/profileGoal" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_2" android:text="Obiettivo non impostato" android:textColor="@color/text_secondary" android:textSize="13sp" />
+                         style="@style/Text.MyFitAI.CardTitle" />
+                     <TextView android:id="@+id/profileStats" style="@style/Text.MyFitAI.Body" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_2" android:text="Dati profilo" />
+                     <TextView android:id="@+id/profileGoal" style="@style/Text.MyFitAI.Body" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_2" android:text="Obiettivo non impostato" />
                     <TextView
                         android:id="@+id/profileSwitcherHint"
                         android:layout_width="wrap_content"
@@ -73,7 +72,7 @@
                         android:layout_marginTop="@dimen/space_4"
                         android:text="Tocca il nome per cambiare profilo · tocca la foto per modificarla"
                         android:textColor="@color/accent_green_dark"
-                        android:textSize="11sp" />
+                         style="@style/Text.MyFitAI.Micro" />
                 </LinearLayout>
             </LinearLayout>
             </com.google.android.material.card.MaterialCardView>

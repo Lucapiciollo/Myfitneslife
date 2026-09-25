@@ -14,8 +14,7 @@ class DashboardMetricsPanel @JvmOverloads constructor(
     init {
         orientation = VERTICAL
         setBackgroundResource(R.drawable.bg_card)
-        val density = resources.displayMetrics.density
-        val padding = (12 * density).toInt()
+        val padding = resources.getDimensionPixelSize(R.dimen.card_content_padding_compact)
         setPadding(padding, padding, padding, padding)
         addMetric(MetricCardView(context).apply { id = R.id.metricWeight; setCompactStyle() })
         addMetric(MetricCardView(context).apply { id = R.id.metricFat; setCompactStyle() })
@@ -25,9 +24,9 @@ class DashboardMetricsPanel @JvmOverloads constructor(
     fun addMetric(metric: MetricCardView) {
         if (childCount > 0) addView(View(context).apply {
             setBackgroundColor(context.getColor(R.color.divider))
-        }, LayoutParams(LayoutParams.MATCH_PARENT, (1 * resources.displayMetrics.density).toInt()).apply {
-            topMargin = (4 * resources.displayMetrics.density).toInt()
-            bottomMargin = (4 * resources.displayMetrics.density).toInt()
+        }, LayoutParams(LayoutParams.MATCH_PARENT, resources.getDimensionPixelSize(R.dimen.space_1)).apply {
+            topMargin = resources.getDimensionPixelSize(R.dimen.space_4)
+            bottomMargin = resources.getDimensionPixelSize(R.dimen.space_4)
         })
         addView(metric, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT))
     }

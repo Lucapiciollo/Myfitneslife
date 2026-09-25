@@ -1,7 +1,6 @@
 package com.myfitai.app.ui.widgets
 
 import android.content.Context
-import android.graphics.Typeface
 import android.util.AttributeSet
 import android.view.Gravity
 import android.widget.LinearLayout
@@ -19,7 +18,7 @@ class KeyValueRowView @JvmOverloads constructor(
     init {
         orientation = HORIZONTAL
         gravity = Gravity.CENTER_VERTICAL
-        setPadding(0, dp(8), 0, dp(8))
+        setPadding(0, context.resources.getDimensionPixelSize(R.dimen.space_8), 0, context.resources.getDimensionPixelSize(R.dimen.space_8))
         importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_YES
 
         keyView = TextView(context).apply {
@@ -28,7 +27,7 @@ class KeyValueRowView @JvmOverloads constructor(
         }
         valueView = TextView(context).apply {
             layoutParams = LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply {
-                marginStart = dp(12)
+                marginStart = context.resources.getDimensionPixelSize(R.dimen.space_12)
             }
             setTextAppearance(R.style.Text_MyFitAI_KeyValueValue)
             gravity = Gravity.END
@@ -44,6 +43,4 @@ class KeyValueRowView @JvmOverloads constructor(
         contentDescription = "${keyView.text}: $value"
     }
     fun setValueColor(colorRes: Int) { valueView.setTextColor(context.getColor(colorRes)) }
-
-    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 }

@@ -21,21 +21,21 @@
         android:orientation="vertical"
         android:padding="@dimen/space_20">
 
-        <LinearLayout android:layout_width="match_parent" android:layout_height="40dp" android:gravity="center_vertical">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="@dimen/screen_header_icon_size" android:gravity="center_vertical">
             <ImageButton
                 android:id="@+id/backButton"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/screen_header_icon_size"
+                android:layout_height="@dimen/screen_header_icon_size"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Indietro"
-                android:padding="8dp"
+                android:padding="@dimen/space_8"
                 android:src="@drawable/ic_arrow_back"
                 app:tint="@color/white" />
         </LinearLayout>
 
         <ImageView
-            android:layout_width="20dp"
-            android:layout_height="20dp"
+            android:layout_width="@dimen/notification_lock_icon_size"
+            android:layout_height="@dimen/notification_lock_icon_size"
             android:layout_gravity="center_horizontal"
             android:layout_marginTop="@dimen/space_16"
             android:src="@drawable/ic_lock"
@@ -58,7 +58,7 @@
             android:gravity="center"
             android:text="—"
             android:textColor="@color/white"
-            android:textSize="15sp" />
+            style="@style/Text.MyFitAI.Body" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -70,8 +70,8 @@
 
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
                 <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
+                    android:layout_width="@dimen/notification_lock_icon_size"
+                    android:layout_height="@dimen/notification_lock_icon_size"
                     android:src="@drawable/img_app_icon"
                     android:scaleType="centerCrop"
                     android:contentDescription="Icona app" />
@@ -83,14 +83,14 @@
                      android:text="MyFitAI"
                     android:textColor="@color/text_primary"
                     android:textStyle="bold"
-                    android:textSize="13sp" />
+                    style="@style/Text.MyFitAI.CardTitle" />
                 <TextView
                     android:id="@+id/notificationTime"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="--:--"
                     android:textColor="@color/text_secondary"
-                    android:textSize="12sp" />
+                    style="@style/Text.MyFitAI.Caption" />
             </LinearLayout>
 
             <TextView
@@ -101,7 +101,7 @@
                 android:text="Promemoria pasto"
                 android:textColor="@color/text_primary"
                 android:textStyle="bold"
-                android:textSize="14sp" />
+                style="@style/Text.MyFitAI.CardTitle" />
             <TextView
                 android:id="@+id/reminderText"
                 android:layout_width="match_parent"
@@ -109,12 +109,12 @@
                 android:layout_marginTop="@dimen/space_2"
                 android:text="Apri il piano per i dettagli"
                 android:textColor="@color/text_secondary"
-                android:textSize="13sp" />
+                style="@style/Text.MyFitAI.Body" />
 
             <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/mealImage"
                 android:layout_width="match_parent"
-                android:layout_height="170dp"
+                android:layout_height="@dimen/notification_meal_image_height"
                 android:layout_marginTop="@dimen/space_12"
                 android:scaleType="centerCrop"
                 android:src="@drawable/img_meal_lunch"
@@ -126,7 +126,7 @@
             android:id="@+id/openMealButton"
             style="@style/Widget.Material3.Button.TextButton"
             android:layout_width="match_parent"
-            android:layout_height="52dp"
+            android:layout_height="@dimen/button_primary_min_height"
             android:layout_marginTop="@dimen/space_16"
             android:background="@drawable/bg_frosted_pill"
             android:text="Apri pasto"
@@ -138,7 +138,7 @@
             android:id="@+id/snoozeButton"
             style="@style/Widget.Material3.Button.TextButton"
             android:layout_width="match_parent"
-            android:layout_height="48dp"
+            android:layout_height="@dimen/button_secondary_min_height"
             android:layout_marginTop="@dimen/space_8"
             android:background="@drawable/bg_frosted_pill_soft"
             android:text="Posticipa 10 min"

@@ -1,7 +1,6 @@
 package com.myfitai.app.ui.widgets
 
 import android.content.Context
-import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.util.AttributeSet
 import android.view.Gravity
@@ -21,11 +20,14 @@ class StatusRowView @JvmOverloads constructor(
     init {
         orientation = HORIZONTAL
         gravity = Gravity.CENTER_VERTICAL
-        setPadding(0, dp(8), 0, dp(8))
+        setPadding(0, context.resources.getDimensionPixelSize(R.dimen.space_8), 0, context.resources.getDimensionPixelSize(R.dimen.space_8))
         importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_YES
 
         indicator = TextView(context).apply {
-            layoutParams = LayoutParams(dp(20), dp(20)).apply { marginEnd = dp(8) }
+            layoutParams = LayoutParams(
+                context.resources.getDimensionPixelSize(R.dimen.status_indicator_size),
+                context.resources.getDimensionPixelSize(R.dimen.status_indicator_size),
+            ).apply { marginEnd = context.resources.getDimensionPixelSize(R.dimen.space_8) }
             gravity = Gravity.CENTER
             text = ""
             background = GradientDrawable().apply {
@@ -40,7 +42,7 @@ class StatusRowView @JvmOverloads constructor(
         }
         stateView = TextView(context).apply {
             layoutParams = LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply {
-                marginStart = dp(8)
+                marginStart = context.resources.getDimensionPixelSize(R.dimen.space_8)
             }
             setTextAppearance(R.style.Text_MyFitAI_StatusValue)
             gravity = Gravity.END
@@ -76,5 +78,4 @@ class StatusRowView @JvmOverloads constructor(
 
     enum class Status { POSITIVE, WARNING, ERROR, NEUTRAL }
 
-    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 }

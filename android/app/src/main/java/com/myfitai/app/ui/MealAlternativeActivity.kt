@@ -1,7 +1,6 @@
 package com.myfitai.app.ui
 
 import android.app.Activity
-import android.graphics.Typeface
 import android.os.Bundle
 import android.view.View
 import android.widget.LinearLayout
@@ -99,40 +98,39 @@ class MealAlternativeActivity : BaseShellActivity() {
                 radius = resources.getDimension(R.dimen.radius_medium)
                 setCardBackgroundColor(getColor(R.color.white))
                 strokeColor = getColor(R.color.divider)
-                strokeWidth = dp(1)
+                strokeWidth = resources.getDimensionPixelSize(R.dimen.space_1)
             }
             val body = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
-                setPadding(dp(16), dp(14), dp(16), dp(14))
+                val horizontalPadding = resources.getDimensionPixelSize(R.dimen.card_content_padding)
+                val verticalPadding = resources.getDimensionPixelSize(R.dimen.space_14)
+                setPadding(horizontalPadding, verticalPadding, horizontalPadding, verticalPadding)
             }
             body.addView(TextView(this).apply {
                 text = "${index + 1}. ${alternative.title}"
-                setTextColor(getColor(R.color.text_primary))
-                textSize = 16f
-                setTypeface(typeface, Typeface.BOLD)
+                setTextAppearance(R.style.Text_MyFitAI_CardTitle)
             })
             body.addView(TextView(this).apply {
                 text = "${NutritionEstimateFormatter.formatEstimatedKcal(alternative.kcal)} · " +
                     "Proteine ${NutritionEstimateFormatter.formatEstimatedMacro(alternative.proteinG, "g")} · " +
                     "Carboidrati ${NutritionEstimateFormatter.formatEstimatedMacro(alternative.carbsG, "g")} · " +
                     "Grassi ${NutritionEstimateFormatter.formatEstimatedMacro(alternative.fatG, "g")}"
+                setTextAppearance(R.style.Text_MyFitAI_StatusValue)
                 setTextColor(getColor(R.color.accent_green_dark))
-                 textSize = 13f
-                 setTypeface(typeface, Typeface.BOLD)
                  setBackgroundResource(R.drawable.bg_card)
-                 setPadding(dp(8), dp(6), dp(8), dp(6))
+                 val horizontalPadding = resources.getDimensionPixelSize(R.dimen.space_8)
+                 val verticalPadding = resources.getDimensionPixelSize(R.dimen.space_6)
+                 setPadding(horizontalPadding, verticalPadding, horizontalPadding, verticalPadding)
             })
             body.addView(TextView(this).apply {
                 text = alternative.ingredients.joinToString(" · ") { it.displayDose }
-                setTextColor(getColor(R.color.text_secondary))
-                textSize = 12f
-                setPadding(0, dp(6), 0, 0)
+                setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
+                setPadding(0, resources.getDimensionPixelSize(R.dimen.space_6), 0, 0)
             })
             body.addView(TextView(this).apply {
                 text = alternative.reason
-                setTextColor(getColor(R.color.text_secondary))
-                textSize = 12f
-                setPadding(0, dp(5), 0, 0)
+                setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
+                setPadding(0, resources.getDimensionPixelSize(R.dimen.space_5), 0, 0)
             })
             body.addView(MaterialButton(this).apply {
                 text = "Sostituisci"
@@ -140,13 +138,13 @@ class MealAlternativeActivity : BaseShellActivity() {
                 setOnClickListener { applyAlternative(alternative) }
             }, LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                dp(48),
-            ).apply { topMargin = dp(10) })
+                resources.getDimensionPixelSize(R.dimen.button_primary_min_height),
+            ).apply { topMargin = resources.getDimensionPixelSize(R.dimen.space_10) })
             card.addView(body)
             container.addView(card, LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT,
-            ).apply { bottomMargin = dp(10) })
+            ).apply { bottomMargin = resources.getDimensionPixelSize(R.dimen.space_10) })
         }
     }
 
@@ -194,8 +192,6 @@ class MealAlternativeActivity : BaseShellActivity() {
             text = message
         }
     }
-
-    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     companion object {
         const val EXTRA_AI_JOB_KEY = "meal_alt_ai_job_key"

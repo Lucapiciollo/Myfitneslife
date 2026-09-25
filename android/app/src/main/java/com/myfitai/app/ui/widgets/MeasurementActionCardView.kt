@@ -1,7 +1,6 @@
 package com.myfitai.app.ui.widgets
 
 import android.content.Context
-import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.util.AttributeSet
 import android.view.Gravity
@@ -46,27 +45,28 @@ class MeasurementActionCardView @JvmOverloads constructor(
         }
         titleView = TextView(context).apply {
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-            setTextAppearance(R.style.Text_MyFitAI_SettingsLabel)
-            textSize = 18f
-            setTypeface(typeface, Typeface.BOLD)
+            setTextAppearance(R.style.Text_MyFitAI_CardTitle)
         }
         header.addView(titleView)
         helpButton = ImageButton(context).apply {
-            layoutParams = LinearLayout.LayoutParams(dp(36), dp(36))
+            layoutParams = LinearLayout.LayoutParams(
+                resources.getDimensionPixelSize(R.dimen.icon_button_size),
+                resources.getDimensionPixelSize(R.dimen.icon_button_size),
+            )
             setImageResource(R.drawable.ic_help_outline)
             background = null
-            setPadding(dp(6), dp(6), dp(6), dp(6))
+            val iconPadding = resources.getDimensionPixelSize(R.dimen.space_6)
+            setPadding(iconPadding, iconPadding, iconPadding, iconPadding)
             setColorFilter(context.getColor(R.color.text_secondary))
         }
         header.addView(helpButton)
         content.addView(header)
 
         latestText = TextView(context).apply {
-            setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
-            textSize = 12f
+            setTextAppearance(R.style.Text_MyFitAI_Caption)
             includeFontPadding = false
             setLineSpacing(0f, 1f)
-            minHeight = dp(48)
+            minHeight = resources.getDimensionPixelSize(R.dimen.control_min_height)
             gravity = Gravity.CENTER_VERTICAL
         }
         val actions = LinearLayout(context).apply {
@@ -74,7 +74,7 @@ class MeasurementActionCardView @JvmOverloads constructor(
             gravity = Gravity.END
         }
         addButton = ImageButton(context).apply {
-            layoutParams = LinearLayout.LayoutParams(dp(48), dp(44))
+            layoutParams = LinearLayout.LayoutParams(dimension(R.dimen.icon_button_size), dimension(R.dimen.icon_button_size))
             contentDescription = "Nuova rilevazione"
             tooltipText = "Nuova rilevazione"
             setImageResource(R.drawable.ic_add_circle)
@@ -84,7 +84,7 @@ class MeasurementActionCardView @JvmOverloads constructor(
             background = roundedBackground(context.getColor(R.color.accent_green))
         }
         historyButton = ImageButton(context).apply {
-            layoutParams = LinearLayout.LayoutParams(dp(48), dp(44)).apply { marginStart = dp(8) }
+            layoutParams = LinearLayout.LayoutParams(dimension(R.dimen.icon_button_size), dimension(R.dimen.icon_button_size)).apply { marginStart = dimension(R.dimen.space_8) }
             contentDescription = "Storico rilevazioni"
             tooltipText = "Storico rilevazioni"
             setImageResource(R.drawable.ic_history)
@@ -101,7 +101,7 @@ class MeasurementActionCardView @JvmOverloads constructor(
         val details = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            layoutParams = marginTop(2)
+            layoutParams = marginTop(R.dimen.space_2)
         }
         latestText.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         details.addView(latestText)
@@ -129,12 +129,14 @@ class MeasurementActionCardView @JvmOverloads constructor(
         historyButton.setOnClickListener(listener)
     }
 
-    private fun marginTop(value: Int) = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(value) }
+    private fun marginTop(dimenRes: Int) = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+        topMargin = dimension(dimenRes)
+    }
     private fun roundedBackground(fillColor: Int, strokeColor: Int? = null) = GradientDrawable().apply {
         shape = GradientDrawable.RECTANGLE
         setColor(fillColor)
-        cornerRadius = dp(13).toFloat()
-        strokeColor?.let { setStroke(dp(1), it) }
+        cornerRadius = dimension(R.dimen.radius_medium).toFloat()
+        strokeColor?.let { setStroke(dimension(R.dimen.space_1), it) }
     }
-    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+    private fun dimension(dimenRes: Int): Int = resources.getDimensionPixelSize(dimenRes)
 }

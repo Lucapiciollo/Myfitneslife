@@ -110,7 +110,7 @@ class NewBodyMeasurementActivity : BaseShellActivity() {
             if (view is MaterialCardView) {
                 view.setCardBackgroundColor(getColor(R.color.white))
                 view.strokeColor = getColor(R.color.divider)
-                view.strokeWidth = (resources.displayMetrics.density).toInt()
+                view.strokeWidth = resources.getDimensionPixelSize(R.dimen.space_1)
                 view.cardElevation = 0f
             }
             if (view is android.view.ViewGroup) {

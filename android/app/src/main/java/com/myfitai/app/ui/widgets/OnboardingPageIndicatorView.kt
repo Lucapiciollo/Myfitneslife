@@ -24,9 +24,8 @@ class OnboardingPageIndicatorView @JvmOverloads constructor(
     private fun buildDots() {
         removeAllViews()
         dots.clear()
-        val density = resources.displayMetrics.density
-        val size = (8 * density).toInt()
-        val gap = (8 * density).toInt()
+        val size = resources.getDimensionPixelSize(R.dimen.space_8)
+        val gap = resources.getDimensionPixelSize(R.dimen.space_8)
         repeat(count) { index ->
             val dot = android.view.View(context).apply {
                 layoutParams = LayoutParams(size, size).apply {

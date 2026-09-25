@@ -21,11 +21,11 @@
             android:gravity="center_vertical">
             <androidx.appcompat.widget.AppCompatImageButton
                 android:id="@+id/backButton"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/screen_header_icon_size"
+                android:layout_height="@dimen/screen_header_icon_size"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Indietro"
-                android:padding="8dp"
+                android:padding="@dimen/space_8"
                 android:src="@drawable/ic_arrow_back" />
             <TextView
                 android:layout_width="0dp"
@@ -35,7 +35,7 @@
                 android:text="Nuovo allenamento"
                 android:textColor="@color/text_primary"
                 style="@style/Text.MyFitAI.ScreenTitle" />
-            <Space android:layout_width="40dp" android:layout_height="40dp" />
+            <Space android:layout_width="@dimen/screen_header_icon_size" android:layout_height="@dimen/screen_header_icon_size" />
         </LinearLayout>
 
         <com.google.android.material.card.MaterialCardView
@@ -74,10 +74,10 @@
                 style="@style/Widget.MyFitAI.InputEditText"
                     android:id="@+id/dateInput"
                     android:layout_width="match_parent"
-                    android:layout_height="64dp"
+                    android:layout_height="@dimen/workout_datetime_field_height"
                     android:focusable="false"
                     android:gravity="center_vertical"
-                    android:minHeight="64dp"
+                    android:minHeight="@dimen/workout_datetime_field_height"
                     android:textSize="16sp" />
             </com.google.android.material.textfield.TextInputLayout>
             <Space android:layout_width="@dimen/space_12" android:layout_height="1dp" />
@@ -85,7 +85,7 @@
                 android:id="@+id/timeLayout"
                 style="@style/Widget.MyFitAI.Input"
                 android:layout_width="0dp"
-                android:layout_height="64dp"
+                android:layout_height="@dimen/workout_datetime_field_height"
                 android:layout_weight="1"
                 android:hint="Ora"
                 app:endIconMode="custom"
@@ -94,10 +94,10 @@
                 style="@style/Widget.MyFitAI.InputEditText"
                     android:id="@+id/timeInput"
                     android:layout_width="match_parent"
-                    android:layout_height="64dp"
+                    android:layout_height="@dimen/workout_datetime_field_height"
                     android:focusable="false"
                     android:gravity="center_vertical"
-                    android:minHeight="64dp"
+                    android:minHeight="@dimen/workout_datetime_field_height"
                     android:textSize="16sp" />
             </com.google.android.material.textfield.TextInputLayout>
         </LinearLayout>
@@ -167,7 +167,7 @@
             android:id="@+id/saveWorkoutButton"
             style="@style/Widget.MyFitAI.Button.Primary"
             android:layout_width="match_parent"
-            android:layout_height="52dp"
+            android:layout_height="@dimen/button_primary_min_height"
             android:layout_marginTop="@dimen/space_20"
             android:layout_marginBottom="@dimen/space_24"
             android:text="Salva" />

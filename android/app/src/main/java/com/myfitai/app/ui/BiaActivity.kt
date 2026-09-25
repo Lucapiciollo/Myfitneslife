@@ -110,6 +110,9 @@ class BiaActivity : BaseShellActivity() {
         bindViews()
         normalizeBiaCards()
         bindSegments()
+        findViewById<View>(R.id.aiConfigurationNoticeButton).setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
+        }
         findViewById<View>(R.id.addBiaFromHistoryButton).setOnClickListener {
             resetForm()
             findViewById<SelectableSegmentView>(R.id.biaSegment).getChildAt(0)?.performClick()
@@ -120,6 +123,8 @@ class BiaActivity : BaseShellActivity() {
         bindSave()
         bindPhotoImport()
         findViewById<View>(R.id.analyzeBiaButton).setOnClickListener { analyzeBiaWithAi(it) }
+        findViewById<View>(R.id.aiConfigurationNoticeCard).visibility =
+            if (aiProviderConfigured) View.GONE else View.VISIBLE
         pendingEditId = intent.getLongExtra(EXTRA_EDIT_ID, 0L)
         observeState()
         renderDateTime()
@@ -133,6 +138,8 @@ class BiaActivity : BaseShellActivity() {
         super.onResume()
         if (this::dateInput.isInitialized) {
             setAiActionEnabled(findViewById(R.id.importPhotoButton))
+            findViewById<View>(R.id.aiConfigurationNoticeCard).visibility =
+                if (aiProviderConfigured) View.GONE else View.VISIBLE
         }
     }
 
@@ -151,7 +158,7 @@ class BiaActivity : BaseShellActivity() {
             findViewById<MaterialCardView>(id).apply {
                 setCardBackgroundColor(getColor(R.color.white))
                 strokeColor = getColor(R.color.divider)
-                strokeWidth = dp(1)
+                strokeWidth = resources.getDimensionPixelSize(R.dimen.space_1)
                 cardElevation = 0f
                 (getChildAt(0) as? View)?.setBackgroundColor(getColor(R.color.white))
             }
@@ -517,7 +524,7 @@ class BiaActivity : BaseShellActivity() {
         } ?: "Data rilevata: non disponibile"
 
         val scrollHeight = minOf(
-            (resources.displayMetrics.density * 300f).toInt(),
+            resources.getDimensionPixelSize(R.dimen.bia_import_preview_max_height),
             (resources.displayMetrics.heightPixels * 0.46f).toInt(),
         )
         scroll.layoutParams = (scroll.layoutParams
@@ -652,11 +659,13 @@ class BiaActivity : BaseShellActivity() {
                 orientation = LinearLayout.VERTICAL
                 setBackgroundResource(R.drawable.bg_card)
                 elevation = 0f
-                setPadding(dp(16), dp(12), dp(16), dp(12))
+                val horizontalPadding = resources.getDimensionPixelSize(R.dimen.space_16)
+                val verticalPadding = resources.getDimensionPixelSize(R.dimen.space_12)
+                setPadding(horizontalPadding, verticalPadding, horizontalPadding, verticalPadding)
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT,
-                ).apply { bottomMargin = dp(8) }
+                ).apply { bottomMargin = resources.getDimensionPixelSize(R.dimen.space_8) }
             }
 
             card.addView(KeyValueRowView(this).apply {
@@ -665,23 +674,21 @@ class BiaActivity : BaseShellActivity() {
             })
             card.addView(TextView(this).apply {
                 text = buildMeasurementLine(item)
-                setTextColor(getColor(R.color.text_secondary))
-                textSize = 12f
-                setPadding(0, dp(5), 0, 0)
+                setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
+                setPadding(0, resources.getDimensionPixelSize(R.dimen.space_5), 0, 0)
             })
             buildConditionLine(item)?.let { conditions ->
                 card.addView(TextView(this).apply {
                     text = conditions
+                    setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
                     setTextColor(getColor(R.color.text_muted))
-                    textSize = 12f
-                    setPadding(0, dp(6), 0, 0)
+                    setPadding(0, resources.getDimensionPixelSize(R.dimen.space_6), 0, 0)
                 })
             }
             card.addView(TextView(this).apply {
                 text = "Tocca per modificare · Tieni premuto per eliminare"
-                setTextColor(getColor(R.color.text_muted))
-                textSize = 10f
-                setPadding(0, dp(6), 0, 0)
+                setTextAppearance(R.style.Text_MyFitAI_Micro)
+                setPadding(0, resources.getDimensionPixelSize(R.dimen.space_6), 0, 0)
             })
             card.setOnClickListener { editReading(item) }
             card.contentDescription = "Modifica rilevazione BIA"
@@ -971,8 +978,6 @@ class BiaActivity : BaseShellActivity() {
         if (value % 1f == 0f) value.toInt().toString() else String.format(Locale.ITALIAN, "%.1f", value)
 
     private fun formatSigned(value: Float): String = String.format(Locale.ITALIAN, "%+.1f", value)
-
-    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     companion object {
         const val EXTRA_OPEN_HISTORY = "open_bia_history"

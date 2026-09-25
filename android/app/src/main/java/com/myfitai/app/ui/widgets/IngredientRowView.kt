@@ -22,11 +22,11 @@ class IngredientRowView @JvmOverloads constructor(
     init {
         orientation = HORIZONTAL
         gravity = android.view.Gravity.CENTER_VERTICAL
-        val density = resources.displayMetrics.density
-        setPadding(0, (8 * density).toInt(), 0, (8 * density).toInt())
+        val rowPadding = resources.getDimensionPixelSize(R.dimen.space_8)
+        setPadding(0, rowPadding, 0, rowPadding)
 
         iconView = ShapeableImageView(context).apply {
-            val size = (32 * density).toInt()
+            val size = resources.getDimensionPixelSize(R.dimen.dashboard_thumbnail_size)
             layoutParams = LayoutParams(size, size)
             scaleType = ImageView.ScaleType.CENTER_CROP
             shapeAppearanceModel = ShapeAppearanceModel.builder(context, 0, R.style.ShapeAppearance_MyFitAI_Avatar).build()
@@ -35,16 +35,14 @@ class IngredientRowView @JvmOverloads constructor(
 
         nameView = TextView(context).apply {
             layoutParams = LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f).apply {
-                marginStart = (12 * density).toInt()
+                marginStart = resources.getDimensionPixelSize(R.dimen.space_12)
             }
-            setTextColor(context.getColor(R.color.text_primary))
-            textSize = 14f
+            setTextAppearance(R.style.Text_MyFitAI_BodyEmphasis)
         }
         addView(nameView)
 
         quantityView = TextView(context).apply {
-            setTextColor(context.getColor(R.color.text_secondary))
-            textSize = 14f
+            setTextAppearance(R.style.Text_MyFitAI_Body)
             gravity = android.view.Gravity.END
             textAlignment = TextView.TEXT_ALIGNMENT_VIEW_END
         }

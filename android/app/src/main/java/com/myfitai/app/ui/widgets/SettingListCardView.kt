@@ -14,24 +14,30 @@ class SettingListCardView @JvmOverloads constructor(
 ) : MaterialCardView(context, attrs) {
     private val rows = LinearLayout(context).apply {
         orientation = LinearLayout.VERTICAL
-        setPadding(dp(12), dp(4), dp(12), dp(4))
+        setPadding(
+            context.resources.getDimensionPixelSize(R.dimen.card_content_padding_compact),
+            context.resources.getDimensionPixelSize(R.dimen.space_4),
+            context.resources.getDimensionPixelSize(R.dimen.card_content_padding_compact),
+            context.resources.getDimensionPixelSize(R.dimen.space_4),
+        )
     }
 
     init {
         setCardBackgroundColor(context.getColor(R.color.surface_primary))
-        radius = dp(16).toFloat()
+        radius = context.resources.getDimension(R.dimen.radius_card)
         cardElevation = 0f
-        strokeWidth = dp(1)
+        strokeWidth = context.resources.getDimensionPixelSize(R.dimen.space_1)
         setStrokeColor(context.getColor(R.color.divider))
         addView(rows)
     }
 
     fun addRow(row: SettingRowView) {
         if (rows.childCount > 0) {
-            rows.addView(View(context).apply { setBackgroundColor(context.getColor(R.color.divider)) }, LinearLayout.LayoutParams(-1, dp(1)))
+            rows.addView(
+                View(context).apply { setBackgroundColor(context.getColor(R.color.divider)) },
+                LinearLayout.LayoutParams(-1, context.resources.getDimensionPixelSize(R.dimen.space_1)),
+            )
         }
         rows.addView(row, LinearLayout.LayoutParams(-1, -2))
     }
-
-    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 }

@@ -9,6 +9,7 @@ import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.ImageButton
+import android.widget.FrameLayout
 import androidx.activity.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -48,6 +49,7 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
     private var analysisDetailsExpanded = false
     private lateinit var analysisLastText: TextView
     private lateinit var analysisNextText: TextView
+    private lateinit var analysisJobMessageText: TextView
     private lateinit var analysisResultText: TextView
     private lateinit var analysisDetailsButton: MaterialButton
     private lateinit var analysisDetailsContainer: LinearLayout
@@ -97,11 +99,27 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
                 viewModel.state.collect { latestState = it; render(it) }
             }
         }
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                data.activeProfileStore.activeProfileId.collectLatest { profileId ->
+                    if (profileId <= 0L) {
+                        renderProgressAnalysisStatus()
+                    } else {
+                        data.aiJobScheduler
+                            .observeActive(AiJobType.PROGRESS_ANALYSIS, profileId)
+                            .collectLatest(::renderProgressAnalysisJob)
+                    }
+                }
+            }
+        }
     }
 
     override fun onResume() {
         super.onResume()
-        if (::analysisLastText.isInitialized) renderProgressAnalysisStatus()
+        if (::analysisLastText.isInitialized) {
+            data.activeProfileStore.currentIdOrNull()?.let(data.progressAnalysisScheduler::ensureScheduled)
+            renderProgressAnalysisStatus()
+        }
     }
 
     private fun bindProgressAnalysisCard() {
@@ -128,26 +146,32 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
                             "la scritta 'Ultima esecuzione: mai' significa solo che questa interpretazione non è ancora stata eseguita.",
                     )
                 }
-            }, LinearLayout.LayoutParams(dp(40), dp(40)))
+            }, LinearLayout.LayoutParams(dimen(R.dimen.icon_button_size), dimen(R.dimen.icon_button_size)))
         }
         analysisHeader = header
 
         val card = MaterialCardView(this).apply {
             setCardBackgroundColor(getColor(R.color.white))
-            radius = dp(20).toFloat()
-            strokeWidth = dp(1)
+            radius = resources.getDimension(R.dimen.radius_card)
+            strokeWidth = dimen(R.dimen.space_1)
             setStrokeColor(getColor(R.color.divider))
              cardElevation = 0f
         }
         analysisCard = card
         val cardContent = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(16), dp(14), dp(16), dp(14))
+            val horizontalPadding = dimen(R.dimen.card_content_padding)
+            val verticalPadding = dimen(R.dimen.space_14)
+            setPadding(horizontalPadding, verticalPadding, horizontalPadding, verticalPadding)
         }
         card.addView(cardContent)
         cardContent.addView(header)
         analysisLastText = bodyText()
         analysisNextText = bodyText()
+        analysisJobMessageText = bodyText().apply {
+            visibility = View.GONE
+            setTextColor(getColor(R.color.text_secondary))
+        }
         analysisResultText = bodyText().apply { visibility = View.GONE }
         analysisDetailsButton = MaterialButton(this).apply {
             text = "Mostra dettagli analisi"
@@ -171,19 +195,20 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         }
         analysisRequirementsText = bodyText().apply {
             visibility = View.GONE
-            textSize = 11f
+            setTextAppearance(R.style.Text_MyFitAI_Micro)
             setTextColor(getColor(R.color.text_muted))
         }
-        cardContent.addView(analysisLastText, marginTopParams(8))
-        cardContent.addView(analysisNextText, marginTopParams(4))
-        cardContent.addView(analysisResultText, marginTopParams(10))
-        cardContent.addView(analysisDetailsButton, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(44)).apply { topMargin = dp(8) })
-        cardContent.addView(analysisDetailsContainer, marginTopParams(6))
-        cardContent.addView(analysisProgress, LinearLayout.LayoutParams(dp(32), dp(32)).apply { topMargin = dp(10) })
-        cardContent.addView(analysisButton, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(48)).apply { topMargin = dp(12) })
-        cardContent.addView(analysisRequirementsText, marginTopParams(6))
+        cardContent.addView(analysisLastText, marginTopParams(R.dimen.space_8))
+        cardContent.addView(analysisNextText, marginTopParams(R.dimen.space_4))
+        cardContent.addView(analysisJobMessageText, marginTopParams(R.dimen.space_8))
+        cardContent.addView(analysisResultText, marginTopParams(R.dimen.space_10))
+        cardContent.addView(analysisDetailsButton, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dimen(R.dimen.control_compact_min_height)).apply { topMargin = dimen(R.dimen.space_8) })
+        cardContent.addView(analysisDetailsContainer, marginTopParams(R.dimen.space_6))
+        cardContent.addView(analysisProgress, LinearLayout.LayoutParams(dimen(R.dimen.progress_indicator_size), dimen(R.dimen.progress_indicator_size)).apply { topMargin = dimen(R.dimen.space_10) })
+        cardContent.addView(analysisButton, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dimen(R.dimen.button_primary_min_height)).apply { topMargin = dimen(R.dimen.space_12) })
+        cardContent.addView(analysisRequirementsText, marginTopParams(R.dimen.space_6))
         root.addView(card, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
-            topMargin = dp(8)
+            topMargin = dimen(R.dimen.space_8)
         })
         renderProgressAnalysisStatus()
     }
@@ -209,14 +234,14 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
                             "La sintesi IA viene generata solo sui dati registrati e non sostituisce una valutazione professionale.",
                     )
                 }
-            }, LinearLayout.LayoutParams(dp(40), dp(40)))
+            }, LinearLayout.LayoutParams(dimen(R.dimen.icon_button_size), dimen(R.dimen.icon_button_size)))
         }
         reviewHeader = header
 
         val card = MaterialCardView(this).apply {
             setCardBackgroundColor(getColor(R.color.white))
-            radius = dp(20).toFloat()
-            strokeWidth = dp(1)
+            radius = resources.getDimension(R.dimen.radius_card)
+            strokeWidth = dimen(R.dimen.space_1)
             setStrokeColor(getColor(R.color.divider))
              cardElevation = 0f
             isClickable = true
@@ -226,7 +251,9 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         reviewCard = card
         val cardContent = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(16), dp(14), dp(16), dp(14))
+            val horizontalPadding = dimen(R.dimen.card_content_padding)
+            val verticalPadding = dimen(R.dimen.space_14)
+            setPadding(horizontalPadding, verticalPadding, horizontalPadding, verticalPadding)
         }
         card.addView(cardContent)
         cardContent.addView(header)
@@ -237,16 +264,16 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         cardContent.addView(TextView(this).apply {
             text = "Controlla alimentazione, allenamenti, variazioni corporee e sintesi IA della settimana."
             setTextAppearance(R.style.Text_MyFitAI_Body)
-        }, marginTopParams(6))
+        }, marginTopParams(R.dimen.space_6))
         cardContent.addView(MaterialButton(this).apply {
             text = "Apri review"
             isAllCaps = false
             setOnClickListener { startActivity(Intent(this@PhysicalEvolutionActivity, WeeklyReviewActivity::class.java)) }
-        }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(48)).apply {
-            topMargin = dp(12)
+        }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dimen(R.dimen.button_primary_min_height)).apply {
+            topMargin = dimen(R.dimen.space_12)
         })
         root.addView(card, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
-            topMargin = dp(8)
+            topMargin = dimen(R.dimen.space_8)
         })
         reviewHeader.visibility = View.GONE
         reviewCard.visibility = View.GONE
@@ -268,6 +295,7 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
     }
 
     private fun executeProgressAnalysis() {
+        if (analysisProgress.visibility == View.VISIBLE) return
         val profileId = data.activeProfileStore.currentIdOrNull()
         if (profileId == null) {
             analysisResultText.visibility = View.VISIBLE
@@ -279,8 +307,7 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         setAiActionEnabled(analysisButton, false)
         analysisButton.text = "Analisi in corso…"
         analysisProgress.visibility = View.VISIBLE
-        analysisResultText.visibility = View.VISIBLE
-        analysisResultText.text = "Analisi dei trend corporei e dello storico registrato…"
+        showAnalysisJobMessage("Analisi dei trend corporei e dello storico registrato…")
         analysisDetailsButton.visibility = View.GONE
         analysisDetailsContainer.visibility = View.GONE
         analysisDetailsExpanded = false
@@ -289,32 +316,80 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
             data.aiJobScheduler.enqueue(AiJobType.PROGRESS_ANALYSIS, profileId, jobKey)
         }.exceptionOrNull()
         if (enqueueError != null) {
-            analysisResultText.text = "Impossibile avviare l'analisi IA: ${enqueueError.message ?: "errore locale"}"
+            showAnalysisJobMessage("Impossibile avviare l'analisi IA: ${enqueueError.message ?: "errore locale"}")
             analysisProgress.visibility = View.GONE
             setAiActionEnabled(analysisButton)
             analysisButton.text = "Esegui analisi ora"
             return
         }
-        lifecycleScope.launch {
-            data.aiJobScheduler.observe(AiJobType.PROGRESS_ANALYSIS, profileId, jobKey).collect { info ->
-                when (info?.state) {
-                    androidx.work.WorkInfo.State.SUCCEEDED -> {
-                        analysisResultText.text = "Analisi completata. Il risultato aggiornato è disponibile."
-                        analysisProgress.visibility = View.GONE
-                        setAiActionEnabled(analysisButton)
-                        analysisButton.text = "Esegui analisi ora"
-                        renderProgressAnalysisStatus(keepTransientResult = false)
+    }
+
+    private fun renderProgressAnalysisJob(info: androidx.work.WorkInfo?) {
+        when (info?.state) {
+            androidx.work.WorkInfo.State.BLOCKED,
+            androidx.work.WorkInfo.State.RUNNING -> {
+                analysisProgress.visibility = View.VISIBLE
+                showAnalysisJobMessage("Analisi dei trend corporei e dello storico registrato…")
+                analysisDetailsButton.visibility = View.GONE
+                analysisDetailsContainer.visibility = View.GONE
+                setAiActionEnabled(analysisButton, false)
+                analysisButton.text = "Analisi in corso…"
+            }
+            androidx.work.WorkInfo.State.ENQUEUED -> {
+                val profileId = data.activeProfileStore.currentIdOrNull()
+                val isManual = profileId != null && info.tags.contains(
+                    "ai-${AiJobType.PROGRESS_ANALYSIS.name.lowercase()}-profile-$profileId-manual",
+                )
+                val nextDue = profileId?.let(data.progressAnalysisPreferences::nextDueEpochMillis)
+                val automaticIsDue = nextDue != null && nextDue <= System.currentTimeMillis()
+                if (!isManual && !automaticIsDue) {
+                    analysisProgress.visibility = View.GONE
+                    hideAnalysisJobMessage()
+                    analysisButton.text = "Esegui analisi ora"
+                    renderProgressAnalysisStatus()
+                    return
+                }
+                analysisProgress.visibility = View.VISIBLE
+                showAnalysisJobMessage(
+                    if (!isManual) "Analisi automatica in attesa: verrà eseguita quando il dispositivo sarà connesso."
+                    else "Analisi in coda: partirà quando il dispositivo sarà connesso."
+                )
+                setAiActionEnabled(analysisButton, false)
+                analysisButton.text = "Analisi in coda…"
+            }
+            androidx.work.WorkInfo.State.FAILED -> {
+                analysisProgress.visibility = View.GONE
+                setAiActionEnabled(analysisButton)
+                analysisButton.text = "Esegui analisi ora"
+                val error = info.outputData.getString(com.myfitai.app.domain.ai.AiJobWorker.KEY_ERROR)
+                val profileId = data.activeProfileStore.currentIdOrNull()
+                val previousSummary = profileId?.let(data.progressAnalysisPreferences::lastSummary)
+                renderProgressAnalysisStatus()
+                if (!error.isNullOrBlank()) {
+                    showAnalysisJobMessage("Ultima richiesta non riuscita: $error")
+                    if (!previousSummary.isNullOrBlank()) {
+                        analysisResultText.visibility = View.VISIBLE
                     }
-                    androidx.work.WorkInfo.State.FAILED -> {
-                        analysisResultText.text = info.outputData.getString(com.myfitai.app.domain.ai.AiJobWorker.KEY_ERROR) ?: "Analisi non riuscita. I dati precedenti restano invariati."
-                        analysisProgress.visibility = View.GONE
-                        setAiActionEnabled(analysisButton)
-                        analysisButton.text = "Esegui analisi ora"
-                    }
-                    else -> Unit
                 }
             }
+            androidx.work.WorkInfo.State.SUCCEEDED,
+            androidx.work.WorkInfo.State.CANCELLED,
+            null -> {
+                analysisProgress.visibility = View.GONE
+                analysisButton.text = "Esegui analisi ora"
+                hideAnalysisJobMessage()
+                renderProgressAnalysisStatus()
+            }
         }
+    }
+
+    private fun showAnalysisJobMessage(message: String) {
+        analysisJobMessageText.text = message
+        analysisJobMessageText.visibility = View.VISIBLE
+    }
+
+    private fun hideAnalysisJobMessage() {
+        analysisJobMessageText.visibility = View.GONE
     }
 
     private fun renderProgressAnalysisStatus(keepTransientResult: Boolean = false) {
@@ -325,6 +400,8 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
             analysisCard.visibility = View.GONE
             analysisLastText.text = "Ultima esecuzione: profilo non disponibile"
             analysisNextText.text = "Esecuzione automatica: non pianificata"
+            analysisProgress.visibility = View.GONE
+            hideAnalysisJobMessage()
             setAiActionEnabled(analysisButton, false)
             analysisDetailsButton.visibility = View.GONE
             analysisDetailsContainer.visibility = View.GONE
@@ -347,6 +424,7 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
             val remaining = prefs.remainingMillis(profileId, System.currentTimeMillis()) ?: 0L
             "Prossima automatica: ${formatDateTime(next)} · manca ${formatRemaining(remaining)}"
         }
+        analysisResultText.setTextColor(getColor(R.color.text_secondary))
         if (!keepTransientResult) {
             val summary = prefs.lastSummary(profileId)
             val classificationValue = prefs.lastClassification(profileId)
@@ -409,12 +487,41 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         }
         analysisDetailsButton.visibility = View.VISIBLE
         patterns.forEach { pattern ->
-            analysisDetailsContainer.addView(TextView(this).apply {
-                text = "${directionSymbol(pattern.direction)} ${patternLabel(pattern.code)} · ${directionLabel(pattern.direction)} · confidenza ${confidenceLabel(pattern.confidence)}"
-                textSize = 13f
-                setTextColor(getColor(R.color.text_secondary))
-                setPadding(0, dp(5), 0, dp(5))
+            val item = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = android.view.Gravity.TOP
+                val verticalPadding = dimen(R.dimen.space_5)
+                setPadding(0, verticalPadding, 0, verticalPadding)
+            }
+            val indicator = FrameLayout(this).apply {
+                layoutParams = LinearLayout.LayoutParams(dimen(R.dimen.progress_pattern_indicator_width), dimen(R.dimen.progress_pattern_indicator_width)).apply {
+                    marginEnd = dimen(R.dimen.space_4)
+                }
+                val color = when (pattern.direction) {
+                    ProgressAnalysisCompactContract.Direction.FAVORABLE -> getColor(R.color.semantic_positive)
+                    ProgressAnalysisCompactContract.Direction.UNFAVORABLE -> getColor(R.color.semantic_error)
+                    ProgressAnalysisCompactContract.Direction.UNCERTAIN -> getColor(R.color.semantic_warning)
+                }
+                background = android.graphics.drawable.GradientDrawable().apply {
+                    shape = android.graphics.drawable.GradientDrawable.OVAL
+                    setColor(color)
+                }
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            }
+            indicator.addView(TextView(this).apply {
+                text = ""
+                setTextAppearance(R.style.Text_MyFitAI_BodyEmphasis)
+                layoutParams = FrameLayout.LayoutParams(dimen(R.dimen.progress_pattern_indicator_dot_size), dimen(R.dimen.progress_pattern_indicator_dot_size), android.view.Gravity.CENTER)
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
             })
+            item.addView(indicator)
+            item.addView(TextView(this).apply {
+                text = "${patternLabel(pattern.code)} · ${directionLabel(pattern.direction)} · confidenza ${confidenceLabel(pattern.confidence)}"
+                setTextAppearance(R.style.Text_MyFitAI_Body)
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            })
+            item.contentDescription = "${directionLabel(pattern.direction)}: ${patternLabel(pattern.code)}, confidenza ${confidenceLabel(pattern.confidence)}"
+            analysisDetailsContainer.addView(item)
         }
         renderDetailsVisibility()
     }
@@ -440,12 +547,6 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         ProgressAnalysisCompactContract.Direction.FAVORABLE -> "trend favorevole"
         ProgressAnalysisCompactContract.Direction.UNFAVORABLE -> "da monitorare"
         ProgressAnalysisCompactContract.Direction.UNCERTAIN -> "trend non conclusivo"
-    }
-
-    private fun directionSymbol(direction: ProgressAnalysisCompactContract.Direction): String = when (direction) {
-        ProgressAnalysisCompactContract.Direction.FAVORABLE -> "✓"
-        ProgressAnalysisCompactContract.Direction.UNFAVORABLE -> "!"
-        ProgressAnalysisCompactContract.Direction.UNCERTAIN -> "•"
     }
 
     private fun render(state: PhysicalEvolutionState) {
@@ -487,7 +588,7 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         setTextAppearance(R.style.Text_MyFitAI_Body)
     }
 
-    private fun marginTopParams(top: Int) = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(top) }
+    private fun marginTopParams(dimenRes: Int) = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dimen(dimenRes) }
 
     private fun classificationLabel(value: ProgressAnalysisCompactContract.Classification): String = when (value) {
         ProgressAnalysisCompactContract.Classification.POSITIVE_RECOMPOSITION -> "Ricomposizione positiva"
@@ -541,7 +642,7 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         }
     }
 
-    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+    private fun dimen(dimenRes: Int): Int = resources.getDimensionPixelSize(dimenRes)
     private fun fmt(v: Float) = String.format(Locale.ITALIAN, "%.1f", v)
     private fun signed(v: Float) = String.format(Locale.ITALIAN, "%+.1f", v)
 }

@@ -48,7 +48,7 @@ class ShoppingListActivity : BaseShellActivity() {
         findViewById<MaterialCardView>(R.id.itemsCard).apply {
             setCardBackgroundColor(getColor(R.color.white))
             strokeColor = getColor(R.color.divider)
-            strokeWidth = dp(1)
+            strokeWidth = resources.getDimensionPixelSize(R.dimen.space_1)
             cardElevation = 0f
         }
 
@@ -136,7 +136,7 @@ class ShoppingListActivity : BaseShellActivity() {
         container.addView(
             SectionHeaderView(this).apply { text = title },
             LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
-                topMargin = dp(12)
+                topMargin = resources.getDimensionPixelSize(R.dimen.space_12)
             },
         )
     }
@@ -235,8 +235,6 @@ class ShoppingListActivity : BaseShellActivity() {
         val short = DateTimeFormatter.ofPattern("d MMM", Locale.ITALIAN)
         return "${start.format(short)} – ${end.format(short)} ${end.year}"
     }
-
-    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     companion object {
         const val EXTRA_WEEK_START_EPOCH_DAY = "shopping_week_start_epoch_day"

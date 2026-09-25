@@ -28,11 +28,11 @@
 
                  <ImageButton
                      android:id="@+id/backButton"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
+                     android:layout_width="@dimen/screen_header_icon_size"
+                     android:layout_height="@dimen/screen_header_icon_size"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="Indietro"
-                    android:padding="8dp"
+                     android:padding="@dimen/space_8"
                     android:src="@drawable/ic_arrow_back"
                     app:tint="@color/text_primary" />
 
@@ -59,20 +59,17 @@
 
                     <TextView
                         android:id="@+id/sourceMealText"
+                        style="@style/Text.MyFitAI.Section"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/text_primary"
-                        android:textSize="16sp"
-                        android:textStyle="bold" />
+                        android:layout_height="wrap_content" />
 
                     <TextView
                         android:id="@+id/constraintText"
+                        style="@style/Text.MyFitAI.BodyCompact"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="Le alternative mantengono lo stesso tipo/orario e le stesse calorie del pasto."
-                        android:textColor="@color/text_secondary"
-                        android:textSize="13sp" />
+                        android:layout_marginTop="@dimen/space_4"
+                        android:text="Le alternative mantengono lo stesso tipo/orario e le stesse calorie del pasto." />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -85,26 +82,24 @@
                 android:orientation="horizontal">
 
                 <ProgressBar
-                    android:layout_width="26dp"
-                    android:layout_height="26dp" />
+                    android:layout_width="@dimen/progress_compact_size"
+                    android:layout_height="@dimen/progress_compact_size" />
 
                 <TextView
+                    style="@style/Text.MyFitAI.BodyCompact"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="@dimen/space_8"
-                    android:text="Sto preparando 5 alternative equivalenti…"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="13sp" />
+                    android:text="Sto preparando 5 alternative equivalenti…" />
             </LinearLayout>
 
             <TextView
                 android:id="@+id/providerText"
+                style="@style/Text.MyFitAI.Micro"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_8"
                 android:gravity="center"
-                android:textColor="@color/text_muted"
-                android:textSize="11sp"
                 android:visibility="gone" />
 
             <LinearLayout
@@ -116,12 +111,11 @@
 
             <TextView
                 android:id="@+id/statusText"
+                style="@style/Text.MyFitAI.BodyCompact"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_12"
                 android:gravity="center"
-                android:textColor="@color/text_secondary"
-                android:textSize="13sp"
                 android:visibility="gone" />
 
         </LinearLayout>

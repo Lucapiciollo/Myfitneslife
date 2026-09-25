@@ -28,6 +28,11 @@ class ProgressAnalysisScheduler(
         enqueue(profileId, nowEpochMillis)
     }
 
+    /** Idempotently restores the next due run when the progress feature is entered. */
+    fun ensureScheduled(profileId: Long, nowEpochMillis: Long = System.currentTimeMillis()) {
+        enqueue(profileId, nowEpochMillis)
+    }
+
     /** Called by a completed worker; current work is not cancelled while the next one is enqueued. */
     fun scheduleNextAfterAutomaticSuccess(profileId: Long, nowEpochMillis: Long = System.currentTimeMillis()) {
         enqueue(profileId, nowEpochMillis)

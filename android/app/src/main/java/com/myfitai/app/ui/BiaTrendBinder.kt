@@ -46,30 +46,32 @@ class BiaTrendBinder(
     val view = LinearLayout(activity).apply {
         orientation = LinearLayout.VERTICAL
         visibility = View.GONE
-        setPadding(0, dp(16), 0, 0)
+        setPadding(0, dimension(R.dimen.space_16), 0, 0)
     }
 
     private val metricButton = MaterialButton(activity).apply {
         isAllCaps = false
-        minHeight = dp(44)
-        cornerRadius = dp(12)
-        strokeWidth = dp(1)
+        minHeight = dimension(R.dimen.control_compact_min_height)
+        cornerRadius = dimension(R.dimen.radius_field)
+        strokeWidth = dimension(R.dimen.space_1)
         strokeColor = ColorStateList.valueOf(activity.getColor(R.color.divider))
         backgroundTintList = ColorStateList.valueOf(activity.getColor(R.color.white))
         setTextColor(activity.getColor(R.color.text_primary))
-        setPadding(dp(12), 0, dp(12), 0)
+        val horizontalPadding = dimension(R.dimen.space_12)
+        setPadding(horizontalPadding, 0, horizontalPadding, 0)
     }
-    private val currentText = text(15f, true)
-    private val previousText = text(13f, false)
-    private val periodText = text(13f, false)
-    private val qualityText = text(12f, false)
+    private val currentText = text(R.style.Text_MyFitAI_KeyValueValue)
+    private val previousText = text(R.style.Text_MyFitAI_SettingsDescription)
+    private val periodText = text(R.style.Text_MyFitAI_SettingsDescription)
+    private val qualityText = text(R.style.Text_MyFitAI_SettingsDescription)
     private val rangeSelector = SelectableSegmentView(activity)
     private val chart = BodyMeasurementTrendView(activity)
     private val trendNote = TextView(activity).apply {
-        textSize = 13f
-        setTextColor(activity.getColor(R.color.text_secondary))
+        setTextAppearance(R.style.Text_MyFitAI_Body)
         setBackgroundResource(R.drawable.bg_card)
-        setPadding(dp(14), dp(12), dp(14), dp(12))
+        val horizontalPadding = dimension(R.dimen.card_content_padding_compact)
+        val verticalPadding = dimension(R.dimen.space_12)
+        setPadding(horizontalPadding, verticalPadding, horizontalPadding, verticalPadding)
     }
 
     init {
@@ -79,14 +81,14 @@ class BiaTrendBinder(
             LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT),
         )
         metricButton.setOnClickListener { showMetricChooser() }
-        view.addView(metricButton, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(48)))
-        view.addView(currentText, marginTop(14))
-        view.addView(previousText, marginTop(6))
-        view.addView(periodText, marginTop(4))
-        view.addView(qualityText, marginTop(10))
-        view.addView(rangeSelector, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(44)).apply { topMargin = dp(14) })
-        view.addView(chart, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(240)).apply { topMargin = dp(12) })
-        view.addView(trendNote, marginTop(10))
+        view.addView(metricButton, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dimension(R.dimen.control_min_height)))
+        view.addView(currentText, marginTop(R.dimen.space_12))
+        view.addView(previousText, marginTop(R.dimen.space_6))
+        view.addView(periodText, marginTop(R.dimen.space_4))
+        view.addView(qualityText, marginTop(R.dimen.space_10))
+        view.addView(rangeSelector, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dimension(R.dimen.control_compact_min_height)).apply { topMargin = dimension(R.dimen.space_12) })
+        view.addView(chart, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dimension(R.dimen.bia_trend_chart_height)).apply { topMargin = dimension(R.dimen.space_12) })
+        view.addView(trendNote, marginTop(R.dimen.space_10))
 
         rangeSelector.setSegments(listOf("1M", "3M", "6M", "1Y"), selectedRangeIndex)
         rangeSelector.setOnSegmentSelectedListener {
@@ -188,16 +190,12 @@ class BiaTrendBinder(
 
     private fun signed(value: Float): String = String.format(Locale.ITALIAN, "%+.1f", value)
 
-    private fun text(size: Float, bold: Boolean) = TextView(activity).apply {
-        textSize = size
-        setTextColor(activity.getColor(if (bold) R.color.text_primary else R.color.text_secondary))
-        if (bold) setTypeface(typeface, android.graphics.Typeface.BOLD)
-    }
+    private fun text(style: Int) = TextView(activity).apply { setTextAppearance(style) }
 
-    private fun marginTop(value: Int) = LinearLayout.LayoutParams(
+    private fun marginTop(dimenRes: Int) = LinearLayout.LayoutParams(
         LinearLayout.LayoutParams.MATCH_PARENT,
         LinearLayout.LayoutParams.WRAP_CONTENT,
-    ).apply { topMargin = dp(value) }
+    ).apply { topMargin = dimension(dimenRes) }
 
-    private fun dp(value: Int) = (value * activity.resources.displayMetrics.density).toInt()
+    private fun dimension(dimenRes: Int) = activity.resources.getDimensionPixelSize(dimenRes)
 }

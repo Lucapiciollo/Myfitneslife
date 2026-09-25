@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    style="@style/Text.MyFitAI.DialogChoice"
     android:id="@android:id/text1"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:minHeight="48dp"
+    android:minHeight="@dimen/control_min_height"
     android:gravity="start|center_vertical"
     android:textAlignment="viewStart"
-    android:paddingStart="20dp"
-    android:paddingEnd="20dp"
-    android:textColor="@color/text_primary"
-    android:textSize="14sp"
+    android:paddingStart="@dimen/space_20"
+    android:paddingEnd="@dimen/space_20"
     android:background="@color/white" />

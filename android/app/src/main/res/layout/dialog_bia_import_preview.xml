@@ -204,12 +204,11 @@
             </com.google.android.material.textfield.TextInputLayout>
 
                 <TextView
+                    style="@style/Text.MyFitAI.Micro"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_8"
-                    android:text="Lascia vuoto un valore se non è leggibile o non vuoi importarlo."
-                    android:textColor="@color/text_muted"
-                    android:textSize="11sp" />
+                    android:text="Lascia vuoto un valore se non è leggibile o non vuoi importarlo." />
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>

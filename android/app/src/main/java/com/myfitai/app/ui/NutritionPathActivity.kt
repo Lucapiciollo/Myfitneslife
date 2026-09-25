@@ -1,7 +1,6 @@
 package com.myfitai.app.ui
 
 import android.os.Bundle
-import android.graphics.Typeface
 import android.view.Gravity
 import android.view.View
 import android.widget.LinearLayout
@@ -149,7 +148,9 @@ class NutritionPathActivity : BaseShellActivity() {
             val backgroundTypedArray = obtainStyledAttributes(backgroundAttributes)
             background = backgroundTypedArray.getDrawable(0)
             backgroundTypedArray.recycle()
-            setPadding(dp(4), dp(10), dp(4), dp(10))
+            val horizontalPadding = resources.getDimensionPixelSize(R.dimen.space_4)
+            val verticalPadding = resources.getDimensionPixelSize(R.dimen.space_10)
+            setPadding(horizontalPadding, verticalPadding, horizontalPadding, verticalPadding)
             contentDescription = "Scegli ${label(path)}"
             setOnClickListener { choose(path) }
         }
@@ -159,21 +160,19 @@ class NutritionPathActivity : BaseShellActivity() {
         }
         textColumn.addView(TextView(this).apply {
             text = label(path)
-            setTextColor(getColor(R.color.text_primary))
-            textSize = 14f
-            setTypeface(typeface, Typeface.BOLD)
+            setTextAppearance(R.style.Text_MyFitAI_SettingsLabel)
         })
         if (reason.isNotBlank()) {
             textColumn.addView(TextView(this).apply {
                 text = reason
+                setTextAppearance(R.style.Text_MyFitAI_Micro)
                 setTextColor(getColor(R.color.text_secondary))
-                textSize = 11f
                 maxLines = 2
                 ellipsize = android.text.TextUtils.TruncateAt.END
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT,
-                ).apply { topMargin = dp(2) }
+                ).apply { topMargin = resources.getDimensionPixelSize(R.dimen.space_2) }
             })
         }
         row.addView(textColumn)
@@ -182,21 +181,20 @@ class NutritionPathActivity : BaseShellActivity() {
             setTextColor(getColor(R.color.text_muted))
             textSize = 18f
             gravity = Gravity.CENTER
-            layoutParams = LinearLayout.LayoutParams(dp(28), dp(28))
+            val chevronSize = resources.getDimensionPixelSize(R.dimen.nutrition_path_chevron_size)
+            layoutParams = LinearLayout.LayoutParams(chevronSize, chevronSize)
         })
         if (container.childCount > 0) {
             container.addView(View(this).apply {
                 setBackgroundColor(getColor(R.color.divider))
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
-                    dp(1),
+                    resources.getDimensionPixelSize(R.dimen.space_1),
                 )
             })
         }
         container.addView(row)
     }
-
-    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     private fun choose(path: String?) {
         if (path == null) return

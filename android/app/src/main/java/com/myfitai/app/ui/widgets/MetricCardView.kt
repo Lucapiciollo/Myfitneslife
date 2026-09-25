@@ -23,8 +23,8 @@ class MetricCardView @JvmOverloads constructor(
     init {
         orientation = VERTICAL
         setBackgroundResource(R.drawable.bg_card)
-        val horizontalPadding = (10 * resources.displayMetrics.density).toInt()
-        val verticalPadding = (6 * resources.displayMetrics.density).toInt()
+        val horizontalPadding = resources.getDimensionPixelSize(R.dimen.space_10)
+        val verticalPadding = resources.getDimensionPixelSize(R.dimen.space_6)
         setPadding(horizontalPadding, verticalPadding, horizontalPadding, verticalPadding)
 
         labelView = TextView(context).apply {
@@ -49,10 +49,10 @@ class MetricCardView @JvmOverloads constructor(
             orientation = HORIZONTAL
             gravity = android.view.Gravity.CENTER_VERTICAL
             layoutParams = LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply {
-                topMargin = (2 * resources.displayMetrics.density).toInt()
+                topMargin = resources.getDimensionPixelSize(R.dimen.space_2)
             }
         }
-        val iconSize = (10 * resources.displayMetrics.density).toInt()
+        val iconSize = resources.getDimensionPixelSize(R.dimen.space_12)
         deltaIcon = ImageView(context).apply {
             layoutParams = LayoutParams(iconSize, iconSize)
             visibility = GONE
@@ -75,7 +75,7 @@ class MetricCardView @JvmOverloads constructor(
 
     fun setCompactStyle() {
         background = null
-        setPadding(0, dp(2), 0, dp(2))
+        setPadding(0, resources.getDimensionPixelSize(R.dimen.space_2), 0, resources.getDimensionPixelSize(R.dimen.space_2))
          labelView.setTextAppearance(R.style.Text_MyFitAI_KeyValueKey)
          valueView.setTextAppearance(R.style.Text_MyFitAI_KeyValueValue)
          deltaView.setTextAppearance(R.style.Text_MyFitAI_StatusValue)
@@ -103,5 +103,4 @@ class MetricCardView @JvmOverloads constructor(
         )
     }
 
-    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 }

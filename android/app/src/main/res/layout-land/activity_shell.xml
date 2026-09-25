@@ -5,10 +5,10 @@
     android:background="@color/bg_primary">
 
     <ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:fillViewport="true">
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingHorizontal="32dp" android:paddingVertical="20dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingHorizontal="@dimen/space_32" android:paddingVertical="@dimen/space_20">
             <TextView android:id="@+id/screenTitle" style="@style/Text.MyFitAI.ScreenTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Schermata" />
-            <TextView android:id="@+id/screenSubtitle" style="@style/Text.MyFitAI.Body" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="Shell landscape." />
-            <LinearLayout android:id="@+id/actionsContainer" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginTop="20dp" />
+            <TextView android:id="@+id/screenSubtitle" style="@style/Text.MyFitAI.Body" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:text="Shell landscape." />
+            <LinearLayout android:id="@+id/actionsContainer" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:layout_marginTop="@dimen/space_20" />
         </LinearLayout>
     </ScrollView>
     <include layout="@layout/view_bottom_navigation" />

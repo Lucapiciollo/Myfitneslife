@@ -24,12 +24,12 @@ class WorkoutRowView @JvmOverloads constructor(
     init {
         orientation = HORIZONTAL
         gravity = android.view.Gravity.CENTER_VERTICAL
-        val density = resources.displayMetrics.density
-        minimumHeight = (48 * density).toInt()
-        setPadding(0, (8 * density).toInt(), 0, (8 * density).toInt())
+        minimumHeight = resources.getDimensionPixelSize(R.dimen.control_min_height)
+        val rowPadding = resources.getDimensionPixelSize(R.dimen.space_8)
+        setPadding(0, rowPadding, 0, rowPadding)
         background = null
 
-        val thumbnailSize = (44 * density).toInt()
+        val thumbnailSize = resources.getDimensionPixelSize(R.dimen.dashboard_thumbnail_size)
         photoThumbnail = ShapeableImageView(context).apply {
             layoutParams = LayoutParams(thumbnailSize, thumbnailSize)
             scaleType = ImageView.ScaleType.CENTER_CROP
@@ -43,7 +43,7 @@ class WorkoutRowView @JvmOverloads constructor(
             visibility = GONE
         }
         val restIcon = ImageView(context).apply {
-            val size = (18 * density).toInt()
+            val size = resources.getDimensionPixelSize(R.dimen.space_20)
             layoutParams = FrameLayout.LayoutParams(size, size).apply { gravity = android.view.Gravity.CENTER }
             setImageResource(R.drawable.ic_pause)
         }
@@ -53,7 +53,7 @@ class WorkoutRowView @JvmOverloads constructor(
         val textColumn = LinearLayout(context).apply {
             orientation = VERTICAL
             layoutParams = LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f).apply {
-                marginStart = (12 * density).toInt()
+                marginStart = resources.getDimensionPixelSize(R.dimen.space_12)
             }
         }
         titleView = TextView(context).apply {
@@ -62,7 +62,7 @@ class WorkoutRowView @JvmOverloads constructor(
         textColumn.addView(titleView)
         subtitleView = TextView(context).apply {
             layoutParams = LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply {
-                topMargin = (2 * density).toInt()
+                topMargin = resources.getDimensionPixelSize(R.dimen.space_2)
             }
             setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
         }

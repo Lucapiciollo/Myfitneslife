@@ -179,7 +179,7 @@ class FoodPlanActivity : BaseShellActivity() {
         if (state.hasPlan && !generation.running) {
             button.backgroundTintList = ColorStateList.valueOf(getColor(R.color.surface_primary))
             button.setTextColor(getColor(R.color.accent_green_dark))
-            button.strokeWidth = dp(1)
+            button.strokeWidth = resources.getDimensionPixelSize(R.dimen.space_1)
             button.strokeColor = ColorStateList.valueOf(getColor(R.color.accent_green))
         } else {
             button.backgroundTintList = ColorStateList.valueOf(getColor(R.color.accent_green))
@@ -224,44 +224,42 @@ class FoodPlanActivity : BaseShellActivity() {
                 if (changeEnabled) setOnChangeClickListener { openMealAlternatives(weekStart, day, meal) }
                 contentDescription = "${displayMealType(meal.type)}: ${meal.title}"
             }
-            container.addView(row, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(8) })
+            container.addView(row, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = resources.getDimensionPixelSize(R.dimen.space_8) })
         }
         day?.supplements?.takeIf { it.isNotEmpty() }?.let { supplements ->
             container.addView(supplementsCard(supplements), LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT,
-            ).apply { topMargin = dp(12) })
+            ).apply { topMargin = resources.getDimensionPixelSize(R.dimen.space_12) })
         }
         day?.hydrationNote?.takeIf { it.isNotBlank() }?.let { container.addView(infoRow("Idratazione", it)) }
     }
 
     private fun supplementsCard(supplements: List<FoodSupplement>): MaterialCardView = MaterialCardView(this).apply {
         setCardBackgroundColor(getColor(R.color.white))
-        radius = dp(16).toFloat()
-        strokeWidth = dp(1)
+        radius = resources.getDimension(R.dimen.radius_card)
+        strokeWidth = resources.getDimensionPixelSize(R.dimen.space_1)
         setStrokeColor(getColor(R.color.divider))
         cardElevation = 0f
         val content = LinearLayout(this@FoodPlanActivity).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(16), dp(12), dp(16), dp(12))
+            val cardPadding = resources.getDimensionPixelSize(R.dimen.card_content_padding)
+            setPadding(cardPadding, resources.getDimensionPixelSize(R.dimen.space_12), cardPadding, resources.getDimensionPixelSize(R.dimen.space_12))
         }
         addView(content)
         content.addView(TextView(this@FoodPlanActivity).apply {
             text = "Integrazione"
-            textSize = 16f
-            setTextColor(getColor(R.color.text_primary))
-            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            setTextAppearance(R.style.Text_MyFitAI_Section)
         })
         content.addView(TextView(this@FoodPlanActivity).apply {
             text = "Dose, orario e valori nutrizionali"
-            textSize = 12f
-            setTextColor(getColor(R.color.text_secondary))
+            setTextAppearance(R.style.Text_MyFitAI_Caption)
         }, marginTopParams(2))
 
         supplements.forEachIndexed { index, supplement ->
             if (index > 0) content.addView(View(this@FoodPlanActivity).apply {
                 setBackgroundColor(getColor(R.color.divider))
-            }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(1)).apply { topMargin = dp(4) })
+            }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, resources.getDimensionPixelSize(R.dimen.space_1)).apply { topMargin = resources.getDimensionPixelSize(R.dimen.space_4) })
             content.addView(supplementRow(supplement), marginTopParams(4))
         }
     }
@@ -269,7 +267,8 @@ class FoodPlanActivity : BaseShellActivity() {
     private fun supplementRow(supplement: FoodSupplement): LinearLayout = LinearLayout(this).apply {
         orientation = LinearLayout.HORIZONTAL
         gravity = android.view.Gravity.CENTER_VERTICAL
-        setPadding(0, dp(6), 0, dp(6))
+        val verticalPadding = resources.getDimensionPixelSize(R.dimen.space_6)
+        setPadding(0, verticalPadding, 0, verticalPadding)
         val timing = supplement.timeMinutes?.let { "%02d:%02d".format(it / 60, it % 60) }
         val details = listOfNotNull(
             timing,
@@ -283,8 +282,7 @@ class FoodPlanActivity : BaseShellActivity() {
             })
             addView(TextView(this@FoodPlanActivity).apply {
                 text = details
-                textSize = 12f
-                setTextColor(getColor(R.color.text_secondary))
+                setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
             }, marginTopParams(2))
         }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
         addView(LinearLayout(this@FoodPlanActivity).apply {
@@ -292,29 +290,32 @@ class FoodPlanActivity : BaseShellActivity() {
             gravity = android.view.Gravity.END
             addView(TextView(this@FoodPlanActivity).apply {
                 text = NutritionEstimateFormatter.formatEstimatedKcal(supplement.kcal)
-                textSize = 14f
-                setTextColor(getColor(R.color.text_primary))
-                setTypeface(typeface, android.graphics.Typeface.BOLD)
+                setTextAppearance(R.style.Text_MyFitAI_KeyValueValue)
                 gravity = android.view.Gravity.END
             })
             addView(TextView(this@FoodPlanActivity).apply {
-                text = "P ${NutritionEstimateFormatter.formatEstimatedMacro(supplement.proteinG, "g")} · C ${NutritionEstimateFormatter.formatEstimatedMacro(supplement.carbsG, "g")} · G ${NutritionEstimateFormatter.formatEstimatedMacro(supplement.fatG, "g")}"
-                textSize = 11f
-                setTextColor(getColor(R.color.text_secondary))
+                text = listOf(
+                    "P ${NutritionEstimateFormatter.formatEstimatedMacro(supplement.proteinG, "g")}",
+                    "C ${NutritionEstimateFormatter.formatEstimatedMacro(supplement.carbsG, "g")}",
+                    "G ${NutritionEstimateFormatter.formatEstimatedMacro(supplement.fatG, "g")}",
+                ).joinToString(" · ")
+                setTextAppearance(R.style.Text_MyFitAI_Micro)
                 gravity = android.view.Gravity.END
             }, marginTopParams(2))
         }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT))
     }
 
-    private fun marginTopParams(top: Int) = LinearLayout.LayoutParams(
+    private fun marginTopParams(dimenRes: Int) = LinearLayout.LayoutParams(
         LinearLayout.LayoutParams.MATCH_PARENT,
         LinearLayout.LayoutParams.WRAP_CONTENT,
-    ).apply { topMargin = dp(top) }
+    ).apply { topMargin = resources.getDimensionPixelSize(dimenRes) }
 
     private fun infoRow(title: String, body: String) = TextView(this).apply {
         text = "$title\n$body"
-        textSize = 15f
-        setPadding(dp(16), dp(12), dp(16), dp(12))
+        setTextAppearance(R.style.Text_MyFitAI_Body)
+        val hPadding = resources.getDimensionPixelSize(R.dimen.card_content_padding)
+        val vPadding = resources.getDimensionPixelSize(R.dimen.space_12)
+        setPadding(hPadding, vPadding, hPadding, vPadding)
         contentDescription = "$title: $body"
     }
 
@@ -404,7 +405,5 @@ class FoodPlanActivity : BaseShellActivity() {
     }
     private fun formatMacro(value: Float): String = if (value % 1f == 0f) value.toInt().toString() else String.format(Locale.ITALIAN, "%.1f", value)
     private fun formatMacro(value: Double): String = if (value % 1.0 == 0.0) value.toInt().toString() else String.format(Locale.ITALIAN, "%.1f", value)
-    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
-
     companion object { const val EXTRA_WEEK_START_EPOCH_DAY = "week_start_epoch_day" }
 }

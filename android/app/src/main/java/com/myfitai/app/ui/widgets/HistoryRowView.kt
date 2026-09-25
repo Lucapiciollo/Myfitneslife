@@ -24,18 +24,17 @@ class HistoryRowView @JvmOverloads constructor(
         gravity = Gravity.CENTER_VERTICAL
         isClickable = true
         isFocusable = true
-        val density = resources.displayMetrics.density
-        val paddingV = (12 * density).toInt()
-        minimumHeight = (56 * density).toInt()
+        val paddingV = resources.getDimensionPixelSize(R.dimen.space_12)
+        minimumHeight = resources.getDimensionPixelSize(R.dimen.control_min_height) + resources.getDimensionPixelSize(R.dimen.space_8)
         setPadding(0, paddingV, 0, paddingV)
 
         val iconCircle = FrameLayout(context).apply {
-            val size = (36 * density).toInt()
+            val size = resources.getDimensionPixelSize(R.dimen.icon_button_size)
             layoutParams = LayoutParams(size, size)
             background = context.getDrawable(R.drawable.bg_logo_circle)
         }
         iconView = ImageView(context).apply {
-            val size = (18 * density).toInt()
+            val size = resources.getDimensionPixelSize(R.dimen.space_20)
             layoutParams = FrameLayout.LayoutParams(size, size).apply { gravity = Gravity.CENTER }
             imageTintList = android.content.res.ColorStateList.valueOf(context.getColor(R.color.accent_green))
         }
@@ -45,7 +44,7 @@ class HistoryRowView @JvmOverloads constructor(
         val textColumn = LinearLayout(context).apply {
             orientation = VERTICAL
             layoutParams = LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f).apply {
-                marginStart = (12 * density).toInt()
+                marginStart = resources.getDimensionPixelSize(R.dimen.space_12)
             }
         }
         titleView = TextView(context).apply {
@@ -54,7 +53,7 @@ class HistoryRowView @JvmOverloads constructor(
         textColumn.addView(titleView)
         subtitleView = TextView(context).apply {
             layoutParams = LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply {
-                topMargin = (2 * density).toInt()
+                topMargin = resources.getDimensionPixelSize(R.dimen.space_2)
             }
             setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
         }
@@ -64,7 +63,7 @@ class HistoryRowView @JvmOverloads constructor(
         val chevron = TextView(context).apply {
             text = "›"
             setTextColor(context.getColor(R.color.text_muted))
-            textSize = 15f
+            setTextAppearance(R.style.Text_MyFitAI_Caption)
         }
         addView(chevron)
     }

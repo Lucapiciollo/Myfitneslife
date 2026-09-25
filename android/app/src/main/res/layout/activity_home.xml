@@ -38,13 +38,13 @@
                         android:layout_height="1dp"
                         android:layout_weight="1" />
                     <FrameLayout
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
+                        android:layout_width="@dimen/dashboard_pill_height"
+                        android:layout_height="@dimen/dashboard_pill_height"
                         android:background="@drawable/bg_logo_circle">
                         <ImageView
                             android:id="@+id/profileButton"
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
+                            android:layout_width="@dimen/status_indicator_size"
+                            android:layout_height="@dimen/status_indicator_size"
                             android:layout_gravity="center"
                             android:contentDescription="@string/dashboard_profile_cd"
                             android:src="@drawable/ic_profile"
@@ -59,28 +59,27 @@
                      android:layout_marginTop="@dimen/space_10"
                     android:text="@string/dashboard_greeting"
                     android:textColor="@color/white"
-                     android:textSize="22sp"
-                    android:textStyle="bold" />
+                      android:textAppearance="@style/Text.MyFitAI.ScreenTitle" />
                 <TextView
                     android:id="@+id/todayLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_4"
                     android:textColor="@color/surface_soft"
-                    android:textSize="13sp" />
+                    style="@style/Text.MyFitAI.Body" />
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_4"
                     android:text="@string/dashboard_subtitle"
                     android:textColor="@color/surface_soft"
-                    android:textSize="13sp" />
+                    style="@style/Text.MyFitAI.Body" />
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                 android:layout_marginTop="-16dp"
+                 android:layout_marginTop="@dimen/dashboard_sheet_overlap"
                 android:background="@drawable/bg_sheet_top_rounded"
                 android:orientation="vertical"
                  android:padding="@dimen/space_16">
@@ -91,29 +90,28 @@
                     android:layout_height="wrap_content"
                     android:visibility="gone"
                     app:cardBackgroundColor="@color/surface_primary"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="0dp"
+                    app:cardCornerRadius="@dimen/radius_card"
+                    app:cardElevation="@dimen/elevation_card"
                     app:strokeColor="@color/semantic_error"
-                    app:strokeWidth="1dp">
+                    app:strokeWidth="@dimen/border_width_default">
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
                         android:padding="@dimen/space_16">
                         <TextView
+                            style="@style/Text.MyFitAI.CardTitle"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:text="Il tuo piano alimentare potrebbe essere aggiornato"
-                            android:textColor="@color/semantic_error"
-                            android:textSize="15sp"
-                            android:textStyle="bold" />
+                            android:textColor="@color/semantic_error" />
                         <TextView
+                            style="@style/Text.MyFitAI.BodyCompact"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/space_4"
                             android:text="Hai modificato dati importanti. Apri il piano per rigenerarlo con le nuove informazioni."
-                            android:textColor="@color/text_primary"
-                            android:textSize="13sp" />
+                            android:textColor="@color/text_primary" />
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/planUpdateNoticeButton"
                             style="@style/Widget.MyFitAI.Button.Text"
@@ -135,29 +133,28 @@
                     android:clickable="true"
                     android:focusable="true"
                     app:cardBackgroundColor="@color/surface_primary"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="0dp"
+                    app:cardCornerRadius="@dimen/radius_card"
+                    app:cardElevation="@dimen/elevation_card"
                     app:strokeColor="@color/accent_green"
-                    app:strokeWidth="1dp">
+                    app:strokeWidth="@dimen/border_width_default">
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
                         android:padding="@dimen/space_16">
                         <TextView
+                            style="@style/Text.MyFitAI.CardTitle"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:text="@string/home_ai_not_configured_title"
-                            android:textColor="@color/text_primary"
-                            android:textSize="15sp"
-                            android:textStyle="bold" />
+                            android:textColor="@color/text_primary" />
                         <TextView
+                            style="@style/Text.MyFitAI.BodyCompact"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/space_4"
                             android:text="@string/home_ai_not_configured_message"
-                            android:textColor="@color/text_secondary"
-                            android:textSize="13sp" />
+                            />
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/aiConfigurationNoticeButton"
                             style="@style/Widget.MyFitAI.Button.Text"
@@ -179,10 +176,10 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12"
                     app:cardBackgroundColor="@color/white"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="0dp"
+                    app:cardCornerRadius="@dimen/radius_card"
+                    app:cardElevation="@dimen/elevation_card"
                     app:strokeColor="@color/divider"
-                    app:strokeWidth="1dp">
+                    app:strokeWidth="@dimen/border_width_default">
                 <LinearLayout
                     style="@style/Widget.MyFitAI.HomeSectionContent"
                     android:layout_width="match_parent"
@@ -194,16 +191,16 @@
                      <com.myfitai.app.ui.widgets.SectionHeaderView
                          android:layout_width="match_parent"
                          android:layout_height="wrap_content"
-                         android:paddingEnd="40dp"
+                          android:paddingEnd="@dimen/screen_header_icon_size"
                          android:text="Panoramica del corpo" />
                     <ImageButton
                         android:id="@+id/bodyOverviewHelpButton"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
+                         android:layout_width="@dimen/screen_header_icon_size"
+                         android:layout_height="@dimen/screen_header_icon_size"
                          android:layout_gravity="top|end"
                          android:background="@android:color/transparent"
                         android:contentDescription="Spiega panoramica del corpo"
-                        android:padding="8dp"
+                         android:padding="@dimen/space_8"
                         android:src="@drawable/ic_help_outline"
                         app:tint="@color/text_secondary" />
                  </FrameLayout>
@@ -213,8 +210,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="12sp" />
+                     style="@style/Text.MyFitAI.Caption" />
 
                 <com.google.android.material.textfield.TextInputLayout
                     style="@style/Widget.MyFitAI.InputDropdown"
@@ -243,8 +239,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_4"
                     android:text="Valori reali; seleziona una misura per cambiare vista"
-                    android:textColor="@color/text_muted"
-                    android:textSize="11sp" />
+                     style="@style/Text.MyFitAI.Micro" />
 
                 <com.myfitai.app.ui.widgets.TimeRangeSelectorView
                     android:id="@+id/timeRangeSelector"
@@ -259,10 +254,10 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12"
                     app:cardBackgroundColor="@color/white"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="0dp"
+                    app:cardCornerRadius="@dimen/radius_card"
+                    app:cardElevation="@dimen/elevation_card"
                     app:strokeColor="@color/divider"
-                    app:strokeWidth="1dp">
+                    app:strokeWidth="@dimen/border_width_default">
                 <LinearLayout
                     style="@style/Widget.MyFitAI.HomeSectionContent"
                     android:layout_width="match_parent"
@@ -274,28 +269,27 @@
                      <com.myfitai.app.ui.widgets.SectionHeaderView
                          android:layout_width="match_parent"
                          android:layout_height="wrap_content"
-                         android:paddingEnd="40dp"
+                          android:paddingEnd="@dimen/screen_header_icon_size"
                          android:text="Calorie base giornaliere" />
                     <ImageButton
                         android:id="@+id/caloriesHelpButton"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
+                         android:layout_width="@dimen/screen_header_icon_size"
+                         android:layout_height="@dimen/screen_header_icon_size"
                          android:layout_gravity="top|end"
                          android:background="@android:color/transparent"
                         android:contentDescription="Spiega calorie base, TDEE e target"
-                        android:padding="8dp"
+                         android:padding="@dimen/space_8"
                         android:src="@drawable/ic_help_outline"
                         app:tint="@color/text_secondary" />
                  </FrameLayout>
                 <TextView
                     android:id="@+id/caloriesModeText"
+                    style="@style/Text.MyFitAI.StatusValue"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_4"
                     android:text="—"
-                    android:textColor="@color/accent_green"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
+                    android:textColor="@color/accent_green" />
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/caloriesCard"
                     android:layout_width="match_parent"
@@ -304,10 +298,10 @@
                     android:clickable="true"
                     android:focusable="true"
                      app:cardBackgroundColor="@color/white"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="0dp"
+                    app:cardCornerRadius="@dimen/radius_card"
+                    app:cardElevation="@dimen/elevation_card"
                     app:strokeColor="@color/divider"
-                    app:strokeWidth="1dp">
+                    app:strokeWidth="@dimen/border_width_default">
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -319,20 +313,18 @@
                             android:gravity="center_vertical"
                             android:orientation="horizontal">
                             <TextView
+                                style="@style/Text.MyFitAI.Body"
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
                                 android:text="Metabolismo (BMR)"
-                                android:textColor="@color/text_secondary"
-                                android:textSize="13sp" />
+                                />
                             <TextView
                                 android:id="@+id/caloriesBmrValue"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="—"
-                                android:textColor="@color/text_primary"
-                                android:textSize="17sp"
-                                android:textStyle="bold" />
+                                style="@style/Text.MyFitAI.CardTitle" />
                         </LinearLayout>
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -341,20 +333,18 @@
                             android:gravity="center_vertical"
                             android:orientation="horizontal">
                             <TextView
+                                style="@style/Text.MyFitAI.Body"
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
                                 android:text="Consumo (TDEE)"
-                                android:textColor="@color/text_secondary"
-                                android:textSize="13sp" />
+                                />
                             <TextView
                                 android:id="@+id/caloriesTdeeValue"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="—"
-                                android:textColor="@color/text_primary"
-                                android:textSize="17sp"
-                                android:textStyle="bold" />
+                                style="@style/Text.MyFitAI.CardTitle" />
                         </LinearLayout>
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -363,20 +353,19 @@
                             android:gravity="center_vertical"
                             android:orientation="horizontal">
                             <TextView
+                                style="@style/Text.MyFitAI.BodyEmphasis"
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
                                 android:text="Target"
-                                android:textColor="@color/text_secondary"
-                                android:textSize="13sp" />
+                                />
                             <TextView
                                 android:id="@+id/caloriesTargetValue"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="—"
-                                android:textColor="@color/accent_green"
-                                android:textSize="17sp"
-                                android:textStyle="bold" />
+                                style="@style/Text.MyFitAI.CardTitle"
+                                android:textColor="@color/accent_green_dark" />
                         </LinearLayout>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
@@ -398,24 +387,21 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:text="Consumate oggi"
-                            android:textColor="@color/text_secondary"
-                            android:textSize="12sp" />
+                            style="@style/Text.MyFitAI.Caption" />
                         <TextView
                             android:id="@+id/caloriesConsumedText"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/space_4"
                             android:text="0 kcal"
-                            android:textColor="@color/text_primary"
-                            android:textSize="16sp"
-                            android:textStyle="bold" />
+                            style="@style/Text.MyFitAI.CardTitle" />
                         <com.google.android.material.progressindicator.LinearProgressIndicator
                             android:id="@+id/caloriesConsumedProgress"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/space_8"
-                            app:trackCornerRadius="4dp"
-                            app:trackThickness="6dp"
+                            app:trackCornerRadius="@dimen/progress_track_corner_radius"
+                            app:trackThickness="@dimen/progress_track_thickness"
                             app:indicatorColor="@color/accent_green"
                             app:trackColor="@color/divider" />
                     </LinearLayout>
@@ -431,24 +417,22 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:text="Rimangono"
-                            android:textColor="@color/text_secondary"
-                            android:textSize="12sp" />
+                            style="@style/Text.MyFitAI.Caption" />
                         <TextView
                             android:id="@+id/caloriesRemainingText"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/space_4"
                             android:text="—"
-                            android:textColor="@color/accent_green"
-                            android:textSize="16sp"
-                            android:textStyle="bold" />
+                            style="@style/Text.MyFitAI.CardTitle"
+                            android:textColor="@color/accent_green_dark" />
                         <com.google.android.material.progressindicator.LinearProgressIndicator
                             android:id="@+id/caloriesRemainingProgress"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/space_8"
-                            app:trackCornerRadius="4dp"
-                            app:trackThickness="6dp"
+                            app:trackCornerRadius="@dimen/progress_track_corner_radius"
+                            app:trackThickness="@dimen/progress_track_thickness"
                             app:indicatorColor="@color/text_muted"
                             app:trackColor="@color/divider" />
                     </LinearLayout>
@@ -458,8 +442,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_4"
                     android:text="Il target considera metabolismo, attività e obiettivo. Le barre mostrano calorie consumate e ancora disponibili nella giornata."
-                    android:textColor="@color/text_muted"
-                    android:textSize="11sp" />
+                    style="@style/Text.MyFitAI.Micro" />
                 </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
@@ -468,10 +451,10 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12"
                     app:cardBackgroundColor="@color/white"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="0dp"
+                    app:cardCornerRadius="@dimen/radius_card"
+                    app:cardElevation="@dimen/elevation_card"
                     app:strokeColor="@color/divider"
-                    app:strokeWidth="1dp">
+                    app:strokeWidth="@dimen/border_width_default">
                 <LinearLayout
                     style="@style/Widget.MyFitAI.HomeSectionContent"
                     android:layout_width="match_parent"
@@ -483,16 +466,16 @@
                      <com.myfitai.app.ui.widgets.SectionHeaderView
                          android:layout_width="match_parent"
                          android:layout_height="wrap_content"
-                         android:paddingEnd="40dp"
+                          android:paddingEnd="@dimen/screen_header_icon_size"
                          android:text="Riserva di recupero" />
                     <ImageButton
                         android:id="@+id/recoveryHelpButton"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
+                         android:layout_width="@dimen/screen_header_icon_size"
+                         android:layout_height="@dimen/screen_header_icon_size"
                          android:layout_gravity="top|end"
                          android:background="@android:color/transparent"
                         android:contentDescription="Spiega la riserva di recupero"
-                        android:padding="8dp"
+                         android:padding="@dimen/space_8"
                         android:src="@drawable/ic_help_outline"
                         app:tint="@color/text_secondary" />
                  </FrameLayout>
@@ -501,10 +484,10 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12"
                      app:cardBackgroundColor="@color/white"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="0dp"
+                    app:cardCornerRadius="@dimen/radius_card"
+                    app:cardElevation="@dimen/elevation_card"
                     app:strokeColor="@color/divider"
-                    app:strokeWidth="1dp">
+                    app:strokeWidth="@dimen/border_width_default">
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -515,17 +498,14 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="—"
-                            android:textColor="@color/text_primary"
-                            android:textSize="18sp"
-                            android:textStyle="bold" />
+                            style="@style/Text.MyFitAI.CardValue" />
                         <TextView
                             android:id="@+id/recoveryHintText"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/space_8"
                             android:text="Kcal extra ancora da distribuire nei prossimi giorni."
-                            android:textColor="@color/text_muted"
-                            android:textSize="12sp" />
+                            style="@style/Text.MyFitAI.Caption" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
                 </LinearLayout>
@@ -558,11 +538,11 @@
 
                             <ImageButton
                                 android:id="@+id/weeklyExpectationHelpButton"
-                                android:layout_width="40dp"
-                                android:layout_height="40dp"
+                                 android:layout_width="@dimen/screen_header_icon_size"
+                                 android:layout_height="@dimen/screen_header_icon_size"
                                 android:background="@android:color/transparent"
                                 android:contentDescription="Spiega il possibile calo teorico"
-                                android:padding="8dp"
+                                 android:padding="@dimen/space_8"
                                 android:src="@drawable/ic_help_outline"
                                 app:tint="@color/text_secondary" />
                         </LinearLayout>
@@ -573,17 +553,15 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/space_12"
                             android:text="Caricamento del piano settimanale…"
-                            android:textColor="@color/accent_green_dark"
-                            android:textSize="19sp"
-                            android:textStyle="bold" />
+                            style="@style/Text.MyFitAI.CardValue"
+                            android:textColor="@color/accent_green_dark" />
 
                         <TextView
                             android:id="@+id/weeklyExpectationDetail"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/space_8"
-                            android:textColor="@color/text_secondary"
-                            android:textSize="13sp" />
+                            style="@style/Text.MyFitAI.Body" />
 
                         <TextView
                             android:id="@+id/weeklyExpectationCaution"
@@ -591,8 +569,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/space_8"
                             android:text="Indicazione basata sul piano, non una previsione certa del peso."
-                            android:textColor="@color/text_muted"
-                            android:textSize="11sp" />
+                            style="@style/Text.MyFitAI.Micro" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
@@ -601,10 +578,10 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12"
                     app:cardBackgroundColor="@color/white"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="0dp"
+                    app:cardCornerRadius="@dimen/radius_card"
+                    app:cardElevation="@dimen/elevation_card"
                     app:strokeColor="@color/divider"
-                    app:strokeWidth="1dp">
+                    app:strokeWidth="@dimen/border_width_default">
                 <LinearLayout
                     style="@style/Widget.MyFitAI.HomeSectionContent"
                     android:layout_width="match_parent"
@@ -616,16 +593,16 @@
                      <com.myfitai.app.ui.widgets.SectionHeaderView
                          android:layout_width="match_parent"
                          android:layout_height="wrap_content"
-                         android:paddingEnd="40dp"
+                          android:paddingEnd="@dimen/screen_header_icon_size"
                          android:text="Prossimi pasti" />
                     <ImageButton
                         android:id="@+id/nextMealHelpButton"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
+                         android:layout_width="@dimen/screen_header_icon_size"
+                         android:layout_height="@dimen/screen_header_icon_size"
                          android:layout_gravity="top|end"
                          android:background="@android:color/transparent"
                         android:contentDescription="Spiega il prossimo pasto"
-                        android:padding="8dp"
+                         android:padding="@dimen/space_8"
                         android:src="@drawable/ic_help_outline"
                         app:tint="@color/text_secondary" />
                  </FrameLayout>
@@ -654,10 +631,10 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12"
                     app:cardBackgroundColor="@color/white"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="0dp"
+                    app:cardCornerRadius="@dimen/radius_card"
+                    app:cardElevation="@dimen/elevation_card"
                     app:strokeColor="@color/divider"
-                    app:strokeWidth="1dp">
+                    app:strokeWidth="@dimen/border_width_default">
                 <LinearLayout
                     style="@style/Widget.MyFitAI.HomeSectionContent"
                     android:layout_width="match_parent"
@@ -669,16 +646,16 @@
                      <com.myfitai.app.ui.widgets.SectionHeaderView
                          android:layout_width="match_parent"
                          android:layout_height="wrap_content"
-                         android:paddingEnd="40dp"
+                          android:paddingEnd="@dimen/screen_header_icon_size"
                          android:text="@string/dashboard_next_workout_title" />
                     <ImageButton
                         android:id="@+id/nextWorkoutHelpButton"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
+                         android:layout_width="@dimen/screen_header_icon_size"
+                         android:layout_height="@dimen/screen_header_icon_size"
                          android:layout_gravity="top|end"
                          android:background="@android:color/transparent"
                         android:contentDescription="Spiega il prossimo allenamento"
-                        android:padding="8dp"
+                         android:padding="@dimen/space_8"
                         android:src="@drawable/ic_help_outline"
                         app:tint="@color/text_secondary" />
                  </FrameLayout>
@@ -691,10 +668,10 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12"
                     app:cardBackgroundColor="@color/white"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="0dp"
+                    app:cardCornerRadius="@dimen/radius_card"
+                    app:cardElevation="@dimen/elevation_card"
                     app:strokeColor="@color/divider"
-                    app:strokeWidth="1dp">
+                    app:strokeWidth="@dimen/border_width_default">
                     <LinearLayout
                         style="@style/Widget.MyFitAI.HomeSectionContent"
                         android:layout_width="match_parent"
@@ -708,7 +685,7 @@
                             android:id="@+id/measurementsButton"
                             style="@style/Widget.MyFitAI.Button.Outlined"
                             android:layout_width="match_parent"
-                            android:layout_height="48dp"
+                            android:layout_height="@dimen/button_secondary_min_height"
                             android:layout_marginTop="@dimen/space_12"
                             android:text="Aggiungi rilevazione"
                             android:textAllCaps="false" />
@@ -716,7 +693,7 @@
                             android:id="@+id/addExtraButton"
                             style="@style/Widget.MyFitAI.Button.Outlined"
                             android:layout_width="match_parent"
-                            android:layout_height="48dp"
+                            android:layout_height="@dimen/button_secondary_min_height"
                             android:layout_marginTop="@dimen/space_8"
                             android:text="Inserisci extra"
                             android:textAllCaps="false" />

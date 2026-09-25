@@ -25,16 +25,16 @@ class TimeRangeSelectorView @JvmOverloads constructor(
             val button = MaterialButton(context, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
                 id = android.view.View.generateViewId()
                 text = label
-                textSize = 12f
+                setTextAppearance(R.style.Text_MyFitAI_BodyEmphasis)
                 isAllCaps = false
-                cornerRadius = (16 * resources.displayMetrics.density).toInt()
+                cornerRadius = resources.getDimensionPixelSize(R.dimen.radius_pill)
                 strokeWidth = 0
                 setPadding(
-                    (16 * resources.displayMetrics.density).toInt(), 0,
-                    (16 * resources.displayMetrics.density).toInt(), 0,
+                    resources.getDimensionPixelSize(R.dimen.space_16), 0,
+                    resources.getDimensionPixelSize(R.dimen.space_16), 0,
                 )
-                minHeight = (48 * resources.displayMetrics.density).toInt()
-                minimumHeight = (48 * resources.displayMetrics.density).toInt()
+                minHeight = resources.getDimensionPixelSize(R.dimen.control_min_height)
+                minimumHeight = resources.getDimensionPixelSize(R.dimen.control_min_height)
                 contentDescription = "Intervallo $label"
                 setTextColor(
                     android.content.res.ColorStateList(

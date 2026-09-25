@@ -13,11 +13,11 @@
         android:paddingHorizontal="@dimen/space_8">
         <ImageButton
             android:id="@+id/backButton"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="@dimen/icon_button_size"
+            android:layout_height="@dimen/icon_button_size"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/action_back"
-            android:padding="8dp"
+            android:padding="@dimen/space_8"
             android:src="@drawable/ic_arrow_back"
             app:tint="@color/text_primary" />
         <TextView
@@ -28,7 +28,7 @@
             android:layout_weight="1"
             android:gravity="center"
             android:text="@string/onboarding_wizard_title" />
-        <Space android:layout_width="48dp" android:layout_height="48dp" />
+        <Space android:layout_width="@dimen/icon_button_size" android:layout_height="@dimen/icon_button_size" />
     </LinearLayout>
 
     <LinearLayout
@@ -56,7 +56,7 @@
     <com.google.android.material.progressindicator.LinearProgressIndicator
         android:id="@+id/progressIndicator"
         android:layout_width="match_parent"
-        android:layout_height="4dp"
+        android:layout_height="@dimen/onboarding_progress_track_thickness"
         android:layout_marginHorizontal="@dimen/space_16"
         app:indicatorColor="@color/accent_green"
         app:trackColor="@color/divider" />

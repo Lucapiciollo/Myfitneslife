@@ -60,7 +60,7 @@ class MealDetailActivity : BaseShellActivity() {
             findViewById<MaterialCardView>(id).apply {
                 setCardBackgroundColor(getColor(R.color.white))
                 strokeColor = getColor(R.color.divider)
-                strokeWidth = dp(1)
+                strokeWidth = resources.getDimensionPixelSize(R.dimen.space_1)
                 cardElevation = 0f
             }
         }
@@ -117,9 +117,9 @@ class MealDetailActivity : BaseShellActivity() {
         if (meal.ingredients.isEmpty()) {
             ingredientsContainer.addView(TextView(this).apply {
                 text = "Ingredienti non disponibili"
-                setTextColor(getColor(R.color.text_secondary))
-                textSize = 13f
-                setPadding(0, dp(14), 0, dp(14))
+                setTextAppearance(R.style.Text_MyFitAI_BodyCompact)
+                val verticalPadding = resources.getDimensionPixelSize(R.dimen.space_14)
+                setPadding(0, verticalPadding, 0, verticalPadding)
             })
         } else {
             meal.ingredients.sortedBy { it.sortOrder }.forEach { ingredient ->
@@ -187,8 +187,6 @@ class MealDetailActivity : BaseShellActivity() {
 
     private fun formatTime(minutes: Int): String = String.format(Locale.ITALIAN, "%02d:%02d", minutes / 60, minutes % 60)
     private fun formatMacro(value: Float): String = if (value % 1f == 0f) value.toInt().toString() else String.format(Locale.ITALIAN, "%.1f", value)
-    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
-
     companion object {
         const val EXTRA_MEAL_ID = "meal_id"
     }

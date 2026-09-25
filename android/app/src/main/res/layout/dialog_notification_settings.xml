@@ -7,11 +7,11 @@
     style="@style/Widget.MyFitAI.Dialog.Content">
 
     <TextView
+        style="@style/Text.MyFitAI.Body"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/notifications_dialog_description"
-        android:textColor="@color/text_secondary"
-        android:textSize="14sp" />
+        />
 
     <com.google.android.material.materialswitch.MaterialSwitch
         android:id="@+id/mealRemindersSwitch"
@@ -20,8 +20,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/space_12"
         android:text="@string/notifications_meal_reminders"
-        android:textColor="@color/text_primary"
-        android:textSize="14sp" />
+        />
 
     <com.google.android.material.materialswitch.MaterialSwitch
         android:id="@+id/weeklyReviewSwitch"
@@ -30,8 +29,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/space_4"
         android:text="@string/notifications_weekly_review"
-        android:textColor="@color/text_primary"
-        android:textSize="14sp" />
+        />
 
     <com.google.android.material.materialswitch.MaterialSwitch
         android:id="@+id/aiBackgroundUpdatesSwitch"
@@ -40,17 +38,16 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/space_4"
         android:text="@string/notifications_ai_background"
-        android:textColor="@color/text_primary"
-        android:textSize="14sp" />
+        />
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/space_4"
         android:layout_marginTop="@dimen/space_2"
+        style="@style/Text.MyFitAI.SettingsDescription"
         android:text="@string/notifications_ai_background_description"
-        android:textColor="@color/text_secondary"
-        android:textSize="12sp" />
+        />
 
     <com.google.android.material.textfield.TextInputLayout
         style="@style/Widget.MyFitAI.InputDropdown"

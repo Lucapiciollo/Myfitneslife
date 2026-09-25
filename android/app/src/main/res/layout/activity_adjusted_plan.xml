@@ -22,16 +22,16 @@
 
             <LinearLayout style="@style/Widget.MyFitAI.ScreenHeader"
                 android:layout_width="match_parent"
-                android:layout_height="56dp"
+                android:layout_height="@dimen/screen_header_height"
                 android:gravity="center_vertical">
                 <TextView
                     android:id="@+id/backButton"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
+                    android:layout_width="@dimen/icon_button_size"
+                    android:layout_height="@dimen/icon_button_size"
                     android:gravity="center"
                      android:background="?attr/selectableItemBackgroundBorderless"
                      android:contentDescription="Indietro"
-                     android:padding="8dp"
+                     android:padding="@dimen/space_8"
                      android:src="@drawable/ic_arrow_back"
                      app:tint="@color/text_primary" />
                 <TextView
@@ -43,7 +43,7 @@
                     android:gravity="center"
                     android:text="Piano aggiornato" />
                 <Space
-                    android:layout_width="40dp"
+                    android:layout_width="@dimen/icon_button_size"
                     android:layout_height="1dp" />
             </LinearLayout>
 
@@ -53,17 +53,16 @@
                  android:layout_height="wrap_content"
                    android:layout_marginTop="@dimen/space_12"
                  app:cardBackgroundColor="@color/white"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="0dp"
+                app:cardCornerRadius="@dimen/radius_card"
+                app:cardElevation="@dimen/elevation_card"
                 app:strokeColor="@color/divider"
-                app:strokeWidth="1dp">
+                app:strokeWidth="@dimen/border_width_default">
                 <LinearLayout style="@style/Widget.MyFitAI.HomeSectionContent" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
                     <TextView
                         android:id="@+id/resultDescription"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textColor="@color/text_primary"
-                        android:textSize="15sp" />
+                        style="@style/Text.MyFitAI.BodyEmphasis" />
                     <TextView
                         android:id="@+id/resultSummary"
                         android:layout_width="match_parent"
@@ -71,8 +70,7 @@
                         android:layout_marginTop="@dimen/space_12"
                         android:padding="@dimen/space_16"
                          android:background="@color/surface_primary"
-                         android:textColor="@color/text_primary"
-                        android:textSize="14sp" />
+                        style="@style/Text.MyFitAI.Body" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -84,10 +82,10 @@
                  android:layout_marginTop="@dimen/space_12"
                  android:visibility="gone"
                  app:cardBackgroundColor="@color/white"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="0dp"
+                app:cardCornerRadius="@dimen/radius_card"
+                app:cardElevation="@dimen/elevation_card"
                 app:strokeColor="@color/divider"
-                app:strokeWidth="1dp">
+                app:strokeWidth="@dimen/border_width_default">
                 <LinearLayout style="@style/Widget.MyFitAI.HomeSectionContent" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
                     <TextView
                         android:id="@+id/modifiedHeader"
@@ -110,24 +108,23 @@
                   android:layout_marginTop="@dimen/space_12"
                   android:visibility="gone"
                   app:cardBackgroundColor="@color/white"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="0dp"
+                app:cardCornerRadius="@dimen/radius_card"
+                app:cardElevation="@dimen/elevation_card"
                 app:strokeColor="@color/divider"
-                app:strokeWidth="1dp">
+                app:strokeWidth="@dimen/border_width_default">
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:padding="@dimen/space_16"
                     android:text="Le modifiche riguardano solo i pasti successivi allo sgarro nella stessa giornata. I pasti passati e i giorni successivi restano invariati; se il bilanciamento richiederebbe restrizioni eccessive, l'app registra lo sgarro senza compensarlo."
-                    android:textColor="@color/text_secondary"
-                    android:textSize="13sp" />
+                     style="@style/Text.MyFitAI.Body" />
             </com.google.android.material.card.MaterialCardView>
 
              <com.google.android.material.button.MaterialButton
                  android:id="@+id/okButton"
                  style="@style/Widget.MyFitAI.Button.Primary"
                 android:layout_width="match_parent"
-                android:layout_height="52dp"
+                 android:layout_height="@dimen/button_primary_min_height"
                  android:layout_marginTop="@dimen/space_16"
                 android:gravity="center"
                  android:text="Vedi piano"

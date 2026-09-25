@@ -112,7 +112,7 @@ class MeasurementsActivity : BaseShellActivity() {
         findViewById<MaterialCardView>(R.id.dietImpactCard).apply {
             setCardBackgroundColor(getColor(R.color.white))
             strokeColor = getColor(R.color.divider)
-            strokeWidth = dp(1)
+            strokeWidth = resources.getDimensionPixelSize(R.dimen.space_1)
             cardElevation = 0f
         }
         listOf(R.id.biaCard, R.id.bodyCard).forEach { id ->
@@ -155,7 +155,7 @@ class MeasurementsActivity : BaseShellActivity() {
         ).forEachIndexed { index, (label, available) ->
             if (index > 0) rows.addView(View(this).apply {
                 setBackgroundColor(getColor(R.color.divider))
-                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(1))
+                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, resources.getDimensionPixelSize(R.dimen.space_1))
             })
             rows.addView(impactRow(label, available))
         }
@@ -198,8 +198,6 @@ class MeasurementsActivity : BaseShellActivity() {
         setStatus(if (available) StatusRowView.Status.POSITIVE else StatusRowView.Status.NEUTRAL)
         contentDescription = if (available) "$label utilizzato" else "$label non disponibile"
     }
-
-    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     private data class AdaptiveReason(val decisionLabel: String, val reasonLabel: String, val windowDays: Int?)
 

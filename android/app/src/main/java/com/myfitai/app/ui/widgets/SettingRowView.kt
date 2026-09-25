@@ -21,8 +21,9 @@ class SettingRowView @JvmOverloads constructor(
     init {
         orientation = HORIZONTAL
         gravity = Gravity.CENTER_VERTICAL
-        minimumHeight = dp(48)
-        setPadding(0, dp(8), 0, dp(8))
+        minimumHeight = resources.getDimensionPixelSize(R.dimen.control_min_height)
+        val rowVerticalPadding = resources.getDimensionPixelSize(R.dimen.space_8)
+        setPadding(0, rowVerticalPadding, 0, rowVerticalPadding)
         background = null
         isClickable = true
         isFocusable = true
@@ -33,13 +34,13 @@ class SettingRowView @JvmOverloads constructor(
         val description = a.getString(R.styleable.SettingRowView_srDescription).orEmpty()
         a.recycle()
 
-        val iconSize = (22 * resources.displayMetrics.density).toInt()
         val icon = ImageView(context).apply {
-            layoutParams = LayoutParams((28 * resources.displayMetrics.density).toInt(), (28 * resources.displayMetrics.density).toInt())
-            setPadding(dp(5), dp(5), dp(5), dp(5))
+            layoutParams = LayoutParams(resources.getDimensionPixelSize(R.dimen.space_32), resources.getDimensionPixelSize(R.dimen.space_32))
+            val iconPadding = resources.getDimensionPixelSize(R.dimen.space_4)
+            setPadding(iconPadding, iconPadding, iconPadding, iconPadding)
             background = GradientDrawable().apply {
                 shape = GradientDrawable.RECTANGLE
-                cornerRadius = dp(11).toFloat()
+                cornerRadius = resources.getDimension(R.dimen.radius_small)
                 setColor(context.getColor(R.color.surface_secondary))
             }
             if (iconRes != 0) setImageResource(iconRes)
@@ -50,7 +51,7 @@ class SettingRowView @JvmOverloads constructor(
         val textColumn = LinearLayout(context).apply {
             orientation = VERTICAL
             layoutParams = LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f).apply {
-                marginStart = (16 * resources.displayMetrics.density).toInt()
+                marginStart = resources.getDimensionPixelSize(R.dimen.space_16)
             }
         }
         val labelView = TextView(context).apply {
@@ -64,7 +65,9 @@ class SettingRowView @JvmOverloads constructor(
             setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
             maxLines = 2
             ellipsize = android.text.TextUtils.TruncateAt.END
-            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply { topMargin = dp(1) }
+            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
+                topMargin = resources.getDimensionPixelSize(R.dimen.space_1)
+            }
         }
         textColumn.addView(descriptionView)
         addView(textColumn)
@@ -73,7 +76,7 @@ class SettingRowView @JvmOverloads constructor(
             layoutParams = LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT)
             text = "›"
             setTextColor(context.getColor(R.color.text_muted))
-            textSize = 18f
+            setTextAppearance(R.style.Text_MyFitAI_CardTitle)
         }
         addView(trailingText)
     }
@@ -81,13 +84,11 @@ class SettingRowView @JvmOverloads constructor(
     fun setTrailingBadge(text: String, colorRes: Int) {
         trailingText.text = text
         trailingText.setTextColor(context.getColor(colorRes))
-        trailingText.textSize = 13f
+        trailingText.setTextAppearance(R.style.Text_MyFitAI_BodyEmphasis)
     }
 
     fun setDescription(value: String?) {
         descriptionView.text = value.orEmpty()
         descriptionView.visibility = if (value.isNullOrBlank()) GONE else VISIBLE
     }
-
-    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 }

@@ -3,7 +3,7 @@
     style="@style/Text.MyFitAI.Body"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:minHeight="48dp"
+    android:minHeight="@dimen/control_min_height"
     android:gravity="center_vertical"
     android:paddingHorizontal="@dimen/space_16"
     android:background="@color/white"

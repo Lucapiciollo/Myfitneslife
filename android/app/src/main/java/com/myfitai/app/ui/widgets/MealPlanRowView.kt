@@ -27,13 +27,17 @@ class MealPlanRowView @JvmOverloads constructor(
         gravity = android.view.Gravity.CENTER_VERTICAL
         isClickable = true
         isFocusable = true
-        val density = resources.displayMetrics.density
-        minimumHeight = (80 * density).toInt()
-        setPadding((12 * density).toInt(), (12 * density).toInt(), (8 * density).toInt(), (12 * density).toInt())
+        minimumHeight = resources.getDimensionPixelSize(R.dimen.food_meal_row_min_height)
+        setPadding(
+            resources.getDimensionPixelSize(R.dimen.card_content_padding_compact),
+            resources.getDimensionPixelSize(R.dimen.space_12),
+            resources.getDimensionPixelSize(R.dimen.space_8),
+            resources.getDimensionPixelSize(R.dimen.space_12),
+        )
         background = context.getDrawable(R.drawable.bg_card)
 
         thumbnail = ShapeableImageView(context).apply {
-            val size = (56 * density).toInt()
+            val size = resources.getDimensionPixelSize(R.dimen.dashboard_thumbnail_size)
             layoutParams = LayoutParams(size, size)
             scaleType = ImageView.ScaleType.CENTER_CROP
             shapeAppearanceModel = ShapeAppearanceModel.builder(context, 0, R.style.ShapeAppearance_MyFitAI_Thumbnail).build()
@@ -43,7 +47,7 @@ class MealPlanRowView @JvmOverloads constructor(
         val textColumn = LinearLayout(context).apply {
             orientation = VERTICAL
             layoutParams = LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f).apply {
-                marginStart = (12 * density).toInt()
+                marginStart = resources.getDimensionPixelSize(R.dimen.space_12)
             }
         }
         val titleRow = LinearLayout(context).apply {
@@ -66,7 +70,7 @@ class MealPlanRowView @JvmOverloads constructor(
 
         descriptionView = TextView(context).apply {
             layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
-                topMargin = (4 * density).toInt()
+                topMargin = resources.getDimensionPixelSize(R.dimen.space_4)
             }
             setTextAppearance(R.style.Text_MyFitAI_Body)
             gravity = android.view.Gravity.START
@@ -75,7 +79,7 @@ class MealPlanRowView @JvmOverloads constructor(
         textColumn.addView(descriptionView)
         statusView = TextView(context).apply {
             layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
-                topMargin = (3 * density).toInt()
+                topMargin = resources.getDimensionPixelSize(R.dimen.space_4)
             }
             setTextAppearance(R.style.Text_MyFitAI_StatusValue)
             setTextColor(context.getColor(R.color.accent_green_dark))
@@ -84,11 +88,12 @@ class MealPlanRowView @JvmOverloads constructor(
         addView(textColumn)
 
         changeButton = ImageView(context).apply {
-            val size = (40 * density).toInt()
-            layoutParams = LayoutParams(size, size).apply { marginStart = (6 * density).toInt() }
+            val size = resources.getDimensionPixelSize(R.dimen.icon_button_size)
+            layoutParams = LayoutParams(size, size).apply { marginStart = resources.getDimensionPixelSize(R.dimen.space_4) }
             setImageResource(R.drawable.ic_refresh)
             setColorFilter(context.getColor(R.color.accent_green_dark))
-            setPadding((9 * density).toInt(), (9 * density).toInt(), (9 * density).toInt(), (9 * density).toInt())
+            val iconPadding = resources.getDimensionPixelSize(R.dimen.space_8)
+            setPadding(iconPadding, iconPadding, iconPadding, iconPadding)
             contentDescription = "Cambia pasto con IA"
             isClickable = true
             isFocusable = true

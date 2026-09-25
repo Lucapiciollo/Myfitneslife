@@ -179,7 +179,7 @@ class AppDataContainer private constructor(context: Context) {
     val aiJobRegistry by lazy {
         AiJobRegistry(mapOf(
             AiJobType.NUTRITION_PATH to NutritionPathAiJobHandler(aiRuntimeService, userProfileRepository, profileCalculationService),
-            AiJobType.PROGRESS_ANALYSIS to ProgressAnalysisAiJobHandler(progressAnalysisService),
+            AiJobType.PROGRESS_ANALYSIS to ProgressAnalysisAiJobHandler(progressAnalysisService, progressAnalysisScheduler),
             AiJobType.WEEKLY_PLAN to WeeklyPlanAiJobHandler(
                 nutritionPlanGenerationService,
                 notificationScheduler,

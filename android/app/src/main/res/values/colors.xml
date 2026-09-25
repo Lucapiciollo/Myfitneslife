@@ -7,7 +7,17 @@
     <color name="metric_label">#24323A</color><color name="metric_value">#0A1115</color><color name="metric_positive">#1A9A59</color>
     <color name="dashboard_header_bg">#10241F</color><color name="admin_header_bg">#F0F2EE</color><color name="screen_header_bg">#FFFFFF</color><color name="pill_selected_bg">#DDE9DF</color><color name="chart_fill_start">#3020B653</color><color name="chart_fill_end">#0020B653</color>
     <color name="surface_positive_soft">#F0F6F0</color><color name="positive_soft_stroke">#D4E3D6</color>
+    <color name="surface_warning_soft">#FFF7E8</color><color name="warning_soft_stroke">#E9D7AA</color>
+    <color name="surface_error_soft">#FFF1EF</color><color name="error_soft_stroke">#EBC9C5</color>
+    <color name="surface_info_soft">#EEF5FC</color><color name="info_soft_stroke">#C9DCEE</color>
+    <color name="surface_ai">#F2EFF8</color><color name="ai_soft_stroke">#D9D0EB</color>
     <color name="dialog_control_neutral">#59635D</color>
     <color name="dialog_action_primary">#11853A</color>
+    <color name="scrim_black_60">#99000000</color>
+    <color name="scrim_black_20">#33000000</color>
+    <color name="scrim_black_25">#40000000</color>
+    <color name="scrim_black_70">#B3000000</color>
+    <color name="nav_surface_shadow">#1F000000</color>
+    <color name="white_40">#66FFFFFF</color>
     <color name="white">#FFFFFFFF</color><color name="black">#FF000000</color><color name="transparent">#00000000</color>
 </resources>

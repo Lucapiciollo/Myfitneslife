@@ -51,7 +51,7 @@ class WorkoutsActivity : BaseShellActivity() {
         findViewById<com.google.android.material.card.MaterialCardView>(R.id.workoutSummaryCard).apply {
             setCardBackgroundColor(getColor(R.color.white))
             cardElevation = 0f
-            strokeWidth = dp(1)
+            strokeWidth = resources.getDimensionPixelSize(R.dimen.space_1)
             strokeColor = getColor(R.color.divider)
         }
         bindBottom(BottomNavBinder.Tab.MORE)
@@ -150,9 +150,9 @@ class WorkoutsActivity : BaseShellActivity() {
             summary.text = "${selectedDate.format(dayFormatter)}\nNessun allenamento o riposo registrato."
             container.addView(TextView(this).apply {
                 text = "Usa il pulsante sotto per aggiungere una voce allo storico."
-                setTextColor(getColor(R.color.text_secondary))
-                textSize = 14f
-                setPadding(0, dp(12), 0, dp(12))
+                setTextAppearance(R.style.Text_MyFitAI_Body)
+                val rowVerticalPadding = resources.getDimensionPixelSize(R.dimen.space_12)
+                setPadding(0, rowVerticalPadding, 0, rowVerticalPadding)
             })
             return
         }
@@ -182,7 +182,7 @@ class WorkoutsActivity : BaseShellActivity() {
         }.joinToString(" · ")
         setSubtitle(subtitle.ifBlank { if (workout.isRestDay) "Giornata di recupero" else "Allenamento" })
         if (workout.isRestDay) setRestDay() else setPhoto(if (workout.type.equals("CARDIO", true)) R.drawable.img_workout_cardio else R.drawable.img_workout_weights)
-        layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(8) }
+        layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { bottomMargin = resources.getDimensionPixelSize(R.dimen.space_8) }
         isLongClickable = true
         setOnLongClickListener {
             confirmDelete(workout)
@@ -210,5 +210,4 @@ class WorkoutsActivity : BaseShellActivity() {
         else -> type.ifBlank { "Altro" }
     }
 
-    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 }

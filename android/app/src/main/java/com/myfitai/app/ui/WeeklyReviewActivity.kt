@@ -60,7 +60,7 @@ class WeeklyReviewActivity : BaseShellActivity() {
             findViewById<MaterialCardView>(id).apply {
                 setCardBackgroundColor(getColor(R.color.white))
                 strokeColor = getColor(R.color.divider)
-                strokeWidth = dp(1)
+                strokeWidth = resources.getDimensionPixelSize(R.dimen.space_1)
                 cardElevation = 0f
             }
         }
@@ -169,5 +169,4 @@ class WeeklyReviewActivity : BaseShellActivity() {
 
     private fun format1(value: Float): String = String.format(Locale.ITALIAN, "%.1f", value)
     private fun signed(value: Float): String = String.format(Locale.ITALIAN, "%+.1f", value)
-    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 }

@@ -101,7 +101,7 @@ class CheatEntryActivity : BaseShellActivity() {
                 is MaterialCardView -> {
                     view.setCardBackgroundColor(getColor(R.color.white))
                     view.strokeColor = getColor(R.color.divider)
-                    view.strokeWidth = dp(1)
+                    view.strokeWidth = resources.getDimensionPixelSize(R.dimen.space_1)
                     view.cardElevation = 0f
                 }
                 is TextInputLayout -> {
@@ -359,5 +359,4 @@ class CheatEntryActivity : BaseShellActivity() {
         super.onDestroy()
     }
 
-    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 }

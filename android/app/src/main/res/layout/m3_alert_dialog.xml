@@ -16,13 +16,13 @@
         android:id="@+id/contentPanel"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:minHeight="48dp"
+        android:minHeight="@dimen/control_min_height"
         android:background="@color/white">
 
         <ImageView
             android:id="@+id/scrollIndicatorUp"
             android:layout_width="match_parent"
-            android:layout_height="1dp"
+            android:layout_height="@dimen/border_width_default"
             android:layout_gravity="top"
             android:background="#1f000000"
             android:visibility="gone"
@@ -68,7 +68,7 @@
         <ImageView
             android:id="@+id/scrollIndicatorDown"
             android:layout_width="match_parent"
-            android:layout_height="1dp"
+            android:layout_height="@dimen/border_width_default"
             android:layout_gravity="bottom"
             android:background="#1f000000"
             android:visibility="gone"
@@ -80,7 +80,7 @@
         android:id="@+id/customPanel"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:minHeight="48dp"
+        android:minHeight="@dimen/control_min_height"
         android:background="@color/white">
 
         <FrameLayout

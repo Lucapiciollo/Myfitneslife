@@ -122,12 +122,13 @@ class NutritionAdviceActivity : BaseShellActivity() {
                 radius = resources.getDimension(R.dimen.radius_medium)
                 setCardBackgroundColor(getColor(R.color.white))
                 strokeColor = getColor(R.color.divider)
-                strokeWidth = dp(1)
+                strokeWidth = resources.getDimensionPixelSize(R.dimen.space_1)
                 cardElevation = 0f
             }
             val body = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
-                setPadding(dp(12), dp(10), dp(12), dp(12))
+                val horizontalPadding = resources.getDimensionPixelSize(R.dimen.card_content_padding_compact)
+                setPadding(horizontalPadding, resources.getDimensionPixelSize(R.dimen.space_10), horizontalPadding, resources.getDimensionPixelSize(R.dimen.space_12))
             }
 
             body.addView(TextView(this).apply {
@@ -139,7 +140,7 @@ class NutritionAdviceActivity : BaseShellActivity() {
             val metrics = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
-                setPadding(0, dp(8), 0, 0)
+                setPadding(0, resources.getDimensionPixelSize(R.dimen.space_8), 0, 0)
             }
             metrics.addView(metric("kcal", NutritionEstimateFormatter.formatEstimatedKcal(suggestion.estimatedKcal), 1.1f))
             metrics.addView(metric("Proteine", NutritionEstimateFormatter.formatEstimatedMacro(suggestion.proteinG, "g"), 1f))
@@ -153,18 +154,18 @@ class NutritionAdviceActivity : BaseShellActivity() {
                 includeFontPadding = false
                 maxLines = 2
                 ellipsize = android.text.TextUtils.TruncateAt.END
-                setPadding(0, dp(10), 0, 0)
+                setPadding(0, resources.getDimensionPixelSize(R.dimen.space_10), 0, 0)
             })
 
             body.addView(MaterialButton(this).apply {
                 text = "Accetta"
                 isAllCaps = false
                 setAiActionEnabled(this, enabled)
-                minHeight = dp(48)
+                minHeight = resources.getDimensionPixelSize(R.dimen.button_primary_min_height)
                 setTextColor(getColor(R.color.white))
                 setTypeface(typeface, Typeface.BOLD)
                 backgroundTintList = ColorStateList.valueOf(getColor(R.color.accent_green))
-                cornerRadius = dp(12)
+                cornerRadius = resources.getDimensionPixelSize(R.dimen.radius_field)
                 stateListAnimator = null
                 setOnClickListener {
                     confirmAiRequest("L'applicazione del suggerimento e il ricalcolo dei pasti futuri") {
@@ -173,14 +174,14 @@ class NutritionAdviceActivity : BaseShellActivity() {
                 }
             }, LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                dp(48),
-            ).apply { topMargin = dp(12) })
+                resources.getDimensionPixelSize(R.dimen.button_primary_min_height),
+            ).apply { topMargin = resources.getDimensionPixelSize(R.dimen.space_12) })
 
             card.addView(body)
             container.addView(card, LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT,
-            ).apply { bottomMargin = dp(8) })
+            ).apply { bottomMargin = resources.getDimensionPixelSize(R.dimen.space_8) })
         }
     }
 
@@ -190,11 +191,11 @@ class NutritionAdviceActivity : BaseShellActivity() {
         layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight)
         addView(TextView(this@NutritionAdviceActivity).apply {
             text = label
+            setTextAppearance(R.style.Text_MyFitAI_Micro)
             setTextColor(getColor(R.color.text_secondary))
-            textSize = 11f
             gravity = Gravity.CENTER
             maxLines = 2
-            minHeight = dp(28)
+            minHeight = resources.getDimensionPixelSize(R.dimen.space_28)
             includeFontPadding = false
         })
         addView(TextView(this@NutritionAdviceActivity).apply {
@@ -205,22 +206,20 @@ class NutritionAdviceActivity : BaseShellActivity() {
         })
     }
 
-    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
-
     private fun normalizeAdviceSurfaces() {
         fun visit(view: View) {
             when (view) {
                 is MaterialCardView -> {
                     view.setCardBackgroundColor(getColor(R.color.white))
                     view.strokeColor = getColor(R.color.divider)
-                    view.strokeWidth = dp(1)
+                    view.strokeWidth = resources.getDimensionPixelSize(R.dimen.space_1)
                     view.cardElevation = 0f
                 }
                 is TextInputLayout -> {
                     view.boxBackgroundColor = getColor(R.color.white)
                     view.boxStrokeColor = getColor(R.color.myfitai_input_stroke)
-                    view.boxStrokeWidth = dp(1)
-                    view.boxStrokeWidthFocused = dp(2)
+                    view.boxStrokeWidth = resources.getDimensionPixelSize(R.dimen.space_1)
+                    view.boxStrokeWidthFocused = resources.getDimensionPixelSize(R.dimen.space_2)
                     view.hintTextColor = android.content.res.ColorStateList.valueOf(getColor(R.color.myfitai_input_hint))
                 }
             }

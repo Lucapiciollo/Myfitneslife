@@ -23,10 +23,8 @@ class MealCardView @JvmOverloads constructor(
     init {
         orientation = HORIZONTAL
         gravity = android.view.Gravity.CENTER_VERTICAL
-        val density = resources.displayMetrics.density
-
         val icon = ImageView(context).apply {
-            layoutParams = LayoutParams((36 * density).toInt(), (36 * density).toInt())
+            layoutParams = LayoutParams(resources.getDimensionPixelSize(R.dimen.icon_button_size), resources.getDimensionPixelSize(R.dimen.icon_button_size))
             setImageResource(R.drawable.ic_clock)
             importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
         }
@@ -35,16 +33,16 @@ class MealCardView @JvmOverloads constructor(
         val textColumn = LinearLayout(context).apply {
             orientation = VERTICAL
             layoutParams = LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f).apply {
-                marginStart = (12 * density).toInt()
+                marginStart = resources.getDimensionPixelSize(R.dimen.space_12)
             }
         }
         timeView = TextView(context).apply {
-            setTextAppearance(R.style.Text_MyFitAI_ScreenTitle)
+            setTextAppearance(R.style.Text_MyFitAI_CardValue)
         }
         textColumn.addView(timeView)
         titleView = TextView(context).apply {
             layoutParams = LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply {
-                topMargin = (2 * density).toInt()
+                topMargin = resources.getDimensionPixelSize(R.dimen.space_2)
             }
             setTextAppearance(R.style.Text_MyFitAI_Body)
             gravity = android.view.Gravity.START
@@ -60,7 +58,7 @@ class MealCardView @JvmOverloads constructor(
         addView(textColumn)
 
         thumbnail = ShapeableImageView(context).apply {
-            val size = (72 * density).toInt()
+            val size = resources.getDimensionPixelSize(R.dimen.dashboard_thumbnail_size)
             layoutParams = LayoutParams(size, size)
             scaleType = ImageView.ScaleType.CENTER_CROP
             shapeAppearanceModel = ShapeAppearanceModel.builder(context, 0, R.style.ShapeAppearance_MyFitAI_Thumbnail).build()

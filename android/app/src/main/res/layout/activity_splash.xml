@@ -5,8 +5,8 @@
     android:background="@color/bg_primary">
 
     <ImageView
-        android:layout_width="120dp"
-        android:layout_height="120dp"
+        android:layout_width="@dimen/splash_corner_decoration_size"
+        android:layout_height="@dimen/splash_corner_decoration_size"
         android:scaleType="fitCenter"
         android:src="@drawable/img_leaf_corner"
         android:alpha="0.6"
@@ -15,8 +15,8 @@
         app:layout_constraintEnd_toEndOf="parent" />
 
     <ImageView
-        android:layout_width="160dp"
-        android:layout_height="160dp"
+        android:layout_width="@dimen/splash_bottom_decoration_size"
+        android:layout_height="@dimen/splash_bottom_decoration_size"
         android:scaleType="fitCenter"
         android:src="@drawable/img_green_blur"
         android:alpha="0.5"
@@ -26,8 +26,8 @@
 
     <ImageView
         android:id="@+id/logoImage"
-        android:layout_width="180dp"
-        android:layout_height="180dp"
+        android:layout_width="@dimen/splash_logo_size"
+        android:layout_height="@dimen/splash_logo_size"
         android:scaleType="fitCenter"
         android:src="@drawable/img_logo_full"
         android:contentDescription="@null"

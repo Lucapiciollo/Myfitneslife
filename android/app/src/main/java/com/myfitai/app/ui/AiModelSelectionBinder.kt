@@ -54,22 +54,20 @@ object AiModelSelectionBinder {
     ) {
         val row = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(0, dp(activity, 8), 0, dp(activity, 8))
+            val verticalPadding = activity.resources.getDimensionPixelSize(R.dimen.space_8)
+            setPadding(0, verticalPadding, 0, verticalPadding)
             isClickable = true
             isFocusable = true
         }
         val modelView = TextView(activity).apply {
-            setTextColor(activity.getColor(R.color.text_secondary))
-            textSize = 14f
+            setTextAppearance(R.style.Text_MyFitAI_Body)
         }
         val pricingView = TextView(activity).apply {
-            setTextColor(activity.getColor(R.color.text_primary))
-            textSize = 13f
-            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            setTextAppearance(R.style.Text_MyFitAI_StatusValue)
         }
         row.addView(modelView, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
         row.addView(pricingView, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
-            topMargin = dp(activity, 2)
+            topMargin = activity.resources.getDimensionPixelSize(R.dimen.space_2)
         })
         fun render() {
             val model = current()
@@ -96,9 +94,7 @@ object AiModelSelectionBinder {
                 .show()
         }
         card.addView(row, 0)
-        card.addView(View(activity).apply { setBackgroundColor(activity.getColor(R.color.divider)) }, 1, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1).apply { bottomMargin = dp(activity, 8) })
+        card.addView(View(activity).apply { setBackgroundColor(activity.getColor(R.color.divider)) }, 1, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, activity.resources.getDimensionPixelSize(R.dimen.space_1)).apply { bottomMargin = activity.resources.getDimensionPixelSize(R.dimen.space_8) })
         render()
     }
-
-    private fun dp(activity: SettingsActivity, value: Int) = (value * activity.resources.displayMetrics.density).toInt()
 }

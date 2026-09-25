@@ -22,11 +22,11 @@
 
             <ImageButton
                 android:id="@+id/backButton"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/icon_button_size"
+                android:layout_height="@dimen/icon_button_size"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Indietro"
-                android:padding="8dp"
+                android:padding="@dimen/space_8"
                 android:src="@drawable/ic_arrow_back_white"
                 app:tint="@color/text_primary" />
 
@@ -41,8 +41,8 @@
                 style="@style/Text.MyFitAI.ScreenTitle" />
 
             <Space
-                android:layout_width="40dp"
-                android:layout_height="40dp" />
+                android:layout_width="@dimen/icon_button_size"
+                android:layout_height="@dimen/icon_button_size" />
         </LinearLayout>
 
         <com.google.android.material.card.MaterialCardView
@@ -104,20 +104,18 @@
                 </GridLayout>
 
                 <TextView
+                    style="@style/Text.MyFitAI.Micro"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_4"
-                    android:text="Peso manuale: viene salvato con le misure, senza creare una BIA."
-                    android:textColor="@color/text_muted"
-                    android:textSize="11sp" />
+                    android:text="Peso manuale: viene salvato con le misure, senza creare una BIA." />
 
                 <TextView
                     android:id="@+id/sameDateBiaWeightHint"
+                    style="@style/Text.MyFitAI.SettingsDescription"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_4"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="12sp"
                     android:visibility="gone" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
@@ -332,7 +330,7 @@
             android:id="@+id/saveMeasurementButton"
             style="@style/Widget.MyFitAI.Button.Primary"
             android:layout_width="match_parent"
-            android:layout_height="52dp"
+            android:layout_height="@dimen/button_primary_min_height"
             android:layout_marginTop="@dimen/space_20"
             android:layout_marginBottom="@dimen/space_24"
             android:text="Salva misurazione" />

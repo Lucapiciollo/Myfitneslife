@@ -56,20 +56,20 @@ abstract class BaseShellActivity : AppCompatActivity() {
             val content = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 setBackgroundColor(getColor(R.color.white))
-                setPadding(dp(4), dp(4), dp(4), dp(4))
+                val contentPadding = dimen(R.dimen.space_4)
+                setPadding(contentPadding, contentPadding, contentPadding, contentPadding)
             }
             View(this).apply {
                 setBackgroundColor(getColor(R.color.accent_green))
-                content.addView(this, LinearLayout.LayoutParams(dp(4), ViewGroup.LayoutParams.MATCH_PARENT).apply {
-                    marginEnd = dp(12)
+                content.addView(this, LinearLayout.LayoutParams(dimen(R.dimen.space_4), ViewGroup.LayoutParams.MATCH_PARENT).apply {
+                    marginEnd = dimen(R.dimen.space_12)
                 })
             }
             TextView(this).apply {
                 text = formatHelpMessage(message)
-                textSize = 15f
+                setTextAppearance(R.style.Text_MyFitAI_Body)
                 setTextColor(getColor(R.color.text_primary))
-                setLineSpacing(0f, 1.18f)
-                setPadding(dp(4), dp(8), dp(8), dp(8))
+                setPadding(dimen(R.dimen.space_4), dimen(R.dimen.space_8), dimen(R.dimen.space_8), dimen(R.dimen.space_8))
                 content.addView(this, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
             }
             MaterialAlertDialogBuilder(this)
@@ -185,17 +185,16 @@ abstract class BaseShellActivity : AppCompatActivity() {
         }
 
         // Detail screens retain the back action and a compact, neutral navigation label.
-        header.layoutParams = header.layoutParams?.apply { height = dp(44) }
+        header.layoutParams = header.layoutParams?.apply { height = dimen(R.dimen.screen_header_height) }
         header.setBackgroundResource(R.drawable.bg_screen_header)
-        header.setPadding(dp(8), 0, dp(8), 0)
+        header.setPadding(dimen(R.dimen.space_8), 0, dimen(R.dimen.space_8), 0)
         if (header is LinearLayout) header.gravity = Gravity.CENTER_VERTICAL
 
         for (index in 0 until header.childCount) {
             val child = header.getChildAt(index)
             if (child is TextView && child.id != R.id.backButton && child.text.isNotBlank()) {
                 child.setTextColor(getColor(R.color.text_primary))
-                child.textSize = 16f
-                child.setTypeface(child.typeface, Typeface.BOLD)
+                child.setTextAppearance(R.style.Text_MyFitAI_ScreenTitle)
                 child.gravity = Gravity.START or Gravity.CENTER_VERTICAL
                 child.textAlignment = View.TEXT_ALIGNMENT_VIEW_START
             }
@@ -220,16 +219,15 @@ abstract class BaseShellActivity : AppCompatActivity() {
     private fun buildProfileHeader(): View = LinearLayout(this).apply {
         orientation = LinearLayout.HORIZONTAL
         gravity = Gravity.CENTER_VERTICAL
-        setPadding(dp(16), dp(6), dp(12), dp(6))
+        setPadding(dimen(R.dimen.page_gutter_compact), dimen(R.dimen.space_6), dimen(R.dimen.space_12), dimen(R.dimen.space_6))
         setBackgroundColor(getColor(R.color.admin_header_bg))
 
         addView(TextView(this@BaseShellActivity).apply {
             text = "Profilo"
+            setTextAppearance(R.style.Text_MyFitAI_Micro)
             setTextColor(getColor(R.color.text_primary))
-            textSize = 12f
-            setTypeface(typeface, Typeface.BOLD)
         }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-            marginEnd = dp(10)
+            marginEnd = dimen(R.dimen.space_10)
         })
 
         profileSwitcher = AutoCompleteTextView(this@BaseShellActivity).apply {
@@ -237,11 +235,11 @@ abstract class BaseShellActivity : AppCompatActivity() {
             background = null
             setTextColor(getColor(R.color.text_primary))
             setHintTextColor(getColor(R.color.surface_soft))
-            textSize = 15f
+            setTextAppearance(R.style.Text_MyFitAI_BodyEmphasis)
             isSingleLine = true
             inputType = 0
             background = null
-            setPadding(dp(12), 0, dp(8), 0)
+            setPadding(dimen(R.dimen.space_12), 0, dimen(R.dimen.space_8), 0)
             setOnClickListener { showDropDown() }
             setOnItemClickListener { _, _, position, _ -> handleProfileSelection(position) }
         }
@@ -250,7 +248,8 @@ abstract class BaseShellActivity : AppCompatActivity() {
         addView(ImageView(this@BaseShellActivity).apply {
             setImageResource(R.drawable.ic_nutrition_ai)
             contentDescription = "Chiedi un consiglio alimentare all'IA"
-            setPadding(dp(8), dp(8), dp(8), dp(8))
+            val iconPadding = dimen(R.dimen.space_8)
+            setPadding(iconPadding, iconPadding, iconPadding, iconPadding)
             isClickable = true
             isFocusable = true
             setOnClickListener {
@@ -258,7 +257,7 @@ abstract class BaseShellActivity : AppCompatActivity() {
                     startActivity(Intent(this@BaseShellActivity, NutritionAdviceActivity::class.java))
                 }
             }
-        }, LinearLayout.LayoutParams(dp(40), dp(40)).apply { marginStart = dp(4) })
+        }, LinearLayout.LayoutParams(dimen(R.dimen.icon_button_size), dimen(R.dimen.icon_button_size)).apply { marginStart = dimen(R.dimen.space_4) })
     }
 
     private fun observeGlobalProfiles() {
@@ -407,5 +406,5 @@ abstract class BaseShellActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+    private fun dimen(dimenRes: Int): Int = resources.getDimensionPixelSize(dimenRes)
 }
