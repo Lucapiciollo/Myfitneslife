@@ -29,6 +29,7 @@ import com.myfitai.app.ui.food.FoodPlanViewModel
 import com.myfitai.app.ui.widgets.MealPlanRowView
 import com.myfitai.app.ui.widgets.KeyValueRowView
 import com.myfitai.app.ui.widgets.WeekDaySelectorView
+import com.myfitai.app.ui.motion.UiMotion
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
@@ -46,6 +47,8 @@ class FoodPlanActivity : BaseShellActivity() {
         if (result.resultCode == Activity.RESULT_OK) recreate()
     }
     private val weekDaySelector by lazy { findViewById<WeekDaySelectorView>(R.id.weekDaySelector) }
+    private val animatedVisibilityTargets = mutableMapOf<Int, Boolean>()
+    private var suppressDaySelectionMotion = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -109,10 +112,12 @@ class FoodPlanActivity : BaseShellActivity() {
         val weekEnd = state.weekStart.plusDays(6)
         val currentWeek = state.weekStart == LocalDate.now().with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY))
         findViewById<TextView>(R.id.weekRangeLabel).text = formatWeekRange(state.weekStart, weekEnd)
+        suppressDaySelectionMotion = true
         weekDaySelector.setDays((0..6).map { offset ->
             val date = state.weekStart.plusDays(offset.toLong())
             WeekDaySelectorView.Day(date.format(DateTimeFormatter.ofPattern("EEE", Locale.ITALIAN)).replaceFirstChar { it.uppercase() }.take(3), date.dayOfMonth.toString())
         }, state.selectedDayIndex)
+        suppressDaySelectionMotion = false
         weekDaySelector.setOnDaySelectedListener(viewModel::selectDay)
 
         val versionLabel = findViewById<TextView>(R.id.planVersionLabel)
@@ -130,17 +135,17 @@ class FoodPlanActivity : BaseShellActivity() {
         val empty = findViewById<TextView>(R.id.emptyPlanText)
         val providerConfigured = aiProviderConfigured
         val aiConfigurationNoticeCard = findViewById<View>(R.id.aiConfigurationNoticeCard)
-        aiConfigurationNoticeCard.visibility = if (providerConfigured) View.GONE else View.VISIBLE
+        revealState(aiConfigurationNoticeCard, !providerConfigured)
         val goalChangedNotice = findViewById<TextView>(R.id.goalChangedNotice)
         val regenerateForGoalButton = findViewById<View>(R.id.regenerateForGoalButton)
-        goalChangedNotice.visibility = if (currentWeek && state.goalChangedSinceGeneration) View.VISIBLE else View.GONE
-        regenerateForGoalButton.visibility = if (currentWeek && state.goalChangedSinceGeneration) View.VISIBLE else View.GONE
+        revealState(goalChangedNotice, currentWeek && state.goalChangedSinceGeneration)
+        revealState(regenerateForGoalButton, currentWeek && state.goalChangedSinceGeneration)
         setAiActionEnabled(regenerateForGoalButton, !state.generation.running)
         val day = state.selectedDay
         val dayMealsCard = findViewById<View>(R.id.dayMealsCard)
         val hasDayContent = day != null && (day.meals.isNotEmpty() || day.supplements.isNotEmpty() || !day.hydrationNote.isNullOrBlank())
-        dayMealsCard.visibility = if (state.hasPlan && hasDayContent) View.VISIBLE else View.GONE
-        empty.visibility = if (!state.hasPlan) View.VISIBLE else View.GONE
+        revealState(dayMealsCard, state.hasPlan && hasDayContent)
+        revealState(empty, !state.hasPlan)
         if (!state.hasPlan) {
             empty.text = if (currentWeek) getString(R.string.food_plan_empty_current) else getString(R.string.food_plan_empty_history)
         }
@@ -149,12 +154,12 @@ class FoodPlanActivity : BaseShellActivity() {
         val weekActionsCard = findViewById<View>(R.id.weekActionsCard)
         val dailyTotalCard = findViewById<View>(R.id.dailyTotalCard)
         val nutritionEstimateCard = findViewById<View>(R.id.nutritionEstimateCard)
-        val generatedContentVisibility = if (state.hasPlan) View.VISIBLE else View.GONE
+        val generatedContentVisible = state.hasPlan
         val hasPlanStateMessage = state.goalChangedSinceGeneration || state.generation.running || state.generation.error != null || state.generation.successMessage != null
-        planStateCard.visibility = if (hasPlanStateMessage) View.VISIBLE else View.GONE
-        weekActionsCard.visibility = generatedContentVisibility
-        dailyTotalCard.visibility = generatedContentVisibility
-        nutritionEstimateCard.visibility = generatedContentVisibility
+        revealState(planStateCard, hasPlanStateMessage)
+        revealState(weekActionsCard, generatedContentVisible)
+        revealState(dailyTotalCard, generatedContentVisible)
+        revealState(nutritionEstimateCard, generatedContentVisible)
 
         renderGeneration(state, currentWeek)
         renderMeals(state.weekStart, day, state.consumptionRecords)
@@ -173,7 +178,7 @@ class FoodPlanActivity : BaseShellActivity() {
         val status = findViewById<TextView>(R.id.generationStatusText)
         val stateDot = findViewById<View>(R.id.planStateDot)
         val generation = state.generation
-        button.visibility = if (currentWeek) View.VISIBLE else View.GONE
+        revealState(button, currentWeek)
         setAiActionEnabled(button, currentWeek && !generation.running)
         button.text = when { generation.running -> "Generazione in corso…"; state.hasPlan -> "Rigenera piano con IA"; else -> "Genera piano con IA" }
         if (state.hasPlan && !generation.running) {
@@ -202,9 +207,14 @@ class FoodPlanActivity : BaseShellActivity() {
                 else -> R.drawable.bg_status_dot_neutral
             }
         )
-        statusContainer.visibility = if (currentWeek && message != null) View.VISIBLE else View.GONE
-        progress.visibility = if (generation.running) View.VISIBLE else View.GONE
+        revealState(statusContainer, currentWeek && message != null)
+        revealState(progress, generation.running)
         status.text = message.orEmpty()
+    }
+
+    private fun revealState(view: View, visible: Boolean) {
+        val previous = animatedVisibilityTargets.put(view.id, visible)
+        UiMotion.reveal(view, visible, animateChange = previous != null)
     }
 
     private fun renderMeals(weekStart: LocalDate, day: FoodPlanDay?, records: List<com.myfitai.app.data.local.entity.FoodConsumptionEntity>) {

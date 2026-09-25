@@ -31,6 +31,7 @@ import com.myfitai.app.domain.food.CheatAdjustmentService
 import com.myfitai.app.domain.food.LabelImageProcessor
 import com.myfitai.app.domain.food.LabelImageTempStore
 import com.myfitai.app.ui.food.CheatEntryViewModel
+import com.myfitai.app.ui.motion.UiMotion
 import com.myfitai.app.ui.widgets.SelectableSegmentView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -187,13 +188,13 @@ class CheatEntryActivity : BaseShellActivity() {
         labelProcessing = processing
         findViewById<View>(R.id.addLabelPhotoButton).isEnabled = !processing
         if (processing) {
-            findViewById<View>(R.id.labelPhotoStatusRow).visibility = View.VISIBLE
+            UiMotion.reveal(findViewById(R.id.labelPhotoStatusRow), true, animateChange = false)
             findViewById<TextView>(R.id.labelPhotoStatus).apply {
                 text = "Preparazione etichetta…"
                 setTextColor(getColor(R.color.text_secondary))
             }
         } else if (error != null) {
-            findViewById<View>(R.id.labelPhotoStatusRow).visibility = View.VISIBLE
+            UiMotion.reveal(findViewById(R.id.labelPhotoStatusRow), true, animateChange = false)
             findViewById<TextView>(R.id.labelPhotoStatus).apply {
                 text = error
                 setTextColor(getColor(R.color.text_secondary))
@@ -203,12 +204,12 @@ class CheatEntryActivity : BaseShellActivity() {
 
     private fun renderLabelState() {
         val attached = labelImage != null
-        findViewById<View>(R.id.labelPhotoStatusRow).visibility = if (attached) View.VISIBLE else View.GONE
+        UiMotion.reveal(findViewById(R.id.labelPhotoStatusRow), attached)
         findViewById<TextView>(R.id.labelPhotoStatus).apply {
             text = "Etichetta pronta ✓ · solo memoria temporanea"
             setTextColor(getColor(R.color.accent_green))
         }
-        findViewById<View>(R.id.removeLabelPhotoButton).visibility = if (attached) View.VISIBLE else View.GONE
+        UiMotion.reveal(findViewById(R.id.removeLabelPhotoButton), attached)
     }
 
     private fun bindPickers() {

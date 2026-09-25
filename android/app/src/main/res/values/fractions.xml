@@ -1,0 +1,4 @@
+<resources>
+    <fraction name="motion_selection_scale">3%</fraction>
+    <fraction name="motion_checkbox_scale">8%</fraction>
+</resources>

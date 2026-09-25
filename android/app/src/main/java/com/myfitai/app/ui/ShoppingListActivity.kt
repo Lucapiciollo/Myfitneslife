@@ -20,10 +20,12 @@ import com.myfitai.app.ui.shopping.ShoppingListViewModel
 import com.myfitai.app.ui.widgets.SectionHeaderView
 import com.myfitai.app.ui.widgets.SelectableSegmentView
 import com.myfitai.app.ui.widgets.ShoppingItemRowView
+import com.myfitai.app.ui.motion.UiMotion
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import java.util.WeakHashMap
 
 class ShoppingListActivity : BaseShellActivity() {
 
@@ -39,6 +41,13 @@ class ShoppingListActivity : BaseShellActivity() {
         )
     }
     private var confirmationShownFor: String? = null
+    private val rowViews = mutableMapOf<String, ShoppingItemRowView>()
+    private val lastAnimatedVisibility = WeakHashMap<View, Boolean>()
+    private var wasLoading = false
+    private var animateNewRows = false
+    private var renderInProgress = false
+    private var renderedRowsSignature: String? = null
+    private var renderedViewMode: ShoppingListViewModel.ViewMode? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -86,6 +95,9 @@ class ShoppingListActivity : BaseShellActivity() {
             }
         }
         findViewById<ProgressBar>(R.id.loadingProgress).visibility = if (state.loading) View.VISIBLE else View.GONE
+        val justFinishedLoading = wasLoading && !state.loading
+        wasLoading = state.loading
+        if (state.loading) renderInProgress = true
 
         val toBuy = state.rows.count { it.status == ShoppingListStateStore.Status.TO_BUY }
         val purchased = state.rows.count { it.status == ShoppingListStateStore.Status.PURCHASED }
@@ -95,7 +107,7 @@ class ShoppingListActivity : BaseShellActivity() {
 
         val empty = findViewById<TextView>(R.id.emptyText)
         val visible = state.visibleRows
-        empty.visibility = if (!state.loading && visible.isEmpty()) View.VISIBLE else View.GONE
+        setAnimatedVisibility(empty, !state.loading && visible.isEmpty(), justFinishedLoading)
         empty.text = when {
             state.error != null -> state.error
             state.rows.isEmpty() -> "Nessun piano disponibile per questa settimana, oppure il piano non contiene ingredienti."
@@ -103,20 +115,42 @@ class ShoppingListActivity : BaseShellActivity() {
         }
 
         val container = findViewById<LinearLayout>(R.id.itemsContainer)
-        container.removeAllViews()
-        findViewById<View>(R.id.itemsCard).visibility = if (visible.isEmpty()) View.GONE else View.VISIBLE
+        UiMotion.beginLayoutChange(container, animateChange = justFinishedLoading)
+        val firstPopulation = renderedRowsSignature == null
+        val desiredSignature = visible.joinToString("|") { it.item.key }
+        val structureChanged = desiredSignature != renderedRowsSignature || state.viewMode != renderedViewMode
+        if (visible.isEmpty() || structureChanged) {
+            container.removeAllViews()
+            rowViews.clear()
+        }
+        val itemsCard = findViewById<View>(R.id.itemsCard)
+        setAnimatedVisibility(itemsCard, visible.isNotEmpty(), justFinishedLoading || (!firstPopulation && structureChanged))
         findViewById<View>(R.id.exportButton).isEnabled = visible.isNotEmpty()
-        if (visible.isEmpty()) return
+        if (visible.isEmpty()) {
+            renderedRowsSignature = desiredSignature
+            renderedViewMode = state.viewMode
+            renderInProgress = false
+            return
+        }
 
-        if (state.viewMode == ShoppingListViewModel.ViewMode.CATEGORY) {
-            visible.groupBy { it.item.category }.toSortedMap(String.CASE_INSENSITIVE_ORDER).forEach { (category, rows) ->
-                addHeader(container, category)
-                rows.sortedBy { it.item.name.lowercase(Locale.ROOT) }.forEach { addRow(container, it) }
+        if (structureChanged) {
+            animateNewRows = !firstPopulation && !justFinishedLoading
+            if (state.viewMode == ShoppingListViewModel.ViewMode.CATEGORY) {
+                visible.groupBy { it.item.category }.toSortedMap(String.CASE_INSENSITIVE_ORDER).forEach { (category, rows) ->
+                    addHeader(container, category)
+                    rows.sortedBy { it.item.name.lowercase(Locale.ROOT) }.forEach { addRow(container, it) }
+                }
+            } else {
+                addHeader(container, "Lista settimanale")
+                visible.sortedBy { it.item.name.lowercase(Locale.ROOT) }.forEach { addRow(container, it) }
             }
         } else {
-            addHeader(container, "Lista settimanale")
-            visible.sortedBy { it.item.name.lowercase(Locale.ROOT) }.forEach { addRow(container, it) }
+            visible.forEach { row -> rowViews[row.item.key]?.let { bindRow(it, row) } }
         }
+        animateNewRows = false
+        renderedRowsSignature = desiredSignature
+        renderedViewMode = state.viewMode
+        renderInProgress = false
     }
 
     private fun showFirstOpenConfirmation(versionNumber: Int?) {
@@ -133,27 +167,41 @@ class ShoppingListActivity : BaseShellActivity() {
     }
 
     private fun addHeader(container: LinearLayout, title: String) {
-        container.addView(
-            SectionHeaderView(this).apply { text = title },
-            LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+        SectionHeaderView(this).apply {
+            text = title
+            if (animateNewRows) UiMotion.reveal(this, true, animateChange = !renderInProgress)
+            container.addView(this, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
                 topMargin = resources.getDimensionPixelSize(R.dimen.space_12)
-            },
-        )
+            })
+        }
     }
 
     private fun addRow(container: LinearLayout, row: ShoppingListViewModel.Row) {
         val item = row.item
-        val view = ShoppingItemRowView(this).apply {
-            setName(if (row.status == ShoppingListStateStore.Status.PANTRY) "${item.name} · dispensa" else item.name)
-            setQuantity(item.displayQuantity() + item.weightState?.takeIf { it.isNotBlank() }?.let { " · $it" }.orEmpty())
-            setIcon(iconFor(item.category))
-            alpha = if (row.status == ShoppingListStateStore.Status.PANTRY) 0.65f else 1f
-            setChecked(row.status == ShoppingListStateStore.Status.PURCHASED)
+        val view = rowViews.getOrPut(item.key) { ShoppingItemRowView(this) }.apply {
             setOnCheckedChangeListener { checked -> viewModel.togglePurchased(item.key, checked) }
-            setOnClickListener { chooseStatus(row) }
-            contentDescription = "${item.name}, ${item.displayQuantity()}, ${statusLabel(row.status)}"
         }
+        bindRow(view, row)
+        if (view.parent == null && animateNewRows) UiMotion.reveal(view, true, animateChange = !renderInProgress)
         container.addView(view, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+    }
+
+    private fun bindRow(view: ShoppingItemRowView, row: ShoppingListViewModel.Row) {
+        val item = row.item
+        view.setName(if (row.status == ShoppingListStateStore.Status.PANTRY) "${item.name} · dispensa" else item.name)
+        view.setQuantity(item.displayQuantity() + item.weightState?.takeIf { it.isNotBlank() }?.let { " · $it" }.orEmpty())
+        view.setIcon(iconFor(item.category))
+        view.alpha = if (row.status == ShoppingListStateStore.Status.PANTRY) 0.65f else 1f
+        view.setChecked(row.status == ShoppingListStateStore.Status.PURCHASED)
+        view.setOnClickListener { chooseStatus(row) }
+        view.contentDescription = "${item.name}, ${item.displayQuantity()}, ${statusLabel(row.status)}"
+    }
+
+    private fun setAnimatedVisibility(view: View, visible: Boolean, animate: Boolean) {
+        val previous = lastAnimatedVisibility[view] ?: (view.visibility == View.VISIBLE)
+        if (previous == visible) return
+        lastAnimatedVisibility[view] = visible
+        UiMotion.reveal(view, visible, animateChange = animate)
     }
 
     private fun chooseStatus(row: ShoppingListViewModel.Row) {

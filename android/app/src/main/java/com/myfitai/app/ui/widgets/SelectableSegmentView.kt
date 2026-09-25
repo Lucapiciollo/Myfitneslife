@@ -7,6 +7,7 @@ import android.view.Gravity
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
 import com.myfitai.app.R
+import com.myfitai.app.ui.motion.UiMotion
 
 /** Segmented control riutilizzabile a selezione singola (es. Misura/Storico, Peso/Grasso/Massa). */
 open class SelectableSegmentView @JvmOverloads constructor(
@@ -15,6 +16,8 @@ open class SelectableSegmentView @JvmOverloads constructor(
 ) : MaterialButtonToggleGroup(context, attrs) {
 
     private var onSegmentSelected: ((Int) -> Unit)? = null
+    private var onSegmentMotion: ((Int, Int?) -> Unit)? = null
+    private var currentSelectionIndex: Int? = null
 
     init {
         isSingleSelection = true
@@ -60,15 +63,25 @@ open class SelectableSegmentView @JvmOverloads constructor(
             addView(button)
         }
         (getChildAt(safeIndex) as? MaterialButton)?.id?.let { check(it) }
+        currentSelectionIndex = safeIndex
         addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (isChecked) {
+                if (!isChecked) return@addOnButtonCheckedListener
                 val index = (0 until childCount).firstOrNull { getChildAt(it).id == checkedId } ?: return@addOnButtonCheckedListener
+                val previousIndex = currentSelectionIndex?.takeUnless { it == index }
+                if (previousIndex != null) onSegmentMotion?.invoke(index, previousIndex)
+                currentSelectionIndex = index
+                (0 until childCount).forEach { childIndex ->
+                    UiMotion.selection(getChildAt(childIndex), childIndex == index)
+                }
                 onSegmentSelected?.invoke(index)
             }
-        }
     }
 
     open fun setOnSegmentSelectedListener(listener: (Int) -> Unit) {
         onSegmentSelected = listener
+    }
+
+    fun setOnSegmentMotionListener(listener: ((selectedIndex: Int, previousIndex: Int?) -> Unit)?) {
+        onSegmentMotion = listener
     }
 }

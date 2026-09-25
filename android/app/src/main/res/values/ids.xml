@@ -2,4 +2,5 @@
     <item name="metricWeight" type="id" />
     <item name="metricFat" type="id" />
     <item name="metricMuscle" type="id" />
+    <item name="motionVisibilityTarget" type="id" />
 </resources>

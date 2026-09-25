@@ -18,6 +18,7 @@ import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.ui.food.MealDetailViewModel
 import com.myfitai.app.ui.widgets.IngredientRowView
 import com.myfitai.app.ui.widgets.SelectableSegmentView
+import com.myfitai.app.ui.motion.UiMotion
 import com.google.android.material.card.MaterialCardView
 import kotlinx.coroutines.launch
 import java.util.Locale
@@ -28,6 +29,7 @@ class MealDetailActivity : BaseShellActivity() {
     private val viewModel: MealDetailViewModel by viewModels {
         MealDetailViewModel.Factory(data.mealPlanRepository, data.foodConsumptionRepository, data.foodConsumptionService)
     }
+    private var selectedDetailTab = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,6 +47,7 @@ class MealDetailActivity : BaseShellActivity() {
             if (viewModel.state.value.consumption?.status == FoodConsumptionStatus.SKIPPED.name) viewModel.clearStatus()
             else viewModel.setStatus(FoodConsumptionStatus.SKIPPED)
         }
+        bindConsumptionFeedback()
 
         val mealId = intent.getLongExtra(EXTRA_MEAL_ID, -1L)
         lifecycleScope.launch {
@@ -67,15 +70,37 @@ class MealDetailActivity : BaseShellActivity() {
     }
 
     private fun bindTabs() {
-        val ingredientsContainer = findViewById<View>(R.id.ingredientsContainer)
-        val preparationContainer = findViewById<View>(R.id.preparationContainer)
+        val ingredientsCard = findViewById<View>(R.id.ingredientsCard)
         val preparationCard = findViewById<View>(R.id.preparationCard)
         findViewById<SelectableSegmentView>(R.id.detailSegment).apply {
             setSegments(listOf("Ingredienti", "Preparazione"), selectedIndex = 0)
+            setOnSegmentMotionListener { selectedIndex, previousIndex ->
+                val outgoingContainer = if (previousIndex == 0) {
+                    findViewById<View>(R.id.ingredientsContainer)
+                } else {
+                    findViewById<View>(R.id.preparationContainer)
+                }
+                val incomingContainer = if (selectedIndex == 0) {
+                    findViewById<View>(R.id.ingredientsContainer)
+                } else {
+                    findViewById<View>(R.id.preparationContainer)
+                }
+                UiMotion.crossfade(outgoingContainer, incomingContainer, showFirst = selectedIndex == 0)
+            }
             setOnSegmentSelectedListener { index ->
-                ingredientsContainer.visibility = if (index == 0) View.VISIBLE else View.GONE
-                preparationContainer.visibility = if (index == 1) View.VISIBLE else View.GONE
-                preparationCard.visibility = if (index == 1) View.VISIBLE else View.GONE
+                selectedDetailTab = index
+            }
+        }
+    }
+
+    private fun bindConsumptionFeedback() {
+        listOf(R.id.consumedButton, R.id.skippedButton).forEach { id ->
+            findViewById<View>(id).addOnLayoutChangeListener { view, _, _, _, _, _, _, _, _ ->
+                val wasVisible = view.getTag(R.id.motionVisibilityTarget) as? Boolean ?: false
+                val isVisible = view.visibility == View.VISIBLE
+                if (wasVisible == isVisible) return@addOnLayoutChangeListener
+                view.setTag(R.id.motionVisibilityTarget, isVisible)
+                if (isVisible) UiMotion.selection(view, selected = true)
             }
         }
     }
@@ -99,6 +124,15 @@ class MealDetailActivity : BaseShellActivity() {
         }
         errorView.visibility = View.GONE
         findViewById<View>(R.id.ingredientsCard).visibility = View.VISIBLE
+        findViewById<View>(R.id.preparationCard).visibility = View.VISIBLE
+        val ingredientsContent = findViewById<View>(R.id.ingredientsContainer)
+        val preparationContent = findViewById<View>(R.id.preparationContainer)
+        ingredientsContent.visibility = if (selectedDetailTab == 0) View.VISIBLE else View.GONE
+        preparationContent.visibility = if (selectedDetailTab == 1) View.VISIBLE else View.GONE
+        ingredientsContent.alpha = 1f
+        preparationContent.alpha = 1f
+        ingredientsContent.translationY = 0f
+        preparationContent.translationY = 0f
         renderConsumption(state)
 
         findViewById<TextView>(R.id.mealTitle).text = meal.title
@@ -139,8 +173,8 @@ class MealDetailActivity : BaseShellActivity() {
         val consumedButton = findViewById<com.google.android.material.button.MaterialButton>(R.id.consumedButton)
         val skippedButton = findViewById<com.google.android.material.button.MaterialButton>(R.id.skippedButton)
         val status = state.consumption?.status
-        consumedButton.visibility = View.VISIBLE
-        skippedButton.visibility = View.VISIBLE
+        UiMotion.reveal(consumedButton, true, animateChange = false)
+        UiMotion.reveal(skippedButton, true, animateChange = false)
         when (status) {
             FoodConsumptionStatus.CONSUMED.name -> {
                 consumedButton.text = "Annulla consumo"

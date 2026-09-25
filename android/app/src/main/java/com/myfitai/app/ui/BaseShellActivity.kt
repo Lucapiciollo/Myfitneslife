@@ -26,6 +26,7 @@ import com.myfitai.app.ai.AiProviderAccess
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.navigation.BottomNavBinder
+import com.myfitai.app.ui.motion.UiMotion
 import kotlinx.coroutines.launch
 
 abstract class BaseShellActivity : AppCompatActivity() {
@@ -154,14 +155,7 @@ abstract class BaseShellActivity : AppCompatActivity() {
         }
         shell.addView(content, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
         super.setContentView(shell)
-        content.alpha = 0f
-        content.translationY = resources.getDimension(R.dimen.motion_screen_offset)
-        content.animate()
-            .alpha(1f)
-            .translationY(0f)
-            .setDuration(resources.getInteger(R.integer.motion_screen_enter_ms).toLong())
-            .setInterpolator(android.view.animation.DecelerateInterpolator())
-            .start()
+        UiMotion.screenEnter(content)
         ViewCompat.setOnApplyWindowInsetsListener(shell) { view, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             view.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)

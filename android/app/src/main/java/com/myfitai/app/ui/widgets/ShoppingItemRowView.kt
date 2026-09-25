@@ -9,6 +9,7 @@ import com.google.android.material.checkbox.MaterialCheckBox
 import com.google.android.material.imageview.ShapeableImageView
 import com.google.android.material.shape.ShapeAppearanceModel
 import com.myfitai.app.R
+import com.myfitai.app.ui.motion.UiMotion
 
 /** Riga articolo riutilizzabile per la lista della spesa: checkbox, icona, nome, quantità. */
 class ShoppingItemRowView @JvmOverloads constructor(
@@ -20,6 +21,8 @@ class ShoppingItemRowView @JvmOverloads constructor(
     private val iconView: ShapeableImageView
     private val nameView: TextView
     private val quantityView: TextView
+    private var suppressCheckedCallback = false
+    private var onCheckedChange: ((Boolean) -> Unit)? = null
 
     init {
         orientation = HORIZONTAL
@@ -30,6 +33,12 @@ class ShoppingItemRowView @JvmOverloads constructor(
         checkBox = MaterialCheckBox(context).apply {
             layoutParams = LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT)
             buttonTintList = android.content.res.ColorStateList.valueOf(context.getColor(R.color.accent_green))
+            setOnCheckedChangeListener { _, checked ->
+                if (!suppressCheckedCallback) {
+                    UiMotion.checked(this, checked)
+                    onCheckedChange?.invoke(checked)
+                }
+            }
         }
         addView(checkBox)
 
@@ -72,12 +81,17 @@ class ShoppingItemRowView @JvmOverloads constructor(
     }
 
     fun setChecked(checked: Boolean) {
-        checkBox.isChecked = checked
+        suppressCheckedCallback = true
+        try {
+            checkBox.isChecked = checked
+        } finally {
+            suppressCheckedCallback = false
+        }
     }
 
     fun isChecked(): Boolean = checkBox.isChecked
 
     fun setOnCheckedChangeListener(listener: (Boolean) -> Unit) {
-        checkBox.setOnCheckedChangeListener { _, isChecked -> listener(isChecked) }
+        onCheckedChange = listener
     }
 }

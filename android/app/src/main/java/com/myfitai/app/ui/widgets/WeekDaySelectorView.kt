@@ -6,6 +6,7 @@ import android.view.Gravity
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.myfitai.app.R
+import com.myfitai.app.ui.motion.UiMotion
 
 /** Selettore settimanale riutilizzabile (7 colonne giorno+numero, singola selezione). */
 class WeekDaySelectorView @JvmOverloads constructor(
@@ -17,6 +18,8 @@ class WeekDaySelectorView @JvmOverloads constructor(
 
     private var onDaySelected: ((Int) -> Unit)? = null
     private var selectedIndex: Int = 0
+    private var selectionInitialized: Boolean = false
+    private var renderedDays: List<Day> = emptyList()
     private val columns = mutableListOf<LinearLayout>()
 
     init {
@@ -24,9 +27,16 @@ class WeekDaySelectorView @JvmOverloads constructor(
     }
 
     fun setDays(days: List<Day>, selectedIndex: Int = 0) {
+        val safeIndex = selectedIndex.coerceIn(0, (days.size - 1).coerceAtLeast(0))
+        if (days == renderedDays && columns.isNotEmpty()) {
+            if (this.selectedIndex != safeIndex) select(safeIndex)
+            return
+        }
+        val animateSelection = selectionInitialized && this.selectedIndex != safeIndex
         removeAllViews()
         columns.clear()
-        this.selectedIndex = selectedIndex
+        this.selectedIndex = safeIndex
+        renderedDays = days.toList()
         days.forEachIndexed { index, day ->
             val column = LinearLayout(context).apply {
                 orientation = VERTICAL
@@ -67,21 +77,24 @@ class WeekDaySelectorView @JvmOverloads constructor(
             addView(column)
             columns.add(column)
         }
-        applySelectionStyle()
+        applySelectionStyle(animateSelection)
+        selectionInitialized = true
     }
 
     fun select(index: Int) {
+        if (index !in columns.indices || selectedIndex == index) return
         selectedIndex = index
-        applySelectionStyle()
+        applySelectionStyle(animateSelection = true)
     }
 
-    private fun applySelectionStyle() {
+    private fun applySelectionStyle(animateSelection: Boolean = false) {
         columns.forEachIndexed { index, column ->
             val isSelected = index == selectedIndex
             column.background = if (isSelected) context.getDrawable(R.drawable.bg_day_selected) else null
             val textColor = context.getColor(if (isSelected) R.color.white else R.color.text_secondary)
             (column.getChildAt(0) as TextView).setTextColor(textColor)
             (column.getChildAt(1) as TextView).setTextColor(textColor)
+            UiMotion.selection(column, isSelected, animateSelection)
         }
     }
 

@@ -109,7 +109,8 @@ I layout più vecchi contengono alcune misure letterali: vanno sostituite con qu
 - Campi: 12dp, bordo neutro 1dp, focus 2dp, altezza minima 48dp.
 - Chip/segmenti: pill; selezione con `pill_selected_bg` e testo/indicatore distinguibile.
 - Dialog standard: 16dp; superfici bianche con controlli neutri.
-- Motion ingresso pagina: breve, token `motion_screen_enter_ms`; no motion decorativo ripetitivo, rispettare riduzione animazioni.
+- Motion Android Views centralizzato in `UiMotion`: ingresso pagina (`motion_screen_enter_ms`), reveal (`motion_reveal_ms`, offset `motion_reveal_offset`), cambi di layout (`motion_layout_change_ms`), selezione (`motion_selection_ms`, `motion_selection_scale`), feedback checkbox (`motion_feedback_ms`, `motion_checkbox_scale`) e transizioni tab (`motion_tab_transition_ms`). Interpolatore Decelerate condiviso; rispetta Animator duration scale, risparmio energetico e feedback vocale accessibile. Nessun motion decorativo infinito.
+- Limite QA motion: build/unit test/package AndroidTest verdi; resta da verificare visivamente l'interazione animata sui flussi Alimentazione, Lista spesa e Dettaglio pasto su device.
 
 ## Tema e adattività
 

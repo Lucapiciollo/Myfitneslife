@@ -71,4 +71,5 @@
     <dimen name="profile_avatar_size">72dp</dimen>
     <dimen name="brand_mark_size">28dp</dimen>
     <dimen name="motion_screen_offset">8dp</dimen>
+    <dimen name="motion_reveal_offset">4dp</dimen>
 </resources>

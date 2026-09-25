@@ -1,3 +1,8 @@
 <resources>
     <integer name="motion_screen_enter_ms">220</integer>
+    <integer name="motion_layout_change_ms">180</integer>
+    <integer name="motion_selection_ms">140</integer>
+    <integer name="motion_feedback_ms">110</integer>
+    <integer name="motion_tab_transition_ms">180</integer>
+    <integer name="motion_reveal_ms">170</integer>
 </resources>

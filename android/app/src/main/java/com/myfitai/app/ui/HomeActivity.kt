@@ -26,6 +26,7 @@ import android.widget.ArrayAdapter
 import com.myfitai.app.ui.widgets.TimeRangeSelectorView
 import com.myfitai.app.ui.widgets.BodyMeasurementTrendView
 import com.myfitai.app.ui.widgets.WorkoutCardView
+import com.myfitai.app.ui.motion.UiMotion
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
@@ -61,6 +62,7 @@ class HomeActivity : BaseShellActivity() {
     private var currentNextMealId: Long? = null
     private var currentCalories: HomeViewModel.CalorieState? = null
     private var currentUpcomingMeals: List<HomeViewModel.NextMealState> = emptyList()
+    private val motionVisibilityTargets = mutableMapOf<Int, Boolean>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -135,24 +137,26 @@ class HomeActivity : BaseShellActivity() {
 
     private fun renderPlanUpdateNotice() {
         val profileId = data.activeProfileStore.currentIdOrNull()
-        findViewById<android.view.View>(R.id.planUpdateNoticeCard)?.visibility =
-            if (profileId != null && data.nutritionPlanUpdatePreferences.isPending(profileId)) {
-                android.view.View.VISIBLE
-            } else {
-                android.view.View.GONE
-            }
+        findViewById<android.view.View>(R.id.planUpdateNoticeCard)?.let { card ->
+            revealState(card, profileId != null && data.nutritionPlanUpdatePreferences.isPending(profileId))
+        }
     }
 
     private fun renderAiConfigurationNotice() {
-        findViewById<android.view.View>(R.id.aiConfigurationNoticeCard)?.visibility =
-            if (aiProviderConfigured) android.view.View.GONE else android.view.View.VISIBLE
+        findViewById<android.view.View>(R.id.aiConfigurationNoticeCard)?.let { card ->
+            revealState(card, !aiProviderConfigured)
+        }
     }
 
     private fun renderWorkoutConfiguration() {
         val profileId = data.activeProfileStore.currentIdOrNull() ?: return
         val enabled = data.workoutPreferences.isEnabled(profileId)
-        findViewById<android.view.View>(R.id.workoutSectionCard)?.visibility =
-            if (enabled) android.view.View.VISIBLE else android.view.View.GONE
+        findViewById<android.view.View>(R.id.workoutSectionCard)?.let { card -> revealState(card, enabled) }
+    }
+
+    private fun revealState(view: android.view.View, visible: Boolean) {
+        val previous = motionVisibilityTargets.put(view.id, visible)
+        UiMotion.reveal(view, visible, animateChange = previous != null)
     }
 
     private fun requestNotificationPermissionOnce() {
