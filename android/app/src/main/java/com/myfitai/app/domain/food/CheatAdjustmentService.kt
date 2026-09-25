@@ -87,6 +87,26 @@ class CheatAdjustmentService(
         )
     }
 
+    suspend fun registerAcceptedSuggestion(input: Input, suggestion: NutritionAdviceContract.Suggestion): Result {
+        require(suggestion.estimatedKcal > 0)
+        require(listOf(suggestion.proteinG, suggestion.carbsG, suggestion.fatG).all { it >= 0f && it.isFinite() })
+        val confirmed = Understanding(
+            understoodFood = suggestion.title,
+            estimate = CheatAdjustmentContract.Estimate(
+                kcal = suggestion.estimatedKcal,
+                proteinG = suggestion.proteinG,
+                carbsG = suggestion.carbsG,
+                fatG = suggestion.fatG,
+                confidence = "high",
+                notes = "Stima già validata dalla proposta nutrizionale accettata.",
+            ),
+            provider = "NutritionAdvice",
+            model = "validated-suggestion",
+            inputFingerprint = inputFingerprint(input),
+        )
+        return registerAndAdapt(input, confirmed)
+    }
+
     suspend fun registerAndAdapt(input: Input, confirmed: Understanding): Result {
         validateInput(input)
         if (confirmed.inputFingerprint != inputFingerprint(input)) throw AdjustmentException.PreviewStale()

@@ -104,8 +104,8 @@ class MeasurementsActivity : BaseShellActivity() {
 
     private fun renderBia(value: BiaMeasurementEntity?) {
         findViewById<MeasurementActionCardView>(R.id.biaCard).setLatest(value?.let {
-            "Ultima rilevazione: ${formatDate(it.measuredAtEpochMillis)}"
-        } ?: "Nessuna rilevazione BIA disponibile")
+            "Ultima rilevazione\n${formatDate(it.measuredAtEpochMillis)}"
+        } ?: "Nessuna rilevazione\nBIA disponibile")
     }
 
     private fun normalizeMeasurementCards() {
@@ -125,8 +125,8 @@ class MeasurementsActivity : BaseShellActivity() {
 
     private fun renderBody(value: BodyMeasurementEntity?) {
         findViewById<MeasurementActionCardView>(R.id.bodyCard).setLatest(value?.let {
-            "Ultima rilevazione: ${formatDate(it.measuredAtEpochMillis)}"
-        } ?: "Nessuna misura corporea disponibile")
+            "Ultima rilevazione\n${formatDate(it.measuredAtEpochMillis)}"
+        } ?: "Nessuna misura\ncorporea disponibile")
     }
 
     private suspend fun renderDietImpact() {

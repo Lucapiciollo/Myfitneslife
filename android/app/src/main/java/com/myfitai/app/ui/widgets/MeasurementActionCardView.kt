@@ -2,13 +2,13 @@ package com.myfitai.app.ui.widgets
 
 import android.content.Context
 import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.util.AttributeSet
 import android.view.Gravity
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.google.android.material.card.MaterialCardView
-import com.google.android.material.button.MaterialButton
 import com.myfitai.app.R
 
 /** Shared BIA/body-measurement card. Data and navigation remain owned by the Activity. */
@@ -18,8 +18,8 @@ class MeasurementActionCardView @JvmOverloads constructor(
 ) : MaterialCardView(context, attrs) {
     private val latestText: TextView
     private val helpButton: ImageButton
-    private val addButton: MaterialButton
-    private val historyButton: MaterialButton
+    private val addButton: ImageButton
+    private val historyButton: ImageButton
     private val titleView: TextView
 
     init {
@@ -47,13 +47,15 @@ class MeasurementActionCardView @JvmOverloads constructor(
         titleView = TextView(context).apply {
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             setTextAppearance(R.style.Text_MyFitAI_SettingsLabel)
+            textSize = 18f
+            setTypeface(typeface, Typeface.BOLD)
         }
         header.addView(titleView)
         helpButton = ImageButton(context).apply {
-            layoutParams = LinearLayout.LayoutParams(dp(40), dp(40))
+            layoutParams = LinearLayout.LayoutParams(dp(36), dp(36))
             setImageResource(R.drawable.ic_help_outline)
             background = null
-            setPadding(dp(8), dp(8), dp(8), dp(8))
+            setPadding(dp(6), dp(6), dp(6), dp(6))
             setColorFilter(context.getColor(R.color.text_secondary))
         }
         header.addView(helpButton)
@@ -61,41 +63,50 @@ class MeasurementActionCardView @JvmOverloads constructor(
 
         latestText = TextView(context).apply {
             setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
-            maxLines = 2
-            ellipsize = android.text.TextUtils.TruncateAt.END
+            textSize = 12f
+            includeFontPadding = false
+            setLineSpacing(0f, 1f)
+            minHeight = dp(48)
+            gravity = Gravity.CENTER_VERTICAL
         }
-        content.addView(latestText, marginTop(2))
-
-        val actions = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
-        addButton = MaterialButton(context).apply {
-            layoutParams = LinearLayout.LayoutParams(0, dp(48), 1f)
-            text = ""
+        val actions = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.END
+        }
+        addButton = ImageButton(context).apply {
+            layoutParams = LinearLayout.LayoutParams(dp(48), dp(44))
             contentDescription = "Nuova rilevazione"
             tooltipText = "Nuova rilevazione"
-            icon = context.getDrawable(R.drawable.ic_add_circle)
-            iconGravity = MaterialButton.ICON_GRAVITY_TEXT_START
-            iconTint = android.content.res.ColorStateList.valueOf(context.getColor(R.color.white))
-            gravity = Gravity.CENTER
+            setImageResource(R.drawable.ic_add_circle)
+            imageTintList = android.content.res.ColorStateList.valueOf(context.getColor(R.color.white))
+            setPadding(0, 0, 0, 0)
             backgroundTintList = android.content.res.ColorStateList.valueOf(context.getColor(R.color.accent_green))
-            cornerRadius = dp(14)
+            background = roundedBackground(context.getColor(R.color.accent_green))
         }
-        historyButton = MaterialButton(context).apply {
-            layoutParams = LinearLayout.LayoutParams(0, dp(48), 1f).apply { marginStart = dp(6) }
-            text = ""
+        historyButton = ImageButton(context).apply {
+            layoutParams = LinearLayout.LayoutParams(dp(48), dp(44)).apply { marginStart = dp(8) }
             contentDescription = "Storico rilevazioni"
             tooltipText = "Storico rilevazioni"
-            icon = context.getDrawable(R.drawable.ic_history)
-            iconGravity = MaterialButton.ICON_GRAVITY_TEXT_START
-            iconTint = android.content.res.ColorStateList.valueOf(context.getColor(R.color.accent_green_dark))
-            gravity = Gravity.CENTER
-            backgroundTintList = android.content.res.ColorStateList.valueOf(context.getColor(R.color.surface_primary))
-            strokeColor = android.content.res.ColorStateList.valueOf(context.getColor(R.color.accent_green))
-            strokeWidth = dp(1)
-            cornerRadius = dp(14)
+            setImageResource(R.drawable.ic_history)
+            imageTintList = android.content.res.ColorStateList.valueOf(context.getColor(R.color.accent_green_dark))
+            setPadding(0, 0, 0, 0)
+            background = roundedBackground(
+                context.getColor(R.color.surface_primary),
+                context.getColor(R.color.accent_green),
+            )
         }
         actions.addView(addButton)
         actions.addView(historyButton)
-        content.addView(actions, marginTop(8))
+
+        val details = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            layoutParams = marginTop(2)
+        }
+        latestText.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        details.addView(latestText)
+        details.addView(actions)
+        content.addView(details)
     }
 
     fun setTitle(value: String) {
@@ -119,5 +130,11 @@ class MeasurementActionCardView @JvmOverloads constructor(
     }
 
     private fun marginTop(value: Int) = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(value) }
+    private fun roundedBackground(fillColor: Int, strokeColor: Int? = null) = GradientDrawable().apply {
+        shape = GradientDrawable.RECTANGLE
+        setColor(fillColor)
+        cornerRadius = dp(13).toFloat()
+        strokeColor?.let { setStroke(dp(1), it) }
+    }
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 }

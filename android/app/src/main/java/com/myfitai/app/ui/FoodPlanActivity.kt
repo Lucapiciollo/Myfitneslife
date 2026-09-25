@@ -15,7 +15,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.domain.food.FoodMeal
@@ -61,6 +60,7 @@ class FoodPlanActivity : BaseShellActivity() {
         findViewById<View>(R.id.cheatButton).setOnClickListener { go(CheatEntryActivity::class.java) }
         findViewById<View>(R.id.generatePlanButton).setOnClickListener { confirmPlanGeneration() }
         findViewById<View>(R.id.planSettingsButton).setOnClickListener { startActivity(Intent(this, NutritionPlanSettingsActivity::class.java)) }
+        findViewById<View>(R.id.aiConfigurationNoticeButton).setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java)) }
         findViewById<View>(R.id.regenerateForGoalButton).setOnClickListener { confirmPlanGeneration() }
         bindFoodHelp()
         findViewById<View>(R.id.dailyTotalHelpButton).setOnClickListener { showTotalsHelp() }
@@ -100,16 +100,9 @@ class FoodPlanActivity : BaseShellActivity() {
     }
 
     private fun confirmPlanGeneration() {
-        MaterialAlertDialogBuilder(this)
-            .setTitle("Generare il piano con IA?")
-            .setMessage(
-                "La generazione invia una richiesta al provider IA e consuma la quota disponibile. " +
-                    "Il costo effettivo dipende dal provider, dal modello e dal tuo piano di billing. " +
-                    "La richiesta partirà solo dopo la tua conferma."
-            )
-            .setNegativeButton("Annulla", null)
-            .setPositiveButton("Conferma e genera") { _, _ -> viewModel.generateCurrentWeek() }
-            .show()
+        confirmAiRequest("La generazione del piano alimentare") {
+            viewModel.generateCurrentWeek()
+        }
     }
 
     private fun render(state: FoodPlanViewModel.State) {
@@ -135,11 +128,14 @@ class FoodPlanActivity : BaseShellActivity() {
         historicalBanner.visibility = if (!currentWeek && state.hasPlan) View.VISIBLE else View.GONE
 
         val empty = findViewById<TextView>(R.id.emptyPlanText)
+        val providerConfigured = aiProviderConfigured
+        val aiConfigurationNoticeCard = findViewById<View>(R.id.aiConfigurationNoticeCard)
+        aiConfigurationNoticeCard.visibility = if (providerConfigured) View.GONE else View.VISIBLE
         val goalChangedNotice = findViewById<TextView>(R.id.goalChangedNotice)
         val regenerateForGoalButton = findViewById<View>(R.id.regenerateForGoalButton)
         goalChangedNotice.visibility = if (currentWeek && state.goalChangedSinceGeneration) View.VISIBLE else View.GONE
         regenerateForGoalButton.visibility = if (currentWeek && state.goalChangedSinceGeneration) View.VISIBLE else View.GONE
-        regenerateForGoalButton.isEnabled = !state.generation.running
+        setAiActionEnabled(regenerateForGoalButton, !state.generation.running)
         val day = state.selectedDay
         val dayMealsCard = findViewById<View>(R.id.dayMealsCard)
         val hasDayContent = day != null && (day.meals.isNotEmpty() || day.supplements.isNotEmpty() || !day.hydrationNote.isNullOrBlank())
@@ -178,7 +174,7 @@ class FoodPlanActivity : BaseShellActivity() {
         val stateDot = findViewById<View>(R.id.planStateDot)
         val generation = state.generation
         button.visibility = if (currentWeek) View.VISIBLE else View.GONE
-        button.isEnabled = currentWeek && !generation.running
+        setAiActionEnabled(button, currentWeek && !generation.running)
         button.text = when { generation.running -> "Generazione in corso…"; state.hasPlan -> "Rigenera piano con IA"; else -> "Genera piano con IA" }
         if (state.hasPlan && !generation.running) {
             button.backgroundTintList = ColorStateList.valueOf(getColor(R.color.surface_primary))
@@ -215,7 +211,7 @@ class FoodPlanActivity : BaseShellActivity() {
         val container = findViewById<LinearLayout>(R.id.mealsContainer)
         container.removeAllViews()
         day?.meals?.sortedWith(compareBy<FoodMeal> { it.timeMinutes ?: Int.MAX_VALUE }.thenBy { it.sortOrder })?.forEach { meal ->
-            val changeEnabled = canChangeMeal(day.dateEpochDay, meal.timeMinutes) && meal.kcal != null
+            val changeEnabled = aiProviderConfigured && canChangeMeal(day.dateEpochDay, meal.timeMinutes) && meal.kcal != null
             val status = records.firstOrNull { it.mealId == meal.id }?.status
             val row = MealPlanRowView(this).apply {
                 setTitle(displayMealType(meal.type)); setKcal(NutritionEstimateFormatter.formatEstimatedKcal(meal.kcal)); setDescription(meal.title); setImage(imageFor(meal))

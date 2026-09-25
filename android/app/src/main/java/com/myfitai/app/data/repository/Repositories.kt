@@ -260,6 +260,10 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
                 proteinG = day.proteinG,
                 carbsG = day.carbsG,
                 fatG = day.fatG,
+                targetKcal = day.targetKcal,
+                targetProteinG = day.targetProteinG,
+                targetCarbsG = day.targetCarbsG,
+                targetFatG = day.targetFatG,
                 meals = dao.getMeals(profileId, day.id).map { meal ->
                     com.myfitai.app.domain.food.FoodMeal(
                         id = meal.id,

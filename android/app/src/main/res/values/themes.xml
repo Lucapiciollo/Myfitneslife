@@ -4,6 +4,14 @@
     <item name="android:statusBarColor">@color/bg_primary</item><item name="android:navigationBarColor">@color/bg_primary</item>
     <item name="colorPrimary">@color/accent_green</item><item name="colorOnPrimary">@color/bg_primary</item>
     <item name="colorSurface">@color/surface_primary</item><item name="colorOnSurface">@color/text_primary</item>
+    <item name="colorSurfaceDim">@color/white</item>
+    <item name="colorSurfaceBright">@color/white</item>
+    <item name="colorSurfaceContainerLowest">@color/white</item>
+    <item name="colorSurfaceContainerLow">@color/white</item>
+    <item name="colorSurfaceContainer">@color/white</item>
+    <item name="colorSurfaceContainerHigh">@color/white</item>
+    <item name="colorSurfaceContainerHighest">@color/white</item>
+    <item name="colorSurfaceVariant">@color/white</item>
     <item name="materialAlertDialogTheme">@style/ThemeOverlay.MyFitAI.AlertDialog</item>
     <item name="android:windowBackground">@color/bg_primary</item>
 </style>
@@ -66,7 +74,8 @@
 <style name="ShapeAppearanceOverlay.MyFitAI.AlertDialog" parent="">
     <item name="cornerSize">16dp</item>
 </style>
-<style name="Text.MyFitAI.ScreenTitle" parent="TextAppearance.Material3.TitleLarge"><item name="android:textColor">@color/text_primary</item><item name="android:textStyle">bold</item><item name="android:textSize">20sp</item></style>
+<style name="Text.MyFitAI.ScreenTitle" parent="TextAppearance.Material3.TitleLarge"><item name="android:textColor">@color/text_primary</item><item name="android:textStyle">bold</item><item name="android:textSize">19sp</item><item name="android:includeFontPadding">false</item></style>
+<style name="Text.MyFitAI.ScreenDate" parent="TextAppearance.Material3.BodySmall"><item name="android:textColor">@color/text_secondary</item><item name="android:textSize">12sp</item><item name="android:includeFontPadding">false</item></style>
 <style name="Widget.MyFitAI.ScreenHeader" parent="">
     <item name="android:layout_width">match_parent</item>
     <item name="android:layout_height">@dimen/screen_header_height</item>
@@ -106,6 +115,7 @@
 </style>
 <style name="Text.MyFitAI.DialogBody" parent="TextAppearance.Material3.BodyMedium">
     <item name="android:textColor">@color/text_secondary</item>
+    <item name="android:background">@color/white</item>
 </style>
  <style name="Widget.MyFitAI.Card" parent="Widget.Material3.CardView.Filled"><item name="cardBackgroundColor">@color/white</item><item name="cardCornerRadius">@dimen/radius_card</item><item name="cardElevation">@dimen/elevation_card</item><item name="strokeColor">@color/divider</item><item name="strokeWidth">1dp</item><item name="android:clipToOutline">true</item></style>
  <style name="Widget.MyFitAI.FormCard" parent="Widget.MyFitAI.Card"><item name="cardBackgroundColor">@color/white</item><item name="cardCornerRadius">16dp</item><item name="cardElevation">0dp</item><item name="strokeColor">@color/divider</item><item name="strokeWidth">1dp</item></style>
@@ -151,14 +161,17 @@
      <item name="android:textColor">@color/text_primary</item>
      <item name="android:textSize">14sp</item>
      <item name="android:textStyle">bold</item>
+     <item name="android:includeFontPadding">false</item>
  </style>
  <style name="Text.MyFitAI.SettingsDescription" parent="TextAppearance.Material3.BodySmall">
      <item name="android:textColor">@color/text_secondary</item>
      <item name="android:textSize">12sp</item>
+     <item name="android:includeFontPadding">false</item>
  </style>
  <style name="Text.MyFitAI.SettingsStatus" parent="TextAppearance.Material3.BodySmall">
      <item name="android:textColor">@color/text_secondary</item>
      <item name="android:textSize">12sp</item>
+     <item name="android:includeFontPadding">false</item>
  </style>
 <style name="Widget.MyFitAI.SettingsSwitch" parent="Widget.Material3.CompoundButton.MaterialSwitch">
      <item name="thumbTint">@color/white</item>
@@ -231,8 +244,8 @@
       <item name="android:background">@color/surface_primary</item>
       <item name="android:paddingStart">12dp</item>
       <item name="android:paddingEnd">12dp</item>
-      <item name="android:paddingTop">10dp</item>
-      <item name="android:paddingBottom">12dp</item>
+      <item name="android:paddingTop">8dp</item>
+      <item name="android:paddingBottom">10dp</item>
   </style>
    <style name="Widget.MyFitAI.InputCompact" parent="Widget.MyFitAI.Input">
        <item name="android:minHeight">48dp</item>

@@ -26,6 +26,7 @@ import com.google.android.material.textfield.TextInputLayout
 import com.google.android.material.timepicker.MaterialTimePicker
 import com.google.android.material.timepicker.TimeFormat
 import com.myfitai.app.R
+import com.myfitai.app.ai.AiProviderAccess
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.data.local.entity.BiaMeasurementEntity
 import com.myfitai.app.domain.body.AiImageProcessor
@@ -125,6 +126,13 @@ class BiaActivity : BaseShellActivity() {
         if (pendingEditId > 0L) loadPendingEdit()
         if (intent.getBooleanExtra(EXTRA_OPEN_HISTORY, false) && pendingEditId == 0L) {
             findViewById<SelectableSegmentView>(R.id.biaSegment).getChildAt(1)?.performClick()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (this::dateInput.isInitialized) {
+            setAiActionEnabled(findViewById(R.id.importPhotoButton))
         }
     }
 
@@ -350,7 +358,13 @@ class BiaActivity : BaseShellActivity() {
     }
 
     private fun bindPhotoImport() {
-        findViewById<View>(R.id.importPhotoButton).setOnClickListener {
+        val importButton = findViewById<View>(R.id.importPhotoButton)
+        setAiActionEnabled(importButton)
+        importButton.setOnClickListener {
+            if (!aiProviderConfigured) {
+                AiProviderAccess.requireConfigured(this)
+                return@setOnClickListener
+            }
             MaterialAlertDialogBuilder(this)
                 .setTitle("Importa BIA da foto")
                 .setItems(arrayOf("Scatta foto", "Scegli dalla galleria")) { _, which ->
@@ -618,7 +632,7 @@ class BiaActivity : BaseShellActivity() {
 
     private fun renderHistory(history: List<BiaMeasurementEntity>) {
         historyList.removeAllViews()
-        findViewById<View>(R.id.analyzeBiaButton).isEnabled = history.any { hasAnalysisValue(it) }
+        setAiActionEnabled(findViewById(R.id.analyzeBiaButton), history.any { hasAnalysisValue(it) })
         if (history.isEmpty()) {
             historySummary.text = "Nessuna misurazione BIA salvata per questo profilo."
             historySummary.visibility = View.GONE
@@ -728,7 +742,7 @@ class BiaActivity : BaseShellActivity() {
             .put("previousDelta", jsonValues(previousDelta))
             .toString()
         confirmAiRequest("L'analisi IA dello stato muscolare e dei valori BIA") {
-            button.isEnabled = false
+            setAiActionEnabled(button, false)
             val profileId = data.activeProfileStore.currentIdOrNull() ?: return@confirmAiRequest
             val jobKey = System.currentTimeMillis().toString()
             data.aiJobScheduler.enqueue(
@@ -765,10 +779,10 @@ class BiaActivity : BaseShellActivity() {
                                 .setMessage(message.trim())
                                 .setPositiveButton("Chiudi", null)
                                 .show()
-                            button.isEnabled = true
+                            setAiActionEnabled(button)
                         }
                         androidx.work.WorkInfo.State.FAILED, androidx.work.WorkInfo.State.CANCELLED -> {
-                            button.isEnabled = true
+                            setAiActionEnabled(button)
                             Toast.makeText(this@BiaActivity, "Analisi BIA non riuscita. Riprova.", Toast.LENGTH_LONG).show()
                         }
                         else -> Unit

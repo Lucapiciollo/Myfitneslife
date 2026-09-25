@@ -19,7 +19,7 @@
              android:paddingTop="@dimen/space_8"
              android:paddingBottom="@dimen/space_24">
 
-             <LinearLayout android:layout_width="match_parent" android:layout_height="56dp" android:background="@drawable/bg_screen_header" android:gravity="center_vertical" android:paddingHorizontal="@dimen/space_8">
+             <LinearLayout android:layout_width="match_parent" android:layout_height="64dp" android:background="@drawable/bg_screen_header" android:gravity="center_vertical" android:paddingHorizontal="@dimen/space_8">
                 <androidx.appcompat.widget.AppCompatImageButton
                     android:id="@+id/backButton"
                     android:layout_width="40dp"
@@ -38,15 +38,10 @@
                     android:src="@drawable/ic_arrow_back"
                     android:contentDescription="Settimana precedente"
                     app:tint="@color/text_primary" />
-                <TextView
-                    android:id="@+id/weekLabel"
-                    android:layout_width="0dp"
-                    android:layout_weight="1"
-                    android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:textColor="@color/text_primary"
-                    android:textStyle="bold"
-                    android:textSize="15sp" />
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:gravity="center">
+                    <TextView style="@style/Text.MyFitAI.ScreenTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:text="Review settimanale" />
+                    <TextView android:id="@+id/weekLabel" style="@style/Text.MyFitAI.ScreenDate" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:gravity="center" />
+                </LinearLayout>
                 <androidx.appcompat.widget.AppCompatImageButton
                     android:id="@+id/nextWeekButton"
                     android:layout_width="36dp"

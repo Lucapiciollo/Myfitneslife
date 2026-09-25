@@ -55,6 +55,7 @@ abstract class BaseShellActivity : AppCompatActivity() {
         runCatching {
             val content = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
+                setBackgroundColor(getColor(R.color.white))
                 setPadding(dp(4), dp(4), dp(4), dp(4))
             }
             View(this).apply {
@@ -318,7 +319,18 @@ abstract class BaseShellActivity : AppCompatActivity() {
         }
     }
     protected fun bindBottom(tab: BottomNavBinder.Tab) { BottomNavBinder.bind(this, tab) }
+    protected val aiProviderConfigured: Boolean
+        get() = AiProviderAccess.isConfigured(this)
+
+    protected fun setAiActionEnabled(view: View, enabled: Boolean = true) {
+        view.isEnabled = aiProviderConfigured && enabled
+    }
+
     protected fun confirmAiRequest(action: String, onConfirmed: () -> Unit) {
+        if (!aiProviderConfigured) {
+            AiProviderAccess.requireConfigured(this)
+            return
+        }
         MaterialAlertDialogBuilder(this)
             .setTitle("Confermare richiesta IA?")
             .setMessage(

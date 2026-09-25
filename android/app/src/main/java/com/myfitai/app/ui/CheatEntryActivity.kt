@@ -303,9 +303,9 @@ class CheatEntryActivity : BaseShellActivity() {
 
     private fun renderState(state: CheatEntryViewModel.State) {
         val hasUnderstanding = state.understanding != null
-        findViewById<View>(R.id.analyzeButton).isEnabled = !state.running && !labelProcessing
-        findViewById<View>(R.id.reevaluateButton).isEnabled = !state.running && !labelProcessing
-        findViewById<View>(R.id.confirmButton).isEnabled = !state.running && !labelProcessing
+        setAiActionEnabled(findViewById(R.id.analyzeButton), !state.running && !labelProcessing)
+        setAiActionEnabled(findViewById(R.id.reevaluateButton), !state.running && !labelProcessing)
+        setAiActionEnabled(findViewById(R.id.confirmButton), !state.running && !labelProcessing)
         findViewById<View>(R.id.addLabelPhotoButton).isEnabled = !state.running && !labelProcessing
         findViewById<ProgressBar>(R.id.progress).visibility = if (state.running) View.VISIBLE else View.GONE
         findViewById<View>(R.id.aiUnderstandingCard).visibility = if (hasUnderstanding) View.VISIBLE else View.GONE

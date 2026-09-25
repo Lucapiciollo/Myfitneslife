@@ -100,10 +100,7 @@ class NutritionAdviceViewModel(
                     },
                     occurredAtEpochMillis = now,
                 )
-                // Reuse the authoritative cheat flow: the nutrition suggestion is re-read by the
-                // deviation agent, then immediately persisted/adapted because the user explicitly accepted it.
-                val understanding = cheatService.analyze(input)
-                cheatService.registerAndAdapt(input, understanding)
+                cheatService.registerAcceptedSuggestion(input, suggestion)
             }.onSuccess { result ->
                 runCatching { notificationScheduler.refresh() }
                 _state.value = previous.copy(accepting = false, acceptedResult = result, error = null)

@@ -1,6 +1,7 @@
 package com.myfitai.app.ui
 
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.graphics.Typeface
 import android.os.Bundle
 import android.view.Gravity
@@ -14,6 +15,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
+import com.google.android.material.textfield.TextInputLayout
 import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.domain.food.NutritionAdviceContract
@@ -41,6 +43,7 @@ class NutritionAdviceActivity : BaseShellActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_nutrition_advice)
+        normalizeAdviceSurfaces()
         bindBack()
         bindBottom(BottomNavBinder.Tab.FOOD)
 
@@ -49,6 +52,9 @@ class NutritionAdviceActivity : BaseShellActivity() {
             confirmAiRequest("La richiesta di un consiglio nutrizionale") {
                 viewModel.ask(question)
             }
+        }
+        findViewById<View>(R.id.aiConfigurationNoticeButton).setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
         }
 
         lifecycleScope.launch {
@@ -60,7 +66,10 @@ class NutritionAdviceActivity : BaseShellActivity() {
 
     private fun render(state: NutritionAdviceViewModel.State) {
         val busy = state.running || state.accepting
-        findViewById<View>(R.id.askButton).isEnabled = !busy
+        val providerConfigured = aiProviderConfigured
+        setAiActionEnabled(findViewById(R.id.askButton), !busy)
+        findViewById<View>(R.id.aiConfigurationNoticeCard).visibility =
+            if (providerConfigured) View.GONE else View.VISIBLE
         findViewById<View>(R.id.loadingRow).visibility = if (busy) View.VISIBLE else View.GONE
 
         val answerCard = findViewById<View>(R.id.answerCard)
@@ -108,43 +117,55 @@ class NutritionAdviceActivity : BaseShellActivity() {
         container.removeAllViews()
         if (suggestions.isEmpty()) return
 
-        container.addView(tableHeader())
-
         suggestions.forEach { suggestion ->
             val card = MaterialCardView(this).apply {
                 radius = resources.getDimension(R.dimen.radius_medium)
                 setCardBackgroundColor(getColor(R.color.white))
                 strokeColor = getColor(R.color.divider)
                 strokeWidth = dp(1)
+                cardElevation = 0f
             }
-             val body = LinearLayout(this).apply {
-                 orientation = LinearLayout.VERTICAL
-                 setPadding(dp(16), dp(14), dp(16), dp(14))
-             }
+            val body = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(dp(12), dp(10), dp(12), dp(12))
+            }
 
-            val row = LinearLayout(this).apply {
+            body.addView(TextView(this).apply {
+                text = suggestion.title
+                setTextAppearance(R.style.Text_MyFitAI_KeyValueValue)
+                includeFontPadding = false
+            })
+
+            val metrics = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
+                setPadding(0, dp(8), 0, 0)
             }
-            row.addView(cell(suggestion.title, 2.4f, bold = true, gravity = Gravity.START))
-            row.addView(cell(NutritionEstimateFormatter.formatEstimatedKcal(suggestion.estimatedKcal), 0.9f, bold = true))
-            row.addView(cell(NutritionEstimateFormatter.formatEstimatedMacro(suggestion.proteinG, "g"), 0.7f))
-            row.addView(cell(NutritionEstimateFormatter.formatEstimatedMacro(suggestion.carbsG, "g"), 0.7f))
-            row.addView(cell(NutritionEstimateFormatter.formatEstimatedMacro(suggestion.fatG, "g"), 0.7f))
-            body.addView(row)
+            metrics.addView(metric("kcal", NutritionEstimateFormatter.formatEstimatedKcal(suggestion.estimatedKcal), 1.1f))
+            metrics.addView(metric("Proteine", NutritionEstimateFormatter.formatEstimatedMacro(suggestion.proteinG, "g"), 1f))
+            metrics.addView(metric("Carboidrati", NutritionEstimateFormatter.formatEstimatedMacro(suggestion.carbsG, "g"), 1.1f))
+            metrics.addView(metric("Grassi", NutritionEstimateFormatter.formatEstimatedMacro(suggestion.fatG, "g"), 0.9f))
+            body.addView(metrics)
 
             body.addView(TextView(this).apply {
                 text = suggestion.reason
-                setTextColor(getColor(R.color.text_secondary))
-                textSize = 11f
+                setTextAppearance(R.style.Text_MyFitAI_Body)
+                includeFontPadding = false
                 maxLines = 2
-                setPadding(0, dp(6), 0, 0)
+                ellipsize = android.text.TextUtils.TruncateAt.END
+                setPadding(0, dp(10), 0, 0)
             })
 
             body.addView(MaterialButton(this).apply {
                 text = "Accetta"
                 isAllCaps = false
-                isEnabled = enabled
+                setAiActionEnabled(this, enabled)
+                minHeight = dp(48)
+                setTextColor(getColor(R.color.white))
+                setTypeface(typeface, Typeface.BOLD)
+                backgroundTintList = ColorStateList.valueOf(getColor(R.color.accent_green))
+                cornerRadius = dp(12)
+                stateListAnimator = null
                 setOnClickListener {
                     confirmAiRequest("L'applicazione del suggerimento e il ricalcolo dei pasti futuri") {
                         viewModel.acceptSuggestion(suggestion)
@@ -152,8 +173,8 @@ class NutritionAdviceActivity : BaseShellActivity() {
                 }
             }, LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                dp(42),
-            ).apply { topMargin = dp(8) })
+                dp(48),
+            ).apply { topMargin = dp(12) })
 
             card.addView(body)
             container.addView(card, LinearLayout.LayoutParams(
@@ -163,32 +184,50 @@ class NutritionAdviceActivity : BaseShellActivity() {
         }
     }
 
-    private fun tableHeader(): View = LinearLayout(this).apply {
-        orientation = LinearLayout.HORIZONTAL
-        gravity = Gravity.CENTER_VERTICAL
-        setPadding(dp(12), 0, dp(12), dp(6))
-        addView(cell("Opzione", 2.4f, bold = true, gravity = Gravity.START, secondary = true))
-        addView(cell("kcal", 0.9f, bold = true, secondary = true))
-         addView(cell("Proteine", 0.7f, bold = true, secondary = true))
-         addView(cell("Carboidrati", 0.7f, bold = true, secondary = true))
-         addView(cell("Grassi", 0.7f, bold = true, secondary = true))
-    }
-
-    private fun cell(
-        value: String,
-        weight: Float,
-        bold: Boolean = false,
-        gravity: Int = Gravity.END,
-        secondary: Boolean = false,
-    ): TextView = TextView(this).apply {
-        text = value
-        setTextColor(getColor(if (secondary) R.color.text_secondary else R.color.text_primary))
-        textSize = if (secondary) 11f else 12f
-        this.gravity = gravity
-        maxLines = 2
-        if (bold) setTypeface(typeface, Typeface.BOLD)
+    private fun metric(label: String, value: String, weight: Float): View = LinearLayout(this).apply {
+        orientation = LinearLayout.VERTICAL
+        gravity = Gravity.CENTER_HORIZONTAL
         layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, weight)
+        addView(TextView(this@NutritionAdviceActivity).apply {
+            text = label
+            setTextColor(getColor(R.color.text_secondary))
+            textSize = 11f
+            gravity = Gravity.CENTER
+            maxLines = 2
+            minHeight = dp(28)
+            includeFontPadding = false
+        })
+        addView(TextView(this@NutritionAdviceActivity).apply {
+            text = value
+            setTextAppearance(R.style.Text_MyFitAI_KeyValueValue)
+            gravity = Gravity.CENTER
+            includeFontPadding = false
+        })
     }
 
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+
+    private fun normalizeAdviceSurfaces() {
+        fun visit(view: View) {
+            when (view) {
+                is MaterialCardView -> {
+                    view.setCardBackgroundColor(getColor(R.color.white))
+                    view.strokeColor = getColor(R.color.divider)
+                    view.strokeWidth = dp(1)
+                    view.cardElevation = 0f
+                }
+                is TextInputLayout -> {
+                    view.boxBackgroundColor = getColor(R.color.white)
+                    view.boxStrokeColor = getColor(R.color.myfitai_input_stroke)
+                    view.boxStrokeWidth = dp(1)
+                    view.boxStrokeWidthFocused = dp(2)
+                    view.hintTextColor = android.content.res.ColorStateList.valueOf(getColor(R.color.myfitai_input_hint))
+                }
+            }
+            if (view is android.view.ViewGroup) {
+                for (index in 0 until view.childCount) visit(view.getChildAt(index))
+            }
+        }
+        visit(findViewById(android.R.id.content))
+    }
 }

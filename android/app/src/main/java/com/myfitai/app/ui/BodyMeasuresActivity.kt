@@ -300,14 +300,14 @@ class BodyMeasuresActivity : BaseShellActivity() {
             "Inserisci misure bilaterali e circonferenze per ottenere rapporti più completi."
         } else details.joinToString("\n")
         findViewById<TextView>(proportionNoteId).text = report.note
-        findViewById<MaterialButton>(proportionAiButtonId).isEnabled = report.availableMeasurements > 0
+        setAiActionEnabled(findViewById(proportionAiButtonId), report.availableMeasurements > 0)
     }
 
     private fun analyzeProportionsWithAi(button: MaterialButton) {
         val report = latestProportionReport ?: return
         if (report.availableMeasurements <= 0) return
         confirmAiRequest("L'interpretazione IA delle proporzioni corporee") {
-            button.isEnabled = false
+            setAiActionEnabled(button, false)
             button.text = "Analisi in corso…"
             val profileId = data.activeProfileStore.currentIdOrNull() ?: return@confirmAiRequest
             val reportJson = org.json.JSONObject().put("status", report.status.name).put("maxAsymmetry", report.maxAsymmetryPercent ?: org.json.JSONObject.NULL).put("availableMeasurements", report.availableMeasurements).put("note", report.note).put("ratios", org.json.JSONArray().apply { report.ratios.forEach { put(org.json.JSONObject().put("key", it.key).put("label", it.label).put("value", it.value).put("description", it.description)) } }).put("asymmetries", org.json.JSONArray().apply { report.asymmetries.forEach { put(org.json.JSONObject().put("key", it.key).put("label", it.label).put("percent", it.percent).put("largerSide", it.largerSide ?: org.json.JSONObject.NULL)) } }).toString()
@@ -323,11 +323,11 @@ class BodyMeasuresActivity : BaseShellActivity() {
                                 .setMessage(p.getString("summary"))
                                 .setPositiveButton("Chiudi", null)
                                 .show()
-                            button.isEnabled = true
+                            setAiActionEnabled(button)
                             button.text = "Interpreta con IA"
                         }
                         androidx.work.WorkInfo.State.FAILED, androidx.work.WorkInfo.State.CANCELLED -> {
-                            button.isEnabled = true
+                            setAiActionEnabled(button)
                             button.text = "Interpreta con IA"
                             Toast.makeText(this@BodyMeasuresActivity, "Analisi non riuscita. Riprova.", Toast.LENGTH_LONG).show()
                         }

@@ -145,7 +145,7 @@ class HomeActivity : BaseShellActivity() {
 
     private fun renderAiConfigurationNotice() {
         findViewById<android.view.View>(R.id.aiConfigurationNoticeCard)?.visibility =
-            if (com.myfitai.app.ai.AiProviderAccess.isConfigured(this)) android.view.View.GONE else android.view.View.VISIBLE
+            if (aiProviderConfigured) android.view.View.GONE else android.view.View.VISIBLE
     }
 
     private fun renderWorkoutConfiguration() {

@@ -145,6 +145,7 @@ class AppDataContainer private constructor(context: Context) {
         profiles = userProfileRepository,
         plans = mealPlanRepository,
         cheats = cheatEntryRepository,
+        foodConsumptions = foodConsumptionRepository,
         activeProfileStore = activeProfileStore,
     )
 

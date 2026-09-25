@@ -22,7 +22,7 @@
              android:paddingTop="@dimen/space_8"
              android:paddingBottom="@dimen/space_24">
 
-             <LinearLayout android:layout_width="match_parent" android:layout_height="@dimen/screen_header_height" android:gravity="center_vertical" android:background="@drawable/bg_screen_header" android:paddingHorizontal="@dimen/space_8">
+             <LinearLayout style="@style/Widget.MyFitAI.ScreenHeader">
                  <ImageButton android:id="@+id/backButton" android:layout_width="40dp" android:layout_height="40dp" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Indietro" android:padding="8dp" android:src="@drawable/ic_arrow_back" app:tint="@color/text_primary" />
                  <TextView android:id="@+id/title" style="@style/Text.MyFitAI.ScreenTitle" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:gravity="center" android:text="Impostazioni" />
                 <Space android:layout_width="40dp" android:layout_height="1dp" />
@@ -219,6 +219,8 @@
                           android:layout_width="0dp"
                           android:layout_height="wrap_content"
                           android:layout_weight="1"
+                          android:includeFontPadding="false"
+                          android:textSize="14sp"
                           android:text="Intelligenza artificiale" />
                       <ImageButton
                           android:id="@+id/aiSectionHelpButton"
@@ -248,23 +250,32 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
+                    android:orientation="vertical">
                     <LinearLayout
-                        android:layout_width="0dp"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-                         <TextView style="@style/Text.MyFitAI.SettingsLabel" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Usa Gemini" />
-                          <TextView style="@style/Text.MyFitAI.SettingsDescription" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Gemini Developer API diretta · se disattivato verrà usato OpenAI" />
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+                        <TextView
+                            style="@style/Text.MyFitAI.SettingsLabel"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Usa Gemini" />
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/useGeminiSwitch"
+                            style="@style/Widget.MyFitAI.SettingsSwitch"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:thumbTint="@color/white"
+                            app:trackTint="@color/accent_green" />
                     </LinearLayout>
-                         <com.google.android.material.materialswitch.MaterialSwitch
-                             android:id="@+id/useGeminiSwitch"
-                             style="@style/Widget.MyFitAI.SettingsSwitch"
-                        android:layout_width="wrap_content"
+                    <TextView
+                        style="@style/Text.MyFitAI.SettingsDescription"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        app:thumbTint="@color/white"
-                          app:trackTint="@color/accent_green" />
+                        android:layout_marginTop="@dimen/space_2"
+                        android:text="Gemini Developer API diretta. Se disattivato, verrà usato OpenAI." />
                 </LinearLayout>
 
                  <TextView android:id="@+id/activeProviderText"
@@ -305,12 +316,55 @@
                         android:layout_marginTop="@dimen/space_6"
                          android:text="Chiave Gemini non configurata"
                          />
-                      <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="@dimen/space_10">
-                          <com.google.android.material.button.MaterialButton android:id="@+id/pasteGeminiKeyButton" style="@style/Widget.MyFitAI.SettingsButton.Outlined" android:layout_width="0dp" android:layout_weight="1" android:layout_height="44dp" android:layout_marginEnd="@dimen/space_6" android:text="Incolla" />
-                          <com.google.android.material.button.MaterialButton android:id="@+id/saveGeminiKeyButton" style="@style/Widget.MyFitAI.SettingsButton.Primary" android:layout_width="0dp" android:layout_weight="1" android:layout_height="44dp" android:layout_marginEnd="@dimen/space_6" android:text="Verifica e salva" />
-                         <com.google.android.material.button.MaterialButton android:id="@+id/replaceGeminiKeyButton" style="@style/Widget.MyFitAI.SettingsButton.Outlined" android:layout_width="0dp" android:layout_weight="1" android:layout_height="44dp" android:layout_marginStart="@dimen/space_6" android:text="Sostituisci" />
-                         <com.google.android.material.button.MaterialButton android:id="@+id/deleteGeminiKeyButton" style="@style/Widget.MyFitAI.SettingsButton.Outlined" android:layout_width="0dp" android:layout_weight="1" android:layout_height="44dp" android:layout_marginStart="@dimen/space_6" android:text="Elimina" />
-                     </LinearLayout>
+                      <LinearLayout
+                          android:layout_width="match_parent"
+                          android:layout_height="wrap_content"
+                          android:layout_marginTop="@dimen/space_8"
+                          android:orientation="vertical">
+                          <LinearLayout
+                              android:layout_width="match_parent"
+                              android:layout_height="wrap_content"
+                              android:orientation="horizontal">
+                              <com.google.android.material.button.MaterialButton
+                                  android:id="@+id/pasteGeminiKeyButton"
+                                  style="@style/Widget.MyFitAI.SettingsButton.Outlined"
+                                  android:layout_width="0dp"
+                                  android:layout_height="44dp"
+                                  android:layout_marginEnd="@dimen/space_4"
+                                  android:layout_weight="1"
+                                  android:text="Incolla" />
+                              <com.google.android.material.button.MaterialButton
+                                  android:id="@+id/saveGeminiKeyButton"
+                                  style="@style/Widget.MyFitAI.SettingsButton.Primary"
+                                  android:layout_width="0dp"
+                                  android:layout_height="44dp"
+                                  android:layout_marginStart="@dimen/space_4"
+                                  android:layout_weight="1"
+                                  android:text="Verifica e salva" />
+                          </LinearLayout>
+                          <LinearLayout
+                              android:layout_width="match_parent"
+                              android:layout_height="wrap_content"
+                              android:layout_marginTop="@dimen/space_6"
+                              android:orientation="horizontal">
+                              <com.google.android.material.button.MaterialButton
+                                  android:id="@+id/replaceGeminiKeyButton"
+                                  style="@style/Widget.MyFitAI.SettingsButton.Outlined"
+                                  android:layout_width="0dp"
+                                  android:layout_height="44dp"
+                                  android:layout_marginEnd="@dimen/space_4"
+                                  android:layout_weight="1"
+                                  android:text="Sostituisci" />
+                              <com.google.android.material.button.MaterialButton
+                                  android:id="@+id/deleteGeminiKeyButton"
+                                  style="@style/Widget.MyFitAI.SettingsButton.Outlined"
+                                  android:layout_width="0dp"
+                                  android:layout_height="44dp"
+                                  android:layout_marginStart="@dimen/space_4"
+                                  android:layout_weight="1"
+                                  android:text="Elimina" />
+                          </LinearLayout>
+                      </LinearLayout>
                 </LinearLayout>
 
                  <LinearLayout
@@ -335,7 +389,6 @@
                             android:layout_height="wrap_content"
                              android:inputType="textPassword"
                              android:singleLine="true"
-                             android:hint="sk-…"
                              android:importantForAccessibility="no" />
                     </com.google.android.material.textfield.TextInputLayout>
 
@@ -351,44 +404,55 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                         android:orientation="horizontal"
-                         android:layout_marginTop="@dimen/space_10">
-                         <com.google.android.material.button.MaterialButton
-                             android:id="@+id/pasteOpenAiKeyButton"
-                             style="@style/Widget.MyFitAI.SettingsButton.Outlined"
-                             android:layout_width="0dp"
-                             android:layout_weight="1"
-                             android:layout_height="44dp"
-                             android:layout_marginEnd="@dimen/space_6"
-                             android:text="Incolla"
-                              android:textAllCaps="false" />
-                         <com.google.android.material.button.MaterialButton
-                             android:id="@+id/saveOpenAiKeyButton"
-                            android:layout_width="0dp"
-                            android:layout_weight="1"
-                            android:layout_height="44dp"
-                            android:layout_marginEnd="@dimen/space_6"
-                             android:text="Verifica e salva"
-                             style="@style/Widget.MyFitAI.SettingsButton.Primary"
-                             android:textAllCaps="false" />
-                         <com.google.android.material.button.MaterialButton
-                             android:id="@+id/replaceOpenAiKeyButton"
-                              style="@style/Widget.MyFitAI.SettingsButton.Outlined"
-                             android:layout_width="0dp"
-                             android:layout_weight="1"
-                             android:layout_height="44dp"
-                             android:layout_marginStart="@dimen/space_6"
-                             android:text="Sostituisci"
-                             android:textAllCaps="false" />
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/deleteOpenAiKeyButton"
-                             style="@style/Widget.MyFitAI.SettingsButton.Outlined"
-                            android:layout_width="0dp"
-                            android:layout_weight="1"
-                            android:layout_height="44dp"
-                            android:layout_marginStart="@dimen/space_6"
-                            android:text="Rimuovi"
-                             android:textAllCaps="false" />
+                        android:layout_marginTop="@dimen/space_8"
+                        android:orientation="vertical">
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/pasteOpenAiKeyButton"
+                                style="@style/Widget.MyFitAI.SettingsButton.Outlined"
+                                android:layout_width="0dp"
+                                android:layout_height="44dp"
+                                android:layout_marginEnd="@dimen/space_4"
+                                android:layout_weight="1"
+                                android:text="Incolla"
+                                android:textAllCaps="false" />
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/saveOpenAiKeyButton"
+                                style="@style/Widget.MyFitAI.SettingsButton.Primary"
+                                android:layout_width="0dp"
+                                android:layout_height="44dp"
+                                android:layout_marginStart="@dimen/space_4"
+                                android:layout_weight="1"
+                                android:text="Verifica e salva"
+                                android:textAllCaps="false" />
+                        </LinearLayout>
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/space_6"
+                            android:orientation="horizontal">
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/replaceOpenAiKeyButton"
+                                style="@style/Widget.MyFitAI.SettingsButton.Outlined"
+                                android:layout_width="0dp"
+                                android:layout_height="44dp"
+                                android:layout_marginEnd="@dimen/space_4"
+                                android:layout_weight="1"
+                                android:text="Sostituisci"
+                                android:textAllCaps="false" />
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/deleteOpenAiKeyButton"
+                                style="@style/Widget.MyFitAI.SettingsButton.Outlined"
+                                android:layout_width="0dp"
+                                android:layout_height="44dp"
+                                android:layout_marginStart="@dimen/space_4"
+                                android:layout_weight="1"
+                                android:text="Rimuovi"
+                                android:textAllCaps="false" />
+                        </LinearLayout>
                     </LinearLayout>
                 </LinearLayout>
 

@@ -24,7 +24,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/screen_header_height"
                 android:gravity="center_vertical">
-                <TextView
+                <ImageButton
                     android:id="@+id/backButton"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
@@ -34,16 +34,22 @@
                      android:src="@drawable/ic_arrow_back"
                      app:tint="@color/text_primary" />
                 <TextView
+                    android:id="@+id/title"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
+                    android:gravity="center"
                     android:text="Chiedi all'IA"
                     android:textColor="@color/text_primary"
                      style="@style/Text.MyFitAI.ScreenTitle" />
+                <Space
+                    android:layout_width="40dp"
+                    android:layout_height="1dp" />
             </LinearLayout>
 
             <com.google.android.material.card.MaterialCardView
                 style="@style/Widget.MyFitAI.Card"
+                app:cardBackgroundColor="@color/white"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_8">
@@ -51,31 +57,30 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    style="@style/Widget.MyFitAI.HomeSectionContent">
+                    style="@style/Widget.MyFitAI.TabCardContent">
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Consulente alimentare"
                         android:textColor="@color/text_primary"
-                        android:textSize="16sp"
-                        android:textStyle="bold" />
+                        style="@style/Text.MyFitAI.Section" />
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
                         android:text="Chiedi cosa potresti mangiare senza stravolgere il piano. Questa chat non viene storicizzata e l'agente risponde esclusivamente a richieste alimentari e nutrizionali."
-                        android:textColor="@color/text_secondary"
-                        android:textSize="13sp" />
+                        style="@style/Text.MyFitAI.Body" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView
                 style="@style/Widget.MyFitAI.Card"
+                app:cardBackgroundColor="@color/white"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                  android:layout_marginTop="@dimen/space_12">
             <LinearLayout
-                style="@style/Widget.MyFitAI.HomeSectionContent"
+                style="@style/Widget.MyFitAI.TabCardContent"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
@@ -86,6 +91,7 @@
 
             <com.google.android.material.textfield.TextInputLayout
                 style="@style/Widget.MyFitAI.Input"
+                app:boxBackgroundColor="@color/white"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_8"
@@ -102,14 +108,52 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/askButton"
+                style="@style/Widget.MyFitAI.Button.Primary"
                 android:layout_width="match_parent"
                 android:layout_height="52dp"
                 android:layout_marginTop="@dimen/space_12"
                 android:text="Chiedi consiglio"
-                android:textAllCaps="false"
-                android:textStyle="bold"
-                app:cornerRadius="12dp"
-                app:backgroundTint="@color/accent_green" />
+                android:textAllCaps="false" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/aiConfigurationNoticeCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_8"
+                android:visibility="gone"
+                app:cardBackgroundColor="@color/surface_primary"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeColor="@color/accent_green"
+                app:strokeWidth="1dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="@dimen/space_16">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Nessun provider IA configurato"
+                        android:textColor="@color/text_primary"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_4"
+                        android:text="Per usare Alimentazione devi scegliere Gemini o OpenAI e configurare la relativa API key personale nelle Impostazioni."
+                        android:textColor="@color/text_secondary"
+                        android:textSize="13sp" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/aiConfigurationNoticeButton"
+                        style="@style/Widget.MyFitAI.Button.Text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_4"
+                        android:text="Apri impostazioni IA" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
             </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -136,6 +180,7 @@
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/answerCard"
                 style="@style/Widget.MyFitAI.Card"
+                app:cardBackgroundColor="@color/white"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_16"
@@ -145,36 +190,31 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    style="@style/Widget.MyFitAI.HomeSectionContent">
+                    style="@style/Widget.MyFitAI.TabCardContent">
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="Risposta IA"
-                        android:textColor="@color/text_primary"
-                        android:textSize="16sp"
-                        android:textStyle="bold" />
+                        style="@style/Text.MyFitAI.Section" />
                     <TextView
                         android:id="@+id/providerText"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:textColor="@color/text_muted"
-                        android:textSize="11sp"
+                        style="@style/Text.MyFitAI.Caption"
                         android:visibility="gone" />
                     <TextView
                         android:id="@+id/answerText"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/space_8"
-                        android:textColor="@color/text_primary"
-                        android:textSize="15sp" />
+                        style="@style/Text.MyFitAI.Body" />
                     <TextView
                         android:id="@+id/assumptionsText"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/space_8"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp"
+                        style="@style/Text.MyFitAI.Caption"
                         android:visibility="gone" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>

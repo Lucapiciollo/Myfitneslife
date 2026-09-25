@@ -96,7 +96,7 @@ class WeeklyReviewActivity : BaseShellActivity() {
         findViewById<View>(R.id.guidanceCard).visibility = if (content?.nextWeekGuidance.isNullOrEmpty()) View.GONE else View.VISIBLE
 
         val button = findViewById<MaterialButton>(R.id.generateReviewButton)
-        button.isEnabled = !state.loading && !state.generating
+        setAiActionEnabled(button, !state.loading && !state.generating)
         button.text = when {
             state.generating -> "Generazione in corso…"
             state.review != null -> "Rigenera review"

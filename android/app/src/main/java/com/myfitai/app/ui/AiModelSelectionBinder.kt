@@ -10,7 +10,6 @@ import com.myfitai.app.ai.AiModelConfig
 import com.myfitai.app.ai.AiSettingsStore
 import com.myfitai.app.ai.GeminiPricingStore
 import com.myfitai.app.ai.OpenAiPricingStore
-import com.myfitai.app.ui.widgets.KeyValueRowView
 
 object AiModelSelectionBinder {
     fun bind(activity: SettingsActivity, card: LinearLayout, settings: AiSettingsStore) {
@@ -53,14 +52,30 @@ object AiModelSelectionBinder {
         priceLabel: (String) -> String,
         select: (String) -> Unit,
     ) {
-        val row = KeyValueRowView(activity).apply {
+        val row = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(0, dp(activity, 8), 0, dp(activity, 8))
             isClickable = true
             isFocusable = true
         }
+        val modelView = TextView(activity).apply {
+            setTextColor(activity.getColor(R.color.text_secondary))
+            textSize = 14f
+        }
+        val pricingView = TextView(activity).apply {
+            setTextColor(activity.getColor(R.color.text_primary))
+            textSize = 13f
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+        }
+        row.addView(modelView, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+        row.addView(pricingView, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+            topMargin = dp(activity, 2)
+        })
         fun render() {
             val model = current()
-            row.setKey(title)
-            row.setValue("${AiModelConfig.displayName(model)} · ${priceLabel(model)}")
+            modelView.text = "$title: ${AiModelConfig.displayName(model)}"
+            pricingView.text = priceLabel(model)
+            row.contentDescription = "$title: ${AiModelConfig.displayName(model)}, ${priceLabel(model)}"
         }
         row.setOnClickListener {
             val selectedModel = current()

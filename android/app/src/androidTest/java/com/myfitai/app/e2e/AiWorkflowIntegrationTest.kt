@@ -209,7 +209,7 @@ class AiWorkflowIntegrationTest {
         return Services(
             generation = NutritionPlanGenerationService(gateway, calculations, profiles, workouts, plans, cheats, com.myfitai.app.data.repository.CalorieRecoveryRepository(db), store, personal, time = time),
             mealAlternative = MealAlternativeService(gateway, profiles, plans, store, time),
-            advice = NutritionAdviceService(gateway, profiles, plans, cheats, store, time),
+            advice = NutritionAdviceService(gateway, profiles, plans, cheats, consumptions, store, time),
             cheat = CheatAdjustmentService(gateway, plans, cheats, profiles, store, time),
             review = WeeklyReviewService(gateway, reviews, plans, workouts, cheats, bia, body, personal, store, time, consumptions, profiles),
         )

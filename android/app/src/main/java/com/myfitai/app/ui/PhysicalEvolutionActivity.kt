@@ -15,7 +15,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.domain.progress.ProgressAnalysisCompactContract
@@ -263,16 +262,9 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
     }
 
     private fun confirmManualProgressAnalysis() {
-        MaterialAlertDialogBuilder(this)
-            .setTitle("Eseguire l'analisi progressi con IA?")
-            .setMessage(
-                "L'analisi invia una richiesta al provider IA configurato e consuma la quota disponibile. " +
-                    "Il costo effettivo dipende dal provider, dal modello e dal tuo piano di billing. " +
-                    "Se l'analisi riesce, questa esecuzione diventa il nuovo riferimento per il prossimo controllo automatico."
-            )
-            .setNegativeButton("Annulla", null)
-            .setPositiveButton("Conferma ed esegui") { _, _ -> executeProgressAnalysis() }
-            .show()
+        confirmAiRequest("L'analisi dei progressi corporei") {
+            executeProgressAnalysis()
+        }
     }
 
     private fun executeProgressAnalysis() {
@@ -281,10 +273,10 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
             analysisResultText.visibility = View.VISIBLE
             analysisResultText.text = "Seleziona un profilo prima di avviare l'analisi IA."
             analysisProgress.visibility = View.GONE
-            analysisButton.isEnabled = false
+            setAiActionEnabled(analysisButton, false)
             return
         }
-        analysisButton.isEnabled = false
+        setAiActionEnabled(analysisButton, false)
         analysisButton.text = "Analisi in corso…"
         analysisProgress.visibility = View.VISIBLE
         analysisResultText.visibility = View.VISIBLE
@@ -299,7 +291,7 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         if (enqueueError != null) {
             analysisResultText.text = "Impossibile avviare l'analisi IA: ${enqueueError.message ?: "errore locale"}"
             analysisProgress.visibility = View.GONE
-            analysisButton.isEnabled = true
+            setAiActionEnabled(analysisButton)
             analysisButton.text = "Esegui analisi ora"
             return
         }
@@ -309,14 +301,14 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
                     androidx.work.WorkInfo.State.SUCCEEDED -> {
                         analysisResultText.text = "Analisi completata. Il risultato aggiornato è disponibile."
                         analysisProgress.visibility = View.GONE
-                        analysisButton.isEnabled = true
+                        setAiActionEnabled(analysisButton)
                         analysisButton.text = "Esegui analisi ora"
                         renderProgressAnalysisStatus(keepTransientResult = false)
                     }
                     androidx.work.WorkInfo.State.FAILED -> {
                         analysisResultText.text = info.outputData.getString(com.myfitai.app.domain.ai.AiJobWorker.KEY_ERROR) ?: "Analisi non riuscita. I dati precedenti restano invariati."
                         analysisProgress.visibility = View.GONE
-                        analysisButton.isEnabled = true
+                        setAiActionEnabled(analysisButton)
                         analysisButton.text = "Esegui analisi ora"
                     }
                     else -> Unit
@@ -333,7 +325,7 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
             analysisCard.visibility = View.GONE
             analysisLastText.text = "Ultima esecuzione: profilo non disponibile"
             analysisNextText.text = "Esecuzione automatica: non pianificata"
-            analysisButton.isEnabled = false
+            setAiActionEnabled(analysisButton, false)
             analysisDetailsButton.visibility = View.GONE
             analysisDetailsContainer.visibility = View.GONE
             return
@@ -394,7 +386,7 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
                 val snapshot = data.profileCalculationService.profileSnapshot(profileId, java.time.LocalDate.now())
                 ProgressAnalysisRequirements.missing(snapshot)
             }
-            analysisButton.isEnabled = missing.isEmpty() && analysisProgress.visibility != View.VISIBLE
+            setAiActionEnabled(analysisButton, missing.isEmpty() && analysisProgress.visibility != View.VISIBLE)
             if (missing.isEmpty()) {
                 analysisRequirementsText.visibility = View.GONE
             } else {

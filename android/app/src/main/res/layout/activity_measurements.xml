@@ -57,21 +57,18 @@
                  android:layout_width="match_parent"
                  android:layout_height="wrap_content"
                  android:layout_marginTop="@dimen/space_8"
-                 android:orientation="horizontal">
+                 android:orientation="vertical">
 
               <com.myfitai.app.ui.widgets.MeasurementActionCardView
                   android:id="@+id/biaCard"
-                  android:layout_width="0dp"
-                   android:layout_height="match_parent"
-                   android:layout_weight="1"
-                   android:layout_marginEnd="@dimen/space_6" />
+                  android:layout_width="match_parent"
+                  android:layout_height="wrap_content" />
 
               <com.myfitai.app.ui.widgets.MeasurementActionCardView
                   android:id="@+id/bodyCard"
-                  android:layout_width="0dp"
-                  android:layout_height="match_parent"
-                  android:layout_weight="1"
-                  android:layout_marginStart="@dimen/space_6" />
+                  android:layout_width="match_parent"
+                  android:layout_height="wrap_content"
+                  android:layout_marginTop="@dimen/space_8" />
              </LinearLayout>
 
               <com.google.android.material.card.MaterialCardView android:id="@+id/dietImpactCard" style="@style/Widget.MyFitAI.Card" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_12" android:layout_marginBottom="@dimen/space_16">
