@@ -75,8 +75,11 @@ class CheatEntryActivity : BaseShellActivity() {
         bindBack()
         normalizeCheatSurfaces()
 
-        findViewById<SelectableSegmentView>(R.id.modeSegment)
-            .setSegments(listOf("Rapido", "Dettagliato"), selectedIndex = 0)
+        findViewById<SelectableSegmentView>(R.id.modeSegment).apply {
+            setSegments(listOf("Rapido", "Dettagliato"), selectedIndex = 0)
+            setOnSegmentSelectedListener { index -> renderMode(detailed = index == 1) }
+        }
+        renderMode(detailed = false)
 
         val quantityInput = findViewById<AutoCompleteTextView>(R.id.quantityInput)
         quantityInput.setAdapter(ArrayAdapter(this, android.R.layout.simple_list_item_1, listOf("Piccolo", "Medio", "Grande")))
@@ -116,6 +119,13 @@ class CheatEntryActivity : BaseShellActivity() {
             }
         }
         visit(findViewById(android.R.id.content))
+    }
+
+    private fun renderMode(detailed: Boolean) {
+        UiMotion.reveal(findViewById(R.id.labelPhotoCard), detailed)
+        UiMotion.reveal(findViewById(R.id.notesCard), detailed)
+        findViewById<View>(R.id.modeSegment).contentDescription =
+            if (detailed) "Modalità dettagliata selezionata" else "Modalità rapida selezionata"
     }
 
     private fun bindLabelPhoto() {

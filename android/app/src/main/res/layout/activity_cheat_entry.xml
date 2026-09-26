@@ -96,6 +96,7 @@
             </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView
+                android:id="@+id/labelPhotoCard"
                 style="@style/Widget.MyFitAI.Card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -113,6 +114,7 @@
             </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView
+                android:id="@+id/whenCard"
                 style="@style/Widget.MyFitAI.Card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -138,6 +140,7 @@
             </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView
+                android:id="@+id/quantityCard"
                 style="@style/Widget.MyFitAI.Card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -168,6 +171,7 @@
             </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView
+                android:id="@+id/notesCard"
                 style="@style/Widget.MyFitAI.Card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

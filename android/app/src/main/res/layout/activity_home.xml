@@ -228,7 +228,7 @@
                         android:contentDescription="Seleziona la misura del grafico" />
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <com.myfitai.app.ui.widgets.WeightTrendChartView
+                <com.myfitai.app.ui.widgets.BodyMeasurementTrendView
                     android:id="@+id/bodyMeasurementTrendChart"
                     android:layout_width="match_parent"
                     android:layout_height="@dimen/dashboard_chart_height"

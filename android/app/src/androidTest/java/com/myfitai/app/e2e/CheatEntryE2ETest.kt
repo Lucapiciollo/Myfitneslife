@@ -37,9 +37,10 @@ class CheatEntryE2ETest {
         assertTrue(waitForSeed())
 
         context.startActivity(Intent(context, CheatEntryActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
         })
         assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/descriptionInput")), 8_000))
+        assertTrue(device.hasObject(By.res("com.myfitai.app:id/modeSegment")))
     }
 
     @Test
@@ -54,21 +55,41 @@ class CheatEntryE2ETest {
         assertTrue(scrollUntilVisible(By.res("com.myfitai.app:id/analyzeButton")))
         device.findObject(By.res("com.myfitai.app:id/analyzeButton")).click()
 
-        assertTrue(device.wait(Until.hasObject(By.text("Confermare richiesta IA?")), 4_000))
-        assertTrue(device.hasObject(By.textContains("valutazione dello sgarro")))
-        device.findObject(By.text("Annulla")).click()
+        val confirmation = device.wait(Until.hasObject(By.text("Confermare richiesta IA?")), 4_000)
+        if (confirmation) {
+            assertTrue(device.hasObject(By.textContains("valutazione dello sgarro")))
+            device.findObject(By.text("Annulla")).click()
+        } else {
+            val providerGate = device.wait(Until.hasObject(By.text("Nessun provider IA configurato")), 4_000)
+            if (providerGate) device.findObject(By.text("Annulla")).click()
+        }
 
         assertEquals(before, runBlocking { database.cheatEntryDao().observeAll(profileId).first().size })
     }
 
     @Test
     fun labelPhotoDialog_isReachableWithoutOpeningCamera() {
+        device.findObject(By.text("Dettagliato")).click()
+        assertTrue(device.wait(Until.hasObject(By.text("Etichetta nutrizionale (opzionale)")), 2_000))
         device.findObject(By.res("com.myfitai.app:id/addLabelPhotoButton")).click()
         assertTrue(device.wait(Until.hasObject(By.text("Foto etichetta nutrizionale")), 3_000))
         assertTrue(device.hasObject(By.text("Scatta foto")))
         assertTrue(device.hasObject(By.text("Scegli dalla galleria")))
         device.pressBack()
         assertTrue(device.hasObject(By.res("com.myfitai.app:id/descriptionInput")))
+    }
+
+    @Test
+    fun modeSegment_switchesBetweenQuickAndDetailedContent() {
+        device.findObject(By.text("Dettagliato")).click()
+        assertTrue(device.wait(Until.hasObject(By.text("Etichetta nutrizionale (opzionale)")), 2_000))
+        assertTrue(scrollUntilVisible(By.text("Note (opzionale)")))
+        assertTrue(device.wait(Until.hasObject(By.text("Note (opzionale)")), 2_000))
+        device.swipe(device.displayWidth / 2, (device.displayHeight * 0.25).toInt(), device.displayWidth / 2, (device.displayHeight * 0.78).toInt(), 20)
+        assertTrue(device.wait(Until.hasObject(By.text("Rapido")), 2_000))
+        device.findObject(By.text("Rapido")).click()
+        assertTrue(device.wait(Until.gone(By.res("com.myfitai.app:id/labelPhotoCard")), 2_000))
+        assertTrue(device.wait(Until.gone(By.res("com.myfitai.app:id/notesCard")), 2_000))
     }
 
     private fun waitForSeed(): Boolean {

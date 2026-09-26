@@ -24,7 +24,7 @@ import com.myfitai.app.ui.widgets.MetricCardView
 import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import android.widget.ArrayAdapter
 import com.myfitai.app.ui.widgets.TimeRangeSelectorView
-import com.myfitai.app.ui.widgets.WeightTrendChartView
+import com.myfitai.app.ui.widgets.BodyMeasurementTrendView
 import com.myfitai.app.ui.widgets.WorkoutCardView
 import com.myfitai.app.ui.motion.UiMotion
 import kotlinx.coroutines.launch
@@ -207,14 +207,34 @@ class HomeActivity : BaseShellActivity() {
             selectedBodyTrendIndex = selectedBodyTrendIndex.coerceIn(0, (series.size - 1).coerceAtLeast(0))
             selector.setAdapter(ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, labels))
             selector.setText(labels.getOrNull(selectedBodyTrendIndex).orEmpty(), false)
-            selector.setOnItemClickListener { _, _, index, _ ->
-                selectedBodyTrendIndex = index
-                renderBodyTrend(viewModel.state.value.bodyMeasurementTrendSeries)
-            }
         }
         val selected = series.getOrNull(selectedBodyTrendIndex)
-        findViewById<WeightTrendChartView>(R.id.bodyMeasurementTrendChart).setSeries(
-            listOfNotNull(selected?.let { item -> item.label to item.points.map { point -> point.value } }),
+        selector.threshold = 0
+        selector.setOnClickListener { selector.showDropDown() }
+        selector.setOnItemClickListener { _, _, index, _ ->
+            selectedBodyTrendIndex = index.coerceIn(0, (series.size - 1).coerceAtLeast(0))
+            selector.setText(labels.getOrNull(selectedBodyTrendIndex).orEmpty(), false)
+            renderBodyTrend(viewModel.state.value.bodyMeasurementTrendSeries)
+        }
+        val unit = when {
+            selected?.label == "Grasso corporeo" -> "%"
+            selected?.label == "Peso" || selected?.label?.startsWith("Massa") == true -> "kg"
+            else -> "cm"
+        }
+        findViewById<BodyMeasurementTrendView>(R.id.bodyMeasurementTrendChart).setRealSeries(
+            selected?.let { item ->
+                BodyMeasurementTrendView.Series(
+                    label = item.label,
+                    points = item.points.map { point ->
+                        BodyMeasurementTrendView.Point(
+                            label = Instant.ofEpochMilli(point.timestamp).atZone(ZoneId.systemDefault())
+                                .format(DateTimeFormatter.ofPattern("dd/MM", Locale.ITALIAN)),
+                            value = point.value,
+                        )
+                    },
+                )
+            },
+            unit,
         )
     }
 
