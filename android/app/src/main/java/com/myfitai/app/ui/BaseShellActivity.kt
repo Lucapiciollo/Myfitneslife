@@ -55,23 +55,14 @@ abstract class BaseShellActivity : AppCompatActivity() {
     protected fun showHelpCard(title: String, message: String) {
         runCatching {
             val content = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                setBackgroundColor(getColor(R.color.white))
-                val contentPadding = dimen(R.dimen.space_4)
-                setPadding(contentPadding, contentPadding, contentPadding, contentPadding)
-            }
-            View(this).apply {
-                setBackgroundColor(getColor(R.color.accent_green))
-                content.addView(this, LinearLayout.LayoutParams(dimen(R.dimen.space_4), ViewGroup.LayoutParams.MATCH_PARENT).apply {
-                    marginEnd = dimen(R.dimen.space_12)
-                })
+                orientation = LinearLayout.VERTICAL
             }
             TextView(this).apply {
                 text = formatHelpMessage(message)
                 setTextAppearance(R.style.Text_MyFitAI_Body)
                 setTextColor(getColor(R.color.text_primary))
-                setPadding(dimen(R.dimen.space_4), dimen(R.dimen.space_8), dimen(R.dimen.space_8), dimen(R.dimen.space_8))
-                content.addView(this, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
+                setPadding(dimen(R.dimen.space_4), dimen(R.dimen.space_8), dimen(R.dimen.space_4), dimen(R.dimen.space_8))
+                content.addView(this, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
             }
             MaterialAlertDialogBuilder(this)
                 .setTitle(title)

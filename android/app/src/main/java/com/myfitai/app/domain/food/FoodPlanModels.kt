@@ -38,6 +38,7 @@ data class FoodPlanDay(
     val targetProteinG: Float? = null,
     val targetCarbsG: Float? = null,
     val targetFatG: Float? = null,
+    val baseTargetKcal: Int? = null,
 )
 
 data class FoodSupplement(

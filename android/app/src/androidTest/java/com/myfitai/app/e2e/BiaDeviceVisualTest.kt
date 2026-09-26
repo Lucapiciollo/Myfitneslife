@@ -19,6 +19,28 @@ class BiaDeviceVisualTest {
     private val device = UiDevice.getInstance(instrumentation)
 
     @Test
+    fun dateAndTimePickers_showStandardNeutralDialogTheme() {
+        instrumentation.startActivitySync(Intent(context, BiaActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        })
+
+        assertTrue(device.wait(Until.hasObject(By.text("Bioimpedenziometria")), 5_000))
+        val dir = File(context.getExternalFilesDir(null), "qa-artifacts").apply { mkdirs() }
+
+        device.findObject(By.res("com.myfitai.app:id/dateInput")).click()
+        assertTrue(device.wait(Until.hasObject(By.text("Data misurazione")), 3_000))
+        assertTrue(device.hasObject(By.text("OK")))
+        device.takeScreenshot(File(dir, "bia_date_picker_neutral.png"))
+        device.pressBack()
+
+        device.findObject(By.res("com.myfitai.app:id/timeInput")).click()
+        assertTrue(device.wait(Until.hasObject(By.text("Ora misurazione")), 3_000))
+        assertTrue(device.hasObject(By.text("OK")))
+        device.takeScreenshot(File(dir, "bia_time_picker_neutral.png"))
+        device.pressBack()
+    }
+
+    @Test
     fun newBiaForm_usesStandardWhiteCardsAndCompactFields() {
         instrumentation.startActivitySync(Intent(context, BiaActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)

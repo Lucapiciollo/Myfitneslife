@@ -40,17 +40,18 @@ object AdaptiveNutritionTargetEngine {
         val evidenceWindowDays: Int,
         val energyFactor: Double?,
         val reasonCode: String,
+        val baseTargetKcal: Double? = targetKcal,
     )
 
     fun adjust(input: Input): Result {
         val tdee = input.tdeeKcal?.takeIf { it.isFinite() && it > 0.0 }
         val base = input.baseTargetKcal?.takeIf { it.isFinite() && it > 0.0 }
         if (tdee == null || base == null) {
-            return Result(base, Decision.INSUFFICIENT_DATA, 0, null, "MISSING_BASE_TARGET")
+            return Result(base, Decision.INSUFFICIENT_DATA, 0, null, "MISSING_BASE_TARGET", base)
         }
 
         if (input.goal != LocalCalculationEngine.Goal.WEIGHT_LOSS && input.goal != LocalCalculationEngine.Goal.RECOMPOSITION) {
-            return Result(base, Decision.NOT_APPLICABLE, 0, base / tdee, "GOAL_NOT_ADAPTIVE")
+            return Result(base, Decision.NOT_APPLICABLE, 0, base / tdee, "GOAL_NOT_ADAPTIVE", base)
         }
 
         val relevant = listOf(input.weight, input.bodyFat, input.muscleMass, input.waist, input.abdomen)
@@ -59,7 +60,7 @@ object AdaptiveNutritionTargetEngine {
         val enoughDuration = evidenceDays >= MIN_EVIDENCE_DAYS
         val enoughSignals = relevant.count { it.spanDays >= MIN_EVIDENCE_DAYS } >= 2
         if (!enoughDuration || !enoughSignals) {
-            return Result(base, Decision.INSUFFICIENT_DATA, evidenceDays, base / tdee, "INSUFFICIENT_TREND")
+            return Result(base, Decision.INSUFFICIENT_DATA, evidenceDays, base / tdee, "INSUFFICIENT_TREND", base)
         }
 
         val weeklyWeightPct = weeklyWeightPercent(input.weight, input.currentWeightKg)
@@ -100,6 +101,7 @@ object AdaptiveNutritionTargetEngine {
                 Decision.KEEP -> if (favorable) "FAVORABLE_PROGRESS" else "NO_SAFE_CHANGE"
                 else -> "NO_CHANGE"
             },
+            baseTargetKcal = base,
         )
     }
 

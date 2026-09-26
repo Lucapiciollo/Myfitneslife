@@ -51,11 +51,7 @@ class ProfileActivity : BaseShellActivity() {
     }
 
     private fun bindSettingsNavigation() {
-        val openEditor = { openReprofileWizard() }
-        findViewById<SettingRowView>(R.id.rowPersonalData).setOnClickListener { openEditor() }
-        findViewById<SettingRowView>(R.id.rowGoals).setOnClickListener { openEditor() }
-        findViewById<SettingRowView>(R.id.rowFoodPreferences).setOnClickListener { openEditor() }
-        findViewById<SettingRowView>(R.id.rowDaySchedule).setOnClickListener { openEditor() }
+        findViewById<SettingRowView>(R.id.rowFoodPreferences).setOnClickListener { openProfileEditor() }
         findViewById<SettingRowView>(R.id.rowWorkouts).setOnClickListener { go(WorkoutsActivity::class.java) }
         updateWorkoutsRowVisibility()
         findViewById<SettingRowView>(R.id.rowNotifications).setOnClickListener { showNotificationSettings() }
@@ -108,9 +104,11 @@ class ProfileActivity : BaseShellActivity() {
 
     private fun bindProfileActions() {
         findViewById<TextView>(R.id.profileName).setOnClickListener { showProfileMenu(it) }
-        findViewById<TextView>(R.id.profileStats).setOnClickListener { openReprofileWizard() }
-        findViewById<TextView>(R.id.profileGoal).setOnClickListener { openReprofileWizard() }
         findViewById<ShapeableImageView>(R.id.profileAvatar).setOnClickListener { showPhotoMenu() }
+    }
+
+    private fun openProfileEditor() {
+        startActivity(Intent(this, ProfileEditActivity::class.java))
     }
 
     private fun ensureProfileSelection() {
@@ -148,12 +146,6 @@ class ProfileActivity : BaseShellActivity() {
                     }
                 }
             }
-        }
-    }
-
-    private fun openReprofileWizard() {
-        currentProfile?.id?.let { id ->
-            startActivity(Intent(this, OnboardingWizardActivity::class.java).putExtra(OnboardingWizardActivity.EXTRA_PROFILE_ID, id))
         }
     }
 

@@ -83,7 +83,7 @@ class BottomNavigationUiTest {
         // Tapping the already-active tab must be a no-op: the Settings root stays on screen.
         clickTab(com.myfitai.app.R.id.navMore)
         assertCurrentTabViewEventually(com.myfitai.app.R.id.settingsContent)
-        assertCurrentTabViewEventually(com.myfitai.app.R.id.rowProfile)
+        assertCurrentTabViewEventually(com.myfitai.app.R.id.rowMeasurements)
     }
 
     @Test

@@ -199,13 +199,15 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/analyzeButton"
-                style="@style/Widget.MyFitAI.Button.Primary"
-                android:layout_width="match_parent"
-                android:layout_height="@dimen/button_primary_min_height"
-                android:layout_marginTop="@dimen/space_12"
-                android:text="Fai capire lo sgarro all'IA"
+             <com.google.android.material.button.MaterialButton
+                 android:id="@+id/analyzeButton"
+                 style="@style/Widget.MyFitAI.Button.Primary"
+                 android:layout_width="match_parent"
+                 android:layout_height="@dimen/button_primary_min_height"
+                 android:layout_marginTop="@dimen/space_12"
+                 android:textColor="@color/white"
+                 app:backgroundTint="@color/accent_green_dark"
+                 android:text="Fai capire lo sgarro all'IA"
                 android:textAllCaps="false"
                 android:textStyle="bold" />
 

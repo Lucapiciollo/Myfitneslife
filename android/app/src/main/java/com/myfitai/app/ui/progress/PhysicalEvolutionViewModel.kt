@@ -15,6 +15,8 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import java.time.Instant
+import java.time.LocalDate
+import java.time.Period
 import java.time.ZoneId
 
 enum class ProgressMetric { WEIGHT, BODY_FAT, MUSCLE }
@@ -56,7 +58,7 @@ class PhysicalEvolutionViewModel(
         PhysicalEvolutionState(
             weight = metric { it.weightKg }.copy(
                 value = weightPoints.lastOrNull()?.value,
-                delta = if (weightPoints.size >= 2) weightPoints.last().value - weightPoints.first().value else null,
+                delta = if (weightPoints.size >= 2) weightPoints.last().value - weightPoints[weightPoints.lastIndex - 1].value else null,
                 series = weightPoints,
             ),
             bodyFat = metric { it.bodyFatPercent },
@@ -65,12 +67,37 @@ class PhysicalEvolutionViewModel(
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PhysicalEvolutionState())
 
+    fun latest(metric: ProgressMetricState): Float? = metric.series.maxByOrNull { it.timestamp }?.value ?: metric.value
+
     fun filtered(metric: ProgressMetricState, rangeIndex: Int): ProgressMetricState {
+        val zone = ZoneId.systemDefault()
+        val today = LocalDate.now(zone)
+        val range = when (rangeIndex) {
+            0 -> Period.ofMonths(1)
+            1 -> Period.ofMonths(3)
+            2 -> Period.ofMonths(6)
+            else -> Period.ofYears(1)
+        }
+        val result = ProgressSeriesEngine.filter(
+            metric.series.map { ProgressSeriesPoint(it.timestamp, it.value) },
+            range,
+            zoneId = zone,
+            asOfDate = today,
+        )
+        return metric.copy(
+            value = result.value,
+            delta = result.delta,
+            series = result.points.map { ProgressPoint(it.timestamp, it.value) },
+        )
+    }
+
+    fun filtered(metric: ProgressMetricState, range: Period): ProgressMetricState {
         val zone = ZoneId.systemDefault()
         val result = ProgressSeriesEngine.filter(
             metric.series.map { ProgressSeriesPoint(it.timestamp, it.value) },
-            rangeIndex,
-            zone,
+            range,
+            zoneId = zone,
+            asOfDate = LocalDate.now(zone),
         )
         return metric.copy(
             value = result.value,

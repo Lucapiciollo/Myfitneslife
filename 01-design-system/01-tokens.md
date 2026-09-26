@@ -108,7 +108,9 @@ I layout più vecchi contengono alcune misure letterali: vanno sostituite con qu
 - Outline del marker corporeo: `body_marker_outline_width` (2dp); angoli inferiori squadrati delle sheet: `radius_square` (0dp).
 - Campi: 12dp, bordo neutro 1dp, focus 2dp, altezza minima 48dp.
 - Chip/segmenti: pill; selezione con `pill_selected_bg` e testo/indicatore distinguibile.
-- Dialog standard: 16dp; superfici bianche con controlli neutri.
+- Dialog standard: 16dp; superfici bianche con controlli/selezioni neutri. Calendar: giorno/anno selezionati su `surface_secondary` con testo `text_primary` per mantenere contrasto; TimePicker: superficie e quadrante `white` (elevation overlay disattivato), lancetta neutra. CTA positiva in `dialog_action_primary`; il verde brand non colora lo stato selected delle date/ore.
+- Dialog di aiuto e Guida app: stesso contenitore Material bianco, raggio `radius_dialog`, superficie e CTA standard; non aggiungere barre verdi o bordi esterni decorativi. Card informative interne usano `radius_card` e bordo `divider`.
+- Riepilogo calorie Home/Alimentazione: distinguere visivamente/semanticamente stima base BMR, stima con attività abituale TDEE, target del piano, menu stimato e consumo registrato; consumi assenti restano non disponibili, non zero. Totale giornaliero espone calorie e proteine; la spesa di un allenamento singolo non è stimata.
 - Motion Android Views centralizzato in `UiMotion`: ingresso pagina (`motion_screen_enter_ms`), reveal (`motion_reveal_ms`, offset `motion_reveal_offset`), cambi di layout (`motion_layout_change_ms`), selezione (`motion_selection_ms`, `motion_selection_scale`), feedback checkbox (`motion_feedback_ms`, `motion_checkbox_scale`) e transizioni tab (`motion_tab_transition_ms`). Interpolatore Decelerate condiviso; rispetta Animator duration scale, risparmio energetico e feedback vocale accessibile. Nessun motion decorativo infinito.
 - Limite QA motion: build/unit test/package AndroidTest verdi; resta da verificare visivamente l'interazione animata sui flussi Alimentazione, Lista spesa e Dettaglio pasto su device.
 

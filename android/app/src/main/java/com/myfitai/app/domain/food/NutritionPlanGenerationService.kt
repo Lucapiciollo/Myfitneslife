@@ -304,6 +304,7 @@ class NutritionPlanGenerationService(
         }
 
         val persistedTargets = averageTargets(dailyTargets.values.toList(), baseTargets)
+        val dailyTargetsByEpochDay = recoveryPlan.days.associate { it.date.toEpochDay() to it.targets }
         val recoveryTokens = recoveryPlan.plannedBySource.entries
             .sortedBy { it.key }
             .joinToString(",") { (sourceId, kcal) -> CalorieRecoveryRepository.recoveryToken(sourceId, kcal) }
@@ -319,12 +320,18 @@ class NutritionPlanGenerationService(
             targetFatG = persistedTargets.fatG.toFloat(),
             appValidationJson = integrity.toJson().toString(),
             days = response.days.sortedBy { it.dateEpochDay }.map { day ->
+                val dayTargets = dailyTargetsByEpochDay[day.dateEpochDay] ?: baseTargets
                 DayDraft(
                     dateEpochDay = day.dateEpochDay,
                     totalKcal = day.totalKcal,
                     proteinG = day.proteinG,
                     carbsG = day.carbsG,
                     fatG = day.fatG,
+                    targetKcal = dayTargets.kcal.toInt(),
+                    targetProteinG = dayTargets.proteinG.toFloat(),
+                    targetCarbsG = dayTargets.carbsG.toFloat(),
+                    targetFatG = dayTargets.fatG.toFloat(),
+                    baseTargetKcal = adaptive.baseTargetKcal?.toInt(),
                     meals = day.meals.sortedBy { it.timeMinutes }.map { meal ->
                         MealDraft(
                             type = meal.type,

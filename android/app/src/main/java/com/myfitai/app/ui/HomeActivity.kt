@@ -24,7 +24,7 @@ import com.myfitai.app.ui.widgets.MetricCardView
 import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import android.widget.ArrayAdapter
 import com.myfitai.app.ui.widgets.TimeRangeSelectorView
-import com.myfitai.app.ui.widgets.BodyMeasurementTrendView
+import com.myfitai.app.ui.widgets.WeightTrendChartView
 import com.myfitai.app.ui.widgets.WorkoutCardView
 import com.myfitai.app.ui.motion.UiMotion
 import kotlinx.coroutines.launch
@@ -213,25 +213,8 @@ class HomeActivity : BaseShellActivity() {
             }
         }
         val selected = series.getOrNull(selectedBodyTrendIndex)
-        val unit = when {
-            selected?.label == "Grasso corporeo" -> "%"
-            selected?.label == "Peso" || selected?.label?.startsWith("Massa") == true -> "kg"
-            else -> "cm"
-        }
-        findViewById<BodyMeasurementTrendView>(R.id.bodyMeasurementTrendChart).setRealSeries(
-            selected?.let { item ->
-                BodyMeasurementTrendView.Series(
-                    label = item.label,
-                    points = item.points.map { point ->
-                        BodyMeasurementTrendView.Point(
-                            label = Instant.ofEpochMilli(point.timestamp).atZone(ZoneId.systemDefault())
-                                .format(DateTimeFormatter.ofPattern("dd/MM", Locale.ITALIAN)),
-                            value = point.value,
-                        )
-                    },
-                )
-            },
-            unit,
+        findViewById<WeightTrendChartView>(R.id.bodyMeasurementTrendChart).setSeries(
+            listOfNotNull(selected?.let { item -> item.label to item.points.map { point -> point.value } }),
         )
     }
 
@@ -339,10 +322,20 @@ class HomeActivity : BaseShellActivity() {
         findViewById<TextView>(R.id.caloriesBmrValue).text = kcal(calories.bmr)
         findViewById<TextView>(R.id.caloriesTdeeValue).text = kcal(calories.tdee)
         findViewById<TextView>(R.id.caloriesTargetValue).text = kcal(calories.target)
-        findViewById<TextView>(R.id.caloriesConsumedText).text = "${calories.consumedKcal} kcal"
+        findViewById<TextView>(R.id.caloriesConsumedText).text = calories.consumedKcal?.let { "$it kcal" } ?: "—"
+        findViewById<TextView>(R.id.caloriesConsumedProteinText).text =
+            calories.consumedProteinG?.let { NutritionEstimateFormatter.formatEstimatedMacro(it, "g") } ?: "—"
+        findViewById<TextView>(R.id.caloriesConsumptionNote).text = when {
+            calories.consumedCount == 0 && calories.recordedCount > 0 -> "Gli elementi registrati risultano saltati."
+            calories.consumedCount == 0 -> "Nessun alimento registrato come consumato oggi."
+            calories.consumedCount < calories.recordedCount -> "Calorie e proteine sommano i soli elementi consumati (${calories.consumedCount})."
+            else -> "Totale di ${calories.consumedCount} elementi segnati come consumati."
+        }
         findViewById<TextView>(R.id.caloriesRemainingText).apply {
             val target = calories.target
-            text = if (target != null && target > 0) {
+            text = if (calories.consumedKcal == null) {
+                "—"
+            } else if (target != null && target > 0) {
                 val remaining = target - calories.consumedKcal
                 if (remaining >= 0) "$remaining kcal" else "${-remaining} oltre"
             } else {
@@ -350,12 +343,12 @@ class HomeActivity : BaseShellActivity() {
             }
         }
         val target = calories.target ?: 0
-        val consumedProgress = if (target > 0) {
+        val consumedProgress = if (target > 0 && calories.consumedKcal != null) {
             (calories.consumedKcal * 100 / target).coerceIn(0, 100)
         } else {
             0
         }
-        val remainingProgress = if (target > 0) {
+        val remainingProgress = if (target > 0 && calories.consumedKcal != null) {
             ((target - calories.consumedKcal) * 100 / target).coerceIn(0, 100)
         } else {
             0
@@ -369,6 +362,21 @@ class HomeActivity : BaseShellActivity() {
             max = 100
             progress = remainingProgress
             setIndicatorColor(getColor(if (remainingProgress > 0) R.color.text_muted else R.color.divider))
+        }
+        val targetDifference = if (calories.targetBeforeAdaptation != null && calories.target != null) calories.targetBeforeAdaptation - calories.target else null
+        findViewById<TextView>(R.id.caloriesTargetSourceText).text = when {
+            targetDifference != null && targetDifference != 0 -> "Profilo ${kcal(calories.targetBeforeAdaptation)} · target attuale ${kcal(calories.target)}"
+            calories.targetFromCurrentPlan -> "Target del giorno selezionato nel piano alimentare"
+            calories.targetFromWeeklyPlan -> "Target settimanale del piano · target specifico del giorno non disponibile"
+            calories.target != null -> "Target calcolato dal profilo · nessun piano corrente"
+            else -> "Target non disponibile: completa i dati richiesti nel profilo"
+        }
+        findViewById<android.view.View>(R.id.caloriesSummaryBody).contentDescription = buildString {
+            append("Calorie base: metabolismo a riposo ${kcal(calories.bmr)}. ")
+            append("Consumo con attività abituale ${kcal(calories.tdee)}. ")
+            append("Target ${kcal(calories.target)}. ")
+            append("Consumate ${calories.consumedKcal?.let { kcal(it) } ?: "nessuna registrazione"}. ")
+            append("Proteine consumate ${calories.consumedProteinG?.let { NutritionEstimateFormatter.formatEstimatedMacro(it, "g") } ?: "non disponibili"}.")
         }
         findViewById<TextView>(R.id.caloriesModeText).apply {
             val percent = calories.energyPercent?.let { p ->

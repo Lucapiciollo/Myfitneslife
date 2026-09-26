@@ -51,6 +51,8 @@ class FoodPlanViewModel(
     private val biaRepository: BiaRepository,
     private val bodyMeasurementRepository: BodyMeasurementRepository,
 ) : ViewModel() {
+    data class CalorieReference(val bmrKcal: Double?, val tdeeKcal: Double?)
+
     private data class SourceData(
         val weekStart: LocalDate,
         val snapshot: FoodPlanSnapshot?,
@@ -72,16 +74,23 @@ class FoodPlanViewModel(
         val hasPlan: Boolean = false,
         val generation: GenerationState = GenerationState(),
         val consumptionRecords: List<FoodConsumptionEntity> = emptyList(),
-        val baseKcal: Double? = null,
+        val calorieReference: CalorieReference = CalorieReference(null, null),
         val goalChangedSinceGeneration: Boolean = false,
     )
 
     private val selectedWeekStart = MutableStateFlow(planWeekMonday(LocalDate.now()))
     private val selectedDayIndex = MutableStateFlow(todayIndexInWeek(selectedWeekStart.value))
     private val generationState = MutableStateFlow(GenerationState())
-    private val baseKcal = activeProfileStore.activeProfileId.flatMapLatest { profileId ->
-        if (profileId <= 0L) flowOf<Double?>(null)
-        else flow { emit(calculations.profileSnapshot(profileId)?.calculation?.tdeeKcal) }
+    private val calorieReference = activeProfileStore.activeProfileId.flatMapLatest { profileId ->
+        if (profileId <= 0L) flowOf(CalorieReference(null, null))
+        else combine(
+            profileRepository.profile(profileId),
+            biaRepository.all(profileId),
+            bodyMeasurementRepository.all(profileId),
+        ) { _, _, _ ->
+            val result = calculations.profileSnapshot(profileId)?.calculation
+            CalorieReference(result?.bmrKcal, result?.tdeeKcal)
+        }
     }
 
     init {
@@ -124,7 +133,7 @@ class FoodPlanViewModel(
         }
     }
 
-    val state: StateFlow<State> = combine(source, selectedDayIndex, generationState, baseKcal) { sourceData, dayIndex, generation, tdeeKcal ->
+    val state: StateFlow<State> = combine(source, selectedDayIndex, generationState, calorieReference) { sourceData, dayIndex, generation, calorieReference ->
         val (weekStart, snapshot, records, profileUpdatedAt, latestMeasurementAt) = sourceData
         val safeIndex = dayIndex.coerceIn(0, 6)
         State(
@@ -135,7 +144,7 @@ class FoodPlanViewModel(
             hasPlan = snapshot != null,
             generation = generation,
             consumptionRecords = records,
-            baseKcal = tdeeKcal,
+            calorieReference = calorieReference,
             goalChangedSinceGeneration = snapshot != null && listOfNotNull(profileUpdatedAt, latestMeasurementAt)
                 .any { it >= snapshot.version.createdAtEpochMillis },
         )

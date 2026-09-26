@@ -152,27 +152,18 @@
                             android:src="@drawable/ic_help_outline"
                             app:tint="@color/text_secondary" />
                     </LinearLayout>
-                    <TextView
-                        android:id="@+id/goalChangedNotice"
-                        style="@style/Text.MyFitAI.BodyCompact"
+                     <TextView
+                         android:id="@+id/goalChangedNotice"
+                         style="@style/Text.MyFitAI.BodyCompact"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/space_12"
                         android:background="@color/surface_primary"
                         android:padding="@dimen/space_12"
-                        android:text="Hai aggiornato il profilo o aggiunto nuove misure. Puoi rigenerare il piano alimentare per aggiornarlo."
+                         android:text="I dati del profilo o le misure sono cambiati dopo la generazione. Usa il pulsante unico qui sotto per rigenerare il piano aggiornato."
                         android:textColor="@color/text_primary"
                         android:visibility="gone" />
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/regenerateForGoalButton"
-                        style="@style/Widget.MyFitAI.Button.Outlined"
-                        android:layout_width="match_parent"
-                  android:layout_height="@dimen/button_secondary_min_height"
-                        android:layout_marginTop="@dimen/space_8"
-                        android:text="Rigenera alimentazione"
-                        android:textAllCaps="false"
-                        android:visibility="gone" />
-                    <LinearLayout
+                     <LinearLayout
                         android:id="@+id/generationStatusContainer"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -313,10 +304,12 @@
                             android:id="@+id/cheatButton"
                             style="@style/Widget.MyFitAI.Button.Outlined"
                             android:layout_width="0dp"
-                  android:layout_height="@dimen/button_secondary_min_height"
+                            android:layout_height="@dimen/button_secondary_min_height"
                             android:layout_weight="1"
                             android:layout_marginStart="@dimen/space_6"
                             android:text="Registra sgarro"
+                            android:textColor="@color/accent_green_dark"
+                            app:strokeColor="@color/accent_green_dark"
                             android:textAllCaps="false"
                             app:icon="@drawable/ic_add_circle"
                             app:iconGravity="textStart" />
@@ -365,42 +358,197 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/space_8"
                         android:orientation="vertical">
-                  <TextView android:id="@+id/dailyTotalLegend" style="@style/Text.MyFitAI.Micro" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Target / piano / consumo registrato" />
-                  <TextView android:id="@+id/consumptionCoverage" style="@style/Text.MyFitAI.SettingsDescription" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:text="Consumo: nessuna registrazione" />
-                  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:orientation="horizontal">
-                      <TextView style="@style/Text.MyFitAI.Caption" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1.15" android:text="Base (TDEE)" />
-                      <TextView android:id="@+id/totalKcalBase" style="@style/Text.MyFitAI.BodyEmphasis" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1.3" android:gravity="center" />
-                      <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="2.7" android:text="" />
-                  </LinearLayout>
-                  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:orientation="horizontal">
-                      <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1.15" android:text="" />
-                       <TextView android:id="@+id/totalTargetHeader" style="@style/Text.MyFitAI.Micro" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1.3" android:gravity="center" android:text="Calorie" android:textStyle="bold" />
-                       <TextView android:id="@+id/totalPlannedHeader" style="@style/Text.MyFitAI.Micro" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="0.9" android:gravity="center" android:text="Proteine" android:textStyle="bold" />
-                       <TextView android:id="@+id/totalConsumedHeader" style="@style/Text.MyFitAI.Micro" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="0.9" android:gravity="center" android:text="Carbo" android:textStyle="bold" />
-                       <TextView style="@style/Text.MyFitAI.Micro" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="0.9" android:gravity="center" android:text="Grassi" android:textStyle="bold" />
-                  </LinearLayout>
-                   <View android:layout_width="match_parent" android:layout_height="@dimen/border_width_default" android:layout_marginTop="@dimen/space_4" android:background="@color/divider" />
-                  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingVertical="@dimen/space_6">
-                       <TextView style="@style/Text.MyFitAI.BodyEmphasis" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1.15" android:text="Target" />
-                       <TextView android:id="@+id/totalKcalTarget" style="@style/Text.MyFitAI.Caption" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1.3" android:gravity="center" />
-                       <TextView android:id="@+id/totalProteinTarget" style="@style/Text.MyFitAI.Caption" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" />
-                       <TextView android:id="@+id/totalCarbsTarget" style="@style/Text.MyFitAI.Caption" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" />
-                       <TextView android:id="@+id/totalFatTarget" style="@style/Text.MyFitAI.Caption" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" />
-                  </LinearLayout>
-                  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingVertical="@dimen/space_6">
-                       <TextView style="@style/Text.MyFitAI.BodyEmphasis" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1.15" android:text="Piano" />
-                       <TextView android:id="@+id/totalKcalPlanned" style="@style/Text.MyFitAI.Caption" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1.3" android:gravity="center" />
-                       <TextView android:id="@+id/totalProteinPlanned" style="@style/Text.MyFitAI.Caption" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" />
-                       <TextView android:id="@+id/totalCarbsPlanned" style="@style/Text.MyFitAI.Caption" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" />
-                       <TextView android:id="@+id/totalFatPlanned" style="@style/Text.MyFitAI.Caption" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" />
-                  </LinearLayout>
-                  <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingVertical="@dimen/space_6">
-                       <TextView style="@style/Text.MyFitAI.BodyEmphasis" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1.15" android:text="Consumato" />
-                       <TextView android:id="@+id/totalKcalConsumed" style="@style/Text.MyFitAI.Caption" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1.3" android:gravity="center" />
-                       <TextView android:id="@+id/totalProteinConsumed" style="@style/Text.MyFitAI.Caption" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:textColor="@color/accent_orange" />
-                       <TextView android:id="@+id/totalCarbsConsumed" style="@style/Text.MyFitAI.Caption" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:textColor="@color/accent_blue" />
-                       <TextView android:id="@+id/totalFatConsumed" style="@style/Text.MyFitAI.Caption" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:textColor="@color/accent_purple" />
-                  </LinearLayout>
+                    <TextView
+                        android:id="@+id/dailyTotalLegend"
+                        style="@style/Text.MyFitAI.BodyCompact"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content" />
+                    <LinearLayout
+                        android:id="@+id/dailyTotalReferenceRows"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_8"
+                        android:orientation="vertical"
+                        android:paddingHorizontal="@dimen/space_12"
+                        android:paddingVertical="@dimen/space_6"
+                        android:background="@drawable/bg_card_soft">
+                        <LinearLayout
+                        android:id="@+id/dailyTotalRowBmr"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:minHeight="@dimen/control_compact_min_height">
+                            <TextView
+                                android:id="@+id/dailyBmrLabel"
+                                style="@style/Text.MyFitAI.Body"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:textColor="@color/metric_label"
+                                android:text="BMR · a riposo" />
+                            <TextView
+                            android:id="@+id/totalKcalBmr"
+                                style="@style/Text.MyFitAI.BodyEmphasis"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/metric_label"
+                                android:text="—" />
+                        </LinearLayout>
+                        <LinearLayout
+                            android:id="@+id/dailyTotalRowTdee"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:minHeight="@dimen/control_compact_min_height">
+                            <TextView
+                                android:id="@+id/dailyTdeeLabel"
+                                style="@style/Text.MyFitAI.Body"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="TDEE · attività abituale" />
+                            <TextView
+                                android:id="@+id/totalKcalTdee"
+                                style="@style/Text.MyFitAI.BodyEmphasis"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="—" />
+                        </LinearLayout>
+                    </LinearLayout>
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_12"
+                        android:orientation="horizontal">
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1.2"
+                            android:text=""
+                            style="@style/Text.MyFitAI.Micro" />
+                        <TextView
+                            style="@style/Text.MyFitAI.Caption"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="end"
+                            android:text="Calorie"
+                            android:textStyle="bold" />
+                        <TextView
+                            style="@style/Text.MyFitAI.Caption"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="end"
+                            android:text="Proteine"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="@dimen/border_width_default"
+                        android:background="@color/divider" />
+                    <LinearLayout
+                        android:id="@+id/dailyTotalRowTarget"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:minHeight="@dimen/control_min_height">
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1.2"
+                            android:id="@+id/dailyTargetLabel"
+                            style="@style/Text.MyFitAI.BodyEmphasis"
+                            android:text="Target del giorno" />
+                        <TextView
+                            android:id="@+id/totalKcalTarget"
+                            style="@style/Text.MyFitAI.BodyEmphasis"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="end"
+                            android:text="—" />
+                        <TextView
+                            android:id="@+id/totalProteinTarget"
+                            style="@style/Text.MyFitAI.BodyEmphasis"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="end"
+                            android:text="—" />
+                    </LinearLayout>
+                    <LinearLayout
+                        android:id="@+id/dailyTotalRowPlanned"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:minHeight="@dimen/control_min_height">
+                        <TextView
+                            style="@style/Text.MyFitAI.Body"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1.2"
+                            android:text="Nel menu" />
+                        <TextView
+                            android:id="@+id/totalKcalPlanned"
+                            style="@style/Text.MyFitAI.BodyEmphasis"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="end"
+                            android:text="—" />
+                        <TextView
+                            android:id="@+id/totalProteinPlanned"
+                            style="@style/Text.MyFitAI.BodyEmphasis"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="end"
+                            android:text="—" />
+                    </LinearLayout>
+                    <LinearLayout
+                        android:id="@+id/dailyTotalRowConsumed"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:minHeight="@dimen/control_min_height">
+                        <TextView
+                            android:id="@+id/dailyConsumedLabel"
+                            style="@style/Text.MyFitAI.BodyEmphasis"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1.2"
+                            android:text="Consumate · non registrate" />
+                        <TextView
+                            android:id="@+id/totalKcalConsumed"
+                            style="@style/Text.MyFitAI.BodyEmphasis"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="end"
+                            android:text="—" />
+                        <TextView
+                            android:id="@+id/totalProteinConsumed"
+                            style="@style/Text.MyFitAI.BodyEmphasis"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="end"
+                            android:text="—"
+                            android:textColor="@color/accent_green_dark" />
+                    </LinearLayout>
+                    <TextView
+                        android:id="@+id/totalConsumptionNote"
+                        style="@style/Text.MyFitAI.SettingsDescription"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingTop="@dimen/space_4" />
+                    <TextView
+                        android:id="@+id/consumptionCoverage"
+                        style="@style/Text.MyFitAI.Caption"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingTop="@dimen/space_4" />
                     </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>

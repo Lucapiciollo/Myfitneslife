@@ -2,6 +2,7 @@ package com.myfitai.app.domain.progress
 
 import java.time.Instant
 import java.time.LocalDate
+import java.time.Period
 import java.time.ZoneId
 
 data class ProgressSeriesPoint(val timestamp: Long, val value: Float)
@@ -21,18 +22,31 @@ object ProgressSeriesEngine {
         points: List<ProgressSeriesPoint>,
         rangeIndex: Int,
         zoneId: ZoneId,
+        asOfDate: LocalDate = LocalDate.now(zoneId),
+    ): FilteredProgressSeries = filter(
+        points = points,
+        range = when (rangeIndex) {
+            0 -> Period.ofMonths(1)
+            1 -> Period.ofMonths(3)
+            2 -> Period.ofMonths(6)
+            else -> Period.ofYears(1)
+        },
+        zoneId = zoneId,
+        asOfDate = asOfDate,
+    )
+
+    fun filter(
+        points: List<ProgressSeriesPoint>,
+        range: Period,
+        zoneId: ZoneId,
+        asOfDate: LocalDate = LocalDate.now(zoneId),
     ): FilteredProgressSeries {
         val normalized = normalize(points)
         if (normalized.isEmpty()) return FilteredProgressSeries(emptyList(), null, null)
-        val latestDate = Instant.ofEpochMilli(normalized.last().timestamp).atZone(zoneId).toLocalDate()
-        val fromDate = when (rangeIndex) {
-            0 -> latestDate.minusMonths(1)
-            1 -> latestDate.minusMonths(3)
-            2 -> latestDate.minusMonths(6)
-            else -> latestDate.minusYears(1)
-        }
+        val fromDate = asOfDate.minus(range)
         val from = fromDate.atStartOfDay(zoneId).toInstant().toEpochMilli()
-        val filtered = normalized.filter { it.timestamp >= from }
+        val until = asOfDate.plusDays(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
+        val filtered = normalized.filter { it.timestamp >= from && it.timestamp < until }
         return FilteredProgressSeries(
             points = filtered,
             value = filtered.lastOrNull()?.value,

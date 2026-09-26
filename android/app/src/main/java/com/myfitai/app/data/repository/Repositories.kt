@@ -136,6 +136,7 @@ data class DayDraft(
     val targetProteinG: Float? = null,
     val targetCarbsG: Float? = null,
     val targetFatG: Float? = null,
+    val baseTargetKcal: Int? = null,
 )
 
 data class PlanVersionDraft(
@@ -210,6 +211,7 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
                 targetProteinG = day.targetProteinG,
                 targetCarbsG = day.targetCarbsG,
                 targetFatG = day.targetFatG,
+                baseTargetKcal = day.baseTargetKcal,
                 supplementsJson = serializeSupplements(day.supplements),
                 hydrationNote = day.hydrationNote,
             ))).single()
@@ -264,6 +266,7 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
                 targetProteinG = day.targetProteinG,
                 targetCarbsG = day.targetCarbsG,
                 targetFatG = day.targetFatG,
+                baseTargetKcal = day.baseTargetKcal,
                 meals = dao.getMeals(profileId, day.id).map { meal ->
                     com.myfitai.app.domain.food.FoodMeal(
                         id = meal.id,

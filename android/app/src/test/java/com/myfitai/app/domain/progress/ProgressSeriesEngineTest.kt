@@ -40,6 +40,24 @@ class ProgressSeriesEngineTest {
     }
 
     @Test
+    fun ranges_areAnchoredToTodayAndReturnNoValueWhenHistoryIsOlderThanRange() {
+        val points = listOf(
+            point(today.minusMonths(7), 95f),
+            point(today.minusMonths(4), 93f),
+            point(today.minusMonths(2), 91f),
+        )
+
+        val oneMonth = ProgressSeriesEngine.filter(points, 0, zone, today)
+        val threeMonths = ProgressSeriesEngine.filter(points, 1, zone, today)
+
+        assertTrue(oneMonth.points.isEmpty())
+        assertNull(oneMonth.value)
+        assertNull(oneMonth.delta)
+        assertEquals(listOf(91f), threeMonths.points.map { it.value })
+        assertNull(threeMonths.delta)
+    }
+
+    @Test
     fun duplicateDates_areOrderedDeterministicallyAndOneYearKeepsAllHistory() {
         val duplicate = listOf(point(today, 90f), point(today, 89f), point(today.minusMonths(13), 99f))
         val normalized = ProgressSeriesEngine.normalize(duplicate)

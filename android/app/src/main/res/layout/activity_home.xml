@@ -93,9 +93,9 @@
                     app:cardCornerRadius="@dimen/radius_card"
                     app:cardElevation="@dimen/elevation_card"
                     app:strokeColor="@color/semantic_error"
-                    app:strokeWidth="@dimen/border_width_default">
-                    <LinearLayout
-                        android:layout_width="match_parent"
+                     app:strokeWidth="@dimen/border_width_default">
+                      <LinearLayout
+                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
                         android:padding="@dimen/space_16">
@@ -228,7 +228,7 @@
                         android:contentDescription="Seleziona la misura del grafico" />
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <com.myfitai.app.ui.widgets.BodyMeasurementTrendView
+                <com.myfitai.app.ui.widgets.WeightTrendChartView
                     android:id="@+id/bodyMeasurementTrendChart"
                     android:layout_width="match_parent"
                     android:layout_height="@dimen/dashboard_chart_height"
@@ -298,12 +298,13 @@
                     android:clickable="true"
                     android:focusable="true"
                      app:cardBackgroundColor="@color/white"
-                    app:cardCornerRadius="@dimen/radius_card"
-                    app:cardElevation="@dimen/elevation_card"
-                    app:strokeColor="@color/divider"
-                    app:strokeWidth="@dimen/border_width_default">
-                    <LinearLayout
-                        android:layout_width="match_parent"
+                     app:cardCornerRadius="@dimen/radius_card"
+                     app:cardElevation="@dimen/elevation_card"
+                     app:strokeColor="@color/divider"
+                     app:strokeWidth="@dimen/border_width_default">
+                     <LinearLayout
+                         android:id="@+id/caloriesSummaryBody"
+                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
                         android:padding="@dimen/space_16">
@@ -359,15 +360,21 @@
                                 android:layout_weight="1"
                                 android:text="Target"
                                 />
-                            <TextView
-                                android:id="@+id/caloriesTargetValue"
+                <TextView
+                    android:id="@+id/caloriesTargetValue"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="—"
                                 style="@style/Text.MyFitAI.CardTitle"
-                                android:textColor="@color/accent_green_dark" />
-                        </LinearLayout>
-                    </LinearLayout>
+                    android:textColor="@color/accent_green_dark" />
+            </LinearLayout>
+            <TextView
+                android:id="@+id/caloriesTargetSourceText"
+                style="@style/Text.MyFitAI.Caption"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_6" />
+        </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -393,7 +400,20 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/space_4"
-                            android:text="0 kcal"
+                            android:text="—"
+                            style="@style/Text.MyFitAI.CardTitle" />
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/space_4"
+                            android:text="Proteine consumate"
+                            style="@style/Text.MyFitAI.Caption" />
+                        <TextView
+                            android:id="@+id/caloriesConsumedProteinText"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/space_2"
+                            android:text="—"
                             style="@style/Text.MyFitAI.CardTitle" />
                         <com.google.android.material.progressindicator.LinearProgressIndicator
                             android:id="@+id/caloriesConsumedProgress"
@@ -438,10 +458,16 @@
                     </LinearLayout>
                 </LinearLayout>
                 <TextView
+                    android:id="@+id/caloriesConsumptionNote"
+                    style="@style/Text.MyFitAI.Caption"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_8" />
+                <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_4"
-                    android:text="Il target considera metabolismo, attività e obiettivo. Le barre mostrano calorie consumate e ancora disponibili nella giornata."
+                    android:text="Le barre confrontano le calorie registrate e ancora disponibili con il target indicato sopra."
                     style="@style/Text.MyFitAI.Micro" />
                 </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>

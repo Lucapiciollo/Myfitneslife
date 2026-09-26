@@ -3,6 +3,7 @@ package com.myfitai.app.e2e
 import android.content.ComponentName
 import android.content.Intent
 import android.view.View
+import java.io.File
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -11,12 +12,15 @@ import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
 import com.myfitai.app.data.local.MyFitAiDatabase
 import com.myfitai.app.data.profile.ActiveProfileStore
+import com.myfitai.app.R
 import com.myfitai.app.ui.MealDetailActivity
+import com.myfitai.app.ui.FoodPlanActivity
 import com.myfitai.app.ui.ShoppingListActivity
 import com.myfitai.app.ui.WeeklyReviewActivity
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -92,6 +96,40 @@ class FoodReviewScreensDeviceTest {
                 assertTrue(activity.findViewById<View>(com.myfitai.app.R.id.generateReviewButton).visibility == View.VISIBLE)
                 assertTrue(activity.findViewById<View>(com.myfitai.app.R.id.adherenceValue).visibility == View.VISIBLE)
             }
+        }
+    }
+
+    @Test
+    fun dailyTotals_showOnlyKcalAndProteinWithClearBasePlanAndConsumptionRows() {
+        ActivityScenario.launch<FoodPlanActivity>(Intent(context, FoodPlanActivity::class.java).apply {
+            putExtra(FoodPlanActivity.EXTRA_WEEK_START_EPOCH_DAY, weekStart)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        }).use { scenario ->
+            assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/dailyTotalCard")), 10_000))
+            val expectedIds = listOf(
+                "totalKcalBmr", "totalKcalTdee", "totalKcalTarget", "totalProteinTarget",
+                "totalKcalPlanned", "totalProteinPlanned", "totalKcalConsumed", "totalProteinConsumed",
+            )
+            scenario.onActivity { activity ->
+                assertTrue(activity.findViewById<View>(R.id.dailyTotalRowBmr) != null)
+                assertTrue(activity.findViewById<View>(R.id.dailyTotalRowTdee) != null)
+                assertTrue(activity.findViewById<View>(R.id.dailyTotalRowTarget) != null)
+                assertTrue(activity.findViewById<View>(R.id.dailyTotalRowPlanned) != null)
+                assertTrue(activity.findViewById<View>(R.id.dailyTotalRowConsumed) != null)
+                assertTrue(activity.findViewById<View>(R.id.dailyTotalLegend).visibility == View.VISIBLE)
+                assertTrue(activity.findViewById<View>(R.id.totalConsumptionNote).visibility == View.VISIBLE)
+                listOf(
+                    "totalCarbsTarget", "totalFatTarget",
+                    "totalCarbsPlanned", "totalFatPlanned",
+                    "totalCarbsConsumed", "totalFatConsumed",
+                ).forEach { name ->
+                    assertEquals("Macro field $name should not be in the daily summary", 0,
+                        activity.resources.getIdentifier(name, "id", activity.packageName))
+                }
+            }
+            expectedIds.forEach { id -> assertTrue("Missing daily total field $id", device.hasObject(By.res("com.myfitai.app:id/$id"))) }
+            val dir = File(context.getExternalFilesDir(null), "qa-artifacts").apply { mkdirs() }
+            device.takeScreenshot(File(dir, "food_plan_daily_totals.png"))
         }
     }
 

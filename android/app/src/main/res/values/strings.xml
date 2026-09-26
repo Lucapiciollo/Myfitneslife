@@ -14,7 +14,8 @@
     <string name="profile_avatar_cd">Foto profilo</string>
     <string name="profile_row_personal_data">Dati personali</string>
     <string name="profile_row_goals">Obiettivi</string>
-    <string name="profile_row_food_preferences">Preferenze alimentari</string>
+    <string name="profile_row_food_preferences">Profilo e preferenze</string>
+    <string name="profile_desc_food_preferences">Dati personali, obiettivo, attività, orari e preferenze alimentari</string>
     <string name="profile_row_day_schedule">Orari della giornata</string>
     <string name="profile_row_workouts">Allenamenti</string>
     <string name="profile_row_openai_key">Chiave OpenAI</string>
@@ -23,7 +24,6 @@
     <string name="profile_row_settings">Impostazioni</string>
     <string name="profile_desc_personal_data">Dati anagrafici, altezza e peso</string>
     <string name="profile_desc_goals">Obiettivo e livello di attività</string>
-    <string name="profile_desc_food_preferences">Preferenze, esclusioni e stile alimentare</string>
     <string name="profile_desc_day_schedule">Sveglia, sonno e orari della giornata</string>
     <string name="profile_desc_workouts">Allenamenti e giorni di riposo</string>
     <string name="profile_desc_notifications">Promemoria e notifiche locali</string>
@@ -54,9 +54,9 @@
         <item>60</item>
     </integer-array>
     <string name="settings_desc_guide">Panoramica del percorso e dei calcoli locali</string>
-    <string name="settings_desc_profile">Dati personali, obiettivo e preferenze</string>
+    <string name="settings_desc_profile">Impostazioni generali del profilo e dell\'app</string>
     <string name="settings_desc_measurements">BIA, misure corporee e storico</string>
-    <string name="settings_desc_food">Preferenze e vincoli alimentari</string>
+    <string name="settings_desc_food">Regime, alimenti preferiti, esclusioni e intolleranze</string>
     <string name="settings_desc_privacy">Dati locali, backup e credenziali protette</string>
     <string name="settings_desc_export">File JSON, CSV e PDF</string>
     <string name="settings_desc_delete_plans">Rimuove piani e versioni salvate</string>

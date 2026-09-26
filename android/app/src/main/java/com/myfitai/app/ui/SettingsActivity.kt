@@ -160,14 +160,8 @@ class SettingsActivity : BaseShellActivity() {
             render()
         }
 
-        findViewById<View>(R.id.rowProfile).setOnClickListener {
-            data.activeProfileStore.currentIdOrNull()?.let { profileId ->
-                startActivity(android.content.Intent(this, OnboardingWizardActivity::class.java).putExtra(OnboardingWizardActivity.EXTRA_PROFILE_ID, profileId))
-            }
-        }
         findViewById<View>(R.id.rowAppGuide).setOnClickListener { showAppGuide() }
         findViewById<View>(R.id.rowMeasurements).setOnClickListener { go(MeasurementsActivity::class.java) }
-        findViewById<View>(R.id.rowFoodPreferences).setOnClickListener { go(ProfileEditActivity::class.java) }
         findViewById<SettingRowView>(R.id.rowUnits).apply {
             setTrailingBadge("Metrico", R.color.text_secondary)
             isClickable = false
@@ -456,46 +450,54 @@ class SettingsActivity : BaseShellActivity() {
             GuideSection("Il percorso MyFitAI", "Da dove parti e dove arrivi", "Inserisci profilo, rilevazioni, allenamenti e preferenze alimentari. L'app usa questi dati per costruire il percorso e lo aggiorna quando registri nuove informazioni."),
             GuideSection("1. Profilo e rilevazioni", "La base del calcolo", "Peso, altezza, età, sesso biologico, massa grassa, circonferenze e livello di attività descrivono il punto di partenza. Più i dati sono recenti e coerenti, più l'interpretazione è utile."),
             GuideSection("2. Calorie di base", "BMR e TDEE", "Il BMR è il consumo stimato a riposo. Con una massa grassa plausibile si usa Katch-McArdle: 370 + 21,6 × massa magra in kg. Altrimenti si usa Mifflin-St Jeor. Il TDEE è il BMR moltiplicato per l'attività: 1,20 sedentario, 1,375 leggero, 1,55 moderato, 1,725 molto attivo, 1,90 estremo."),
-            GuideSection("3. Obiettivo e target", "Il numero calorico di riferimento", "Il target iniziale deriva dal TDEE: ricomposizione 95%, perdita di peso 85%, mantenimento 100%, aumento massa 110%, performance 100%. Sono fattori iniziali e non promesse sul risultato."),
-            GuideSection("4. Macronutrienti", "Come vengono distribuiti i macro", "Le proteine sono 2,0 g/kg per perdita, ricomposizione e aumento massa, oppure 1,8 g/kg per mantenimento e performance. I grassi sono 0,8 g/kg, oppure 0,9 g/kg nella performance. I carboidrati ricevono le calorie rimanenti: (target - calorie di proteine e grassi) / 4."),
-            GuideSection("5. Adattamento", "Il piano impara dai trend", "Il target cambia solo con evidenze sufficienti: almeno 21 giorni e almeno due segnali tra peso, massa grassa, massa muscolare, vita e addome. Uno stallo prolungato richiede almeno 28 giorni. La correzione è graduale, a passi del 2,5%, e resta dentro limiti conservativi."),
-            GuideSection("6. Piano alimentare", "L'IA propone, l'app controlla", "L'IA propone pasti, quantità e preparazioni usando i target calcolati localmente. Prima del salvataggio l'app controlla struttura, calorie e macronutrienti. L'IA non decide autonomamente il deficit."),
-            GuideSection("7. Diario e review", "Dal piano a ciò che accade davvero", "I pasti registrati vengono confrontati con il piano per mostrare calorie e macronutrienti consumati. Le review settimanali aiutano a leggere andamento, rispetto del piano e trend, ma una stima non diventa una misurazione certa."),
-            GuideSection("8. Sgarro e serbatoio", "Il surplus viene distribuito nella settimana", "L'IA stima calorie e macro dello sgarro. Dopo la conferma, l'eccesso entra nel serbatoio e viene distribuito sui giorni futuri. Ogni giorno può essere ridotto al massimo del 15% del target; pasti già trascorsi o bloccati restano invariati. L'eventuale residuo non distribuito viene mostrato."),
+            GuideSection("3. Target giornaliero", "Profilo, piano e consumo", "In Alimentazione puoi confrontare il BMR stimato a riposo, il TDEE con l'attività abituale del profilo, il target giornaliero, i valori del menu e calorie/proteine registrate come consumate. Il TDEE non rappresenta la spesa misurata di un allenamento singolo."),
+            GuideSection("4. Obiettivo e target", "Il numero calorico di riferimento", "Il target iniziale deriva dal TDEE: ricomposizione 95%, perdita di peso 85%, mantenimento 100%, aumento massa 110%, performance 100%. Sono fattori iniziali e non promesse sul risultato."),
+            GuideSection("5. Macronutrienti", "Come vengono distribuiti i macro", "Le proteine sono 2,0 g/kg per perdita, ricomposizione e aumento massa, oppure 1,8 g/kg per mantenimento e performance. I grassi sono 0,8 g/kg, oppure 0,9 g/kg nella performance. I carboidrati ricevono le calorie rimanenti: (target - calorie di proteine e grassi) / 4."),
+            GuideSection("6. Adattamento", "Il piano impara dai trend", "Il target cambia solo con evidenze sufficienti: almeno 21 giorni e almeno due segnali tra peso, massa grassa, massa muscolare, vita e addome. Uno stallo prolungato richiede almeno 28 giorni. La correzione è graduale, a passi del 2,5%, e resta dentro limiti conservativi."),
+            GuideSection("7. Piano alimentare", "L'IA propone, l'app controlla", "L'IA propone pasti, quantità e preparazioni usando i target calcolati localmente. Prima del salvataggio l'app controlla struttura, calorie e macronutrienti. L'IA non decide autonomamente il deficit."),
+            GuideSection("8. Diario e review", "Dal piano a ciò che accade davvero", "Puoi confrontare calorie e proteine del target, del menu e degli elementi segnati come consumati. I consumi manuali e le stime del piano restano distinti. La review settimanale aiuta a leggere andamento e rispetto del piano, ma una stima non diventa una misurazione certa."),
+            GuideSection("9. Sgarro e serbatoio", "Il surplus viene distribuito nella settimana", "L'IA stima calorie e macro dello sgarro. Dopo la conferma, l'app distribuisce una parte dell'extra sui pasti futuri entro i limiti giornalieri di sicurezza; i pasti già trascorsi restano invariati. L'eventuale residuo non distribuito viene mostrato."),
             GuideSection("Da ricordare", "Una guida, non una diagnosi", "I risultati sono stime orientative basate sui dati inseriti. Idratazione, glicogeno, attività reale e qualità delle rilevazioni possono cambiare il risultato. Per condizioni mediche o obiettivi specifici, confrontati con un professionista."),
         )
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(getColor(R.color.white))
-            val contentInset = resources.getDimensionPixelSize(R.dimen.space_4)
+            val contentInset = resources.getDimensionPixelSize(R.dimen.space_12)
             setPadding(contentInset, contentInset, contentInset, contentInset)
-            sections.forEach { addView(guideSectionCard(it)) }
+            sections.forEach { section ->
+                val sectionCard = guideSectionCard(section)
+                sectionCard.layoutParams = LinearLayout.LayoutParams(-1, -2).apply {
+                    marginStart = resources.getDimensionPixelSize(R.dimen.space_4)
+                    marginEnd = resources.getDimensionPixelSize(R.dimen.space_4)
+                    bottomMargin = resources.getDimensionPixelSize(R.dimen.space_8)
+                }
+                addView(sectionCard)
+            }
         }
         val scroll = ScrollView(this).apply {
             isFillViewport = true
-            setBackgroundColor(getColor(R.color.white))
             addView(content)
         }
         val dialog = MaterialAlertDialogBuilder(this)
             .setTitle("Come funziona MyFitAI")
             .setView(scroll)
             .setPositiveButton("Ho capito", null)
-            .create()
-        dialog.setOnShowListener {
-            dialog.window?.setBackgroundDrawableResource(R.drawable.bg_dialog_card)
-            dialog.findViewById<View>(com.google.android.material.R.id.buttonPanel)?.setBackgroundColor(getColor(R.color.white))
-            dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE)?.setTextColor(getColor(R.color.accent_green_dark))
-        }
-        dialog.show()
+            .show()
+    }
+
+    private fun showStandardHelpDialog(title: String, message: String) {
+        MaterialAlertDialogBuilder(this)
+            .setTitle(title)
+            .setMessage(message)
+            .setPositiveButton("Ho capito", null)
+            .show()
     }
 
     private fun guideSectionCard(section: GuideSection): MaterialCardView {
         val card = MaterialCardView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = resources.getDimensionPixelSize(R.dimen.space_10) }
             setCardBackgroundColor(getColor(R.color.white))
             strokeColor = getColor(R.color.divider)
             strokeWidth = resources.getDimensionPixelSize(R.dimen.space_1)
-            radius = resources.getDimension(R.dimen.radius_medium)
+            radius = resources.getDimension(R.dimen.radius_card)
             cardElevation = 0f
         }
         val content = LinearLayout(this).apply {

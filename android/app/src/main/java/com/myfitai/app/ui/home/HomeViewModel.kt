@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.myfitai.app.data.local.entity.BiaMeasurementEntity
 import com.myfitai.app.data.local.entity.BodyMeasurementEntity
+import com.myfitai.app.data.local.entity.FoodConsumptionEntity
 import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.data.local.entity.WorkoutEntity
 import com.myfitai.app.data.profile.ActiveProfileStore
@@ -23,6 +24,8 @@ import com.myfitai.app.domain.food.CalorieRecoveryEngine
 import com.myfitai.app.domain.food.FoodConsumptionMetrics
 import com.myfitai.app.domain.food.FoodMeal
 import com.myfitai.app.domain.food.FoodPlanDay
+import com.myfitai.app.domain.progress.ProgressSeriesEngine
+import com.myfitai.app.domain.progress.ProgressSeriesPoint
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -61,7 +64,13 @@ class HomeViewModel(
         val target: Int? = null,
         val goalLabel: String? = null,
         val energyPercent: Int? = null,
-        val consumedKcal: Int = 0,
+        val targetFromCurrentPlan: Boolean = false,
+        val targetFromWeeklyPlan: Boolean = false,
+        val targetBeforeAdaptation: Int? = null,
+        val consumedKcal: Int? = null,
+        val consumedProteinG: Double? = null,
+        val consumedCount: Int = 0,
+        val recordedCount: Int = 0,
     )
     data class NextWorkoutState(val startedAtEpochMillis: Long, val title: String, val type: String)
     data class NextMealState(
@@ -74,7 +83,6 @@ class HomeViewModel(
     )
 
     data class RecoveryState(val pendingKcal: Int = 0, val creditCount: Int = 0, val nextExpiry: LocalDate? = null)
-
     data class DashboardState(
         val loading: Boolean = true,
         val profileName: String? = null,
@@ -89,6 +97,7 @@ class HomeViewModel(
         val nextWorkout: NextWorkoutState? = null,
         val nextMeal: NextMealState? = null,
         val upcomingMeals: List<NextMealState> = emptyList(),
+        val consumptionRecords: List<FoodConsumptionEntity> = emptyList(),
         val recovery: RecoveryState = RecoveryState(),
         val weeklyExpectation: WeeklyBodyExpectation.Result = WeeklyBodyExpectation.Result(available = false),
     )
@@ -141,10 +150,16 @@ class HomeViewModel(
 
     private val consumedTodaySource = activeProfileStore.activeProfileId.flatMapLatest { profileId ->
         if (profileId <= 0L) {
-            flowOf(0)
+            flowOf(emptyList())
         } else {
-            foodConsumptionRepository.forDay(profileId, LocalDate.now().toEpochDay()).map { records ->
-                Math.round(FoodConsumptionMetrics.dayTotals(records).kcal).toInt()
+            val weekStart = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).toEpochDay()
+            mealPlanRepository.latestSnapshot(profileId, weekStart).flatMapLatest { snapshot ->
+                if (snapshot == null) flowOf(emptyList<FoodConsumptionEntity>())
+                else foodConsumptionRepository.forDay(profileId, LocalDate.now().toEpochDay()).map { records ->
+                    records.filter { it.planVersionId == snapshot.version.id }
+                        .takeIf { filtered -> filtered.isNotEmpty() }
+                        .orEmpty()
+                }
             }
         }
     }
@@ -178,13 +193,41 @@ class HomeViewModel(
         upcomingMealsSource,
         recoverySource,
         consumedTodaySource,
-    ) { source, rangeIndex, upcomingMeals, recovery, consumedKcal ->
-        buildState(source, rangeIndex, upcomingMeals, recovery, consumedKcal)
+    ) { source, rangeIndex, upcomingMeals, recovery, consumption ->
+        buildState(source, rangeIndex, upcomingMeals, recovery, consumption)
     }.combine(weeklyPlanSource) { dashboard, snapshot ->
         val monday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        val todayTargetDay = snapshot?.version?.days
+            ?.firstOrNull { it.dateEpochDay == LocalDate.now().toEpochDay() }
+        val todayTarget = todayTargetDay?.targetKcal
+        val todayBaseTarget = todayTargetDay?.baseTargetKcal ?: todayTargetDay?.targetKcal ?: snapshot?.version?.targetKcal
+        val displayedTarget = todayTarget ?: snapshot?.version?.targetKcal ?: dashboard.calories.target
+        val displayedTargetPercent = if (displayedTarget != null && dashboard.calories.tdee != null && dashboard.calories.tdee > 0) {
+            Math.round((displayedTarget - dashboard.calories.tdee) * 100.0 / dashboard.calories.tdee).toInt()
+        } else null
+        val currentVersionConsumptions = snapshot?.let { current ->
+            dashboard.consumptionRecords.filter { it.planVersionId == current.version.id }
+        }.orEmpty()
+        val todayRecords = currentVersionConsumptions.filter { it.plannedDateEpochDay == LocalDate.now().toEpochDay() }
+        val consumed = FoodConsumptionMetrics.dayTotals(todayRecords)
+        val consumedRows = todayRecords.filter {
+            it.status == com.myfitai.app.domain.food.FoodConsumptionStatus.CONSUMED.name
+        }
+        val consumedKcal = consumedRows.takeIf { rows -> rows.isNotEmpty() && rows.all { it.kcal != null } }
+            ?.sumOf { it.kcal!!.toDouble() }
+        val consumedProtein = consumedRows.takeIf { rows -> rows.isNotEmpty() && rows.all { it.proteinG != null } }
+            ?.sumOf { it.proteinG!!.toDouble() }
         dashboard.copy(
             calories = dashboard.calories.copy(
-                target = snapshot?.version?.targetKcal ?: dashboard.calories.target,
+                target = displayedTarget,
+                targetFromCurrentPlan = todayTargetDay != null,
+                targetFromWeeklyPlan = snapshot != null,
+                targetBeforeAdaptation = todayBaseTarget,
+                energyPercent = displayedTargetPercent,
+                consumedKcal = consumedKcal?.let { Math.round(it).toInt() },
+                consumedProteinG = consumedProtein,
+                consumedCount = consumed.consumedCount,
+                recordedCount = consumed.recordedCount,
             ),
             weeklyExpectation = WeeklyBodyExpectation.calculate(
                 maintenanceKcal = dashboard.calories.tdee,
@@ -201,21 +244,27 @@ class HomeViewModel(
         rangeIndex: Int,
         upcomingMeals: List<NextMealState>,
         recovery: RecoveryState,
-        consumedKcal: Int,
+        consumption: List<FoodConsumptionEntity>,
     ): DashboardState {
-        val weightValues = (
+        val recordedWeightValues = (
             metricValues(source.bia) { it.weightKg } +
                 source.body.mapNotNull { row -> row.weightKg?.let { row.measuredAtEpochMillis to it } }
             ).sortedByDescending { it.first }
-            .ifEmpty { source.profile?.currentWeightKg?.let { listOf(System.currentTimeMillis() to it) }.orEmpty() }
+        val weightValues = recordedWeightValues.ifEmpty {
+            source.profile?.currentWeightKg?.let { listOf(System.currentTimeMillis() to it) }.orEmpty()
+        }
         val fatValues = metricValues(source.bia) { it.bodyFatPercent }
         val muscleValues = metricValues(source.bia) { it.muscleMassKg }
-        val fatTrend = LocalCalculationEngine.trend(fatValues.map { LocalCalculationEngine.TimedValue(it.first, it.second.toDouble()) })
-        val muscleTrend = LocalCalculationEngine.trend(muscleValues.map { LocalCalculationEngine.TimedValue(it.first, it.second.toDouble()) })
-        val weightSeries = filterRange(weightValues, rangeIndex).map { it.second }
-        val fatSeries = filterRange(fatValues, rangeIndex).map { it.second }
-        val muscleSeries = filterRange(muscleValues, rangeIndex).map { it.second }
-        val bodyMeasurementTrendSeries = bodyMeasurementTrendSeries(source, rangeIndex)
+        val rangePeriod = rangePeriod(rangeIndex)
+        val weightInRange = filterRange(recordedWeightValues, rangePeriod)
+        val fatInRange = filterRange(fatValues, rangePeriod)
+        val muscleInRange = filterRange(muscleValues, rangePeriod)
+        val fatTrend = LocalCalculationEngine.trend(fatInRange.map { LocalCalculationEngine.TimedValue(it.first, it.second.toDouble()) })
+        val muscleTrend = LocalCalculationEngine.trend(muscleInRange.map { LocalCalculationEngine.TimedValue(it.first, it.second.toDouble()) })
+        val weightSeries = weightInRange.map { it.second }
+        val fatSeries = fatInRange.map { it.second }
+        val muscleSeries = muscleInRange.map { it.second }
+        val bodyMeasurementTrendSeries = bodyMeasurementTrendSeries(source, rangePeriod)
         val now = System.currentTimeMillis()
         val nextWorkout = source.workouts
             .asSequence()
@@ -223,7 +272,7 @@ class HomeViewModel(
             .minWithOrNull(compareBy<WorkoutEntity> { it.startedAtEpochMillis }.thenBy { it.id })
             ?.let { NextWorkoutState(it.startedAtEpochMillis, it.title, it.type) }
 
-        val calories = calorieState(source).copy(consumedKcal = consumedKcal)
+        val calories = calorieState(source)
 
         val weightSource = when {
             (source.bia.maxOfOrNull { it.measuredAtEpochMillis } ?: Long.MIN_VALUE) >=
@@ -237,20 +286,30 @@ class HomeViewModel(
             loading = false,
             profileName = source.profile?.name,
             goal = source.profile?.goal,
-            weight = metricState(weightValues).copy(sourceLabel = weightSource),
-            bodyFat = metricState(fatValues).copy(sourceLabel = "da BIA".takeIf { fatValues.isNotEmpty() }),
-            muscleMass = metricState(muscleValues).copy(sourceLabel = "da BIA".takeIf { muscleValues.isNotEmpty() }),
+            weight = metricState(weightInRange).copy(
+                value = recordedWeightValues.firstOrNull()?.second ?: source.profile?.currentWeightKg,
+                sourceLabel = weightSource,
+            ),
+            bodyFat = metricState(fatInRange).copy(
+                value = fatValues.maxByOrNull { it.first }?.second,
+                sourceLabel = "da BIA".takeIf { fatValues.isNotEmpty() },
+            ),
+            muscleMass = metricState(muscleInRange).copy(
+                value = muscleValues.maxByOrNull { it.first }?.second,
+                sourceLabel = "da BIA".takeIf { muscleValues.isNotEmpty() },
+            ),
             trendSeries = listOf(
                 TrendSeries("Peso", weightSeries.map { TrendPoint(0L, it) }),
                 TrendSeries("Grasso corporeo", fatSeries.map { TrendPoint(0L, it) }),
                 TrendSeries("Massa muscolare", muscleSeries.map { TrendPoint(0L, it) }),
             ),
-            bodyMeasurementTrendSeries = bodyMeasurementTrendSeries,
+            bodyMeasurementTrendSeries = bodyMeasurementTrendSeries(source, rangePeriod),
             recompositionState = LocalCalculationEngine.classifyRecomposition(fatTrend.delta, muscleTrend.delta),
             calories = calories,
             nextWorkout = nextWorkout,
             nextMeal = upcomingMeals.firstOrNull(),
             upcomingMeals = upcomingMeals,
+            consumptionRecords = consumption,
             recovery = recovery,
         )
     }
@@ -374,13 +433,7 @@ class HomeViewModel(
         return RecoveryState(pendingKcal = pending, creditCount = credits, nextExpiry = nextExpiry)
     }
 
-    private fun metricState(valuesDesc: List<Pair<Long, Float>>): MetricState {
-        val current = valuesDesc.getOrNull(0)?.second
-        val previous = valuesDesc.getOrNull(1)?.second
-        return MetricState(current, if (current != null && previous != null) current - previous else null)
-    }
-
-    private fun bodyMeasurementTrendSeries(source: Source, rangeIndex: Int): List<TrendSeries> {
+    private fun bodyMeasurementTrendSeries(source: Source, range: Period): List<TrendSeries> {
         val metrics = listOf(
             "Peso" to (source.bia.mapNotNull { row -> row.weightKg?.let { row.measuredAtEpochMillis to it } } +
                 source.body.mapNotNull { row -> row.weightKg?.let { row.measuredAtEpochMillis to it } }),
@@ -401,7 +454,7 @@ class HomeViewModel(
             "Polpaccio destro" to source.body.mapNotNull { row -> row.calfRightCm?.let { row.measuredAtEpochMillis to it } },
         )
         return metrics.mapNotNull { (label, values) ->
-            val filtered = filterRange(values.sortedByDescending { it.first }, rangeIndex)
+            val filtered = filterRange(values.sortedByDescending { it.first }, range)
             filtered.takeIf { it.isNotEmpty() }?.let { entries ->
                 TrendSeries(label, entries.map { TrendPoint(it.first, it.second) })
             }
@@ -411,17 +464,28 @@ class HomeViewModel(
     private fun metricValues(history: List<BiaMeasurementEntity>, selector: (BiaMeasurementEntity) -> Float?): List<Pair<Long, Float>> =
         history.mapNotNull { row -> selector(row)?.let { row.measuredAtEpochMillis to it } }
 
-    private fun filterRange(valuesDesc: List<Pair<Long, Float>>, rangeIndex: Int): List<Pair<Long, Float>> {
-        if (valuesDesc.isEmpty()) return emptyList()
+    private fun filterRange(values: List<Pair<Long, Float>>, range: Period): List<Pair<Long, Float>> {
+        if (values.isEmpty()) return emptyList()
         val zone = ZoneId.systemDefault()
-        val anchor = Instant.ofEpochMilli(valuesDesc.first().first).atZone(zone).toLocalDate()
-        val from = when (rangeIndex) {
-            0 -> anchor.minusWeeks(1)
-            1 -> anchor.minusMonths(1)
-            2 -> anchor.minusMonths(3)
-            else -> anchor.minusYears(1)
-        }
-        return valuesDesc.filter { (timestamp, _) -> !Instant.ofEpochMilli(timestamp).atZone(zone).toLocalDate().isBefore(from) }.asReversed()
+        return ProgressSeriesEngine.filter(
+            points = values.map { ProgressSeriesPoint(it.first, it.second) },
+            range = range,
+            zoneId = zone,
+            asOfDate = LocalDate.now(zone),
+        ).points.map { it.timestamp to it.value }
+    }
+
+    private fun rangePeriod(index: Int): Period = when (index) {
+        0 -> Period.ofWeeks(1)
+        1 -> Period.ofMonths(1)
+        2 -> Period.ofMonths(3)
+        else -> Period.ofYears(1)
+    }
+
+    private fun metricState(valuesChronological: List<Pair<Long, Float>>): MetricState {
+        val current = valuesChronological.lastOrNull()?.second
+        val previous = valuesChronological.getOrNull(valuesChronological.lastIndex - 1)?.second
+        return MetricState(current, if (current != null && previous != null) current - previous else null)
     }
 
     class Factory(

@@ -97,6 +97,12 @@
                         android:layout_marginTop="@dimen/space_2"
                         android:text="Dati insufficienti"
                         style="@style/Text.MyFitAI.Body" />
+                    <TextView
+                        android:id="@+id/rangeDataNote"
+                        style="@style/Text.MyFitAI.Caption"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_4" />
                     <com.myfitai.app.ui.widgets.WeightTrendChartView
                         android:id="@+id/evolutionChart"
                         android:layout_width="match_parent"
@@ -106,7 +112,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/space_4"
-                        android:text="Il grafico mostra le rilevazioni disponibili nel periodo selezionato."
+                        android:text="Periodo ancorato a oggi · mostra solo le rilevazioni disponibili nell'intervallo selezionato."
                         style="@style/Text.MyFitAI.Micro" />
                     <LinearLayout
                         android:layout_width="match_parent"

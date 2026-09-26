@@ -554,32 +554,59 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         val filtered = viewModel.filtered(selected, rangeIndex)
         val unit = if (metricIndex == 1) "%" else "kg"
         findViewById<TextView>(R.id.metricLabel).text = listOf("Peso", "Grasso corporeo", "Massa muscolare")[metricIndex]
-        findViewById<TextView>(R.id.metricValue).text = filtered.value?.let { "${fmt(it)} $unit" } ?: "—"
+        val latestObserved = viewModel.latest(selected)
+        findViewById<TextView>(R.id.metricValue).text = (latestObserved ?: filtered.value)?.let { "${fmt(it)} $unit" } ?: "—"
         val rangeLabel = listOf("1M", "3M", "6M", "1Y")[rangeIndex]
         findViewById<TextView>(R.id.metricDelta).text = filtered.delta?.let { "${signed(it)} $unit negli ultimi $rangeLabel" } ?: "Dati insufficienti"
         findViewById<WeightTrendChartView>(R.id.evolutionChart).setData(filtered.series.map { it.value })
-        renderDateLabels(filtered)
-        renderSecondary(R.id.otherIndicatorFatValue, R.id.otherIndicatorFatDelta, state.bodyFat, "%")
-        renderSecondary(R.id.otherIndicatorMuscleValue, R.id.otherIndicatorMuscleDelta, state.muscle, "kg")
-        renderSecondary(R.id.otherIndicatorWaterValue, R.id.otherIndicatorWaterDelta, state.bodyWater, "%")
+        renderDateLabels(filtered, rangeIndex)
+        renderSecondary(R.id.otherIndicatorFatValue, R.id.otherIndicatorFatDelta, state.bodyFat, viewModel.filtered(state.bodyFat, dateRangePeriod(rangeIndex)), "%", rangeLabel)
+        renderSecondary(R.id.otherIndicatorMuscleValue, R.id.otherIndicatorMuscleDelta, state.muscle, viewModel.filtered(state.muscle, dateRangePeriod(rangeIndex)), "kg", rangeLabel)
+        renderSecondary(R.id.otherIndicatorWaterValue, R.id.otherIndicatorWaterDelta, state.bodyWater, viewModel.filtered(state.bodyWater, dateRangePeriod(rangeIndex)), "%", rangeLabel)
         findViewById<View>(R.id.visualComparisonSection).visibility = View.GONE
-        findViewById<TextView>(R.id.progressSummaryTitle).text = if (filtered.series.size >= 2) "Andamento basato sulle misurazioni disponibili" else "Affidabilità dell’andamento"
-        findViewById<TextView>(R.id.progressSummaryText).text = if (filtered.series.size >= 2) "I valori mostrati derivano dallo storico BIA reale del profilo attivo." else "Aggiungi almeno due misurazioni confrontabili per visualizzare un andamento affidabile."
-        findViewById<View>(R.id.otherIndicatorsCard).visibility = if (state.bodyFat.value == null && state.muscle.value == null && state.bodyWater.value == null) View.GONE else View.VISIBLE
+        val hasRangeHistory = filtered.series.isNotEmpty()
+        findViewById<TextView>(R.id.rangeDataNote).text = if (latestObserved != null && filtered.value == null) {
+            "Ultimo valore registrato: ${fmt(latestObserved)} $unit · nessuna rilevazione nell'intervallo selezionato."
+        } else if (latestObserved != null && filtered.series.size == 1) {
+            "Ultima rilevazione: ${fmt(latestObserved)} $unit · non basta per calcolare una variazione."
+        } else {
+            "Valore mostrato: ultima rilevazione disponibile · variazione calcolata nell'intervallo selezionato."
+        }
+        findViewById<TextView>(R.id.progressSummaryTitle).text = when {
+            filtered.series.size >= 2 -> "Andamento nel periodo · $rangeLabel"
+            hasRangeHistory -> "Una sola rilevazione · $rangeLabel"
+            else -> "Nessuna rilevazione · $rangeLabel"
+        }
+        findViewById<TextView>(R.id.progressSummaryText).text = when {
+            filtered.series.size >= 2 -> "Variazione tra la prima e l'ultima rilevazione disponibile nell'intervallo. La riga è stata filtrata su questo stesso periodo."
+            hasRangeHistory -> "È presente una sola rilevazione nell'intervallo: il valore è mostrato, ma non è possibile calcolare una variazione."
+            else -> "Non risultano rilevazioni nell'intervallo selezionato. Prova un periodo più ampio o registra una nuova misura."
+        }
+        findViewById<View>(R.id.otherIndicatorsCard).visibility = if (
+            viewModel.latest(state.bodyFat) == null && viewModel.latest(state.muscle) == null && viewModel.latest(state.bodyWater) == null
+        ) View.GONE else View.VISIBLE
     }
 
-    private fun renderSecondary(valueId: Int, deltaId: Int, metric: ProgressMetricState, unit: String) {
-        findViewById<TextView>(valueId).text = metric.value?.let { "${fmt(it)} $unit" } ?: "—"
-        findViewById<TextView>(deltaId).text = metric.delta?.let { signed(it) } ?: "—"
+    private fun renderSecondary(
+        valueId: Int,
+        deltaId: Int,
+        latestMetric: ProgressMetricState,
+        periodMetric: ProgressMetricState,
+        unit: String,
+        rangeLabel: String,
+    ) {
+        findViewById<TextView>(valueId).text = viewModel.latest(latestMetric)?.let { "${fmt(it)} $unit" } ?: "—"
+        findViewById<TextView>(deltaId).text = periodMetric.delta?.let { "${signed(it)} $unit · $rangeLabel" } ?: "—"
     }
 
-    private fun renderDateLabels(metric: ProgressMetricState) {
+    private fun renderDateLabels(metric: ProgressMetricState, selectedRangeIndex: Int) {
         val ids = intArrayOf(R.id.dateLabel1, R.id.dateLabel2, R.id.dateLabel3, R.id.dateLabel4, R.id.dateLabel5)
         val points = metric.series
+        val formatter = DateTimeFormatter.ofPattern(if (selectedRangeIndex == 3) "dd/MM/yy" else "dd/MM")
         ids.forEachIndexed { index, id ->
             val point = if (points.isEmpty()) null else points[((points.lastIndex * index) / 4).coerceIn(0, points.lastIndex)]
             findViewById<TextView>(id).text = point?.let {
-                Instant.ofEpochMilli(it.timestamp).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("dd/MM"))
+                Instant.ofEpochMilli(it.timestamp).atZone(ZoneId.systemDefault()).format(formatter)
             } ?: "—"
         }
     }
@@ -643,6 +670,12 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
     }
 
     private fun dimen(dimenRes: Int): Int = resources.getDimensionPixelSize(dimenRes)
+    private fun dateRangePeriod(index: Int) = when (index) {
+        0 -> java.time.Period.ofMonths(1)
+        1 -> java.time.Period.ofMonths(3)
+        2 -> java.time.Period.ofMonths(6)
+        else -> java.time.Period.ofYears(1)
+    }
     private fun fmt(v: Float) = String.format(Locale.ITALIAN, "%.1f", v)
     private fun signed(v: Float) = String.format(Locale.ITALIAN, "%+.1f", v)
 }

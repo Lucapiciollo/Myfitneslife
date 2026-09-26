@@ -73,12 +73,8 @@
                      android:orientation="vertical">
                    <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowAppGuide" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_help_outline" app:srLabel="Come funziona MyFitAI" app:srDescription="@string/settings_desc_guide" />
                    <View android:layout_width="match_parent" android:layout_height="@dimen/border_width_default" android:background="@color/divider" />
-                   <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowProfile" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_person" app:srLabel="Profilo" app:srDescription="@string/settings_desc_profile" />
+                     <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowMeasurements" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_person" app:srLabel="Rilevazioni" app:srDescription="@string/settings_desc_measurements" />
                    <View android:layout_width="match_parent" android:layout_height="@dimen/border_width_default" android:background="@color/divider" />
-                   <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowMeasurements" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_person" app:srLabel="Rilevazioni" app:srDescription="@string/settings_desc_measurements" />
-                   <View android:layout_width="match_parent" android:layout_height="@dimen/border_width_default" android:background="@color/divider" />
-                   <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowFoodPreferences" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="Preferenze alimentari" app:srDescription="@string/settings_desc_food" />
-                  <View android:layout_width="match_parent" android:layout_height="@dimen/border_width_default" android:background="@color/divider" />
                   <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowMealCount" android:visibility="gone" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="Pasti al giorno" />
                    <TextView android:id="@+id/mealCountValue" style="@style/Text.MyFitAI.Caption" android:visibility="gone" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingStart="@dimen/space_16" android:paddingBottom="@dimen/space_8" android:text="Pasti al giorno" />
                   <LinearLayout
