@@ -77,7 +77,7 @@ class ProfileActivity : BaseShellActivity() {
 
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.notifications_dialog_title)
-            .setView(content)
+            .setView(normalizeRuntimeDialogContent(content))
             .setNegativeButton(R.string.action_cancel, null)
             .setPositiveButton(R.string.action_save) { _, _ ->
                 prefs.mealRemindersEnabled = mealSwitch.isChecked

@@ -285,7 +285,7 @@ class BiaActivity : BaseShellActivity() {
 
         MaterialAlertDialogBuilder(this)
             .setTitle(label)
-            .setView(content)
+            .setView(normalizeRuntimeDialogContent(content))
             .setNegativeButton("Annulla", null)
             .setNeutralButton("Svuota") { _, _ ->
                 values[key] = null
@@ -536,7 +536,7 @@ class BiaActivity : BaseShellActivity() {
 
         val dialog = MaterialAlertDialogBuilder(this)
             .setTitle("Controlla importazione BIA")
-            .setView(content)
+            .setView(normalizeRuntimeDialogContent(content))
             .setNegativeButton("Annulla", null)
             .setPositiveButton("Usa valori") { _, _ ->
                 values[KEY_WEIGHT] = parseFloat(inputs.getValue(KEY_WEIGHT).text?.toString())

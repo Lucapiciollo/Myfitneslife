@@ -88,7 +88,7 @@ class CheatEntryE2ETest {
         device.swipe(device.displayWidth / 2, (device.displayHeight * 0.25).toInt(), device.displayWidth / 2, (device.displayHeight * 0.78).toInt(), 20)
         assertTrue(device.wait(Until.hasObject(By.text("Rapido")), 2_000))
         device.findObject(By.text("Rapido")).click()
-        assertTrue(device.wait(Until.gone(By.res("com.myfitai.app:id/labelPhotoCard")), 2_000))
+        assertTrue(device.wait(Until.hasObject(By.text("Etichetta nutrizionale (opzionale)")), 2_000))
         assertTrue(device.wait(Until.gone(By.res("com.myfitai.app:id/notesCard")), 2_000))
     }
 

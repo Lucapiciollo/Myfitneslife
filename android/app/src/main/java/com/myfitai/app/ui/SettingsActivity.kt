@@ -479,7 +479,7 @@ class SettingsActivity : BaseShellActivity() {
         }
         val dialog = MaterialAlertDialogBuilder(this)
             .setTitle("Come funziona MyFitAI")
-            .setView(scroll)
+            .setView(normalizeRuntimeDialogContent(scroll))
             .setPositiveButton("Ho capito", null)
             .show()
     }

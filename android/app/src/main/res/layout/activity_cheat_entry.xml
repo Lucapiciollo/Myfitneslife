@@ -48,6 +48,7 @@
                 android:layout_height="@dimen/control_compact_min_height" />
 
             <com.google.android.material.card.MaterialCardView
+                android:id="@+id/entryCard"
                 style="@style/Widget.MyFitAI.Card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

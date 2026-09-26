@@ -5,7 +5,10 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.view.View
 import android.widget.TextView
+import android.widget.GridLayout
+import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.core.content.ContextCompat
@@ -67,6 +70,8 @@ class HomeActivity : BaseShellActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
+        adaptLandscapeContent()
+        adaptQuickActions()
         bindBottom(BottomNavBinder.Tab.HOME)
         renderWorkoutConfiguration()
         requestNotificationPermissionOnce()
@@ -126,6 +131,58 @@ class HomeActivity : BaseShellActivity() {
         }
 
         observeDashboard()
+    }
+
+    private fun adaptLandscapeContent() {
+        if (resources.configuration.orientation != android.content.res.Configuration.ORIENTATION_LANDSCAPE) return
+        val metrics = findViewById<View>(R.id.dashboardMetricsPanel) ?: return
+        val sheet = metrics.parent as? ViewGroup ?: return
+        if (sheet.findViewWithTag<View>(LANDSCAPE_GRID_TAG) != null) return
+
+        val children = (0 until sheet.childCount).map { sheet.getChildAt(it) }
+        val grid = GridLayout(this).apply {
+            tag = LANDSCAPE_GRID_TAG
+            columnCount = 2
+            rowCount = GridLayout.UNDEFINED
+            useDefaultMargins = false
+            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
+        sheet.removeAllViews()
+        sheet.addView(grid)
+
+        children.forEach { child ->
+            val fullWidth = child.id == R.id.planUpdateNoticeCard ||
+                child.id == R.id.aiConfigurationNoticeCard ||
+                child.id == R.id.dashboardMetricsPanel ||
+                child.findViewById<View>(R.id.bodyOverviewHelpButton) != null
+            val params = GridLayout.LayoutParams().apply {
+                width = 0
+                height = ViewGroup.LayoutParams.WRAP_CONTENT
+                columnSpec = GridLayout.spec(GridLayout.UNDEFINED, if (fullWidth) 2 else 1, 1f)
+                rowSpec = GridLayout.spec(GridLayout.UNDEFINED)
+                setMargins(
+                    resources.getDimensionPixelSize(R.dimen.space_6),
+                    resources.getDimensionPixelSize(R.dimen.space_6),
+                    resources.getDimensionPixelSize(R.dimen.space_6),
+                    resources.getDimensionPixelSize(R.dimen.space_6),
+                )
+            }
+            grid.addView(child, params)
+        }
+    }
+
+    private fun adaptQuickActions() {
+        val actions = findViewById<android.widget.LinearLayout>(R.id.quickActionsRow) ?: return
+        if (resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) {
+            actions.orientation = android.widget.LinearLayout.HORIZONTAL
+            actions.findViewById<View>(R.id.measurementsButton)?.layoutParams =
+                android.widget.LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            actions.findViewById<View>(R.id.addExtraButton)?.layoutParams =
+                android.widget.LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
+                    marginStart = resources.getDimensionPixelSize(R.dimen.space_8)
+                    topMargin = 0
+                }
+        }
     }
 
     override fun onResume() {
@@ -532,4 +589,8 @@ class HomeActivity : BaseShellActivity() {
 
     private fun formatNumber(value: Float): String = if (value % 1f == 0f) value.toInt().toString() else String.format(Locale.ITALIAN, "%.1f", value)
     private fun formatSigned(value: Float): String = String.format(Locale.ITALIAN, "%+.1f", value)
+
+    private companion object {
+        const val LANDSCAPE_GRID_TAG = "home_landscape_grid"
+    }
 }

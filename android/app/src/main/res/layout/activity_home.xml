@@ -707,22 +707,32 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:text="Azioni rapide" />
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/measurementsButton"
-                            style="@style/Widget.MyFitAI.Button.Outlined"
-                            android:layout_width="match_parent"
-                            android:layout_height="@dimen/button_secondary_min_height"
-                            android:layout_marginTop="@dimen/space_12"
-                            android:text="Aggiungi rilevazione"
-                            android:textAllCaps="false" />
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/addExtraButton"
-                            style="@style/Widget.MyFitAI.Button.Outlined"
-                            android:layout_width="match_parent"
-                            android:layout_height="@dimen/button_secondary_min_height"
-                            android:layout_marginTop="@dimen/space_8"
-                            android:text="Inserisci extra"
-                            android:textAllCaps="false" />
+                         <LinearLayout
+                             android:id="@+id/quickActionsRow"
+                             android:layout_width="match_parent"
+                             android:layout_height="wrap_content"
+                             android:layout_marginTop="@dimen/space_12"
+                             android:orientation="vertical">
+                             <com.google.android.material.button.MaterialButton
+                                 android:id="@+id/measurementsButton"
+                                 style="@style/Widget.MyFitAI.Button.Outlined"
+                                 android:layout_width="match_parent"
+                                 android:layout_height="@dimen/button_secondary_min_height"
+                                 android:gravity="center"
+                                 android:minWidth="0dp"
+                                 android:text="Aggiungi rilevazione"
+                                 android:textAllCaps="false" />
+                             <com.google.android.material.button.MaterialButton
+                                 android:id="@+id/addExtraButton"
+                                 style="@style/Widget.MyFitAI.Button.Outlined"
+                                 android:layout_width="match_parent"
+                                 android:layout_height="@dimen/button_secondary_min_height"
+                                 android:layout_marginTop="@dimen/space_8"
+                                 android:gravity="center"
+                                 android:minWidth="0dp"
+                                 android:text="Inserisci extra"
+                                 android:textAllCaps="false" />
+                         </LinearLayout>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
             </LinearLayout>

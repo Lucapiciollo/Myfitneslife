@@ -9,6 +9,8 @@ import android.widget.AutoCompleteTextView
 import com.google.android.material.textfield.TextInputEditText
 import android.widget.ProgressBar
 import android.widget.TextView
+import android.widget.GridLayout
+import android.view.ViewGroup
 import android.content.res.ColorStateList
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -72,6 +74,7 @@ class CheatEntryActivity : BaseShellActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_cheat_entry)
+        adaptLandscapeContent()
         bindBack()
         normalizeCheatSurfaces()
 
@@ -121,11 +124,57 @@ class CheatEntryActivity : BaseShellActivity() {
         visit(findViewById(android.R.id.content))
     }
 
+    private fun adaptLandscapeContent() {
+        if (resources.configuration.orientation != android.content.res.Configuration.ORIENTATION_LANDSCAPE) return
+        val scroll = findFirstScrollView(findViewById(android.R.id.content)) ?: return
+        val root = scroll.getChildAt(0) as? ViewGroup ?: return
+        if (root.findViewWithTag<View>(LANDSCAPE_GRID_TAG) != null) return
+        val children = (0 until root.childCount).map { root.getChildAt(it) }
+        val grid = GridLayout(this).apply {
+            tag = LANDSCAPE_GRID_TAG
+            columnCount = 2
+            useDefaultMargins = false
+            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
+        root.removeAllViews()
+        root.addView(grid)
+        children.forEach { child ->
+            val halfWidth = child.id == R.id.entryCard ||
+                child.id == R.id.labelPhotoCard ||
+                child.id == R.id.whenCard ||
+                child.id == R.id.quantityCard ||
+                child.id == R.id.notesCard
+            val params = GridLayout.LayoutParams().apply {
+                width = 0
+                height = ViewGroup.LayoutParams.WRAP_CONTENT
+                columnSpec = GridLayout.spec(GridLayout.UNDEFINED, if (halfWidth) 1 else 2, 1f)
+                rowSpec = GridLayout.spec(GridLayout.UNDEFINED)
+                setMargins(
+                    resources.getDimensionPixelSize(R.dimen.space_6),
+                    resources.getDimensionPixelSize(R.dimen.space_6),
+                    resources.getDimensionPixelSize(R.dimen.space_6),
+                    resources.getDimensionPixelSize(R.dimen.space_6),
+                )
+            }
+            grid.addView(child, params)
+        }
+    }
+
     private fun renderMode(detailed: Boolean) {
-        UiMotion.reveal(findViewById(R.id.labelPhotoCard), detailed)
+        UiMotion.reveal(findViewById(R.id.labelPhotoCard), true)
         UiMotion.reveal(findViewById(R.id.notesCard), detailed)
         findViewById<View>(R.id.modeSegment).contentDescription =
             if (detailed) "Modalità dettagliata selezionata" else "Modalità rapida selezionata"
+    }
+
+    private fun findFirstScrollView(view: View): android.widget.ScrollView? {
+        if (view is android.widget.ScrollView) return view
+        if (view is ViewGroup) {
+            for (index in 0 until view.childCount) {
+                findFirstScrollView(view.getChildAt(index))?.let { return it }
+            }
+        }
+        return null
     }
 
     private fun bindLabelPhoto() {
@@ -363,6 +412,10 @@ class CheatEntryActivity : BaseShellActivity() {
             visibility = View.VISIBLE
             text = message
         }
+    }
+
+    private companion object {
+        const val LANDSCAPE_GRID_TAG = "cheat_landscape_grid"
     }
 
     override fun onDestroy() {

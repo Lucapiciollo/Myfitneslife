@@ -66,7 +66,7 @@ abstract class BaseShellActivity : AppCompatActivity() {
             }
             MaterialAlertDialogBuilder(this)
                 .setTitle(title)
-                .setView(content)
+                .setView(normalizeRuntimeDialogContent(content))
                 .setPositiveButton("Ho capito", null)
                 .show()
         }.onFailure {
@@ -76,6 +76,24 @@ abstract class BaseShellActivity : AppCompatActivity() {
                 .setPositiveButton("Ho capito", null)
                 .show()
         }
+    }
+
+    /** Applies the same inset/surface contract to programmatically-created dialog content. */
+    fun normalizeRuntimeDialogContent(content: View): View {
+        content.setBackgroundColor(getColor(R.color.white))
+        content.setPadding(
+            dimen(R.dimen.space_20),
+            dimen(R.dimen.space_8),
+            dimen(R.dimen.space_20),
+            dimen(R.dimen.space_12),
+        )
+        if (content is ViewGroup) {
+            content.clipToPadding = false
+            content.layoutParams = content.layoutParams?.apply {
+                width = ViewGroup.LayoutParams.MATCH_PARENT
+            } ?: ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
+        return content
     }
 
     private fun formatHelpMessage(message: String): CharSequence {

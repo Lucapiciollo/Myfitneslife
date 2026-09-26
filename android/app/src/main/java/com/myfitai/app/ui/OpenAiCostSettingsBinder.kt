@@ -89,7 +89,7 @@ object OpenAiCostSettingsBinder {
         val dialog = MaterialAlertDialogBuilder(activity)
             .setTitle("Prezzi OpenAI manuali")
             .setMessage("I costi già registrati non vengono ricalcolati.")
-            .setView(content)
+            .setView(activity.normalizeRuntimeDialogContent(content))
             .setNegativeButton("Annulla", null)
             .setPositiveButton("Salva", null)
             .create()
