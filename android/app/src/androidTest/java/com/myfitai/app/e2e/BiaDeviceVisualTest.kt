@@ -33,6 +33,20 @@ class BiaDeviceVisualTest {
         assertTrue(device.hasObject(By.text("Condizioni della misura")))
         assertTrue(device.hasObject(By.text("Risultati")))
 
+        device.findObject(By.res("com.myfitai.app:id/dateInput")).click()
+        assertTrue(device.wait(Until.hasObject(By.text("Data misurazione")), 3_000))
+        assertTrue(device.hasObject(By.text("OK")))
+        assertTrue(device.hasObject(By.text("ANNULLA")) || device.hasObject(By.text("CANCELLA")))
+        device.takeScreenshot(File(context.getExternalFilesDir(null), "qa-artifacts/bia_date_picker.png"))
+        device.pressBack()
+
+        device.findObject(By.res("com.myfitai.app:id/timeInput")).click()
+        assertTrue(device.wait(Until.hasObject(By.text("Ora misurazione")), 3_000))
+        assertTrue(device.hasObject(By.text("OK")))
+        assertTrue(device.hasObject(By.desc("Seleziona ora")) || device.hasObject(By.desc("Seleziona minuti")))
+        device.takeScreenshot(File(context.getExternalFilesDir(null), "qa-artifacts/bia_time_picker.png"))
+        device.pressBack()
+
         val dir = File(context.getExternalFilesDir(null), "qa-artifacts").apply { mkdirs() }
         device.takeScreenshot(File(dir, "bia_new_form_white_cards_top.png"))
 

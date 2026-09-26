@@ -54,6 +54,44 @@
     <item name="materialAlertDialogBodyTextStyle">@style/Text.MyFitAI.DialogBody</item>
     <item name="shapeAppearanceOverlay">@style/ShapeAppearanceOverlay.MyFitAI.AlertDialog</item>
 </style>
+<style name="ThemeOverlay.MyFitAI.MaterialCalendar" parent="ThemeOverlay.Material3.MaterialCalendar">
+    <item name="android:windowBackground">@color/white</item>
+    <item name="android:colorBackground">@color/white</item>
+    <item name="backgroundTint">@color/white</item>
+    <item name="colorSurface">@color/white</item>
+    <item name="colorOnSurface">@color/text_primary</item>
+    <item name="colorSurfaceVariant">@color/white</item>
+    <item name="colorSurfaceContainerLowest">@color/white</item>
+    <item name="colorSurfaceContainerLow">@color/white</item>
+    <item name="colorSurfaceContainer">@color/white</item>
+    <item name="colorSurfaceContainerHigh">@color/white</item>
+    <item name="colorSurfaceContainerHighest">@color/white</item>
+    <item name="colorPrimary">@color/accent_green</item>
+    <item name="colorOnPrimary">@color/white</item>
+    <item name="colorControlNormal">@color/dialog_control_neutral</item>
+    <item name="colorControlActivated">@color/accent_green</item>
+    <item name="buttonBarPositiveButtonStyle">@style/Widget.MyFitAI.Dialog.PositiveButton</item>
+    <item name="buttonBarNegativeButtonStyle">@style/Widget.MyFitAI.Dialog.NeutralButton</item>
+</style>
+<style name="ThemeOverlay.MyFitAI.MaterialTimePicker" parent="ThemeOverlay.Material3.MaterialTimePicker">
+    <item name="android:windowBackground">@color/white</item>
+    <item name="android:colorBackground">@color/white</item>
+    <item name="backgroundTint">@color/white</item>
+    <item name="colorSurface">@color/white</item>
+    <item name="colorOnSurface">@color/text_primary</item>
+    <item name="colorSurfaceVariant">@color/white</item>
+    <item name="colorSurfaceContainerLowest">@color/white</item>
+    <item name="colorSurfaceContainerLow">@color/white</item>
+    <item name="colorSurfaceContainer">@color/white</item>
+    <item name="colorSurfaceContainerHigh">@color/white</item>
+    <item name="colorSurfaceContainerHighest">@color/white</item>
+    <item name="colorPrimary">@color/accent_green</item>
+    <item name="colorOnPrimary">@color/white</item>
+    <item name="colorControlNormal">@color/dialog_control_neutral</item>
+    <item name="colorControlActivated">@color/accent_green</item>
+    <item name="buttonBarPositiveButtonStyle">@style/Widget.MyFitAI.Dialog.PositiveButton</item>
+    <item name="buttonBarNegativeButtonStyle">@style/Widget.MyFitAI.Dialog.NeutralButton</item>
+</style>
 <style name="MaterialAlertDialog.MyFitAI" parent="MaterialAlertDialog.Material3">
     <item name="backgroundTint">@color/white</item>
     <item name="android:backgroundTint">@color/white</item>

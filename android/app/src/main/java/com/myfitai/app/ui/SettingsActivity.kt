@@ -312,6 +312,7 @@ class SettingsActivity : BaseShellActivity() {
         fun chooseTime(day: java.time.DayOfWeek) {
             val config = data.nutritionPlanSchedulePreferences.get(profileId)
             val picker = MaterialTimePicker.Builder()
+                .setTheme(R.style.ThemeOverlay_MyFitAI_MaterialTimePicker)
                 .setTimeFormat(TimeFormat.CLOCK_24H)
                 .setHour(config.timeMinutes / 60)
                 .setMinute(config.timeMinutes % 60)

@@ -128,7 +128,7 @@ class ProfileEditActivity : BaseShellActivity() {
 
     private fun bindPickers() {
         birthDateInput.setOnClickListener {
-            val builder = MaterialDatePicker.Builder.datePicker().setTitleText("Data di nascita")
+            val builder = MaterialDatePicker.Builder.datePicker().setTheme(R.style.ThemeOverlay_MyFitAI_MaterialCalendar).setTitleText("Data di nascita")
             birthDateEpochDay?.let { epochDay ->
                 builder.setSelection(LocalDate.ofEpochDay(epochDay).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli())
             }
@@ -146,6 +146,7 @@ class ProfileEditActivity : BaseShellActivity() {
 
     private fun showTimePicker(title: String, current: Int?, onSelected: (Int) -> Unit) {
         val picker = MaterialTimePicker.Builder()
+            .setTheme(R.style.ThemeOverlay_MyFitAI_MaterialTimePicker)
             .setTimeFormat(TimeFormat.CLOCK_24H)
             .setHour(current?.div(60) ?: 7)
             .setMinute(current?.rem(60) ?: 0)

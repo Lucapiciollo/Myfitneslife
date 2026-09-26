@@ -47,6 +47,6 @@ class NutritionPlanSettingsActivity : BaseShellActivity() {
     }
     private fun chooseTime(id: Long) {
         val current = data.nutritionPlanSchedulePreferences.get(id)
-        MaterialTimePicker.Builder().setTimeFormat(TimeFormat.CLOCK_24H).setHour(current.timeMinutes / 60).setMinute(current.timeMinutes % 60).setTitleText("Ora generazione").build().also { picker -> picker.addOnPositiveButtonClickListener { data.nutritionPlanSchedulePreferences.setTimeMinutes(id, picker.hour * 60 + picker.minute); data.nutritionPlanSchedulePreferences.setEnabled(id, true); data.nutritionPlanScheduler.reschedule(id); refresh(); Toast.makeText(this, "Configurazione piano aggiornata", Toast.LENGTH_SHORT).show() }; picker.show(supportFragmentManager, "plan_time") }
+        MaterialTimePicker.Builder().setTheme(R.style.ThemeOverlay_MyFitAI_MaterialTimePicker).setTimeFormat(TimeFormat.CLOCK_24H).setHour(current.timeMinutes / 60).setMinute(current.timeMinutes % 60).setTitleText("Ora generazione").build().also { picker -> picker.addOnPositiveButtonClickListener { data.nutritionPlanSchedulePreferences.setTimeMinutes(id, picker.hour * 60 + picker.minute); data.nutritionPlanSchedulePreferences.setEnabled(id, true); data.nutritionPlanScheduler.reschedule(id); refresh(); Toast.makeText(this, "Configurazione piano aggiornata", Toast.LENGTH_SHORT).show() }; picker.show(supportFragmentManager, "plan_time") }
     }
 }

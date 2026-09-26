@@ -194,6 +194,7 @@ class BiaActivity : BaseShellActivity() {
     private fun bindDateTime() {
         dateInput.setOnClickListener {
             val picker = MaterialDatePicker.Builder.datePicker()
+                .setTheme(R.style.ThemeOverlay_MyFitAI_MaterialCalendar)
                 .setTitleText("Data misurazione")
                 .setSelection(selectedDateMillis)
                 .build()
@@ -207,6 +208,7 @@ class BiaActivity : BaseShellActivity() {
 
         timeInput.setOnClickListener {
             val picker = MaterialTimePicker.Builder()
+                .setTheme(R.style.ThemeOverlay_MyFitAI_MaterialTimePicker)
                 .setTimeFormat(TimeFormat.CLOCK_24H)
                 .setHour(selectedHour)
                 .setMinute(selectedMinute)

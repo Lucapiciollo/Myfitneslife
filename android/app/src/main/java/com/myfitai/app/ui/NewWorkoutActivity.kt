@@ -75,6 +75,7 @@ class NewWorkoutActivity : BaseShellActivity() {
 
         dateInput.setOnClickListener {
             val picker = MaterialDatePicker.Builder.datePicker()
+                .setTheme(R.style.ThemeOverlay_MyFitAI_MaterialCalendar)
                 .setTitleText("Data allenamento")
                 .setSelection(selectedDate.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli())
                 .build()
@@ -87,6 +88,7 @@ class NewWorkoutActivity : BaseShellActivity() {
 
         timeInput.setOnClickListener {
             val picker = MaterialTimePicker.Builder()
+                .setTheme(R.style.ThemeOverlay_MyFitAI_MaterialTimePicker)
                 .setTimeFormat(TimeFormat.CLOCK_24H)
                 .setHour(selectedTime.hour)
                 .setMinute(selectedTime.minute)

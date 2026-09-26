@@ -127,6 +127,7 @@ class NewBodyMeasurementActivity : BaseShellActivity() {
 
         val openDatePicker = {
             val picker = MaterialDatePicker.Builder.datePicker()
+                .setTheme(R.style.ThemeOverlay_MyFitAI_MaterialCalendar)
                 .setTitleText("Data misurazione")
                 .setSelection(selectedDate.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli())
                 .build()

@@ -2,7 +2,9 @@ package com.myfitai.app.ui
 
 import android.content.Intent
 import android.os.Bundle
+import android.text.method.PasswordTransformationMethod
 import android.view.View
+import android.view.WindowManager
 import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
 import android.widget.LinearLayout
@@ -48,6 +50,12 @@ class OnboardingWizardActivity : AppCompatActivity() {
     private val isNewProfile by lazy { intent.getBooleanExtra(EXTRA_NEW_PROFILE, false) }
     private val editingId by lazy { intent.getLongExtra(EXTRA_PROFILE_ID, 0L).takeIf { it > 0L } }
     private val isBootstrap by lazy { intent.getBooleanExtra(EXTRA_BOOTSTRAP, false) }
+    /** API setup belongs only to the first app bootstrap, never to re-profile flows. */
+    private val showAiStep by lazy {
+        isBootstrap &&
+            !credentials.exists(AiCredentialProvider.GEMINI) &&
+            !credentials.exists(AiCredentialProvider.OPENAI)
+    }
 
     private lateinit var stepContent: LinearLayout
     private lateinit var stepTitle: TextView
@@ -89,10 +97,12 @@ class OnboardingWizardActivity : AppCompatActivity() {
     private var aiStatus: TextView? = null
 
     private val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.ITALIAN)
-    private val totalSteps = 4
+    private val totalSteps: Int
+        get() = if (showAiStep) 4 else 3
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         setContentView(R.layout.activity_onboarding_wizard)
         selectedProvider = if (aiSettings.useGemini) AiCredentialProvider.GEMINI else AiCredentialProvider.OPENAI
         bindShell()
@@ -180,7 +190,7 @@ class OnboardingWizardActivity : AppCompatActivity() {
             0 -> renderProfileStep()
             1 -> renderMealsStep()
             2 -> renderScheduleStep()
-            3 -> renderAiStep()
+            3 -> if (showAiStep) renderAiStep()
         }
     }
 
@@ -263,6 +273,11 @@ class OnboardingWizardActivity : AppCompatActivity() {
             it.setOnItemClickListener { _, _, position, _ -> selectedProvider = if (position == 0) AiCredentialProvider.GEMINI else AiCredentialProvider.OPENAI; renderAiStatus() }
         }
         apiKeyInput = textInput(content, R.string.onboarding_api_key_hint, "textPassword", singleLine = true)
+            .apply {
+                transformationMethod = PasswordTransformationMethod.getInstance()
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+                isLongClickable = false
+            }
         addDescription(content, R.string.onboarding_ai_optional_description)
         renderAiStatus()
         stepContent.addView(card)
@@ -315,9 +330,16 @@ class OnboardingWizardActivity : AppCompatActivity() {
                 data.nutritionPlanSchedulePreferences.setTimeMinutes(profileId, planTimeMinutes)
                 notificationPreferences.mealRemindersEnabled = notificationsEnabled
                 notificationPreferences.weeklyReviewEnabled = notificationsEnabled
-                val providerConfigured = saveOptionalCredential()
-                data.nutritionPlanSchedulePreferences.setEnabled(profileId, providerConfigured)
-                if (providerConfigured) data.nutritionPlanScheduler.reschedule(profileId) else data.nutritionPlanScheduler.cancel(profileId)
+                val providerConfigured = if (showAiStep) {
+                    saveOptionalCredential()
+                } else {
+                    // Re-profile/new-profile flows must not alter existing provider state.
+                    com.myfitai.app.ai.AiProviderAccess.isConfigured(this@OnboardingWizardActivity)
+                }
+                if (showAiStep) {
+                    data.nutritionPlanSchedulePreferences.setEnabled(profileId, providerConfigured)
+                    if (providerConfigured) data.nutritionPlanScheduler.reschedule(profileId) else data.nutritionPlanScheduler.cancel(profileId)
+                }
                 data.notificationScheduler.refresh()
             }.onSuccess {
                 Toast.makeText(this@OnboardingWizardActivity, R.string.onboarding_saved, Toast.LENGTH_SHORT).show()
@@ -400,7 +422,7 @@ class OnboardingWizardActivity : AppCompatActivity() {
     }
 
     private fun showDatePicker(input: TextInputEditText) {
-        val picker = MaterialDatePicker.Builder.datePicker().setTitleText(getString(R.string.profile_birth_date_title)).build()
+        val picker = MaterialDatePicker.Builder.datePicker().setTheme(R.style.ThemeOverlay_MyFitAI_MaterialCalendar).setTitleText(getString(R.string.profile_birth_date_title)).build()
         picker.addOnPositiveButtonClickListener { value ->
             birthDateEpochDay = Instant.ofEpochMilli(value).atZone(ZoneOffset.UTC).toLocalDate().toEpochDay()
             input.setText(LocalDate.ofEpochDay(birthDateEpochDay!!).format(formatter))
@@ -409,7 +431,7 @@ class OnboardingWizardActivity : AppCompatActivity() {
     }
 
     private fun showTimePicker(input: TextInputEditText, titleId: Int, current: Int, onSelected: (Int) -> Unit) {
-        val picker = MaterialTimePicker.Builder().setTimeFormat(TimeFormat.CLOCK_24H).setHour(current / 60).setMinute(current % 60).setTitleText(getString(titleId)).build()
+        val picker = MaterialTimePicker.Builder().setTheme(R.style.ThemeOverlay_MyFitAI_MaterialTimePicker).setTimeFormat(TimeFormat.CLOCK_24H).setHour(current / 60).setMinute(current % 60).setTitleText(getString(titleId)).build()
         picker.addOnPositiveButtonClickListener { onSelected(picker.hour * 60 + picker.minute) }
         picker.show(supportFragmentManager, "wizard_time_${input.id}")
     }
@@ -445,6 +467,11 @@ class OnboardingWizardActivity : AppCompatActivity() {
         val input = layout.findViewById<TextInputEditText>(R.id.onboardingTextInput).apply {
             this.inputType = when (inputType) { "numberDecimal" -> android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL; "textPassword" -> android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD; "textPersonName" -> android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PERSON_NAME; else -> android.text.InputType.TYPE_NULL }
             this.isSingleLine = singleLine
+            if (inputType == "textPassword") {
+                transformationMethod = PasswordTransformationMethod.getInstance()
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+                isLongClickable = false
+            }
         }
         parent.addView(layout)
         return input

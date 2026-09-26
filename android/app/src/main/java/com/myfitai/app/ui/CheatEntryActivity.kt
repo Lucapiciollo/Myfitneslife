@@ -215,6 +215,7 @@ class CheatEntryActivity : BaseShellActivity() {
     private fun bindPickers() {
         findViewById<View>(R.id.dateField).setOnClickListener {
             val picker = MaterialDatePicker.Builder.datePicker()
+                .setTheme(R.style.ThemeOverlay_MyFitAI_MaterialCalendar)
                 .setTitleText("Data sgarro")
                 .setSelection(selectedDate.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli())
                 .build()
@@ -228,6 +229,7 @@ class CheatEntryActivity : BaseShellActivity() {
 
         findViewById<View>(R.id.timeField).setOnClickListener {
             val picker = MaterialTimePicker.Builder()
+                .setTheme(R.style.ThemeOverlay_MyFitAI_MaterialTimePicker)
                 .setTimeFormat(TimeFormat.CLOCK_24H)
                 .setHour(selectedTime.hour)
                 .setMinute(selectedTime.minute)

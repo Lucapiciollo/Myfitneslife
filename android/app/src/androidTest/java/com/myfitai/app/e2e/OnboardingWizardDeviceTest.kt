@@ -41,7 +41,7 @@ class OnboardingWizardDeviceTest {
         })
 
         assertTrue(device.wait(Until.hasObject(By.text("Il tuo profilo")), 5_000))
-        assertTrue(device.hasObject(By.text("Passo 1 di 4")))
+        assertTrue(device.hasObject(By.text("Passo 1 di 3")))
         assertTrue(device.hasObject(By.text("Demo 12 mesi")))
         assertTrue(device.hasObject(By.text("Maschio")))
 
@@ -62,12 +62,11 @@ class OnboardingWizardDeviceTest {
         }
         device.findObject(By.text("Continua")).click()
         assertTrue(device.wait(Until.hasObject(By.text("Piano settimanale e notifiche")), 5_000))
-        device.findObject(By.text("Continua")).click()
-        assertTrue(device.wait(Until.hasObject(By.text("Intelligenza artificiale")), 5_000))
-        assertTrue(device.hasObject(By.text("Salva e continua")))
+        assertTrue(device.hasObject(By.text("Passo 3 di 3")))
+        assertTrue(!device.hasObject(By.text("Intelligenza artificiale")))
 
         device.pressBack()
-        assertTrue(device.wait(Until.hasObject(By.text("Piano settimanale e notifiche")), 5_000))
+        assertTrue(device.wait(Until.hasObject(By.text("Pasti e giornata")), 5_000))
     }
 
     private fun waitForDemoSeed(): Boolean {
