@@ -159,9 +159,17 @@
 </style>
 <style name="Widget.MyFitAI.Dialog.TitlePanel" parent="MaterialAlertDialog.Material3.Title.Panel">
     <item name="android:background">@color/white</item>
+    <item name="android:paddingStart">@dimen/space_12</item>
+    <item name="android:paddingEnd">@dimen/space_12</item>
+    <item name="android:paddingTop">@dimen/space_8</item>
+    <item name="android:paddingBottom">@dimen/space_4</item>
 </style>
 <style name="Widget.MyFitAI.Dialog.ButtonBar" parent="Widget.AppCompat.ButtonBar.AlertDialog">
     <item name="android:background">@color/white</item>
+    <item name="android:paddingStart">@dimen/space_8</item>
+    <item name="android:paddingEnd">@dimen/space_8</item>
+    <item name="android:paddingTop">@dimen/space_4</item>
+    <item name="android:paddingBottom">@dimen/space_8</item>
 </style>
 <style name="Widget.MyFitAI.Dialog.PositiveButton" parent="Widget.Material3.Button.TextButton.Dialog">
     <item name="android:textColor">@color/dialog_action_primary</item>
@@ -221,22 +229,30 @@
     <item name="android:layout_height">wrap_content</item>
     <item name="android:textColor">@color/text_primary</item>
     <item name="android:textStyle">bold</item>
-    <item name="android:gravity">start|center_vertical</item>
-    <item name="android:textAlignment">viewStart</item>
+     <item name="android:gravity">start|center_vertical</item>
+     <item name="android:textAlignment">viewStart</item>
+     <item name="android:textSize">20sp</item>
+     <item name="android:includeFontPadding">false</item>
 </style>
 <style name="Text.MyFitAI.DialogBody" parent="TextAppearance.Material3.BodyMedium">
     <item name="android:textColor">@color/text_secondary</item>
     <item name="android:background">@color/white</item>
+    <item name="android:textSize">14sp</item>
+    <item name="android:includeFontPadding">false</item>
+    <item name="android:paddingStart">@dimen/space_12</item>
+    <item name="android:paddingEnd">@dimen/space_12</item>
+    <item name="android:paddingTop">@dimen/space_4</item>
+    <item name="android:paddingBottom">@dimen/space_4</item>
 </style>
  <style name="Widget.MyFitAI.Card" parent="Widget.Material3.CardView.Filled"><item name="cardBackgroundColor">@color/white</item><item name="cardCornerRadius">@dimen/radius_card</item><item name="cardElevation">@dimen/elevation_card</item><item name="strokeColor">@color/divider</item><item name="strokeWidth">@dimen/border_width_default</item></style>
  <style name="Widget.MyFitAI.FormCard" parent="Widget.MyFitAI.Card"><item name="cardBackgroundColor">@color/white</item><item name="cardCornerRadius">@dimen/radius_card</item><item name="cardElevation">@dimen/elevation_card</item><item name="strokeColor">@color/divider</item><item name="strokeWidth">@dimen/border_width_default</item></style>
  <style name="Widget.MyFitAI.Dialog.Card" parent="Widget.MyFitAI.Card"><item name="cardBackgroundColor">@color/white</item><item name="strokeColor">@color/divider</item><item name="strokeWidth">@dimen/border_width_default</item></style>
  <style name="Widget.MyFitAI.Dialog.Content" parent="">
      <item name="android:background">@color/white</item>
-      <item name="android:paddingStart">@dimen/space_20</item>
-      <item name="android:paddingEnd">@dimen/space_20</item>
-      <item name="android:paddingTop">@dimen/space_8</item>
-      <item name="android:paddingBottom">@dimen/space_12</item>
+       <item name="android:paddingStart">@dimen/space_12</item>
+       <item name="android:paddingEnd">@dimen/space_12</item>
+       <item name="android:paddingTop">@dimen/space_4</item>
+       <item name="android:paddingBottom">@dimen/space_8</item>
  </style>
 <style name="Widget.MyFitAI.HomeSectionContent" parent="">
     <item name="android:paddingStart">@dimen/space_16</item>

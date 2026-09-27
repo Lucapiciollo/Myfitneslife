@@ -6,6 +6,7 @@ import com.myfitai.app.data.repository.BodyMeasurementRepository
 import com.myfitai.app.data.repository.CheatEntryRepository
 import com.myfitai.app.data.repository.MealPlanRepository
 import com.myfitai.app.data.repository.WorkoutRepository
+import com.myfitai.app.data.repository.BodyExpectationGoalRepository
 import kotlinx.coroutines.flow.first
 import java.time.Instant
 import java.time.ZoneId
@@ -18,6 +19,7 @@ class PersonalResponseService(
     private val workouts: WorkoutRepository,
     private val bia: BiaRepository,
     private val bodyMeasurements: BodyMeasurementRepository,
+    private val expectationGoals: BodyExpectationGoalRepository,
 ) {
     suspend fun summarizeActiveProfile(
         nowEpochMillis: Long = System.currentTimeMillis(),
@@ -55,5 +57,14 @@ class PersonalResponseService(
     suspend fun promptContext(
         nowEpochMillis: Long = System.currentTimeMillis(),
         lookbackDays: Int = 56,
-    ): String = summarizeActiveProfile(nowEpochMillis, lookbackDays)?.toPromptContext().orEmpty()
+    ): String {
+        val history = summarizeActiveProfile(nowEpochMillis, lookbackDays)?.toPromptContext().orEmpty()
+        val profileId = activeProfileStore.currentIdOrNull() ?: return history
+        val goals = expectationGoals.all(profileId).first()
+            .take(8)
+            .joinToString("|") {
+                "${it.periodStartEpochDay}:${it.periodEndEpochDay}:${it.status}:days=${it.plannedDays}:deficit=${it.theoreticalDeficitKcal ?: "?"}:range=${it.expectedFatLossMinKg ?: "?"}-${it.expectedFatLossMaxKg ?: "?"}"
+            }
+        return if (goals.isBlank()) history else "$history\nGOAL_OUTCOMES:$goals\nSAFE:goal outcomes are user-confirmed context for evaluating the previous plan; never override local numerical targets automatically"
+    }
 }

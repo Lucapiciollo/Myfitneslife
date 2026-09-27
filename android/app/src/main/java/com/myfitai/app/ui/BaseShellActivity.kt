@@ -82,10 +82,10 @@ abstract class BaseShellActivity : AppCompatActivity() {
     fun normalizeRuntimeDialogContent(content: View): View {
         content.setBackgroundColor(getColor(R.color.white))
         content.setPadding(
-            dimen(R.dimen.space_20),
-            dimen(R.dimen.space_8),
-            dimen(R.dimen.space_20),
             dimen(R.dimen.space_12),
+            dimen(R.dimen.space_4),
+            dimen(R.dimen.space_12),
+            dimen(R.dimen.space_8),
         )
         if (content is ViewGroup) {
             content.clipToPadding = false

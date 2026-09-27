@@ -83,6 +83,7 @@ class AppDataContainer private constructor(context: Context) {
     val foodConsumptionRepository = FoodConsumptionRepository(db)
     val foodConsumptionService = FoodConsumptionService(foodConsumptionRepository, activeProfileStore)
     val weeklyReviewRepository = WeeklyReviewRepository(db)
+    val bodyExpectationGoalRepository = BodyExpectationGoalRepository(db)
 
     val profileCalculationService = ProfileCalculationService(
         profiles = userProfileRepository,
@@ -98,6 +99,7 @@ class AppDataContainer private constructor(context: Context) {
         workouts = workoutRepository,
         bia = biaRepository,
         bodyMeasurements = bodyMeasurementRepository,
+        expectationGoals = bodyExpectationGoalRepository,
     )
 
     val aiRuntimeService = AiRuntimeService(appContext)

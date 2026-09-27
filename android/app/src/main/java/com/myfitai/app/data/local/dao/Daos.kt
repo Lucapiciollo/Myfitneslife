@@ -100,6 +100,21 @@ interface WorkoutDao {
 }
 
 @Dao
+interface BodyExpectationGoalDao {
+    @Query("SELECT * FROM body_expectation_goals WHERE profileId = :profileId ORDER BY periodStartEpochDay DESC")
+    fun observeAll(profileId: Long): Flow<List<BodyExpectationGoalEntity>>
+
+    @Query("SELECT * FROM body_expectation_goals WHERE profileId = :profileId AND periodStartEpochDay = :periodStart LIMIT 1")
+    suspend fun getForPeriod(profileId: Long, periodStart: Long): BodyExpectationGoalEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(value: BodyExpectationGoalEntity): Long
+
+    @Query("DELETE FROM body_expectation_goals WHERE profileId = :profileId")
+    suspend fun deleteByProfile(profileId: Long)
+}
+
+@Dao
 interface MealPlanDao {
     @Query("SELECT * FROM meal_plans WHERE profileId = :profileId ORDER BY weekStartEpochDay DESC, id DESC")
     fun observePlans(profileId: Long): Flow<List<MealPlanEntity>>

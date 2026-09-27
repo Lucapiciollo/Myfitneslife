@@ -96,6 +96,12 @@ class WeeklyReviewRepository(private val db: MyFitAiDatabase) {
     suspend fun upsert(value: WeeklyReviewEntity) = db.weeklyReviewDao().upsert(value)
 }
 
+class BodyExpectationGoalRepository(private val db: MyFitAiDatabase) {
+    fun all(profileId: Long): Flow<List<BodyExpectationGoalEntity>> = db.bodyExpectationGoalDao().observeAll(profileId)
+    suspend fun getForPeriod(profileId: Long, periodStartEpochDay: Long) = db.bodyExpectationGoalDao().getForPeriod(profileId, periodStartEpochDay)
+    suspend fun upsert(value: BodyExpectationGoalEntity): Long = db.bodyExpectationGoalDao().upsert(value)
+}
+
 data class IngredientDraft(
     val name: String,
     val quantity: Float,
@@ -172,12 +178,14 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
     fun latestSnapshot(profileId: Long, weekStartEpochDay: Long): Flow<com.myfitai.app.domain.food.FoodPlanSnapshot?> =
         db.mealPlanDao().observeLatestVersionIdForWeek(profileId, weekStartEpochDay)
             .map { loadLatestSnapshot(profileId, weekStartEpochDay) }
-    fun latestSnapshotContainingDate(profileId: Long, dateEpochDay: Long): Flow<com.myfitai.app.domain.food.FoodPlanSnapshot?> =
+    fun latestSnapshotForDisplayedWeek(profileId: Long, weekStartEpochDay: Long): Flow<com.myfitai.app.domain.food.FoodPlanSnapshot?> =
         db.mealPlanDao().observePlans(profileId).map { plans ->
-            plans.sortedByDescending { it.weekStartEpochDay }
+            plans.firstOrNull { it.weekStartEpochDay == weekStartEpochDay }
+                ?.let { loadLatestSnapshot(profileId, it.weekStartEpochDay) }
+                ?: plans.sortedByDescending { it.weekStartEpochDay }
                 .firstNotNullOfOrNull { plan ->
                     loadLatestSnapshot(profileId, plan.weekStartEpochDay)
-                        ?.takeIf { snapshot -> snapshot.version.days.any { it.dateEpochDay == dateEpochDay } }
+                        ?.takeIf { snapshot -> snapshot.version.days.any { day -> day.dateEpochDay in weekStartEpochDay..(weekStartEpochDay + 6) } }
                 }
         }
 

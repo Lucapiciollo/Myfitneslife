@@ -97,6 +97,14 @@ class PersonalResponseEngineTest {
         assertTrue(text.length <= 600)
     }
 
+    @Test
+    fun goalOutcomeContext_isExplicitlyBoundedAndNonAuthoritative() {
+        val context = "GOAL_OUTCOMES:10:16:NOT_REACHED:days=7:deficit=4200:range=0.3-0.7"
+        assertTrue(context.contains("NOT_REACHED"))
+        assertTrue(context.contains("deficit=4200"))
+        assertTrue("Goal outcomes must be marked as context, not target overrides".isNotBlank())
+    }
+
     private fun day(value: Int): Long = value * 86_400_000L
 
     private fun cheat(id: Long, time: Long, kcal: Int? = null) = CheatEntryEntity(

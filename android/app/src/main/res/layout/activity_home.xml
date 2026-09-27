@@ -122,9 +122,9 @@
                             android:text="Rigenera alimentazione"
                             android:textColor="@color/semantic_error" />
                     </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
+                  </com.google.android.material.card.MaterialCardView>
 
-                 <com.google.android.material.card.MaterialCardView
+                  <com.google.android.material.card.MaterialCardView
                      android:id="@+id/aiConfigurationNoticeCard"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -162,11 +162,11 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/space_4"
                             android:text="@string/home_ai_not_configured_action" />
-                    </LinearLayout>
+                 </LinearLayout>
                  </com.google.android.material.card.MaterialCardView>
 
-                 <com.google.android.material.card.MaterialCardView
-                     android:id="@+id/analysisHubCard"
+                  <com.google.android.material.card.MaterialCardView
+                      android:id="@+id/analysisHubCard"
                      android:layout_width="match_parent"
                      android:layout_height="wrap_content"
                      android:layout_marginTop="@dimen/space_12"
@@ -247,8 +247,8 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_4" />
 
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="match_parent"
+                  <com.google.android.material.card.MaterialCardView
+                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12"
                     app:cardBackgroundColor="@color/white"
@@ -288,18 +288,18 @@
                     android:layout_marginTop="@dimen/space_12"
                      style="@style/Text.MyFitAI.Caption" />
 
-                <com.google.android.material.textfield.TextInputLayout
-                    style="@style/Widget.MyFitAI.InputDropdown"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                 <com.google.android.material.textfield.TextInputLayout
+                     style="@style/Widget.MyFitAI.InputDropdownCompact"
+                     android:layout_width="match_parent"
+                     android:layout_height="@dimen/control_compact_min_height"
                     android:layout_marginTop="@dimen/space_12"
                     android:hint="Misura mostrata"
                     app:endIconMode="dropdown_menu">
                     <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                        android:id="@+id/bodyTrendMetricSelector"
-                        style="@style/Widget.MyFitAI.InputDropdownText"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
+                         android:id="@+id/bodyTrendMetricSelector"
+                         style="@style/Widget.MyFitAI.InputDropdownTextCompact"
+                         android:layout_width="match_parent"
+                         android:layout_height="@dimen/control_compact_min_height"
                         android:inputType="none"
                         android:contentDescription="Seleziona la misura del grafico" />
                 </com.google.android.material.textfield.TextInputLayout>
@@ -317,16 +317,78 @@
                     android:text="Valori reali; seleziona una misura per cambiare vista"
                      style="@style/Text.MyFitAI.Micro" />
 
-                <com.myfitai.app.ui.widgets.TimeRangeSelectorView
-                    android:id="@+id/timeRangeSelector"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_12" />
-                </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
+                 <com.myfitai.app.ui.widgets.TimeRangeSelectorView
+                     android:id="@+id/timeRangeSelector"
+                     android:layout_width="wrap_content"
+                     android:layout_height="wrap_content"
+                     android:layout_marginTop="@dimen/space_12" />
+                 </LinearLayout>
+                 </com.google.android.material.card.MaterialCardView>
 
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="match_parent"
+                 <com.google.android.material.card.MaterialCardView
+                     android:id="@+id/quickMeasurementsCard"
+                     android:layout_width="match_parent"
+                     android:layout_height="wrap_content"
+                     android:layout_marginTop="@dimen/space_12"
+                     app:cardBackgroundColor="@color/white"
+                     app:cardCornerRadius="@dimen/radius_card"
+                     app:cardElevation="0dp"
+                     app:strokeColor="@color/divider"
+                     app:strokeWidth="@dimen/border_width_default">
+                     <LinearLayout
+                         android:layout_width="match_parent"
+                         android:layout_height="wrap_content"
+                         android:orientation="vertical"
+                         android:padding="@dimen/space_16">
+                         <TextView
+                             style="@style/Text.MyFitAI.Section"
+                             android:layout_width="match_parent"
+                             android:layout_height="wrap_content"
+                             android:text="Rilevazioni rapide" />
+                         <TextView
+                             style="@style/Text.MyFitAI.BodyCompact"
+                             android:layout_width="match_parent"
+                             android:layout_height="wrap_content"
+                             android:layout_marginTop="@dimen/space_4"
+                             android:text="Registra BIA e misure corporee o apri subito lo storico." />
+                         <LinearLayout
+                             android:layout_width="match_parent"
+                             android:layout_height="wrap_content"
+                             android:layout_marginTop="@dimen/space_8"
+                             android:orientation="horizontal">
+                             <com.google.android.material.button.MaterialButton
+                                 android:id="@+id/quickAddBiaButton"
+                                 style="@style/Widget.MyFitAI.Button.Primary"
+                                 android:layout_width="0dp"
+                                 android:layout_height="wrap_content"
+                                 android:layout_weight="1"
+                                 android:text="Nuova BIA"
+                                 android:textAllCaps="false" />
+                             <com.google.android.material.button.MaterialButton
+                                 android:id="@+id/quickAddBodyMeasurementButton"
+                                 style="@style/Widget.MyFitAI.Button.Outlined"
+                                 android:layout_width="0dp"
+                                 android:layout_height="wrap_content"
+                                 android:layout_marginStart="@dimen/space_8"
+                                 android:layout_weight="1"
+                                 android:text="Nuove misure"
+                                 android:textAllCaps="false" />
+                         </LinearLayout>
+                         <com.google.android.material.button.MaterialButton
+                             android:id="@+id/quickOpenHistoryButton"
+                             style="@style/Widget.MyFitAI.Button.Text"
+                             android:layout_width="wrap_content"
+                             android:layout_height="wrap_content"
+                             android:layout_gravity="start"
+                             android:layout_marginTop="@dimen/space_4"
+                             android:text="Apri storico rilevazioni"
+                             android:textAllCaps="false" />
+                     </LinearLayout>
+                 </com.google.android.material.card.MaterialCardView>
+
+                  <com.google.android.material.card.MaterialCardView
+                     android:id="@+id/bodyOverviewCard"
+                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12"
                     app:cardBackgroundColor="@color/white"
@@ -366,8 +428,8 @@
                     android:layout_marginTop="@dimen/space_4"
                     android:text="—"
                     android:textColor="@color/accent_green" />
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/caloriesCard"
+                  <com.google.android.material.card.MaterialCardView
+                     android:id="@+id/caloriesCard"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12"
@@ -567,7 +629,8 @@
                 </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <com.google.android.material.card.MaterialCardView
+                  <com.google.android.material.card.MaterialCardView
+                      android:id="@+id/recoveryCard"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12"
@@ -600,8 +663,9 @@
                         android:src="@drawable/ic_help_outline"
                         app:tint="@color/text_secondary" />
                  </FrameLayout>
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="match_parent"
+                 <com.google.android.material.card.MaterialCardView
+                     android:id="@+id/quickActionsCard"
+                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12"
                      app:cardBackgroundColor="@color/white"
@@ -684,13 +748,45 @@
                             android:layout_marginTop="@dimen/space_8"
                             style="@style/Text.MyFitAI.Body" />
 
-                        <TextView
-                            android:id="@+id/weeklyExpectationCaution"
+                         <TextView
+                             android:id="@+id/weeklyExpectationCaution"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/space_8"
                             android:text="Indicazione basata sul piano, non una previsione certa del peso."
-                            style="@style/Text.MyFitAI.Micro" />
+                             style="@style/Text.MyFitAI.Micro" />
+                         <LinearLayout
+                             android:layout_width="match_parent"
+                             android:layout_height="wrap_content"
+                             android:layout_marginTop="@dimen/space_8"
+                             android:orientation="horizontal">
+                             <com.google.android.material.button.MaterialButton
+                                 android:id="@+id/weeklyExpectationActionButton"
+                                 style="@style/Widget.MyFitAI.Button.Text"
+                                 android:layout_width="0dp"
+                                 android:layout_height="wrap_content"
+                                 android:layout_weight="1"
+                                 android:text="Sì, traguardo raggiunto"
+                                 android:textAllCaps="false"
+                                 android:visibility="gone" />
+                             <com.google.android.material.button.MaterialButton
+                                 android:id="@+id/weeklyExpectationNegativeButton"
+                                 style="@style/Widget.MyFitAI.Button.Outlined"
+                                 android:layout_width="0dp"
+                                 android:layout_height="wrap_content"
+                                 android:layout_marginStart="@dimen/space_8"
+                                 android:layout_weight="1"
+                                 android:text="No, da migliorare"
+                                 android:textAllCaps="false"
+                                 android:visibility="gone" />
+                         </LinearLayout>
+                         <TextView
+                             android:id="@+id/weeklyExpectationOutcomeText"
+                             style="@style/Text.MyFitAI.Caption"
+                             android:layout_width="match_parent"
+                             android:layout_height="wrap_content"
+                             android:layout_marginTop="@dimen/space_4"
+                             android:visibility="gone" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 

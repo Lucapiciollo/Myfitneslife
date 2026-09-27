@@ -205,7 +205,7 @@ class AiWorkflowIntegrationTest {
         val reviews = com.myfitai.app.data.repository.WeeklyReviewRepository(db)
         val consumptions = com.myfitai.app.data.repository.FoodConsumptionRepository(db)
         val calculations = ProfileCalculationService(profiles, bia, body, store)
-        val personal = PersonalResponseService(store, plans, cheats, workouts, bia, body)
+        val personal = PersonalResponseService(store, plans, cheats, workouts, bia, body, com.myfitai.app.data.repository.BodyExpectationGoalRepository(db))
         return Services(
             generation = NutritionPlanGenerationService(gateway, calculations, profiles, workouts, plans, cheats, com.myfitai.app.data.repository.CalorieRecoveryRepository(db), store, personal, time = time),
             mealAlternative = MealAlternativeService(gateway, profiles, plans, store, time),

@@ -78,7 +78,7 @@ class BodyMeasurementTrendView @JvmOverloads constructor(
             lineMode = LineDataSet.Mode.CUBIC_BEZIER
             isDrawFilled = true
             fillColor = context.getColor(R.color.accent_green)
-            fillAlpha = 42
+             fillAlpha = 82
         }
         chart.data = LineData(dataSet)
         chart.invalidate()
@@ -108,7 +108,7 @@ class BodyMeasurementTrendView @JvmOverloads constructor(
             lineMode = LineDataSet.Mode.CUBIC_BEZIER
             isDrawFilled = true
             fillColor = context.getColor(R.color.accent_green)
-            fillAlpha = 42
+             fillAlpha = 82
         }
         chart.data = LineData(dataSet)
         chart.invalidate()

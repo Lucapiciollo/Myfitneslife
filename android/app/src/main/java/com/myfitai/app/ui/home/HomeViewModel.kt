@@ -8,7 +8,9 @@ import com.myfitai.app.data.local.entity.BodyMeasurementEntity
 import com.myfitai.app.data.local.entity.FoodConsumptionEntity
 import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.data.local.entity.WorkoutEntity
+import com.myfitai.app.data.local.entity.BodyExpectationGoalEntity
 import com.myfitai.app.data.profile.ActiveProfileStore
+import com.myfitai.app.data.profile.NutritionPlanSchedulePreferences
 import com.myfitai.app.data.repository.BiaRepository
 import com.myfitai.app.data.repository.BodyMeasurementRepository
 import com.myfitai.app.data.repository.CalorieRecoveryRepository
@@ -17,6 +19,7 @@ import com.myfitai.app.data.repository.FoodConsumptionRepository
 import com.myfitai.app.data.repository.MealPlanRepository
 import com.myfitai.app.data.repository.UserProfileRepository
 import com.myfitai.app.data.repository.WorkoutRepository
+import com.myfitai.app.data.repository.BodyExpectationGoalRepository
 import com.myfitai.app.domain.calculation.LocalCalculationEngine
 import com.myfitai.app.domain.calculation.ProfileCalculationMapper
 import com.myfitai.app.domain.calculation.WeeklyBodyExpectation
@@ -35,6 +38,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
@@ -52,6 +56,8 @@ class HomeViewModel(
     private val cheatRepository: CheatEntryRepository,
     private val recoveryRepository: CalorieRecoveryRepository,
     private val foodConsumptionRepository: FoodConsumptionRepository,
+    private val bodyExpectationGoalRepository: BodyExpectationGoalRepository,
+    private val nutritionPlanSchedulePreferences: NutritionPlanSchedulePreferences,
     private val activeProfileStore: ActiveProfileStore,
 ) : ViewModel() {
 
@@ -102,6 +108,7 @@ class HomeViewModel(
         val recovery: RecoveryState = RecoveryState(),
         val latestBiaTimestamp: Long? = null,
         val weeklyExpectation: WeeklyBodyExpectation.Result = WeeklyBodyExpectation.Result(available = false),
+        val expectationGoals: List<BodyExpectationGoalEntity> = emptyList(),
     )
 
     private data class Source(
@@ -189,6 +196,10 @@ class HomeViewModel(
         }
     }
 
+    private val expectationGoalsSource = activeProfileStore.activeProfileId.flatMapLatest { profileId ->
+        if (profileId <= 0L) flowOf(emptyList()) else bodyExpectationGoalRepository.all(profileId)
+    }
+
     val state: StateFlow<DashboardState> = combine(
         source,
         selectedRange,
@@ -235,11 +246,42 @@ class HomeViewModel(
                 maintenanceKcal = dashboard.calories.tdee,
                 weekStartEpochDay = monday.toEpochDay(),
                 plannedDays = snapshot?.version?.days.orEmpty().map { it.dateEpochDay to it.totalKcal },
+                periodWeeks = activeProfileStore.currentIdOrNull()?.let(nutritionPlanSchedulePreferences::periodWeeks) ?: 1,
             ),
         )
+    }.combine(expectationGoalsSource) { dashboard, goals ->
+        dashboard.copy(expectationGoals = goals)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DashboardState())
 
     fun selectRange(index: Int) { selectedRange.value = index.coerceIn(0, 3) }
+
+    fun confirmExpectation(status: String, note: String? = null) {
+        val profileId = activeProfileStore.currentIdOrNull() ?: return
+        val result = state.value.weeklyExpectation
+        val monday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        viewModelScope.launch {
+            val now = System.currentTimeMillis()
+            val existing = bodyExpectationGoalRepository.getForPeriod(profileId, monday.toEpochDay())
+            bodyExpectationGoalRepository.upsert(
+                BodyExpectationGoalEntity(
+                    id = existing?.id ?: 0L,
+                    profileId = profileId,
+                    periodStartEpochDay = monday.toEpochDay(),
+                    periodEndEpochDay = monday.plusWeeks(result.periodWeeks.toLong()).minusDays(1).toEpochDay(),
+                    plannedDays = result.plannedDays,
+                    theoreticalDeficitKcal = result.theoreticalDeficitKcal,
+                    expectedFatLossMinKg = result.expectedFatLossKgMin,
+                    expectedFatLossMaxKg = result.expectedFatLossKgMax,
+                    initialWeightKg = existing?.initialWeightKg,
+                    finalWeightKg = existing?.finalWeightKg,
+                    status = status,
+                    note = note,
+                    createdAtEpochMillis = existing?.createdAtEpochMillis ?: now,
+                    updatedAtEpochMillis = now,
+                ),
+            )
+        }
+    }
 
     private fun buildState(
         source: Source,
@@ -444,6 +486,9 @@ class HomeViewModel(
             "Grasso corporeo" to source.bia.mapNotNull { row ->
                 row.bodyFatPercent?.let { row.measuredAtEpochMillis to it }
             },
+            "Acqua corporea" to source.bia.mapNotNull { row ->
+                row.bodyWaterPercent?.let { row.measuredAtEpochMillis to it }
+            },
             "Fianchi" to source.body.mapNotNull { row -> row.hipsCm?.let { row.measuredAtEpochMillis to it } },
             "Vita" to source.body.mapNotNull { row -> row.waistCm?.let { row.measuredAtEpochMillis to it } },
             "Torace" to source.body.mapNotNull { row -> row.chestCm?.let { row.measuredAtEpochMillis to it } },
@@ -457,11 +502,11 @@ class HomeViewModel(
             "Polpaccio sinistro" to source.body.mapNotNull { row -> row.calfLeftCm?.let { row.measuredAtEpochMillis to it } },
             "Polpaccio destro" to source.body.mapNotNull { row -> row.calfRightCm?.let { row.measuredAtEpochMillis to it } },
         )
-        return metrics.mapNotNull { (label, values) ->
+        // Keep every supported metric in the selector even when the selected range
+        // has no reading for it. The chart itself becomes empty for that metric.
+        return metrics.map { (label, values) ->
             val filtered = filterRange(values.sortedByDescending { it.first }, range)
-            filtered.takeIf { it.isNotEmpty() }?.let { entries ->
-                TrendSeries(label, entries.map { TrendPoint(it.first, it.second) })
-            }
+            TrendSeries(label, filtered.map { TrendPoint(it.first, it.second) })
         }
     }
 
@@ -501,12 +546,14 @@ class HomeViewModel(
         private val cheatRepository: CheatEntryRepository,
         private val recoveryRepository: CalorieRecoveryRepository,
         private val foodConsumptionRepository: FoodConsumptionRepository,
+        private val bodyExpectationGoalRepository: BodyExpectationGoalRepository,
+        private val nutritionPlanSchedulePreferences: NutritionPlanSchedulePreferences,
         private val activeProfileStore: ActiveProfileStore,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(HomeViewModel::class.java))
-            return HomeViewModel(profiles, biaRepository, bodyRepository, workoutRepository, mealPlanRepository, cheatRepository, recoveryRepository, foodConsumptionRepository, activeProfileStore) as T
+            return HomeViewModel(profiles, biaRepository, bodyRepository, workoutRepository, mealPlanRepository, cheatRepository, recoveryRepository, foodConsumptionRepository, bodyExpectationGoalRepository, nutritionPlanSchedulePreferences, activeProfileStore) as T
         }
     }
 }

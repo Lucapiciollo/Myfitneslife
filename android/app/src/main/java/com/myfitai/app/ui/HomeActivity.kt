@@ -35,6 +35,7 @@ import com.myfitai.app.ui.motion.UiMotion
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
+import java.time.DayOfWeek
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -56,6 +57,8 @@ class HomeActivity : BaseShellActivity() {
             cheatRepository = data.cheatEntryRepository,
             recoveryRepository = data.calorieRecoveryRepository,
             foodConsumptionRepository = data.foodConsumptionRepository,
+            bodyExpectationGoalRepository = data.bodyExpectationGoalRepository,
+            nutritionPlanSchedulePreferences = data.nutritionPlanSchedulePreferences,
             activeProfileStore = data.activeProfileStore,
         )
     }
@@ -72,6 +75,9 @@ class HomeActivity : BaseShellActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
+        moveBodyOverviewToSecondBlock()
+        moveRecoveryToThirdBlock()
+        moveOperationalSectionsToEnd()
         adaptLandscapeContent()
         adaptQuickActions()
         bindBottom(BottomNavBinder.Tab.HOME)
@@ -86,6 +92,21 @@ class HomeActivity : BaseShellActivity() {
         findViewById<android.view.View>(R.id.biaDueNoticeCard).setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java)) }
         findViewById<android.view.View>(R.id.biaDueNoticeButton).setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java)) }
         findViewById<android.view.View>(R.id.analysisHubButton).setOnClickListener { startActivity(Intent(this, MeasurementsActivity::class.java)) }
+        findViewById<android.view.View>(R.id.weeklyExpectationActionButton).setOnClickListener {
+            viewModel.confirmExpectation("REACHED")
+        }
+        findViewById<android.view.View>(R.id.weeklyExpectationNegativeButton).setOnClickListener {
+            viewModel.confirmExpectation("NOT_REACHED")
+        }
+        findViewById<android.view.View>(R.id.quickAddBiaButton).setOnClickListener {
+            startActivity(Intent(this, BiaActivity::class.java))
+        }
+        findViewById<android.view.View>(R.id.quickAddBodyMeasurementButton).setOnClickListener {
+            startActivity(Intent(this, NewBodyMeasurementActivity::class.java))
+        }
+        findViewById<android.view.View>(R.id.quickOpenHistoryButton).setOnClickListener {
+            startActivity(Intent(this, HistoryActivity::class.java))
+        }
         findViewById<android.view.View>(R.id.nextMealCard).setOnClickListener {
             currentNextMealId?.let { mealId ->
                 startActivity(Intent(this, MealDetailActivity::class.java).putExtra(MealDetailActivity.EXTRA_MEAL_ID, mealId))
@@ -131,7 +152,9 @@ class HomeActivity : BaseShellActivity() {
         findViewById<MetricCardView>(R.id.metricMuscle).setLabel(getString(R.string.dashboard_metric_muscle))
 
         findViewById<TimeRangeSelectorView>(R.id.timeRangeSelector).apply {
-            setRanges(listOf("1W", "1M", "3M", "1Y"), selectedIndex = 1)
+            // Keep the dashboard selector aligned with the full body-history view so
+            // less frequent measurements are available without an extra navigation step.
+            setRanges(listOf("1W", "1M", "3M", "1Y"), selectedIndex = 3)
             setOnRangeSelectedListener(viewModel::selectRange)
         }
 
@@ -160,6 +183,8 @@ class HomeActivity : BaseShellActivity() {
                 child.id == R.id.aiConfigurationNoticeCard ||
                 child.id == R.id.biaDueNoticeCard ||
                 child.id == R.id.analysisHubCard ||
+                child.id == R.id.quickMeasurementsCard ||
+                child.id == R.id.quickActionsCard ||
                 child.id == R.id.dashboardMetricsPanel ||
                 child.findViewById<View>(R.id.bodyOverviewHelpButton) != null
             val params = GridLayout.LayoutParams().apply {
@@ -190,6 +215,34 @@ class HomeActivity : BaseShellActivity() {
                     topMargin = 0
                 }
         }
+    }
+
+    private fun moveOperationalSectionsToEnd() {
+        val sections = listOf(
+            findViewById<View>(R.id.analysisHubCard),
+            findViewById<View>(R.id.quickMeasurementsCard),
+            findViewById<View>(R.id.quickActionsCard),
+        )
+        val parent = sections.firstOrNull()?.parent as? ViewGroup ?: return
+        if (sections.any { it.parent !== parent }) return
+        sections.forEach(parent::removeView)
+        sections.forEach { parent.addView(it) }
+    }
+
+    private fun moveBodyOverviewToSecondBlock() {
+        val bodyCard = findViewById<View>(R.id.bodyOverviewCard)
+        val parent = bodyCard.parent as? ViewGroup ?: return
+        parent.removeView(bodyCard)
+        parent.addView(bodyCard, 0)
+    }
+
+    private fun moveRecoveryToThirdBlock() {
+        val bodyCard = findViewById<View>(R.id.bodyOverviewCard)
+        val recoveryCard = findViewById<View>(R.id.recoveryCard)
+        val parent = bodyCard.parent as? ViewGroup ?: return
+        if (recoveryCard.parent !== parent) return
+        parent.removeView(recoveryCard)
+        parent.addView(recoveryCard, 1.coerceAtMost(parent.childCount))
     }
 
     override fun onResume() {
@@ -283,7 +336,7 @@ class HomeActivity : BaseShellActivity() {
             renderBodyTrend(viewModel.state.value.bodyMeasurementTrendSeries)
         }
         val unit = when {
-            selected?.label == "Grasso corporeo" -> "%"
+            selected?.label == "Grasso corporeo" || selected?.label == "Acqua corporea" -> "%"
             selected?.label == "Peso" || selected?.label?.startsWith("Massa") == true -> "kg"
             else -> "cm"
         }
@@ -308,17 +361,19 @@ class HomeActivity : BaseShellActivity() {
         val status = findViewById<TextView>(R.id.weeklyExpectationStatus)
         val detail = findViewById<TextView>(R.id.weeklyExpectationDetail)
         val caution = findViewById<TextView>(R.id.weeklyExpectationCaution)
-        val period = if (result.isFullWeek) "7 giorni del piano" else "${result.plannedDays}/7 giorni pianificati"
+        val monday = LocalDate.now().with(java.time.temporal.TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        val periodEnd = monday.plusWeeks(result.periodWeeks.toLong()).minusDays(1)
+        val period = "${monday.format(DateTimeFormatter.ofPattern("dd/MM", Locale.ITALIAN))}–${periodEnd.format(DateTimeFormatter.ofPattern("dd/MM", Locale.ITALIAN))}"
         when {
             result.available -> {
                 val minLoss = requireNotNull(result.expectedFatLossKgMin)
                 val maxLoss = requireNotNull(result.expectedFatLossKgMax)
                 status.text = "≈ ${formatExpectedLossRange(minLoss, maxLoss)} di grasso"
-                detail.text = "Possibile calo teorico se segui il piano · $period · deficit ≈ ${result.theoreticalDeficitKcal} kcal"
+                detail.text = "Periodo $period · ${result.plannedDays}/${result.periodWeeks * 7} giorni pianificati · deficit ≈ ${result.theoreticalDeficitKcal} kcal"
             }
             result.plannedDays > 0 -> {
                 status.text = "Nessuna perdita stimabile"
-                detail.text = "$period · bilancio energetico non in deficit"
+                detail.text = "Periodo $period · bilancio energetico non in deficit"
             }
             else -> {
                 status.text = "Dati insufficienti"
@@ -326,6 +381,25 @@ class HomeActivity : BaseShellActivity() {
             }
         }
         caution.text = result.caution
+        val hasResult = result.plannedDays > 0
+        val currentGoal = viewModel.state.value.expectationGoals.firstOrNull { it.periodStartEpochDay == monday.toEpochDay() }
+        findViewById<TextView>(R.id.weeklyExpectationActionButton).apply {
+            visibility = if (hasResult) View.VISIBLE else View.GONE
+            val goal = viewModel.state.value.expectationGoals.firstOrNull { it.periodStartEpochDay == monday.toEpochDay() }
+            text = if (goal?.status == "REACHED") "Sì, traguardo raggiunto" else "Sì, traguardo raggiunto"
+        }
+        findViewById<TextView>(R.id.weeklyExpectationNegativeButton).apply {
+            visibility = if (hasResult) View.VISIBLE else View.GONE
+            text = "No, da migliorare"
+        }
+        findViewById<TextView>(R.id.weeklyExpectationOutcomeText).apply {
+            visibility = if (currentGoal != null) View.VISIBLE else View.GONE
+            text = when (currentGoal?.status) {
+                "REACHED" -> "Esito registrato: sì, traguardo raggiunto."
+                "NOT_REACHED" -> "Esito registrato: no, da migliorare."
+                else -> ""
+            }
+        }
     }
 
     private fun formatExpectedLossRange(minKg: Double, maxKg: Double): String {

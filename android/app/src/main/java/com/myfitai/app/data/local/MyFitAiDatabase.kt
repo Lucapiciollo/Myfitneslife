@@ -24,9 +24,10 @@ import com.myfitai.app.data.local.entity.*
         CheatEntryEntity::class,
         FoodConsumptionEntity::class,
         WeeklyReviewEntity::class,
+        BodyExpectationGoalEntity::class,
         AiUsageRecordEntity::class,
     ],
-    version = 17,
+    version = 18,
     exportSchema = true,
 )
 abstract class MyFitAiDatabase : RoomDatabase() {
@@ -39,6 +40,7 @@ abstract class MyFitAiDatabase : RoomDatabase() {
     abstract fun cheatEntryDao(): CheatEntryDao
     abstract fun foodConsumptionDao(): FoodConsumptionDao
     abstract fun weeklyReviewDao(): WeeklyReviewDao
+    abstract fun bodyExpectationGoalDao(): BodyExpectationGoalDao
     abstract fun aiUsageDao(): AiUsageDao
     abstract fun calorieRecoveryQueryDao(): CalorieRecoveryQueryDao
 
@@ -334,6 +336,31 @@ object DatabaseMigrations {
         }
     }
 
+    val MIGRATION_17_18 = object : Migration(17, 18) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """CREATE TABLE IF NOT EXISTS body_expectation_goals (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    profileId INTEGER NOT NULL DEFAULT 1,
+                    periodStartEpochDay INTEGER NOT NULL,
+                    periodEndEpochDay INTEGER NOT NULL,
+                    plannedDays INTEGER NOT NULL,
+                    theoreticalDeficitKcal INTEGER,
+                    expectedFatLossMinKg REAL,
+                    expectedFatLossMaxKg REAL,
+                    initialWeightKg REAL,
+                    finalWeightKg REAL,
+                    status TEXT NOT NULL,
+                    note TEXT,
+                    createdAtEpochMillis INTEGER NOT NULL,
+                    updatedAtEpochMillis INTEGER NOT NULL
+                )""".trimIndent(),
+            )
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_body_expectation_goals_profileId ON body_expectation_goals(profileId)")
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_body_expectation_goals_profileId_periodStartEpochDay ON body_expectation_goals(profileId, periodStartEpochDay)")
+        }
+    }
+
     private fun addMissingColumns(db: SupportSQLiteDatabase, table: String, definitions: List<String>) {
         val existing = mutableSetOf<String>()
         db.query("PRAGMA table_info($table)").use { cursor ->
@@ -363,5 +390,6 @@ object DatabaseMigrations {
         MIGRATION_14_15,
         MIGRATION_15_16,
         MIGRATION_16_17,
+        MIGRATION_17_18,
     )
 }

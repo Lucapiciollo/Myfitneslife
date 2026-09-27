@@ -117,7 +117,7 @@ class FoodPlanViewModel(
             if (profileId <= 0L) flowOf(SourceData(selectedWeekStart.value, null, emptyList(), null, null))
         else selectedWeekStart.flatMapLatest { weekStart ->
             combine(
-                repository.latestSnapshotContainingDate(profileId, weekStart.toEpochDay()),
+                repository.latestSnapshotForDisplayedWeek(profileId, weekStart.toEpochDay()),
                 consumptionRepository.all(profileId),
                 profileRepository.profile(profileId),
                 biaRepository.all(profileId),

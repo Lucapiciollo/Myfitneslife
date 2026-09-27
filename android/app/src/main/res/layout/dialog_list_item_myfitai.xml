@@ -7,6 +7,6 @@
     android:minHeight="@dimen/control_min_height"
     android:gravity="start|center_vertical"
     android:textAlignment="viewStart"
-    android:paddingStart="@dimen/space_20"
-    android:paddingEnd="@dimen/space_20"
+    android:paddingStart="@dimen/space_12"
+    android:paddingEnd="@dimen/space_12"
     android:background="@color/white" />

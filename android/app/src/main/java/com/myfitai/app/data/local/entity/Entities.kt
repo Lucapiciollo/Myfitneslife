@@ -295,3 +295,24 @@ data class WeeklyReviewEntity(
     val summary: String,
     val structuredJson: String?,
 )
+
+@Entity(
+    tableName = "body_expectation_goals",
+    indices = [Index("profileId"), Index(value = ["profileId", "periodStartEpochDay"], unique = true)],
+)
+data class BodyExpectationGoalEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @ColumnInfo(defaultValue = "1") val profileId: Long,
+    val periodStartEpochDay: Long,
+    val periodEndEpochDay: Long,
+    val plannedDays: Int,
+    val theoreticalDeficitKcal: Int?,
+    val expectedFatLossMinKg: Double?,
+    val expectedFatLossMaxKg: Double?,
+    val initialWeightKg: Float?,
+    val finalWeightKg: Float?,
+    val status: String,
+    val note: String?,
+    val createdAtEpochMillis: Long,
+    val updatedAtEpochMillis: Long,
+)

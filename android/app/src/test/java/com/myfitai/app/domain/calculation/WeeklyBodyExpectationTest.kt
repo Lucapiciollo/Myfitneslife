@@ -65,4 +65,18 @@ class WeeklyBodyExpectationTest {
         assertFalse(WeeklyBodyExpectation.calculate(2_500, monday, emptyList()).available)
         assertFalse(WeeklyBodyExpectation.calculate(0, monday, listOf(monday to 2_000)).available)
     }
+
+    @Test
+    fun biweeklyPeriodUsesAllFourteenPlanDays() {
+        val result = WeeklyBodyExpectation.calculate(
+            maintenanceKcal = 2_500,
+            weekStartEpochDay = monday,
+            plannedDays = (0L..13L).map { monday + it to 2_000 },
+            periodWeeks = 2,
+        )
+        assertTrue(result.available)
+        assertEquals(2, result.periodWeeks)
+        assertEquals(14, result.plannedDays)
+        assertEquals(7_000, result.theoreticalDeficitKcal)
+    }
 }
