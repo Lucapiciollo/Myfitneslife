@@ -183,7 +183,6 @@ class SettingsActivity : BaseShellActivity() {
         findViewById<View>(R.id.rowExport).setOnClickListener { go(ExportActivity::class.java) }
 
         bindDataDeletion()
-        bindNutritionPlanSchedule()
         bindAiAutomationControls()
         GeminiCostSettingsBinder.bind(this, findViewById(R.id.aiSectionCard), settings)
         render()

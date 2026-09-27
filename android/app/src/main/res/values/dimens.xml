@@ -8,7 +8,7 @@
     <dimen name="radius_small">10dp</dimen><dimen name="radius_medium">14dp</dimen><dimen name="radius_large">22dp</dimen>
     <dimen name="radius_chip">20dp</dimen>
     <dimen name="radius_card">16dp</dimen><dimen name="radius_screen_header">18dp</dimen><dimen name="radius_field">12dp</dimen><dimen name="radius_dialog">16dp</dimen>
-    <dimen name="elevation_card">0dp</dimen><dimen name="elevation_dialog">8dp</dimen>
+    <dimen name="elevation_card">0dp</dimen><dimen name="elevation_dialog">8dp</dimen><dimen name="sticky_header_elevation">2dp</dimen>
     <dimen name="radius_pill">16dp</dimen>
     <dimen name="splash_corner_decoration_size">120dp</dimen>
     <dimen name="splash_bottom_decoration_size">160dp</dimen>

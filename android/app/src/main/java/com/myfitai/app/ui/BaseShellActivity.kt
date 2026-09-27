@@ -13,6 +13,7 @@ import android.widget.AutoCompleteTextView
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.core.view.ViewCompat
@@ -35,6 +36,41 @@ abstract class BaseShellActivity : AppCompatActivity() {
     private var profileSwitcher: AutoCompleteTextView? = null
     private var profileHeader: View? = null
     private var isTabRoot = false
+
+    override fun onPostCreate(savedInstanceState: Bundle?) {
+        super.onPostCreate(savedInstanceState)
+        promoteScreenHeaderToSticky()
+    }
+
+    private fun promoteScreenHeaderToSticky() {
+        val header = findViewById<View?>(R.id.backButton)?.parent as? ViewGroup
+            ?: findViewById<View?>(R.id.prevWeekButton)?.parent as? ViewGroup
+            ?: return
+        val headerParent = header.parent as? ViewGroup ?: return
+        val scrollContainer = headerParent.parent as? ViewGroup ?: return
+        val root = scrollContainer.parent as? ViewGroup ?: return
+        if (root.indexOfChild(scrollContainer) < 0) return
+
+        headerParent.removeView(header)
+        root.addView(header, 0)
+        header.setBackgroundColor(getColor(R.color.white))
+        header.setPadding(dimen(R.dimen.space_8), 0, dimen(R.dimen.space_8), 0)
+        ViewCompat.setElevation(header, resources.getDimension(R.dimen.sticky_header_elevation))
+        header.findFirstTextView()?.apply {
+            gravity = Gravity.CENTER
+            textAlignment = View.TEXT_ALIGNMENT_CENTER
+        }
+    }
+
+    private fun View.findFirstTextView(): TextView? {
+        if (this is TextView && text.isNotBlank()) return this
+        if (this !is ViewGroup) return null
+        for (index in 0 until childCount) {
+            findViewById<TextView?>(android.R.id.text1)?.let { return it }
+            getChildAt(index).findFirstTextView()?.let { return it }
+        }
+        return null
+    }
 
     protected fun openFoodPlan(weekStartEpochDay: Long? = null): Boolean {
         if (weekStartEpochDay == null && !AiProviderAccess.requireConfigured(this)) return false
