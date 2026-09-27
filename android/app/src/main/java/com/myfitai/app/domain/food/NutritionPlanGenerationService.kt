@@ -65,10 +65,15 @@ class NutritionPlanGenerationService(
     }
 
     suspend fun generateWeek(profileId: Long, weekStart: LocalDate): Result {
-        val monday = weekStart.minusDays((weekStart.dayOfWeek.value - 1).toLong())
+        return generatePeriod(profileId, weekStart, 1)
+    }
+
+    suspend fun generatePeriod(profileId: Long, weekStart: LocalDate, periodWeeks: Int): Result {
+        require(periodWeeks in NutritionPlanPeriod.MIN_WEEKS..NutritionPlanPeriod.MAX_WEEKS) { "INVALID_PERIOD_WEEKS" }
+        val monday = NutritionPlanPeriod.monday(weekStart)
         val today = time.today()
-        if (monday.plusDays(6).isBefore(today)) throw GenerationException.PastWeek()
-        val generationStart = if (today.isAfter(monday)) today else monday
+        if (NutritionPlanPeriod.isEntirelyPast(monday, periodWeeks, today)) throw GenerationException.PastWeek()
+        val generationStart = NutritionPlanPeriod.generationStart(monday, today)
 
         val profile = profiles.get(profileId)
             ?: throw GenerationException.NeedsInput(listOf("profilo"))
@@ -123,7 +128,7 @@ class NutritionPlanGenerationService(
 
         val zone = time.zoneId
         val from = monday.atStartOfDay(zone).toInstant().toEpochMilli()
-        val to = monday.plusDays(7).atStartOfDay(zone).toInstant().toEpochMilli() - 1
+        val to = monday.plusWeeks(periodWeeks.toLong()).atStartOfDay(zone).toInstant().toEpochMilli() - 1
         val weekWorkouts = workouts.between(profileId, from, to).first()
         val sportsMode = SportsNutritionClassifier.classify(profile.activityLevel, weekWorkouts)
         val mealsPerDay = mealCountPreferences?.get(profileId) ?: MealCountPreferences.DEFAULT
@@ -155,6 +160,7 @@ class NutritionPlanGenerationService(
             weightKg = weightKg,
             goal = resolvedGoal,
             credits = credits,
+            periodWeeks = periodWeeks,
         )
         val dailyTargets = recoveryPlan.days
             .filter { !it.date.isBefore(generationStart) }
@@ -171,6 +177,7 @@ class NutritionPlanGenerationService(
             userPrompt = buildUserPrompt(
                 monday = monday,
                 generationStart = generationStart,
+                periodWeeks = periodWeeks,
                 profile = profile,
                 baseTargets = baseTargets,
                 dailyTargets = dailyTargets,
@@ -219,6 +226,7 @@ class NutritionPlanGenerationService(
                         tolerance = targetTolerance,
                         targetBelowOnly = false,
                         expectedFirstDate = generationStart,
+                        expectedPeriodWeeks = periodWeeks,
                         maintenanceCeilingKcal = maintenanceCeilingKcal,
                     ).getOrThrow()
                     // The model must center the real M+S calorie sum on each daily target.
@@ -247,6 +255,7 @@ class NutritionPlanGenerationService(
                     tolerance = targetTolerance,
                     targetBelowOnly = false,
                     expectedFirstDate = generationStart,
+                    expectedPeriodWeeks = periodWeeks,
                     maintenanceCeilingKcal = maintenanceCeilingKcal,
                 ).getOrThrow()
             }
@@ -285,7 +294,7 @@ class NutritionPlanGenerationService(
                     workouts = weekWorkouts.map { w ->
                         val dt = Instant.ofEpochMilli(w.startedAtEpochMillis).atZone(zone)
                         PlanReviewService.WorkoutSignal(
-                            dayOffset = (dt.toLocalDate().toEpochDay() - monday.toEpochDay()).toInt().coerceIn(0, 6),
+                            dayOffset = (dt.toLocalDate().toEpochDay() - monday.toEpochDay()).toInt().coerceIn(0, periodWeeks * 7 - 1),
                             timeMinutes = dt.toLocalTime().hour * 60 + dt.toLocalTime().minute,
                             type = w.type,
                             durationMinutes = w.durationMinutes ?: 0,
@@ -382,6 +391,7 @@ class NutritionPlanGenerationService(
     private fun buildUserPrompt(
         monday: LocalDate,
         generationStart: LocalDate,
+        periodWeeks: Int,
         profile: com.myfitai.app.data.local.entity.UserProfileEntity,
         baseTargets: NutritionBusinessValidator.Targets,
         dailyTargets: Map<Long, NutritionBusinessValidator.Targets>,
@@ -404,7 +414,8 @@ class NutritionPlanGenerationService(
         appendLine("TARGET_POLICY:Center each daily TD kcal and macro target; aim within 1% where practical; the supplied 3% is a hard validation margin, not an extra calorie allowance. Do not aim systematically at TD+3% or subtract a second deficit.")
         appendLine("REC:${recoveryPlan.availableBeforeKcal}|${recoveryPlan.plannedRecoveryKcal}|${recoveryPlan.remainingKcal}|10")
         appendLine("MEALS_PER_DAY:$mealsPerDay")
-        appendLine("GENERATE_FROM:${generationStart.toEpochDay()}|${monday.plusDays(6).toEpochDay()}")
+        appendLine("GENERATE_FROM:${generationStart.toEpochDay()}|${NutritionPlanPeriod.endDate(monday, periodWeeks).toEpochDay()}")
+        appendLine("PERIOD_WEEKS:$periodWeeks")
         appendLine("SM:${sportsMode.name}")
         appendLine("U:${AiUserContext.profileLine(profile, time.today(), snapshot.latestWeightKg)}")
         appendLine("LC:${AiUserContext.calculationLine(snapshot.calculation)}")
@@ -496,12 +507,12 @@ class NutritionPlanGenerationService(
         }
 
         private val SYSTEM_PROMPT = """
-MyFitAI NutritionPlanAgent. Your ONLY operational responsibility is generating a complete weekly nutrition plan from the authoritative targets and context supplied by the app. Never choose/change the user's goal, interpret progress, or adapt a recorded deviation/cheat; dedicated agents own those tasks. Output ONLY JSON matching the supplied envelope schema. The `data` string must begin with the exact line `MFP1`, followed by the pipe records below. Do not omit `MFP1`, do not replace it with another header, do not use markdown, and do not add text outside records.
+MyFitAI NutritionPlanAgent. Your ONLY operational responsibility is generating a complete nutrition plan for the requested period from the authoritative targets and context supplied by the app. Never choose/change the user's goal, interpret progress, or adapt a recorded deviation/cheat; dedicated agents own those tasks. Output ONLY JSON matching the supplied envelope schema. The `data` string must begin with the exact line `MFP1`, followed by the pipe records below. Do not omit `MFP1`, do not replace it with another header, do not use markdown, and do not add text outside records.
 ${AiUserContext.INPUT_DESCRIPTION}
 ${NutritionPlanCompactContract.PROTOCOL}
 E is the estimated maintenance expenditure (TDEE), or ? for a goal without a mandatory deficit. It is NOT the diet target: T and each TD are already adjusted for the user's chosen goal. If E is numeric, ensure the sum of meals plus caloric supplements is strictly BELOW E for every generated day; never fill all maintenance calories merely because the target tolerance permits it. T is the base local target. Every TD line is the AUTHORITATIVE target for that specific epoch day and overrides T for that day. CENTER the actual daily sum of meals and caloric supplements on that day's TD kcal AND protein/carbs/fat targets, ideally within 1% where practicable. The ±3% in T/TD is ONLY the app's outer acceptance margin for rounding and food composition, NOT bonus calories or a range to saturate. Do not systematically aim at its upper bound. The goal-specific deficit or surplus is already included in TD: never apply a second calorie adjustment. REC is informational only: available|planned|remaining|maxDailyPercent. Never calculate, increase or decrease recovery yourself and never compensate beyond TD. B0/B/BT order is weightKg|bodyFatPct|muscleMassKg|skeletalMuscleKg|bodyWaterPct|visceralFat and means baseline/current/recent-trend-delta. BM0/BM/BMD/BMT order is chest|waist|abdomen|shoulders|glutes|hips|armLeft|armRight|thighLeft|thighRight|calfLeft|calfRight and means baseline/current/previous-delta/recent-trend-delta. `?` means unavailable. Body/BIA signals are contextual only: use them jointly to inform food choice, distribution and timing, never to autonomously alter calories/macros, diagnose disease, dehydration, edema or muscle loss, or infer causality from one reading. Weight alone must never drive a dietary change.
 DP format is A=allergies;I=intolerances;E=excludedFoods;D=dislikedFoods;P=preferredFoods;S=dietStyle;N=free-text food preferences. A, I, E and S are HARD constraints: never output an ingredient that violates them. D, P and N are SOFT preferences only. Read them and follow them when possible, but never change, stretch or bypass the authoritative calorie and macro targets to satisfy them. Requests in N, including quantities, frequency goals and weekly objectives such as "pizza once per week" or "gelato twice per week", are suggestions rather than mandatory requirements. Include or distribute them only when they fit naturally within the daily TD targets; otherwise reduce, replace or omit them and keep the targets exact. Do not weaken, reinterpret or override hard constraints. The app independently validates every ingredient and rejects violations.
-Rules: generate exactly the dates in GENERATE_FROM (inclusive) through its end date, with exactly MEALS_PER_DAY meals per day. The complete record order is W, then for each requested day exactly one D followed by its M records, each meal's I records, and optional S/H records; after the final requested day emit exactly ONE V record as the final line. Never emit V inside a day or more than once. Use distinct meal slots with practical timing unless the supplied schedule requires different names. Never use `|` or line breaks inside a text field. All kcal/macros are numeric. D totals are transport hints only: the app recalculates authoritative daily kcal/protein/carbs/fat from all M records plus caloric S records. Therefore calculate the SUM of M+S values before emitting each D, refine portions to match that day's exact TD kcal and macros as closely as possible, and use the supplied tolerance only as a last-resort acceptance bound; do not rely on D values to satisfy the target. For every meal/supplement, kcal must remain coherent with 4*proteinG + 4*carbsG + 9*fatG within the app integrity tolerance. Count oils, dressings and caloric drinks. Ordinary foods first. Protein powder is optional and its kcal/macros count. Creatine only when SM=SPORT and always 0 kcal/P/C/F. H may give cautious hydration guidance. No punitive compensation. V notes <= 8 words. Skeleton: MFP1 -> W -> requested dates (D -> M/I/S/H) -> V exactly once.
+Rules: generate exactly the dates in GENERATE_FROM (inclusive) through its end date, with exactly MEALS_PER_DAY meals per day. The complete record order is W, then for each requested date exactly one D followed by its M records, each meal's I records, and optional S/H records; after the final requested date emit exactly ONE V record as the final line. Never emit V inside a day or more than once. Use distinct meal slots with practical timing unless the supplied schedule requires different names. Never use `|` or line breaks inside a text field. All kcal/macros are numeric. D totals are transport hints only: the app recalculates authoritative daily kcal/protein/carbs/fat from all M records plus caloric S records. Therefore calculate the SUM of M+S values before emitting each D, refine portions to match that day's exact TD kcal and macros as closely as possible, and use the supplied tolerance only as a last-resort acceptance bound; do not rely on D values to satisfy the target. For every meal/supplement, kcal must remain coherent with 4*proteinG + 4*carbsG + 9*fatG within the app integrity tolerance. Count oils, dressings and caloric drinks. Ordinary foods first. Protein powder is optional and its kcal/macros count. Creatine only when SM=SPORT and always 0 kcal/P/C/F. H may give cautious hydration guidance. No punitive compensation. V notes <= 8 words. Skeleton: MFP1 -> W -> all requested dates (D -> M/I/S/H) -> V exactly once.
 VARIETY: make every meal recipe different across the requested dates. Rotate protein sources, vegetables, fruit, grains and preparation methods. Do not repeat the same meal title with the same ingredient set on another day. Recurring staples such as oil, salt, spices or water are allowed; the complete recipe must not be duplicated.
 """.trimIndent()
     }

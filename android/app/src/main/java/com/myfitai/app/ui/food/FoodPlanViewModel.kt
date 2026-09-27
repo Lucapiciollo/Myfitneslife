@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.myfitai.app.data.profile.ActiveProfileStore
+import com.myfitai.app.data.profile.NutritionPlanSchedulePreferences
 import com.myfitai.app.data.repository.MealPlanRepository
 import com.myfitai.app.data.repository.FoodConsumptionRepository
 import com.myfitai.app.data.repository.UserProfileRepository
@@ -16,6 +17,7 @@ import com.myfitai.app.domain.food.NutritionPlanGenerationService
 import com.myfitai.app.domain.calculation.ProfileCalculationService
 import com.myfitai.app.domain.ai.AiJobScheduler
 import com.myfitai.app.domain.ai.AiJobType
+import com.myfitai.app.domain.food.WeeklyPlanAiJobHandler
 import androidx.work.WorkInfo
 import com.myfitai.app.notifications.NotificationScheduler
 import com.myfitai.app.ai.AiTransportException
@@ -50,6 +52,7 @@ class FoodPlanViewModel(
     private val profileRepository: UserProfileRepository,
     private val biaRepository: BiaRepository,
     private val bodyMeasurementRepository: BodyMeasurementRepository,
+    private val schedulePreferences: NutritionPlanSchedulePreferences,
 ) : ViewModel() {
     data class CalorieReference(val bmrKcal: Double?, val tdeeKcal: Double?)
 
@@ -114,7 +117,7 @@ class FoodPlanViewModel(
             if (profileId <= 0L) flowOf(SourceData(selectedWeekStart.value, null, emptyList(), null, null))
         else selectedWeekStart.flatMapLatest { weekStart ->
             combine(
-                repository.latestSnapshot(profileId, weekStart.toEpochDay()),
+                repository.latestSnapshotContainingDate(profileId, weekStart.toEpochDay()),
                 consumptionRepository.all(profileId),
                 profileRepository.profile(profileId),
                 biaRepository.all(profileId),
@@ -175,10 +178,14 @@ class FoodPlanViewModel(
                     profileId = profileId,
                     jobKey = week.toEpochDay().toString(),
                     replaceExisting = true,
+                    params = androidx.work.workDataOf(
+                        WeeklyPlanAiJobHandler.KEY_PERIOD_WEEKS to schedulePreferences.periodWeeks(profileId),
+                    ),
                 )
             }
         }
     }
+
 
     fun clearGenerationMessage() { if (!generationState.value.running) generationState.value = GenerationState() }
 
@@ -190,12 +197,12 @@ class FoodPlanViewModel(
             "Il piano generato non rispetta il target del giorno. Dettagli: ${raw.substringAfter(':', "valori fuori tolleranza")}. Verifica anche le preferenze alimentari e riprova."
         raw.startsWith("DAY_TOTALS_INCONSISTENT") ->
             "Nel piano generato la somma dei pasti non coincide con i totali del giorno. Riprova a generare il piano."
-        raw.startsWith("WEEK_MUST_HAVE_7_DAYS") || raw.startsWith("WEEK_DATES_INVALID") || raw.startsWith("WEEK_START_MISMATCH") || raw.contains("MEALS") || raw.contains("MEAL_COUNT") ->
-            "Il piano generato è incompleto o mal strutturato (non copre tutti e 7 i giorni o i pasti previsti). Riprova a generare il piano."
+        raw.startsWith("WEEK_MUST_HAVE_") || raw.startsWith("WEEK_DATES_INVALID") || raw.startsWith("WEEK_START_MISMATCH") || raw.contains("MEALS") || raw.contains("MEAL_COUNT") ->
+             "Il piano generato è incompleto o mal strutturato (non copre tutti i giorni o i pasti previsti). Riprova a generare il piano."
         raw.startsWith("PLAN_REVIEW_") ->
             "La revisione automatica ha respinto il piano generato. Riprova a generare il piano."
-        raw.startsWith("OUTPUT_TRUNCATED") ->
-            "Il provider IA ha interrotto la risposta prima di completare i 7 giorni del piano. Aggiorna l'app e riprova; nessun piano incompleto è stato salvato."
+         raw.startsWith("OUTPUT_TRUNCATED") ->
+             "Il provider IA ha interrotto la risposta prima di completare il periodo del piano. Aggiorna l'app e riprova; nessun piano incompleto è stato salvato."
         raw.startsWith("INVALID_SCHEMA") || raw.startsWith("PIPE_") || raw.contains("INVALID_COMPACT_PROTOCOL") ->
             "La risposta dell'IA non era nel formato atteso anche dopo i tentativi di correzione. Riprova a generare il piano."
         raw.startsWith("Completa prima") || raw.startsWith("NEEDS_INPUT") -> raw
@@ -240,11 +247,12 @@ class FoodPlanViewModel(
         private val profileRepository: UserProfileRepository,
         private val biaRepository: BiaRepository,
         private val bodyMeasurementRepository: BodyMeasurementRepository,
+        private val schedulePreferences: NutritionPlanSchedulePreferences,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(FoodPlanViewModel::class.java))
-            return FoodPlanViewModel(repository, activeProfileStore, generationService, calculations, notificationScheduler, consumptionRepository, aiJobScheduler, profileRepository, biaRepository, bodyMeasurementRepository) as T
+            return FoodPlanViewModel(repository, activeProfileStore, generationService, calculations, notificationScheduler, consumptionRepository, aiJobScheduler, profileRepository, biaRepository, bodyMeasurementRepository, schedulePreferences) as T
         }
     }
 }

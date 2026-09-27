@@ -280,16 +280,18 @@ internal object PdfExportRenderer {
     ) {
         val document = PdfDocument()
         var pageNumber = 1
-        val weekStart = LocalDate.ofEpochDay(snapshot.weekStartEpochDay)
-        val weekEnd = weekStart.plusDays(6)
+        val weekStart = LocalDate.ofEpochDay(snapshot.version.days.minOfOrNull { it.dateEpochDay } ?: snapshot.weekStartEpochDay)
+        val weekEnd = LocalDate.ofEpochDay(snapshot.version.days.maxOfOrNull { it.dateEpochDay } ?: snapshot.weekStartEpochDay)
         val dateRange = "${formatDate(weekStart)} - ${formatDate(weekEnd)}"
         val days = snapshot.version.days.sortedBy { it.dateEpochDay }
+        val periodLabel = if (days.size > 7) "Piano alimentare per periodo" else "Piano alimentare settimanale"
+        val shortLabel = if (days.size > 7) "Dieta periodo" else "Dieta settimanale"
 
         // Copertina settimanale
         run {
             val page = startPage(document, pageNumber)
             val canvas = page.canvas
-            drawHeader(canvas, "Piano alimentare settimanale", "$dateRange | $profileName")
+            drawHeader(canvas, periodLabel, "$dateRange | $profileName")
             drawCard(canvas, 40f, 150f, 515f, 120f)
             text(canvas, "Target giornaliero", 58f, 180f, 11f, MUTED, true)
             text(canvas, snapshot.version.targetKcal?.let { "$it kcal" }.orDash(), 58f, 222f, 28f, TEXT, true)
@@ -319,7 +321,7 @@ internal object PdfExportRenderer {
             text(canvas, "Versione piano: ${snapshot.version.versionNumber}", 58f, 404f, 9f, MUTED)
 
             drawCard(canvas, 40f, 450f, 515f, 275f)
-            text(canvas, "Settimana", 58f, 482f, 14f, TEXT, true)
+            text(canvas, if (days.size > 7) "Periodo" else "Settimana", 58f, 482f, 14f, TEXT, true)
             var y = 515f
             days.forEach { day ->
                 val date = LocalDate.ofEpochDay(day.dateEpochDay)
@@ -329,7 +331,7 @@ internal object PdfExportRenderer {
                 text(canvas, "${day.meals.size} pasti", 535f, y, 9f, MUTED, alignRight = true)
                 y += 30f
             }
-            drawFooter(canvas, pageNumber, "Dieta settimanale")
+            drawFooter(canvas, pageNumber, shortLabel)
             document.finishPage(page)
             pageNumber++
         }
@@ -341,9 +343,9 @@ internal object PdfExportRenderer {
             mealPages.forEachIndexed { partIndex, meals ->
                 val page = startPage(document, pageNumber)
                 val canvas = page.canvas
-                drawHeader(canvas, "Dieta settimanale", dateRange)
+                drawHeader(canvas, periodLabel, dateRange)
                 drawDayCard(canvas, day, meals, 150f, partIndex > 0)
-                drawFooter(canvas, pageNumber, "Dieta settimanale")
+                drawFooter(canvas, pageNumber, shortLabel)
                 document.finishPage(page)
                 pageNumber++
             }
@@ -353,14 +355,14 @@ internal object PdfExportRenderer {
         val groups = shoppingItems.groupBy { it.category }.toSortedMap(String.CASE_INSENSITIVE_ORDER)
         var page = startPage(document, pageNumber)
         var canvas = page.canvas
-        drawHeader(canvas, "Lista della spesa", "Aggregata dal piano settimanale")
+        drawHeader(canvas, "Lista della spesa", "Aggregata dal piano")
         var column = 0
         val columnX = floatArrayOf(40f, 307f)
         val columnWidth = 248f
         val columnBottom = floatArrayOf(150f, 150f)
 
         fun finishShoppingPage() {
-            drawFooter(canvas, pageNumber, "Dieta settimanale")
+            drawFooter(canvas, pageNumber, shortLabel)
             document.finishPage(page)
             pageNumber++
             page = startPage(document, pageNumber)
@@ -396,7 +398,7 @@ internal object PdfExportRenderer {
             columnBottom[column] += required + 12f
         }
 
-        drawFooter(canvas, pageNumber, "Dieta settimanale")
+            drawFooter(canvas, pageNumber, shortLabel)
         document.finishPage(page)
 
         FileOutputStream(file).use(document::writeTo)

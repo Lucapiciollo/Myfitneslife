@@ -15,7 +15,9 @@ import com.myfitai.app.domain.food.FoodPlanDay
 import com.myfitai.app.domain.food.FoodPlanSnapshot
 import com.myfitai.app.domain.food.FoodPlanVersion
 import com.myfitai.app.domain.food.FoodSupplement
+import com.myfitai.app.domain.food.NutritionPlanPeriod
 import com.myfitai.app.domain.shopping.ShoppingListEngine
+import com.myfitai.app.data.profile.NutritionPlanSchedulePreferences
 import com.myfitai.app.domain.time.SystemTimeProvider
 import com.myfitai.app.domain.time.TimeProvider
 import kotlinx.coroutines.flow.first
@@ -23,11 +25,9 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
-import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.Period
 import java.time.format.DateTimeFormatter
-import java.time.temporal.TemporalAdjusters
 import java.util.Locale
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
@@ -37,6 +37,7 @@ class ProfileExportService(
     private val db: MyFitAiDatabase,
     private val activeProfileStore: ActiveProfileStore,
     private val time: TimeProvider = SystemTimeProvider,
+    private val nutritionPlanSchedulePreferences: NutritionPlanSchedulePreferences? = null,
 ) {
     enum class Format { JSON, CSV_ZIP, PDF, WEEKLY_PLAN_PDF }
     data class ExportedFile(val file: File, val mimeType: String)
@@ -56,13 +57,22 @@ class ProfileExportService(
         val plans = db.mealPlanDao().observePlans(profileId).first().sortedBy { it.weekStartEpochDay }
 
         if (format == Format.WEEKLY_PLAN_PDF) {
-            val currentWeekStart = time.today()
-                .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-                .toEpochDay()
-            val selectedPlan = plans.firstOrNull { it.weekStartEpochDay == currentWeekStart }
-                ?: plans.maxByOrNull { it.weekStartEpochDay }
-                ?: error("Nessun piano alimentare disponibile")
-            val snapshot = loadLatestSnapshot(selectedPlan) ?: error("Piano alimentare non disponibile")
+            val currentDate = time.today()
+            val currentMonday = NutritionPlanPeriod.monday(currentDate).toEpochDay()
+            val configuredWeeks = nutritionPlanSchedulePreferences?.periodWeeks(profileId) ?: 1
+            val snapshots = plans.asReversed().mapNotNull { loadLatestSnapshot(it) }
+            val snapshot = snapshots.firstOrNull { snapshot ->
+                val start = LocalDate.ofEpochDay(snapshot.weekStartEpochDay)
+                val end = NutritionPlanPeriod.endDate(start, configuredWeeks)
+                val dates = snapshot.version.days.map { it.dateEpochDay }.sorted()
+                val coversConfiguredPeriod = dates.isNotEmpty() &&
+                    dates.last() == end.toEpochDay() &&
+                    dates.zipWithNext().all { (left, right) -> right == left + 1 }
+                coversConfiguredPeriod && (
+                    snapshot.weekStartEpochDay == currentMonday ||
+                        snapshot.version.days.any { it.dateEpochDay == currentDate.toEpochDay() }
+                    )
+            } ?: error("Nessun piano completo per il periodo configurato disponibile")
             val shopping = ShoppingListEngine.aggregate(snapshot)
             val file = exportFile(profile.name, "dieta-settimanale", "pdf")
             PdfExportRenderer.writeWeeklyPlanReport(file, profile.name, snapshot, shopping)

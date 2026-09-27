@@ -43,11 +43,12 @@ object CalorieRecoveryEngine {
         weightKg: Double,
         goal: LocalCalculationEngine.Goal,
         credits: List<Credit>,
+        periodWeeks: Int = 1,
     ): Result {
         require(baseTargets.kcal > 0.0)
         require(weightKg > 0.0)
 
-        val dates = (0L..6L).map(monday::plusDays)
+        val dates = NutritionPlanPeriod.dates(monday, periodWeeks)
         val validCredits = credits
             .filter { it.kcal > 0 }
             .sortedWith(compareBy<Credit> { it.occurredOn }.thenBy { it.sourceId })

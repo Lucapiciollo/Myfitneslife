@@ -215,6 +215,7 @@ class AppDataContainer private constructor(context: Context) {
         context = appContext,
         db = db,
         activeProfileStore = activeProfileStore,
+        nutritionPlanSchedulePreferences = nutritionPlanSchedulePreferences,
     )
     val profileBackupService = ProfileBackupService(appContext, db, activeProfileStore)
 

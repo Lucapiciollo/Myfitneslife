@@ -22,6 +22,7 @@ class WeeklyPlanAiJobHandler(
                 ?: jobKey.toLongOrNull()
                 ?: return AiJobOutcome.Failure("Settimana non valida")
             val weekStart = LocalDate.ofEpochDay(weekEpochDay)
+            val periodWeeks = params.getInt(KEY_PERIOD_WEEKS, 1).coerceIn(1, 4)
 
             if (automatic && plans.getPlanForWeek(profileId, weekStart.toEpochDay()) != null) {
                 return AiJobOutcome.Success(
@@ -29,7 +30,7 @@ class WeeklyPlanAiJobHandler(
                 )
             }
 
-            val result = service.generateWeek(profileId, weekStart)
+            val result = service.generatePeriod(profileId, weekStart, periodWeeks)
             runCatching { notifications.refresh() }
             AiJobOutcome.Success(
                 Data.Builder()
@@ -48,5 +49,6 @@ class WeeklyPlanAiJobHandler(
     companion object {
         const val KEY_WEEK_START_EPOCH_DAY = "week_start_epoch_day"
         const val KEY_AUTOMATIC = "automatic_generation"
+        const val KEY_PERIOD_WEEKS = "period_weeks"
     }
 }

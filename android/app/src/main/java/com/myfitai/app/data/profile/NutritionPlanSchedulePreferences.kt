@@ -15,6 +15,8 @@ class NutritionPlanSchedulePreferences(context: Context) {
 
     enum class Frequency { DAILY, WEEKLY, BIWEEKLY, MONTHLY }
 
+    fun periodWeeks(profileId: Long): Int = periodWeeks(get(profileId).frequency)
+
     fun get(profileId: Long): Config = Config(
         enabled = prefs.getBoolean(keyEnabled(profileId), false),
         frequency = prefs.getString(keyFrequency(profileId), Frequency.WEEKLY.name)
@@ -60,5 +62,11 @@ class NutritionPlanSchedulePreferences(context: Context) {
         private const val PREFS_NAME = "nutrition_plan_schedule"
         val DEFAULT_DAY: DayOfWeek = DayOfWeek.SUNDAY
         const val DEFAULT_TIME_MINUTES = 18 * 60
+
+        fun periodWeeks(frequency: Frequency): Int = when (frequency) {
+            Frequency.DAILY, Frequency.WEEKLY -> 1
+            Frequency.BIWEEKLY -> 2
+            Frequency.MONTHLY -> 4
+        }
     }
 }

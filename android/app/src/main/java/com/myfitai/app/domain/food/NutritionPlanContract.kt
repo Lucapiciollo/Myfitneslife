@@ -4,7 +4,7 @@ import com.myfitai.app.domain.calculation.NutritionBusinessValidator
 import org.json.JSONObject
 import java.time.LocalDate
 
-/** Canonical provider-neutral contract for weekly nutrition generation. */
+/** Canonical provider-neutral contract for nutrition-period generation. */
 object NutritionPlanContract {
     const val SCHEMA_NAME = "myfitai_weekly_nutrition_plan_v2"
 
@@ -14,7 +14,7 @@ object NutritionPlanContract {
           "type":"object","additionalProperties":false,
           "properties":{
             "weekStartEpochDay":{"type":"integer"},
-            "days":{"type":"array","minItems":1,"maxItems":7,"items":{
+             "days":{"type":"array","minItems":1,"maxItems":28,"items":{
               "type":"object","additionalProperties":false,
               "properties":{
                 "dateEpochDay":{"type":"integer"},"totalKcal":{"type":"integer"},"proteinG":{"type":"number"},"carbsG":{"type":"number"},"fatG":{"type":"number"},
@@ -136,6 +136,7 @@ object NutritionPlanContract {
         tolerance: Double = NutritionBusinessValidator.DEFAULT_TOLERANCE,
         targetBelowOnly: Boolean = false,
         expectedFirstDate: LocalDate = expectedWeekStart,
+        expectedPeriodWeeks: Int = 1,
         // A deficit-oriented plan must never reach maintenance expenditure,
         // even when it falls within the target's percentage tolerance.
         maintenanceCeilingKcal: Double? = null,
@@ -144,10 +145,10 @@ object NutritionPlanContract {
             "MAINTENANCE_CEILING_INVALID"
         }
         require(response.weekStartEpochDay == expectedWeekStart.toEpochDay()) { "WEEK_START_MISMATCH" }
-        val expectedLastDate = expectedWeekStart.plusDays(6)
+        val expectedLastDate = expectedWeekStart.plusWeeks(expectedPeriodWeeks.toLong()).minusDays(1)
         require(!expectedFirstDate.isBefore(expectedWeekStart) && !expectedFirstDate.isAfter(expectedLastDate)) { "GENERATION_START_INVALID" }
-        val expectedDates = (0L..expectedLastDate.toEpochDay() - expectedFirstDate.toEpochDay())
-            .map { expectedFirstDate.plusDays(it).toEpochDay() }
+        val expectedDates = NutritionPlanPeriod.dates(expectedWeekStart, expectedPeriodWeeks, expectedFirstDate)
+            .map(LocalDate::toEpochDay)
             .toSet()
         require(response.days.size == expectedDates.size) { "WEEK_MUST_HAVE_${expectedDates.size}_DAYS" }
         require(response.days.map { it.dateEpochDay }.toSet() == expectedDates) { "WEEK_DATES_INVALID" }

@@ -83,7 +83,7 @@ I|issueCode|I_W_M_C|dayOffset_or_-|mealType_or_-"""
                     require(p.size == 5 && status != null) { "PR_ISSUE_RECORD_INVALID" }
                     val dayOffset = when (p[3]) {
                         "-" -> null
-                        else -> p[3].toIntOrNull()?.takeIf { it in 0..6 }
+                        else -> p[3].toIntOrNull()?.takeIf { it in 0..27 }
                             ?: error("PR_DAY_INVALID")
                     }
                     val mealType = p[4].takeUnless { it == "-" }?.trim()?.takeIf { it.isNotEmpty() }

@@ -203,7 +203,15 @@
                  android:textAllCaps="false"
                  android:textStyle="bold"
                  app:backgroundTint="@color/accent_green"
-                  app:cornerRadius="@dimen/radius_field" />
+                   app:cornerRadius="@dimen/radius_field" />
+
+             <TextView
+                 android:id="@+id/planScheduleStatusText"
+                 style="@style/Text.MyFitAI.SettingsDescription"
+                 android:layout_width="match_parent"
+                 android:layout_height="wrap_content"
+                 android:layout_marginTop="@dimen/space_4"
+                 android:text="Schedulazione piano non attiva" />
 
              <com.google.android.material.card.MaterialCardView
                  android:id="@+id/aiConfigurationNoticeCard"
@@ -287,15 +295,17 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/space_8"
-                        android:orientation="horizontal">
+                     android:layout_marginTop="@dimen/space_8"
+                         android:orientation="horizontal"
+                         android:gravity="center_vertical">
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/shoppingButton"
                             style="@style/Widget.MyFitAI.Button.Outlined"
                             android:layout_width="0dp"
                   android:layout_height="@dimen/button_secondary_min_height"
                             android:layout_weight="1"
-                            android:layout_marginEnd="@dimen/space_6"
+                            android:layout_marginEnd="@dimen/space_4"
+                            android:gravity="center"
                             android:text="Lista spesa"
                             android:textAllCaps="false"
                             app:icon="@drawable/ic_cart"
@@ -306,8 +316,10 @@
                             android:layout_width="0dp"
                             android:layout_height="@dimen/button_secondary_min_height"
                             android:layout_weight="1"
-                            android:layout_marginStart="@dimen/space_6"
-                            android:text="Registra sgarro"
+                            android:layout_marginStart="@dimen/space_4"
+                            android:gravity="center"
+                            android:minLines="2"
+                            android:text="Extra"
                             android:textColor="@color/accent_green_dark"
                             app:strokeColor="@color/accent_green_dark"
                             android:textAllCaps="false"

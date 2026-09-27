@@ -163,6 +163,9 @@ class SettingsActivity : BaseShellActivity() {
         }
 
         findViewById<View>(R.id.rowAppGuide).setOnClickListener { showAppGuide() }
+        findViewById<View>(R.id.rowFoodPreferences).setOnClickListener {
+            startActivity(android.content.Intent(this, DietaryPreferencesActivity::class.java))
+        }
         findViewById<View>(R.id.rowMeasurements).setOnClickListener { go(MeasurementsActivity::class.java) }
         findViewById<SettingRowView>(R.id.rowBiaFrequency).setOnClickListener { showBiaFrequencySettings() }
         findViewById<SettingRowView>(R.id.rowUnits).apply {

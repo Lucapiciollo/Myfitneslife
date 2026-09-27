@@ -21,7 +21,6 @@ import com.google.android.material.timepicker.TimeFormat
 import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.data.local.entity.UserProfileEntity
-import com.myfitai.app.domain.food.DietaryProfile
 import com.myfitai.app.ui.profile.ProfileEditViewModel
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -49,13 +48,6 @@ class ProfileEditActivity : BaseShellActivity() {
     private lateinit var activityInput: AutoCompleteTextView
     private lateinit var wakeTimeInput: TextInputEditText
     private lateinit var sleepTimeInput: TextInputEditText
-    private lateinit var preferredFoodsInput: TextInputEditText
-    private lateinit var dislikedFoodsInput: TextInputEditText
-    private lateinit var excludedFoodsInput: TextInputEditText
-    private lateinit var intolerancesInput: TextInputEditText
-    private lateinit var allergiesInput: TextInputEditText
-    private lateinit var dietStyleInput: AutoCompleteTextView
-    private lateinit var preferencesInput: TextInputEditText
     private lateinit var saveButton: MaterialButton
 
     private var birthDateEpochDay: Long? = null
@@ -103,13 +95,6 @@ class ProfileEditActivity : BaseShellActivity() {
         activityInput = findViewById(R.id.activityInput)
         wakeTimeInput = findViewById(R.id.wakeTimeInput)
         sleepTimeInput = findViewById(R.id.sleepTimeInput)
-        preferredFoodsInput = findViewById(R.id.preferredFoodsInput)
-        dislikedFoodsInput = findViewById(R.id.dislikedFoodsInput)
-        excludedFoodsInput = findViewById(R.id.excludedFoodsInput)
-        intolerancesInput = findViewById(R.id.intolerancesInput)
-        allergiesInput = findViewById(R.id.allergiesInput)
-        dietStyleInput = findViewById(R.id.dietStyleInput)
-        preferencesInput = findViewById(R.id.preferencesInput)
         saveButton = findViewById(R.id.saveProfileButton)
     }
 
@@ -117,13 +102,6 @@ class ProfileEditActivity : BaseShellActivity() {
         sexInput.setAdapter(ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, listOf("Maschio", "Femmina")))
         goalInput.setAdapter(ArrayAdapter.createFromResource(this, R.array.profile_goals, android.R.layout.simple_dropdown_item_1line))
         activityInput.setAdapter(ArrayAdapter.createFromResource(this, R.array.profile_activity_levels, android.R.layout.simple_dropdown_item_1line))
-        dietStyleInput.setAdapter(
-            ArrayAdapter(
-                this,
-                android.R.layout.simple_dropdown_item_1line,
-                listOf("Nessuno", "Onnivoro", "Vegetariano", "Vegano", "Pescetariano"),
-            )
-        )
     }
 
     private fun bindPickers() {
@@ -186,17 +164,6 @@ class ProfileEditActivity : BaseShellActivity() {
             }
             if (!valid) return@setOnClickListener
 
-            val dietaryProfile = DietaryProfile(
-                preferredFoods = DietaryProfile.csv(preferredFoodsInput.text?.toString()),
-                dislikedFoods = DietaryProfile.csv(dislikedFoodsInput.text?.toString()),
-                excludedFoods = DietaryProfile.csv(excludedFoodsInput.text?.toString()),
-                intolerances = DietaryProfile.csv(intolerancesInput.text?.toString()),
-                allergies = DietaryProfile.csv(allergiesInput.text?.toString()),
-                dietStyle = dietStyleInput.text?.toString()?.trim()?.takeIf {
-                    it.isNotBlank() && !it.equals("Nessuno", ignoreCase = true)
-                },
-                notes = preferencesInput.text?.toString()?.trim()?.takeIf { it.isNotBlank() },
-            )
             viewModel.save(
                 name = name,
                 birthDateEpochDay = birthDateEpochDay,
@@ -207,7 +174,7 @@ class ProfileEditActivity : BaseShellActivity() {
                 activityLevel = activity,
                 wakeTimeMinutes = wakeTimeMinutes,
                 sleepTimeMinutes = sleepTimeMinutes,
-                dietaryPreferencesJson = dietaryProfile.toJson(),
+                dietaryPreferencesJson = if (isCreate) null else viewModel.profile.value?.dietaryPreferencesJson,
             )
         }
     }
@@ -232,27 +199,16 @@ class ProfileEditActivity : BaseShellActivity() {
                 launch {
                     viewModel.saved.collect { savedEvent ->
                         val profileId = savedEvent.profileId
-                        val recommendationJobKey = if (isCreate) data.nutritionPathTrigger.maybeEnqueue(profileId) else null
                         Toast.makeText(this@ProfileEditActivity, if (isCreate) "Profilo creato" else "Profilo salvato", Toast.LENGTH_SHORT).show()
-                        if (isCreate && recommendationJobKey != null) {
-                            startActivity(Intent(this@ProfileEditActivity, NutritionPathActivity::class.java).apply {
-                                putExtra(NutritionPathActivity.EXTRA_JOB_KEY, recommendationJobKey)
+                        if (isCreate) {
+                            startActivity(Intent(this@ProfileEditActivity, DietaryPreferencesActivity::class.java).apply {
+                                putExtra(DietaryPreferencesActivity.EXTRA_BOOTSTRAP, true)
                                 if (isBootstrap) addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                             })
                             finish()
-                        } else if (!isCreate && savedEvent.nutritionDataChanged && hasCurrentPlan(profileId)) {
+                        } else if (savedEvent.nutritionDataChanged && hasCurrentPlan(profileId)) {
                             data.nutritionPlanUpdatePreferences.setPending(profileId, true)
                             showPlanUpdateDialog()
-                        } else if (isBootstrap) {
-                            startActivity(Intent(this@ProfileEditActivity, TabHostActivity::class.java).apply {
-                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-                            })
-                            finish()
-                        } else if (isCreate) {
-                            startActivity(Intent(this@ProfileEditActivity, TabHostActivity::class.java).apply {
-                                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NO_ANIMATION)
-                            })
-                            finish()
                         } else finish()
                     }
                 }
@@ -294,14 +250,6 @@ class ProfileEditActivity : BaseShellActivity() {
         wakeTimeInput.setText(profile.wakeTimeMinutes?.let(::formatMinutes).orEmpty())
         sleepTimeInput.setText(profile.sleepTimeMinutes?.let(::formatMinutes).orEmpty())
 
-        val dietaryProfile = DietaryProfile.parse(profile.dietaryPreferencesJson)
-        preferredFoodsInput.setText(dietaryProfile.preferredFoods.joinToString(", "))
-        dislikedFoodsInput.setText(dietaryProfile.dislikedFoods.joinToString(", "))
-        excludedFoodsInput.setText(dietaryProfile.excludedFoods.joinToString(", "))
-        intolerancesInput.setText(dietaryProfile.intolerances.joinToString(", "))
-        allergiesInput.setText(dietaryProfile.allergies.joinToString(", "))
-        dietStyleInput.setText(dietaryProfile.dietStyle ?: "Nessuno", false)
-        preferencesInput.setText(dietaryProfile.notes.orEmpty())
     }
 
     private fun clearErrors() {

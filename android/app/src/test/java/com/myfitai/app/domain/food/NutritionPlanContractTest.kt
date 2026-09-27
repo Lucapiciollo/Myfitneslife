@@ -47,6 +47,22 @@ class NutritionPlanContractTest {
     }
 
     @Test
+    fun fourWeekPeriod_requiresAllRemainingDates() {
+        val dates = NutritionPlanPeriod.dates(week, 4)
+        val response = response().copy(days = dates.map { date ->
+            response().days.first().copy(dateEpochDay = date.toEpochDay())
+        })
+        assertTrue(
+            NutritionPlanContract.validateBusiness(
+                response = response,
+                expectedWeekStart = week,
+                targets = targets,
+                expectedPeriodWeeks = 4,
+            ).isSuccess,
+        )
+    }
+
+    @Test
     fun dayOutsideThreePercent_isRejected() {
         val original = response()
         val badDay = original.days.first().copy(totalKcal = 2200)

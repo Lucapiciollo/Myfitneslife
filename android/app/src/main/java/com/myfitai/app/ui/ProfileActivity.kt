@@ -58,7 +58,9 @@ class ProfileActivity : BaseShellActivity() {
     }
 
     private fun bindSettingsNavigation() {
-        findViewById<SettingRowView>(R.id.rowFoodPreferences).setOnClickListener { openProfileEditor() }
+        findViewById<SettingRowView>(R.id.rowFoodPreferences).setOnClickListener {
+            startActivity(Intent(this, DietaryPreferencesActivity::class.java))
+        }
         findViewById<SettingRowView>(R.id.rowWorkouts).setOnClickListener { go(WorkoutsActivity::class.java) }
         updateWorkoutsRowVisibility()
         findViewById<SettingRowView>(R.id.rowNotifications).setOnClickListener { showNotificationSettings() }

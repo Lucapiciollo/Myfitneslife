@@ -49,6 +49,7 @@ class NutritionPlanScheduler(
         val due = nextOccurrence(now, config.frequency, config.dayOfWeek, config.timeMinutes, zoneId)
         val targetWeek = due.toLocalDate()
             .with(TemporalAdjusters.next(DayOfWeek.MONDAY))
+        val periodWeeks = NutritionPlanSchedulePreferences.periodWeeks(config.frequency)
         val dueEpochMillis = due.toInstant().toEpochMilli()
         val jobKey = "auto-$dueEpochMillis"
         val delay = (dueEpochMillis - nowEpochMillis).coerceAtLeast(0L)
@@ -60,7 +61,8 @@ class NutritionPlanScheduler(
             initialDelayMillis = delay,
             params = workDataOf(
                 WeeklyPlanAiJobHandler.KEY_WEEK_START_EPOCH_DAY to targetWeek.toEpochDay(),
-                WeeklyPlanAiJobHandler.KEY_AUTOMATIC to true,
+                    WeeklyPlanAiJobHandler.KEY_AUTOMATIC to true,
+                    WeeklyPlanAiJobHandler.KEY_PERIOD_WEEKS to periodWeeks,
             ),
         )
         preferences.setScheduledJobKey(profileId, jobKey)

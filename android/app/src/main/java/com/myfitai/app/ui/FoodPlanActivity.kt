@@ -22,6 +22,8 @@ import com.myfitai.app.domain.food.FoodSupplement
 import com.myfitai.app.domain.food.FoodPlanDay
 import com.myfitai.app.domain.food.FoodPlanMetrics
 import com.myfitai.app.domain.food.FoodPlanVersion
+import com.myfitai.app.domain.food.NutritionPlanPeriod
+import com.myfitai.app.data.profile.NutritionPlanSchedulePreferences
 import com.myfitai.app.domain.food.FoodConsumptionMetrics
 import com.myfitai.app.domain.food.FoodConsumptionStatus
 import com.myfitai.app.navigation.BottomNavBinder
@@ -35,12 +37,14 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import java.time.Instant
+import java.time.ZoneId
 
 class FoodPlanActivity : BaseShellActivity() {
 
     private val data by lazy { AppDataContainer.get(this) }
     private val viewModel: FoodPlanViewModel by viewModels {
-         FoodPlanViewModel.Factory(data.mealPlanRepository, data.activeProfileStore, data.nutritionPlanGenerationService, data.profileCalculationService, data.notificationScheduler, data.foodConsumptionRepository, data.aiJobScheduler, data.userProfileRepository, data.biaRepository, data.bodyMeasurementRepository)
+         FoodPlanViewModel.Factory(data.mealPlanRepository, data.activeProfileStore, data.nutritionPlanGenerationService, data.profileCalculationService, data.notificationScheduler, data.foodConsumptionRepository, data.aiJobScheduler, data.userProfileRepository, data.biaRepository, data.bodyMeasurementRepository, data.nutritionPlanSchedulePreferences)
     }
 
     private val mealAlternativeLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -110,6 +114,9 @@ class FoodPlanActivity : BaseShellActivity() {
     private fun render(state: FoodPlanViewModel.State) {
         val weekEnd = state.weekStart.plusDays(6)
         val currentWeek = state.weekStart == LocalDate.now().with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY))
+        val profileId = data.activeProfileStore.currentIdOrNull()
+        val periodWeeks = profileId?.let(data.nutritionPlanSchedulePreferences::periodWeeks) ?: 1
+        val periodCanBeGenerated = !NutritionPlanPeriod.isEntirelyPast(state.weekStart, periodWeeks, LocalDate.now())
         findViewById<TextView>(R.id.weekRangeLabel).text = formatWeekRange(state.weekStart, weekEnd)
         suppressDaySelectionMotion = true
         weekDaySelector.setDays((0..6).map { offset ->
@@ -157,12 +164,13 @@ class FoodPlanActivity : BaseShellActivity() {
         revealState(dailyTotalCard, generatedContentVisible)
         revealState(nutritionEstimateCard, generatedContentVisible)
 
-        renderGeneration(state, currentWeek)
+        renderGeneration(state, currentWeek, periodCanBeGenerated)
+        renderPlanScheduleStatus()
         renderMeals(state.weekStart, day, state.consumptionRecords)
         renderTotals(day, state.snapshot?.version, state.consumptionRecords, state.calorieReference)
     }
 
-    private fun renderGeneration(state: FoodPlanViewModel.State, currentWeek: Boolean) {
+    private fun renderGeneration(state: FoodPlanViewModel.State, currentWeek: Boolean, periodCanBeGenerated: Boolean) {
         if (state.generation.successMessage != null) {
             data.activeProfileStore.currentIdOrNull()?.let { profileId ->
                 data.nutritionPlanUpdatePreferences.setPending(profileId, false)
@@ -174,8 +182,8 @@ class FoodPlanActivity : BaseShellActivity() {
         val status = findViewById<TextView>(R.id.generationStatusText)
         val stateDot = findViewById<View>(R.id.planStateDot)
         val generation = state.generation
-        revealState(button, currentWeek)
-        setAiActionEnabled(button, currentWeek && !generation.running)
+        revealState(button, periodCanBeGenerated)
+        setAiActionEnabled(button, periodCanBeGenerated && !generation.running)
         button.text = when { generation.running -> "Generazione in corso…"; state.hasPlan -> "Rigenera piano con IA"; else -> "Genera piano con IA" }
         if (state.hasPlan && !generation.running) {
             button.backgroundTintList = ColorStateList.valueOf(getColor(R.color.surface_primary))
@@ -203,7 +211,7 @@ class FoodPlanActivity : BaseShellActivity() {
                 else -> R.drawable.bg_status_dot_neutral
             }
         )
-        revealState(statusContainer, currentWeek && message != null)
+        revealState(statusContainer, periodCanBeGenerated && message != null)
         revealState(progress, generation.running)
         status.text = message.orEmpty()
     }
@@ -241,6 +249,32 @@ class FoodPlanActivity : BaseShellActivity() {
         day?.hydrationNote?.takeIf { it.isNotBlank() }?.let {
             container.addView(infoRow("Idratazione", formatHydrationNote(it)))
         }
+    }
+
+    private fun renderPlanScheduleStatus() {
+        val status = findViewById<TextView>(R.id.planScheduleStatusText)
+        val profileId = data.activeProfileStore.currentIdOrNull()
+        if (profileId == null) {
+            status.text = "Schedulazione piano non disponibile: nessun profilo attivo."
+            return
+        }
+        val config = data.nutritionPlanSchedulePreferences.get(profileId)
+        if (!config.enabled) {
+            status.text = "Schedulazione piano non attiva."
+            return
+        }
+        val key = data.nutritionPlanSchedulePreferences.scheduledJobKey(profileId)
+        val due = key?.removePrefix("auto-")?.toLongOrNull()
+        val frequency = when (config.frequency) {
+            com.myfitai.app.data.profile.NutritionPlanSchedulePreferences.Frequency.DAILY -> "giornaliera"
+            com.myfitai.app.data.profile.NutritionPlanSchedulePreferences.Frequency.WEEKLY -> "settimanale"
+            com.myfitai.app.data.profile.NutritionPlanSchedulePreferences.Frequency.BIWEEKLY -> "bisettimanale"
+            com.myfitai.app.data.profile.NutritionPlanSchedulePreferences.Frequency.MONTHLY -> "mensile"
+        }
+        val next = due?.let {
+            Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm", Locale.ITALIAN))
+        } ?: "in attesa di programmazione"
+        status.text = "Schedulazione attiva: $frequency · prossimo ricalcolo: $next"
     }
 
     private fun formatHydrationNote(raw: String): String {

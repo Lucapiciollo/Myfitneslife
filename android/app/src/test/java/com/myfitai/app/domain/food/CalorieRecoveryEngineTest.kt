@@ -46,4 +46,14 @@ class CalorieRecoveryEngineTest {
         assertEquals(0, result.plannedRecoveryKcal)
         assertTrue(result.days.all { it.targets.kcal == base.kcal })
     }
+
+    @Test
+    fun recovery_periodCoversAllConfiguredDays() {
+        val monday = LocalDate.of(2026, 9, 14)
+        val result = CalorieRecoveryEngine.plan(
+            monday, monday, base, 90.0, LocalCalculationEngine.Goal.MAINTENANCE, emptyList(), periodWeeks = 4,
+        )
+        assertEquals(28, result.days.size)
+        assertEquals(monday.plusDays(27), result.days.last().date)
+    }
 }
