@@ -7,11 +7,20 @@
     style="@style/Widget.MyFitAI.Dialog.Content">
 
     <TextView
+        android:id="@+id/notificationsStatusText"
         style="@style/Text.MyFitAI.Body"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/notifications_dialog_description"
-        />
+        android:text="@string/notifications_dialog_description" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/openAndroidNotificationSettingsButton"
+        style="@style/Widget.MyFitAI.Button.Text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_4"
+        android:text="@string/notifications_open_android_settings"
+        android:textAllCaps="false" />
 
     <com.google.android.material.materialswitch.MaterialSwitch
         android:id="@+id/mealRemindersSwitch"

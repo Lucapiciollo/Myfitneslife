@@ -3,14 +3,21 @@ package com.myfitai.app.ui
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import android.provider.Settings
 import android.widget.PopupMenu
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import com.google.android.material.imageview.ShapeableImageView
 import com.myfitai.app.notifications.NotificationPreferences
 import com.myfitai.app.R
@@ -64,6 +71,8 @@ class ProfileActivity : BaseShellActivity() {
         val mealSwitch = content.findViewById<com.google.android.material.materialswitch.MaterialSwitch>(R.id.mealRemindersSwitch)
         val reviewSwitch = content.findViewById<com.google.android.material.materialswitch.MaterialSwitch>(R.id.weeklyReviewSwitch)
         val aiSwitch = content.findViewById<com.google.android.material.materialswitch.MaterialSwitch>(R.id.aiBackgroundUpdatesSwitch)
+        val statusText = content.findViewById<TextView>(R.id.notificationsStatusText)
+        val openAndroidSettings = content.findViewById<android.view.View>(R.id.openAndroidNotificationSettingsButton)
         val leadInput = content.findViewById<com.google.android.material.textfield.MaterialAutoCompleteTextView>(R.id.mealLeadInput)
         val leadMinutes = resources.getIntArray(R.array.notification_lead_minutes)
         val leadLabels = resources.getStringArray(R.array.notification_lead_labels)
@@ -74,6 +83,15 @@ class ProfileActivity : BaseShellActivity() {
         aiSwitch.isChecked = prefs.aiBackgroundUpdatesEnabled
         leadInput.setAdapter(android.widget.ArrayAdapter(this, R.layout.item_dropdown_myfitai, leadLabels.toList()))
         leadInput.setText(leadLabels[selectedLead.coerceAtMost(leadLabels.lastIndex)], false)
+        val permissionGranted = Build.VERSION.SDK_INT < 33 || ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+        statusText.text = if (NotificationManagerCompat.from(this).areNotificationsEnabled() && permissionGranted) {
+            getString(R.string.notifications_status_enabled)
+        } else {
+            getString(R.string.notifications_status_disabled)
+        }
+        openAndroidSettings.setOnClickListener {
+            startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName))
+        }
 
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.notifications_dialog_title)
@@ -85,7 +103,8 @@ class ProfileActivity : BaseShellActivity() {
                 prefs.aiBackgroundUpdatesEnabled = aiSwitch.isChecked
                 prefs.mealLeadMinutes = leadMinutes.getOrElse(leadLabels.indexOf(leadInput.text.toString())) { prefs.mealLeadMinutes }
                 lifecycleScope.launch {
-                    runCatching { data.notificationScheduler.refresh() }
+                    val count = runCatching { data.notificationScheduler.refresh() }.getOrDefault(0)
+                    Toast.makeText(this@ProfileActivity, getString(R.string.notifications_updated_count, count), Toast.LENGTH_SHORT).show()
                 }
             }
             .show()

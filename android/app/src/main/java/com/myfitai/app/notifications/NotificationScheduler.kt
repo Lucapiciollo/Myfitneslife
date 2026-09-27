@@ -19,16 +19,17 @@ class NotificationScheduler(
     private val alarmGateway: NotificationAlarmGateway = AndroidNotificationAlarmGateway(context),
     private val settings: NotificationSettings = NotificationPreferences(context),
 ) {
-    suspend fun refresh(nowEpochMillis: Long = time.nowEpochMillis()) {
+    suspend fun refresh(nowEpochMillis: Long = time.nowEpochMillis()): Int {
         cancelAllTracked()
         val newCodes = mutableSetOf<Int>()
         val profileId = activeProfileStore.currentIdOrNull() ?: run {
             settings.replaceScheduledRequestCodes(emptySet())
-            return
+            return 0
         }
         if (settings.mealRemindersEnabled) scheduleMealReminders(profileId, nowEpochMillis, newCodes)
         if (settings.weeklyReviewEnabled) scheduleWeeklyReview(nowEpochMillis, newCodes)
         settings.replaceScheduledRequestCodes(newCodes)
+        return newCodes.size
     }
 
     fun snoozeMeal(mealId: Long, mealType: String, mealTitle: String, profileId: Long, delayMinutes: Int = 10) {

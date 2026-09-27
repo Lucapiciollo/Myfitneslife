@@ -9,14 +9,32 @@ class AndroidNotificationAlarmGateway(context: Context) : NotificationAlarmGatew
     private val appContext = context.applicationContext
     private val alarmManager = appContext.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
-    override fun scheduleMeal(spec: MealReminderSpec) = alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, spec.triggerAtEpochMillis, mealIntent(spec.requestCode, spec.mealId, spec.mealType, spec.mealTitle, spec.profileId))
+    override fun scheduleMeal(spec: MealReminderSpec) {
+        val pending = mealIntent(spec.requestCode, spec.mealId, spec.mealType, spec.mealTitle, spec.profileId)
+        scheduleWithBestPrecision(spec.triggerAtEpochMillis, pending)
+    }
 
     override fun scheduleWeeklyReview(spec: WeeklyReviewReminderSpec) {
         val pending = PendingIntent.getBroadcast(appContext, spec.requestCode, Intent(appContext, ReminderReceiver::class.java).apply { action = ReminderReceiver.ACTION_WEEKLY_REVIEW }, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         alarmManager.setInexactRepeating(AlarmManager.RTC_WAKEUP, spec.triggerAtEpochMillis, AlarmManager.INTERVAL_DAY * 7, pending)
     }
 
-    override fun scheduleSnooze(spec: SnoozeReminderSpec) = alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, spec.triggerAtEpochMillis, mealIntent(spec.requestCode, spec.mealId, spec.mealType, spec.mealTitle, spec.profileId))
+    override fun scheduleSnooze(spec: SnoozeReminderSpec) {
+        val pending = mealIntent(spec.requestCode, spec.mealId, spec.mealType, spec.mealTitle, spec.profileId)
+        scheduleWithBestPrecision(spec.triggerAtEpochMillis, pending)
+    }
+
+    private fun scheduleWithBestPrecision(triggerAtEpochMillis: Long, pending: PendingIntent) {
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()) {
+            runCatching {
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtEpochMillis, pending)
+            }.onFailure {
+                alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtEpochMillis, pending)
+            }
+        } else {
+            alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtEpochMillis, pending)
+        }
+    }
 
     override fun cancel(requestCode: Int) {
         listOf(ReminderReceiver.ACTION_MEAL, ReminderReceiver.ACTION_WEEKLY_REVIEW).forEach { action ->

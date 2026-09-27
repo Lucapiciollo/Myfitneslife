@@ -17,7 +17,7 @@ internal object AiOutputTokenPolicy {
             "weekly_review" in schemaName -> 700
             "cheat_understanding" in schemaName -> 500
             "body_proportion" in schemaName -> 500
-            "bia" in schemaName -> 350
+            "bia" in schemaName -> if ("progress_coach" in schemaName) 2_200 else 350
             else -> 1_500
         }
         return requested?.let { minOf(it, compactCap) }

@@ -21,6 +21,7 @@ import com.google.android.material.checkbox.MaterialCheckBox
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.card.MaterialCardView
+import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import com.google.android.material.timepicker.MaterialTimePicker
@@ -29,6 +30,7 @@ import com.myfitai.app.R
 import com.myfitai.app.ai.AiProviderAccess
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.data.local.entity.BiaMeasurementEntity
+import com.myfitai.app.data.local.entity.BiaAnalysisResultEntity
 import com.myfitai.app.domain.body.AiImageProcessor
 import com.myfitai.app.domain.body.AiImageTempStore
 import com.myfitai.app.domain.body.BiaImportContract
@@ -53,7 +55,7 @@ class BiaActivity : BaseShellActivity() {
 
     private val data by lazy { AppDataContainer.get(this) }
     private val viewModel: BiaViewModel by viewModels {
-        BiaViewModel.Factory(data.biaRepository, data.activeProfileStore, data.nutritionPathTrigger)
+        BiaViewModel.Factory(data.biaRepository, data.activeProfileStore, data.nutritionPathTrigger, data.biaProgressCoachScheduler)
     }
 
     private lateinit var dateInput: TextInputEditText
@@ -63,6 +65,10 @@ class BiaActivity : BaseShellActivity() {
     private lateinit var historyContainer: View
     private lateinit var historyList: LinearLayout
     private lateinit var historySummary: TextView
+    private lateinit var biaAnalysisProgressContainer: View
+    private lateinit var biaAnalysisProgressTitle: TextView
+    private lateinit var biaAnalysisProgressText: TextView
+    private lateinit var reviewSavedBiaAnalysisButton: MaterialButton
 
     private val values = linkedMapOf<String, Float?>(
         KEY_WEIGHT to null,
@@ -131,6 +137,9 @@ class BiaActivity : BaseShellActivity() {
         if (pendingEditId > 0L) loadPendingEdit()
         if (intent.getBooleanExtra(EXTRA_OPEN_HISTORY, false) && pendingEditId == 0L) {
             findViewById<SelectableSegmentView>(R.id.biaSegment).getChildAt(1)?.performClick()
+            if (intent.getBooleanExtra(EXTRA_ANALYZE_LATEST, false)) {
+                window.decorView.postDelayed({ analyzeBiaWithAi(findViewById(R.id.analyzeBiaButton)) }, 250L)
+            }
         }
     }
 
@@ -151,6 +160,11 @@ class BiaActivity : BaseShellActivity() {
         historyContainer = findViewById(R.id.historyContainer)
         historyList = findViewById(R.id.historyList)
         historySummary = findViewById(R.id.historySummary)
+        biaAnalysisProgressContainer = findViewById(R.id.biaAnalysisProgressContainer)
+        biaAnalysisProgressTitle = findViewById(R.id.biaAnalysisProgressTitle)
+        biaAnalysisProgressText = findViewById(R.id.biaAnalysisProgressText)
+        reviewSavedBiaAnalysisButton = findViewById(R.id.reviewSavedBiaAnalysisButton)
+        reviewSavedBiaAnalysisButton.setOnClickListener { reviewLatestSavedAnalysis() }
     }
 
     private fun normalizeBiaCards() {
@@ -647,13 +661,27 @@ class BiaActivity : BaseShellActivity() {
             historySummary.visibility = View.GONE
             findViewById<View>(R.id.historyEmptyText).visibility = View.VISIBLE
             findViewById<View>(R.id.analyzeBiaButton).visibility = View.GONE
+            reviewSavedBiaAnalysisButton.visibility = View.GONE
             return
         }
         historySummary.visibility = View.VISIBLE
         findViewById<View>(R.id.historyEmptyText).visibility = View.GONE
         findViewById<View>(R.id.analyzeBiaButton).visibility = View.VISIBLE
-
         val latest = history.first()
+        reviewSavedBiaAnalysisButton.visibility = View.GONE
+        lifecycleScope.launch {
+            val profileId = data.activeProfileStore.currentIdOrNull() ?: return@launch
+            val saved = data.biaAnalysisResultRepository.latestForMeasurement(profileId, latest.id)
+            if (saved == null) {
+                findViewById<View>(R.id.analyzeBiaButton).visibility = View.VISIBLE
+                setAiActionEnabled(findViewById(R.id.analyzeBiaButton), history.any { hasAnalysisValue(it) })
+                reviewSavedBiaAnalysisButton.visibility = View.GONE
+            } else {
+                findViewById<View>(R.id.analyzeBiaButton).visibility = View.GONE
+                reviewSavedBiaAnalysisButton.visibility = View.VISIBLE
+            }
+        }
+
         historySummary.text = buildSummary(history, latest)
 
         history.forEach { item ->
@@ -687,6 +715,14 @@ class BiaActivity : BaseShellActivity() {
                     setPadding(0, resources.getDimensionPixelSize(R.dimen.space_6), 0, 0)
                 })
             }
+            if (hasAnalysisValue(item)) {
+                card.addView(MaterialButton(this).apply {
+                    setText(R.string.bia_analyze_measurement_action)
+                    setAiActionEnabled(this)
+                    setOnClickListener { analyzeBiaWithAi(this, item, history) }
+                    contentDescription = getString(R.string.bia_analysis_accessibility_date, SimpleDateFormat("dd/MM/yyyy", Locale.ITALIAN).format(Date(item.measuredAtEpochMillis)))
+                })
+            }
             card.addView(TextView(this).apply {
                 text = "Tocca per modificare · Tieni premuto per eliminare"
                 setTextAppearance(R.style.Text_MyFitAI_Micro)
@@ -702,9 +738,10 @@ class BiaActivity : BaseShellActivity() {
         }
     }
 
-    private fun analyzeBiaWithAi(button: View) {
-        val history = viewModel.history.value
-        val latest = history.firstOrNull() ?: return
+    private fun analyzeBiaWithAi(button: View, selectedMeasurement: BiaMeasurementEntity? = null, suppliedHistory: List<BiaMeasurementEntity>? = null) {
+        val history = suppliedHistory ?: viewModel.history.value
+        val latest = selectedMeasurement ?: history.firstOrNull() ?: return
+        val previousHistory = history.filter { it.id != latest.id && it.measuredAtEpochMillis < latest.measuredAtEpochMillis }
         val current = linkedMapOf<String, Float>().apply {
             latest.weightKg?.let { put("weightKg", it) }
             latest.bodyFatPercent?.let { put("bodyFatPercent", it) }
@@ -727,7 +764,7 @@ class BiaActivity : BaseShellActivity() {
 
         val previousDelta = linkedMapOf<String, Float>().apply {
             fun addDelta(key: String, currentValue: Float?, selector: (BiaMeasurementEntity) -> Float?) {
-                val previous = history.drop(1).firstNotNullOfOrNull(selector)
+                val previous = previousHistory.firstNotNullOfOrNull(selector)
                 if (currentValue != null && previous != null) put(key, currentValue - previous)
             }
             addDelta("weightKg", latest.weightKg) { it.weightKg }
@@ -749,9 +786,22 @@ class BiaActivity : BaseShellActivity() {
             .put("measurementCount", history.size)
             .put("current", jsonValues(current))
             .put("previousDelta", jsonValues(previousDelta))
+            .put("history", org.json.JSONArray().apply {
+                history.sortedBy { it.measuredAtEpochMillis }.forEach { item ->
+                    put(org.json.JSONObject()
+                        .put("measuredAtEpochMillis", item.measuredAtEpochMillis)
+                        .put("values", jsonValues(measurementValues(item)))
+                        .put("fasting", item.fasting)
+                        .put("justWokeUp", item.justWokeUp)
+                        .put("afterBathroom", item.afterBathroom)
+                        .put("noRecentWorkout", item.noRecentWorkout))
+                }
+            })
+            .put("conditions", buildConditionLine(latest) ?: "?")
             .toString()
-        confirmAiRequest("L'analisi IA dello stato muscolare e dei valori BIA") {
+        confirmAiRequest("L'analisi MyFitAI Progress Coach della rilevazione BIA") {
             setAiActionEnabled(button, false)
+            showBiaAnalysisProgress("Analisi in coda", "Preparazione dei dati BIA e dello storico…")
             val profileId = data.activeProfileStore.currentIdOrNull() ?: return@confirmAiRequest
             val jobKey = System.currentTimeMillis().toString()
             data.aiJobScheduler.enqueue(
@@ -763,36 +813,37 @@ class BiaActivity : BaseShellActivity() {
             lifecycleScope.launch {
                 data.aiJobScheduler.observe(AiJobType.BIA_ANALYSIS, profileId, jobKey).collect { info ->
                     when (info?.state) {
+                        androidx.work.WorkInfo.State.ENQUEUED, androidx.work.WorkInfo.State.BLOCKED -> showBiaAnalysisProgress("In coda", "In attesa del provider IA e della connessione…")
+                        androidx.work.WorkInfo.State.RUNNING -> showBiaAnalysisProgress("Analisi in corso", "Il Progress Coach sta confrontando BIA, misure e andamento…")
+                        else -> Unit
+                    }
+                    when (info?.state) {
                         androidx.work.WorkInfo.State.SUCCEEDED -> {
+                            hideBiaAnalysisProgress()
                             val payload = org.json.JSONObject(info.outputData.getString(BiaAnalysisAiJobHandler.KEY_PAYLOAD).orEmpty())
-                            val doingWell = jsonLines(payload, "doingWell")
-                            val improve = jsonLines(payload, "improve")
-                            val message = buildString {
-                                appendLine(payload.optString("summary"))
-                                appendLine()
-                                appendLine("Stato della muscolatura")
-                                appendLine(payload.optString("muscleStatus"))
-                                if (doingWell.isNotEmpty()) {
-                                    appendLine()
-                                    appendLine("Cosa va bene")
-                                    doingWell.forEach { appendLine("• $it") }
-                                }
-                                if (improve.isNotEmpty()) {
-                                    appendLine()
-                                    appendLine("Dove migliorare")
-                                    improve.forEach { appendLine("• $it") }
-                                }
+                            lifecycleScope.launch {
+                                val profileId = data.activeProfileStore.currentIdOrNull()
+                                if (profileId != null) data.biaAnalysisResultRepository.insert(
+                                    BiaAnalysisResultEntity(
+                                        profileId = profileId,
+                                        biaMeasurementId = latest.id,
+                                        createdAtEpochMillis = System.currentTimeMillis(),
+                                        provider = payload.optString("provider", "-") ,
+                                        model = payload.optString("model", "-") ,
+                                        payloadJson = payload.toString(),
+                                    ),
+                                )
+                                showBiaAnalysisDialog(payload)
                             }
-                            MaterialAlertDialogBuilder(this@BiaActivity)
-                                .setTitle("Analisi sportiva BIA")
-                                .setMessage(message.trim())
-                                .setPositiveButton("Chiudi", null)
-                                .show()
                             setAiActionEnabled(button)
                         }
                         androidx.work.WorkInfo.State.FAILED, androidx.work.WorkInfo.State.CANCELLED -> {
+                            hideBiaAnalysisProgress()
                             setAiActionEnabled(button)
-                            Toast.makeText(this@BiaActivity, "Analisi BIA non riuscita. Riprova.", Toast.LENGTH_LONG).show()
+                            val reason = info.outputData.getString(com.myfitai.app.domain.ai.AiJobWorker.KEY_ERROR)
+                                ?.removePrefix("BIA_PROGRESS_COACH_FAILED:")
+                                ?.takeIf { it.isNotBlank() }
+                            Toast.makeText(this@BiaActivity, "Analisi BIA non riuscita${reason?.let { ": $it" }.orEmpty()}", Toast.LENGTH_LONG).show()
                         }
                         else -> Unit
                     }
@@ -805,9 +856,104 @@ class BiaActivity : BaseShellActivity() {
         values.forEach { (key, value) -> put(org.json.JSONObject().put("key", key).put("value", value)) }
     }
 
+    private fun reviewLatestSavedAnalysis() {
+        lifecycleScope.launch {
+            val profileId = data.activeProfileStore.currentIdOrNull() ?: return@launch
+            val measurementId = viewModel.history.value.firstOrNull()?.id ?: return@launch
+            val saved = data.biaAnalysisResultRepository.latestForMeasurement(profileId, measurementId) ?: return@launch
+            showBiaAnalysisDialog(org.json.JSONObject(saved.payloadJson), saved = true)
+        }
+    }
+
+    private fun showBiaAnalysisDialog(payload: org.json.JSONObject, saved: Boolean = false) {
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(resources.getDimensionPixelSize(R.dimen.space_16), 0, resources.getDimensionPixelSize(R.dimen.space_16), resources.getDimensionPixelSize(R.dimen.space_8))
+        }
+        fun section(title: String, body: String, emphasis: Boolean = false) {
+            if (body.isBlank() || body == "?") return
+            val box = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setBackgroundColor(getColor(R.color.white))
+                setPadding(0, resources.getDimensionPixelSize(R.dimen.space_8), 0, resources.getDimensionPixelSize(R.dimen.space_8))
+            }
+            box.addView(TextView(this).apply {
+                text = title
+                setTextAppearance(if (emphasis) R.style.Text_MyFitAI_CardTitle else R.style.Text_MyFitAI_SettingsLabel)
+            })
+            box.addView(TextView(this).apply {
+                text = body
+                setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
+                setPadding(0, resources.getDimensionPixelSize(R.dimen.space_4), 0, 0)
+            })
+            content.addView(box, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+        }
+        section("Verdetto", payload.optString("verdict"), true)
+        section("Cosa sta succedendo", payload.optString("whatIsHappening"))
+        section("Perdita di grasso", payload.optString("fatLoss"))
+        section("Obiettivo e calorie", listOf(payload.optString("objective"), payload.optString("caloriesAndMacros")).filter { it.isNotBlank() }.joinToString("\n"))
+        val comparisons = jsonObjects(payload, "comparisons").joinToString("\n\n") { row ->
+            "${row.optString("indicator")}: ${row.optString("previous")} -> ${row.optString("current")} (${row.optString("difference")})\n${row.optString("interpretation")}"
+        }
+        section("Confronto rilevazioni", comparisons)
+        val scenarios = jsonObjects(payload, "scenarios").joinToString("\n\n") { row ->
+            "${row.optString("label")}\nGrasso obiettivo: ${row.optString("targetBodyFat")}; peso: ${row.optString("targetWeight")}; da perdere: ${row.optString("fatToLose")}\n${row.optString("assumption")}"
+        }
+        section("Scenari indicativi", scenarios)
+        section("Punti positivi", jsonLines(payload, "positives").joinToString("\n") { "• $it" })
+        section("Da monitorare", jsonLines(payload, "monitor").joinToString("\n") { "• $it" })
+        section("Tre azioni prioritarie", jsonLines(payload, "actions").mapIndexed { index, value -> "${index + 1}. $value" }.joinToString("\n"), true)
+        section("Prossimo controllo", payload.optString("nextCheck"))
+        section("Affidabilità", "${payload.optString("reliability")}\n${payload.optString("reliabilityReason")}")
+        section("Nota di sicurezza", payload.optString("safetyNote"))
+        section("Domanda finale", payload.optString("question"))
+        val source = listOf(payload.optString("provider"), payload.optString("model")).filter { it.isNotBlank() && it != "-" }.joinToString(" · ")
+        section(if (saved) "Analisi salvata" else "Analisi salvata localmente", if (source.isBlank()) "Disponibile offline per questa rilevazione." else "$source\nDisponibile offline per questa rilevazione.")
+        val scroll = androidx.core.widget.NestedScrollView(this).apply { addView(content) }
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Analisi nutrizionale e sportiva BIA")
+            .setView(normalizeRuntimeDialogContent(scroll))
+            .setPositiveButton("Chiudi", null)
+            .show()
+    }
+
+    private fun showBiaAnalysisProgress(title: String, message: String) {
+        biaAnalysisProgressTitle.text = title
+        biaAnalysisProgressText.text = message
+        biaAnalysisProgressContainer.visibility = View.VISIBLE
+    }
+
+    private fun hideBiaAnalysisProgress() {
+        biaAnalysisProgressContainer.visibility = View.GONE
+    }
+
+    private fun measurementValues(item: BiaMeasurementEntity): Map<String, Float> = linkedMapOf<String, Float>().apply {
+        item.weightKg?.let { put("weightKg", it) }
+        item.bodyFatPercent?.let { put("bodyFatPercent", it) }
+        item.visceralFatLevel?.let { put("visceralFatLevel", it) }
+        item.muscleMassKg?.let { put("muscleMassKg", it) }
+        item.skeletalMuscleKg?.let { put("skeletalMuscleKg", it) }
+        item.bodyWaterPercent?.let { put("bodyWaterPercent", it) }
+        item.bmrKcal?.let { put("bmrKcal", it) }
+        item.fatMassKg?.let { put("fatMassKg", it) }
+        item.leanMassKg?.let { put("leanMassKg", it) }
+        item.bodyWaterKg?.let { put("bodyWaterKg", it) }
+        item.subcutaneousFatPercent?.let { put("subcutaneousFatPercent", it) }
+        item.boneMassKg?.let { put("boneMassKg", it) }
+        item.proteinPercent?.let { put("proteinPercent", it) }
+        item.proteinKg?.let { put("proteinKg", it) }
+        item.bodyAgeYears?.let { put("bodyAgeYears", it.toFloat()) }
+        item.bmi?.let { put("bmi", it) }
+    }
+
     private fun jsonLines(payload: org.json.JSONObject, key: String): List<String> {
         val values = payload.optJSONArray(key) ?: return emptyList()
         return buildList { for (index in 0 until values.length()) add(values.optString(index)) }
+    }
+
+    private fun jsonObjects(payload: org.json.JSONObject, key: String): List<org.json.JSONObject> {
+        val values = payload.optJSONArray(key) ?: return emptyList()
+        return buildList { for (index in 0 until values.length()) add(values.optJSONObject(index) ?: return@buildList) }
     }
 
     private fun hasAnalysisValue(item: BiaMeasurementEntity): Boolean = listOf(
@@ -983,6 +1129,7 @@ class BiaActivity : BaseShellActivity() {
 
     companion object {
         const val EXTRA_OPEN_HISTORY = "open_bia_history"
+        const val EXTRA_ANALYZE_LATEST = "analyze_latest_bia"
         const val EXTRA_EDIT_ID = "edit_bia_measurement_id"
         const val EXTRA_AI_JOB_KEY = "bia_ai_job_key"
         private const val KEY_WEIGHT = "weight"

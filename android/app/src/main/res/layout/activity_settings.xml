@@ -73,9 +73,11 @@
                      android:orientation="vertical">
                    <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowAppGuide" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_help_outline" app:srLabel="Come funziona MyFitAI" app:srDescription="@string/settings_desc_guide" />
                    <View android:layout_width="match_parent" android:layout_height="@dimen/border_width_default" android:background="@color/divider" />
-                     <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowMeasurements" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_person" app:srLabel="Rilevazioni" app:srDescription="@string/settings_desc_measurements" />
+                   <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowMeasurements" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_person" app:srLabel="Rilevazioni" app:srDescription="@string/settings_desc_measurements" />
                    <View android:layout_width="match_parent" android:layout_height="@dimen/border_width_default" android:background="@color/divider" />
-                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowMealCount" android:visibility="gone" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="Pasti al giorno" />
+                   <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowBiaFrequency" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_gear" app:srLabel="Frequenza rilevazione BIA" app:srDescription="Ricorda in Home quando è il momento di ripetere la rilevazione" />
+                   <View android:layout_width="match_parent" android:layout_height="@dimen/border_width_default" android:background="@color/divider" />
+                   <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowMealCount" android:visibility="gone" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="Pasti al giorno" />
                    <TextView android:id="@+id/mealCountValue" style="@style/Text.MyFitAI.Caption" android:visibility="gone" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingStart="@dimen/space_16" android:paddingBottom="@dimen/space_8" android:text="Pasti al giorno" />
                   <LinearLayout
                      android:layout_width="match_parent"
@@ -271,13 +273,13 @@
                 </LinearLayout>
 
                   <TextView android:id="@+id/activeProviderText"
-                     style="@style/Text.MyFitAI.BodyCompact"
-                     android:layout_width="match_parent"
-                     android:layout_height="wrap_content"
-                     android:layout_marginTop="@dimen/space_12"
-                     android:text="Provider non configurato" />
+                      style="@style/Text.MyFitAI.BodyCompact"
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:layout_marginTop="@dimen/space_12"
+                      android:text="Provider non configurato" />
 
-                 <LinearLayout
+                  <LinearLayout
                     android:id="@+id/geminiKeyContainer"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -299,14 +301,35 @@
                               android:singleLine="true"
                               android:importantForAccessibility="no" />
                      </com.google.android.material.textfield.TextInputLayout>
-                  <TextView
-                     android:id="@+id/geminiKeyStatusText"
+                   <TextView
+                      android:id="@+id/geminiKeyStatusText"
                      style="@style/Text.MyFitAI.SettingsStatus"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/space_6"
-                         android:text="Chiave Gemini non configurata"
-                         />
+                          android:text="Chiave Gemini non configurata"
+                          />
+                  <com.google.android.material.textfield.TextInputLayout
+                      style="@style/Widget.MyFitAI.InputDropdown"
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:layout_marginTop="@dimen/space_8"
+                      android:hint="Modello Gemini"
+                      app:endIconMode="dropdown_menu">
+                      <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                          android:id="@+id/geminiModelInput"
+                          style="@style/Widget.MyFitAI.InputDropdownText"
+                          android:layout_width="match_parent"
+                          android:layout_height="wrap_content"
+                          android:inputType="none"
+                          android:contentDescription="Seleziona il modello Gemini" />
+                  </com.google.android.material.textfield.TextInputLayout>
+                  <TextView
+                      android:id="@+id/geminiModelCostText"
+                      style="@style/Text.MyFitAI.SettingsDescription"
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:layout_marginTop="@dimen/space_2" />
                       <LinearLayout
                           android:layout_width="match_parent"
                           android:layout_height="wrap_content"
@@ -383,14 +406,35 @@
                              android:importantForAccessibility="no" />
                     </com.google.android.material.textfield.TextInputLayout>
 
-                     <TextView
-                        android:id="@+id/openAiKeyStatusText"
+                      <TextView
+                         android:id="@+id/openAiKeyStatusText"
                         style="@style/Text.MyFitAI.SettingsStatus"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/space_6"
-                        android:text="Nessuna chiave OpenAI salvata"
-                         />
+                         android:text="Nessuna chiave OpenAI salvata"
+                          />
+                  <com.google.android.material.textfield.TextInputLayout
+                      style="@style/Widget.MyFitAI.InputDropdown"
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:layout_marginTop="@dimen/space_8"
+                      android:hint="Modello OpenAI"
+                      app:endIconMode="dropdown_menu">
+                      <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                          android:id="@+id/openAiModelInput"
+                          style="@style/Widget.MyFitAI.InputDropdownText"
+                          android:layout_width="match_parent"
+                          android:layout_height="wrap_content"
+                          android:inputType="none"
+                          android:contentDescription="Seleziona il modello OpenAI" />
+                  </com.google.android.material.textfield.TextInputLayout>
+                  <TextView
+                      android:id="@+id/openAiModelCostText"
+                      style="@style/Text.MyFitAI.SettingsDescription"
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:layout_marginTop="@dimen/space_2" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -443,8 +487,8 @@
                                 android:layout_weight="1"
                                 android:text="Rimuovi"
                                 android:textAllCaps="false" />
-                        </LinearLayout>
-                    </LinearLayout>
+                     </LinearLayout>
+                 </LinearLayout>
                 </LinearLayout>
 
                   <TextView

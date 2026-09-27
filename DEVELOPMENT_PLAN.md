@@ -67,7 +67,9 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 - [x] Import BIA da foto con JSON strutturato, preview modificabile e conferma prima del salvataggio.
 - [x] Import BIA mantiene immagini temporanee solo in memoria/cache privata e riusa lo storico Room esistente.
 - [x] Agent import BIA strict: immagini non-BIA vengono rifiutate senza valori, preview o persistenza.
+- [x] `MyFitAI Progress Coach`: agente BIA strutturato BA2 con storico, confronti, scenari, affidabilità, tre azioni e guardrail non diagnostici; contratto e validator locali coperti da unit test.
 - [ ] Verifica reale Gemini/OpenAI dell'agent di import BIA con immagine autorizzata.
+- [ ] Verifica runtime reale Gemini/OpenAI del `MyFitAI Progress Coach`; il fake provider e il contratto locale sono verificati, ma il confronto reale tra provider resta da eseguire con credenziali inserite manualmente.
 
 ### Generazione piano alimentare
 - [x] Target calcolati localmente prima dell'IA.

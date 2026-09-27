@@ -19,6 +19,7 @@ class MeasurementActionCardView @JvmOverloads constructor(
     private val helpButton: ImageButton
     private val addButton: ImageButton
     private val historyButton: ImageButton
+    private val analysisButton: ImageButton
     private val titleView: TextView
 
     init {
@@ -95,8 +96,18 @@ class MeasurementActionCardView @JvmOverloads constructor(
                 context.getColor(R.color.accent_green),
             )
         }
+        analysisButton = ImageButton(context).apply {
+            layoutParams = LinearLayout.LayoutParams(dimension(R.dimen.icon_button_size), dimension(R.dimen.icon_button_size)).apply { marginStart = dimension(R.dimen.space_8) }
+            contentDescription = "Analizza dati"
+            tooltipText = "Analizza dati"
+            setImageResource(R.drawable.ic_nutrition_ai)
+            imageTintList = android.content.res.ColorStateList.valueOf(context.getColor(R.color.accent_purple))
+            setPadding(0, 0, 0, 0)
+            background = roundedBackground(context.getColor(R.color.surface_primary), context.getColor(R.color.accent_purple))
+        }
         actions.addView(addButton)
         actions.addView(historyButton)
+        actions.addView(analysisButton)
 
         val details = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -127,6 +138,11 @@ class MeasurementActionCardView @JvmOverloads constructor(
         historyButton.contentDescription = contentDescription
         historyButton.tooltipText = contentDescription
         historyButton.setOnClickListener(listener)
+    }
+    fun setAnalysisAction(contentDescription: String, listener: OnClickListener) {
+        analysisButton.contentDescription = contentDescription
+        analysisButton.tooltipText = contentDescription
+        analysisButton.setOnClickListener(listener)
     }
 
     private fun marginTop(dimenRes: Int) = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {

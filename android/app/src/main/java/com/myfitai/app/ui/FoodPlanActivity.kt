@@ -238,7 +238,22 @@ class FoodPlanActivity : BaseShellActivity() {
                 LinearLayout.LayoutParams.WRAP_CONTENT,
             ).apply { topMargin = resources.getDimensionPixelSize(R.dimen.space_12) })
         }
-        day?.hydrationNote?.takeIf { it.isNotBlank() }?.let { container.addView(infoRow("Idratazione", it)) }
+        day?.hydrationNote?.takeIf { it.isNotBlank() }?.let {
+            container.addView(infoRow("Idratazione", formatHydrationNote(it)))
+        }
+    }
+
+    private fun formatHydrationNote(raw: String): String {
+        val parts = raw.split('|').map { it.trim() }.filter { it.isNotBlank() && it != "?" }
+        if (parts.isEmpty()) return "Segui una regolare idratazione durante la giornata."
+        if (parts.size == 1) return parts.single()
+        return parts.drop(1).fold(parts.first()) { description, part ->
+            when {
+                description.endsWith(':') -> "$description $part"
+                description.endsWith('.') -> "$description $part"
+                else -> "$description. $part"
+            }
+        }.replace(Regex("\\s+"), " ").trim()
     }
 
     private fun supplementsCard(supplements: List<FoodSupplement>): MaterialCardView = MaterialCardView(this).apply {

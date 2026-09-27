@@ -79,6 +79,7 @@ class AiExecutionService {
                             it.contains("meal_alternatives") -> "MA1"
                             it.contains("nutrition_advice") -> "NA1"
                             it.contains("weekly_review") -> "WR1"
+                            it.contains("progress_coach") -> "BA2"
                             it.contains("bia") -> "BIA1"
                             else -> "?"
                         }
@@ -92,7 +93,7 @@ class AiExecutionService {
                 if (compact && attempt < maxSchemaRetries) {
                     attempt++
                     currentRequest = request.copy(
-                        userPrompt = request.userPrompt + "\nFIX:${reason.take(80)}. Regenerate exact pipe records only."
+                        userPrompt = request.userPrompt + "\nFIX:${reason.take(80)}. Return exactly one JSON envelope. The data value must begin with BA2 and contain one pipe record per line. Never concatenate records, never add markdown or code fences."
                     )
                     continue
                 }

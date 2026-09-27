@@ -85,6 +85,13 @@ class OnboardingWizardActivity : AppCompatActivity() {
     private var weightInput: TextInputEditText? = null
     private var activityInput: AutoCompleteTextView? = null
     private var goalInput: AutoCompleteTextView? = null
+    private var preferredFoodsInput: TextInputEditText? = null
+    private var dislikedFoodsInput: TextInputEditText? = null
+    private var excludedFoodsInput: TextInputEditText? = null
+    private var intolerancesInput: TextInputEditText? = null
+    private var allergiesInput: TextInputEditText? = null
+    private var dietStyleInput: AutoCompleteTextView? = null
+    private var foodNotesInput: TextInputEditText? = null
     private var mealCountInput: AutoCompleteTextView? = null
     private var wakeInput: TextInputEditText? = null
     private var sleepInput: TextInputEditText? = null
@@ -215,7 +222,35 @@ class OnboardingWizardActivity : AppCompatActivity() {
         weightInput?.setText(profile?.currentWeightKg?.let(::formatNumber).orEmpty())
         activityInput?.setText(profile?.activityLevel.orEmpty(), false)
         goalInput?.setText(profile?.goal.orEmpty(), false)
+        renderFoodPreferences()
         stepContent.addView(card)
+    }
+
+    private fun renderFoodPreferences() {
+        val foodCard = card()
+        val content = content(foodCard)
+        TextView(this).apply {
+            setText(R.string.onboarding_food_preferences_title)
+            setTextAppearance(R.style.Text_MyFitAI_Section)
+            content.addView(this)
+        }
+        addDescription(content, R.string.onboarding_food_preferences_description)
+        val dietary = DietaryProfile.parse(profile?.dietaryPreferencesJson)
+        preferredFoodsInput = textInput(content, R.string.profile_preferred_foods_hint, "textCapSentences", singleLine = false)
+        dislikedFoodsInput = textInput(content, R.string.profile_disliked_foods_hint, "textCapSentences", singleLine = false)
+        excludedFoodsInput = textInput(content, R.string.profile_excluded_foods_hint, "textCapSentences", singleLine = false)
+        intolerancesInput = textInput(content, R.string.profile_intolerances_hint, "textCapSentences", singleLine = false)
+        allergiesInput = textInput(content, R.string.profile_allergies_hint, "textCapSentences", singleLine = false)
+        dietStyleInput = dropdown(content, R.string.profile_diet_style_hint, listOf("Nessuno", "Onnivoro", "Vegetariano", "Vegano", "Pescetariano"))
+        foodNotesInput = textInput(content, R.string.profile_food_notes_hint, "textMultiLine", singleLine = false)
+        preferredFoodsInput?.setText(dietary.preferredFoods.joinToString(", "))
+        dislikedFoodsInput?.setText(dietary.dislikedFoods.joinToString(", "))
+        excludedFoodsInput?.setText(dietary.excludedFoods.joinToString(", "))
+        intolerancesInput?.setText(dietary.intolerances.joinToString(", "))
+        allergiesInput?.setText(dietary.allergies.joinToString(", "))
+        dietStyleInput?.setText(dietary.dietStyle ?: "Nessuno", false)
+        foodNotesInput?.setText(dietary.notes.orEmpty())
+        stepContent.addView(foodCard)
     }
 
     private fun renderMealsStep() {
@@ -367,7 +402,15 @@ class OnboardingWizardActivity : AppCompatActivity() {
         val goal = goalInput?.text?.toString()?.trim()?.takeIf { it.isNotBlank() }
         val activity = activityInput?.text?.toString()?.trim()?.takeIf { it.isNotBlank() }
         val existing = profile
-        val dietaryJson = existing?.dietaryPreferencesJson ?: DietaryProfile().toJson()
+        val dietaryJson = DietaryProfile(
+            preferredFoods = DietaryProfile.csv(preferredFoodsInput?.text?.toString()),
+            dislikedFoods = DietaryProfile.csv(dislikedFoodsInput?.text?.toString()),
+            excludedFoods = DietaryProfile.csv(excludedFoodsInput?.text?.toString()),
+            intolerances = DietaryProfile.csv(intolerancesInput?.text?.toString()),
+            allergies = DietaryProfile.csv(allergiesInput?.text?.toString()),
+            dietStyle = dietStyleInput?.text?.toString()?.trim()?.takeIf { it.isNotBlank() && !it.equals("Nessuno", ignoreCase = true) },
+            notes = foodNotesInput?.text?.toString()?.trim()?.takeIf { it.isNotBlank() },
+        ).toJson()
         if (existing == null) {
             return data.userProfileRepository.create(UserProfileEntity(
                 name = name, birthDateEpochDay = birth, biologicalSex = sex,
@@ -465,8 +508,13 @@ class OnboardingWizardActivity : AppCompatActivity() {
             layoutParams = marginParams(top = if (parent.childCount == 0) 0 else R.dimen.space_8)
         }
         val input = layout.findViewById<TextInputEditText>(R.id.onboardingTextInput).apply {
-            this.inputType = when (inputType) { "numberDecimal" -> android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL; "textPassword" -> android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD; "textPersonName" -> android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PERSON_NAME; else -> android.text.InputType.TYPE_NULL }
+            this.inputType = when (inputType) { "numberDecimal" -> android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL; "textPassword" -> android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD; "textPersonName" -> android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PERSON_NAME; "textMultiLine" -> android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE or android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES; else -> android.text.InputType.TYPE_NULL }
             this.isSingleLine = singleLine
+            if (!singleLine) {
+                minLines = 2
+                maxLines = if (inputType == "textMultiLine") 4 else 2
+                gravity = android.view.Gravity.TOP or android.view.Gravity.START
+            }
             if (inputType == "textPassword") {
                 transformationMethod = PasswordTransformationMethod.getInstance()
                 importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS

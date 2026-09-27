@@ -55,6 +55,18 @@ interface BiaMeasurementDao {
 }
 
 @Dao
+interface BiaAnalysisResultDao {
+    @Query("SELECT * FROM bia_analysis_results WHERE profileId = :profileId ORDER BY createdAtEpochMillis DESC, id DESC")
+    fun observeAll(profileId: Long): Flow<List<BiaAnalysisResultEntity>>
+
+    @Query("SELECT * FROM bia_analysis_results WHERE profileId = :profileId AND biaMeasurementId = :measurementId ORDER BY createdAtEpochMillis DESC, id DESC LIMIT 1")
+    suspend fun latestForMeasurement(profileId: Long, measurementId: Long): BiaAnalysisResultEntity?
+
+    @Insert
+    suspend fun insert(value: BiaAnalysisResultEntity): Long
+}
+
+@Dao
 interface BodyMeasurementDao {
     @Query("SELECT * FROM body_measurements WHERE profileId = :profileId ORDER BY measuredAtEpochMillis DESC, id DESC")
     fun observeAll(profileId: Long): Flow<List<BodyMeasurementEntity>>

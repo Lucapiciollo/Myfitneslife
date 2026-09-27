@@ -1,100 +1,93 @@
 package com.myfitai.app.ui
 
-import android.view.View
-import android.widget.LinearLayout
+import android.widget.ArrayAdapter
 import android.widget.TextView
 import android.widget.Toast
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import com.myfitai.app.R
 import com.myfitai.app.ai.AiModelConfig
 import com.myfitai.app.ai.AiSettingsStore
 import com.myfitai.app.ai.GeminiPricingStore
 import com.myfitai.app.ai.OpenAiPricingStore
 
+/** Exposed model combos. Each selection is applied only after explicit confirmation. */
 object AiModelSelectionBinder {
-    fun bind(activity: SettingsActivity, card: LinearLayout, settings: AiSettingsStore) {
+    fun bind(activity: SettingsActivity, card: android.widget.LinearLayout, settings: AiSettingsStore) {
         val geminiPricing = GeminiPricingStore(activity)
         val openAiPricing = OpenAiPricingStore(activity)
+        val geminiInput = activity.findViewById<MaterialAutoCompleteTextView>(R.id.geminiModelInput)
+        val openAiInput = activity.findViewById<MaterialAutoCompleteTextView>(R.id.openAiModelInput)
+        val geminiCost = activity.findViewById<TextView>(R.id.geminiModelCostText)
+        val openAiCost = activity.findViewById<TextView>(R.id.openAiModelCostText)
+        var pendingGemini = settings.selectedGeminiModel
+        var pendingOpenAi = settings.selectedOpenAiModel
+        fun comboLabel(model: String): String = "${AiModelConfig.ratingLabel(model)}  ${AiModelConfig.displayName(model)}"
 
-        addModelRow(
-            activity = activity,
-            card = card,
-            title = "Modello Gemini",
-            models = AiModelConfig.GEMINI_SELECTABLE,
-            current = { settings.selectedGeminiModel },
-            priceLabel = { model ->
-                val p = geminiPricing.pricingFor(model)
-                "input \$${p.inputUsdPerMillion.stripTrailingZeros().toPlainString()} · cache \$${p.cachedInputUsdPerMillion.stripTrailingZeros().toPlainString()} · output \$${p.outputUsdPerMillion.stripTrailingZeros().toPlainString()} / 1M"
-            },
-            select = { settings.selectedGeminiModel = it },
-        )
+        fun geminiPrice(model: String): String {
+            val p = geminiPricing.pricingFor(model)
+            return "Indice MyFitAI: ${AiModelConfig.ratingLabel(model)} · costo stimato: input \$${p.inputUsdPerMillion.stripTrailingZeros().toPlainString()} · cache \$${p.cachedInputUsdPerMillion.stripTrailingZeros().toPlainString()} · output \$${p.outputUsdPerMillion.stripTrailingZeros().toPlainString()} / 1M token"
+        }
 
-        addModelRow(
-            activity = activity,
-            card = card,
-            title = "Modello OpenAI",
-            models = AiModelConfig.OPENAI_SELECTABLE,
-            current = { settings.selectedOpenAiModel },
-            priceLabel = { model ->
-                val p = openAiPricing.pricingFor(model)
-                "input \$${p.inputUsdPerMillion.stripTrailingZeros().toPlainString()} · cache \$${p.cachedInputUsdPerMillion.stripTrailingZeros().toPlainString()} · output \$${p.outputUsdPerMillion.stripTrailingZeros().toPlainString()} / 1M"
-            },
-            select = { settings.selectedOpenAiModel = it },
-        )
-    }
+        fun openAiPrice(model: String): String {
+            val p = openAiPricing.pricingFor(model)
+            return "Indice MyFitAI: ${AiModelConfig.ratingLabel(model)} · costo stimato: input \$${p.inputUsdPerMillion.stripTrailingZeros().toPlainString()} · cache \$${p.cachedInputUsdPerMillion.stripTrailingZeros().toPlainString()} · output \$${p.outputUsdPerMillion.stripTrailingZeros().toPlainString()} / 1M token"
+        }
 
-    private fun addModelRow(
-        activity: SettingsActivity,
-        card: LinearLayout,
-        title: String,
-        models: List<String>,
-        current: () -> String,
-        priceLabel: (String) -> String,
-        select: (String) -> Unit,
-    ) {
-        val row = LinearLayout(activity).apply {
-            orientation = LinearLayout.VERTICAL
-            val verticalPadding = activity.resources.getDimensionPixelSize(R.dimen.space_8)
-            setPadding(0, verticalPadding, 0, verticalPadding)
-            isClickable = true
-            isFocusable = true
-        }
-        val modelView = TextView(activity).apply {
-            setTextAppearance(R.style.Text_MyFitAI_Body)
-        }
-        val pricingView = TextView(activity).apply {
-            setTextAppearance(R.style.Text_MyFitAI_StatusValue)
-        }
-        row.addView(modelView, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
-        row.addView(pricingView, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
-            topMargin = activity.resources.getDimensionPixelSize(R.dimen.space_2)
-        })
         fun render() {
-            val model = current()
-            modelView.text = "$title: ${AiModelConfig.displayName(model)}"
-            pricingView.text = priceLabel(model)
-            row.contentDescription = "$title: ${AiModelConfig.displayName(model)}, ${priceLabel(model)}"
+            geminiInput.setText(comboLabel(pendingGemini), false)
+            openAiInput.setText(comboLabel(pendingOpenAi), false)
+            geminiCost.text = geminiPrice(pendingGemini)
+            openAiCost.text = openAiPrice(pendingOpenAi)
         }
-        row.setOnClickListener {
-            val selectedModel = current()
-            val labels = models.map { model ->
-                val marker = if (model == selectedModel) " ✓" else ""
-                "${AiModelConfig.displayName(model)}$marker\n${priceLabel(model)}"
-            }.toTypedArray()
-            MaterialAlertDialogBuilder(activity)
-                .setTitle(title)
-                .setSingleChoiceItems(labels, models.indexOf(selectedModel)) { dialog, which ->
-                    val model = models[which]
-                    select(model)
-                    dialog.dismiss()
-                    render()
-                    Toast.makeText(activity, "${AiModelConfig.displayName(model)} sarà usato dalla prossima richiesta", Toast.LENGTH_LONG).show()
+
+        geminiInput.setAdapter(ArrayAdapter(activity, android.R.layout.simple_dropdown_item_1line, AiModelConfig.GEMINI_SELECTABLE.map(::comboLabel)))
+        openAiInput.setAdapter(ArrayAdapter(activity, android.R.layout.simple_dropdown_item_1line, AiModelConfig.OPENAI_SELECTABLE.map(::comboLabel)))
+        fun confirmSelection(
+            title: String,
+            model: String,
+            price: String,
+            previous: String,
+            apply: () -> Unit,
+            restore: () -> Unit,
+        ) {
+            val dialog = com.google.android.material.dialog.MaterialAlertDialogBuilder(activity)
+                .setTitle("Confermare modello?")
+                .setMessage("$title\n${AiModelConfig.displayName(model)}\n\n$price")
+                .setNegativeButton("Annulla") { _, _ -> restore() }
+                .setPositiveButton("Conferma") { _, _ ->
+                    apply()
+                    Toast.makeText(activity, "${AiModelConfig.displayName(model)} confermato", Toast.LENGTH_SHORT).show()
                 }
-                .setNegativeButton("Annulla", null)
-                .show()
+                .create()
+            dialog.setOnCancelListener { restore() }
+            dialog.show()
         }
-        card.addView(row, 0)
-        card.addView(View(activity).apply { setBackgroundColor(activity.getColor(R.color.divider)) }, 1, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, activity.resources.getDimensionPixelSize(R.dimen.space_1)).apply { bottomMargin = activity.resources.getDimensionPixelSize(R.dimen.space_8) })
+
+        geminiInput.setOnItemClickListener { _, _, position, _ ->
+            val previous = settings.selectedGeminiModel
+            pendingGemini = AiModelConfig.GEMINI_SELECTABLE[position]
+            render()
+            confirmSelection("Modello Gemini", pendingGemini, geminiPrice(pendingGemini), previous, {
+                settings.selectedGeminiModel = pendingGemini
+            }, {
+                pendingGemini = previous
+                render()
+            })
+        }
+        openAiInput.setOnItemClickListener { _, _, position, _ ->
+            val previous = settings.selectedOpenAiModel
+            pendingOpenAi = AiModelConfig.OPENAI_SELECTABLE[position]
+            render()
+            confirmSelection("Modello OpenAI", pendingOpenAi, openAiPrice(pendingOpenAi), previous, {
+                settings.selectedOpenAiModel = pendingOpenAi
+            }, {
+                pendingOpenAi = previous
+                render()
+            })
+        }
+        geminiInput.setOnClickListener { geminiInput.showDropDown() }
+        openAiInput.setOnClickListener { openAiInput.showDropDown() }
         render()
     }
 }

@@ -25,6 +25,8 @@ class MyFitAiApplication : Application() {
                 runCatching { data.notificationScheduler.refresh() }
                 if (profileId > 0L) {
                     runCatching { data.nutritionPlanScheduler.reschedule(profileId) }
+                    runCatching { data.biaProgressCoachScheduler.ensureScheduled(profileId) }
+                    runCatching { data.progressAnalysisScheduler.ensureScheduled(profileId) }
                 }
             }
         }

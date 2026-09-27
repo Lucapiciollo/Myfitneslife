@@ -51,6 +51,7 @@ class AiJobWorker(appContext: Context, params: WorkerParameters) : CoroutineWork
         const val KEY_ERROR = "error"
         const val KEY_PROVIDER = "provider"
         const val KEY_IMAGE_PATH = "image_path"
+        const val KEY_AUTOMATIC = "automatic"
         const val MAX_RETRY_ATTEMPTS = 2
     }
 }

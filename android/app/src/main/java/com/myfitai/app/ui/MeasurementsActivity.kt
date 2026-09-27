@@ -59,6 +59,9 @@ class MeasurementsActivity : BaseShellActivity() {
             setHistoryAction("Storico rilevazioni BIA") {
             startActivity(Intent(this@MeasurementsActivity, BiaActivity::class.java).putExtra(BiaActivity.EXTRA_OPEN_HISTORY, true))
             }
+            setAnalysisAction("Analizza ultima BIA con MyFitAI Progress Coach") {
+                startActivity(Intent(this@MeasurementsActivity, BiaActivity::class.java).putExtra(BiaActivity.EXTRA_OPEN_HISTORY, true).putExtra(BiaActivity.EXTRA_ANALYZE_LATEST, true))
+            }
         }
         findViewById<MeasurementActionCardView>(R.id.bodyCard).apply {
             setTitle("Misure")
@@ -73,6 +76,9 @@ class MeasurementsActivity : BaseShellActivity() {
             }
             setHistoryAction("Storico misure corporee") {
             startActivity(Intent(this@MeasurementsActivity, BodyMeasuresActivity::class.java).putExtra(BodyMeasuresActivity.EXTRA_OPEN_HISTORY, true))
+            }
+            setAnalysisAction("Analizza proporzioni corporee con IA") {
+                startActivity(Intent(this@MeasurementsActivity, BodyMeasuresActivity::class.java).putExtra(BodyMeasuresActivity.EXTRA_ANALYZE_PROPORTIONS, true))
             }
         }
         findViewById<android.view.View>(R.id.allHistoryButton).setOnClickListener { startActivity(Intent(this, HistoryActivity::class.java)) }

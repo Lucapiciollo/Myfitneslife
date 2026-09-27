@@ -124,8 +124,8 @@
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/aiConfigurationNoticeCard"
+                 <com.google.android.material.card.MaterialCardView
+                     android:id="@+id/aiConfigurationNoticeCard"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_8"
@@ -163,7 +163,83 @@
                             android:layout_marginTop="@dimen/space_4"
                             android:text="@string/home_ai_not_configured_action" />
                     </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
+                 </com.google.android.material.card.MaterialCardView>
+
+                 <com.google.android.material.card.MaterialCardView
+                     android:id="@+id/analysisHubCard"
+                     android:layout_width="match_parent"
+                     android:layout_height="wrap_content"
+                     android:layout_marginTop="@dimen/space_12"
+                     app:cardBackgroundColor="@color/surface_ai"
+                     app:cardCornerRadius="@dimen/radius_card"
+                     app:cardElevation="0dp"
+                     app:strokeColor="@color/ai_soft_stroke"
+                     app:strokeWidth="@dimen/border_width_default">
+                     <LinearLayout
+                         android:layout_width="match_parent"
+                         android:layout_height="wrap_content"
+                         android:orientation="vertical"
+                         android:padding="@dimen/space_16">
+                         <TextView
+                             style="@style/Text.MyFitAI.Section"
+                             android:layout_width="match_parent"
+                             android:layout_height="wrap_content"
+                             android:text="Analisi e review" />
+                         <TextView
+                             style="@style/Text.MyFitAI.BodyCompact"
+                             android:layout_width="match_parent"
+                             android:layout_height="wrap_content"
+                             android:layout_marginTop="@dimen/space_4"
+                             android:text="Trova qui le analisi IA dei dati corporei e dei progressi." />
+                         <com.google.android.material.button.MaterialButton
+                             android:id="@+id/analysisHubButton"
+                             style="@style/Widget.MyFitAI.Button.Primary"
+                             android:layout_width="wrap_content"
+                             android:layout_height="wrap_content"
+                             android:layout_marginTop="@dimen/space_8"
+                             android:text="Apri analisi dati"
+                             android:textAllCaps="false" />
+                     </LinearLayout>
+                 </com.google.android.material.card.MaterialCardView>
+
+                 <com.google.android.material.card.MaterialCardView
+                     android:id="@+id/biaDueNoticeCard"
+                     android:layout_width="match_parent"
+                     android:layout_height="wrap_content"
+                     android:layout_marginTop="@dimen/space_8"
+                     android:visibility="gone"
+                     app:cardBackgroundColor="@color/surface_primary"
+                     app:cardCornerRadius="@dimen/radius_card"
+                     app:cardElevation="@dimen/elevation_card"
+                     app:strokeColor="@color/semantic_warning"
+                     app:strokeWidth="@dimen/border_width_default">
+                     <LinearLayout
+                         android:layout_width="match_parent"
+                         android:layout_height="wrap_content"
+                         android:orientation="vertical"
+                         android:padding="@dimen/space_16">
+                         <TextView
+                             style="@style/Text.MyFitAI.CardTitle"
+                             android:layout_width="match_parent"
+                             android:layout_height="wrap_content"
+                             android:text="@string/home_bia_due_title"
+                             android:textColor="@color/text_primary" />
+                         <TextView
+                             android:id="@+id/biaDueNoticeText"
+                             style="@style/Text.MyFitAI.BodyCompact"
+                             android:layout_width="match_parent"
+                             android:layout_height="wrap_content"
+                             android:layout_marginTop="@dimen/space_4" />
+                         <com.google.android.material.button.MaterialButton
+                             android:id="@+id/biaDueNoticeButton"
+                             style="@style/Widget.MyFitAI.Button.Text"
+                             android:layout_width="wrap_content"
+                             android:layout_height="wrap_content"
+                             android:layout_marginTop="@dimen/space_4"
+                             android:text="@string/home_bia_due_action"
+                             android:textAllCaps="false" />
+                     </LinearLayout>
+                 </com.google.android.material.card.MaterialCardView>
 
                 <com.myfitai.app.ui.widgets.DashboardMetricsPanel
                     android:id="@+id/dashboardMetricsPanel"
@@ -318,16 +394,35 @@
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
-                                android:text="Metabolismo (BMR)"
-                                />
+                                 android:text="@string/home_calories_bmr_local"
+                                 />
                             <TextView
                                 android:id="@+id/caloriesBmrValue"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="—"
-                                style="@style/Text.MyFitAI.CardTitle" />
-                        </LinearLayout>
-                        <LinearLayout
+                                 style="@style/Text.MyFitAI.CardTitle" />
+                         </LinearLayout>
+                         <LinearLayout
+                             android:layout_width="match_parent"
+                             android:layout_height="wrap_content"
+                             android:layout_marginTop="@dimen/space_12"
+                             android:gravity="center_vertical"
+                             android:orientation="horizontal">
+                             <TextView
+                                 style="@style/Text.MyFitAI.Body"
+                                 android:layout_width="0dp"
+                                 android:layout_height="wrap_content"
+                                 android:layout_weight="1"
+                                 android:text="@string/home_calories_bmr_bia_reference" />
+                             <TextView
+                                 android:id="@+id/caloriesBiaBmrValue"
+                                 android:layout_width="wrap_content"
+                                 android:layout_height="wrap_content"
+                                 android:text="—"
+                                 style="@style/Text.MyFitAI.CardTitle" />
+                         </LinearLayout>
+                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/space_12"

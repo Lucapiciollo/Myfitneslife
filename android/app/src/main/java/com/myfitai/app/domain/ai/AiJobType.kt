@@ -72,9 +72,9 @@ enum class AiJobType(
     ),
     BIA_ANALYSIS(
         channelId = "ai_bia_analysis",
-        channelName = "Specialista BIA e sport",
-        successTitle = "Analisi sportiva BIA pronta",
-        successText = "La lettura muscolare e sportiva è disponibile.",
+        channelName = "MyFitAI Progress Coach",
+        successTitle = "Analisi BIA Progress Coach pronta",
+        successText = "La lettura nutrizionale e sportiva è disponibile.",
         failureTitle = "Analisi BIA non disponibile",
     ),
     BIA_IMPORT(

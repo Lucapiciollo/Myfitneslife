@@ -92,6 +92,9 @@ class BodyMeasuresActivity : BaseShellActivity() {
         if (intent.getBooleanExtra(EXTRA_OPEN_HISTORY, false)) {
             findViewById<SelectableSegmentView>(R.id.measureSegment).getChildAt(2)?.performClick()
         }
+        if (intent.getBooleanExtra(EXTRA_ANALYZE_PROPORTIONS, false)) {
+            window.decorView.postDelayed({ findViewById<MaterialButton>(proportionAiButtonId)?.performClick() }, 250L)
+        }
     }
 
     private fun loadProfileHeight() {
@@ -530,6 +533,7 @@ class BodyMeasuresActivity : BaseShellActivity() {
 
     companion object {
         const val EXTRA_OPEN_HISTORY = "open_body_history"
+        const val EXTRA_ANALYZE_PROPORTIONS = "analyze_body_proportions"
         private const val PROPORTION_CARD_TAG = "body_proportion_card"
         private var proportionStatusId: Int = View.NO_ID
         private var proportionDetailsId: Int = View.NO_ID

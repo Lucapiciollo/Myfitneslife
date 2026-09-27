@@ -291,7 +291,7 @@
       <item name="android:textSize">14sp</item>
       <item name="android:includeFontPadding">false</item>
  </style>
-<style name="Widget.MyFitAI.MeasurementCheck" parent="Widget.Material3.CompoundButton.CheckBox">
+ <style name="Widget.MyFitAI.MeasurementCheck" parent="Widget.Material3.CompoundButton.CheckBox">
     <item name="android:minHeight">@dimen/control_min_height</item>
     <item name="android:textColor">@color/text_primary</item>
     <item name="android:textSize">14sp</item>
@@ -310,6 +310,13 @@
       <item name="boxCornerRadiusBottomEnd">@dimen/radius_field</item>
      <item name="hintTextColor">@color/myfitai_input_hint</item>
       <item name="android:minHeight">@dimen/control_min_height</item>
+ </style>
+ <style name="Widget.MyFitAI.DialogRadioButton" parent="Widget.Material3.CompoundButton.RadioButton">
+     <item name="android:minHeight">@dimen/control_min_height</item>
+     <item name="android:textColor">@color/text_primary</item>
+     <item name="android:textSize">14sp</item>
+     <item name="buttonTint">@color/dialog_control_neutral</item>
+     <item name="android:gravity">center_vertical</item>
  </style>
  <style name="Widget.MyFitAI.InputDropdown" parent="Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
      <item name="boxBackgroundColor">@color/white</item>

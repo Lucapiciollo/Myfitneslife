@@ -10,6 +10,7 @@ import androidx.work.WorkManager
 import androidx.work.workDataOf
 import com.myfitai.app.domain.ai.AiJobScheduler
 import com.myfitai.app.domain.ai.AiJobType
+import com.myfitai.app.data.profile.AiAutomationPreferences
 import java.util.concurrent.TimeUnit
 
 /**
@@ -20,6 +21,7 @@ class ProgressAnalysisScheduler(
     context: Context,
     private val preferences: ProgressAnalysisPreferences,
     private val aiJobScheduler: AiJobScheduler? = null,
+    private val automation: AiAutomationPreferences? = null,
 ) {
     private val workManager = WorkManager.getInstance(context.applicationContext)
 
@@ -47,11 +49,20 @@ class ProgressAnalysisScheduler(
     }
 
     private fun enqueue(profileId: Long, nowEpochMillis: Long) {
-        val due = preferences.nextDueEpochMillis(profileId) ?: return
+        val automationConfig = automation?.get(profileId, AiAutomationPreferences.Feature.PROGRESS_ANALYSIS)
+        if (automationConfig != null && !automationConfig.enabled) return
+        val due = automation?.nextDue(profileId, AiAutomationPreferences.Feature.PROGRESS_ANALYSIS)
+            ?: preferences.nextDueEpochMillis(profileId) ?: return
         val delay = (due - nowEpochMillis).coerceAtLeast(0L)
         if (aiJobScheduler != null) {
             // Cadence is owned here; the shared worker handles network and retry constraints.
-            aiJobScheduler.enqueue(AiJobType.PROGRESS_ANALYSIS, profileId, due.toString(), delay)
+            aiJobScheduler.enqueue(
+                AiJobType.PROGRESS_ANALYSIS,
+                profileId,
+                due.toString(),
+                delay,
+                params = androidx.work.Data.Builder().putBoolean(com.myfitai.app.domain.ai.AiJobWorker.KEY_AUTOMATIC, true).build(),
+            )
             return
         }
         val request = OneTimeWorkRequestBuilder<ProgressAnalysisWorker>()

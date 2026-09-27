@@ -1,91 +1,47 @@
 package com.myfitai.app.domain.body
 
-import com.myfitai.app.ai.AiCompactEnvelope
 import com.myfitai.app.ai.AiRuntimeService
 import com.myfitai.app.ai.AiStructuredRequest
-import com.myfitai.app.domain.ai.AiUserContext
 
 class BiaAnalysisService(private val aiRuntime: AiRuntimeService) {
-    data class Report(
-        val current: Map<String, Float>,
-        val previousDelta: Map<String, Float>,
-        val measurementCount: Int,
+    data class Report(val inputPayload: String, val measurementCount: Int)
+    data class Result(
+        val interpretation: BiaAnalysisContract.Interpretation,
+        val provider: String,
+        val model: String,
     )
 
-    data class Interpretation(
-        val summary: String,
-        val muscleStatus: String,
-        val doingWell: List<String>,
-        val improve: List<String>,
-        val validation: String,
-    )
-
-    suspend fun analyze(report: Report, userContext: String = ""): Interpretation {
-        require(report.current.isNotEmpty()) { "INSUFFICIENT_DATA" }
-        var parsed: Interpretation? = null
+    suspend fun analyze(report: Report): Result {
+        require(report.inputPayload.isNotBlank()) { "INSUFFICIENT_DATA" }
+        var parsed: BiaAnalysisContract.Interpretation? = null
         val response = aiRuntime.execute(
             request = AiStructuredRequest(
                 systemPrompt = SYSTEM_PROMPT,
-                userPrompt = buildPrompt(report, userContext),
-                schemaName = "myfitai_bia_analysis_pipe_v1",
-                schemaJson = AiCompactEnvelope.schemaJson,
-                maxOutputTokens = 500,
+                userPrompt = report.inputPayload,
+                schemaName = BiaAnalysisContract.SCHEMA_NAME,
+                schemaJson = BiaAnalysisContract.schemaJson,
+                maxOutputTokens = 2_200,
                 thinkingBudget = 0,
             ),
             businessValidator = { json -> runCatching {
-                parse(json).also { validate(it).getOrThrow(); parsed = it }
+                BiaAnalysisContract.parse(json).also { BiaAnalysisContract.validateBusiness(it).getOrThrow(); parsed = it }
             } },
         )
-        return parsed ?: parse(response.jsonText).also { validate(it).getOrThrow() }
-    }
-
-    private fun buildPrompt(report: Report, userContext: String): String = buildString {
-        if (userContext.isNotBlank()) appendLine("U:$userContext")
-        append("BIA|").append(report.measurementCount).appendLine()
-        report.current.forEach { (key, value) -> appendLine("V|$key|$value") }
-        report.previousDelta.forEach { (key, value) -> appendLine("D|$key|$value") }
-    }
-
-    private fun parse(json: String): Interpretation {
-        val lines = AiCompactEnvelope.data(json).lineSequence().map { it.trim() }.filter { it.isNotEmpty() }.toList()
-        require(lines.firstOrNull() == "BA1") { "BIA_PIPE_INVALID" }
-        var summary: String? = null
-        var muscleStatus: String? = null
-        val doingWell = mutableListOf<String>()
-        val improve = mutableListOf<String>()
-        var validation = ""
-        lines.drop(1).forEach { line ->
-            val parts = line.split('|')
-            when (parts.firstOrNull()) {
-                "S" -> { require(parts.size == 2 && summary == null); summary = parts[1].trim() }
-                "M" -> { require(parts.size == 2 && muscleStatus == null); muscleStatus = parts[1].trim() }
-                "O" -> { require(parts.size == 2); doingWell += parts[1].trim() }
-                "I" -> { require(parts.size == 2); improve += parts[1].trim() }
-                "V" -> { require(parts.size == 3 && parts[1] in setOf("0", "1")); validation = parts[2].trim() }
-                else -> error("BIA_RECORD_INVALID")
-            }
-        }
-        return Interpretation(requireNotNull(summary), requireNotNull(muscleStatus), doingWell, improve, validation)
-    }
-
-    private fun validate(value: Interpretation): Result<Unit> = runCatching {
-        val text = (listOf(value.summary, value.muscleStatus) + value.doingWell + value.improve).joinToString(" ").lowercase()
-        require(listOf("diagnosi", "patologia", "causa", "ideale perfetto").none(text::contains))
-        require(value.summary.isNotBlank() && value.muscleStatus.isNotBlank())
-        require(value.doingWell.size <= 4 && value.improve.size <= 4)
+        val interpretation = parsed ?: BiaAnalysisContract.parse(response.jsonText).also { BiaAnalysisContract.validateBusiness(it).getOrThrow() }
+        return Result(interpretation, response.provider.name, response.model)
     }
 
     companion object {
-        private const val SYSTEM_PROMPT = """
-MyFitAI specialist in bioimpedance and sports body composition. Use only the supplied values and deltas. Read the data as a sports professional: explain muscle status, body-composition context, what is already positive, and where to improve through training, recovery, and nutrition. Distinguish measured facts from cautious interpretation. Never diagnose, infer causes, invent missing values, prescribe medical treatment, or compare with aesthetic ideals. A single measurement describes status, not a trend. Output ONLY JSON envelope with data:
-${AiUserContext.INPUT_DESCRIPTION}
-BA1
-S|brief overall summary
-M|brief muscle status
-O|positive observation or sporting strength (0..4 rows)
-I|improvement priority with practical sport action (0..4 rows)
-V|1_or_0|notes
-Keep each text row <=20 words. Never use | or newline inside a text field.
-"""
+        private val SYSTEM_PROMPT = """
+Sei MyFitAI Progress Coach, agente specializzato in nutrizione sportiva, composizione corporea, ricomposizione, dimagrimento, ipertrofia, allenamento con i pesi e interpretazione prudente delle bioimpedenziometrie BIA.
+
+Analizza esclusivamente il profilo, la rilevazione corrente, lo storico e il contesto forniti dall'app. Non inventare dati, non trasformare stime in misure, non formulare diagnosi mediche, non prescrivere farmaci e non sostituire professionisti sanitari. Se emergono sintomi, valori estremi, perdita rapida non intenzionale, restrizione grave o condizioni cliniche, usa D per invitare prudentemente a una valutazione professionale.
+
+Prima controlla coerenza BMI/peso, massa grassa, massa magra, acqua, duplicati, ordine cronologico, unità, dispositivo e condizioni. Tolleranza piccole differenze di arrotondamento. Considera acqua, glicogeno, sale, creatina, pasti, sudorazione, allenamento, sonno, contatto elettrodi, dispositivo e orario. Una variazione isolata di massa muscolare non è prova di perdita reale: cerca tendenze ripetute, circonferenze, forza, calorie, proteine e recupero. Se non puoi distinguere muscolo da acqua/glicogeno, dichiaralo.
+
+Confronta corrente con precedente, finestre 30/90 giorni e inizio storico quando presenti. Classifica in base all'obiettivo: POSITIVE, PROBABLY_POSITIVE, STABLE, MONITOR, NEGATIVE o INSUFFICIENT_DATA. Calcola scenari di grasso solo se massa magra e percentuale grasso sono disponibili, usando massa magra / (1 - target body fat / 100); usa circa/intervalli e ipotesi esplicite. Verifica calorie con proteine*4 + carboidrati*4 + grassi*9, considerando arrotondamenti. Non modificare automaticamente tutti i parametri: dai esattamente tre azioni prioritarie quando i dati bastano.
+
+Rispondi in italiano con BA2 e solo i record del protocollo. Ogni testo deve essere breve, concreto e comprensibile. Usa ? per dati non ricevuti. Distingui misurato, calcolato, stima, ipotesi e mancante. Non mostrare ragionamenti interni.
+""".trimIndent()
     }
 }

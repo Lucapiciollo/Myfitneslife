@@ -21,6 +21,8 @@ import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.domain.calculation.LocalCalculationEngine
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.notifications.NotificationPreferences
+import com.myfitai.app.data.profile.BiaFrequencyPreferences
+import com.myfitai.app.data.profile.AiAutomationPreferences
 import com.myfitai.app.ui.home.HomeViewModel
 import com.myfitai.app.ui.widgets.MealCardView
 import com.myfitai.app.ui.widgets.MetricCardView
@@ -81,6 +83,9 @@ class HomeActivity : BaseShellActivity() {
         findViewById<android.view.View>(R.id.planUpdateNoticeButton).setOnClickListener { openFoodPlan() }
         findViewById<android.view.View>(R.id.aiConfigurationNoticeCard).setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java)) }
         findViewById<android.view.View>(R.id.aiConfigurationNoticeButton).setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java)) }
+        findViewById<android.view.View>(R.id.biaDueNoticeCard).setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java)) }
+        findViewById<android.view.View>(R.id.biaDueNoticeButton).setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java)) }
+        findViewById<android.view.View>(R.id.analysisHubButton).setOnClickListener { startActivity(Intent(this, MeasurementsActivity::class.java)) }
         findViewById<android.view.View>(R.id.nextMealCard).setOnClickListener {
             currentNextMealId?.let { mealId ->
                 startActivity(Intent(this, MealDetailActivity::class.java).putExtra(MealDetailActivity.EXTRA_MEAL_ID, mealId))
@@ -153,6 +158,8 @@ class HomeActivity : BaseShellActivity() {
         children.forEach { child ->
             val fullWidth = child.id == R.id.planUpdateNoticeCard ||
                 child.id == R.id.aiConfigurationNoticeCard ||
+                child.id == R.id.biaDueNoticeCard ||
+                child.id == R.id.analysisHubCard ||
                 child.id == R.id.dashboardMetricsPanel ||
                 child.findViewById<View>(R.id.bodyOverviewHelpButton) != null
             val params = GridLayout.LayoutParams().apply {
@@ -190,6 +197,7 @@ class HomeActivity : BaseShellActivity() {
         renderWorkoutConfiguration()
         renderPlanUpdateNotice()
         renderAiConfigurationNotice()
+        renderBiaDueNotice(viewModel.state.value)
     }
 
     private fun renderPlanUpdateNotice() {
@@ -236,6 +244,7 @@ class HomeActivity : BaseShellActivity() {
     private fun renderDashboard(state: HomeViewModel.DashboardState) {
         renderPlanUpdateNotice()
         renderAiConfigurationNotice()
+        renderBiaDueNotice(state)
         val firstName = state.profileName?.trim()?.substringBefore(' ')?.takeIf { it.isNotBlank() }
         findViewById<TextView>(R.id.greetingText).text = firstName?.let { "Ciao $it 👋" } ?: "Ciao 👋"
 
@@ -397,6 +406,7 @@ class HomeActivity : BaseShellActivity() {
         currentCalories = calories
         fun kcal(value: Int?) = value?.let { "$it kcal" } ?: "—"
         findViewById<TextView>(R.id.caloriesBmrValue).text = kcal(calories.bmr)
+        findViewById<TextView>(R.id.caloriesBiaBmrValue).text = kcal(calories.biaBmr)
         findViewById<TextView>(R.id.caloriesTdeeValue).text = kcal(calories.tdee)
         findViewById<TextView>(R.id.caloriesTargetValue).text = kcal(calories.target)
         findViewById<TextView>(R.id.caloriesConsumedText).text = calories.consumedKcal?.let { "$it kcal" } ?: "—"
@@ -449,7 +459,8 @@ class HomeActivity : BaseShellActivity() {
             else -> "Target non disponibile: completa i dati richiesti nel profilo"
         }
         findViewById<android.view.View>(R.id.caloriesSummaryBody).contentDescription = buildString {
-            append("Calorie base: metabolismo a riposo ${kcal(calories.bmr)}. ")
+            append("BMR locale: ${kcal(calories.bmr)}. ")
+            append("BMR riportato dalla BIA: ${kcal(calories.biaBmr)}. ")
             append("Consumo con attività abituale ${kcal(calories.tdee)}. ")
             append("Target ${kcal(calories.target)}. ")
             append("Consumate ${calories.consumedKcal?.let { kcal(it) } ?: "nessuna registrazione"}. ")
@@ -483,11 +494,14 @@ class HomeActivity : BaseShellActivity() {
             }
         } ?: "Imposta un obiettivo nel profilo per calcolare il target."
         val message = buildString {
-            appendLine("• Metabolismo basale (BMR): ${kcal(c?.bmr)}")
-            appendLine("  Energia che il corpo consuma a riposo.")
+            appendLine("• BMR locale: ${kcal(c?.bmr)}")
+            appendLine("  Stima usata dall'app per calcolare TDEE e target.")
+            appendLine()
+            appendLine("• BMR riportato dalla BIA: ${kcal(c?.biaBmr)}")
+            appendLine("  Valore salvato dalla rilevazione, mostrato come riferimento.")
             appendLine()
             appendLine("• Consumo giornaliero (TDEE): ${kcal(c?.tdee)}")
-            appendLine("  BMR moltiplicato per il livello di attività.")
+            appendLine("  BMR locale moltiplicato per il livello di attività.")
             appendLine()
             appendLine("• Target calorico: ${kcal(c?.target)}")
             append("  $percentLine")
@@ -592,5 +606,28 @@ class HomeActivity : BaseShellActivity() {
 
     private companion object {
         const val LANDSCAPE_GRID_TAG = "home_landscape_grid"
+    }
+
+    private fun renderBiaDueNotice(state: HomeViewModel.DashboardState) {
+        val card = findViewById<View>(R.id.biaDueNoticeCard)
+        val text = findViewById<TextView>(R.id.biaDueNoticeText)
+        val measuredAt = state.latestBiaTimestamp
+        if (measuredAt == null) {
+            revealState(card, false)
+            return
+        }
+        val interval = BiaFrequencyPreferences(this).intervalDays
+        val dueAt = measuredAt + interval * 24L * 60L * 60L * 1000L
+        val now = System.currentTimeMillis()
+        val warningWindow = 7L * 24L * 60L * 60L * 1000L
+        val due = now >= dueAt
+        val expiringSoon = due || dueAt - now <= warningWindow
+        val intervalLabel = when (interval) {
+            BiaFrequencyPreferences.WEEKLY -> "settimanale"
+            BiaFrequencyPreferences.BIMONTHLY -> "ogni 2 mesi"
+            else -> "mensile"
+        }
+        text.text = if (due) getString(R.string.home_bia_due_text, intervalLabel) else getString(R.string.home_bia_due_soon_text, ((dueAt - now) / 86_400_000L).coerceAtLeast(1), intervalLabel)
+        revealState(card, expiringSoon)
     }
 }

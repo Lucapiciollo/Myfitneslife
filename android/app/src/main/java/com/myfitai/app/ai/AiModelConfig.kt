@@ -51,4 +51,15 @@ object AiModelConfig {
         OPENAI_GPT_4O_MINI -> "GPT-4o mini"
         else -> model
     }
+
+    /** MyFitAI editorial preference, based on capability, cost and current app fit. */
+    fun rating(model: String): Int = when (model) {
+        GEMINI_35_FLASH_LITE, OPENAI_GPT_5_NANO -> 5
+        GEMINI_35_FLASH, GEMINI_37_FLASH, OPENAI_GPT_5_MINI -> 4
+        GEMINI_36_FLASH, GEMINI_31_FLASH_LITE, OPENAI_GPT_5 -> 4
+        GEMINI_25_FLASH, GEMINI_25_FLASH_LITE, OPENAI_GPT_4O_MINI -> 3
+        else -> 3
+    }
+
+    fun ratingLabel(model: String): String = "★".repeat(rating(model)) + "☆".repeat(5 - rating(model))
 }

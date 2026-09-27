@@ -81,7 +81,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/space_4"
                         android:text="Per usare le funzioni IA della bioimpedenziometria devi scegliere Gemini o OpenAI e configurare la relativa API key personale nelle Impostazioni." />
-                    <com.google.android.material.button.MaterialButton
+                  <com.google.android.material.button.MaterialButton
                         android:id="@+id/aiConfigurationNoticeButton"
                         style="@style/Widget.MyFitAI.Button.Text"
                         android:layout_width="wrap_content"
@@ -384,6 +384,35 @@
                      android:text="Nessuna misurazione BIA salvata per questo profilo."
                       android:visibility="gone" />
 
+                  <LinearLayout
+                      android:id="@+id/biaAnalysisProgressContainer"
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:layout_marginTop="@dimen/space_8"
+                      android:orientation="vertical"
+                      android:visibility="gone"
+                      android:padding="@dimen/space_12"
+                      android:background="@drawable/bg_card">
+                      <TextView
+                          android:id="@+id/biaAnalysisProgressTitle"
+                          style="@style/Text.MyFitAI.SettingsLabel"
+                          android:layout_width="match_parent"
+                          android:layout_height="wrap_content" />
+                      <TextView
+                          android:id="@+id/biaAnalysisProgressText"
+                          style="@style/Text.MyFitAI.SettingsDescription"
+                          android:layout_width="match_parent"
+                          android:layout_height="wrap_content"
+                          android:layout_marginTop="@dimen/space_4" />
+                      <ProgressBar
+                          android:id="@+id/biaAnalysisProgressBar"
+                          style="?android:attr/progressBarStyleHorizontal"
+                          android:layout_width="match_parent"
+                          android:layout_height="wrap_content"
+                          android:layout_marginTop="@dimen/space_8"
+                          android:indeterminate="true" />
+                  </LinearLayout>
+
                   <com.google.android.material.textview.MaterialTextView
                       android:id="@+id/historySummary"
                       style="@style/Text.MyFitAI.Body"
@@ -395,17 +424,27 @@
                       android:textColor="@color/text_primary"
                      android:visibility="gone" />
 
-                 <com.google.android.material.button.MaterialButton
-                     android:id="@+id/analyzeBiaButton"
+                  <com.google.android.material.button.MaterialButton
+                      android:id="@+id/analyzeBiaButton"
                     style="@style/Widget.MyFitAI.Button.Outlined"
                     android:layout_width="match_parent"
                     android:layout_height="@dimen/button_secondary_min_height"
                     android:layout_marginTop="@dimen/space_8"
                      android:text="Analisi sportiva BIA"
                      android:textAllCaps="false"
-                     android:visibility="gone" />
+                      android:visibility="gone" />
 
-                <LinearLayout
+                  <com.google.android.material.button.MaterialButton
+                      android:id="@+id/reviewSavedBiaAnalysisButton"
+                      style="@style/Widget.MyFitAI.Button.Outlined"
+                      android:layout_width="match_parent"
+                      android:layout_height="@dimen/button_secondary_min_height"
+                      android:layout_marginTop="@dimen/space_8"
+                      android:text="Rivedi ultima analisi salvata"
+                      android:textAllCaps="false"
+                      android:visibility="gone" />
+
+                 <LinearLayout
                     android:id="@+id/historyList"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

@@ -58,6 +58,24 @@ data class BiaMeasurementEntity(
 )
 
 @Entity(
+    tableName = "bia_analysis_results",
+    indices = [
+        Index("profileId"),
+        Index("biaMeasurementId"),
+        Index(value = ["profileId", "createdAtEpochMillis"]),
+    ],
+)
+data class BiaAnalysisResultEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @ColumnInfo(defaultValue = "1") val profileId: Long,
+    val biaMeasurementId: Long,
+    val createdAtEpochMillis: Long,
+    val provider: String,
+    val model: String,
+    val payloadJson: String,
+)
+
+@Entity(
     tableName = "body_measurements",
     indices = [Index("profileId"), Index("measuredAtEpochMillis"), Index(value = ["profileId", "measuredAtEpochMillis"])],
 )

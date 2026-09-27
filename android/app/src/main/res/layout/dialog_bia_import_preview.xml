@@ -16,10 +16,11 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <com.google.android.material.card.MaterialCardView
-            style="@style/Widget.MyFitAI.Dialog.Card"
+        <LinearLayout
+            android:background="@color/white"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -42,13 +43,14 @@
                     android:textStyle="bold" />
 
             </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
 
-        <com.google.android.material.card.MaterialCardView
-            style="@style/Widget.MyFitAI.Dialog.Card"
+        <LinearLayout
+            android:background="@color/white"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_12">
+            android:layout_marginTop="@dimen/space_12"
+            android:orientation="vertical">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -211,7 +213,7 @@
                     android:text="Lascia vuoto un valore se non è leggibile o non vuoi importarlo." />
 
             </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
 
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

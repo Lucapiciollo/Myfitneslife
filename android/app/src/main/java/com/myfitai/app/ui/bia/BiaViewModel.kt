@@ -7,6 +7,7 @@ import com.myfitai.app.data.local.entity.BiaMeasurementEntity
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.repository.BiaRepository
 import com.myfitai.app.domain.food.NutritionPathTrigger
+import com.myfitai.app.domain.body.BiaProgressCoachScheduler
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -21,6 +22,7 @@ class BiaViewModel(
     private val repository: BiaRepository,
     private val activeProfileStore: ActiveProfileStore,
     private val nutritionPathTrigger: NutritionPathTrigger? = null,
+    private val biaProgressCoachScheduler: BiaProgressCoachScheduler? = null,
 ) : ViewModel() {
 
     val history: StateFlow<List<BiaMeasurementEntity>> = activeProfileStore.activeProfileId
@@ -127,6 +129,7 @@ class BiaViewModel(
                 val recommendationJobKey = runCatching {
                     nutritionPathTrigger?.maybeEnqueue(profileId)
                 }.getOrNull()
+                runCatching { biaProgressCoachScheduler?.ensureScheduled(profileId) }
                 _saved.tryEmit(recommendationJobKey)
             }
                 .onFailure { _error.tryEmit("Impossibile salvare la misurazione BIA") }
@@ -209,6 +212,7 @@ class BiaViewModel(
             }.onSuccess {
                 // Refresh the recommendation context but do not navigate away for an edit.
                 runCatching { nutritionPathTrigger?.maybeEnqueue(profileId) }
+                runCatching { biaProgressCoachScheduler?.ensureScheduled(profileId) }
                 _updated.tryEmit(Unit)
             }.onFailure { _error.tryEmit("Impossibile aggiornare la misurazione BIA") }
         }
@@ -226,11 +230,12 @@ class BiaViewModel(
         private val repository: BiaRepository,
         private val activeProfileStore: ActiveProfileStore,
         private val nutritionPathTrigger: NutritionPathTrigger? = null,
+        private val biaProgressCoachScheduler: BiaProgressCoachScheduler? = null,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(BiaViewModel::class.java))
-            return BiaViewModel(repository, activeProfileStore, nutritionPathTrigger) as T
+            return BiaViewModel(repository, activeProfileStore, nutritionPathTrigger, biaProgressCoachScheduler) as T
         }
     }
 }

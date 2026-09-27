@@ -23,6 +23,8 @@ import com.myfitai.app.ai.AiSettingsStore
 import com.myfitai.app.ai.GeminiByokProvider
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.data.profile.MealCountPreferences
+import com.myfitai.app.data.profile.BiaFrequencyPreferences
+import com.myfitai.app.data.profile.AiAutomationPreferences
 import com.myfitai.app.data.profile.NutritionPlanSchedulePreferences
 import com.myfitai.app.domain.progress.ProgressAnalysisPreferences
 import com.myfitai.app.navigation.BottomNavBinder
@@ -69,7 +71,7 @@ class SettingsActivity : BaseShellActivity() {
             openAiContainer.visibility = View.VISIBLE
             val geminiConfigured = credentialStore.exists(AiCredentialProvider.GEMINI)
             val openAiConfigured = credentialStore.exists(AiCredentialProvider.OPENAI)
-            val geminiModel = settings.geminiVerifiedModel ?: AiModelConfig.GEMINI_PRIMARY
+            val geminiModel = settings.selectedGeminiModel
             findViewById<View>(R.id.geminiInputLayout).visibility = if (geminiConfigured) View.GONE else View.VISIBLE
             findViewById<View>(R.id.pasteGeminiKeyButton).visibility = if (geminiConfigured) View.GONE else View.VISIBLE
             findViewById<View>(R.id.saveGeminiKeyButton).visibility = if (geminiConfigured) View.GONE else View.VISIBLE
@@ -91,11 +93,11 @@ class SettingsActivity : BaseShellActivity() {
                 com.myfitai.app.ai.AiProviderType.NOT_CONFIGURED -> if (useGemini) "Gemini selezionato ma non configurato" else "Provider OpenAI selezionato ma non configurato"
             }
             geminiStatus.text = if (geminiConfigured) {
-                "Gemini configurato ✓\nModello: ${AiModelConfig.displayName(geminiModel)}"
+                "Gemini configurato ✓\nModello selezionato: ${AiModelConfig.displayName(geminiModel)}"
             } else {
                 "Chiave Gemini non configurata"
             }
-            openAiStatus.text = if (openAiConfigured) "OpenAI configurato ✓ · chiave nascosta" else "Chiave OpenAI non configurata"
+            openAiStatus.text = if (openAiConfigured) "OpenAI configurato ✓ · chiave nascosta\nModello selezionato: ${AiModelConfig.displayName(settings.selectedOpenAiModel)}" else "Chiave OpenAI non configurata"
         }
 
         fun saveCredential(
@@ -162,6 +164,7 @@ class SettingsActivity : BaseShellActivity() {
 
         findViewById<View>(R.id.rowAppGuide).setOnClickListener { showAppGuide() }
         findViewById<View>(R.id.rowMeasurements).setOnClickListener { go(MeasurementsActivity::class.java) }
+        findViewById<SettingRowView>(R.id.rowBiaFrequency).setOnClickListener { showBiaFrequencySettings() }
         findViewById<SettingRowView>(R.id.rowUnits).apply {
             setTrailingBadge("Metrico", R.color.text_secondary)
             isClickable = false
@@ -178,9 +181,110 @@ class SettingsActivity : BaseShellActivity() {
 
         bindDataDeletion()
         bindNutritionPlanSchedule()
-        bindProgressAnalysisFrequency()
+        bindAiAutomationControls()
         GeminiCostSettingsBinder.bind(this, findViewById(R.id.aiSectionCard), settings)
         render()
+    }
+
+    private fun showBiaFrequencySettings() {
+        val prefs = com.myfitai.app.data.profile.BiaFrequencyPreferences(this)
+        val content = layoutInflater.inflate(R.layout.bia_frequency_settings, null)
+        val group = content.findViewById<android.widget.RadioGroup>(R.id.biaFrequencyGroup)
+        val selectedId = when (prefs.intervalDays) {
+            BiaFrequencyPreferences.WEEKLY -> R.id.biaFrequencyWeekly
+            BiaFrequencyPreferences.BIMONTHLY -> R.id.biaFrequencyBimonthly
+            else -> R.id.biaFrequencyMonthly
+        }
+        group.check(selectedId)
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.bia_frequency_title)
+            .setView(normalizeRuntimeDialogContent(content))
+            .setNegativeButton(R.string.action_cancel, null)
+            .setPositiveButton(R.string.action_save) { _, _ ->
+                prefs.intervalDays = when (group.checkedRadioButtonId) {
+                    R.id.biaFrequencyWeekly -> BiaFrequencyPreferences.WEEKLY
+                    R.id.biaFrequencyBimonthly -> BiaFrequencyPreferences.BIMONTHLY
+                    else -> BiaFrequencyPreferences.MONTHLY
+                }
+            }
+            .show()
+    }
+
+    private fun bindAiAutomationControls() {
+        val profileId = data.activeProfileStore.currentIdOrNull() ?: return
+        val card = findViewById<LinearLayout>(R.id.aiSectionCard)
+        val preferences = data.aiAutomationPreferences
+        val rows = listOf(
+            AiAutomationPreferences.Feature.BIA_PROGRESS_COACH to "Progress Coach BIA",
+            AiAutomationPreferences.Feature.PROGRESS_ANALYSIS to "Analisi progressi",
+            AiAutomationPreferences.Feature.BODY_PROPORTIONS to "Proporzioni corporee",
+            AiAutomationPreferences.Feature.WEEKLY_REVIEW to "Review settimanale",
+        )
+        rows.forEachIndexed { index, (feature, label) ->
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(0, resources.getDimensionPixelSize(R.dimen.space_8), 0, resources.getDimensionPixelSize(R.dimen.space_8))
+            }
+            val title = TextView(this).apply { text = label; setTextAppearance(R.style.Text_MyFitAI_SettingsLabel) }
+            val automatic = MaterialSwitch(this).apply {
+                text = "Automatica"
+                setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
+                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+            }
+            val notifications = MaterialSwitch(this).apply {
+                text = "Notifiche"
+                setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
+                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+            }
+            val frequency = TextView(this).apply {
+                setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
+                isClickable = true
+                isFocusable = true
+                setPadding(0, resources.getDimensionPixelSize(R.dimen.space_2), 0, resources.getDimensionPixelSize(R.dimen.space_4))
+            }
+            var rendering = false
+            fun render() {
+                rendering = true
+                val config = preferences.get(profileId, feature)
+                automatic.isChecked = config.enabled
+                notifications.isChecked = config.notificationsEnabled
+                frequency.text = "Frequenza: ${if (config.frequency == AiAutomationPreferences.Frequency.WEEKLY) "settimanale" else "mensile"}. L'azione manuale resta sempre disponibile."
+                rendering = false
+            }
+            automatic.setOnCheckedChangeListener { _, checked ->
+                if (rendering) return@setOnCheckedChangeListener
+                preferences.setEnabled(profileId, feature, checked)
+                if (feature == AiAutomationPreferences.Feature.BIA_PROGRESS_COACH) {
+                    if (checked) data.biaProgressCoachScheduler.ensureScheduled(profileId) else data.biaProgressCoachScheduler.cancel(profileId)
+                } else if (feature == AiAutomationPreferences.Feature.PROGRESS_ANALYSIS) {
+                    if (checked) data.progressAnalysisScheduler.ensureScheduled(profileId) else data.progressAnalysisScheduler.cancel(profileId)
+                }
+                render()
+            }
+            notifications.setOnCheckedChangeListener { _, checked ->
+                if (rendering) return@setOnCheckedChangeListener
+                preferences.setNotificationsEnabled(profileId, feature, checked)
+                render()
+            }
+            frequency.setOnClickListener {
+                val labels = arrayOf("Ogni settimana", "Ogni mese")
+                val current = preferences.get(profileId, feature).frequency.ordinal
+                MaterialAlertDialogBuilder(this).setTitle("Frequenza $label")
+                    .setSingleChoiceItems(labels, current) { dialog, which ->
+                        preferences.setFrequency(profileId, feature, if (which == 0) AiAutomationPreferences.Frequency.WEEKLY else AiAutomationPreferences.Frequency.MONTHLY)
+                        if (feature == AiAutomationPreferences.Feature.BIA_PROGRESS_COACH && preferences.get(profileId, feature).enabled) data.biaProgressCoachScheduler.ensureScheduled(profileId)
+                        if (feature == AiAutomationPreferences.Feature.PROGRESS_ANALYSIS && preferences.get(profileId, feature).enabled) data.progressAnalysisScheduler.reschedule(profileId)
+                        render(); dialog.dismiss()
+                    }.setNegativeButton(R.string.action_cancel, null).show()
+            }
+            render()
+            row.addView(title)
+            row.addView(frequency)
+            row.addView(automatic)
+            row.addView(notifications)
+            card.addView(row, index + 1)
+            if (index < rows.lastIndex) card.addView(View(this).apply { setBackgroundColor(getColor(R.color.divider)) }, index * 2 + 2, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, resources.getDimensionPixelSize(R.dimen.space_1)))
+        }
     }
 
     private fun normalizeSettingsSurfaces() {
@@ -258,22 +362,22 @@ class SettingsActivity : BaseShellActivity() {
             val verticalPadding = resources.getDimensionPixelSize(R.dimen.space_8)
             setPadding(0, verticalPadding, 0, verticalPadding)
         }
-        val header = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = android.view.Gravity.CENTER_VERTICAL
-        }
         val title = TextView(this).apply {
             text = "Generazione automatica piano"
             setTextAppearance(R.style.Text_MyFitAI_SettingsLabel)
         }
-        val enabledSwitch = MaterialSwitch(this)
-        header.addView(title, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-        header.addView(enabledSwitch)
+        val enabledSwitch = MaterialSwitch(this).apply {
+            text = "Automatica"
+            setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+        }
         val value = TextView(this).apply { setTextAppearance(R.style.Text_MyFitAI_SettingsDescription) }
-        row.addView(header)
-        row.addView(value, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
-            topMargin = resources.getDimensionPixelSize(R.dimen.space_2)
-        })
+        value.isClickable = true
+        value.isFocusable = true
+        value.setPadding(0, resources.getDimensionPixelSize(R.dimen.space_2), 0, resources.getDimensionPixelSize(R.dimen.space_4))
+        row.addView(title)
+        row.addView(value)
+        row.addView(enabledSwitch)
 
         fun dayLabel(day: java.time.DayOfWeek): String = when (day) {
             java.time.DayOfWeek.MONDAY -> "Lunedì"

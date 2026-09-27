@@ -60,6 +60,7 @@ class HomeViewModel(
     data class TrendSeries(val label: String, val points: List<TrendPoint>)
     data class CalorieState(
         val bmr: Int? = null,
+        val biaBmr: Int? = null,
         val tdee: Int? = null,
         val target: Int? = null,
         val goalLabel: String? = null,
@@ -99,6 +100,7 @@ class HomeViewModel(
         val upcomingMeals: List<NextMealState> = emptyList(),
         val consumptionRecords: List<FoodConsumptionEntity> = emptyList(),
         val recovery: RecoveryState = RecoveryState(),
+        val latestBiaTimestamp: Long? = null,
         val weeklyExpectation: WeeklyBodyExpectation.Result = WeeklyBodyExpectation.Result(available = false),
     )
 
@@ -311,6 +313,7 @@ class HomeViewModel(
             upcomingMeals = upcomingMeals,
             consumptionRecords = consumption,
             recovery = recovery,
+            latestBiaTimestamp = source.bia.maxByOrNull { it.measuredAtEpochMillis }?.measuredAtEpochMillis,
         )
     }
 
@@ -354,6 +357,7 @@ class HomeViewModel(
         }
         return CalorieState(
             bmr = calculation.bmrKcal?.let { Math.round(it).toInt() },
+            biaBmr = latestBia?.bmrKcal?.let { Math.round(it).toInt() },
             tdee = tdeeInt,
             target = targetInt,
             goalLabel = goalLabel(ProfileCalculationMapper.goal(profile.goal)),

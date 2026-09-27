@@ -46,6 +46,13 @@ class BiaRepository(private val db: MyFitAiDatabase) {
     suspend fun delete(value: BiaMeasurementEntity) = db.biaMeasurementDao().delete(value)
 }
 
+class BiaAnalysisResultRepository(private val db: MyFitAiDatabase) {
+    fun all(profileId: Long): Flow<List<BiaAnalysisResultEntity>> = db.biaAnalysisResultDao().observeAll(profileId)
+    suspend fun latestForMeasurement(profileId: Long, measurementId: Long): BiaAnalysisResultEntity? =
+        db.biaAnalysisResultDao().latestForMeasurement(profileId, measurementId)
+    suspend fun insert(value: BiaAnalysisResultEntity): Long = db.biaAnalysisResultDao().insert(value)
+}
+
 class BodyMeasurementRepository(private val db: MyFitAiDatabase) {
     fun all(profileId: Long): Flow<List<BodyMeasurementEntity>> = db.bodyMeasurementDao().observeAll(profileId)
     fun latest(profileId: Long): Flow<BodyMeasurementEntity?> = db.bodyMeasurementDao().observeLatest(profileId)
