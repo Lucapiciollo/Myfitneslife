@@ -12,6 +12,8 @@ class WorkoutPreferences(context: Context) {
         prefs.edit().putBoolean(key(profileId), enabled).apply()
     }
 
+    fun clearProfile(profileId: Long) { prefs.edit().remove(key(profileId)).apply() }
+
     private fun key(profileId: Long) = "workouts_enabled_$profileId"
 
     companion object {

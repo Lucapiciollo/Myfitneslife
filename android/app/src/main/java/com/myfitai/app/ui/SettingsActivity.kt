@@ -25,6 +25,7 @@ import com.myfitai.app.ai.AiModelConfig
 import com.myfitai.app.ai.AiSettingsStore
 import com.myfitai.app.ai.GeminiByokProvider
 import com.myfitai.app.data.AppDataContainer
+import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.data.profile.MealCountPreferences
 import com.myfitai.app.data.profile.BiaFrequencyPreferences
 import com.myfitai.app.data.profile.AiAutomationPreferences
@@ -44,6 +45,12 @@ class SettingsActivity : BaseShellActivity() {
     private val data by lazy { AppDataContainer.get(this) }
     private val backupOpenLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) confirmBackupImport(uri)
+    }
+    private var profileAwaitingDeletionBackup: UserProfileEntity? = null
+    private val deleteProfileBackupLauncher = registerForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        val profile = profileAwaitingDeletionBackup
+        profileAwaitingDeletionBackup = null
+        if (uri != null && profile != null) saveProfileBackupBeforeDeletion(profile, uri)
     }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -197,6 +204,7 @@ class SettingsActivity : BaseShellActivity() {
         findViewById<View>(R.id.rowImportProfileBackup).setOnClickListener {
             backupOpenLauncher.launch(arrayOf("application/json", "text/json", "text/plain"))
         }
+        findViewById<View>(R.id.rowDeleteProfile).setOnClickListener { selectProfileToDelete() }
 
         bindDataDeletion()
         bindAiAutomationControls()
@@ -230,6 +238,114 @@ class SettingsActivity : BaseShellActivity() {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
         })
         finish()
+    }
+
+    private fun selectProfileToDelete() {
+        lifecycleScope.launch {
+            val profiles = data.userProfileRepository.profiles.first()
+            if (profiles.isEmpty()) {
+                showProfileDeletionError("Non ci sono profili da eliminare.")
+                return@launch
+            }
+            val selectedId = data.activeProfileStore.currentIdOrNull()
+            if (profiles.size == 1) {
+                confirmProfileDeletion(profiles.single(), isOnlyProfile = true)
+                return@launch
+            }
+            val labels = profiles.map { profile ->
+                if (profile.id == selectedId) "${profile.name} · attivo" else profile.name
+            }.toTypedArray()
+            MaterialAlertDialogBuilder(this@SettingsActivity)
+                .setTitle("Seleziona il profilo da eliminare")
+                .setItems(labels) { _, index -> profiles.getOrNull(index)?.let { confirmProfileDeletion(it, isOnlyProfile = false) } }
+                .setNegativeButton("Annulla", null)
+                .show()
+        }
+    }
+
+    private fun confirmProfileDeletion(profile: UserProfileEntity, isOnlyProfile: Boolean) {
+        val active = profile.id == data.activeProfileStore.currentIdOrNull()
+        val consequence = if (isOnlyProfile) {
+            "È l'unico profilo: dopo la cancellazione l'app tornerà alla configurazione iniziale."
+        } else if (active) {
+            "È il profilo attivo: al termine verrà selezionato un altro profilo."
+        } else {
+            "Gli altri profili non verranno modificati."
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Vuoi salvare i dati prima di procedere alla cancellazione del profilo?")
+            .setMessage("Profilo: ${profile.name}\n$consequence\n\nPuoi salvare un backup JSON completo prima di eliminarlo.")
+            .setNegativeButton("Annulla", null)
+            .setNeutralButton("Elimina senza backup") { _, _ -> confirmIrreversibleProfileDeletion(profile, isOnlyProfile) }
+            .setPositiveButton("Salva backup") { _, _ ->
+                profileAwaitingDeletionBackup = profile
+                deleteProfileBackupLauncher.launch("myfitai-${safeBackupName(profile.name)}.json")
+            }
+            .show()
+    }
+
+    private fun saveProfileBackupBeforeDeletion(profile: UserProfileEntity, uri: Uri) {
+        lifecycleScope.launch {
+            runCatching {
+                val exported = withContext(Dispatchers.IO) { data.profileExportService.exportProfile(profile.id) }
+                withContext(Dispatchers.IO) {
+                    contentResolver.openOutputStream(uri)?.use { output ->
+                        exported.file.inputStream().use { input -> input.copyTo(output) }
+                    } ?: error("Impossibile salvare il backup")
+                }
+            }.onSuccess {
+                MaterialAlertDialogBuilder(this@SettingsActivity)
+                    .setTitle("Backup salvato")
+                    .setMessage("Il backup completo di ${profile.name} è stato salvato. Procedere con l'eliminazione definitiva del profilo e di tutti i suoi dati?")
+                    .setNegativeButton("Annulla", null)
+                    .setPositiveButton("Elimina profilo") { _, _ -> deleteProfile(profile) }
+                    .show()
+            }.onFailure { error ->
+                showProfileDeletionError("Backup non salvato. Il profilo non è stato eliminato. ${error.message.orEmpty()}")
+            }
+        }
+    }
+
+    private fun confirmIrreversibleProfileDeletion(profile: UserProfileEntity, isOnlyProfile: Boolean) {
+        val text = if (isOnlyProfile) {
+            "Il profilo ${profile.name} e tutti i suoi dati verranno eliminati definitivamente. Essendo l'unico profilo, l'app tornerà all'onboarding. Vuoi continuare?"
+        } else {
+            "Il profilo ${profile.name} e tutti i suoi dati verranno eliminati definitivamente. Vuoi continuare?"
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Conferma eliminazione definitiva")
+            .setMessage(text)
+            .setNegativeButton("Annulla", null)
+            .setPositiveButton("Elimina definitivamente") { _, _ -> deleteProfile(profile) }
+            .show()
+    }
+
+    private fun deleteProfile(profile: UserProfileEntity) {
+        lifecycleScope.launch {
+            runCatching { withContext(Dispatchers.IO) { data.dataDeletionService.deleteProfile(profile.id) } }
+                .onSuccess {
+                    Toast.makeText(this@SettingsActivity, "Profilo eliminato", Toast.LENGTH_LONG).show()
+                    startActivity(Intent(this@SettingsActivity, SplashActivity::class.java).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                    })
+                    finish()
+                }
+                .onFailure { error -> showProfileDeletionError("Eliminazione non riuscita. ${error.message.orEmpty()}") }
+        }
+    }
+
+    private fun safeBackupName(value: String): String = value
+        .replace(Regex("[^A-Za-z0-9._-]+"), "-")
+        .trim('-', '.', '_')
+        .take(48)
+        .ifBlank { "profilo" }
+
+    private fun showProfileDeletionError(message: String) {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Eliminazione profilo")
+            .setMessage(message)
+            .setPositiveButton("Chiudi", null)
+            .show()
     }
 
     private fun showBiaFrequencySettings() {

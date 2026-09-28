@@ -117,7 +117,9 @@
                   <View android:layout_width="match_parent" android:layout_height="@dimen/border_width_default" android:background="@color/divider" />
                    <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowExport" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_export" app:srLabel="Esporta / importa dati" app:srDescription="@string/settings_desc_export" />
                    <View android:layout_width="match_parent" android:layout_height="@dimen/border_width_default" android:background="@color/divider" />
-                   <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowImportProfileBackup" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_export" app:srLabel="Carica profilo da backup" app:srDescription="Sostituisce il profilo attivo con tutti i suoi dati e riavvia l'app" />
+                    <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowImportProfileBackup" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_export" app:srLabel="Carica profilo da backup" app:srDescription="Sostituisce il profilo attivo con tutti i suoi dati e riavvia l'app" />
+                    <View android:layout_width="match_parent" android:layout_height="@dimen/border_width_default" android:background="@color/divider" />
+                    <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteProfile" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_lock" app:srLabel="Elimina profilo" app:srDescription="Salva facoltativamente i dati ed elimina il profilo selezionato e il suo storico" />
                  </LinearLayout>
                  </LinearLayout>
              </com.google.android.material.card.MaterialCardView>
@@ -171,7 +173,7 @@
                       android:layout_height="wrap_content"
                       android:paddingTop="@dimen/space_12"
                       android:paddingBottom="@dimen/space_8"
-                      android:text="Puoi eliminare una sola categoria oppure tutti i dati di attività del profilo attivo. Il profilo e le chiavi IA non vengono cancellati." />
+                       android:text="Puoi eliminare singole categorie, tutti i dati di attività oppure un intero profilo con il relativo storico." />
                    <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeletePlans" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="Elimina piani alimentari salvati" app:srDescription="@string/settings_desc_delete_plans" />
                   <View android:layout_width="match_parent" android:layout_height="@dimen/border_width_default" android:background="@color/divider" />
                    <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowDeleteConsumptions" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="Elimina pasti e consumi registrati" app:srDescription="@string/settings_desc_delete_consumptions" />

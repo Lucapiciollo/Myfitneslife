@@ -43,6 +43,7 @@ abstract class BaseShellActivity : AppCompatActivity() {
     }
 
     private fun promoteScreenHeaderToSticky() {
+        if (this is NutritionAdviceActivity) return
         val header = findViewById<View?>(R.id.backButton)?.parent as? ViewGroup
             ?: findViewById<View?>(R.id.prevWeekButton)?.parent as? ViewGroup
             ?: return
@@ -188,7 +189,7 @@ abstract class BaseShellActivity : AppCompatActivity() {
         normalizeScreenHeader(content)
         val shell = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(getColor(R.color.bg_primary))
+            setBackgroundColor(getColor(if (this@BaseShellActivity is NutritionAdviceActivity) R.color.transparent else R.color.bg_primary))
         }
         if (this is HomeActivity) {
             profileHeader = buildProfileHeader().also { header ->
@@ -200,7 +201,7 @@ abstract class BaseShellActivity : AppCompatActivity() {
         }
         shell.addView(content, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
         super.setContentView(shell)
-        UiMotion.screenEnter(content)
+        if (this !is NutritionAdviceActivity) UiMotion.screenEnter(content)
         ViewCompat.setOnApplyWindowInsetsListener(shell) { view, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             view.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
@@ -285,6 +286,7 @@ abstract class BaseShellActivity : AppCompatActivity() {
         addView(profileSwitcher, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f))
 
         addView(ImageView(this@BaseShellActivity).apply {
+            id = R.id.nutritionAdviceButton
             setImageResource(R.drawable.ic_nutrition_ai)
             contentDescription = "Chiedi un consiglio alimentare all'IA"
             val iconPadding = dimen(R.dimen.space_8)
@@ -293,7 +295,7 @@ abstract class BaseShellActivity : AppCompatActivity() {
             isFocusable = true
             setOnClickListener {
                 if (this@BaseShellActivity !is NutritionAdviceActivity) {
-                    startActivity(Intent(this@BaseShellActivity, NutritionAdviceActivity::class.java))
+                    startActivity(Intent(this@BaseShellActivity, NutritionAdviceActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION))
                 }
             }
         }, LinearLayout.LayoutParams(dimen(R.dimen.icon_button_size), dimen(R.dimen.icon_button_size)).apply { marginStart = dimen(R.dimen.space_4) })
@@ -356,7 +358,9 @@ abstract class BaseShellActivity : AppCompatActivity() {
             }
         }
     }
-    protected fun bindBottom(tab: BottomNavBinder.Tab) { BottomNavBinder.bind(this, tab) }
+    protected fun bindBottom(tab: BottomNavBinder.Tab) {
+        if (this !is NutritionAdviceActivity) BottomNavBinder.bind(this, tab)
+    }
     protected val aiProviderConfigured: Boolean
         get() = AiProviderAccess.isConfigured(this)
 

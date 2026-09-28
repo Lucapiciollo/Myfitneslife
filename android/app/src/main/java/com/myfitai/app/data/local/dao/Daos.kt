@@ -23,6 +23,9 @@ interface UserProfileDao {
     @Query("SELECT * FROM user_profile ORDER BY id ASC LIMIT 1")
     suspend fun getFirst(): UserProfileEntity?
 
+    @Query("SELECT * FROM user_profile WHERE id != :profileId ORDER BY name COLLATE NOCASE ASC")
+    suspend fun getAllExcept(profileId: Long): List<UserProfileEntity>
+
     @Insert
     suspend fun insert(profile: UserProfileEntity): Long
 

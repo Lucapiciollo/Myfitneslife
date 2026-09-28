@@ -86,6 +86,16 @@ class SettingsSecurityUiTest {
         device.findObject(By.text("OK")).click()
     }
 
+    @Test
+    fun deleteProfileAction_isAvailableInDataManagement() {
+        scenario.onActivity { activity ->
+            val row = activity.findViewById<View>(com.myfitai.app.R.id.rowDeleteProfile)
+            assertTrue(row.visibility == View.VISIBLE)
+            assertTrue(row.isEnabled)
+            assertTrue(row.isClickable)
+        }
+    }
+
     private fun hasOpenAiSecurityStatus(): Boolean =
         device.hasObject(By.textContains("Chiave OpenAI non configurata")) ||
             device.hasObject(By.textContains("OpenAI configurato"))

@@ -1,6 +1,7 @@
 package com.myfitai.app.data.local
 
 import androidx.room.Room
+import androidx.room.withTransaction
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.myfitai.app.data.local.entity.BiaMeasurementEntity
@@ -8,6 +9,8 @@ import com.myfitai.app.data.local.entity.BodyMeasurementEntity
 import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.data.local.entity.WorkoutEntity
 import com.myfitai.app.data.local.entity.DailyActivityCheckInEntity
+import com.myfitai.app.data.local.entity.BiaAnalysisResultEntity
+import com.myfitai.app.data.local.entity.BodyExpectationGoalEntity
 import com.myfitai.app.data.local.entity.FoodConsumptionEntity
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.domain.food.FoodConsumptionService
@@ -20,6 +23,7 @@ import com.myfitai.app.data.repository.MealDraft
 import com.myfitai.app.data.repository.MealPlanRepository
 import com.myfitai.app.data.repository.PlanVersionDraft
 import com.myfitai.app.data.repository.SupplementDraft
+import com.myfitai.app.domain.data.DataDeletionService
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -494,6 +498,76 @@ class MyFitAiDatabaseTest {
         assertEquals(FoodConsumptionStatus.SKIPPED.name, skipped.status)
         service.clear(20L, "MEAL:40")
         assertEquals(null, db.foodConsumptionDao().getForItem(profileId, 20L, "MEAL:40"))
+    }
+
+    @Test
+    fun deleteProfile_removesOwnedRowsAndSelectsAnotherProfile() = runBlocking {
+        val deletingProfileId = db.userProfileDao().insert(profile("Da eliminare"))
+        val retainedProfileId = db.userProfileDao().insert(profile("Da mantenere"))
+        db.biaMeasurementDao().insert(bia(deletingProfileId, 1000L, 80f))
+        db.biaMeasurementDao().insert(bia(retainedProfileId, 2000L, 70f))
+        db.biaAnalysisResultDao().insert(BiaAnalysisResultEntity(
+            profileId = deletingProfileId,
+            biaMeasurementId = 1L,
+            createdAtEpochMillis = 1000L,
+            provider = "GEMINI",
+            model = "test-model",
+            payloadJson = "{}",
+        ))
+        db.bodyExpectationGoalDao().upsert(BodyExpectationGoalEntity(
+            profileId = deletingProfileId,
+            periodStartEpochDay = 1L,
+            periodEndEpochDay = 30L,
+            plannedDays = 30,
+            theoreticalDeficitKcal = 1000,
+            expectedFatLossMinKg = 0.1,
+            expectedFatLossMaxKg = 0.2,
+            initialWeightKg = 80f,
+            finalWeightKg = null,
+            status = "ACTIVE",
+            note = null,
+            createdAtEpochMillis = 1L,
+            updatedAtEpochMillis = 1L,
+        ))
+        db.bodyMeasurementDao().insert(measure(deletingProfileId, 1000L, 90f))
+        db.bodyMeasurementDao().insert(measure(retainedProfileId, 2000L, 70f))
+        db.workoutDao().insert(workout(deletingProfileId, 1000L, "Da eliminare"))
+        db.workoutDao().insert(workout(retainedProfileId, 2000L, "Da mantenere"))
+        db.dailyActivityCheckInDao().upsert(checkIn(deletingProfileId, 1L, "REST", 0))
+        db.dailyActivityCheckInDao().upsert(checkIn(retainedProfileId, 2L, "REST", 0))
+
+        val profileStore = ActiveProfileStore(ApplicationProvider.getApplicationContext())
+        profileStore.selectProfile(deletingProfileId)
+        val deleted = DataDeletionService(db, profileStore).deleteProfile(deletingProfileId)
+
+        assertEquals("Da eliminare", deleted.name)
+        assertEquals(null, db.userProfileDao().get(deletingProfileId))
+        assertEquals("Da mantenere", db.userProfileDao().get(retainedProfileId)?.name)
+        assertEquals(retainedProfileId, profileStore.currentIdOrNull())
+        assertEquals(retainedProfileId, profileStore.defaultIdOrNull())
+        assertTrue(db.biaMeasurementDao().observeAll(deletingProfileId).first().isEmpty())
+        assertTrue(db.biaAnalysisResultDao().observeAll(deletingProfileId).first().isEmpty())
+        assertTrue(db.bodyExpectationGoalDao().observeAll(deletingProfileId).first().isEmpty())
+        assertTrue(db.bodyMeasurementDao().observeAll(deletingProfileId).first().isEmpty())
+        assertTrue(db.workoutDao().observeAll(deletingProfileId).first().isEmpty())
+        assertTrue(db.dailyActivityCheckInDao().observeAll(deletingProfileId).isEmpty())
+        assertEquals(1, db.biaMeasurementDao().observeAll(retainedProfileId).first().size)
+        assertEquals(1, db.bodyMeasurementDao().observeAll(retainedProfileId).first().size)
+        assertEquals(1, db.workoutDao().observeAll(retainedProfileId).first().size)
+        assertEquals(1, db.dailyActivityCheckInDao().observeAll(retainedProfileId).size)
+    }
+
+    @Test
+    fun deletingOnlyProfile_clearsActiveAndDefaultSelection() = runBlocking {
+        val onlyProfileId = db.userProfileDao().insert(profile("Unico profilo"))
+        val profileStore = ActiveProfileStore(ApplicationProvider.getApplicationContext())
+        profileStore.selectProfile(onlyProfileId)
+
+        DataDeletionService(db, profileStore).deleteProfile(onlyProfileId)
+
+        assertEquals(null, db.userProfileDao().get(onlyProfileId))
+        assertEquals(null, profileStore.currentIdOrNull())
+        assertEquals(null, profileStore.defaultIdOrNull())
     }
 
     private fun profile(name: String): UserProfileEntity {

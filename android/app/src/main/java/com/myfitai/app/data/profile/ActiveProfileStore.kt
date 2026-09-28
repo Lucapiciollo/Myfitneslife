@@ -56,6 +56,23 @@ class ActiveProfileStore(context: Context) {
         if (makeDefault) setDefaultProfile(profileId)
     }
 
+    /** Clears only session pointers that reference the deleted profile. */
+    fun onProfileDeleted(profileId: Long, replacementProfileId: Long?) {
+        val editor = prefs.edit()
+        val activeWasDeleted = currentIdOrNull() == profileId
+        val defaultWasDeleted = defaultIdOrNull() == profileId
+        if (activeWasDeleted) {
+            if (replacementProfileId != null) editor.putLong(KEY_ACTIVE_PROFILE_ID, replacementProfileId)
+            else editor.remove(KEY_ACTIVE_PROFILE_ID)
+        }
+        if (defaultWasDeleted) {
+            if (replacementProfileId != null) editor.putLong(KEY_DEFAULT_PROFILE_ID, replacementProfileId)
+            else editor.remove(KEY_DEFAULT_PROFILE_ID)
+        }
+        editor.apply()
+        if (activeWasDeleted) sharedActiveProfileId.value = replacementProfileId ?: NO_PROFILE
+    }
+
     fun restoreDefaultProfile(): Long? {
         val id = defaultIdOrNull() ?: return null
         setActiveProfile(id)

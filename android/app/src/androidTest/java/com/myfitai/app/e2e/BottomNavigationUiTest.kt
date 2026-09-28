@@ -96,6 +96,23 @@ class BottomNavigationUiTest {
     }
 
     @Test
+    fun nutritionAdviceOpensAsModalWithoutReplacingHomeTab() {
+        assertViewEventually(com.myfitai.app.R.id.navHome)
+        scenario.onActivity { activity ->
+            activity.currentTabActivity()
+                ?.findViewById<View>(com.myfitai.app.R.id.nutritionAdviceButton)
+                ?.performClick()
+        }
+        assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/dismissAdviceButton")), 5_000))
+        scenario.onActivity { activity ->
+            assertTrue(activity.findViewById<View>(com.myfitai.app.R.id.navHome).isSelected)
+        }
+        device.findObject(By.res("com.myfitai.app:id/dismissAdviceButton")).click()
+        assertViewEventually(com.myfitai.app.R.id.navHome)
+        scenario.onActivity { activity -> assertTrue(activity.currentTabActivity() is com.myfitai.app.ui.HomeActivity) }
+    }
+
+    @Test
     fun backAfterTabChanges_returnsToLauncherInsteadOfPreviousTab() {
         assertViewEventually(com.myfitai.app.R.id.navHome)
         clickTab(com.myfitai.app.R.id.navFood)

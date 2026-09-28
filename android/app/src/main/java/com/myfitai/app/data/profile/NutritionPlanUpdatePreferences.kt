@@ -11,6 +11,8 @@ class NutritionPlanUpdatePreferences(context: Context) {
         prefs.edit().putBoolean(key(profileId), pending).apply()
     }
 
+    fun clearProfile(profileId: Long) { prefs.edit().remove(key(profileId)).apply() }
+
     private fun key(profileId: Long): String = "pending_$profileId"
 
     private companion object {

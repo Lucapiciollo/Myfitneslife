@@ -1,9 +1,18 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="@color/bg_primary">
+    android:background="@android:color/transparent">
+
+    <LinearLayout
+        android:id="@+id/adviceModalSurface"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginHorizontal="@dimen/advice_modal_horizontal_margin"
+        android:layout_marginVertical="@dimen/advice_modal_vertical_margin"
+        android:background="@drawable/bg_advice_modal"
+        android:clipToOutline="true"
+        android:orientation="vertical">
 
     <ScrollView
         android:layout_width="match_parent"
@@ -24,15 +33,10 @@
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/screen_header_height"
                 android:gravity="center_vertical">
-                <ImageButton
-                    android:id="@+id/backButton"
+                <Space
                     android:layout_width="@dimen/screen_header_icon_size"
                     android:layout_height="@dimen/screen_header_icon_size"
-                     android:background="?attr/selectableItemBackgroundBorderless"
-                     android:contentDescription="Indietro"
-                     android:padding="@dimen/space_8"
-                     android:src="@drawable/ic_arrow_back"
-                     app:tint="@color/text_primary" />
+                    />
                 <TextView
                     android:id="@+id/title"
                     android:layout_width="0dp"
@@ -42,9 +46,15 @@
                     android:text="Chiedi all'IA"
                     android:textColor="@color/text_primary"
                      style="@style/Text.MyFitAI.ScreenTitle" />
-                <Space
+                <ImageButton
+                    android:id="@+id/dismissAdviceButton"
                     android:layout_width="@dimen/screen_header_icon_size"
-                    android:layout_height="1dp" />
+                    android:layout_height="@dimen/screen_header_icon_size"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Chiudi consiglio IA"
+                    android:padding="@dimen/space_8"
+                    android:src="@drawable/ic_close"
+                    app:tint="@color/text_primary" />
             </LinearLayout>
 
             <com.google.android.material.card.MaterialCardView
@@ -237,5 +247,5 @@
         </LinearLayout>
     </ScrollView>
 
-    <include layout="@layout/view_bottom_navigation" />
-</LinearLayout>
+    </LinearLayout>
+</FrameLayout>

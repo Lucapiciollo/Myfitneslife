@@ -121,11 +121,26 @@ class AppDataContainer private constructor(context: Context) {
         preferences = progressAnalysisPreferences,
     )
     val progressAnalysisScheduler = ProgressAnalysisScheduler(appContext, progressAnalysisPreferences, aiJobScheduler)
+    val notificationScheduler = NotificationScheduler(
+        context = appContext,
+        plans = mealPlanRepository,
+        activeProfileStore = activeProfileStore,
+    )
     val dataDeletionService = DataDeletionService(
         db = db,
         activeProfileStore = activeProfileStore,
         progressAnalysisPreferences = progressAnalysisPreferences,
         progressAnalysisScheduler = progressAnalysisScheduler,
+        aiJobScheduler = aiJobScheduler,
+        biaProgressCoachScheduler = biaProgressCoachScheduler,
+        nutritionPlanScheduler = nutritionPlanScheduler,
+        nutritionPlanSchedulePreferences = nutritionPlanSchedulePreferences,
+        nutritionPlanUpdatePreferences = nutritionPlanUpdatePreferences,
+        aiAutomationPreferences = aiAutomationPreferences,
+        mealCountPreferences = mealCountPreferences,
+        workoutPreferences = workoutPreferences,
+        profilePhotoStore = profilePhotoStore,
+        notificationScheduler = notificationScheduler,
     )
 
     val nutritionPlanGenerationService = NutritionPlanGenerationService(
@@ -178,12 +193,6 @@ class AppDataContainer private constructor(context: Context) {
         activeProfileStore = activeProfileStore,
         foodConsumptions = foodConsumptionRepository,
         profiles = userProfileRepository,
-    )
-
-    val notificationScheduler = NotificationScheduler(
-        context = appContext,
-        plans = mealPlanRepository,
-        activeProfileStore = activeProfileStore,
     )
 
     val aiJobRegistry by lazy {

@@ -19,7 +19,6 @@ import com.google.android.material.textfield.TextInputLayout
 import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.domain.food.NutritionAdviceContract
-import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.ui.food.NutritionAdviceViewModel
 import kotlinx.coroutines.launch
 import java.util.Locale
@@ -45,7 +44,7 @@ class NutritionAdviceActivity : BaseShellActivity() {
         setContentView(R.layout.activity_nutrition_advice)
         normalizeAdviceSurfaces()
         bindBack()
-        bindBottom(BottomNavBinder.Tab.FOOD)
+        bindBack()
 
         findViewById<View>(R.id.askButton).setOnClickListener {
             val question = findViewById<TextInputEditText>(R.id.questionInput).text?.toString().orEmpty()
@@ -56,6 +55,7 @@ class NutritionAdviceActivity : BaseShellActivity() {
         findViewById<View>(R.id.aiConfigurationNoticeButton).setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
         }
+        findViewById<View>(R.id.dismissAdviceButton).setOnClickListener { finish() }
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -102,7 +102,7 @@ class NutritionAdviceActivity : BaseShellActivity() {
         val result = state.acceptedResult ?: return
         viewModel.consumeAcceptedResult()
         startActivity(
-            Intent(this, AdjustedPlanActivity::class.java)
+                    Intent(this, AdjustedPlanActivity::class.java)
                 .putExtra(AdjustedPlanActivity.EXTRA_DESCRIPTION, "Suggerimento alimentare accettato")
                 .putExtra(AdjustedPlanActivity.EXTRA_ESTIMATE, result.estimateSummary)
                 .putExtra(AdjustedPlanActivity.EXTRA_ADAPTED, result.adapted)

@@ -12,6 +12,8 @@ class MealCountPreferences(context: Context) {
         prefs.edit().putInt(key(profileId), count).apply()
     }
 
+    fun clearProfile(profileId: Long) { prefs.edit().remove(key(profileId)).apply() }
+
     private fun key(profileId: Long) = "meals_per_day_$profileId"
 
     companion object {

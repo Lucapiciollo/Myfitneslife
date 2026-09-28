@@ -49,7 +49,7 @@
         <activity android:name=".ui.SettingsActivity" android:launchMode="singleTop" />
         <activity android:name=".ui.ExportActivity" />
         <activity android:name=".ui.AiAnalysisActivity" />
-        <activity android:name=".ui.NutritionAdviceActivity" />
+        <activity android:name=".ui.NutritionAdviceActivity" android:theme="@style/Theme.MyFitAI.NutritionAdviceModal" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".ui.HistoryActivity" />
         <activity android:name=".ui.AdjustedPlanActivity" />
         <activity android:name=".ui.CheatEntryActivity" />

@@ -52,6 +52,16 @@ class NutritionPlanSchedulePreferences(context: Context) {
         }.apply()
     }
 
+    fun clearProfile(profileId: Long) {
+        prefs.edit().apply {
+            remove(keyEnabled(profileId))
+            remove(keyFrequency(profileId))
+            remove(keyDay(profileId))
+            remove(keyTime(profileId))
+            remove(keyScheduledJob(profileId))
+        }.apply()
+    }
+
     private fun keyEnabled(profileId: Long) = "auto_plan_enabled_$profileId"
     private fun keyFrequency(profileId: Long) = "auto_plan_frequency_$profileId"
     private fun keyDay(profileId: Long) = "auto_plan_day_$profileId"

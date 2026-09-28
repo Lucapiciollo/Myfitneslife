@@ -17,6 +17,8 @@
     <dimen name="multiline_notes_field_height">96dp</dimen>
     <dimen name="cheat_clarification_field_height">88dp</dimen>
     <dimen name="nutrition_question_field_height">112dp</dimen>
+    <dimen name="advice_modal_horizontal_margin">16dp</dimen>
+    <dimen name="advice_modal_vertical_margin">32dp</dimen>
     <dimen name="border_width_default">1dp</dimen>
     <dimen name="border_width_focused">2dp</dimen>
     <dimen name="body_marker_outline_width">2dp</dimen>

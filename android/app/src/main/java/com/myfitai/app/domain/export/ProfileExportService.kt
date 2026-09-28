@@ -56,6 +56,11 @@ class ProfileExportService(
     suspend fun export(format: Format): ExportedFile {
         activeProfileStore.refreshFromPersistence()
         val profileId = activeProfileStore.currentIdOrNull() ?: error("Nessun profilo attivo")
+        return exportProfile(profileId, format)
+    }
+
+    suspend fun exportProfile(profileId: Long, format: Format = Format.JSON): ExportedFile {
+        require(profileId > 0) { "Profilo non valido" }
         val profile = db.userProfileDao().get(profileId) ?: error("Profilo non disponibile")
         val bia = db.biaMeasurementDao().observeAll(profileId).first().sortedBy { it.measuredAtEpochMillis }
         val body = db.bodyMeasurementDao().observeAll(profileId).first().sortedBy { it.measuredAtEpochMillis }
