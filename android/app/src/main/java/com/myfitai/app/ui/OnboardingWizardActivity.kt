@@ -6,6 +6,8 @@ import android.os.Bundle
 import android.text.method.PasswordTransformationMethod
 import android.view.View
 import android.view.WindowManager
+import android.content.Context
+import android.view.inputmethod.InputMethodManager
 import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
 import android.widget.LinearLayout
@@ -80,6 +82,7 @@ class OnboardingWizardActivity : AppCompatActivity() {
     private var planDay = NutritionPlanSchedulePreferences.DEFAULT_DAY
     private var planTimeMinutes = NutritionPlanSchedulePreferences.DEFAULT_TIME_MINUTES
     private var selectedProvider = AiCredentialProvider.GEMINI
+    private var dietaryDraft = DietaryProfile()
     private val backupOpenLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) confirmBackupImport(uri)
     }
@@ -111,7 +114,7 @@ class OnboardingWizardActivity : AppCompatActivity() {
 
     private val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.ITALIAN)
     private val totalSteps: Int
-        get() = if (showAiStep) 4 else 3
+        get() = if (showAiStep) 5 else 4
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -159,6 +162,7 @@ class OnboardingWizardActivity : AppCompatActivity() {
     private fun bindNavigation() {
         findViewById<View>(R.id.backButton).setOnClickListener {
             if (step > 0) {
+                captureCurrentStep()
                 step--
                 renderStep()
             } else if (!isBootstrap) {
@@ -183,6 +187,7 @@ class OnboardingWizardActivity : AppCompatActivity() {
     }
 
     private fun loadProfile(value: UserProfileEntity) {
+        dietaryDraft = DietaryProfile.parse(value.dietaryPreferencesJson)
         birthDateEpochDay = value.birthDateEpochDay
         wakeMinutes = value.wakeTimeMinutes
         sleepMinutes = value.sleepTimeMinutes
@@ -205,9 +210,10 @@ class OnboardingWizardActivity : AppCompatActivity() {
         nextButton.setText(if (step == totalSteps - 1) R.string.onboarding_finish else R.string.action_next)
         when (step) {
             0 -> renderProfileStep()
-            1 -> renderMealsStep()
-            2 -> renderScheduleStep()
-            3 -> if (showAiStep) renderAiStep()
+            1 -> renderFoodPreferencesStep()
+            2 -> renderMealsStep()
+            3 -> renderScheduleStep()
+            4 -> if (showAiStep) renderAiStep()
         }
     }
 
@@ -232,7 +238,6 @@ class OnboardingWizardActivity : AppCompatActivity() {
         weightInput?.setText(profile?.currentWeightKg?.let(::formatNumber).orEmpty())
         activityInput?.setText(profile?.activityLevel.orEmpty(), false)
         goalInput?.setText(profile?.goal.orEmpty(), false)
-        renderFoodPreferences()
         stepContent.addView(card)
     }
 
@@ -266,7 +271,7 @@ class OnboardingWizardActivity : AppCompatActivity() {
         finish()
     }
 
-    private fun renderFoodPreferences() {
+    private fun renderFoodPreferencesStep() {
         val foodCard = card()
         val content = content(foodCard)
         TextView(this).apply {
@@ -275,14 +280,14 @@ class OnboardingWizardActivity : AppCompatActivity() {
             content.addView(this)
         }
         addDescription(content, R.string.onboarding_food_preferences_description)
-        val dietary = DietaryProfile.parse(profile?.dietaryPreferencesJson)
-        preferredFoodsInput = textInput(content, R.string.profile_preferred_foods_hint, "textCapSentences", singleLine = false)
-        dislikedFoodsInput = textInput(content, R.string.profile_disliked_foods_hint, "textCapSentences", singleLine = false)
-        excludedFoodsInput = textInput(content, R.string.profile_excluded_foods_hint, "textCapSentences", singleLine = false)
-        intolerancesInput = textInput(content, R.string.profile_intolerances_hint, "textCapSentences", singleLine = false)
-        allergiesInput = textInput(content, R.string.profile_allergies_hint, "textCapSentences", singleLine = false)
+        val dietary = dietaryDraft
+        preferredFoodsInput = textInput(content, R.string.profile_preferred_foods_hint, "textCapSentencesMultiLine", singleLine = false).apply { id = R.id.preferredFoodsInput }
+        dislikedFoodsInput = textInput(content, R.string.profile_disliked_foods_hint, "textCapSentencesMultiLine", singleLine = false).apply { id = R.id.dislikedFoodsInput }
+        excludedFoodsInput = textInput(content, R.string.profile_excluded_foods_hint, "textCapSentencesMultiLine", singleLine = false).apply { id = R.id.excludedFoodsInput }
+        intolerancesInput = textInput(content, R.string.profile_intolerances_hint, "textCapSentencesMultiLine", singleLine = false).apply { id = R.id.intolerancesInput }
+        allergiesInput = textInput(content, R.string.profile_allergies_hint, "textCapSentencesMultiLine", singleLine = false).apply { id = R.id.allergiesInput }
         dietStyleInput = dropdown(content, R.string.profile_diet_style_hint, listOf("Nessuno", "Onnivoro", "Vegetariano", "Vegano", "Pescetariano"))
-        foodNotesInput = textInput(content, R.string.profile_food_notes_hint, "textMultiLine", singleLine = false)
+        foodNotesInput = textInput(content, R.string.profile_food_notes_hint, "textMultiLine", singleLine = false).apply { id = R.id.preferencesInput }
         preferredFoodsInput?.setText(dietary.preferredFoods.joinToString(", "))
         dislikedFoodsInput?.setText(dietary.dislikedFoods.joinToString(", "))
         excludedFoodsInput?.setText(dietary.excludedFoods.joinToString(", "))
@@ -361,13 +366,22 @@ class OnboardingWizardActivity : AppCompatActivity() {
     private fun captureCurrentStep() {
         when (step) {
             0 -> Unit
-            1 -> {
+            1 -> dietaryDraft = DietaryProfile(
+                preferredFoods = DietaryProfile.csv(preferredFoodsInput?.text?.toString()),
+                dislikedFoods = DietaryProfile.csv(dislikedFoodsInput?.text?.toString()),
+                excludedFoods = DietaryProfile.csv(excludedFoodsInput?.text?.toString()),
+                intolerances = DietaryProfile.csv(intolerancesInput?.text?.toString()),
+                allergies = DietaryProfile.csv(allergiesInput?.text?.toString()),
+                dietStyle = dietStyleInput?.text?.toString()?.trim()?.takeIf { it.isNotBlank() && !it.equals("Nessuno", ignoreCase = true) },
+                notes = foodNotesInput?.text?.toString()?.trim()?.takeIf { it.isNotBlank() },
+            )
+            2 -> {
                 mealCount = mealCountInput?.text?.toString()?.substringBefore(' ')?.toIntOrNull() ?: mealCount
                 wakeMinutes = parseTime(wakeInput?.text?.toString()) ?: wakeMinutes
                 sleepMinutes = parseTime(sleepInput?.text?.toString()) ?: sleepMinutes
             }
-            2 -> notificationsEnabled = notificationSwitch?.isChecked ?: notificationsEnabled
-            3 -> Unit
+            3 -> notificationsEnabled = notificationSwitch?.isChecked ?: notificationsEnabled
+            4 -> Unit
         }
     }
 
@@ -442,15 +456,7 @@ class OnboardingWizardActivity : AppCompatActivity() {
         val goal = goalInput?.text?.toString()?.trim()?.takeIf { it.isNotBlank() }
         val activity = activityInput?.text?.toString()?.trim()?.takeIf { it.isNotBlank() }
         val existing = profile
-        val dietaryJson = DietaryProfile(
-            preferredFoods = DietaryProfile.csv(preferredFoodsInput?.text?.toString()),
-            dislikedFoods = DietaryProfile.csv(dislikedFoodsInput?.text?.toString()),
-            excludedFoods = DietaryProfile.csv(excludedFoodsInput?.text?.toString()),
-            intolerances = DietaryProfile.csv(intolerancesInput?.text?.toString()),
-            allergies = DietaryProfile.csv(allergiesInput?.text?.toString()),
-            dietStyle = dietStyleInput?.text?.toString()?.trim()?.takeIf { it.isNotBlank() && !it.equals("Nessuno", ignoreCase = true) },
-            notes = foodNotesInput?.text?.toString()?.trim()?.takeIf { it.isNotBlank() },
-        ).toJson()
+        val dietaryJson = dietaryDraft.toJson()
         if (existing == null) {
             return data.userProfileRepository.create(UserProfileEntity(
                 name = name, birthDateEpochDay = birth, biologicalSex = sex,
@@ -465,6 +471,7 @@ class OnboardingWizardActivity : AppCompatActivity() {
             heightCm = height, currentWeightKg = weight,
             initialWeightKg = existing.initialWeightKg ?: weight, goal = goal,
             activityLevel = activity, wakeTimeMinutes = wakeMinutes, sleepTimeMinutes = sleepMinutes,
+            dietaryPreferencesJson = dietaryJson,
             updatedAtEpochMillis = now,
         ))
         return existing.id
@@ -548,7 +555,15 @@ class OnboardingWizardActivity : AppCompatActivity() {
             layoutParams = marginParams(top = if (parent.childCount == 0) 0 else R.dimen.space_8)
         }
         val input = layout.findViewById<TextInputEditText>(R.id.onboardingTextInput).apply {
-            this.inputType = when (inputType) { "numberDecimal" -> android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL; "textPassword" -> android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD; "textPersonName" -> android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PERSON_NAME; "textMultiLine" -> android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE or android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES; else -> android.text.InputType.TYPE_NULL }
+            this.inputType = when (inputType) {
+                "numberDecimal" -> android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
+                "textPassword" -> android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+                "textPersonName" -> android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PERSON_NAME
+                "textMultiLine" -> android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE or android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+                "textCapSentences" -> android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+                "textCapSentencesMultiLine" -> android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE or android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+                else -> android.text.InputType.TYPE_NULL
+            }
             this.isSingleLine = singleLine
             if (!singleLine) {
                 minLines = 2
@@ -559,6 +574,16 @@ class OnboardingWizardActivity : AppCompatActivity() {
                 transformationMethod = PasswordTransformationMethod.getInstance()
                 importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
                 isLongClickable = false
+            }
+            if (inputType != "none") {
+                val inputMethodManager = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                setOnFocusChangeListener { view, focused ->
+                    if (focused) view.postDelayed({ inputMethodManager.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT) }, 100L)
+                }
+                setOnClickListener { view ->
+                    view.requestFocus()
+                    view.postDelayed({ inputMethodManager.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT) }, 100L)
+                }
             }
         }
         parent.addView(layout)
@@ -598,8 +623,21 @@ class OnboardingWizardActivity : AppCompatActivity() {
     private fun dayLabel(day: DayOfWeek) = when (day) {
         DayOfWeek.MONDAY -> "Lunedì"; DayOfWeek.TUESDAY -> "Martedì"; DayOfWeek.WEDNESDAY -> "Mercoledì"; DayOfWeek.THURSDAY -> "Giovedì"; DayOfWeek.FRIDAY -> "Venerdì"; DayOfWeek.SATURDAY -> "Sabato"; DayOfWeek.SUNDAY -> "Domenica"
     }
-    private fun stepTitleResource() = arrayOf(R.string.onboarding_step_profile, R.string.onboarding_step_meals, R.string.onboarding_step_schedule, R.string.onboarding_step_ai)[step]
-    private fun stepDescriptionResource() = arrayOf(R.string.onboarding_step_profile_description, R.string.onboarding_step_meals_description, R.string.onboarding_step_schedule_description, R.string.onboarding_step_ai_description)[step]
+    private fun stepTitleResource(): Int = when (step) {
+        0 -> R.string.onboarding_step_profile
+        1 -> R.string.onboarding_step_food
+        2 -> R.string.onboarding_step_meals
+        3 -> R.string.onboarding_step_schedule
+        else -> R.string.onboarding_step_ai
+    }
+
+    private fun stepDescriptionResource(): Int = when (step) {
+        0 -> R.string.onboarding_step_profile_description
+        1 -> R.string.onboarding_food_preferences_description
+        2 -> R.string.onboarding_step_meals_description
+        3 -> R.string.onboarding_step_schedule_description
+        else -> R.string.onboarding_step_ai_description
+    }
 
     companion object {
         const val EXTRA_BOOTSTRAP = "onboarding_bootstrap"

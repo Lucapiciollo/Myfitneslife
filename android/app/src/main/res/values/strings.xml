@@ -86,6 +86,7 @@
     <string name="onboarding_step_count">Passo %1$d di %2$d</string>
     <string name="onboarding_step_profile">Il tuo profilo</string>
     <string name="onboarding_step_profile_description">Questi dati servono per i calcoli locali e per personalizzare il percorso.</string>
+    <string name="onboarding_step_food">Preferenze alimentari</string>
     <string name="onboarding_step_meals">Pasti e giornata</string>
     <string name="onboarding_step_meals_description">Scegli quanti pasti vuoi vedere nel piano e indica i tuoi orari di riferimento.</string>
     <string name="onboarding_step_schedule">Piano settimanale e notifiche</string>
@@ -104,7 +105,7 @@
     <string name="profile_activity_hint">Livello di attività</string>
     <string name="profile_goal_hint">Obiettivo (opzionale)</string>
     <string name="onboarding_food_preferences_title">Preferenze e vincoli alimentari</string>
-    <string name="onboarding_food_preferences_description">Separa più alimenti con una virgola. Preferenze e alimenti non graditi vengono rispettati quando possibile; allergie, intolleranze ed esclusioni sono vincoli rigidi.</string>
+    <string name="onboarding_food_preferences_description">Separa più alimenti con una virgola. Puoi completare o modificare queste preferenze anche in seguito da Altro. Preferenze e alimenti non graditi sono indicazioni; allergie, intolleranze ed esclusioni sono vincoli rigidi.</string>
     <string name="profile_preferred_foods_hint">Alimenti preferiti</string>
     <string name="profile_disliked_foods_hint">Alimenti non graditi</string>
     <string name="profile_excluded_foods_hint">Alimenti da escludere</string>

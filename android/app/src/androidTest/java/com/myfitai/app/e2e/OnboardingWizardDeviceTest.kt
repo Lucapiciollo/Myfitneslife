@@ -25,6 +25,36 @@ class OnboardingWizardDeviceTest {
     private val device = UiDevice.getInstance(instrumentation)
 
     @Test
+    fun foodPreferencesStep_opensKeyboardWithoutSavingProfile() {
+        val existingProfile = runBlocking {
+            val store = AppDataContainer.get(context)
+            val id = store.activeProfileStore.currentIdOrNull() ?: store.userProfileRepository.getFirst()?.id
+            id?.let { store.userProfileRepository.get(it) }
+        }
+        assertTrue("An existing profile is required for this non-destructive UI check", existingProfile != null)
+
+        instrumentation.startActivitySync(Intent(context, OnboardingWizardActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            putExtra(OnboardingWizardActivity.EXTRA_PROFILE_ID, existingProfile!!.id)
+        })
+        assertTrue(device.wait(Until.hasObject(By.text("Il tuo profilo")), 5_000))
+        assertTrue("Profile data should load before navigating", device.wait(Until.hasObject(By.text(existingProfile!!.name)), 5_000))
+        device.findObject(By.res("com.myfitai.app:id/nextButton")).click()
+        assertTrue(device.wait(Until.hasObject(By.text("Preferenze alimentari")), 5_000))
+
+        assertTrue("Preferred foods input should be present", device.wait(Until.hasObject(By.res("com.myfitai.app:id/preferredFoodsInput")), 2_000))
+        val preferredFoods = device.findObject(By.res("com.myfitai.app:id/preferredFoodsInput"))
+        assertTrue("Preferred foods input should be enabled", preferredFoods.isEnabled)
+        preferredFoods.click()
+        assertTrue("Preferred foods input should receive focus", device.wait(Until.hasObject(By.focused(true)), 2_000))
+        preferredFoods.setText("Verifica tastiera")
+        assertTrue("The field should accept typed food preferences", preferredFoods.text.contains("Verifica tastiera"))
+
+        device.pressBack()
+        device.pressBack()
+    }
+
+    @Test
     fun reprofileWizard_navigatesWithoutSaving() {
         instrumentation.startActivitySync(Intent(context, QaSeederActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
@@ -41,9 +71,9 @@ class OnboardingWizardDeviceTest {
         })
 
         assertTrue(device.wait(Until.hasObject(By.text("Il tuo profilo")), 5_000))
-        assertTrue(device.hasObject(By.text("Passo 1 di 3")))
-        assertTrue(device.hasObject(By.text("Demo 12 mesi")))
-        assertTrue(device.hasObject(By.text("Maschio")))
+        assertTrue(device.hasObject(By.text("Passo 1 di 4")))
+        assertTrue(device.wait(Until.hasObject(By.text("Demo 12 mesi")), 5_000))
+        assertTrue(device.wait(Until.hasObject(By.text("Maschio")), 5_000))
 
         val nextButton = device.findObject(By.res("com.myfitai.app:id/nextButton"))
         UiScrollable(UiSelector().className("android.widget.ScrollView")).scrollToEnd(10)
@@ -55,14 +85,24 @@ class OnboardingWizardDeviceTest {
         device.findObject(By.res("com.myfitai.app:id/validationMessage"))?.text?.let {
             Log.i("MyFitAI.OnboardingTest", "validation=$it")
         }
-        val advanced = device.wait(Until.hasObject(By.text("Pasti e giornata")), 5_000)
+        val advanced = device.wait(Until.hasObject(By.text("Preferenze alimentari")), 5_000)
         if (!advanced) {
             val validationText = device.findObject(By.res("com.myfitai.app:id/validationMessage"))?.text
             throw AssertionError("Wizard did not advance. validation=$validationText")
         }
+        assertTrue(device.hasObject(By.text("Passo 2 di 4")))
+        assertTrue(device.hasObject(By.text("Alimenti preferiti")))
+        assertTrue(device.hasObject(By.text("Allergie")))
+        device.findObject(By.text("Alimenti preferiti")).click()
+        assertTrue("Food preference input must accept text", device.wait(Until.hasObject(By.clazz("android.widget.EditText")), 2_000))
+        device.pressBack()
+        device.waitForIdle()
+        device.findObject(By.res("com.myfitai.app:id/nextButton")).click()
+        assertTrue(device.wait(Until.hasObject(By.text("Pasti e giornata")), 5_000))
+        assertTrue(device.hasObject(By.text("Passo 3 di 4")))
         device.findObject(By.text("Continua")).click()
         assertTrue(device.wait(Until.hasObject(By.text("Piano settimanale e notifiche")), 5_000))
-        assertTrue(device.hasObject(By.text("Passo 3 di 3")))
+        assertTrue(device.hasObject(By.text("Passo 4 di 4")))
         assertTrue(!device.hasObject(By.text("Intelligenza artificiale")))
 
         device.pressBack()
