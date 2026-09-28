@@ -37,10 +37,13 @@ class WeeklyReviewActivity : BaseShellActivity() {
 
         findViewById<View>(R.id.prevWeekButton).setOnClickListener { viewModel.previousWeek() }
         findViewById<View>(R.id.nextWeekButton).setOnClickListener { viewModel.nextWeek() }
-        findViewById<View>(R.id.generateReviewButton).setOnClickListener {
+        gateAiClick(findViewById(R.id.generateReviewButton)) {
             confirmAiRequest("La generazione della review nutrizionale settimanale") {
                 viewModel.generate()
             }
+        }
+        findViewById<View>(R.id.aiConfigurationNoticeButton).setOnClickListener {
+            startActivity(android.content.Intent(this, SettingsActivity::class.java).putExtra(BottomNavBinder.EXTRA_SELECTED_TAB, BottomNavBinder.Tab.AI.name))
         }
 
         lifecycleScope.launch {
@@ -97,6 +100,7 @@ class WeeklyReviewActivity : BaseShellActivity() {
 
         val button = findViewById<MaterialButton>(R.id.generateReviewButton)
         setAiActionEnabled(button, !state.loading && !state.generating)
+        findViewById<View>(R.id.aiConfigurationNoticeCard).visibility = if (aiProviderConfigured) View.GONE else View.VISIBLE
         button.text = when {
             state.generating -> "Generazione in corso…"
             state.review != null -> "Rigenera review"

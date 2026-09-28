@@ -28,7 +28,6 @@ import com.myfitai.app.ui.home.HomeViewModel
 import com.myfitai.app.ui.widgets.MealCardView
 import com.myfitai.app.ui.widgets.MetricCardView
 import com.google.android.material.textfield.MaterialAutoCompleteTextView
-import android.widget.ArrayAdapter
 import com.myfitai.app.ui.widgets.TimeRangeSelectorView
 import com.myfitai.app.ui.widgets.BodyMeasurementTrendView
 import com.myfitai.app.ui.widgets.WorkoutCardView
@@ -93,9 +92,13 @@ class HomeActivity : BaseShellActivity() {
 
         findViewById<android.view.View>(R.id.profileButton).setOnClickListener { go(ProfileActivity::class.java) }
         findViewById<android.view.View>(R.id.planUpdateNoticeCard).setOnClickListener { openFoodPlan() }
-        findViewById<android.view.View>(R.id.planUpdateNoticeButton).setOnClickListener { openFoodPlan() }
-        findViewById<android.view.View>(R.id.aiConfigurationNoticeCard).setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java)) }
-        findViewById<android.view.View>(R.id.aiConfigurationNoticeButton).setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java)) }
+        findViewById<android.view.View>(R.id.planUpdateNoticeButton).apply {
+            setAiActionEnabled(this)
+            setOnClickListener { openFoodPlan() }
+        }
+        findViewById<android.view.View>(R.id.aiConfigurationNoticeCard).setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java).putExtra(BottomNavBinder.EXTRA_SELECTED_TAB, BottomNavBinder.Tab.AI.name)) }
+        findViewById<android.view.View>(R.id.aiConfigurationNoticeButton).setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java).putExtra(BottomNavBinder.EXTRA_SELECTED_TAB, BottomNavBinder.Tab.AI.name)) }
+        findViewById<View>(R.id.aiConfigurationNoticeButton).contentDescription = "Apri impostazioni IA"
         findViewById<android.view.View>(R.id.biaDueNoticeCard).setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java)) }
         findViewById<android.view.View>(R.id.biaDueNoticeButton).setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java)) }
         findViewById<android.view.View>(R.id.analysisHubButton).setOnClickListener { startActivity(Intent(this, MeasurementsActivity::class.java)) }
@@ -153,10 +156,14 @@ class HomeActivity : BaseShellActivity() {
         }
         findViewById<android.view.View>(R.id.todayMenuButton).setOnClickListener { showTodayMenu() }
         findViewById<android.view.View>(R.id.measurementsButton).setOnClickListener { go(MeasurementsActivity::class.java) }
-        findViewById<android.view.View>(R.id.addExtraButton).setOnClickListener {
-            startActivity(Intent(this, CheatEntryActivity::class.java))
+        findViewById<android.view.View>(R.id.addExtraButton).apply {
+            setAiActionEnabled(this)
+            setOnClickListener {
+                startActivity(Intent(this@HomeActivity, CheatEntryActivity::class.java))
+            }
         }
         findViewById<TextView>(R.id.todayLabel).text = todayLabel()
+        renderAiConfigurationNotice()
 
         findViewById<MetricCardView>(R.id.metricWeight).setLabel(getString(R.string.dashboard_metric_weight))
         findViewById<MetricCardView>(R.id.metricFat).setLabel(getString(R.string.dashboard_metric_fat))
@@ -273,9 +280,11 @@ class HomeActivity : BaseShellActivity() {
     }
 
     private fun renderAiConfigurationNotice() {
-        findViewById<android.view.View>(R.id.aiConfigurationNoticeCard)?.let { card ->
-            revealState(card, !aiProviderConfigured)
-        }
+        val providerAvailable = aiProviderConfigured
+        findViewById<android.view.View>(R.id.aiConfigurationNoticeCard)?.let { card -> revealState(card, !providerAvailable) }
+        findViewById<View?>(R.id.todayMenuButton)?.let { setAiActionEnabled(it, providerAvailable) }
+        findViewById<View?>(R.id.planUpdateNoticeButton)?.let { setAiActionEnabled(it, providerAvailable) }
+        findViewById<View?>(R.id.addExtraButton)?.let { setAiActionEnabled(it, providerAvailable) }
     }
 
     private fun renderWorkoutConfiguration() {
@@ -336,12 +345,11 @@ class HomeActivity : BaseShellActivity() {
         if (labels != bodyTrendLabels) {
             bodyTrendLabels = labels
             selectedBodyTrendIndex = selectedBodyTrendIndex.coerceIn(0, (series.size - 1).coerceAtLeast(0))
-            selector.setAdapter(ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, labels))
+            selector.setMyFitAiDropdownItems(labels)
             selector.setText(labels.getOrNull(selectedBodyTrendIndex).orEmpty(), false)
         }
         val selected = series.getOrNull(selectedBodyTrendIndex)
         selector.threshold = 0
-        selector.setOnClickListener { selector.showDropDown() }
         selector.setOnItemClickListener { _, _, index, _ ->
             selectedBodyTrendIndex = index.coerceIn(0, (series.size - 1).coerceAtLeast(0))
             selector.setText(labels.getOrNull(selectedBodyTrendIndex).orEmpty(), false)

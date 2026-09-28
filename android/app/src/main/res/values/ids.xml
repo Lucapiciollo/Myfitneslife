@@ -4,4 +4,8 @@
     <item name="metricFat" type="id" />
     <item name="metricMuscle" type="id" />
     <item name="motionVisibilityTarget" type="id" />
+    <item name="aiActionAccessibilityInitialized" type="id" />
+    <item name="aiActionOriginalContentDescription" type="id" />
+    <item name="aiActionOriginalTooltip" type="id" />
+    <item name="aiActionOriginalAlpha" type="id" />
 </resources>

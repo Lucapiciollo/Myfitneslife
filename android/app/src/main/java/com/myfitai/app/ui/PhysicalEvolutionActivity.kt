@@ -179,8 +179,7 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         analysisButton = MaterialButton(this).apply {
             text = "Esegui analisi ora"
             isAllCaps = false
-            isEnabled = false
-            setOnClickListener { confirmManualProgressAnalysis() }
+            gateAiClick(this) { confirmManualProgressAnalysis() }
         }
         analysisRequirementsText = bodyText().apply {
             visibility = View.GONE

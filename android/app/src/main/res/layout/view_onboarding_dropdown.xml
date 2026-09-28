@@ -3,7 +3,7 @@
     style="@style/Widget.MyFitAI.InputDropdownCompact"
     android:layout_width="match_parent"
     android:layout_height="wrap_content">
-    <AutoCompleteTextView
+    <com.google.android.material.textfield.MaterialAutoCompleteTextView
         android:id="@+id/onboardingDropdownInput"
         style="@style/Widget.MyFitAI.InputDropdownTextCompact"
         android:layout_width="match_parent"

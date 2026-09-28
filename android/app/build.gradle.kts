@@ -18,6 +18,13 @@ android {
 
     defaultConfig {
         applicationId = "com.myfitai.app"
+        val previewSuffix = providers.gradleProperty("previewSuffix").orNull
+        if (previewSuffix != null) {
+            require(previewSuffix.matches(Regex("[A-Za-z0-9]+"))) { "previewSuffix must be alphanumeric" }
+            applicationIdSuffix = ".$previewSuffix"
+        } else if (providers.gradleProperty("dropdownPreview").isPresent) {
+            applicationIdSuffix = ".dropdownpreview"
+        }
         minSdk = 26
         targetSdk = 36
         versionCode = 1

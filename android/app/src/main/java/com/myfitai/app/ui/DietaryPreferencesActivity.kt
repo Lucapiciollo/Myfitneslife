@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.content.Context
-import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
@@ -53,8 +52,7 @@ class DietaryPreferencesActivity : BaseShellActivity() {
     }
 
     private fun bindDropdown() {
-        dietStyle.setAdapter(ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, listOf("Nessuno", "Onnivoro", "Vegetariano", "Vegano", "Pescetariano")))
-        dietStyle.setOnClickListener { dietStyle.showDropDown() }
+        dietStyle.setMyFitAiDropdownItems(listOf("Nessuno", "Onnivoro", "Vegetariano", "Vegano", "Pescetariano"))
     }
 
     private fun loadProfile() {
@@ -92,7 +90,7 @@ class DietaryPreferencesActivity : BaseShellActivity() {
             data.userProfileRepository.update(profile.copy(dietaryPreferencesJson = dietary.toJson(), updatedAtEpochMillis = System.currentTimeMillis()))
             Toast.makeText(this@DietaryPreferencesActivity, "Preferenze alimentari salvate", Toast.LENGTH_SHORT).show()
             if (isBootstrap) {
-                val jobKey = data.nutritionPathTrigger.maybeEnqueue(profile.id)
+                val jobKey = if (aiProviderConfigured) data.nutritionPathTrigger.maybeEnqueue(profile.id) else null
                 startActivity(Intent(this@DietaryPreferencesActivity, NutritionPathActivity::class.java).apply {
                     putExtra(NutritionPathActivity.EXTRA_JOB_KEY, jobKey)
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)

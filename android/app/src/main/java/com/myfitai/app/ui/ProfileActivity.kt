@@ -83,7 +83,7 @@ class ProfileActivity : BaseShellActivity() {
         mealSwitch.isChecked = prefs.mealRemindersEnabled
         reviewSwitch.isChecked = prefs.weeklyReviewEnabled
         aiSwitch.isChecked = prefs.aiBackgroundUpdatesEnabled
-        leadInput.setAdapter(android.widget.ArrayAdapter(this, R.layout.item_dropdown_myfitai, leadLabels.toList()))
+        leadInput.setMyFitAiDropdownItems(leadLabels.toList())
         leadInput.setText(leadLabels[selectedLead.coerceAtMost(leadLabels.lastIndex)], false)
         val permissionGranted = Build.VERSION.SDK_INT < 33 || ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
         statusText.text = if (NotificationManagerCompat.from(this).areNotificationsEnabled() && permissionGranted) {

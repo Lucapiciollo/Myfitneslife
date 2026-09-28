@@ -24,6 +24,9 @@ class NutritionPathActivity : BaseShellActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_nutrition_path)
         bindBack()
+        if (!aiProviderConfigured) {
+            showManualFallback("Provider IA non configurato. Puoi scegliere manualmente un obiettivo e salvarlo localmente.")
+        }
         findViewById<MaterialButton>(R.id.chooseButton).setOnClickListener { choose(selectedPath) }
         showCurrentGoalIfPresent()
         observe()
@@ -43,6 +46,7 @@ class NutritionPathActivity : BaseShellActivity() {
     }
 
     private fun observe() {
+        if (!aiProviderConfigured) return
         val profileId = data.activeProfileStore.currentIdOrNull()
         if (profileId == null || jobKey.isBlank()) {
             showManualFallback("Non posso generare il consiglio automatico. Puoi comunque scegliere l'obiettivo.")

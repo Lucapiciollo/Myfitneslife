@@ -161,7 +161,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/space_8">
-                        <AutoCompleteTextView
+                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
                             style="@style/Widget.MyFitAI.InputDropdownTextCompact"
                             android:id="@+id/quantityInput"
                             android:layout_width="match_parent"

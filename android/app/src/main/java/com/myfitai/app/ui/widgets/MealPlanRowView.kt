@@ -128,6 +128,7 @@ class MealPlanRowView @JvmOverloads constructor(
 
     fun setChangeEnabled(enabled: Boolean) {
         changeButton.isEnabled = enabled
+        changeButton.importantForAccessibility = if (enabled) IMPORTANT_FOR_ACCESSIBILITY_AUTO else IMPORTANT_FOR_ACCESSIBILITY_NO
         changeButton.alpha = if (enabled) 1f else 0.35f
     }
 }

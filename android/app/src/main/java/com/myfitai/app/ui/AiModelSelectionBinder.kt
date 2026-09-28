@@ -1,6 +1,5 @@
 package com.myfitai.app.ui
 
-import android.widget.ArrayAdapter
 import android.widget.TextView
 import android.widget.Toast
 import com.google.android.material.button.MaterialButton
@@ -41,8 +40,8 @@ object AiModelSelectionBinder {
             openAiCost.text = openAiPrice(pendingOpenAi)
         }
 
-        geminiInput.setAdapter(ArrayAdapter(activity, android.R.layout.simple_dropdown_item_1line, AiModelConfig.GEMINI_SELECTABLE.map(::comboLabel)))
-        openAiInput.setAdapter(ArrayAdapter(activity, android.R.layout.simple_dropdown_item_1line, AiModelConfig.OPENAI_SELECTABLE.map(::comboLabel)))
+        geminiInput.setMyFitAiDropdownItems(AiModelConfig.GEMINI_SELECTABLE.map(::comboLabel))
+        openAiInput.setMyFitAiDropdownItems(AiModelConfig.OPENAI_SELECTABLE.map(::comboLabel))
         fun confirmSelection(
             title: String,
             model: String,
@@ -86,8 +85,6 @@ object AiModelSelectionBinder {
                 render()
             })
         }
-        geminiInput.setOnClickListener { geminiInput.showDropDown() }
-        openAiInput.setOnClickListener { openAiInput.showDropDown() }
         render()
     }
 }

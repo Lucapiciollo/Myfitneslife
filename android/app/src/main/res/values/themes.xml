@@ -354,27 +354,33 @@
      <item name="buttonTint">@color/dialog_control_neutral</item>
      <item name="android:gravity">center_vertical</item>
  </style>
- <style name="Widget.MyFitAI.InputDropdown" parent="Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
-     <item name="boxBackgroundColor">@color/white</item>
-     <item name="boxStrokeColor">@color/myfitai_input_stroke</item>
-      <item name="boxStrokeWidth">@dimen/border_width_default</item>
-      <item name="boxStrokeWidthFocused">@dimen/border_width_focused</item>
-      <item name="boxCornerRadiusTopStart">@dimen/radius_field</item>
-      <item name="boxCornerRadiusTopEnd">@dimen/radius_field</item>
-      <item name="boxCornerRadiusBottomStart">@dimen/radius_field</item>
-      <item name="boxCornerRadiusBottomEnd">@dimen/radius_field</item>
-     <item name="hintTextColor">@color/myfitai_input_hint</item>
-      <item name="android:minHeight">@dimen/control_min_height</item>
- </style>
-  <style name="Widget.MyFitAI.InputDropdownText" parent="Widget.AppCompat.AutoCompleteTextView">
-      <item name="android:background">@color/transparent</item>
-      <item name="android:popupBackground">@color/white</item>
-      <item name="android:textColor">@color/text_primary</item>
-     <item name="android:textColorHint">@color/text_secondary</item>
-      <item name="android:textSize">14sp</item>
-      <item name="android:minHeight">@dimen/control_min_height</item>
-      <item name="android:paddingStart">@dimen/space_14</item>
-      <item name="android:paddingEnd">@dimen/space_14</item>
+  <style name="Widget.MyFitAI.InputDropdown" parent="Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
+      <item name="boxBackgroundColor">@color/white</item>
+      <item name="boxStrokeColor">@color/myfitai_input_stroke</item>
+       <item name="boxStrokeWidth">@dimen/border_width_default</item>
+       <item name="boxStrokeWidthFocused">@dimen/border_width_focused</item>
+       <item name="boxCornerRadiusTopStart">@dimen/radius_dropdown</item>
+       <item name="boxCornerRadiusTopEnd">@dimen/radius_dropdown</item>
+       <item name="boxCornerRadiusBottomStart">@dimen/radius_dropdown</item>
+       <item name="boxCornerRadiusBottomEnd">@dimen/radius_dropdown</item>
+      <item name="hintTextColor">@color/myfitai_input_hint</item>
+       <item name="android:minHeight">@dimen/control_min_height</item>
+       <item name="endIconTint">@color/text_secondary</item>
+       <item name="endIconCheckable">false</item>
+  </style>
+   <style name="Widget.MyFitAI.InputDropdownText" parent="Widget.AppCompat.AutoCompleteTextView">
+       <item name="android:background">@color/transparent</item>
+       <item name="android:popupBackground">@drawable/bg_dropdown_popup</item>
+       <item name="android:popupElevation">@dimen/elevation_dialog</item>
+       <item name="android:dropDownVerticalOffset">@dimen/space_4</item>
+       <item name="android:textColor">@color/text_primary</item>
+      <item name="android:textColorHint">@color/text_secondary</item>
+       <item name="android:textSize">14sp</item>
+       <item name="android:minHeight">@dimen/control_min_height</item>
+       <item name="android:gravity">center_vertical</item>
+       <item name="android:includeFontPadding">true</item>
+       <item name="android:paddingStart">@dimen/space_14</item>
+       <item name="android:paddingEnd">@dimen/space_14</item>
  </style>
   <style name="Widget.MyFitAI.InputEditText" parent="Widget.Material3.TextInputEditText.OutlinedBox">
      <item name="android:textColor">@color/text_primary</item>
@@ -407,8 +413,8 @@
    <style name="Widget.MyFitAI.InputCompact" parent="Widget.MyFitAI.Input">
        <item name="android:minHeight">@dimen/control_min_height</item>
   </style>
-  <style name="Widget.MyFitAI.InputDropdownCompact" parent="Widget.MyFitAI.InputDropdown">
-       <item name="android:minHeight">@dimen/control_compact_min_height</item>
+   <style name="Widget.MyFitAI.InputDropdownCompact" parent="Widget.MyFitAI.InputDropdown">
+        <item name="android:minHeight">@dimen/control_min_height</item>
   </style>
    <style name="Widget.MyFitAI.InputEditTextCompact" parent="Widget.MyFitAI.InputEditText">
        <item name="android:textSize">14sp</item>
@@ -423,12 +429,12 @@
        <item name="android:minHeight">@dimen/control_min_height</item>
        <item name="android:includeFontPadding">true</item>
    </style>
-   <style name="Widget.MyFitAI.InputDropdownTextCompact" parent="Widget.MyFitAI.InputDropdownText">
-       <item name="android:textSize">14sp</item>
-       <item name="android:minHeight">@dimen/control_min_height</item>
-       <item name="android:paddingStart">@dimen/space_12</item>
-       <item name="android:paddingEnd">@dimen/space_12</item>
-       <item name="android:popupBackground">@color/white</item>
+    <style name="Widget.MyFitAI.InputDropdownTextCompact" parent="Widget.MyFitAI.InputDropdownText">
+        <item name="android:textSize">14sp</item>
+        <item name="android:minHeight">@dimen/control_min_height</item>
+        <item name="android:paddingStart">@dimen/space_12</item>
+        <item name="android:paddingEnd">@dimen/space_12</item>
+        <item name="android:popupBackground">@drawable/bg_dropdown_popup</item>
    </style>
 <style name="ShapeAppearance.MyFitAI.Thumbnail" parent="ShapeAppearance.Material3.Corner.Medium"><item name="cornerSize">@dimen/radius_medium</item></style>
 <style name="ShapeAppearance.MyFitAI.Avatar" parent="ShapeAppearance.Material3.Corner.Full"/>

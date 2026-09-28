@@ -4,7 +4,6 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
-import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
 import com.google.android.material.textfield.TextInputEditText
 import android.widget.ProgressBar
@@ -85,15 +84,15 @@ class CheatEntryActivity : BaseShellActivity() {
         renderMode(detailed = false)
 
         val quantityInput = findViewById<AutoCompleteTextView>(R.id.quantityInput)
-        quantityInput.setAdapter(ArrayAdapter(this, android.R.layout.simple_list_item_1, listOf("Piccolo", "Medio", "Grande")))
+        quantityInput.setMyFitAiDropdownItems(listOf("Piccolo", "Medio", "Grande"))
         quantityInput.setText("Medio", false)
 
         bindLabelPhoto()
         renderDateTime()
         bindPickers()
-        findViewById<View>(R.id.analyzeButton).setOnClickListener { analyze() }
-        findViewById<View>(R.id.reevaluateButton).setOnClickListener { analyze() }
-        findViewById<View>(R.id.confirmButton).setOnClickListener { confirm() }
+        gateAiClick(findViewById(R.id.analyzeButton)) { analyze() }
+        gateAiClick(findViewById(R.id.reevaluateButton)) { analyze() }
+        gateAiClick(findViewById(R.id.confirmButton)) { confirm() }
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -178,9 +177,7 @@ class CheatEntryActivity : BaseShellActivity() {
     }
 
     private fun bindLabelPhoto() {
-        findViewById<View>(R.id.addLabelPhotoButton).setOnClickListener {
-            if (!labelProcessing) showLabelSourceDialog()
-        }
+        gateAiClick(findViewById(R.id.addLabelPhotoButton)) { if (!labelProcessing) showLabelSourceDialog() }
         findViewById<View>(R.id.removeLabelPhotoButton).setOnClickListener {
             labelImage = null
             viewModel.invalidateUnderstanding()
@@ -368,7 +365,8 @@ class CheatEntryActivity : BaseShellActivity() {
         setAiActionEnabled(findViewById(R.id.analyzeButton), !state.running && !labelProcessing)
         setAiActionEnabled(findViewById(R.id.reevaluateButton), !state.running && !labelProcessing)
         setAiActionEnabled(findViewById(R.id.confirmButton), !state.running && !labelProcessing)
-        findViewById<View>(R.id.addLabelPhotoButton).isEnabled = !state.running && !labelProcessing
+        setAiActionEnabled(findViewById(R.id.addLabelPhotoButton), !state.running && !labelProcessing)
+        findViewById<View>(R.id.removeLabelPhotoButton).isEnabled = !state.running && !labelProcessing
         findViewById<ProgressBar>(R.id.progress).visibility = if (state.running) View.VISIBLE else View.GONE
         findViewById<View>(R.id.aiUnderstandingCard).visibility = if (hasUnderstanding) View.VISIBLE else View.GONE
         findViewById<View>(R.id.analyzeButton).visibility = if (hasUnderstanding) View.GONE else View.VISIBLE

@@ -117,7 +117,7 @@ class BiaActivity : BaseShellActivity() {
         normalizeBiaCards()
         bindSegments()
         findViewById<View>(R.id.aiConfigurationNoticeButton).setOnClickListener {
-            startActivity(Intent(this, SettingsActivity::class.java))
+            startActivity(Intent(this, SettingsActivity::class.java).putExtra(com.myfitai.app.navigation.BottomNavBinder.EXTRA_SELECTED_TAB, com.myfitai.app.navigation.BottomNavBinder.Tab.AI.name))
         }
         findViewById<View>(R.id.addBiaFromHistoryButton).setOnClickListener {
             resetForm()
@@ -128,7 +128,8 @@ class BiaActivity : BaseShellActivity() {
         bindMeasurementRows()
         bindSave()
         bindPhotoImport()
-        findViewById<View>(R.id.analyzeBiaButton).setOnClickListener { analyzeBiaWithAi(it) }
+        gateAiClick(findViewById(R.id.analyzeBiaButton)) { analyzeBiaWithAi(findViewById(R.id.analyzeBiaButton)) }
+        setAiActionEnabled(findViewById(R.id.analyzeBiaButton))
         findViewById<View>(R.id.aiConfigurationNoticeCard).visibility =
             if (aiProviderConfigured) View.GONE else View.VISIBLE
         pendingEditId = intent.getLongExtra(EXTRA_EDIT_ID, 0L)
@@ -147,6 +148,7 @@ class BiaActivity : BaseShellActivity() {
         super.onResume()
         if (this::dateInput.isInitialized) {
             setAiActionEnabled(findViewById(R.id.importPhotoButton))
+            refreshAiActionAvailability()
             findViewById<View>(R.id.aiConfigurationNoticeCard).visibility =
                 if (aiProviderConfigured) View.GONE else View.VISIBLE
         }
@@ -383,11 +385,7 @@ class BiaActivity : BaseShellActivity() {
     private fun bindPhotoImport() {
         val importButton = findViewById<View>(R.id.importPhotoButton)
         setAiActionEnabled(importButton)
-        importButton.setOnClickListener {
-            if (!aiProviderConfigured) {
-                AiProviderAccess.requireConfigured(this)
-                return@setOnClickListener
-            }
+        gateAiClick(importButton) {
             MaterialAlertDialogBuilder(this)
                 .setTitle("Importa BIA da foto")
                 .setItems(arrayOf("Scatta foto", "Scegli dalla galleria")) { _, which ->
@@ -626,6 +624,7 @@ class BiaActivity : BaseShellActivity() {
                         resetForm()
                         // Only a saved BIA can trigger a visible goal recommendation. Never
                         // silently replace the existing goal: NutritionPathActivity asks the user.
+                        if (!aiProviderConfigured) return@collect
                         startActivity(Intent(this@BiaActivity, NutritionPathActivity::class.java).apply {
                             recommendationJobKey?.let { putExtra(NutritionPathActivity.EXTRA_JOB_KEY, it) }
                         })
@@ -719,7 +718,7 @@ class BiaActivity : BaseShellActivity() {
                 card.addView(MaterialButton(this).apply {
                     setText(R.string.bia_analyze_measurement_action)
                     setAiActionEnabled(this)
-                    setOnClickListener { analyzeBiaWithAi(this, item, history) }
+                    gateAiClick(this) { analyzeBiaWithAi(this, item, history) }
                     contentDescription = getString(R.string.bia_analysis_accessibility_date, SimpleDateFormat("dd/MM/yyyy", Locale.ITALIAN).format(Date(item.measuredAtEpochMillis)))
                 })
             }

@@ -13,6 +13,8 @@
     <string name="dashboard_next_meal_title">Prossimo pasto</string>
     <string name="dashboard_next_workout_title">Prossimo allenamento</string>
     <string name="profile_avatar_cd">Foto profilo</string>
+    <string name="ai_action_requires_provider">Richiede un provider IA configurato</string>
+    <string name="ai_action_provider_tooltip">Configura Gemini o OpenAI nella scheda IA per usare questa funzione.</string>
     <string name="profile_row_personal_data">Dati personali</string>
     <string name="profile_row_goals">Obiettivi</string>
     <string name="profile_row_food_preferences">Profilo e preferenze</string>
@@ -65,7 +67,7 @@
     <string name="settings_desc_delete_bia">Rimuove lo storico bioimpedenziometrico</string>
     <string name="settings_desc_delete_body">Rimuove peso e misure corporee</string>
     <string name="settings_desc_delete_workouts">Rimuove allenamenti e giorni di riposo</string>
-    <string name="settings_desc_delete_cheats">Rimuove gli sgarri registrati</string>
+    <string name="settings_desc_delete_cheats">Rimuove gli extra registrati</string>
     <string name="settings_desc_delete_reviews">Rimuove le review settimanali</string>
     <string name="settings_desc_delete_all">Rimuove tutti i dati di attività del profilo</string>
     <string name="profile_openai_configured">Configurata</string>

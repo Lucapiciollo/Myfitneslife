@@ -154,7 +154,41 @@
             </com.google.android.material.card.MaterialCardView>
 
               <TextView android:id="@+id/statusText" style="@style/Text.MyFitAI.Caption" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_16" android:gravity="start" android:visibility="gone" />
-            <ProgressBar android:id="@+id/reviewProgress" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center_horizontal" android:layout_marginTop="@dimen/space_12" android:visibility="gone" />
+             <com.google.android.material.card.MaterialCardView
+                 android:id="@+id/aiConfigurationNoticeCard"
+                 android:layout_width="match_parent"
+                 android:layout_height="wrap_content"
+                 android:layout_marginTop="@dimen/space_8"
+                 android:visibility="gone"
+                 app:cardBackgroundColor="@color/surface_primary"
+                 app:cardCornerRadius="@dimen/radius_card"
+                 app:strokeColor="@color/accent_green"
+                 app:strokeWidth="@dimen/border_width_default">
+                 <LinearLayout
+                     android:layout_width="match_parent"
+                     android:layout_height="wrap_content"
+                     android:orientation="vertical"
+                     android:padding="@dimen/space_12">
+                     <TextView
+                         style="@style/Text.MyFitAI.SettingsLabel"
+                         android:layout_width="match_parent"
+                         android:layout_height="wrap_content"
+                         android:text="Nessun provider IA configurato" />
+                     <TextView
+                         style="@style/Text.MyFitAI.SettingsDescription"
+                         android:layout_width="match_parent"
+                         android:layout_height="wrap_content"
+                         android:layout_marginTop="@dimen/space_4"
+                         android:text="La review usa l'IA per generare una sintesi; i dati e i riepiloghi locali restano consultabili." />
+                     <com.google.android.material.button.MaterialButton
+                         android:id="@+id/aiConfigurationNoticeButton"
+                         style="@style/Widget.MyFitAI.Button.Text"
+                         android:layout_width="wrap_content"
+                         android:layout_height="wrap_content"
+                         android:text="Configura provider IA" />
+                 </LinearLayout>
+             </com.google.android.material.card.MaterialCardView>
+             <ProgressBar android:id="@+id/reviewProgress" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="center_horizontal" android:layout_marginTop="@dimen/space_12" android:visibility="gone" />
              <com.google.android.material.button.MaterialButton
                  android:id="@+id/generateReviewButton"
                  style="@style/Widget.MyFitAI.Button.Primary"

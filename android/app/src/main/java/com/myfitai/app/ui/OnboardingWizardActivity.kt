@@ -8,7 +8,6 @@ import android.view.View
 import android.view.WindowManager
 import android.content.Context
 import android.view.inputmethod.InputMethodManager
-import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -597,8 +596,7 @@ class OnboardingWizardActivity : AppCompatActivity() {
             layoutParams = marginParams(top = if (parent.childCount == 0) 0 else R.dimen.space_8)
         }
         val input = layout.findViewById<AutoCompleteTextView>(R.id.onboardingDropdownInput).apply {
-            setAdapter(ArrayAdapter(this@OnboardingWizardActivity, R.layout.item_dropdown_myfitai, values))
-            setOnClickListener { showDropDown() }
+            setMyFitAiDropdownItems(values)
         }
         parent.addView(layout)
         return input

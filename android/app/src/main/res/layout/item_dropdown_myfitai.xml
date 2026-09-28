@@ -6,5 +6,9 @@
     android:minHeight="@dimen/control_min_height"
     android:gravity="center_vertical"
     android:paddingHorizontal="@dimen/space_16"
-    android:background="@color/white"
+    android:background="@drawable/bg_dropdown_item"
+    android:fontFamily="sans"
+    android:includeFontPadding="true"
+    android:ellipsize="end"
+    android:maxLines="1"
     android:textColor="@color/text_primary" />

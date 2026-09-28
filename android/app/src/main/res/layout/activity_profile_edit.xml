@@ -122,7 +122,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_8"
                     android:hint="Sesso biologico">
-                    <AutoCompleteTextView
+                    <com.google.android.material.textfield.MaterialAutoCompleteTextView
                         style="@style/Widget.MyFitAI.InputDropdownTextCompact"
                         android:id="@+id/sexInput"
                         android:layout_width="match_parent"
@@ -204,7 +204,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12"
                     android:hint="Obiettivo">
-                    <AutoCompleteTextView
+                    <com.google.android.material.textfield.MaterialAutoCompleteTextView
                         style="@style/Widget.MyFitAI.InputDropdownTextCompact"
                         android:id="@+id/goalInput"
                         android:layout_width="match_parent"
@@ -219,7 +219,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_8"
                     android:hint="Livello di attività">
-                    <AutoCompleteTextView
+                    <com.google.android.material.textfield.MaterialAutoCompleteTextView
                         style="@style/Widget.MyFitAI.InputDropdownTextCompact"
                         android:id="@+id/activityInput"
                         android:layout_width="match_parent"

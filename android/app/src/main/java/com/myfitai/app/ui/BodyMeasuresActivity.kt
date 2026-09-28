@@ -3,7 +3,6 @@ package com.myfitai.app.ui
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
-import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -135,7 +134,7 @@ class BodyMeasuresActivity : BaseShellActivity() {
     private fun bindMetricSelector() {
         val input = findViewById<AutoCompleteTextView>(R.id.trendMetricInput)
         val labels = Metric.entries.map { it.label }
-        input.setAdapter(ArrayAdapter(this, R.layout.item_dropdown_myfitai, labels))
+        input.setMyFitAiDropdownItems(labels)
         input.setText(selectedMetric.label, false)
         input.setOnItemClickListener { _, _, position, _ ->
             selectedMetric = Metric.entries[position]
@@ -267,7 +266,7 @@ class BodyMeasuresActivity : BaseShellActivity() {
             id = View.generateViewId().also { proportionAiButtonId = it }
             text = "Interpreta con IA"
             isAllCaps = false
-            setOnClickListener { analyzeProportionsWithAi(this) }
+            gateAiClick(this) { analyzeProportionsWithAi(this) }
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 resources.getDimensionPixelSize(R.dimen.button_secondary_min_height),

@@ -96,7 +96,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_8"
                     android:hint="Misura">
-                    <AutoCompleteTextView
+                    <com.google.android.material.textfield.MaterialAutoCompleteTextView
                         style="@style/Widget.MyFitAI.InputDropdownText"
                         android:id="@+id/trendMetricInput"
                         android:layout_width="match_parent"

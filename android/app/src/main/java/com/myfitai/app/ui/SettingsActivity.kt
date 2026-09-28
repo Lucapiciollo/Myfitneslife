@@ -21,6 +21,7 @@ import com.google.android.material.timepicker.MaterialTimePicker
 import com.google.android.material.timepicker.TimeFormat
 import com.myfitai.app.R
 import com.myfitai.app.ai.AiRuntimeConfig
+import com.myfitai.app.ai.AiProviderAccess
 import com.myfitai.app.ai.AiModelConfig
 import com.myfitai.app.ai.AiSettingsStore
 import com.myfitai.app.ai.GeminiByokProvider
@@ -56,15 +57,17 @@ class SettingsActivity : BaseShellActivity() {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         setContentView(R.layout.activity_settings)
-        val isAiRoot = intent.getBooleanExtra(BottomNavBinder.EXTRA_AI_ROOT, false)
+        val isAiRoot = intent.getBooleanExtra(BottomNavBinder.EXTRA_AI_ROOT, false) ||
+            intent.getStringExtra(BottomNavBinder.EXTRA_SELECTED_TAB) == BottomNavBinder.Tab.AI.name
         bindBottom(if (isAiRoot) BottomNavBinder.Tab.AI else BottomNavBinder.Tab.MORE)
         bindBack()
         findViewById<View>(R.id.generalSectionCard).visibility = if (isAiRoot) View.GONE else View.VISIBLE
         findViewById<View>(R.id.dataSectionCard).visibility = if (isAiRoot) View.GONE else View.VISIBLE
-        findViewById<View>(R.id.aiSectionCard).visibility = if (isAiRoot) View.VISIBLE else View.GONE
+        findViewById<View>(R.id.aiRootSectionCard).visibility = if (isAiRoot) View.VISIBLE else View.GONE
         if (isAiRoot) findViewById<TextView>(R.id.title).text = "IA"
         normalizeSettingsSurfaces()
         bindSectionHelp()
+        findViewById<View>(R.id.aiSectionHelpButton).visibility = if (isAiRoot) View.VISIBLE else View.GONE
         bindWorkoutConfiguration()
 
         val settings = AiSettingsStore(this)
@@ -83,7 +86,9 @@ class SettingsActivity : BaseShellActivity() {
         geminiInput.isLongClickable = false
         openAiInput.isLongClickable = false
         useGeminiSwitch.isChecked = settings.useGemini
-        findViewById<View>(R.id.analyzeNutritionPathButton).setOnClickListener { enqueueNutritionPath() }
+        findViewById<View>(R.id.analyzeNutritionPathButton).setOnClickListener {
+            if (aiProviderConfigured) enqueueNutritionPath() else AiProviderAccess.requireConfigured(this)
+        }
 
         fun render() {
             val useGemini = useGeminiSwitch.isChecked
@@ -118,6 +123,7 @@ class SettingsActivity : BaseShellActivity() {
                 "Chiave Gemini non configurata"
             }
             openAiStatus.text = if (openAiConfigured) "OpenAI configurato ✓ · chiave nascosta\nModello selezionato: ${AiModelConfig.displayName(settings.selectedOpenAiModel)}" else "Chiave OpenAI non configurata"
+            findViewById<View>(R.id.analyzeNutritionPathButton).isEnabled = config.selectedProvider() != com.myfitai.app.ai.AiProviderType.NOT_CONFIGURED
         }
 
         fun saveCredential(
@@ -411,6 +417,9 @@ class SettingsActivity : BaseShellActivity() {
                 automatic.isChecked = config.enabled
                 notifications.isChecked = config.notificationsEnabled
                 frequency.text = "Frequenza: ${if (config.frequency == AiAutomationPreferences.Frequency.WEEKLY) "settimanale" else "mensile"}. L'azione manuale resta sempre disponibile."
+                automatic.isEnabled = aiProviderConfigured
+                notifications.isEnabled = aiProviderConfigured
+                frequency.isEnabled = aiProviderConfigured
                 rendering = false
             }
             automatic.setOnCheckedChangeListener { _, checked ->
@@ -515,6 +524,28 @@ class SettingsActivity : BaseShellActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        refreshAiActionAvailability()
+        renderActiveProviderState()
+    }
+
+    private fun renderActiveProviderState() {
+        val settings = AiSettingsStore(this)
+        val store = SecureAiCredentialStore(this)
+        val config = AiRuntimeConfig(
+            useGemini = settings.useGemini,
+            geminiConfigured = store.exists(AiCredentialProvider.GEMINI),
+            openAiConfigured = store.exists(AiCredentialProvider.OPENAI),
+        )
+        findViewById<TextView?>(R.id.activeProviderText)?.text = when (config.selectedProvider()) {
+            com.myfitai.app.ai.AiProviderType.GEMINI -> "Provider attivo: Gemini BYOK"
+            com.myfitai.app.ai.AiProviderType.OPENAI -> "Provider attivo: OpenAI BYOK"
+            com.myfitai.app.ai.AiProviderType.NOT_CONFIGURED -> if (config.useGemini) "Gemini selezionato ma non configurato" else "Provider OpenAI selezionato ma non configurato"
+        }
+        findViewById<View?>(R.id.analyzeNutritionPathButton)?.isEnabled = config.selectedProvider() != com.myfitai.app.ai.AiProviderType.NOT_CONFIGURED
+    }
+
     private fun bindNutritionPlanSchedule() {
         val profileId = data.activeProfileStore.currentIdOrNull() ?: return
         val card = findViewById<LinearLayout>(R.id.aiSectionCard)
@@ -554,6 +585,9 @@ class SettingsActivity : BaseShellActivity() {
         fun renderSchedule() {
             val config = data.nutritionPlanSchedulePreferences.get(profileId)
             enabledSwitch.isChecked = config.enabled
+            enabledSwitch.isEnabled = aiProviderConfigured
+            row.isEnabled = aiProviderConfigured
+            value.isEnabled = aiProviderConfigured
             val frequencyLabel = when (config.frequency) {
                 NutritionPlanSchedulePreferences.Frequency.DAILY -> "ogni giorno"
                 NutritionPlanSchedulePreferences.Frequency.WEEKLY -> "ogni settimana il ${dayLabel(config.dayOfWeek)}"
@@ -666,6 +700,8 @@ class SettingsActivity : BaseShellActivity() {
         fun renderValue() {
             val weeks = data.progressAnalysisPreferences.intervalWeeks
             value.text = "Ogni $weeks ${if (weeks == 1) "settimana" else "settimane"} · usa quota del provider IA"
+            row.isEnabled = aiProviderConfigured
+            value.isEnabled = aiProviderConfigured
         }
         renderValue()
         row.addView(title)
@@ -804,7 +840,7 @@ class SettingsActivity : BaseShellActivity() {
             R.id.rowDeleteBia to DeletionAction("misurazioni BIA", "le rilevazioni BIA", data.dataDeletionService::deleteBiaMeasurements),
             R.id.rowDeleteBody to DeletionAction("misurazioni corporee", "peso, altezza e le altre rilevazioni corporee registrate", data.dataDeletionService::deleteBodyMeasurements),
             R.id.rowDeleteWorkouts to DeletionAction("allenamenti registrati", "le sessioni di allenamento", data.dataDeletionService::deleteWorkouts),
-            R.id.rowDeleteCheats to DeletionAction("sgarri registrati", "gli sgarri e il relativo storico", data.dataDeletionService::deleteCheatEntries),
+            R.id.rowDeleteCheats to DeletionAction("extra registrati", "gli extra e il relativo storico", data.dataDeletionService::deleteCheatEntries),
             R.id.rowDeleteReviews to DeletionAction("riepiloghi settimanali", "le review settimanali", data.dataDeletionService::deleteWeeklyReviews),
         )
         actions.forEach { (viewId, action) ->

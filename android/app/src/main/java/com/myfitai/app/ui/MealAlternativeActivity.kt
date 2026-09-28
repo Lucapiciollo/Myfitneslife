@@ -29,6 +29,10 @@ class MealAlternativeActivity : BaseShellActivity() {
         setContentView(R.layout.activity_meal_alternative)
         bindBack()
         bindBottom(BottomNavBinder.Tab.FOOD)
+        if (!aiProviderConfigured) {
+            showError("Nessun provider IA configurato. Configura Gemini o OpenAI nella scheda IA per generare alternative.")
+            return
+        }
 
         val weekStart = intent.getLongExtra(EXTRA_WEEK_START_EPOCH_DAY, Long.MIN_VALUE)
         val day = intent.getLongExtra(EXTRA_DAY_EPOCH_DAY, Long.MIN_VALUE)
@@ -92,6 +96,7 @@ class MealAlternativeActivity : BaseShellActivity() {
             return
         }
         val container = findViewById<LinearLayout>(R.id.alternativesContainer)
+        val applyEnabled = aiProviderConfigured
         container.removeAllViews()
         items.forEachIndexed { index, alternative ->
             val card = MaterialCardView(this).apply {
@@ -135,6 +140,7 @@ class MealAlternativeActivity : BaseShellActivity() {
             body.addView(MaterialButton(this).apply {
                 text = "Sostituisci"
                 isAllCaps = false
+                setAiActionEnabled(this, applyEnabled)
                 setOnClickListener { applyAlternative(alternative) }
             }, LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,

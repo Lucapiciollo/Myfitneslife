@@ -3,7 +3,6 @@ package com.myfitai.app.ui
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
-import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
 import android.widget.TextView
 import android.widget.Toast
@@ -99,9 +98,9 @@ class ProfileEditActivity : BaseShellActivity() {
     }
 
     private fun bindDropdowns() {
-        sexInput.setAdapter(ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, listOf("Maschio", "Femmina")))
-        goalInput.setAdapter(ArrayAdapter.createFromResource(this, R.array.profile_goals, android.R.layout.simple_dropdown_item_1line))
-        activityInput.setAdapter(ArrayAdapter.createFromResource(this, R.array.profile_activity_levels, android.R.layout.simple_dropdown_item_1line))
+        sexInput.setMyFitAiDropdownItems(listOf("Maschio", "Femmina"))
+        goalInput.setMyFitAiDropdownItems(resources.getStringArray(R.array.profile_goals).toList())
+        activityInput.setMyFitAiDropdownItems(resources.getStringArray(R.array.profile_activity_levels).toList())
     }
 
     private fun bindPickers() {

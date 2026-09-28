@@ -8,7 +8,6 @@ import android.text.style.StyleSpan
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -36,6 +35,7 @@ abstract class BaseShellActivity : AppCompatActivity() {
     private var profileSwitcher: AutoCompleteTextView? = null
     private var profileHeader: View? = null
     private var isTabRoot = false
+    private val aiActionViews = linkedMapOf<View, Boolean>()
 
     override fun onPostCreate(savedInstanceState: Bundle?) {
         super.onPostCreate(savedInstanceState)
@@ -177,6 +177,7 @@ abstract class BaseShellActivity : AppCompatActivity() {
         super.onResume()
         shellData.activeProfileStore.refreshFromPersistence()
         isTabRoot = isRootTabIntent(intent)
+        refreshAiActionAvailability()
     }
 
     @Deprecated("Use OnBackPressedDispatcher for in-app back handling")
@@ -280,6 +281,8 @@ abstract class BaseShellActivity : AppCompatActivity() {
             inputType = 0
             background = null
             setPadding(dimen(R.dimen.space_12), 0, dimen(R.dimen.space_8), 0)
+            setDropDownBackgroundResource(R.drawable.bg_dropdown_popup)
+            dropDownVerticalOffset = dimen(R.dimen.space_4)
             setOnClickListener { showDropDown() }
             setOnItemClickListener { _, _, position, _ -> handleProfileSelection(position) }
         }
@@ -298,7 +301,7 @@ abstract class BaseShellActivity : AppCompatActivity() {
                     startActivity(Intent(this@BaseShellActivity, NutritionAdviceActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION))
                 }
             }
-        }, LinearLayout.LayoutParams(dimen(R.dimen.icon_button_size), dimen(R.dimen.icon_button_size)).apply { marginStart = dimen(R.dimen.space_4) })
+        }.also { setAiActionEnabled(it) }, LinearLayout.LayoutParams(dimen(R.dimen.icon_button_size), dimen(R.dimen.icon_button_size)).apply { marginStart = dimen(R.dimen.space_4) })
     }
 
     private fun observeGlobalProfiles() {
@@ -309,7 +312,7 @@ abstract class BaseShellActivity : AppCompatActivity() {
                         shellProfiles = profiles
                         profileHeader?.visibility = if (profiles.isEmpty()) View.GONE else View.VISIBLE
                         val labels = profiles.map { it.name } + "+ Nuovo profilo"
-                        profileSwitcher?.setAdapter(ArrayAdapter(this@BaseShellActivity, R.layout.item_dropdown_myfitai, labels))
+                        profileSwitcher?.setMyFitAiDropdownItems(labels)
                         renderActiveProfile()
                     }
                 }
@@ -365,7 +368,44 @@ abstract class BaseShellActivity : AppCompatActivity() {
         get() = AiProviderAccess.isConfigured(this)
 
     protected fun setAiActionEnabled(view: View, enabled: Boolean = true) {
-        view.isEnabled = aiProviderConfigured && enabled
+        aiActionViews[view] = enabled
+        val configured = aiProviderConfigured
+        view.isEnabled = configured && enabled
+        if (view.getTag(R.id.aiActionAccessibilityInitialized) != true) {
+            view.setTag(R.id.aiActionAccessibilityInitialized, true)
+            view.setTag(R.id.aiActionOriginalContentDescription, view.contentDescription)
+            view.setTag(R.id.aiActionOriginalTooltip, view.tooltipText)
+            view.setTag(R.id.aiActionOriginalAlpha, view.alpha)
+        }
+        if (!configured) {
+            val originalDescription = view.getTag(R.id.aiActionOriginalContentDescription) as? CharSequence
+            val label = originalDescription?.takeIf { it.isNotBlank() }
+                ?: (view as? TextView)?.text?.takeIf { it.isNotBlank() }
+                ?: view.resources.getString(R.string.ai_action_requires_provider)
+            view.contentDescription = "$label. ${view.resources.getString(R.string.ai_action_requires_provider)}."
+            view.tooltipText = view.resources.getString(R.string.ai_action_provider_tooltip)
+            view.alpha = ((view.getTag(R.id.aiActionOriginalAlpha) as? Float) ?: 1f) * 0.45f
+        } else {
+            view.contentDescription = view.getTag(R.id.aiActionOriginalContentDescription) as? CharSequence
+            view.tooltipText = view.getTag(R.id.aiActionOriginalTooltip) as? CharSequence
+            view.alpha = (view.getTag(R.id.aiActionOriginalAlpha) as? Float) ?: 1f
+        }
+    }
+
+    protected fun refreshAiActionAvailability() {
+        if (aiActionViews.isEmpty()) return
+        aiActionViews.toMap().forEach { (view, enabled) ->
+            if (view.isAttachedToWindow) setAiActionEnabled(view, enabled)
+        }
+        aiActionViews.keys.removeAll { !it.isAttachedToWindow }
+    }
+
+    protected fun gateAiClick(view: View, enabled: Boolean = true, action: () -> Unit) {
+        setAiActionEnabled(view, enabled)
+        view.setOnClickListener {
+            if (!enabled) return@setOnClickListener
+            if (aiProviderConfigured) action() else AiProviderAccess.requireConfigured(this)
+        }
     }
 
     protected fun confirmAiRequest(action: String, onConfirmed: () -> Unit) {

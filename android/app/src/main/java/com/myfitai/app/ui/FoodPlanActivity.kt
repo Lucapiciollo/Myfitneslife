@@ -65,9 +65,9 @@ class FoodPlanActivity : BaseShellActivity() {
             startActivity(Intent(this, ShoppingListActivity::class.java).putExtra(ShoppingListActivity.EXTRA_WEEK_START_EPOCH_DAY, viewModel.state.value.weekStart.toEpochDay()))
         }
         findViewById<View>(R.id.cheatButton).setOnClickListener { go(CheatEntryActivity::class.java) }
-        findViewById<View>(R.id.generatePlanButton).setOnClickListener { confirmPlanGeneration() }
+        gateAiClick(findViewById(R.id.generatePlanButton)) { confirmPlanGeneration() }
         findViewById<View>(R.id.planSettingsButton).setOnClickListener { startActivity(Intent(this, NutritionPlanSettingsActivity::class.java)) }
-        findViewById<View>(R.id.aiConfigurationNoticeButton).setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java)) }
+        findViewById<View>(R.id.aiConfigurationNoticeButton).setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java).putExtra(BottomNavBinder.EXTRA_SELECTED_TAB, BottomNavBinder.Tab.AI.name)) }
         bindFoodHelp()
         findViewById<View>(R.id.dailyTotalHelpButton).setOnClickListener { showTotalsHelp() }
         renderMealCountPreference()
@@ -181,6 +181,7 @@ class FoodPlanActivity : BaseShellActivity() {
         val statusContainer = findViewById<View>(R.id.generationStatusContainer)
         val progress = findViewById<ProgressBar>(R.id.generationProgress)
         val status = findViewById<TextView>(R.id.generationStatusText)
+        setAiActionEnabled(findViewById(R.id.aiConfigurationNoticeButton))
         val stateDot = findViewById<View>(R.id.planStateDot)
         val generation = state.generation
         revealState(button, periodCanBeGenerated)
@@ -236,7 +237,7 @@ class FoodPlanActivity : BaseShellActivity() {
                     else -> null
                 })
                 setOnClickListener { openMeal(meal.id) }; setChangeEnabled(changeEnabled)
-                if (changeEnabled) setOnChangeClickListener { openMealAlternatives(weekStart, day, meal) }
+                setOnChangeClickListener { if (changeEnabled) openMealAlternatives(weekStart, day, meal) }
                 contentDescription = "${displayMealType(meal.type)}: ${meal.title}"
             }
             container.addView(row, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = resources.getDimensionPixelSize(R.dimen.space_8) })
@@ -475,6 +476,7 @@ class FoodPlanActivity : BaseShellActivity() {
 
     private fun openMeal(mealId: Long) = startActivity(Intent(this, MealDetailActivity::class.java).putExtra(MealDetailActivity.EXTRA_MEAL_ID, mealId))
     private fun openMealAlternatives(weekStart: LocalDate, day: FoodPlanDay, meal: FoodMeal) {
+        if (!aiProviderConfigured) return
         mealAlternativeLauncher.launch(Intent(this, MealAlternativeActivity::class.java)
             .putExtra(MealAlternativeActivity.EXTRA_WEEK_START_EPOCH_DAY, weekStart.toEpochDay())
             .putExtra(MealAlternativeActivity.EXTRA_DAY_EPOCH_DAY, day.dateEpochDay)

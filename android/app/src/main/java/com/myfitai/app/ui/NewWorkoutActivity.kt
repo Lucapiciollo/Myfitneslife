@@ -1,7 +1,6 @@
 package com.myfitai.app.ui
 
 import android.os.Bundle
-import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
 import android.widget.Toast
 import androidx.activity.viewModels
@@ -64,7 +63,7 @@ class NewWorkoutActivity : BaseShellActivity() {
         val restSwitch = findViewById<MaterialSwitch>(R.id.restDaySwitch)
 
         val types = listOf("Pesi", "Cardio", "Mobilità", "Sport", "Altro")
-        typeInput.setAdapter(ArrayAdapter(this, R.layout.item_dropdown_myfitai, types))
+        typeInput.setMyFitAiDropdownItems(types)
         typeInput.setText(types.first(), false)
 
         fun renderDateTime() {

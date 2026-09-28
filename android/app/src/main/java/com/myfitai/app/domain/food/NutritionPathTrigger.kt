@@ -3,6 +3,7 @@ package com.myfitai.app.domain.food
 import com.myfitai.app.data.repository.BiaRepository
 import com.myfitai.app.data.repository.BodyMeasurementRepository
 import com.myfitai.app.data.repository.UserProfileRepository
+import com.myfitai.app.ai.AiRuntimeService
 import kotlinx.coroutines.flow.first
 
 /**
@@ -17,8 +18,10 @@ class NutritionPathTrigger(
     private val bia: BiaRepository,
     private val body: BodyMeasurementRepository,
     private val scheduler: NutritionPathScheduler,
+    private val aiRuntime: AiRuntimeService? = null,
 ) {
     suspend fun maybeEnqueue(profileId: Long): String? {
+        if (aiRuntime?.selectedProviderType() == com.myfitai.app.ai.AiProviderType.NOT_CONFIGURED) return null
         val profile = profiles.get(profileId) ?: return null
         val latestBia = bia.all(profileId).first()
             .maxWithOrNull(compareBy({ it.measuredAtEpochMillis }, { it.id }))

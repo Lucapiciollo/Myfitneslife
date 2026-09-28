@@ -25,7 +25,7 @@ class NutritionPlanSettingsActivity : BaseShellActivity() {
         findViewById<View>(R.id.mealCountButton).setOnClickListener { chooseMealCount(id) }
         findViewById<View>(R.id.scheduleButton).setOnClickListener { chooseFrequency(id) }
         findViewById<View>(R.id.nutritionPathButton).setOnClickListener {
-            startActivity(android.content.Intent(this, NutritionPathActivity::class.java))
+            if (aiProviderConfigured) startActivity(android.content.Intent(this, NutritionPathActivity::class.java))
         }
         refresh()
     }
@@ -35,6 +35,10 @@ class NutritionPlanSettingsActivity : BaseShellActivity() {
         findViewById<TextView>(R.id.mealCountValue).text = "${data.mealCountPreferences.get(id)} pasti al giorno"
         findViewById<MaterialSwitch>(R.id.scheduleSwitch).isChecked = config.enabled
         findViewById<TextView>(R.id.scheduleValue).text = if (config.enabled) "${config.frequency.name.lowercase()} · ${config.timeMinutes / 60}:${"%02d".format(config.timeMinutes % 60)}" else "Disattivata"
+        val switch = findViewById<MaterialSwitch>(R.id.scheduleSwitch)
+        switch.isEnabled = aiProviderConfigured
+        findViewById<View>(R.id.scheduleButton).isEnabled = aiProviderConfigured
+        setAiActionEnabled(findViewById(R.id.nutritionPathButton))
     }
     private fun chooseMealCount(id: Long) {
         val values = intArrayOf(4, 5, 6)

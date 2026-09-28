@@ -76,8 +76,9 @@ class AppDataContainer private constructor(context: Context) {
     val biaRepository = BiaRepository(db)
     val biaAnalysisResultRepository = BiaAnalysisResultRepository(db)
     val bodyMeasurementRepository = BodyMeasurementRepository(db)
+    val aiRuntimeService = AiRuntimeService(appContext)
     val nutritionPathScheduler = NutritionPathScheduler(appContext, aiJobScheduler)
-    val nutritionPathTrigger = NutritionPathTrigger(userProfileRepository, biaRepository, bodyMeasurementRepository, nutritionPathScheduler)
+    val nutritionPathTrigger = NutritionPathTrigger(userProfileRepository, biaRepository, bodyMeasurementRepository, nutritionPathScheduler, aiRuntimeService)
     val workoutRepository = WorkoutRepository(db)
     val dailyActivityCheckInRepository = DailyActivityCheckInRepository(db)
     val mealPlanRepository = MealPlanRepository(db)
@@ -105,7 +106,6 @@ class AppDataContainer private constructor(context: Context) {
         expectationGoals = bodyExpectationGoalRepository,
     )
 
-    val aiRuntimeService = AiRuntimeService(appContext)
     val bodyProportionAnalysisService = BodyProportionAnalysisService(aiRuntimeService)
     val biaAnalysisService = BiaAnalysisService(aiRuntimeService)
     val biaImportService = BiaImportService(aiRuntimeService)

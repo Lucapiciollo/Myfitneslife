@@ -19,6 +19,7 @@ import com.google.android.material.textfield.TextInputLayout
 import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.domain.food.NutritionAdviceContract
+import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.ui.food.NutritionAdviceViewModel
 import kotlinx.coroutines.launch
 import java.util.Locale
@@ -45,15 +46,15 @@ class NutritionAdviceActivity : BaseShellActivity() {
         normalizeAdviceSurfaces()
         bindBack()
         bindBack()
+        findViewById<View>(R.id.aiConfigurationNoticeButton).setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java).putExtra(BottomNavBinder.EXTRA_SELECTED_TAB, BottomNavBinder.Tab.AI.name))
+        }
 
-        findViewById<View>(R.id.askButton).setOnClickListener {
+        gateAiClick(findViewById(R.id.askButton)) {
             val question = findViewById<TextInputEditText>(R.id.questionInput).text?.toString().orEmpty()
             confirmAiRequest("La richiesta di un consiglio nutrizionale") {
                 viewModel.ask(question)
             }
-        }
-        findViewById<View>(R.id.aiConfigurationNoticeButton).setOnClickListener {
-            startActivity(Intent(this, SettingsActivity::class.java))
         }
         findViewById<View>(R.id.dismissAdviceButton).setOnClickListener { finish() }
 
@@ -85,6 +86,11 @@ class NutritionAdviceActivity : BaseShellActivity() {
                 text = state.assumptions
                 visibility = if (state.assumptions.isBlank()) View.GONE else View.VISIBLE
             }
+        }
+        findViewById<View>(R.id.askButton).contentDescription = if (providerConfigured) {
+            "Chiedi consiglio"
+        } else {
+            "Chiedi consiglio. Richiede un provider IA configurato."
         }
 
         renderSuggestions(state.suggestions, enabled = !busy)
@@ -160,18 +166,17 @@ class NutritionAdviceActivity : BaseShellActivity() {
             body.addView(MaterialButton(this).apply {
                 text = "Accetta"
                 isAllCaps = false
-                setAiActionEnabled(this, enabled)
+                gateAiClick(this, enabled) {
+                    confirmAiRequest("L'applicazione del suggerimento e il ricalcolo dei pasti futuri") {
+                        viewModel.acceptSuggestion(suggestion)
+                    }
+                }
                 minHeight = resources.getDimensionPixelSize(R.dimen.button_primary_min_height)
                 setTextColor(getColor(R.color.white))
                 setTypeface(typeface, Typeface.BOLD)
                 backgroundTintList = ColorStateList.valueOf(getColor(R.color.accent_green))
                 cornerRadius = resources.getDimensionPixelSize(R.dimen.radius_field)
                 stateListAnimator = null
-                setOnClickListener {
-                    confirmAiRequest("L'applicazione del suggerimento e il ricalcolo dei pasti futuri") {
-                        viewModel.acceptSuggestion(suggestion)
-                    }
-                }
             }, LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 resources.getDimensionPixelSize(R.dimen.button_primary_min_height),
