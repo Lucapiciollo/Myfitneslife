@@ -10,11 +10,14 @@ import com.myfitai.app.data.repository.FoodConsumptionRepository
 import com.myfitai.app.data.repository.UserProfileRepository
 import com.myfitai.app.data.repository.BiaRepository
 import com.myfitai.app.data.repository.BodyMeasurementRepository
+import com.myfitai.app.data.repository.DailyActivityCheckInRepository
 import com.myfitai.app.data.local.entity.FoodConsumptionEntity
 import com.myfitai.app.domain.food.FoodPlanDay
 import com.myfitai.app.domain.food.FoodPlanSnapshot
 import com.myfitai.app.domain.food.NutritionPlanGenerationService
 import com.myfitai.app.domain.calculation.ProfileCalculationService
+import com.myfitai.app.domain.calculation.DailyActivityCheckInEngine
+import com.myfitai.app.domain.calculation.OperationalNutritionMetrics
 import com.myfitai.app.domain.ai.AiJobScheduler
 import com.myfitai.app.domain.ai.AiJobType
 import com.myfitai.app.domain.food.WeeklyPlanAiJobHandler
@@ -31,6 +34,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.temporal.TemporalAdjusters
@@ -41,6 +45,7 @@ private fun todayIndexInWeek(weekStart: LocalDate): Int {
     return if (!today.isBefore(weekStart) && !today.isAfter(weekStart.plusDays(6))) (today.toEpochDay() - weekStart.toEpochDay()).toInt() else 0
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class FoodPlanViewModel(
     private val repository: MealPlanRepository,
     private val activeProfileStore: ActiveProfileStore,
@@ -52,9 +57,15 @@ class FoodPlanViewModel(
     private val profileRepository: UserProfileRepository,
     private val biaRepository: BiaRepository,
     private val bodyMeasurementRepository: BodyMeasurementRepository,
+    private val dailyActivityCheckIns: DailyActivityCheckInRepository,
     private val schedulePreferences: NutritionPlanSchedulePreferences,
 ) : ViewModel() {
-    data class CalorieReference(val bmrKcal: Double?, val tdeeKcal: Double?)
+    data class CalorieReference(
+        val bmrKcal: Double?,
+        val tdeeKcal: Double?,
+        val operationalTargetKcal: Double?,
+        val operationalProteinG: Double?,
+    )
 
     private data class SourceData(
         val weekStart: LocalDate,
@@ -77,22 +88,30 @@ class FoodPlanViewModel(
         val hasPlan: Boolean = false,
         val generation: GenerationState = GenerationState(),
         val consumptionRecords: List<FoodConsumptionEntity> = emptyList(),
-        val calorieReference: CalorieReference = CalorieReference(null, null),
+        val calorieReference: CalorieReference = CalorieReference(null, null, null, null),
         val goalChangedSinceGeneration: Boolean = false,
     )
 
     private val selectedWeekStart = MutableStateFlow(planWeekMonday(LocalDate.now()))
     private val selectedDayIndex = MutableStateFlow(todayIndexInWeek(selectedWeekStart.value))
     private val generationState = MutableStateFlow(GenerationState())
+    private val selectedDate = combine(selectedWeekStart, selectedDayIndex) { weekStart, dayIndex ->
+        weekStart.plusDays(dayIndex.coerceIn(0, 6).toLong())
+    }
     private val calorieReference = activeProfileStore.activeProfileId.flatMapLatest { profileId ->
-        if (profileId <= 0L) flowOf(CalorieReference(null, null))
+        if (profileId <= 0L) flowOf(CalorieReference(null, null, null, null))
         else combine(
             profileRepository.profile(profileId),
             biaRepository.all(profileId),
             bodyMeasurementRepository.all(profileId),
-        ) { _, _, _ ->
+            selectedDate.flatMapLatest { date -> dailyActivityCheckIns.observeForDay(profileId, date.toEpochDay()) },
+        ) { _, _, _, activityCheckIn ->
             val result = calculations.profileSnapshot(profileId)?.calculation
-            CalorieReference(result?.bmrKcal, result?.tdeeKcal)
+            val metrics = OperationalNutritionMetrics.calculate(
+                calculation = result,
+                checkIn = activityCheckIn,
+            )
+            CalorieReference(result?.bmrKcal, metrics.operationalTdeeKcal, metrics.operationalTargetKcal, metrics.operationalProteinG)
         }
     }
 
@@ -201,6 +220,8 @@ class FoodPlanViewModel(
              "Il piano generato è incompleto o mal strutturato (non copre tutti i giorni o i pasti previsti). Riprova a generare il piano."
         raw.startsWith("PLAN_REVIEW_") ->
             "La revisione automatica ha respinto il piano generato. Riprova a generare il piano."
+        raw.startsWith("WEEKLY_VARIETY_DUPLICATE_RECIPE") ->
+            "Il piano contiene alcuni pasti ripetuti, ma questa condizione non dovrebbe impedire il salvataggio. Riprova se il problema persiste."
          raw.startsWith("OUTPUT_TRUNCATED") ->
              "Il provider IA ha interrotto la risposta prima di completare il periodo del piano. Aggiorna l'app e riprova; nessun piano incompleto è stato salvato."
         raw.startsWith("INVALID_SCHEMA") || raw.startsWith("PIPE_") || raw.contains("INVALID_COMPACT_PROTOCOL") ->
@@ -247,12 +268,13 @@ class FoodPlanViewModel(
         private val profileRepository: UserProfileRepository,
         private val biaRepository: BiaRepository,
         private val bodyMeasurementRepository: BodyMeasurementRepository,
+        private val dailyActivityCheckIns: DailyActivityCheckInRepository,
         private val schedulePreferences: NutritionPlanSchedulePreferences,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(FoodPlanViewModel::class.java))
-            return FoodPlanViewModel(repository, activeProfileStore, generationService, calculations, notificationScheduler, consumptionRepository, aiJobScheduler, profileRepository, biaRepository, bodyMeasurementRepository, schedulePreferences) as T
+            return FoodPlanViewModel(repository, activeProfileStore, generationService, calculations, notificationScheduler, consumptionRepository, aiJobScheduler, profileRepository, biaRepository, bodyMeasurementRepository, dailyActivityCheckIns, schedulePreferences) as T
         }
     }
 }

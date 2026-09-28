@@ -47,6 +47,27 @@ class AiExecutionServiceTest {
         }
     }
 
+    @Test
+    fun compactSchemaRetry_requiresOnlyDataEnvelopeProperty() {
+        runBlocking {
+            val provider = CompactRetryProvider()
+            AiExecutionService().execute(
+                provider = provider,
+                request = AiStructuredRequest(
+                    systemPrompt = "system",
+                    userPrompt = "user",
+                    schemaName = "test_pipe_schema",
+                    schemaJson = """
+                        {"type":"object","additionalProperties":false,"properties":{"data":{"type":"string"}},"required":["data"]}
+                    """.trimIndent(),
+                ),
+                maxSchemaRetries = 1,
+            )
+            assertTrue(provider.secondPrompt.contains("exactly one property named data"))
+            assertTrue(provider.secondPrompt.contains("Do not include schema, status, metadata"))
+        }
+    }
+
     @Test(expected = AiExecutionService.Failure.BusinessRejected::class)
     fun execute_doesNotBypassBusinessValidation() {
         runBlocking {
@@ -81,6 +102,22 @@ class AiExecutionServiceTest {
             val response = responses.getOrElse(calls) { responses.last() }
             calls++
             return AiRawResponse(type, "fake", response)
+        }
+    }
+
+    private class CompactRetryProvider : AiProvider {
+        override val type = AiProviderType.OPENAI
+        var secondPrompt = ""
+        private var calls = 0
+
+        override suspend fun generateStructured(request: AiStructuredRequest): AiRawResponse {
+            calls++
+            if (calls == 2) secondPrompt = request.userPrompt
+            return if (calls == 1) {
+                AiRawResponse(type, "fake", "{\"data\":\"x\",\"schema\":\"unexpected\"}")
+            } else {
+                AiRawResponse(type, "fake", "{\"data\":\"x\"}")
+            }
         }
     }
 }

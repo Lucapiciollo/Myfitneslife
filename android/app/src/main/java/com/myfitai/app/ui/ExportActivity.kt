@@ -63,15 +63,25 @@ class ExportActivity : BaseShellActivity() {
     private fun importBackup(uri: Uri) {
         MaterialAlertDialogBuilder(this)
             .setTitle("Importa backup completo?")
-            .setMessage("Verrà creato un nuovo profilo con i dati del file. I dati esistenti non verranno sovrascritti.")
+             .setMessage("Il profilo attivo e tutti i suoi dati verranno sostituiti dai dati del file: BIA, misure, alimentazione, storico, allenamenti, consumi e versioni dei piani. Le chiavi IA non fanno parte del backup. L'operazione è transazionale.")
             .setNegativeButton("Annulla", null)
             .setPositiveButton("Importa") { _, _ ->
                 lifecycleScope.launch {
                     runCatching { withContext(Dispatchers.IO) { data.profileBackupService.restore(uri) } }
-                        .onSuccess { name -> Toast.makeText(this@ExportActivity, "Backup importato: $name", Toast.LENGTH_LONG).show(); recreate() }
+                        .onSuccess { name ->
+                            Toast.makeText(this@ExportActivity, "Profilo ripristinato: $name", Toast.LENGTH_LONG).show()
+                            restartApp()
+                        }
                         .onFailure { Toast.makeText(this@ExportActivity, "Importazione non riuscita: ${it.message}", Toast.LENGTH_LONG).show() }
                 }
             }.show()
+    }
+
+    private fun restartApp() {
+        startActivity(Intent(this, SplashActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        })
+        finish()
     }
 
     private fun export(format: ProfileExportService.Format) {

@@ -59,7 +59,7 @@ class AiExecutionService {
                 attempt++
                 currentRequest = request.copy(
                     userPrompt = request.userPrompt + if (compact) {
-                        "\nFIX: invalid envelope. Return exact schema + pipe protocol only."
+                        "\nFIX: return exactly one JSON object with exactly one property named data, whose value is a string containing the pipe protocol. Do not include schema, status, metadata or any other property. Return no prose or markdown."
                     } else {
                         "\nPrevious output was INVALID_SCHEMA. Return exactly one valid JSON object. Do not use markdown. Do not wrap the JSON in code fences. Do not add text before or after the JSON. All strings must be valid JSON strings with escaped special characters."
                     }

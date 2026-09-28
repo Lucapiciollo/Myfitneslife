@@ -40,4 +40,16 @@ class AiTransportFailureKindTest {
             AiTransportFailureClassifier.classify(401, "UNAUTHENTICATED"),
         )
     }
+
+    @Test
+    fun interactionsOnlyModel_isClassifiedSeparatelyFromSchemaErrors() {
+        assertEquals(
+            AiTransportFailureKind.MODEL_REQUIRES_INTERACTIONS,
+            AiTransportFailureClassifier.classify(400, "This model only supports the Interactions API."),
+        )
+        assertEquals(
+            AiTransportFailureKind.SCHEMA,
+            AiTransportFailureClassifier.classify(400, "Invalid argument: response schema"),
+        )
+    }
 }

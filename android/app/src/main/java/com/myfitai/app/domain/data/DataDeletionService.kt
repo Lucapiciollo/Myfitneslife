@@ -46,6 +46,7 @@ class DataDeletionService(
             db.biaMeasurementDao().deleteByProfile(profileId)
             db.bodyMeasurementDao().deleteByProfile(profileId)
             db.workoutDao().deleteByProfile(profileId)
+            db.dailyActivityCheckInDao().deleteByProfile(profileId)
             db.cheatEntryDao().deleteByProfile(profileId)
             db.weeklyReviewDao().deleteByProfile(profileId)
         }

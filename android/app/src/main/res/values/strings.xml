@@ -2,6 +2,7 @@
     <string name="nav_home">Home</string>
     <string name="nav_food">Alimentazione</string>
     <string name="nav_progress">Progresso</string>
+    <string name="nav_ai">IA</string>
     <string name="nav_more">Altro</string>
     <string name="dashboard_profile_cd">Profilo</string>
     <string name="dashboard_greeting">Ciao Luca 👋</string>

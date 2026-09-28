@@ -96,6 +96,16 @@ class WeeklyReviewRepository(private val db: MyFitAiDatabase) {
     suspend fun upsert(value: WeeklyReviewEntity) = db.weeklyReviewDao().upsert(value)
 }
 
+class DailyActivityCheckInRepository(private val db: MyFitAiDatabase) {
+    fun observeForDay(profileId: Long, dateEpochDay: Long): Flow<DailyActivityCheckInEntity?> =
+        db.dailyActivityCheckInDao().observeForDay(profileId, dateEpochDay)
+
+    suspend fun upsert(value: DailyActivityCheckInEntity): Long = db.dailyActivityCheckInDao().upsert(value)
+
+    suspend fun deleteForDay(profileId: Long, dateEpochDay: Long) =
+        db.dailyActivityCheckInDao().deleteForDay(profileId, dateEpochDay)
+}
+
 class BodyExpectationGoalRepository(private val db: MyFitAiDatabase) {
     fun all(profileId: Long): Flow<List<BodyExpectationGoalEntity>> = db.bodyExpectationGoalDao().observeAll(profileId)
     suspend fun getForPeriod(profileId: Long, periodStartEpochDay: Long) = db.bodyExpectationGoalDao().getForPeriod(profileId, periodStartEpochDay)

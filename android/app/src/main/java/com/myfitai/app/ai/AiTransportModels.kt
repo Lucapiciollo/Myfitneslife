@@ -58,11 +58,17 @@ enum class AiTransportFailureKind {
     NETWORK,
     PROVIDER_UNAVAILABLE,
     UNKNOWN,
+    MODEL_REQUIRES_INTERACTIONS,
 }
 
 internal object AiTransportFailureClassifier {
     fun classify(status: Int, responseBody: String): AiTransportFailureKind {
         val body = responseBody.lowercase()
+        if ((body.contains("interactions api") || body.contains("interactions_api")) &&
+            (body.contains("only") || body.contains("support") || body.contains("must use"))
+        ) {
+            return AiTransportFailureKind.MODEL_REQUIRES_INTERACTIONS
+        }
         // Auth Key (AQ.) recognized but rejected by the endpoint as an unsupported credential type.
         // This is NOT an invalid key: the value is accepted as a credential but the auth path is refused
         // (e.g. Auth Key bound to a project/org that does not allow REST API-key access).

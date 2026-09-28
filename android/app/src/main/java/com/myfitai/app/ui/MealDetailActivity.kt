@@ -30,6 +30,8 @@ class MealDetailActivity : BaseShellActivity() {
         MealDetailViewModel.Factory(data.mealPlanRepository, data.foodConsumptionRepository, data.foodConsumptionService)
     }
     private var selectedDetailTab = 0
+    private lateinit var ingredientsContainer: View
+    private lateinit var preparationContainer: View
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -72,25 +74,35 @@ class MealDetailActivity : BaseShellActivity() {
     private fun bindTabs() {
         val ingredientsCard = findViewById<View>(R.id.ingredientsCard)
         val preparationCard = findViewById<View>(R.id.preparationCard)
+        ingredientsContainer = ingredientsCard.findViewById(R.id.ingredientsContainer)
+        preparationContainer = preparationCard.findViewById(R.id.preparationContainer)
         findViewById<SelectableSegmentView>(R.id.detailSegment).apply {
             setSegments(listOf("Ingredienti", "Preparazione"), selectedIndex = 0)
             setOnSegmentMotionListener { selectedIndex, previousIndex ->
                 val outgoingContainer = if (previousIndex == 0) {
-                    findViewById<View>(R.id.ingredientsContainer)
+                    ingredientsContainer
                 } else {
-                    findViewById<View>(R.id.preparationContainer)
+                    preparationContainer
                 }
                 val incomingContainer = if (selectedIndex == 0) {
-                    findViewById<View>(R.id.ingredientsContainer)
+                    ingredientsContainer
                 } else {
-                    findViewById<View>(R.id.preparationContainer)
+                    preparationContainer
                 }
+                val outgoingCard = if (previousIndex == 0) ingredientsCard else preparationCard
+                val incomingCard = if (selectedIndex == 0) ingredientsCard else preparationCard
+                UiMotion.reveal(outgoingCard, false)
+                UiMotion.reveal(incomingCard, true)
                 UiMotion.crossfade(outgoingContainer, incomingContainer, showFirst = selectedIndex == 0)
             }
             setOnSegmentSelectedListener { index ->
                 selectedDetailTab = index
             }
         }
+        ingredientsCard.visibility = View.VISIBLE
+        preparationCard.visibility = View.GONE
+        ingredientsContainer.visibility = View.VISIBLE
+        preparationContainer.visibility = View.GONE
     }
 
     private fun bindConsumptionFeedback() {
@@ -123,10 +135,10 @@ class MealDetailActivity : BaseShellActivity() {
             return
         }
         errorView.visibility = View.GONE
-        findViewById<View>(R.id.ingredientsCard).visibility = View.VISIBLE
-        findViewById<View>(R.id.preparationCard).visibility = View.VISIBLE
-        val ingredientsContent = findViewById<View>(R.id.ingredientsContainer)
-        val preparationContent = findViewById<View>(R.id.preparationContainer)
+        findViewById<View>(R.id.ingredientsCard).visibility = if (selectedDetailTab == 0) View.VISIBLE else View.GONE
+        findViewById<View>(R.id.preparationCard).visibility = if (selectedDetailTab == 1) View.VISIBLE else View.GONE
+        val ingredientsContent = ingredientsContainer
+        val preparationContent = preparationContainer
         ingredientsContent.visibility = if (selectedDetailTab == 0) View.VISIBLE else View.GONE
         preparationContent.visibility = if (selectedDetailTab == 1) View.VISIBLE else View.GONE
         ingredientsContent.alpha = 1f
@@ -146,10 +158,10 @@ class MealDetailActivity : BaseShellActivity() {
         findViewById<TextView>(R.id.statFat).text = NutritionEstimateFormatter.formatEstimatedMacro(meal.fatG, "g")
         findViewById<ImageView>(R.id.mealImage).setImageResource(imageFor(meal))
 
-        val ingredientsContainer = findViewById<LinearLayout>(R.id.ingredientsContainer)
-        ingredientsContainer.removeAllViews()
+        val ingredientsList = ingredientsContainer as LinearLayout
+        ingredientsList.removeAllViews()
         if (meal.ingredients.isEmpty()) {
-            ingredientsContainer.addView(TextView(this).apply {
+            ingredientsList.addView(TextView(this).apply {
                 text = "Ingredienti non disponibili"
                 setTextAppearance(R.style.Text_MyFitAI_BodyCompact)
                 val verticalPadding = resources.getDimensionPixelSize(R.dimen.space_14)
@@ -157,7 +169,7 @@ class MealDetailActivity : BaseShellActivity() {
             })
         } else {
             meal.ingredients.sortedBy { it.sortOrder }.forEach { ingredient ->
-                ingredientsContainer.addView(IngredientRowView(this).apply {
+                ingredientsList.addView(IngredientRowView(this).apply {
                     setName(ingredient.name)
                     setQuantity(displayQuantity(ingredient))
                     setIcon(iconFor(ingredient))
@@ -165,7 +177,7 @@ class MealDetailActivity : BaseShellActivity() {
             }
         }
 
-        findViewById<TextView>(R.id.preparationContainer).text =
+        (preparationContainer as TextView).text =
             meal.preparation?.takeIf { it.isNotBlank() } ?: "Preparazione non disponibile."
     }
 

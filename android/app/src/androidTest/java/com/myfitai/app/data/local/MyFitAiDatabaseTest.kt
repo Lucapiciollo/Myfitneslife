@@ -7,6 +7,7 @@ import com.myfitai.app.data.local.entity.BiaMeasurementEntity
 import com.myfitai.app.data.local.entity.BodyMeasurementEntity
 import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.data.local.entity.WorkoutEntity
+import com.myfitai.app.data.local.entity.DailyActivityCheckInEntity
 import com.myfitai.app.data.local.entity.FoodConsumptionEntity
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.domain.food.FoodConsumptionService
@@ -142,6 +143,19 @@ class MyFitAiDatabaseTest {
         assertEquals(listOf(3000L, 2000L, 1000L), dao.observeAll(profile1Id).first().map { it.startedAtEpochMillis })
         assertEquals(listOf(1000L, 2000L), dao.observeBetween(profile1Id, 1000, 2500).first().map { it.startedAtEpochMillis })
         assertEquals(listOf("Cardio"), dao.observeAll(profile2Id).first().map { it.title })
+    }
+
+    @Test
+    fun dailyActivityCheckIn_isUniquePerProfileAndDay() = runBlocking {
+        val profile1Id = db.userProfileDao().insert(profile("Check-in uno"))
+        val profile2Id = db.userProfileDao().insert(profile("Check-in due"))
+        val dao = db.dailyActivityCheckInDao()
+        dao.upsert(checkIn(profile1Id, 20_000L, "REST", 0))
+        dao.upsert(checkIn(profile1Id, 20_000L, "PLANNED_WORKOUT", 140))
+        dao.upsert(checkIn(profile2Id, 20_000L, "REST", 0))
+        assertEquals("PLANNED_WORKOUT", dao.observeForDay(profile1Id, 20_000L).first()?.status)
+        assertEquals(140, dao.observeForDay(profile1Id, 20_000L).first()?.adjustmentKcal)
+        assertEquals("REST", dao.observeForDay(profile2Id, 20_000L).first()?.status)
     }
 
     @Test
@@ -498,5 +512,16 @@ class MyFitAiDatabaseTest {
         title = title,
         durationMinutes = if (rest) null else 45,
         isRestDay = rest,
+    )
+
+    private fun checkIn(profileId: Long, day: Long, status: String, adjustment: Int) = DailyActivityCheckInEntity(
+        profileId = profileId,
+        dateEpochDay = day,
+        status = status,
+        durationMinutes = if (status == "REST") null else 60,
+        intensity = if (status == "REST") null else "MODERATE",
+        adjustmentKcal = adjustment,
+        createdAtEpochMillis = 1000L,
+        updatedAtEpochMillis = 1000L,
     )
 }

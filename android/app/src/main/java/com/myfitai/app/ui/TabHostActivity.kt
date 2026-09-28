@@ -16,7 +16,7 @@ import com.myfitai.app.R
 import com.myfitai.app.navigation.BottomNavBinder
 import java.time.LocalDate
 
-/** Single window host for the four persistent root tabs. Child screens remain normal Activities. */
+/** Single window host for the five persistent root tabs. Child screens remain normal Activities. */
 class TabHostActivity : AppCompatActivity() {
     private lateinit var activityManager: LocalActivityManager
     private lateinit var content: FrameLayout
@@ -84,6 +84,7 @@ class TabHostActivity : AppCompatActivity() {
         val childIntent = Intent(this, tab.activityClass())
             .putExtra(BottomNavBinder.EXTRA_EMBEDDED_TAB, true)
             .putExtra(BottomNavBinder.EXTRA_TAB_ROOT, true)
+        if (tab == BottomNavBinder.Tab.AI) childIntent.putExtra(BottomNavBinder.EXTRA_AI_ROOT, true)
         if (tab == BottomNavBinder.Tab.FOOD && intent.hasExtra(FoodPlanActivity.EXTRA_WEEK_START_EPOCH_DAY)) {
             childIntent.putExtra(
                 FoodPlanActivity.EXTRA_WEEK_START_EPOCH_DAY,
@@ -122,6 +123,6 @@ class TabHostActivity : AppCompatActivity() {
         BottomNavBinder.Tab.HOME -> HomeActivity::class.java
         BottomNavBinder.Tab.FOOD -> FoodPlanActivity::class.java
         BottomNavBinder.Tab.PROGRESS -> PhysicalEvolutionActivity::class.java
-        BottomNavBinder.Tab.MORE -> SettingsActivity::class.java
+        BottomNavBinder.Tab.AI, BottomNavBinder.Tab.MORE -> SettingsActivity::class.java
     }
 }

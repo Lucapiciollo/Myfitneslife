@@ -9,6 +9,7 @@ import android.widget.TextView
 import com.myfitai.app.ai.AiStructuredRequest
 import com.myfitai.app.ai.AiTransportException
 import com.myfitai.app.ai.GeminiByokProvider
+import com.myfitai.app.ai.GeminiInteractionsTransport
 import com.myfitai.app.domain.food.NutritionPlanContract
 import com.myfitai.app.security.SecureAiCredentialStore
 import kotlinx.coroutines.CoroutineScope
@@ -31,6 +32,10 @@ class GeminiSchemaProbeActivity : Activity() {
                 text = "RUN F FULL"
                 setOnClickListener { runFullProbe() }
             })
+            addView(Button(this@GeminiSchemaProbeActivity).apply {
+                text = "RUN INTERACTIONS MINIMAL"
+                setOnClickListener { runInteractionsProbe() }
+            })
         })
     }
 
@@ -48,6 +53,40 @@ class GeminiSchemaProbeActivity : Activity() {
             val result = withContext(Dispatchers.IO) { probeFullSchema() }
             status.text = result
         }
+    }
+
+    private fun runInteractionsProbe() {
+        status.text = "Interactions probe in corso..."
+        scope.launch {
+            val result = withContext(Dispatchers.IO) { probeInteractions() }
+            status.text = result
+        }
+    }
+
+    private suspend fun probeInteractions(): String {
+        val credential = SecureAiCredentialStore(this).read(com.myfitai.app.security.AiCredentialProvider.GEMINI)
+            ?.takeIf { it.isNotBlank() }
+            ?: return "INTERACTIONS=NOT_CONFIGURED"
+        val request = AiStructuredRequest(
+            systemPrompt = "Return only a JSON object with status set to ok.",
+            userPrompt = "Reply with status ok.",
+            schemaName = "myfitai_interactions_probe",
+            schemaJson = """{"type":"object","properties":{"status":{"type":"string"}},"required":["status"]}""",
+            maxOutputTokens = 64,
+        )
+        val outcome = runCatching {
+            GeminiInteractionsTransport().generate(credential, "gemini-3.5-flash-lite", request)
+            "PASS"
+        }.getOrElse { error ->
+            when (error) {
+                is AiTransportException.Http -> "FAIL_HTTP_${error.statusCode}_${error.failureKind}"
+                is AiTransportException.Network -> "FAIL_NETWORK"
+                is AiTransportException.InvalidResponse -> "FAIL_INVALID_RESPONSE"
+                else -> "FAIL_${error.javaClass.simpleName}"
+            }
+        }
+        Log.i("MyFitAiSchemaProbe", "case=INTERACTIONS_MINIMAL outcome=$outcome")
+        return "INTERACTIONS=$outcome"
     }
 
     private suspend fun probeFullSchema(): String {

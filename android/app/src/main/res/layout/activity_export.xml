@@ -48,7 +48,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_12"
-                android:text="Puoi esportare i dati del profilo attivo oppure importare uno storico BIA. Le rilevazioni già presenti non vengono sovrascritte."
+                 android:text="Puoi salvare un backup completo e ripristinare il profilo attivo con BIA, misure, alimentazione, storico, allenamenti, consumi e versioni dei piani. L'import del backup sostituisce il profilo dopo conferma e riavvia l'app."
                 style="@style/Text.MyFitAI.Body" />
 
             <com.myfitai.app.ui.widgets.SettingListCardView
@@ -80,7 +80,7 @@
                         android:layout_height="wrap_content"
                         app:srIcon="@drawable/ic_setting_export"
                         app:srLabel="Importa backup da disco"
-                        app:srDescription="Crea un nuovo profilo dai dati del file JSON" />
+                         app:srDescription="Sostituisce il profilo attivo con tutti i dati del file JSON e riavvia l'app" />
                 </LinearLayout>
             </com.myfitai.app.ui.widgets.SettingListCardView>
 

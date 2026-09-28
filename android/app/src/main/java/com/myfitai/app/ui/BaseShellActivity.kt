@@ -390,6 +390,7 @@ abstract class BaseShellActivity : AppCompatActivity() {
                 HomeActivity::class.java -> BottomNavBinder.Tab.HOME
                 FoodPlanActivity::class.java -> BottomNavBinder.Tab.FOOD
                 PhysicalEvolutionActivity::class.java -> BottomNavBinder.Tab.PROGRESS
+                SettingsActivity::class.java -> BottomNavBinder.Tab.MORE
                 else -> BottomNavBinder.Tab.MORE
             }
             (parent as? TabHostActivity)?.let {

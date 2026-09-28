@@ -46,6 +46,7 @@ import com.myfitai.app.domain.progress.ProgressAnalysisPreferences
 import com.myfitai.app.domain.progress.ProgressAnalysisScheduler
 import com.myfitai.app.domain.progress.ProgressAnalysisService
 import com.myfitai.app.domain.progress.ProgressAnalysisAiJobHandler
+import com.myfitai.app.data.profile.BiaFrequencyPreferences
 import com.myfitai.app.domain.review.WeeklyReviewService
 import com.myfitai.app.domain.data.DataDeletionService
 import com.myfitai.app.notifications.NotificationScheduler
@@ -62,6 +63,7 @@ class AppDataContainer private constructor(context: Context) {
     val nutritionPlanUpdatePreferences = NutritionPlanUpdatePreferences(appContext)
     val nutritionPlanSchedulePreferences = NutritionPlanSchedulePreferences(appContext)
     val profilePhotoStore = ProfilePhotoStore(appContext)
+    val biaFrequencyPreferences = BiaFrequencyPreferences(appContext)
     val workoutPreferences = WorkoutPreferences(appContext)
     val progressAnalysisPreferences = ProgressAnalysisPreferences(appContext)
     val aiAutomationPreferences = AiAutomationPreferences(appContext)
@@ -77,6 +79,7 @@ class AppDataContainer private constructor(context: Context) {
     val nutritionPathScheduler = NutritionPathScheduler(appContext, aiJobScheduler)
     val nutritionPathTrigger = NutritionPathTrigger(userProfileRepository, biaRepository, bodyMeasurementRepository, nutritionPathScheduler)
     val workoutRepository = WorkoutRepository(db)
+    val dailyActivityCheckInRepository = DailyActivityCheckInRepository(db)
     val mealPlanRepository = MealPlanRepository(db)
     val cheatEntryRepository = CheatEntryRepository(db)
     val calorieRecoveryRepository = CalorieRecoveryRepository(db)
@@ -218,8 +221,22 @@ class AppDataContainer private constructor(context: Context) {
         db = db,
         activeProfileStore = activeProfileStore,
         nutritionPlanSchedulePreferences = nutritionPlanSchedulePreferences,
+        mealCountPreferences = mealCountPreferences,
+        workoutPreferences = workoutPreferences,
+        biaFrequencyPreferences = biaFrequencyPreferences,
+        aiAutomationPreferences = aiAutomationPreferences,
     )
-    val profileBackupService = ProfileBackupService(appContext, db, activeProfileStore)
+    val profileBackupService = ProfileBackupService(
+        context = appContext,
+        db = db,
+        activeProfiles = activeProfileStore,
+        mealCountPreferences = mealCountPreferences,
+        workoutPreferences = workoutPreferences,
+        biaFrequencyPreferences = biaFrequencyPreferences,
+        nutritionPlanSchedulePreferences = nutritionPlanSchedulePreferences,
+        aiAutomationPreferences = aiAutomationPreferences,
+        profilePhotoStore = profilePhotoStore,
+    )
 
     companion object {
         @Volatile private var instance: AppDataContainer? = null

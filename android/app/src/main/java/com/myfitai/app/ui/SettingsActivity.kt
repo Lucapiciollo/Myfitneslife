@@ -3,6 +3,8 @@ package com.myfitai.app.ui
 import android.os.Bundle
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.view.View
 import android.view.WindowManager
 import android.widget.LinearLayout
@@ -10,6 +12,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
+import androidx.activity.result.contract.ActivityResultContracts
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.materialswitch.MaterialSwitch
@@ -33,16 +36,26 @@ import com.myfitai.app.security.SecureAiCredentialStore
 import com.myfitai.app.ui.widgets.SettingRowView
 import com.myfitai.app.domain.food.NutritionPathTrigger
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.first
 
 class SettingsActivity : BaseShellActivity() {
     private val data by lazy { AppDataContainer.get(this) }
+    private val backupOpenLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) confirmBackupImport(uri)
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         setContentView(R.layout.activity_settings)
-        bindBottom(BottomNavBinder.Tab.MORE)
+        val isAiRoot = intent.getBooleanExtra(BottomNavBinder.EXTRA_AI_ROOT, false)
+        bindBottom(if (isAiRoot) BottomNavBinder.Tab.AI else BottomNavBinder.Tab.MORE)
         bindBack()
+        findViewById<View>(R.id.generalSectionCard).visibility = if (isAiRoot) View.GONE else View.VISIBLE
+        findViewById<View>(R.id.dataSectionCard).visibility = if (isAiRoot) View.GONE else View.VISIBLE
+        findViewById<View>(R.id.aiSectionCard).visibility = if (isAiRoot) View.VISIBLE else View.GONE
+        if (isAiRoot) findViewById<TextView>(R.id.title).text = "IA"
         normalizeSettingsSurfaces()
         bindSectionHelp()
         bindWorkoutConfiguration()
@@ -181,11 +194,42 @@ class SettingsActivity : BaseShellActivity() {
                 .show()
         }
         findViewById<View>(R.id.rowExport).setOnClickListener { go(ExportActivity::class.java) }
+        findViewById<View>(R.id.rowImportProfileBackup).setOnClickListener {
+            backupOpenLauncher.launch(arrayOf("application/json", "text/json", "text/plain"))
+        }
 
         bindDataDeletion()
         bindAiAutomationControls()
         GeminiCostSettingsBinder.bind(this, findViewById(R.id.aiSectionCard), settings)
         render()
+    }
+
+    private fun confirmBackupImport(uri: Uri) {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Carica profilo dal backup?")
+            .setMessage("Stai caricando un profilo completo. Il profilo attivo verrà sostituito insieme a BIA, misure, alimentazione, storico, allenamenti, consumi e versioni dei piani. Le chiavi IA non sono incluse. L'app verrà riavviata.")
+            .setNegativeButton("Annulla", null)
+            .setPositiveButton("Importa e riavvia") { _, _ ->
+                lifecycleScope.launch {
+                    runCatching { withContext(Dispatchers.IO) { data.profileBackupService.restore(uri) } }
+                        .onSuccess { restartAfterRestore() }
+                        .onFailure { error ->
+                            MaterialAlertDialogBuilder(this@SettingsActivity)
+                                .setTitle("Importazione non riuscita")
+                                .setMessage(error.message ?: "Controlla il file JSON e riprova.")
+                                .setPositiveButton("Chiudi", null)
+                                .show()
+                        }
+                }
+            }
+            .show()
+    }
+
+    private fun restartAfterRestore() {
+        startActivity(Intent(this, SplashActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        })
+        finish()
     }
 
     private fun showBiaFrequencySettings() {
@@ -556,7 +600,7 @@ class SettingsActivity : BaseShellActivity() {
             GuideSection("Il percorso MyFitAI", "Da dove parti e dove arrivi", "Inserisci profilo, rilevazioni, allenamenti e preferenze alimentari. L'app usa questi dati per costruire il percorso e lo aggiorna quando registri nuove informazioni."),
             GuideSection("1. Profilo e rilevazioni", "La base del calcolo", "Peso, altezza, età, sesso biologico, massa grassa, circonferenze e livello di attività descrivono il punto di partenza. Più i dati sono recenti e coerenti, più l'interpretazione è utile."),
             GuideSection("2. Calorie di base", "BMR e TDEE", "Il BMR è il consumo stimato a riposo. Con una massa grassa plausibile si usa Katch-McArdle: 370 + 21,6 × massa magra in kg. Altrimenti si usa Mifflin-St Jeor. Il TDEE è il BMR moltiplicato per l'attività: 1,20 sedentario, 1,375 leggero, 1,55 moderato, 1,725 molto attivo, 1,90 estremo."),
-            GuideSection("3. Target giornaliero", "Profilo, piano e consumo", "In Alimentazione puoi confrontare il BMR stimato a riposo, il TDEE con l'attività abituale del profilo, il target giornaliero, i valori del menu e calorie/proteine registrate come consumate. Il TDEE non rappresenta la spesa misurata di un allenamento singolo."),
+            GuideSection("3. Target giornaliero", "Profilo, piano e consumo", "In Alimentazione puoi confrontare il BMR a riposo, il TDEE operativo calcolato sul profilo e sull'attività del giorno, il target operativo, il target del piano, i valori del menu e calorie/proteine registrate come consumate. Il TDEE non rappresenta la spesa misurata di un allenamento singolo."),
             GuideSection("4. Obiettivo e target", "Il numero calorico di riferimento", "Il target iniziale deriva dal TDEE: ricomposizione 95%, perdita di peso 85%, mantenimento 100%, aumento massa 110%, performance 100%. Sono fattori iniziali e non promesse sul risultato."),
             GuideSection("5. Macronutrienti", "Come vengono distribuiti i macro", "Le proteine sono 2,0 g/kg per perdita, ricomposizione e aumento massa, oppure 1,8 g/kg per mantenimento e performance. I grassi sono 0,8 g/kg, oppure 0,9 g/kg nella performance. I carboidrati ricevono le calorie rimanenti: (target - calorie di proteine e grassi) / 4."),
             GuideSection("6. Adattamento", "Il piano impara dai trend", "Il target cambia solo con evidenze sufficienti: almeno 21 giorni e almeno due segnali tra peso, massa grassa, massa muscolare, vita e addome. Uno stallo prolungato richiede almeno 28 giorni. La correzione è graduale, a passi del 2,5%, e resta dentro limiti conservativi."),

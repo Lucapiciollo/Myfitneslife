@@ -115,7 +115,9 @@
                   <View android:layout_width="match_parent" android:layout_height="@dimen/border_width_default" android:background="@color/divider" />
                   <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowPrivacy" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_lock" app:srLabel="Privacy e dati" app:srDescription="@string/settings_desc_privacy" />
                   <View android:layout_width="match_parent" android:layout_height="@dimen/border_width_default" android:background="@color/divider" />
-                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowExport" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_export" app:srLabel="Esporta / importa dati" app:srDescription="@string/settings_desc_export" />
+                   <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowExport" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_export" app:srLabel="Esporta / importa dati" app:srDescription="@string/settings_desc_export" />
+                   <View android:layout_width="match_parent" android:layout_height="@dimen/border_width_default" android:background="@color/divider" />
+                   <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowImportProfileBackup" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_export" app:srLabel="Carica profilo da backup" app:srDescription="Sostituisce il profilo attivo con tutti i suoi dati e riavvia l'app" />
                  </LinearLayout>
                  </LinearLayout>
              </com.google.android.material.card.MaterialCardView>

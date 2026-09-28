@@ -8,6 +8,7 @@ import com.myfitai.app.data.local.entity.BodyMeasurementEntity
 import com.myfitai.app.data.local.entity.FoodConsumptionEntity
 import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.data.local.entity.WorkoutEntity
+import com.myfitai.app.data.local.entity.DailyActivityCheckInEntity
 import com.myfitai.app.data.local.entity.BodyExpectationGoalEntity
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.profile.NutritionPlanSchedulePreferences
@@ -21,7 +22,10 @@ import com.myfitai.app.data.repository.UserProfileRepository
 import com.myfitai.app.data.repository.WorkoutRepository
 import com.myfitai.app.data.repository.BodyExpectationGoalRepository
 import com.myfitai.app.domain.calculation.LocalCalculationEngine
+import com.myfitai.app.domain.calculation.DailyActivityCheckInEngine
 import com.myfitai.app.domain.calculation.ProfileCalculationMapper
+import com.myfitai.app.domain.calculation.ProfileCalculationService
+import com.myfitai.app.domain.calculation.OperationalNutritionMetrics
 import com.myfitai.app.domain.calculation.WeeklyBodyExpectation
 import com.myfitai.app.domain.food.CalorieRecoveryEngine
 import com.myfitai.app.domain.food.FoodConsumptionMetrics
@@ -39,6 +43,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
@@ -47,6 +52,7 @@ import java.time.Period
 import java.time.ZoneId
 import java.time.temporal.TemporalAdjusters
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModel(
     private val profiles: UserProfileRepository,
     private val biaRepository: BiaRepository,
@@ -59,6 +65,8 @@ class HomeViewModel(
     private val bodyExpectationGoalRepository: BodyExpectationGoalRepository,
     private val nutritionPlanSchedulePreferences: NutritionPlanSchedulePreferences,
     private val activeProfileStore: ActiveProfileStore,
+    private val dailyActivityCheckIns: com.myfitai.app.data.repository.DailyActivityCheckInRepository,
+    private val profileCalculationService: ProfileCalculationService,
 ) : ViewModel() {
 
     data class MetricState(val value: Float?, val deltaFromPrevious: Float?, val sourceLabel: String? = null)
@@ -74,6 +82,9 @@ class HomeViewModel(
         val targetFromCurrentPlan: Boolean = false,
         val targetFromWeeklyPlan: Boolean = false,
         val targetBeforeAdaptation: Int? = null,
+        val planTarget: Int? = null,
+        val activityAdjustmentKcal: Int = 0,
+        val habitualTdee: Int? = null,
         val consumedKcal: Int? = null,
         val consumedProteinG: Double? = null,
         val consumedCount: Int = 0,
@@ -109,6 +120,14 @@ class HomeViewModel(
         val latestBiaTimestamp: Long? = null,
         val weeklyExpectation: WeeklyBodyExpectation.Result = WeeklyBodyExpectation.Result(available = false),
         val expectationGoals: List<BodyExpectationGoalEntity> = emptyList(),
+        val activityCheckIn: ActivityCheckInState = ActivityCheckInState(),
+    )
+
+    data class ActivityCheckInState(
+        val status: String? = null,
+        val durationMinutes: Int? = null,
+        val intensity: String? = null,
+        val adjustmentKcal: Int = 0,
     )
 
     private data class Source(
@@ -116,20 +135,22 @@ class HomeViewModel(
         val bia: List<BiaMeasurementEntity>,
         val body: List<BodyMeasurementEntity>,
         val workouts: List<WorkoutEntity>,
+        val activityCheckIn: DailyActivityCheckInEntity?,
     )
 
     private val selectedRange = MutableStateFlow(1)
 
     private val source = activeProfileStore.activeProfileId.flatMapLatest { profileId ->
         if (profileId <= 0L) {
-            flowOf(Source(null, emptyList(), emptyList(), emptyList()))
+            flowOf(Source(null, emptyList(), emptyList(), emptyList(), null))
         } else {
             combine(
                 profiles.profile(profileId),
                 biaRepository.all(profileId),
                 bodyRepository.all(profileId),
                 workoutRepository.all(profileId),
-            ) { profile, bia, body, workouts -> Source(profile, bia, body, workouts) }
+                dailyActivityCheckIns.observeForDay(profileId, LocalDate.now().toEpochDay()),
+            ) { profile, bia, body, workouts, activity -> Source(profile, bia, body, workouts, activity) }
         }
     }
 
@@ -214,7 +235,8 @@ class HomeViewModel(
             ?.firstOrNull { it.dateEpochDay == LocalDate.now().toEpochDay() }
         val todayTarget = todayTargetDay?.targetKcal
         val todayBaseTarget = todayTargetDay?.baseTargetKcal ?: todayTargetDay?.targetKcal ?: snapshot?.version?.targetKcal
-        val displayedTarget = todayTarget ?: snapshot?.version?.targetKcal ?: dashboard.calories.target
+        val planTarget = todayTarget ?: snapshot?.version?.targetKcal ?: dashboard.calories.planTarget ?: dashboard.calories.target
+        val displayedTarget = dashboard.calories.target ?: planTarget
         val displayedTargetPercent = if (displayedTarget != null && dashboard.calories.tdee != null && dashboard.calories.tdee > 0) {
             Math.round((displayedTarget - dashboard.calories.tdee) * 100.0 / dashboard.calories.tdee).toInt()
         } else null
@@ -236,6 +258,8 @@ class HomeViewModel(
                 targetFromCurrentPlan = todayTargetDay != null,
                 targetFromWeeklyPlan = snapshot != null,
                 targetBeforeAdaptation = todayBaseTarget,
+                planTarget = planTarget,
+                activityAdjustmentKcal = dashboard.activityCheckIn.adjustmentKcal,
                 energyPercent = displayedTargetPercent,
                 consumedKcal = consumedKcal?.let { Math.round(it).toInt() },
                 consumedProteinG = consumedProtein,
@@ -254,6 +278,38 @@ class HomeViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DashboardState())
 
     fun selectRange(index: Int) { selectedRange.value = index.coerceIn(0, 3) }
+
+    fun setRestDay() = saveActivityCheckIn("REST", null, null, 0)
+
+    fun setPlannedWorkout(durationMinutes: Int, intensity: DailyActivityCheckInEngine.Intensity) =
+        saveActivityCheckIn(
+            status = "PLANNED_WORKOUT",
+            durationMinutes = durationMinutes,
+            intensity = intensity.name,
+            adjustmentKcal = DailyActivityCheckInEngine.adjustmentKcal(durationMinutes, intensity),
+        )
+
+    fun clearActivityCheckIn() {
+        val profileId = activeProfileStore.currentIdOrNull() ?: return
+        viewModelScope.launch { dailyActivityCheckIns.deleteForDay(profileId, LocalDate.now().toEpochDay()) }
+    }
+
+    private fun saveActivityCheckIn(status: String, durationMinutes: Int?, intensity: String?, adjustmentKcal: Int) {
+        val profileId = activeProfileStore.currentIdOrNull() ?: return
+        viewModelScope.launch {
+            val now = System.currentTimeMillis()
+            dailyActivityCheckIns.upsert(DailyActivityCheckInEntity(
+                profileId = profileId,
+                dateEpochDay = LocalDate.now().toEpochDay(),
+                status = status,
+                durationMinutes = durationMinutes,
+                intensity = intensity,
+                adjustmentKcal = adjustmentKcal,
+                createdAtEpochMillis = now,
+                updatedAtEpochMillis = now,
+            ))
+        }
+    }
 
     fun confirmExpectation(status: String, note: String? = null) {
         val profileId = activeProfileStore.currentIdOrNull() ?: return
@@ -283,7 +339,7 @@ class HomeViewModel(
         }
     }
 
-    private fun buildState(
+    private suspend fun buildState(
         source: Source,
         rangeIndex: Int,
         upcomingMeals: List<NextMealState>,
@@ -356,52 +412,34 @@ class HomeViewModel(
             consumptionRecords = consumption,
             recovery = recovery,
             latestBiaTimestamp = source.bia.maxByOrNull { it.measuredAtEpochMillis }?.measuredAtEpochMillis,
+            activityCheckIn = ActivityCheckInState(
+                status = source.activityCheckIn?.status,
+                durationMinutes = source.activityCheckIn?.durationMinutes,
+                intensity = source.activityCheckIn?.intensity,
+                adjustmentKcal = source.activityCheckIn?.adjustmentKcal ?: 0,
+            ),
         )
     }
 
-    private fun calorieState(source: Source): CalorieState {
+    private suspend fun calorieState(source: Source): CalorieState {
         val profile = source.profile ?: return CalorieState()
-        val today = LocalDate.now()
         val latestBia = source.bia.maxByOrNull { it.measuredAtEpochMillis }
-        val latestBody = source.body.maxByOrNull { it.measuredAtEpochMillis }
-        val latestRecordedWeight = (
-            source.bia.mapNotNull { row -> row.weightKg?.let { row.measuredAtEpochMillis to it } } +
-                source.body.mapNotNull { row -> row.weightKg?.let { row.measuredAtEpochMillis to it } }
-            ).maxByOrNull { it.first }?.second
-        val weightKg = latestRecordedWeight?.toDouble() ?: profile.currentWeightKg?.toDouble()
-        val ageYears = profile.birthDateEpochDay?.let { epochDay ->
-            val birth = LocalDate.ofEpochDay(epochDay)
-            if (birth.isAfter(today)) null else Period.between(birth, today).years
-        }
-        val calculation = LocalCalculationEngine.calculate(
-            LocalCalculationEngine.Input(
-                weightKg = weightKg,
-                heightCm = profile.heightCm?.toDouble(),
-                ageYears = ageYears,
-                biologicalSex = when (profile.biologicalSex?.trim()?.lowercase()) {
-                    "maschio", "male", "m" -> LocalCalculationEngine.BiologicalSex.MALE
-                    "femmina", "female", "f" -> LocalCalculationEngine.BiologicalSex.FEMALE
-                    else -> null
-                },
-                bodyFatPercent = latestBia?.bodyFatPercent?.toDouble(),
-                activityLevel = ProfileCalculationMapper.activity(profile.activityLevel),
-                goal = ProfileCalculationMapper.goal(profile.goal),
-                waistCm = source.body.filter { it.waistCm != null }
-                    .maxByOrNull { it.measuredAtEpochMillis }?.waistCm?.toDouble(),
-            )
-        )
-        val tdeeInt = calculation.tdeeKcal?.let { Math.round(it).toInt() }
-        val targetInt = calculation.targetKcal?.let { Math.round(it).toInt() }
+        val calculation = profileCalculationService.profileSnapshot(profile.id)?.calculation
+        val metrics = OperationalNutritionMetrics.calculate(calculation, source.activityCheckIn)
+        val tdeeInt = metrics.operationalTdeeKcal?.let { Math.round(it).toInt() }
+        val targetInt = metrics.operationalTargetKcal?.let { Math.round(it).toInt() }
         val energyPercent = if (tdeeInt != null && targetInt != null && tdeeInt > 0) {
             Math.round((targetInt - tdeeInt) * 100.0 / tdeeInt).toInt()
         } else {
             null
         }
         return CalorieState(
-            bmr = calculation.bmrKcal?.let { Math.round(it).toInt() },
+            bmr = metrics.bmrKcal?.let { Math.round(it).toInt() },
             biaBmr = latestBia?.bmrKcal?.let { Math.round(it).toInt() },
             tdee = tdeeInt,
             target = targetInt,
+            planTarget = metrics.profileTargetKcal?.let { Math.round(it).toInt() },
+            habitualTdee = metrics.habitualTdeeKcal?.let { Math.round(it).toInt() },
             goalLabel = goalLabel(ProfileCalculationMapper.goal(profile.goal)),
             energyPercent = energyPercent,
         )
@@ -549,11 +587,13 @@ class HomeViewModel(
         private val bodyExpectationGoalRepository: BodyExpectationGoalRepository,
         private val nutritionPlanSchedulePreferences: NutritionPlanSchedulePreferences,
         private val activeProfileStore: ActiveProfileStore,
+        private val dailyActivityCheckIns: com.myfitai.app.data.repository.DailyActivityCheckInRepository,
+        private val profileCalculationService: ProfileCalculationService,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(HomeViewModel::class.java))
-            return HomeViewModel(profiles, biaRepository, bodyRepository, workoutRepository, mealPlanRepository, cheatRepository, recoveryRepository, foodConsumptionRepository, bodyExpectationGoalRepository, nutritionPlanSchedulePreferences, activeProfileStore) as T
+            return HomeViewModel(profiles, biaRepository, bodyRepository, workoutRepository, mealPlanRepository, cheatRepository, recoveryRepository, foodConsumptionRepository, bodyExpectationGoalRepository, nutritionPlanSchedulePreferences, activeProfileStore, dailyActivityCheckIns, profileCalculationService) as T
         }
     }
 }

@@ -6,12 +6,24 @@ import androidx.room.withTransaction
 import com.myfitai.app.data.local.MyFitAiDatabase
 import com.myfitai.app.data.local.entity.*
 import com.myfitai.app.data.profile.ActiveProfileStore
+import com.myfitai.app.data.profile.MealCountPreferences
+import com.myfitai.app.data.profile.WorkoutPreferences
+import com.myfitai.app.data.profile.BiaFrequencyPreferences
+import com.myfitai.app.data.profile.NutritionPlanSchedulePreferences
+import com.myfitai.app.data.profile.AiAutomationPreferences
+import com.myfitai.app.data.profile.ProfilePhotoStore
 import org.json.JSONObject
 
 class ProfileBackupService(
     context: Context,
     private val db: MyFitAiDatabase,
     private val activeProfiles: ActiveProfileStore,
+    private val mealCountPreferences: MealCountPreferences? = null,
+    private val workoutPreferences: WorkoutPreferences? = null,
+    private val biaFrequencyPreferences: BiaFrequencyPreferences? = null,
+    private val nutritionPlanSchedulePreferences: NutritionPlanSchedulePreferences? = null,
+    private val aiAutomationPreferences: AiAutomationPreferences? = null,
+    private val profilePhotoStore: ProfilePhotoStore? = null,
 ) {
     private val resolver = context.applicationContext.contentResolver
 
@@ -19,10 +31,11 @@ class ProfileBackupService(
         val bytes = resolver.openInputStream(uri)?.use { it.readBytes() } ?: error("Impossibile leggere il backup")
         require(bytes.size <= MAX_BYTES) { "Backup troppo grande" }
         val root = JSONObject(bytes.toString(Charsets.UTF_8))
-        require(root.optString("schema").startsWith("myfitai_profile_export_")) { "Formato backup MyFitAI non riconosciuto" }
+        require(root.optString("schema") == "myfitai_profile_export_v2" || root.optString("schema") == "myfitai_profile_export_v1") { "Formato backup MyFitAI non riconosciuto" }
+        val currentProfileId = activeProfiles.currentIdOrNull()
+        val replace = currentProfileId != null
         val profile = root.getJSONObject("profile")
-        val now = System.currentTimeMillis()
-        val profileId = db.userProfileDao().insert(UserProfileEntity(
+        val profileId = currentProfileId ?: db.userProfileDao().insert(UserProfileEntity(
             name = profile.optString("name", "Profilo importato"),
             birthDateEpochDay = profile.longOrNull("birthDateEpochDay"),
             heightCm = profile.floatOrNull("heightCm"),
@@ -32,27 +45,94 @@ class ProfileBackupService(
             wakeTimeMinutes = profile.intOrNull("wakeTimeMinutes"),
             sleepTimeMinutes = profile.intOrNull("sleepTimeMinutes"),
             dietaryPreferencesJson = profile.stringOrNull("dietaryPreferencesJson"),
-            createdAtEpochMillis = now,
-            updatedAtEpochMillis = now,
+            createdAtEpochMillis = profile.optLong("createdAtEpochMillis", System.currentTimeMillis()),
+            updatedAtEpochMillis = profile.optLong("updatedAtEpochMillis", System.currentTimeMillis()),
             biologicalSex = profile.stringOrNull("biologicalSex"),
             initialWeightKg = profile.floatOrNull("initialWeightKg"),
         ))
-        restoreBia(root, profileId)
+        if (replace) {
+            db.biaAnalysisResultDao().deleteByProfile(profileId)
+            db.bodyExpectationGoalDao().deleteByProfile(profileId)
+            db.biaMeasurementDao().deleteByProfile(profileId)
+            db.bodyMeasurementDao().deleteByProfile(profileId)
+            db.workoutDao().deleteByProfile(profileId)
+            db.dailyActivityCheckInDao().deleteByProfile(profileId)
+            db.mealPlanDao().deleteByProfile(profileId)
+            db.cheatEntryDao().deleteByProfile(profileId)
+            db.weeklyReviewDao().deleteByProfile(profileId)
+            db.foodConsumptionDao().deleteByProfile(profileId)
+            db.userProfileDao().update(UserProfileEntity(
+                id = profileId,
+                name = profile.optString("name", "Profilo importato"),
+                birthDateEpochDay = profile.longOrNull("birthDateEpochDay"), heightCm = profile.floatOrNull("heightCm"), currentWeightKg = profile.floatOrNull("currentWeightKg"),
+                goal = profile.stringOrNull("goal"), activityLevel = profile.stringOrNull("activityLevel"), wakeTimeMinutes = profile.intOrNull("wakeTimeMinutes"), sleepTimeMinutes = profile.intOrNull("sleepTimeMinutes"),
+                dietaryPreferencesJson = profile.stringOrNull("dietaryPreferencesJson"), photoPath = null, createdAtEpochMillis = profile.optLong("createdAtEpochMillis", System.currentTimeMillis()), updatedAtEpochMillis = profile.optLong("updatedAtEpochMillis", System.currentTimeMillis()),
+                biologicalSex = profile.stringOrNull("biologicalSex"), initialWeightKg = profile.floatOrNull("initialWeightKg"),
+            ))
+        }
+        profile.stringOrNull("photoBase64")?.let { encoded -> profilePhotoStore?.importFromBase64(profileId, encoded)?.let { path ->
+            db.userProfileDao().update(db.userProfileDao().get(profileId)!!.copy(photoPath = path))
+        } }
+        val biaIds = restoreBia(root, profileId)
         restoreBody(root, profileId)
         restoreWorkouts(root, profileId)
+        restoreActivityCheckIns(root, profileId)
+        restoreBiaAnalysisResults(root, profileId, biaIds)
+        restoreExpectationGoals(root, profileId)
         val maps = restorePlans(root, profileId)
         restoreCheats(root, profileId, maps)
         restoreReviews(root, profileId)
         restoreConsumptions(root, profileId, maps)
+        restorePreferences(root, profileId)
         activeProfiles.selectProfile(profileId, makeDefault = false)
         profile.optString("name", "Profilo importato")
     }
 
-    private suspend fun restoreBia(root: JSONObject, profileId: Long) {
-        val rows = root.optJSONArray("biaMeasurements") ?: return
+    private suspend fun restoreBiaAnalysisResults(root: JSONObject, profileId: Long, biaIds: Map<Long, Long>) {
+        val rows = root.optJSONArray("biaAnalysisResults") ?: return
         for (index in 0 until rows.length()) {
             val row = rows.getJSONObject(index)
-            db.biaMeasurementDao().insert(BiaMeasurementEntity(
+            val biaMeasurementId = biaIds[row.optLong("biaMeasurementId")] ?: continue
+            db.biaAnalysisResultDao().insert(BiaAnalysisResultEntity(profileId = profileId, biaMeasurementId = biaMeasurementId, createdAtEpochMillis = row.optLong("createdAtEpochMillis"), provider = row.optString("provider"), model = row.optString("model"), payloadJson = row.optString("payloadJson")))
+        }
+    }
+
+    private suspend fun restoreExpectationGoals(root: JSONObject, profileId: Long) {
+        val rows = root.optJSONArray("bodyExpectationGoals") ?: return
+        for (index in 0 until rows.length()) {
+            val row = rows.getJSONObject(index)
+            db.bodyExpectationGoalDao().upsert(BodyExpectationGoalEntity(profileId = profileId, periodStartEpochDay = row.optLong("periodStartEpochDay"), periodEndEpochDay = row.optLong("periodEndEpochDay"), plannedDays = row.optInt("plannedDays"), theoreticalDeficitKcal = row.intOrNull("theoreticalDeficitKcal"), expectedFatLossMinKg = row.doubleOrNull("expectedFatLossMinKg"), expectedFatLossMaxKg = row.doubleOrNull("expectedFatLossMaxKg"), initialWeightKg = row.floatOrNull("initialWeightKg"), finalWeightKg = row.floatOrNull("finalWeightKg"), status = row.optString("status"), note = row.stringOrNull("note"), createdAtEpochMillis = row.optLong("createdAtEpochMillis"), updatedAtEpochMillis = row.optLong("updatedAtEpochMillis")))
+        }
+    }
+
+    private fun restorePreferences(root: JSONObject, profileId: Long) {
+        val prefs = root.optJSONObject("profilePreferences") ?: return
+        mealCountPreferences?.set(profileId, prefs.optInt("mealCount", MealCountPreferences.DEFAULT))
+        workoutPreferences?.setEnabled(profileId, prefs.optBoolean("workoutsEnabled", WorkoutPreferences.DEFAULT_ENABLED))
+        biaFrequencyPreferences?.intervalDays = prefs.optInt("biaIntervalDays", BiaFrequencyPreferences.DEFAULT_INTERVAL_DAYS)
+        prefs.optJSONObject("nutritionSchedule")?.let { schedule ->
+            nutritionPlanSchedulePreferences?.setEnabled(profileId, schedule.optBoolean("enabled"))
+            runCatching { nutritionPlanSchedulePreferences?.setFrequency(profileId, NutritionPlanSchedulePreferences.Frequency.valueOf(schedule.optString("frequency"))) }
+            runCatching { nutritionPlanSchedulePreferences?.setDayOfWeek(profileId, java.time.DayOfWeek.of(schedule.optInt("dayOfWeek"))) }
+            nutritionPlanSchedulePreferences?.setTimeMinutes(profileId, schedule.optInt("timeMinutes", NutritionPlanSchedulePreferences.DEFAULT_TIME_MINUTES))
+        }
+        prefs.optJSONObject("aiAutomation")?.let { automation ->
+            AiAutomationPreferences.Feature.entries.forEach { feature ->
+                val config = automation.optJSONObject(feature.name) ?: return@forEach
+                aiAutomationPreferences?.setEnabled(profileId, feature, config.optBoolean("enabled"))
+                runCatching { aiAutomationPreferences?.setFrequency(profileId, feature, AiAutomationPreferences.Frequency.valueOf(config.optString("frequency"))) }
+                aiAutomationPreferences?.setNotificationsEnabled(profileId, feature, config.optBoolean("notificationsEnabled", true))
+                config.longOrNull("lastRun")?.let { aiAutomationPreferences?.markRun(profileId, feature, it) }
+            }
+        }
+    }
+
+    private suspend fun restoreBia(root: JSONObject, profileId: Long): Map<Long, Long> {
+        val rows = root.optJSONArray("biaMeasurements") ?: return emptyMap()
+        val ids = mutableMapOf<Long, Long>()
+        for (index in 0 until rows.length()) {
+            val row = rows.getJSONObject(index)
+            val newId = db.biaMeasurementDao().insert(BiaMeasurementEntity(
                 profileId = profileId,
                 measuredAtEpochMillis = row.getLong("measuredAtEpochMillis"),
                 weightKg = row.floatOrNull("weightKg"), bodyFatPercent = row.floatOrNull("bodyFatPercent"),
@@ -65,7 +145,9 @@ class ProfileBackupService(
                 boneMassKg = row.floatOrNull("boneMassKg"), proteinPercent = row.floatOrNull("proteinPercent"), proteinKg = row.floatOrNull("proteinKg"),
                 bodyAgeYears = row.intOrNull("bodyAgeYears"), bmi = row.floatOrNull("bmi"),
             ))
+            row.optLong("id").takeIf { it > 0L }?.let { ids[it] = newId }
         }
+        return ids
     }
 
     private suspend fun restoreBody(root: JSONObject, profileId: Long) {
@@ -91,6 +173,23 @@ class ProfileBackupService(
                 profileId = profileId, startedAtEpochMillis = row.getLong("startedAtEpochMillis"),
                 type = row.optString("type"), title = row.optString("title"), durationMinutes = row.intOrNull("durationMinutes"),
                 isRestDay = row.optBoolean("isRestDay"), notes = row.stringOrNull("notes"),
+            ))
+        }
+    }
+
+    private suspend fun restoreActivityCheckIns(root: JSONObject, profileId: Long) {
+        val rows = root.optJSONArray("dailyActivityCheckIns") ?: return
+        for (index in 0 until rows.length()) {
+            val row = rows.getJSONObject(index)
+            db.dailyActivityCheckInDao().upsert(DailyActivityCheckInEntity(
+                profileId = profileId,
+                dateEpochDay = row.getLong("dateEpochDay"),
+                status = row.optString("status"),
+                durationMinutes = row.intOrNull("durationMinutes"),
+                intensity = row.stringOrNull("intensity"),
+                adjustmentKcal = row.optInt("adjustmentKcal", 0),
+                createdAtEpochMillis = row.optLong("createdAtEpochMillis", System.currentTimeMillis()),
+                updatedAtEpochMillis = row.optLong("updatedAtEpochMillis", System.currentTimeMillis()),
             ))
         }
     }
@@ -122,8 +221,8 @@ class ProfileBackupService(
                     val newDay = db.mealPlanDao().insertDays(listOf(MealPlanDayEntity(
                         versionId = newVersion, dateEpochDay = oldDay.getLong("dateEpochDay"), totalKcal = oldDay.intOrNull("totalKcal"),
                         proteinG = oldDay.floatOrNull("proteinG"), carbsG = oldDay.floatOrNull("carbsG"), fatG = oldDay.floatOrNull("fatG"),
-                        supplementsJson = oldDay.stringOrNull("supplementsJson"), hydrationNote = oldDay.stringOrNull("hydrationNote"),
-                        targetKcal = oldDay.intOrNull("targetKcal"), targetProteinG = oldDay.floatOrNull("targetProteinG"), targetCarbsG = oldDay.floatOrNull("targetCarbsG"), targetFatG = oldDay.floatOrNull("targetFatG"),
+                         supplementsJson = oldDay.stringOrNull("supplementsJson") ?: oldDay.optJSONArray("supplements")?.toString(), hydrationNote = oldDay.stringOrNull("hydrationNote"),
+                         targetKcal = oldDay.intOrNull("targetKcal"), targetProteinG = oldDay.floatOrNull("targetProteinG"), targetCarbsG = oldDay.floatOrNull("targetCarbsG"), targetFatG = oldDay.floatOrNull("targetFatG"), baseTargetKcal = oldDay.intOrNull("baseTargetKcal"),
                     ))).single()
                     dayIds[oldDay.optLong("id")] = newDay
                     val meals = oldDay.optJSONArray("meals") ?: continue
@@ -185,3 +284,4 @@ private fun JSONObject.stringOrNull(key: String): String? = if (!has(key) || isN
 private fun JSONObject.longOrNull(key: String): Long? = if (!has(key) || isNull(key)) null else optLong(key)
 private fun JSONObject.intOrNull(key: String): Int? = if (!has(key) || isNull(key)) null else optInt(key)
 private fun JSONObject.floatOrNull(key: String): Float? = if (!has(key) || isNull(key)) null else optDouble(key).toFloat()
+private fun JSONObject.doubleOrNull(key: String): Double? = if (!has(key) || isNull(key)) null else optDouble(key)

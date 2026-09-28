@@ -8,17 +8,19 @@ import com.myfitai.app.R
 import com.myfitai.app.ui.*
 
 object BottomNavBinder {
-    enum class Tab { HOME, FOOD, PROGRESS, MORE }
+    enum class Tab { HOME, FOOD, PROGRESS, AI, MORE }
     const val EXTRA_TAB_ROOT = "myfitai_tab_root"
     const val EXTRA_INTERNAL_NAV = "myfitai_internal_nav"
     const val EXTRA_EMBEDDED_TAB = "myfitai_embedded_tab"
     const val EXTRA_SELECTED_TAB = "myfitai_selected_tab"
+    const val EXTRA_AI_ROOT = "myfitai_ai_root"
 
     fun bind(activity: Activity, selected: Tab) {
         val mapping = listOf(
             Triple(R.id.navHome, Tab.HOME, HomeActivity::class.java),
             Triple(R.id.navFood, Tab.FOOD, FoodPlanActivity::class.java),
             Triple(R.id.navProgress, Tab.PROGRESS, PhysicalEvolutionActivity::class.java),
+            Triple(R.id.navAi, Tab.AI, SettingsActivity::class.java),
             Triple(R.id.navMore, Tab.MORE, SettingsActivity::class.java),
         )
 

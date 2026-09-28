@@ -64,6 +64,9 @@ interface BiaAnalysisResultDao {
 
     @Insert
     suspend fun insert(value: BiaAnalysisResultEntity): Long
+
+    @Query("DELETE FROM bia_analysis_results WHERE profileId = :profileId")
+    suspend fun deleteByProfile(profileId: Long)
 }
 
 @Dao
@@ -100,6 +103,23 @@ interface WorkoutDao {
 }
 
 @Dao
+interface DailyActivityCheckInDao {
+    @Query("SELECT * FROM daily_activity_checkins WHERE profileId = :profileId ORDER BY dateEpochDay ASC")
+    suspend fun observeAll(profileId: Long): List<DailyActivityCheckInEntity>
+    @Query("SELECT * FROM daily_activity_checkins WHERE profileId = :profileId AND dateEpochDay = :dateEpochDay LIMIT 1")
+    fun observeForDay(profileId: Long, dateEpochDay: Long): Flow<DailyActivityCheckInEntity?>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(value: DailyActivityCheckInEntity): Long
+
+    @Query("DELETE FROM daily_activity_checkins WHERE profileId = :profileId AND dateEpochDay = :dateEpochDay")
+    suspend fun deleteForDay(profileId: Long, dateEpochDay: Long)
+
+    @Query("DELETE FROM daily_activity_checkins WHERE profileId = :profileId")
+    suspend fun deleteByProfile(profileId: Long)
+}
+
+@Dao
 interface BodyExpectationGoalDao {
     @Query("SELECT * FROM body_expectation_goals WHERE profileId = :profileId ORDER BY periodStartEpochDay DESC")
     fun observeAll(profileId: Long): Flow<List<BodyExpectationGoalEntity>>
@@ -112,6 +132,7 @@ interface BodyExpectationGoalDao {
 
     @Query("DELETE FROM body_expectation_goals WHERE profileId = :profileId")
     suspend fun deleteByProfile(profileId: Long)
+
 }
 
 @Dao

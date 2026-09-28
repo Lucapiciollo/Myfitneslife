@@ -117,6 +117,25 @@ data class WorkoutEntity(
 )
 
 @Entity(
+    tableName = "daily_activity_checkins",
+    indices = [
+        Index("profileId"),
+        Index(value = ["profileId", "dateEpochDay"], unique = true),
+    ],
+)
+data class DailyActivityCheckInEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @ColumnInfo(defaultValue = "1") val profileId: Long,
+    val dateEpochDay: Long,
+    val status: String,
+    val durationMinutes: Int?,
+    val intensity: String?,
+    val adjustmentKcal: Int,
+    val createdAtEpochMillis: Long,
+    val updatedAtEpochMillis: Long,
+)
+
+@Entity(
     tableName = "meal_plans",
     indices = [Index("profileId"), Index("createdAtEpochMillis"), Index(value = ["profileId", "weekStartEpochDay"], unique = true)],
 )

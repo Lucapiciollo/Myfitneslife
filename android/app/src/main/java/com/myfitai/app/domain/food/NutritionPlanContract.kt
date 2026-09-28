@@ -187,9 +187,15 @@ object NutritionPlanContract {
             day.meals.forEach { meal ->
                 require(meal.type.isNotBlank() && meal.title.isNotBlank() && meal.timeMinutes in 0..1439) { "MEAL_INVALID" }
                 require(meal.kcal >= 0 && meal.proteinG >= 0f && meal.carbsG >= 0f && meal.fatG >= 0f) { "MEAL_MACROS_INVALID" }
+                require(meal.preparation.isNotBlank() && meal.preparation.length <= 1200) { "MEAL_PREPARATION_INVALID" }
                 meal.ingredients.forEach { ingredient ->
                     require(ingredient.name.isNotBlank() && ingredient.quantity > 0f && ingredient.quantity.isFinite()) { "INGREDIENT_INVALID" }
                     require(ingredient.unit.isNotBlank() && ingredient.displayDose.isNotBlank()) { "INGREDIENT_DOSE_MISSING" }
+                }
+                NutritionPreparationValidator.validate(meal).takeIf { it.isNotEmpty() }?.let { violations ->
+                    require(false) {
+                        "PREPARATION_INGREDIENT_OMITTED:${violations.joinToString(",") { it.mentionedIngredient }}"
+                    }
                 }
             }
         }

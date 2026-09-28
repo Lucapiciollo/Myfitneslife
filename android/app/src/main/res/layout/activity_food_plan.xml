@@ -89,27 +89,91 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="@dimen/settings_section_header_height"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-                        <com.myfitai.app.ui.widgets.SectionHeaderView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Pasti del giorno" />
-                        <ImageButton
-                            android:id="@+id/dayMealsHelpButton"
-                            android:layout_width="@dimen/screen_header_icon_size"
-                            android:layout_height="@dimen/screen_header_icon_size"
-                            android:layout_marginEnd="@dimen/space_4"
-                            android:background="@android:color/transparent"
-                            android:contentDescription="Spiega pasti del giorno"
-                            android:padding="@dimen/space_8"
-                            android:src="@drawable/ic_help_outline"
-                            app:tint="@color/text_secondary" />
-                    </LinearLayout>
+                     <LinearLayout
+                         android:layout_width="match_parent"
+                         android:layout_height="@dimen/settings_section_header_height"
+                         android:gravity="center_vertical"
+                         android:orientation="horizontal">
+                         <com.myfitai.app.ui.widgets.SectionHeaderView
+                             android:layout_width="0dp"
+                             android:layout_height="wrap_content"
+                             android:layout_weight="1"
+                             android:text="Piano alimentare" />
+                         <ImageButton
+                             android:id="@+id/foodPlanHelpButton"
+                             android:layout_width="@dimen/screen_header_icon_size"
+                             android:layout_height="@dimen/screen_header_icon_size"
+                             android:layout_marginEnd="@dimen/space_4"
+                             android:background="@android:color/transparent"
+                             android:contentDescription="Spiega piano alimentare"
+                             android:padding="@dimen/space_8"
+                             android:src="@drawable/ic_help_outline"
+                             app:tint="@color/text_secondary" />
+                     </LinearLayout>
+                     <TextView
+                         android:id="@+id/goalChangedNotice"
+                         style="@style/Text.MyFitAI.BodyCompact"
+                         android:layout_width="match_parent"
+                         android:layout_height="wrap_content"
+                         android:layout_marginTop="@dimen/space_12"
+                         android:background="@color/surface_primary"
+                         android:padding="@dimen/space_12"
+                         android:text="I dati del profilo o le misure sono cambiati dopo la generazione. Usa il pulsante unico qui sotto per rigenerare il piano aggiornato."
+                         android:textColor="@color/text_primary"
+                         android:visibility="gone" />
+                     <LinearLayout
+                         android:id="@+id/generationStatusContainer"
+                         android:layout_width="match_parent"
+                         android:layout_height="wrap_content"
+                         android:layout_marginTop="@dimen/space_8"
+                         android:gravity="center_vertical"
+                         android:orientation="horizontal"
+                         android:visibility="gone">
+                         <View
+                             android:id="@+id/planStateDot"
+                             android:layout_width="@dimen/food_plan_status_dot_size"
+                             android:layout_height="@dimen/food_plan_status_dot_size"
+                             android:background="@drawable/bg_status_dot_neutral" />
+                         <ProgressBar
+                             android:id="@+id/generationProgress"
+                             android:layout_width="@dimen/compact_progress_indicator_size"
+                             android:layout_height="@dimen/compact_progress_indicator_size"
+                             android:indeterminate="true"
+                             android:visibility="gone" />
+                         <TextView
+                             android:id="@+id/generationStatusText"
+                             style="@style/Text.MyFitAI.SettingsDescription"
+                             android:layout_width="0dp"
+                             android:layout_height="wrap_content"
+                             android:layout_weight="1"
+                             android:layout_marginStart="@dimen/space_8" />
+                     </LinearLayout>
+                     <View
+                         android:layout_width="match_parent"
+                         android:layout_height="@dimen/space_1"
+                         android:layout_marginTop="@dimen/space_12"
+                         android:background="@color/divider" />
+                     <LinearLayout
+                         android:layout_width="match_parent"
+                         android:layout_height="@dimen/settings_section_header_height"
+                         android:gravity="center_vertical"
+                         android:orientation="horizontal">
+                         <com.myfitai.app.ui.widgets.SectionHeaderView
+                             android:layout_width="0dp"
+                             android:layout_height="wrap_content"
+                             android:layout_weight="1"
+                             android:text="Pasti del giorno" />
+                         <ImageButton
+                             android:id="@+id/dayMealsHelpButton"
+                             android:layout_width="@dimen/screen_header_icon_size"
+                             android:layout_height="@dimen/screen_header_icon_size"
+                             android:layout_marginEnd="@dimen/space_4"
+                             android:background="@android:color/transparent"
+                             android:contentDescription="Spiega pasti del giorno"
+                             android:padding="@dimen/space_8"
+                             android:src="@drawable/ic_help_outline"
+                             app:tint="@color/text_secondary" />
+                     </LinearLayout>
                     <LinearLayout
                         android:id="@+id/mealsContainer"
                         android:layout_width="match_parent"
@@ -118,81 +182,6 @@
                         android:orientation="vertical" />
                  </LinearLayout>
              </com.google.android.material.card.MaterialCardView>
-
-             <com.google.android.material.card.MaterialCardView
-                 android:id="@+id/planStateCard"
-                 android:layout_width="match_parent"
-                 android:layout_height="wrap_content"
-                 android:layout_marginTop="@dimen/space_12"
-                 android:visibility="gone"
-                 style="@style/Widget.MyFitAI.Card">
-                <LinearLayout
-                    style="@style/Widget.MyFitAI.WhiteCardContent"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical">
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="@dimen/settings_section_header_height"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-                        <com.myfitai.app.ui.widgets.SectionHeaderView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Piano alimentare" />
-                        <ImageButton
-                            android:id="@+id/foodPlanHelpButton"
-                            android:layout_width="@dimen/screen_header_icon_size"
-                            android:layout_height="@dimen/screen_header_icon_size"
-                            android:layout_marginEnd="@dimen/space_4"
-                            android:background="@android:color/transparent"
-                            android:contentDescription="Spiega piano alimentare"
-                            android:padding="@dimen/space_8"
-                            android:src="@drawable/ic_help_outline"
-                            app:tint="@color/text_secondary" />
-                    </LinearLayout>
-                     <TextView
-                         android:id="@+id/goalChangedNotice"
-                         style="@style/Text.MyFitAI.BodyCompact"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/space_12"
-                        android:background="@color/surface_primary"
-                        android:padding="@dimen/space_12"
-                         android:text="I dati del profilo o le misure sono cambiati dopo la generazione. Usa il pulsante unico qui sotto per rigenerare il piano aggiornato."
-                        android:textColor="@color/text_primary"
-                        android:visibility="gone" />
-                     <LinearLayout
-                        android:id="@+id/generationStatusContainer"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/space_8"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:visibility="gone">
-                        <View
-                            android:id="@+id/planStateDot"
-                            android:layout_width="@dimen/food_plan_status_dot_size"
-                            android:layout_height="@dimen/food_plan_status_dot_size"
-                            android:background="@drawable/bg_status_dot_neutral" />
-                        <ProgressBar
-                            android:id="@+id/generationProgress"
-                            android:layout_width="@dimen/compact_progress_indicator_size"
-                            android:layout_height="@dimen/compact_progress_indicator_size"
-                            android:indeterminate="true"
-                            android:visibility="gone" />
-                        <TextView
-                            android:id="@+id/generationStatusText"
-                            style="@style/Text.MyFitAI.SettingsDescription"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:layout_marginStart="@dimen/space_8"
-                            />
-                    </LinearLayout>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
 
              <com.google.android.material.button.MaterialButton
                  android:id="@+id/generatePlanButton"

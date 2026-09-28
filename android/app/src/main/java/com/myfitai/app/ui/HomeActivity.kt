@@ -19,6 +19,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.domain.calculation.LocalCalculationEngine
+import com.myfitai.app.domain.calculation.DailyActivityCheckInEngine
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.notifications.NotificationPreferences
 import com.myfitai.app.data.profile.BiaFrequencyPreferences
@@ -60,11 +61,17 @@ class HomeActivity : BaseShellActivity() {
             bodyExpectationGoalRepository = data.bodyExpectationGoalRepository,
             nutritionPlanSchedulePreferences = data.nutritionPlanSchedulePreferences,
             activeProfileStore = data.activeProfileStore,
+            dailyActivityCheckIns = data.dailyActivityCheckInRepository,
+            profileCalculationService = data.profileCalculationService,
         )
     }
 
     private val notificationPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) lifecycleScope.launch { runCatching { data.notificationScheduler.refresh() } }
+        val prefs = NotificationPreferences(this)
+        prefs.permissionPrompted = true
+        if (granted) {
+            lifecycleScope.launch { runCatching { data.notificationScheduler.refresh() } }
+        }
     }
 
     private var currentNextMealId: Long? = null
@@ -120,6 +127,10 @@ class HomeActivity : BaseShellActivity() {
         findViewById<android.view.View>(R.id.nextWorkoutCard).setOnClickListener { go(WorkoutsActivity::class.java) }
         findViewById<android.view.View>(R.id.caloriesCard).setOnClickListener { showTdeeExplanation() }
         findViewById<android.view.View>(R.id.caloriesHelpButton).setOnClickListener { showTdeeExplanation() }
+        findViewById<android.view.View>(R.id.activityCheckInRestButton).setOnClickListener { viewModel.setRestDay() }
+        findViewById<android.view.View>(R.id.activityCheckInWorkoutButton).setOnClickListener { showActivityCheckInDialog() }
+        findViewById<android.view.View>(R.id.activityCheckInEditButton).setOnClickListener { showActivityCheckInDialog() }
+        findViewById<android.view.View>(R.id.activityCheckInClearButton).setOnClickListener { viewModel.clearActivityCheckIn() }
         findViewById<android.view.View>(R.id.bodyOverviewHelpButton).setOnClickListener {
             showHomeHelp("Panoramica del corpo", "Le tre card mostrano l'ultima rilevazione disponibile di peso, percentuale di grasso e massa muscolare. Il grafico mostra l'andamento del peso nel periodo selezionato.")
         }
@@ -185,6 +196,7 @@ class HomeActivity : BaseShellActivity() {
                 child.id == R.id.analysisHubCard ||
                 child.id == R.id.quickMeasurementsCard ||
                 child.id == R.id.quickActionsCard ||
+                child.id == R.id.activityCheckInCard ||
                 child.id == R.id.dashboardMetricsPanel ||
                 child.findViewById<View>(R.id.bodyOverviewHelpButton) != null
             val params = GridLayout.LayoutParams().apply {
@@ -282,7 +294,6 @@ class HomeActivity : BaseShellActivity() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) return
         val prefs = NotificationPreferences(this)
         if (prefs.permissionPrompted) return
-        prefs.permissionPrompted = true
         notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 
@@ -311,6 +322,7 @@ class HomeActivity : BaseShellActivity() {
         renderBodyTrend(state.bodyMeasurementTrendSeries)
         findViewById<TextView>(R.id.recompositionStateText).text = recompositionText(state.recompositionState)
         renderCalories(state.calories)
+        renderActivityCheckIn(state.activityCheckIn, state.calories)
         renderWeeklyExpectation(state.weeklyExpectation)
         renderRecovery(state.recovery)
         renderUpcomingMeals(state.upcomingMeals)
@@ -526,6 +538,8 @@ class HomeActivity : BaseShellActivity() {
         }
         val targetDifference = if (calories.targetBeforeAdaptation != null && calories.target != null) calories.targetBeforeAdaptation - calories.target else null
         findViewById<TextView>(R.id.caloriesTargetSourceText).text = when {
+            calories.activityAdjustmentKcal > 0 -> "TDEE abituale ${kcal(calories.habitualTdee)} · TDEE operativo ${kcal(calories.tdee)} · attività +${calories.activityAdjustmentKcal} kcal"
+            currentCalories?.activityAdjustmentKcal == 0 && viewModel.state.value.activityCheckIn.status != "PLANNED_WORKOUT" -> "TDEE abituale ${kcal(calories.habitualTdee)} · TDEE operativo da riposo ${kcal(calories.tdee)}"
             targetDifference != null && targetDifference != 0 -> "Profilo ${kcal(calories.targetBeforeAdaptation)} · target attuale ${kcal(calories.target)}"
             calories.targetFromCurrentPlan -> "Target del giorno selezionato nel piano alimentare"
             calories.targetFromWeeklyPlan -> "Target settimanale del piano · target specifico del giorno non disponibile"
@@ -535,7 +549,7 @@ class HomeActivity : BaseShellActivity() {
         findViewById<android.view.View>(R.id.caloriesSummaryBody).contentDescription = buildString {
             append("BMR locale: ${kcal(calories.bmr)}. ")
             append("BMR riportato dalla BIA: ${kcal(calories.biaBmr)}. ")
-            append("Consumo con attività abituale ${kcal(calories.tdee)}. ")
+            append("TDEE operativo ${kcal(calories.tdee)}. TDEE abituale ${kcal(calories.habitualTdee)}. ")
             append("Target ${kcal(calories.target)}. ")
             append("Consumate ${calories.consumedKcal?.let { kcal(it) } ?: "nessuna registrazione"}. ")
             append("Proteine consumate ${calories.consumedProteinG?.let { NutritionEstimateFormatter.formatEstimatedMacro(it, "g") } ?: "non disponibili"}.")
@@ -680,6 +694,61 @@ class HomeActivity : BaseShellActivity() {
 
     private companion object {
         const val LANDSCAPE_GRID_TAG = "home_landscape_grid"
+    }
+
+    private fun renderActivityCheckIn(
+        checkIn: HomeViewModel.ActivityCheckInState,
+        calories: HomeViewModel.CalorieState,
+    ) {
+        val summary = findViewById<TextView>(R.id.activityCheckInSummary)
+        val status = checkIn.status
+        when (status) {
+            "REST" -> {
+                summary.text = "Riposo registrato per oggi. TDEE e target operativo sono ricalcolati sul livello sedentario di base."
+                findViewById<View>(R.id.activityCheckInRestButton).visibility = View.GONE
+                findViewById<View>(R.id.activityCheckInWorkoutButton).visibility = View.VISIBLE
+                findViewById<View>(R.id.activityCheckInEditButton).visibility = View.GONE
+                findViewById<View>(R.id.activityCheckInClearButton).visibility = View.VISIBLE
+            }
+            "PLANNED_WORKOUT" -> {
+                val intensity = when (checkIn.intensity) {
+                    "LIGHT" -> "leggera"
+                    "HARD" -> "intensa"
+                    else -> "media"
+                }
+                summary.text = "Allenamento previsto: ${checkIn.durationMinutes} min · intensità $intensity. " +
+                    "Target operativo ${calories.target?.let { "$it kcal" } ?: "non disponibile"} (+${checkIn.adjustmentKcal} kcal)."
+                findViewById<View>(R.id.activityCheckInRestButton).visibility = View.GONE
+                findViewById<View>(R.id.activityCheckInWorkoutButton).visibility = View.GONE
+                findViewById<View>(R.id.activityCheckInEditButton).visibility = View.VISIBLE
+                findViewById<View>(R.id.activityCheckInClearButton).visibility = View.VISIBLE
+            }
+            else -> {
+                summary.text = "Nessun allenamento registrato oggi. Il TDEE operativo usa il livello di riposo."
+                findViewById<View>(R.id.activityCheckInRestButton).visibility = View.VISIBLE
+                findViewById<View>(R.id.activityCheckInWorkoutButton).visibility = View.VISIBLE
+                findViewById<View>(R.id.activityCheckInEditButton).visibility = View.GONE
+                findViewById<View>(R.id.activityCheckInClearButton).visibility = View.GONE
+            }
+        }
+    }
+
+    private fun showActivityCheckInDialog() {
+        val options = arrayOf("30 minuti · leggera", "45 minuti · media", "60 minuti · media", "60 minuti · intensa", "75+ minuti · intensa")
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Allenamento previsto oggi")
+            .setItems(options) { _, which ->
+                val values = when (which) {
+                    0 -> 30 to DailyActivityCheckInEngine.Intensity.LIGHT
+                    1 -> 45 to DailyActivityCheckInEngine.Intensity.MODERATE
+                    2 -> 60 to DailyActivityCheckInEngine.Intensity.MODERATE
+                    3 -> 60 to DailyActivityCheckInEngine.Intensity.HARD
+                    else -> 75 to DailyActivityCheckInEngine.Intensity.HARD
+                }
+                viewModel.setPlannedWorkout(values.first, values.second)
+            }
+            .setNegativeButton("Annulla", null)
+            .show()
     }
 
     private fun renderBiaDueNotice(state: HomeViewModel.DashboardState) {

@@ -9,6 +9,15 @@ import org.junit.Test
 class LocalCalculationEngineTest {
 
     @Test
+    fun dailyActivityCheckIn_isConservativeAndCapped() {
+        assertEquals(50, DailyActivityCheckInEngine.adjustmentKcal(30, DailyActivityCheckInEngine.Intensity.LIGHT))
+        assertEquals(140, DailyActivityCheckInEngine.adjustmentKcal(60, DailyActivityCheckInEngine.Intensity.MODERATE))
+        assertEquals(225, DailyActivityCheckInEngine.adjustmentKcal(120, DailyActivityCheckInEngine.Intensity.HARD))
+        assertEquals(2100.0, DailyActivityCheckInEngine.effectiveTdeeKcal(1750.0, 2712.5, "REST", 0)!!, 0.01)
+        assertEquals(2852.5, DailyActivityCheckInEngine.effectiveTdeeKcal(1750.0, 2712.5, "PLANNED_WORKOUT", 140)!!, 0.01)
+    }
+
+    @Test
     fun calculate_usesKatchMcArdleWhenBodyFatIsAvailable() {
         val result = LocalCalculationEngine.calculate(
             LocalCalculationEngine.Input(

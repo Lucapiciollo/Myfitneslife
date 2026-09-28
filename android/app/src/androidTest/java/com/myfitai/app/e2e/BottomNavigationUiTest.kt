@@ -70,6 +70,7 @@ class BottomNavigationUiTest {
         assertViewEventually(com.myfitai.app.R.id.navHome)
         assertViewEventually(com.myfitai.app.R.id.navFood)
         assertViewEventually(com.myfitai.app.R.id.navProgress)
+        assertViewEventually(com.myfitai.app.R.id.navAi)
         assertViewEventually(com.myfitai.app.R.id.navMore)
     }
 
@@ -79,11 +80,19 @@ class BottomNavigationUiTest {
         clickTab(com.myfitai.app.R.id.navFood)
         dismissFoodGateOrVerifyFoodRoot()
         clickAndWait("navProgress", "evolutionChart")
+        clickAndWait("navAi", "settingsContent")
+        assertCurrentTabViewEventually(com.myfitai.app.R.id.aiSectionCard)
+        scenario.onActivity { activity ->
+            assertTrue(activity.currentTabActivity()?.findViewById<View>(com.myfitai.app.R.id.aiSectionCard)?.visibility == View.VISIBLE)
+        }
         clickAndWait("navMore", "settingsContent")
         // Tapping the already-active tab must be a no-op: the Settings root stays on screen.
         clickTab(com.myfitai.app.R.id.navMore)
         assertCurrentTabViewEventually(com.myfitai.app.R.id.settingsContent)
         assertCurrentTabViewEventually(com.myfitai.app.R.id.rowMeasurements)
+        scenario.onActivity { activity ->
+            assertTrue(activity.currentTabActivity()?.findViewById<View>(com.myfitai.app.R.id.aiSectionCard)?.visibility != View.VISIBLE)
+        }
     }
 
     @Test

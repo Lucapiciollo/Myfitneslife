@@ -47,6 +47,29 @@ class NutritionPlanContractTest {
     }
 
     @Test
+    fun preparationMentioningGruyereWithoutIngredient_isRejected() {
+        val invalid = response().copy(days = response().days.mapIndexed { index, day ->
+            if (index != 0) day else day.copy(meals = day.meals.mapIndexed { mealIndex, meal ->
+                if (mealIndex != 0) meal else meal.copy(preparation = "Sciogli la gruviera e servi.")
+            })
+        })
+        assertFalse(NutritionPlanContract.validateBusiness(invalid, week, targets).isSuccess)
+    }
+
+    @Test
+    fun preparationWithGruyereIngredient_isAccepted() {
+        val valid = response().copy(days = response().days.mapIndexed { index, day ->
+            if (index != 0) day else day.copy(meals = day.meals.mapIndexed { mealIndex, meal ->
+                if (mealIndex != 0) meal.copy(
+                    preparation = "Sciogli la gruviera e servi.",
+                    ingredients = meal.ingredients + meal.ingredients.first().copy(name = "Gruviera", quantity = 20f, displayDose = "20 g"),
+                ) else meal
+            })
+        })
+        assertTrue(NutritionPlanContract.validateBusiness(valid, week, targets).isSuccess)
+    }
+
+    @Test
     fun fourWeekPeriod_requiresAllRemainingDates() {
         val dates = NutritionPlanPeriod.dates(week, 4)
         val response = response().copy(days = dates.map { date ->
@@ -174,6 +197,16 @@ class NutritionPlanContractTest {
             })
         })
         assertFalse(NutritionPlanContract.validateBusiness(duplicate, week, targets, enforceWeeklyVariety = true).isSuccess)
+    }
+
+    @Test
+    fun identicalRecipe_canPassWhenVarietyIsNotEnforced() {
+        val duplicate = response().copy(days = response().days.map { day ->
+            day.copy(meals = day.meals.map { meal ->
+                meal.copy(title = "Same recipe", ingredients = listOf(meal.ingredients.first().copy(name = "Same ingredient")))
+            })
+        })
+        assertTrue(NutritionPlanContract.validateBusiness(duplicate, week, targets, enforceWeeklyVariety = false).isSuccess)
     }
 
     @Test

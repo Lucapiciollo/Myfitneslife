@@ -16,6 +16,7 @@ import com.myfitai.app.data.local.entity.*
         BiaAnalysisResultEntity::class,
         BodyMeasurementEntity::class,
         WorkoutEntity::class,
+        DailyActivityCheckInEntity::class,
         MealPlanEntity::class,
         MealPlanVersionEntity::class,
         MealPlanDayEntity::class,
@@ -27,7 +28,7 @@ import com.myfitai.app.data.local.entity.*
         BodyExpectationGoalEntity::class,
         AiUsageRecordEntity::class,
     ],
-    version = 18,
+    version = 19,
     exportSchema = true,
 )
 abstract class MyFitAiDatabase : RoomDatabase() {
@@ -36,6 +37,7 @@ abstract class MyFitAiDatabase : RoomDatabase() {
     abstract fun biaAnalysisResultDao(): BiaAnalysisResultDao
     abstract fun bodyMeasurementDao(): BodyMeasurementDao
     abstract fun workoutDao(): WorkoutDao
+    abstract fun dailyActivityCheckInDao(): DailyActivityCheckInDao
     abstract fun mealPlanDao(): MealPlanDao
     abstract fun cheatEntryDao(): CheatEntryDao
     abstract fun foodConsumptionDao(): FoodConsumptionDao
@@ -361,6 +363,24 @@ object DatabaseMigrations {
         }
     }
 
+    val MIGRATION_18_19 = object : Migration(18, 19) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("""CREATE TABLE IF NOT EXISTS daily_activity_checkins (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                profileId INTEGER NOT NULL DEFAULT 1,
+                dateEpochDay INTEGER NOT NULL,
+                status TEXT NOT NULL,
+                durationMinutes INTEGER,
+                intensity TEXT,
+                adjustmentKcal INTEGER NOT NULL,
+                createdAtEpochMillis INTEGER NOT NULL,
+                updatedAtEpochMillis INTEGER NOT NULL
+            )""".trimIndent())
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_daily_activity_checkins_profileId ON daily_activity_checkins(profileId)")
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_daily_activity_checkins_profileId_dateEpochDay ON daily_activity_checkins(profileId, dateEpochDay)")
+        }
+    }
+
     private fun addMissingColumns(db: SupportSQLiteDatabase, table: String, definitions: List<String>) {
         val existing = mutableSetOf<String>()
         db.query("PRAGMA table_info($table)").use { cursor ->
@@ -391,5 +411,6 @@ object DatabaseMigrations {
         MIGRATION_15_16,
         MIGRATION_16_17,
         MIGRATION_17_18,
+        MIGRATION_18_19,
     )
 }

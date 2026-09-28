@@ -1,6 +1,7 @@
 package com.myfitai.app.ui
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.text.method.PasswordTransformationMethod
 import android.view.View
@@ -11,10 +12,12 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.materialswitch.MaterialSwitch
 import com.google.android.material.progressindicator.LinearProgressIndicator
@@ -77,6 +80,9 @@ class OnboardingWizardActivity : AppCompatActivity() {
     private var planDay = NutritionPlanSchedulePreferences.DEFAULT_DAY
     private var planTimeMinutes = NutritionPlanSchedulePreferences.DEFAULT_TIME_MINUTES
     private var selectedProvider = AiCredentialProvider.GEMINI
+    private val backupOpenLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) confirmBackupImport(uri)
+    }
 
     private var nameInput: TextInputEditText? = null
     private var birthDateInput: TextInputEditText? = null
@@ -114,6 +120,10 @@ class OnboardingWizardActivity : AppCompatActivity() {
         selectedProvider = if (aiSettings.useGemini) AiCredentialProvider.GEMINI else AiCredentialProvider.OPENAI
         bindShell()
         bindNavigation()
+        findViewById<View>(R.id.importProfileBackupButton).apply {
+            visibility = if (isBootstrap) View.VISIBLE else View.GONE
+            setOnClickListener { backupOpenLauncher.launch(arrayOf("application/json", "text/json", "text/plain")) }
+        }
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 if (step > 0) {
@@ -224,6 +234,36 @@ class OnboardingWizardActivity : AppCompatActivity() {
         goalInput?.setText(profile?.goal.orEmpty(), false)
         renderFoodPreferences()
         stepContent.addView(card)
+    }
+
+    private fun confirmBackupImport(uri: Uri) {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Ripristina profilo dal backup?")
+            .setMessage("Il profilo attivo e tutti i dati eventualmente presenti verranno sostituiti con il backup: BIA, misure, alimentazione, storico, allenamenti, consumi e versioni dei piani. Le chiavi IA non sono incluse.")
+            .setNegativeButton("Annulla", null)
+            .setPositiveButton("Importa e riavvia") { _, _ ->
+                lifecycleScope.launch {
+                    nextButton.isEnabled = false
+                    runCatching { data.profileBackupService.restore(uri) }
+                        .onSuccess { restartAfterRestore() }
+                        .onFailure {
+                            nextButton.isEnabled = true
+                            MaterialAlertDialogBuilder(this@OnboardingWizardActivity)
+                                .setTitle("Importazione non riuscita")
+                                .setMessage(it.message ?: "Controlla il file JSON e riprova.")
+                                .setPositiveButton("Chiudi", null)
+                                .show()
+                        }
+                }
+            }
+            .show()
+    }
+
+    private fun restartAfterRestore() {
+        startActivity(Intent(this, SplashActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        })
+        finish()
     }
 
     private fun renderFoodPreferences() {

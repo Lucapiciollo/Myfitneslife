@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.core.content.FileProvider
 import java.io.File
 import java.io.FileOutputStream
+import android.util.Base64
 
 /**
  * Gestisce le foto profilo nello storage privato dell'app.
@@ -36,6 +37,14 @@ class ProfilePhotoStore(private val context: Context) {
             FileOutputStream(target, false).use { output -> input.copyTo(output) }
         }
         source.delete()
+        return target.absolutePath
+    }
+
+    fun importFromBase64(profileId: Long, value: String): String {
+        val target = targetFile(profileId)
+        FileOutputStream(target, false).use { output ->
+            output.write(Base64.decode(value, Base64.DEFAULT))
+        }
         return target.absolutePath
     }
 

@@ -94,6 +94,9 @@ class ProfileActivity : BaseShellActivity() {
         openAndroidSettings.setOnClickListener {
             startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName))
         }
+        if (Build.VERSION.SDK_INT >= 33 && !permissionGranted) {
+            openAndroidSettings.visibility = android.view.View.VISIBLE
+        }
 
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.notifications_dialog_title)

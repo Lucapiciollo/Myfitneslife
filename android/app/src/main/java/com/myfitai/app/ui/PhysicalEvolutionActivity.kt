@@ -46,12 +46,10 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
     private var metricIndex = 0
     private var rangeIndex = 1
     private var latestState = PhysicalEvolutionState()
-    private var analysisDetailsExpanded = false
     private lateinit var analysisLastText: TextView
     private lateinit var analysisNextText: TextView
     private lateinit var analysisJobMessageText: TextView
     private lateinit var analysisResultText: TextView
-    private lateinit var analysisDetailsButton: MaterialButton
     private lateinit var analysisDetailsContainer: LinearLayout
     private lateinit var analysisProgress: ProgressBar
     private lateinit var analysisButton: MaterialButton
@@ -173,15 +171,6 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
             setTextColor(getColor(R.color.text_secondary))
         }
         analysisResultText = bodyText().apply { visibility = View.GONE }
-        analysisDetailsButton = MaterialButton(this).apply {
-            text = "Mostra dettagli analisi"
-            isAllCaps = false
-            visibility = View.GONE
-            setOnClickListener {
-                analysisDetailsExpanded = !analysisDetailsExpanded
-                renderDetailsVisibility()
-            }
-        }
         analysisDetailsContainer = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             visibility = View.GONE
@@ -202,7 +191,6 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         cardContent.addView(analysisNextText, marginTopParams(R.dimen.space_4))
         cardContent.addView(analysisJobMessageText, marginTopParams(R.dimen.space_8))
         cardContent.addView(analysisResultText, marginTopParams(R.dimen.space_10))
-        cardContent.addView(analysisDetailsButton, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dimen(R.dimen.control_compact_min_height)).apply { topMargin = dimen(R.dimen.space_8) })
         cardContent.addView(analysisDetailsContainer, marginTopParams(R.dimen.space_6))
         cardContent.addView(analysisProgress, LinearLayout.LayoutParams(dimen(R.dimen.progress_indicator_size), dimen(R.dimen.progress_indicator_size)).apply { topMargin = dimen(R.dimen.space_10) })
         cardContent.addView(analysisButton, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dimen(R.dimen.button_primary_min_height)).apply { topMargin = dimen(R.dimen.space_12) })
@@ -308,9 +296,7 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         analysisButton.text = "Analisi in corso…"
         analysisProgress.visibility = View.VISIBLE
         showAnalysisJobMessage("Analisi dei trend corporei e dello storico registrato…")
-        analysisDetailsButton.visibility = View.GONE
         analysisDetailsContainer.visibility = View.GONE
-        analysisDetailsExpanded = false
         val jobKey = "manual-${System.currentTimeMillis()}"
         val enqueueError = runCatching {
             data.aiJobScheduler.enqueue(AiJobType.PROGRESS_ANALYSIS, profileId, jobKey)
@@ -330,7 +316,6 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
             androidx.work.WorkInfo.State.RUNNING -> {
                 analysisProgress.visibility = View.VISIBLE
                 showAnalysisJobMessage("Analisi dei trend corporei e dello storico registrato…")
-                analysisDetailsButton.visibility = View.GONE
                 analysisDetailsContainer.visibility = View.GONE
                 setAiActionEnabled(analysisButton, false)
                 analysisButton.text = "Analisi in corso…"
@@ -403,7 +388,6 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
             analysisProgress.visibility = View.GONE
             hideAnalysisJobMessage()
             setAiActionEnabled(analysisButton, false)
-            analysisDetailsButton.visibility = View.GONE
             analysisDetailsContainer.visibility = View.GONE
             return
         }
@@ -449,7 +433,6 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
                 analysisResultText.visibility = View.VISIBLE
                 analysisResultText.setTextColor(getColor(R.color.text_secondary))
                 analysisResultText.text = "Nessuna analisi IA disponibile. Tocca 'Esegui analisi ora' per ricevere una sintesi dei tuoi progressi."
-                analysisDetailsButton.visibility = View.GONE
                 analysisDetailsContainer.visibility = View.GONE
             }
         }
@@ -481,11 +464,9 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
     private fun renderAnalysisDetails(patterns: List<ProgressAnalysisCompactContract.Pattern>) {
         analysisDetailsContainer.removeAllViews()
         if (patterns.isEmpty()) {
-            analysisDetailsButton.visibility = View.GONE
             analysisDetailsContainer.visibility = View.GONE
             return
         }
-        analysisDetailsButton.visibility = View.VISIBLE
         patterns.forEach { pattern ->
             val item = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
@@ -523,12 +504,7 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
             item.contentDescription = "${directionLabel(pattern.direction)}: ${patternLabel(pattern.code)}, confidenza ${confidenceLabel(pattern.confidence)}"
             analysisDetailsContainer.addView(item)
         }
-        renderDetailsVisibility()
-    }
-
-    private fun renderDetailsVisibility() {
-        analysisDetailsContainer.visibility = if (analysisDetailsExpanded && analysisDetailsContainer.childCount > 0) View.VISIBLE else View.GONE
-        analysisDetailsButton.text = if (analysisDetailsExpanded) "Nascondi dettagli analisi" else "Mostra dettagli analisi"
+        analysisDetailsContainer.visibility = View.VISIBLE
     }
 
     private fun patternLabel(code: ProgressAnalysisCompactContract.PatternCode): String = when (code) {

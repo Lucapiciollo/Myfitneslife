@@ -6,10 +6,11 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /** Direct Gemini Developer API transport. Firebase AI Logic is intentionally not involved. */
-class GeminiByokProvider(
+class GeminiByokProvider internal constructor(
     private val credentialStore: SecureAiCredentialStore,
     private val primaryModel: String = AiModelConfig.GEMINI_PRIMARY,
     private val fallbackModel: String = AiModelConfig.GEMINI_FALLBACK,
+    private val interactionsTransport: GeminiInteractionsTransport = GeminiInteractionsTransport(),
 ) : AiProvider {
     override val type: AiProviderType = AiProviderType.GEMINI
 
@@ -40,7 +41,9 @@ class GeminiByokProvider(
         return try {
             generateWithModel(apiKey, primaryModel, request)
         } catch (error: AiTransportException.Http) {
-            if (error.provider == type && error.failureKind == AiTransportFailureKind.MODEL_UNAVAILABLE && primaryModel != fallbackModel) {
+            if (error.provider == type && error.failureKind == AiTransportFailureKind.MODEL_REQUIRES_INTERACTIONS) {
+                interactionsTransport.generate(apiKey, primaryModel, request)
+            } else if (error.provider == type && error.failureKind == AiTransportFailureKind.MODEL_UNAVAILABLE && primaryModel != fallbackModel) {
                 generateWithModel(apiKey, fallbackModel, request)
             } else if (error.provider == type && error.failureKind == AiTransportFailureKind.SCHEMA &&
                 request.useNativeSchema && request.allowSchemaFallback

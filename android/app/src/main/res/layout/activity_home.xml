@@ -630,7 +630,79 @@
                 </com.google.android.material.card.MaterialCardView>
 
                   <com.google.android.material.card.MaterialCardView
-                      android:id="@+id/recoveryCard"
+                      android:id="@+id/activityCheckInCard"
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:layout_marginTop="@dimen/space_12"
+                      app:cardBackgroundColor="@color/white"
+                      app:cardCornerRadius="@dimen/radius_card"
+                      app:cardElevation="@dimen/elevation_card"
+                      app:strokeColor="@color/divider"
+                      app:strokeWidth="@dimen/border_width_default">
+                      <LinearLayout
+                          style="@style/Widget.MyFitAI.HomeSectionContent"
+                          android:layout_width="match_parent"
+                          android:layout_height="wrap_content"
+                          android:orientation="vertical">
+                          <com.myfitai.app.ui.widgets.SectionHeaderView
+                              android:layout_width="match_parent"
+                              android:layout_height="wrap_content"
+                              android:text="Attività di oggi" />
+                          <TextView
+                              android:id="@+id/activityCheckInSummary"
+                              style="@style/Text.MyFitAI.Body"
+                              android:layout_width="match_parent"
+                              android:layout_height="wrap_content"
+                              android:layout_marginTop="@dimen/space_8"
+                              android:text="Non ancora deciso. Indica se oggi prevedi di allenarti per stimare il target operativo." />
+                          <LinearLayout
+                              android:layout_width="match_parent"
+                              android:layout_height="wrap_content"
+                              android:layout_marginTop="@dimen/space_8"
+                              android:orientation="horizontal">
+                              <com.google.android.material.button.MaterialButton
+                                  android:id="@+id/activityCheckInRestButton"
+                                  style="@style/Widget.MyFitAI.Button.Outlined"
+                                  android:layout_width="0dp"
+                                  android:layout_height="wrap_content"
+                                  android:layout_weight="1"
+                                  android:layout_marginEnd="@dimen/space_4"
+                                  android:text="Non mi alleno"
+                                  android:textAllCaps="false" />
+                              <com.google.android.material.button.MaterialButton
+                                  android:id="@+id/activityCheckInWorkoutButton"
+                                  style="@style/Widget.MyFitAI.Button.Text"
+                                  android:layout_width="0dp"
+                                  android:layout_height="wrap_content"
+                                  android:layout_weight="1"
+                                  android:layout_marginStart="@dimen/space_4"
+                                  android:text="Mi alleno"
+                                  android:textAllCaps="false" />
+                              <com.google.android.material.button.MaterialButton
+                                  android:id="@+id/activityCheckInEditButton"
+                                  style="@style/Widget.MyFitAI.Button.Text"
+                                  android:layout_width="0dp"
+                                  android:layout_height="wrap_content"
+                                  android:layout_weight="1"
+                                  android:layout_marginStart="@dimen/space_4"
+                                  android:text="Modifica"
+                                  android:textAllCaps="false"
+                                  android:visibility="gone" />
+                          </LinearLayout>
+                          <com.google.android.material.button.MaterialButton
+                              android:id="@+id/activityCheckInClearButton"
+                              style="@style/Widget.MyFitAI.Button.Text"
+                              android:layout_width="wrap_content"
+                              android:layout_height="wrap_content"
+                              android:layout_marginTop="@dimen/space_2"
+                              android:text="Rimuovi check-in"
+                              android:textAllCaps="false"
+                              android:visibility="gone" />
+                      </LinearLayout>
+                  </com.google.android.material.card.MaterialCardView>
+
+                   <com.google.android.material.card.MaterialCardView
+                       android:id="@+id/recoveryCard"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12"

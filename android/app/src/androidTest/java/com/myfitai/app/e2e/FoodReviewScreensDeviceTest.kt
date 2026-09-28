@@ -106,6 +106,12 @@ class FoodReviewScreensDeviceTest {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
         }).use { scenario ->
             assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/dailyTotalCard")), 10_000))
+            scenario.onActivity { activity ->
+                assertTrue(activity.findViewById<View>(R.id.dayMealsCard).visibility == View.VISIBLE)
+                assertTrue(activity.findViewById<View>(R.id.foodPlanHelpButton).visibility == View.VISIBLE)
+                assertTrue(activity.findViewById<View>(R.id.dayMealsHelpButton).visibility == View.VISIBLE)
+                assertEquals(0, activity.resources.getIdentifier("planStateCard", "id", activity.packageName))
+            }
             val expectedIds = listOf(
                 "totalKcalBmr", "totalKcalTdee", "totalKcalTarget", "totalProteinTarget",
                 "totalKcalPlanned", "totalProteinPlanned", "totalKcalConsumed", "totalProteinConsumed",
