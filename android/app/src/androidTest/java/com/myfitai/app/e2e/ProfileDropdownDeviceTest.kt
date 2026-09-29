@@ -15,7 +15,6 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.io.File
 
 /** Opens the existing profile editor read-only; no profile or demo data is created or changed. */
 @RunWith(AndroidJUnit4::class)
@@ -44,10 +43,6 @@ class ProfileDropdownDeviceTest {
                 }
 
                 assertTrue(device.wait(Until.hasObject(By.text(expectedOptions.first())), 2_000))
-                if (viewId == R.id.sexInput) {
-                    val artifactDirectory = File(context.getExternalFilesDir(null), "qa-artifacts").apply { mkdirs() }
-                    device.takeScreenshot(File(artifactDirectory, "profile_dropdown_popup.png"))
-                }
                 scenario.onActivity { input?.dismissDropDown() }
             }
         }

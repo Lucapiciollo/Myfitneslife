@@ -96,6 +96,22 @@ class SettingsSecurityUiTest {
         }
     }
 
+    @Test
+    fun deleteDataUsesSingleEntryAndShowsCategoryPicker() {
+        scenario.onActivity { activity ->
+            val deleteRow = activity.findViewById<View>(com.myfitai.app.R.id.rowDeleteRecordedData)
+            assertTrue(deleteRow.visibility == View.VISIBLE)
+            assertTrue(deleteRow.isEnabled)
+            assertTrue(activity.resources.getIdentifier("rowDeletePlans", "id", activity.packageName) == 0)
+            deleteRow.performClick()
+        }
+        assertTrue(device.wait(Until.hasObject(By.text("Scegli cosa eliminare")), 3_000))
+        assertTrue(device.hasObject(By.text("Elimina piani alimentari salvati")))
+        assertTrue(device.hasObject(By.text("Elimina misurazioni BIA")))
+        assertTrue(device.hasObject(By.text("Elimina tutti i dati di attività")))
+        device.pressBack()
+    }
+
     private fun hasOpenAiSecurityStatus(): Boolean =
         device.hasObject(By.textContains("Chiave OpenAI non configurata")) ||
             device.hasObject(By.textContains("OpenAI configurato"))

@@ -91,10 +91,7 @@ class TabHostActivity : AppCompatActivity() {
                 intent.getLongExtra(FoodPlanActivity.EXTRA_WEEK_START_EPOCH_DAY, LocalDate.now().toEpochDay()),
             )
         }
-        val child = activityManager.startActivity(
-            tab.name,
-            childIntent,
-        ) ?: return
+        val child = activityManager.startActivity(tab.name, childIntent) ?: return
         child.decorView.findViewById<View>(R.id.bottomNav)?.visibility = View.GONE
         content.removeAllViews()
         content.addView(child.decorView, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)

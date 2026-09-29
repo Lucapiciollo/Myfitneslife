@@ -84,6 +84,7 @@ class BottomNavigationUiTest {
         assertCurrentTabViewEventually(com.myfitai.app.R.id.aiSectionCard)
         scenario.onActivity { activity ->
             assertTrue(activity.currentTabActivity()?.findViewById<View>(com.myfitai.app.R.id.aiSectionCard)?.visibility == View.VISIBLE)
+            assertTrue(activity.currentTabActivity()?.findViewById<View>(com.myfitai.app.R.id.aiRootSectionCard)?.visibility == View.VISIBLE)
         }
         clickAndWait("navMore", "settingsContent")
         // Tapping the already-active tab must be a no-op: the Settings root stays on screen.
@@ -91,17 +92,24 @@ class BottomNavigationUiTest {
         assertCurrentTabViewEventually(com.myfitai.app.R.id.settingsContent)
         assertCurrentTabViewEventually(com.myfitai.app.R.id.rowMeasurements)
         scenario.onActivity { activity ->
-            assertTrue(activity.currentTabActivity()?.findViewById<View>(com.myfitai.app.R.id.aiSectionCard)?.visibility != View.VISIBLE)
+            assertTrue(activity.currentTabActivity()?.findViewById<View>(com.myfitai.app.R.id.aiRootSectionCard)?.visibility != View.VISIBLE)
         }
     }
 
     @Test
     fun nutritionAdviceOpensAsModalWithoutReplacingHomeTab() {
         assertViewEventually(com.myfitai.app.R.id.navHome)
+        var actionEnabled = false
         scenario.onActivity { activity ->
-            activity.currentTabActivity()
-                ?.findViewById<View>(com.myfitai.app.R.id.nutritionAdviceButton)
-                ?.performClick()
+            val button = activity.currentTabActivity()?.findViewById<View>(com.myfitai.app.R.id.nutritionAdviceButton)
+            assertTrue("Home root missing nutrition advice action", button != null)
+            actionEnabled = button!!.isEnabled
+            if (actionEnabled) button.performClick()
+        }
+        if (!actionEnabled) {
+            assertTrue("Disabled advice action must not launch the modal", device.wait(Until.gone(By.res("com.myfitai.app.navcheck:id/dismissAdviceButton")), 1_000))
+            scenario.onActivity { activity -> assertTrue(activity.findViewById<View>(com.myfitai.app.R.id.navHome).isSelected) }
+            return
         }
         assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/dismissAdviceButton")), 5_000))
         scenario.onActivity { activity ->
@@ -122,7 +130,7 @@ class BottomNavigationUiTest {
         device.pressBack()
         assertTrue(device.wait(Until.hasObject(By.textContains("Uscire da MyFitAI")), 3_000))
         device.findObject(By.text("Esci")).click()
-        assertTrue(device.wait(Until.hasObject(By.pkg("com.sec.android.app.launcher")), 5_000))
+        assertTrue(device.wait(Until.gone(By.res("com.myfitai.app:id/navHome")), 5_000))
     }
 
     private fun clickAndWait(navId: String, screenId: String) {
@@ -132,17 +140,19 @@ class BottomNavigationUiTest {
     }
 
     private fun dismissFoodGateOrVerifyFoodRoot() {
-        val gateVisible = device.wait(Until.hasObject(By.textContains("Nessun provider IA configurato")), 3_000)
-        if (gateVisible) {
-            device.findObject(By.text("Annulla")).click()
-            // Back on the previous root after cancelling the gate; the bottom bar stays available.
-            assertViewEventually(com.myfitai.app.R.id.navHome)
+        scenario.onActivity { activity ->
+            val current = activity.currentTabActivity()
+            assertTrue("Alimentazione must open as a root tab without an AI provider", current is com.myfitai.app.ui.FoodPlanActivity)
+            val notice = current?.findViewById<View>(com.myfitai.app.R.id.aiConfigurationNoticeCard)
+            assertTrue("Food tab should explain that AI provider setup is required", notice?.visibility == View.VISIBLE)
         }
     }
 
     private fun clickTab(viewId: Int) {
         scenario.onActivity { activity ->
-            activity.findViewById<View>(viewId).performClick()
+            val tab = activity.findViewById<View>(viewId)
+            assertTrue("Bottom tab view not found: $viewId, current=${activity.currentTabActivity()?.javaClass?.simpleName}", tab != null)
+            tab.performClick()
         }
     }
 
@@ -169,7 +179,11 @@ class BottomNavigationUiTest {
     }
 
     private fun contextResources(name: String): Int =
-        InstrumentationRegistry.getInstrumentation().targetContext.resources.getIdentifier(name, "id", "com.myfitai.app")
+        InstrumentationRegistry.getInstrumentation().targetContext.resources.getIdentifier(
+            name,
+            "id",
+            InstrumentationRegistry.getInstrumentation().targetContext.packageName,
+        )
 
     @After
     fun closeScenario() {

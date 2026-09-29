@@ -834,28 +834,59 @@ class SettingsActivity : BaseShellActivity() {
     private data class GuideSection(val title: String, val subtitle: String, val description: String)
 
     private fun bindDataDeletion() {
+        findViewById<View>(R.id.rowDeleteRecordedData).setOnClickListener { showDeletionCategoryPicker() }
+    }
+
+    private fun showDeletionCategoryPicker() {
         val actions = listOf(
-            R.id.rowDeletePlans to DeletionAction("piani alimentari salvati", "i piani e le giornate alimentari generate", data.dataDeletionService::deleteMealPlans),
-            R.id.rowDeleteConsumptions to DeletionAction("pasti e consumi registrati", "gli alimenti e i pasti segnati come consumati", data.dataDeletionService::deleteFoodConsumptions),
-            R.id.rowDeleteBia to DeletionAction("misurazioni BIA", "le rilevazioni BIA", data.dataDeletionService::deleteBiaMeasurements),
-            R.id.rowDeleteBody to DeletionAction("misurazioni corporee", "peso, altezza e le altre rilevazioni corporee registrate", data.dataDeletionService::deleteBodyMeasurements),
-            R.id.rowDeleteWorkouts to DeletionAction("allenamenti registrati", "le sessioni di allenamento", data.dataDeletionService::deleteWorkouts),
-            R.id.rowDeleteCheats to DeletionAction("extra registrati", "gli extra e il relativo storico", data.dataDeletionService::deleteCheatEntries),
-            R.id.rowDeleteReviews to DeletionAction("riepiloghi settimanali", "le review settimanali", data.dataDeletionService::deleteWeeklyReviews),
+            DeletionAction("piani alimentari salvati", "i piani e le giornate alimentari generate", data.dataDeletionService::deleteMealPlans),
+            DeletionAction("pasti e consumi registrati", "gli alimenti e i pasti segnati come consumati", data.dataDeletionService::deleteFoodConsumptions),
+            DeletionAction("misurazioni BIA", "le rilevazioni BIA", data.dataDeletionService::deleteBiaMeasurements),
+            DeletionAction("misurazioni corporee", "peso, altezza e le altre rilevazioni corporee registrate", data.dataDeletionService::deleteBodyMeasurements),
+            DeletionAction("allenamenti registrati", "le sessioni di allenamento", data.dataDeletionService::deleteWorkouts),
+            DeletionAction("extra registrati", "gli extra e il relativo storico", data.dataDeletionService::deleteCheatEntries),
+            DeletionAction("riepiloghi settimanali", "le review settimanali", data.dataDeletionService::deleteWeeklyReviews),
+            DeletionAction(
+                "tutti i dati di attività",
+                "piani alimentari, pasti e consumi, misurazioni BIA e corporee, allenamenti, extra e riepiloghi settimanali",
+                data.dataDeletionService::deleteRecordedData,
+            ),
         )
-        actions.forEach { (viewId, action) ->
-            findViewById<View>(viewId).setOnClickListener { confirmDeletion(action, false) }
+        val labels = actions.map { "Elimina ${it.label}" }.toTypedArray()
+        var categoryDialog: androidx.appcompat.app.AlertDialog? = null
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            val inset = resources.getDimensionPixelSize(R.dimen.space_8)
+            setPadding(inset, 0, inset, 0)
         }
-        findViewById<View>(R.id.rowDeleteRecordedData).setOnClickListener {
-            confirmDeletion(
-                DeletionAction(
-                    "tutti i dati di attività",
-                    "piani alimentari, pasti e consumi, misurazioni BIA e corporee, allenamenti, sgarri e riepiloghi settimanali",
-                    data.dataDeletionService::deleteRecordedData,
-                ),
-                true,
-            )
+        actions.forEachIndexed { index, action ->
+            val row = SettingRowView(this).apply {
+                setIcon(R.drawable.ic_delete_trash)
+                setLabel(labels[index])
+                contentDescription = labels[index]
+                setDescription(action.description)
+                setOnClickListener {
+                    categoryDialog?.dismiss()
+                    confirmDeletion(action, index == actions.lastIndex)
+                }
+            }
+            content.addView(row, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ))
+            if (index != actions.lastIndex) {
+                content.addView(View(this).apply { setBackgroundColor(getColor(R.color.divider)) }, LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    resources.getDimensionPixelSize(R.dimen.space_1),
+                ))
+            }
         }
+        categoryDialog = MaterialAlertDialogBuilder(this)
+            .setTitle("Scegli cosa eliminare")
+            .setView(normalizeRuntimeDialogContent(content))
+            .setNegativeButton("Chiudi", null)
+            .create()
+        categoryDialog?.show()
     }
 
     private fun confirmDeletion(action: DeletionAction, allData: Boolean) {

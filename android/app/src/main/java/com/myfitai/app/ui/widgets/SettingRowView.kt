@@ -17,6 +17,8 @@ class SettingRowView @JvmOverloads constructor(
 
     private val trailingText: TextView
     private val descriptionView: TextView
+    private val iconView: ImageView
+    private val labelView: TextView
 
     init {
         orientation = HORIZONTAL
@@ -34,7 +36,7 @@ class SettingRowView @JvmOverloads constructor(
         val description = a.getString(R.styleable.SettingRowView_srDescription).orEmpty()
         a.recycle()
 
-        val icon = ImageView(context).apply {
+        iconView = ImageView(context).apply {
             layoutParams = LayoutParams(resources.getDimensionPixelSize(R.dimen.space_32), resources.getDimensionPixelSize(R.dimen.space_32))
             val iconPadding = resources.getDimensionPixelSize(R.dimen.space_4)
             setPadding(iconPadding, iconPadding, iconPadding, iconPadding)
@@ -46,7 +48,7 @@ class SettingRowView @JvmOverloads constructor(
             if (iconRes != 0) setImageResource(iconRes)
             imageTintList = android.content.res.ColorStateList.valueOf(context.getColor(R.color.text_secondary))
         }
-        addView(icon)
+        addView(iconView)
 
         val textColumn = LinearLayout(context).apply {
             orientation = VERTICAL
@@ -54,7 +56,7 @@ class SettingRowView @JvmOverloads constructor(
                 marginStart = resources.getDimensionPixelSize(R.dimen.space_16)
             }
         }
-        val labelView = TextView(context).apply {
+        labelView = TextView(context).apply {
             text = label
             setTextAppearance(R.style.Text_MyFitAI_SettingsLabel)
         }
@@ -85,6 +87,15 @@ class SettingRowView @JvmOverloads constructor(
         trailingText.text = text
         trailingText.setTextColor(context.getColor(colorRes))
         trailingText.setTextAppearance(R.style.Text_MyFitAI_BodyEmphasis)
+    }
+
+    fun setLabel(value: String) {
+        labelView.text = value
+    }
+
+    fun setIcon(resourceId: Int) {
+        iconView.setImageResource(resourceId)
+        iconView.visibility = VISIBLE
     }
 
     fun setDescription(value: String?) {
