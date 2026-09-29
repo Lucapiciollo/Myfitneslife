@@ -130,7 +130,7 @@ class BottomNavigationUiTest {
         device.pressBack()
         assertTrue(device.wait(Until.hasObject(By.textContains("Uscire da MyFitAI")), 3_000))
         device.findObject(By.text("Esci")).click()
-        assertTrue(device.wait(Until.gone(By.res("com.myfitai.app:id/navHome")), 5_000))
+        assertTrue("App should leave the foreground after confirming exit", device.wait(Until.gone(By.pkg("com.myfitai.app")), 5_000))
     }
 
     private fun clickAndWait(navId: String, screenId: String) {
