@@ -7,6 +7,7 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.view.View
+import com.google.android.material.card.MaterialCardView
 import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -22,6 +23,7 @@ import com.myfitai.app.data.local.MyFitAiDatabase
 import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.profile.WorkoutPreferences
+import com.myfitai.app.domain.food.FoodSupplement
 import com.myfitai.app.domain.ai.AiJobType
 import com.myfitai.app.domain.ai.AiJobWorker
 import com.myfitai.app.ui.BiaActivity
@@ -105,6 +107,41 @@ class ActivitySmokeTest {
         smoke(WeeklyReviewActivity::class.java)
         smoke(NotificationsActivity::class.java)
         smoke(ExportActivity::class.java)
+    }
+
+    @Test
+    fun foodPlan_rendersSupplementCardWithoutTreatingSpacingAsResourceIds() {
+        ActivityScenario.launch<FoodPlanActivity>(Intent(context, FoodPlanActivity::class.java)).use { scenario ->
+            scenario.onActivity { activity ->
+                val renderSupplements = FoodPlanActivity::class.java.getDeclaredMethod(
+                    "supplementsCard",
+                    List::class.java,
+                ).apply { isAccessible = true }
+                val card = renderSupplements.invoke(
+                    activity,
+                    listOf(
+                        FoodSupplement(
+                            kind = "vitamin",
+                            name = "Vitamina test",
+                            dose = 1f,
+                            unit = "capsula",
+                            timeMinutes = 480,
+                            kcal = 0,
+                            proteinG = 0f,
+                            carbsG = 0f,
+                            fatG = 0f,
+                            notes = "Dopo colazione",
+                        ),
+                    ),
+                ) as MaterialCardView
+
+                val content = card.getChildAt(0) as LinearLayout
+                assertEquals(3, content.childCount)
+                assertEquals("Integrazione", (content.getChildAt(0) as TextView).text)
+                val supplementRow = content.getChildAt(2) as LinearLayout
+                assertEquals(2, supplementRow.childCount)
+            }
+        }
     }
 
     @Test

@@ -249,13 +249,12 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:text="Usa Gemini" />
-                        <com.google.android.material.materialswitch.MaterialSwitch
-                            android:id="@+id/useGeminiSwitch"
-                            style="@style/Widget.MyFitAI.SettingsSwitch"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            app:thumbTint="@color/white"
-                            app:trackTint="@color/accent_green" />
+                         <com.google.android.material.materialswitch.MaterialSwitch
+                             android:id="@+id/useGeminiSwitch"
+                             style="@style/Widget.MyFitAI.SettingsSwitch"
+                             android:layout_width="wrap_content"
+                             android:layout_height="wrap_content"
+                             />
                     </LinearLayout>
                     <TextView
                         style="@style/Text.MyFitAI.SettingsDescription"

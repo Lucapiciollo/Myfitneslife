@@ -1,4 +1,14 @@
 <resources>
     <fraction name="motion_selection_scale">6%</fraction>
     <fraction name="motion_checkbox_scale">8%</fraction>
+    <fraction name="segment_bia_new_weight">140%</fraction>
+    <fraction name="segment_bia_other_weight">80%</fraction>
+    <fraction name="alpha_ai_unavailable">45%</fraction>
+    <fraction name="alpha_component_disabled">35%</fraction>
+    <fraction name="dialog_editor_max_height">45%</fraction>
+    <fraction name="text_line_spacing_default">100%</fraction>
+    <fraction name="text_line_spacing_comfortable">116%</fraction>
+    <fraction name="bia_import_preview_max_height_fraction">46%</fraction>
+    <fraction name="bia_dialog_width_fraction">92%</fraction>
+    <fraction name="chart_normalized_stability_threshold">20%</fraction>
 </resources>

@@ -50,8 +50,8 @@ class WorkoutsActivity : BaseShellActivity() {
         setContentView(R.layout.activity_workouts)
         findViewById<com.google.android.material.card.MaterialCardView>(R.id.workoutSummaryCard).apply {
             setCardBackgroundColor(getColor(R.color.white))
-            cardElevation = 0f
-            strokeWidth = resources.getDimensionPixelSize(R.dimen.space_1)
+            cardElevation = resources.getDimension(R.dimen.elevation_none)
+            strokeWidth = resources.getDimensionPixelSize(R.dimen.border_width_default)
             strokeColor = getColor(R.color.divider)
         }
         bindBottom(BottomNavBinder.Tab.MORE)

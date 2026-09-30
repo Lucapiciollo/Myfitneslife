@@ -107,8 +107,8 @@ class CheatEntryActivity : BaseShellActivity() {
                 is MaterialCardView -> {
                     view.setCardBackgroundColor(getColor(R.color.white))
                     view.strokeColor = getColor(R.color.divider)
-                    view.strokeWidth = resources.getDimensionPixelSize(R.dimen.space_1)
-                    view.cardElevation = 0f
+                    view.strokeWidth = resources.getDimensionPixelSize(R.dimen.border_width_default)
+                    view.cardElevation = resources.getDimension(R.dimen.elevation_none)
                 }
                 is TextInputLayout -> {
                     view.boxBackgroundColor = getColor(R.color.white)

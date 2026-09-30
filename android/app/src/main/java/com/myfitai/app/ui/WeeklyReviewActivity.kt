@@ -63,8 +63,8 @@ class WeeklyReviewActivity : BaseShellActivity() {
             findViewById<MaterialCardView>(id).apply {
                 setCardBackgroundColor(getColor(R.color.white))
                 strokeColor = getColor(R.color.divider)
-                strokeWidth = resources.getDimensionPixelSize(R.dimen.space_1)
-                cardElevation = 0f
+                strokeWidth = resources.getDimensionPixelSize(R.dimen.border_width_default)
+                cardElevation = resources.getDimension(R.dimen.elevation_none)
             }
         }
     }

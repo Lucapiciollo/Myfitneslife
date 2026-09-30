@@ -174,8 +174,8 @@ class BiaActivity : BaseShellActivity() {
             findViewById<MaterialCardView>(id).apply {
                 setCardBackgroundColor(getColor(R.color.white))
                 strokeColor = getColor(R.color.divider)
-                strokeWidth = resources.getDimensionPixelSize(R.dimen.space_1)
-                cardElevation = 0f
+                strokeWidth = resources.getDimensionPixelSize(R.dimen.border_width_default)
+                cardElevation = resources.getDimension(R.dimen.elevation_none)
                 (getChildAt(0) as? View)?.setBackgroundColor(getColor(R.color.white))
             }
         }
@@ -539,7 +539,8 @@ class BiaActivity : BaseShellActivity() {
 
         val scrollHeight = minOf(
             resources.getDimensionPixelSize(R.dimen.bia_import_preview_max_height),
-            (resources.displayMetrics.heightPixels * 0.46f).toInt(),
+            (resources.displayMetrics.heightPixels *
+                resources.getFraction(R.fraction.bia_import_preview_max_height_fraction, 1, 1)).toInt(),
         )
         scroll.layoutParams = (scroll.layoutParams
             ?: android.view.ViewGroup.LayoutParams(android.view.ViewGroup.LayoutParams.MATCH_PARENT, scrollHeight)).apply {
@@ -593,7 +594,8 @@ class BiaActivity : BaseShellActivity() {
             dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(getColor(R.color.text_secondary))
             dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(getColor(R.color.accent_green_dark))
             dialog.window?.setLayout(
-                (resources.displayMetrics.widthPixels * 0.92f).toInt(),
+                (resources.displayMetrics.widthPixels *
+                    resources.getFraction(R.fraction.bia_dialog_width_fraction, 1, 1)).toInt(),
                 android.view.WindowManager.LayoutParams.WRAP_CONTENT,
             )
         }

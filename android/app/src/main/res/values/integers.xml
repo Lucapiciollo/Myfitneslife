@@ -5,4 +5,10 @@
     <integer name="motion_feedback_ms">180</integer>
     <integer name="motion_tab_transition_ms">260</integer>
     <integer name="motion_reveal_ms">260</integer>
+    <integer name="chart_x_axis_label_count">4</integer>
+    <integer name="chart_x_axis_granularity">1</integer>
+    <integer name="chart_comparison_percent_multiplier">100</integer>
+    <integer name="chart_area_fill_alpha_value">82</integer>
+    <integer name="chart_x_axis_label_rotation_degrees">-35</integer>
+    <integer name="chart_percent_multiplier">100</integer>
 </resources>

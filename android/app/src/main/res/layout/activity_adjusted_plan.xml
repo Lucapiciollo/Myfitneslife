@@ -44,7 +44,7 @@
                     android:text="Piano aggiornato" />
                 <Space
                     android:layout_width="@dimen/icon_button_size"
-                    android:layout_height="1dp" />
+                    android:layout_height="@dimen/space_1" />
             </LinearLayout>
 
              <com.google.android.material.card.MaterialCardView

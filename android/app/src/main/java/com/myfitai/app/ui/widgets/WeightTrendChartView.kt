@@ -1,7 +1,6 @@
 package com.myfitai.app.ui.widgets
 
 import android.content.Context
-import android.graphics.Color
 import android.util.AttributeSet
 import android.widget.FrameLayout
 import com.myfitai.app.R
@@ -24,13 +23,13 @@ class WeightTrendChartView @JvmOverloads constructor(
         chart.description.isEnabled = false
         chart.legend.isEnabled = true
         chart.legend.textColor = context.getColor(R.color.text_secondary)
-        chart.legend.textSize = 11f
+        chart.legend.textSize = chartDp(R.dimen.chart_legend_text_size)
         chart.axisRight.isEnabled = false
         chart.axisLeft.isEnabled = false
         chart.xAxis.isEnabled = false
         chart.setTouchEnabled(false)
         chart.isPinchZoom = false
-        chart.setBackgroundColor(Color.TRANSPARENT)
+        chart.setBackgroundColor(context.getColor(R.color.chart_transparent))
         chart.setDrawGridBackground(false)
         chart.setDrawBorders(false)
     }
@@ -46,20 +45,19 @@ class WeightTrendChartView @JvmOverloads constructor(
     fun setData(values: List<Float>) = setSeries(listOf("Peso" to values))
 
     fun setSeries(series: List<Pair<String, List<Float>>>) {
-        val colors = listOf(
-            R.color.accent_green_dark,
-            R.color.accent_orange,
-            R.color.accent_blue,
-        )
+        val colors = context.resources.obtainTypedArray(R.array.chart_series_palette)
         val dataSets = series.mapIndexedNotNull { index, (label, values) ->
             if (values.isEmpty()) return@mapIndexedNotNull null
             val baseline = values.firstOrNull()?.takeIf { it != 0f } ?: return@mapIndexedNotNull null
             val entries = values.mapIndexed { pointIndex, value ->
-                EntryFloat(pointIndex.toFloat(), ((value / baseline) - 1f) * 100f)
+                EntryFloat(
+                    pointIndex.toFloat(),
+                    ((value / baseline) - 1f) * context.resources.getInteger(R.integer.chart_percent_multiplier),
+                )
             }.toMutableList()
             LineDataSet<EntryFloat>(entries, label).apply {
-                color = context.getColor(colors[index % colors.size])
-                lineWidth = 2f
+                color = colors.getColor(index % colors.length(), context.getColor(R.color.text_primary))
+                lineWidth = chartDp(R.dimen.chart_line_width)
                 isDrawCircles = false
                 isDrawValues = false
                 isHighlight = false
@@ -67,7 +65,11 @@ class WeightTrendChartView @JvmOverloads constructor(
                 isDrawFilled = false
             }
         }
+        colors.recycle()
         chart.data = LineData(dataSets.toMutableList() as MutableList<ILineDataSet<EntryFloat>>)
         chart.invalidate()
     }
+
+    private fun chartDp(dimenRes: Int): Float =
+        resources.getDimension(dimenRes) / resources.displayMetrics.density
 }

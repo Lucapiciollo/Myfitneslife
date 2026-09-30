@@ -28,7 +28,7 @@ class TimeRangeSelectorView @JvmOverloads constructor(
                 setTextAppearance(R.style.Text_MyFitAI_BodyEmphasis)
                 isAllCaps = false
                 cornerRadius = resources.getDimensionPixelSize(R.dimen.radius_pill)
-                strokeWidth = 0
+                strokeWidth = resources.getDimensionPixelSize(R.dimen.border_width_none)
                 setPadding(
                     resources.getDimensionPixelSize(R.dimen.space_16), 0,
                     resources.getDimensionPixelSize(R.dimen.space_16), 0,

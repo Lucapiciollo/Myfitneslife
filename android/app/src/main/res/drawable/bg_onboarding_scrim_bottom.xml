@@ -3,5 +3,5 @@
         android:angle="90"
         android:startColor="@color/scrim_black_70"
         android:centerColor="@color/scrim_black_25"
-        android:endColor="#00000000" />
+        android:endColor="@color/illustration_scrim_transparent" />
 </shape>

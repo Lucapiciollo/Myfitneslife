@@ -1,7 +1,6 @@
 package com.myfitai.app.ui.widgets
 
 import android.content.Context
-import android.graphics.Color
 import android.util.AttributeSet
 import android.widget.FrameLayout
 import com.myfitai.app.R
@@ -31,7 +30,7 @@ class BodyMeasurementTrendView @JvmOverloads constructor(
         chart.description.isEnabled = false
         chart.legend.isEnabled = true
         chart.legend.textColor = context.getColor(R.color.text_secondary)
-        chart.legend.textSize = 10f
+        chart.legend.textSize = chartDp(R.dimen.chart_axis_text_size)
         chart.axisRight.isEnabled = false
         chart.axisLeft.isEnabled = true
         chart.axisLeft.textColor = context.getColor(R.color.text_secondary)
@@ -41,7 +40,7 @@ class BodyMeasurementTrendView @JvmOverloads constructor(
         chart.xAxis.isEnabled = false
         chart.setTouchEnabled(true)
         chart.isPinchZoom = false
-        chart.setBackgroundColor(Color.TRANSPARENT)
+        chart.setBackgroundColor(context.getColor(R.color.chart_transparent))
         chart.setDrawGridBackground(false)
         chart.setDrawBorders(false)
     }
@@ -50,9 +49,9 @@ class BodyMeasurementTrendView @JvmOverloads constructor(
         chart.xAxis.isEnabled = true
         chart.xAxis.textColor = context.getColor(R.color.text_secondary)
         chart.xAxis.isDrawGridLines = false
-        chart.xAxis.labelRotationAngle = -35f
-        chart.xAxis.granularity = 1f
-        chart.xAxis.setLabelCount(4, true)
+        chart.xAxis.labelRotationAngle = context.resources.getInteger(R.integer.chart_x_axis_label_rotation_degrees).toFloat()
+        chart.xAxis.granularity = context.resources.getInteger(R.integer.chart_x_axis_granularity).toFloat()
+        chart.xAxis.setLabelCount(context.resources.getInteger(R.integer.chart_x_axis_label_count), true)
         chart.xAxis.valueFormatter = object : IAxisValueFormatter {
             override fun getFormattedValue(value: Float, axis: AxisBase?): String {
                 return series?.points?.getOrNull(value.toInt())?.label.orEmpty()
@@ -60,7 +59,8 @@ class BodyMeasurementTrendView @JvmOverloads constructor(
         }
         chart.axisLeft.valueFormatter = object : IAxisValueFormatter {
             override fun getFormattedValue(value: Float, axis: AxisBase?): String =
-                if (unit == "%") "%.1f%%".format(Locale.ITALIAN, value) else "%.1f".format(Locale.ITALIAN, value)
+                if (unit == "%") resources.getString(R.string.chart_percent_value_format, value)
+                else resources.getString(R.string.chart_decimal_value_format, value)
         }
         if (series == null || series.points.isEmpty()) {
             chart.clear()
@@ -70,15 +70,15 @@ class BodyMeasurementTrendView @JvmOverloads constructor(
         val entries = series.points.mapIndexed { index, point -> EntryFloat(index.toFloat(), point.value) }.toMutableList()
         val dataSet = LineDataSet<EntryFloat>(entries, "$unit").apply {
             color = context.getColor(R.color.accent_green_dark)
-            lineWidth = 2.4f
+            lineWidth = chartDp(R.dimen.chart_line_width_emphasis)
             isDrawCircles = true
-            circleRadius = 4f
+            circleRadius = chartDp(R.dimen.chart_point_radius)
             isDrawValues = false
             isHighlight = true
             lineMode = LineDataSet.Mode.CUBIC_BEZIER
             isDrawFilled = true
             fillColor = context.getColor(R.color.accent_green)
-             fillAlpha = 82
+            fillAlpha = resources.getInteger(R.integer.chart_area_fill_alpha_value)
         }
         chart.data = LineData(dataSet)
         chart.invalidate()
@@ -100,15 +100,15 @@ class BodyMeasurementTrendView @JvmOverloads constructor(
         val entries = points.mapIndexed { index, point -> EntryFloat(index.toFloat(), point.value) }.toMutableList()
         val dataSet = LineDataSet<EntryFloat>(entries, "measurement").apply {
             color = context.getColor(R.color.accent_green_dark)
-            lineWidth = 2.4f
+            lineWidth = chartDp(R.dimen.chart_line_width_emphasis)
             isDrawCircles = true
-            circleRadius = 4f
+            circleRadius = chartDp(R.dimen.chart_point_radius)
             isDrawValues = false
             isHighlight = true
             lineMode = LineDataSet.Mode.CUBIC_BEZIER
             isDrawFilled = true
             fillColor = context.getColor(R.color.accent_green)
-             fillAlpha = 82
+            fillAlpha = resources.getInteger(R.integer.chart_area_fill_alpha_value)
         }
         chart.data = LineData(dataSet)
         chart.invalidate()
@@ -116,30 +116,31 @@ class BodyMeasurementTrendView @JvmOverloads constructor(
     }
 
     fun setNormalizedSeries(series: List<Series>) {
-        val colors = listOf(
-            R.color.accent_green_dark,
-            R.color.accent_orange,
-            R.color.accent_blue,
-            R.color.semantic_positive,
-            R.color.text_primary,
-        )
+        val colors = resources.obtainTypedArray(R.array.chart_series_palette)
         val dataSets = series.mapIndexedNotNull { index, item ->
             val baseline = item.points.firstOrNull()?.value?.takeIf { it != 0f } ?: return@mapIndexedNotNull null
             val entries = item.points.mapIndexed { pointIndex, point ->
-                EntryFloat(pointIndex.toFloat(), ((point.value / baseline) - 1f) * 100f)
+                EntryFloat(
+                    pointIndex.toFloat(),
+                    ((point.value / baseline) - 1f) * resources.getInteger(R.integer.chart_percent_multiplier),
+                )
             }.toMutableList()
             LineDataSet<EntryFloat>(entries, item.label).apply {
-                color = context.getColor(colors[index % colors.size])
-                lineWidth = 2f
+                color = colors.getColor(index % colors.length(), context.getColor(R.color.text_primary))
+                lineWidth = chartDp(R.dimen.chart_line_width)
                 isDrawCircles = true
-                circleRadius = 3f
+                circleRadius = chartDp(R.dimen.chart_point_radius_compact)
                 isDrawValues = false
                 isHighlight = false
                 lineMode = LineDataSet.Mode.CUBIC_BEZIER
                 isDrawFilled = false
             }
         }
+        colors.recycle()
         chart.data = LineData(dataSets.toMutableList() as MutableList<info.appdev.charting.interfaces.datasets.ILineDataSet<EntryFloat>>)
         chart.invalidate()
     }
+
+    private fun chartDp(dimenRes: Int): Float =
+        resources.getDimension(dimenRes) / resources.displayMetrics.density
 }

@@ -131,7 +131,7 @@
                     <ImageView android:layout_width="@dimen/inline_icon_size" android:layout_height="@dimen/inline_icon_size" android:src="@drawable/ic_calendar" android:importantForAccessibility="no" />
                     <TextView android:id="@+id/dateValue" style="@style/Text.MyFitAI.StatusLabel" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="@dimen/space_8" android:gravity="center_vertical" />
                 </LinearLayout>
-                <Space android:layout_width="@dimen/space_12" android:layout_height="1dp" />
+                <Space android:layout_width="@dimen/space_12" android:layout_height="@dimen/space_1" />
                 <LinearLayout android:id="@+id/timeField" android:layout_width="0dp" android:layout_weight="1" android:layout_height="@dimen/date_time_field_height" android:orientation="horizontal" android:gravity="center_vertical" android:background="@drawable/bg_input" android:padding="@dimen/space_12">
                     <ImageView android:layout_width="@dimen/inline_icon_size" android:layout_height="@dimen/inline_icon_size" android:src="@drawable/ic_setting_clock" android:importantForAccessibility="no" />
                     <TextView android:id="@+id/timeValue" style="@style/Text.MyFitAI.StatusLabel" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="@dimen/space_8" android:gravity="center_vertical" />

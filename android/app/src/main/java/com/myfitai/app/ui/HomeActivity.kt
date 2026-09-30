@@ -9,6 +9,10 @@ import android.view.View
 import android.widget.TextView
 import android.widget.GridLayout
 import android.view.ViewGroup
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.ComposeView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.core.content.ContextCompat
@@ -26,7 +30,10 @@ import com.myfitai.app.data.profile.BiaFrequencyPreferences
 import com.myfitai.app.data.profile.AiAutomationPreferences
 import com.myfitai.app.ui.home.HomeViewModel
 import com.myfitai.app.ui.widgets.MealCardView
-import com.myfitai.app.ui.widgets.MetricCardView
+import com.myfitai.app.ui.components.DashboardMetricPresentation
+import com.myfitai.app.ui.components.DashboardMetricsPanel
+import com.myfitai.app.ui.components.MetricDeltaTone
+import com.myfitai.app.ui.theme.setMyFitAiContent
 import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import com.myfitai.app.ui.widgets.TimeRangeSelectorView
 import com.myfitai.app.ui.widgets.BodyMeasurementTrendView
@@ -77,6 +84,7 @@ class HomeActivity : BaseShellActivity() {
     private var currentCalories: HomeViewModel.CalorieState? = null
     private var currentUpcomingMeals: List<HomeViewModel.NextMealState> = emptyList()
     private val motionVisibilityTargets = mutableMapOf<Int, Boolean>()
+    private var dashboardMetricPresentations by mutableStateOf(emptyList<DashboardMetricPresentation>())
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -87,6 +95,7 @@ class HomeActivity : BaseShellActivity() {
         adaptLandscapeContent()
         adaptQuickActions()
         bindBottom(BottomNavBinder.Tab.HOME)
+        installDashboardMetricsComposeView()
         renderWorkoutConfiguration()
         requestNotificationPermissionOnce()
 
@@ -165,10 +174,6 @@ class HomeActivity : BaseShellActivity() {
         findViewById<TextView>(R.id.todayLabel).text = todayLabel()
         renderAiConfigurationNotice()
 
-        findViewById<MetricCardView>(R.id.metricWeight).setLabel(getString(R.string.dashboard_metric_weight))
-        findViewById<MetricCardView>(R.id.metricFat).setLabel(getString(R.string.dashboard_metric_fat))
-        findViewById<MetricCardView>(R.id.metricMuscle).setLabel(getString(R.string.dashboard_metric_muscle))
-
         findViewById<TimeRangeSelectorView>(R.id.timeRangeSelector).apply {
             // Keep the dashboard selector aligned with the full body-history view so
             // less frequent measurements are available without an extra navigation step.
@@ -177,6 +182,90 @@ class HomeActivity : BaseShellActivity() {
         }
 
         observeDashboard()
+    }
+
+    private fun installDashboardMetricsComposeView() {
+        val composeView = findViewById<ComposeView>(R.id.dashboardMetricsPanel)
+        dashboardMetricPresentations = listOf(
+            loadingMetric(getString(R.string.dashboard_metric_weight), R.drawable.ic_trend_down),
+            loadingMetric(getString(R.string.dashboard_metric_fat), R.drawable.ic_trend_down),
+            loadingMetric(getString(R.string.dashboard_metric_muscle), R.drawable.ic_trend_up),
+        )
+        composeView.setMyFitAiContent {
+            DashboardMetricsPanel(dashboardMetricPresentations)
+        }
+    }
+
+    private fun loadingMetric(label: String, trendIcon: Int) = DashboardMetricPresentation(
+        label = label,
+        value = getString(R.string.dashboard_loading),
+        delta = getString(R.string.dashboard_loading),
+        tone = MetricDeltaTone.Neutral,
+        trendIcon = trendIcon,
+    )
+
+    private fun renderDashboardMetrics(state: HomeViewModel.DashboardState) {
+        dashboardMetricPresentations = listOf(
+            metricPresentation(
+                getString(R.string.dashboard_metric_weight), state.weight.value,
+                state.weight.deltaFromPrevious, "kg", DeltaSemantic.NEUTRAL,
+                state.loading, state.weight.sourceLabel, R.drawable.ic_trend_down,
+            ),
+            metricPresentation(
+                getString(R.string.dashboard_metric_fat), state.bodyFat.value,
+                state.bodyFat.deltaFromPrevious, "%", DeltaSemantic.DOWN_IS_POSITIVE,
+                state.loading, state.bodyFat.sourceLabel, R.drawable.ic_trend_down,
+            ),
+            metricPresentation(
+                getString(R.string.dashboard_metric_muscle), state.muscleMass.value,
+                state.muscleMass.deltaFromPrevious, "kg", DeltaSemantic.UP_IS_POSITIVE,
+                state.loading, state.muscleMass.sourceLabel, R.drawable.ic_trend_up,
+            ),
+        )
+    }
+
+    private fun metricPresentation(
+        label: String,
+        value: Float?,
+        delta: Float?,
+        unit: String,
+        semantic: DeltaSemantic,
+        loading: Boolean,
+        sourceLabel: String?,
+        trendIcon: Int,
+    ): DashboardMetricPresentation {
+        val displayLabel = label + sourceLabel?.let { " · $it" }.orEmpty()
+        if (loading) return loadingMetric(displayLabel, trendIcon)
+
+        val displayValue = value?.let { "${formatNumber(it)} $unit" }
+            ?: getString(R.string.dashboard_metric_unavailable)
+        if (delta == null) {
+            return DashboardMetricPresentation(
+                displayLabel, displayValue,
+                getString(R.string.dashboard_metric_insufficient_data),
+                MetricDeltaTone.Neutral, trendIcon,
+            )
+        }
+        val tone = when (semantic) {
+            DeltaSemantic.NEUTRAL -> MetricDeltaTone.Neutral
+            DeltaSemantic.DOWN_IS_POSITIVE -> when {
+                delta < 0f -> MetricDeltaTone.Positive
+                delta > 0f -> MetricDeltaTone.Negative
+                else -> MetricDeltaTone.Neutral
+            }
+            DeltaSemantic.UP_IS_POSITIVE -> when {
+                delta > 0f -> MetricDeltaTone.Positive
+                delta < 0f -> MetricDeltaTone.Negative
+                else -> MetricDeltaTone.Neutral
+            }
+        }
+        return DashboardMetricPresentation(
+            displayLabel,
+            displayValue,
+            "${formatNumber(kotlin.math.abs(delta))} $unit",
+            tone,
+            if (tone == MetricDeltaTone.Positive) R.drawable.ic_trend_up else R.drawable.ic_trend_down,
+        )
     }
 
     private fun adaptLandscapeContent() {
@@ -321,12 +410,7 @@ class HomeActivity : BaseShellActivity() {
         val firstName = state.profileName?.trim()?.substringBefore(' ')?.takeIf { it.isNotBlank() }
         findViewById<TextView>(R.id.greetingText).text = firstName?.let { "Ciao $it 👋" } ?: "Ciao 👋"
 
-        findViewById<MetricCardView>(R.id.metricWeight).setLabel(getString(R.string.dashboard_metric_weight) + state.weight.sourceLabel?.let { " · $it" }.orEmpty())
-        findViewById<MetricCardView>(R.id.metricFat).setLabel(getString(R.string.dashboard_metric_fat) + state.bodyFat.sourceLabel?.let { " · $it" }.orEmpty())
-        findViewById<MetricCardView>(R.id.metricMuscle).setLabel(getString(R.string.dashboard_metric_muscle) + state.muscleMass.sourceLabel?.let { " · $it" }.orEmpty())
-        renderMetric(findViewById(R.id.metricWeight), state.weight.value, state.weight.deltaFromPrevious, "kg", DeltaSemantic.NEUTRAL, state.loading)
-        renderMetric(findViewById(R.id.metricFat), state.bodyFat.value, state.bodyFat.deltaFromPrevious, "%", DeltaSemantic.DOWN_IS_POSITIVE, state.loading)
-        renderMetric(findViewById(R.id.metricMuscle), state.muscleMass.value, state.muscleMass.deltaFromPrevious, "kg", DeltaSemantic.UP_IS_POSITIVE, state.loading)
+        renderDashboardMetrics(state)
 
         renderBodyTrend(state.bodyMeasurementTrendSeries)
         findViewById<TextView>(R.id.recompositionStateText).text = recompositionText(state.recompositionState)
@@ -668,25 +752,6 @@ class HomeActivity : BaseShellActivity() {
         .replaceFirstChar { it.uppercase(Locale.ITALIAN) }
 
     private enum class DeltaSemantic { NEUTRAL, DOWN_IS_POSITIVE, UP_IS_POSITIVE }
-
-    private fun renderMetric(view: MetricCardView, value: Float?, delta: Float?, unit: String, semantic: DeltaSemantic, loading: Boolean) {
-        if (loading) {
-            view.setValue("Caricamento…")
-            view.setDelta("Caricamento…", MetricCardView.DeltaState.NEUTRAL)
-            return
-        }
-        view.setValue(value?.let { "${formatNumber(it)} $unit" } ?: "Non disponibile")
-        if (delta == null) {
-            view.setDelta("Dati insufficienti", MetricCardView.DeltaState.NEUTRAL)
-            return
-        }
-        val state = when (semantic) {
-            DeltaSemantic.NEUTRAL -> MetricCardView.DeltaState.NEUTRAL
-            DeltaSemantic.DOWN_IS_POSITIVE -> when { delta < 0f -> MetricCardView.DeltaState.POSITIVE; delta > 0f -> MetricCardView.DeltaState.NEGATIVE; else -> MetricCardView.DeltaState.NEUTRAL }
-            DeltaSemantic.UP_IS_POSITIVE -> when { delta > 0f -> MetricCardView.DeltaState.POSITIVE; delta < 0f -> MetricCardView.DeltaState.NEGATIVE; else -> MetricCardView.DeltaState.NEUTRAL }
-        }
-        view.setDelta("${formatNumber(kotlin.math.abs(delta))} $unit", state)
-    }
 
     private fun recompositionText(state: LocalCalculationEngine.RecompositionState): String = when (state) {
         LocalCalculationEngine.RecompositionState.FAVORABLE -> "Trend: grasso in calo e massa muscolare in aumento."

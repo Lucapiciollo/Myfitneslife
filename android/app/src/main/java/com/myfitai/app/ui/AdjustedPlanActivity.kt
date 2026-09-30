@@ -37,9 +37,9 @@ class AdjustedPlanActivity : BaseShellActivity() {
             val card = MaterialCardView(this).apply {
                 setCardBackgroundColor(getColor(R.color.white))
                 radius = resources.getDimension(R.dimen.radius_card)
-                cardElevation = 0f
+                cardElevation = resources.getDimension(R.dimen.elevation_none)
                 strokeColor = getColor(R.color.divider)
-                strokeWidth = resources.getDimensionPixelSize(R.dimen.space_1)
+                strokeWidth = resources.getDimensionPixelSize(R.dimen.border_width_default)
                 addView(StatusRowView(this@AdjustedPlanActivity).apply {
                     setLabel(label)
                     setState("Pasto futuro")

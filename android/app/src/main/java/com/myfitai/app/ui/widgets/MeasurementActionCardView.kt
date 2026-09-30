@@ -25,9 +25,9 @@ class MeasurementActionCardView @JvmOverloads constructor(
     init {
         setCardBackgroundColor(context.getColor(R.color.white))
         radius = context.resources.getDimension(R.dimen.radius_card)
-        strokeWidth = context.resources.getDimensionPixelSize(R.dimen.space_1)
+        strokeWidth = context.resources.getDimensionPixelSize(R.dimen.border_width_default)
         setStrokeColor(context.getColor(R.color.divider))
-        cardElevation = 0f
+        cardElevation = context.resources.getDimension(R.dimen.elevation_none)
 
         val content = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -66,7 +66,10 @@ class MeasurementActionCardView @JvmOverloads constructor(
         latestText = TextView(context).apply {
             setTextAppearance(R.style.Text_MyFitAI_Caption)
             includeFontPadding = false
-            setLineSpacing(0f, 1f)
+            setLineSpacing(
+                resources.getDimension(R.dimen.line_spacing_zero_extra),
+                resources.getFraction(R.fraction.text_line_spacing_default, 1, 1),
+            )
             minHeight = resources.getDimensionPixelSize(R.dimen.control_min_height)
             gravity = Gravity.CENTER_VERTICAL
         }
@@ -152,7 +155,7 @@ class MeasurementActionCardView @JvmOverloads constructor(
         shape = GradientDrawable.RECTANGLE
         setColor(fillColor)
         cornerRadius = dimension(R.dimen.radius_medium).toFloat()
-        strokeColor?.let { setStroke(dimension(R.dimen.space_1), it) }
+        strokeColor?.let { setStroke(dimension(R.dimen.border_width_default), it) }
     }
     private fun dimension(dimenRes: Int): Int = resources.getDimensionPixelSize(dimenRes)
 }

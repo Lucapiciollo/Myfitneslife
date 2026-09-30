@@ -61,6 +61,7 @@ class NewWorkoutActivity : BaseShellActivity() {
         val durationInput = findViewById<TextInputEditText>(R.id.durationInput)
         val notesInput = findViewById<TextInputEditText>(R.id.notesInput)
         val restSwitch = findViewById<MaterialSwitch>(R.id.restDaySwitch)
+        restSwitch.applyMyFitAiSwitchTints()
 
         val types = listOf("Pesi", "Cardio", "Mobilità", "Sport", "Altro")
         typeInput.setMyFitAiDropdownItems(types)

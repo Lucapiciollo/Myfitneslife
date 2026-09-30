@@ -1,8 +1,6 @@
 <resources>
+    <item name="dashboardMetricsPanel" type="id" />
     <item name="nutritionAdviceButton" type="id" />
-    <item name="metricWeight" type="id" />
-    <item name="metricFat" type="id" />
-    <item name="metricMuscle" type="id" />
     <item name="motionVisibilityTarget" type="id" />
     <item name="aiActionAccessibilityInitialized" type="id" />
     <item name="aiActionOriginalContentDescription" type="id" />

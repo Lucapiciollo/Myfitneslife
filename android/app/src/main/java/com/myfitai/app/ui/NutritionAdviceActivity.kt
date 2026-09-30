@@ -128,8 +128,8 @@ class NutritionAdviceActivity : BaseShellActivity() {
                 radius = resources.getDimension(R.dimen.radius_medium)
                 setCardBackgroundColor(getColor(R.color.white))
                 strokeColor = getColor(R.color.divider)
-                strokeWidth = resources.getDimensionPixelSize(R.dimen.space_1)
-                cardElevation = 0f
+                strokeWidth = resources.getDimensionPixelSize(R.dimen.border_width_default)
+                cardElevation = resources.getDimension(R.dimen.elevation_none)
             }
             val body = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
@@ -217,13 +217,13 @@ class NutritionAdviceActivity : BaseShellActivity() {
                 is MaterialCardView -> {
                     view.setCardBackgroundColor(getColor(R.color.white))
                     view.strokeColor = getColor(R.color.divider)
-                    view.strokeWidth = resources.getDimensionPixelSize(R.dimen.space_1)
-                    view.cardElevation = 0f
+                    view.strokeWidth = resources.getDimensionPixelSize(R.dimen.border_width_default)
+                    view.cardElevation = resources.getDimension(R.dimen.elevation_none)
                 }
                 is TextInputLayout -> {
                     view.boxBackgroundColor = getColor(R.color.white)
                     view.boxStrokeColor = getColor(R.color.myfitai_input_stroke)
-                    view.boxStrokeWidth = resources.getDimensionPixelSize(R.dimen.space_1)
+                    view.boxStrokeWidth = resources.getDimensionPixelSize(R.dimen.border_width_default)
                     view.boxStrokeWidthFocused = resources.getDimensionPixelSize(R.dimen.space_2)
                     view.hintTextColor = android.content.res.ColorStateList.valueOf(getColor(R.color.myfitai_input_hint))
                 }

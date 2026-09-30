@@ -13,6 +13,9 @@
     <color name="surface_ai">#F2EFF8</color><color name="ai_soft_stroke">#D9D0EB</color>
     <color name="dialog_control_neutral">#59635D</color>
     <color name="dialog_action_primary">#11853A</color>
+    <color name="switch_disabled_thumb">#D7DCD8</color>
+    <color name="switch_disabled_track">#AEB7B0</color>
+    <color name="switch_unchecked_track">#B7E2C5</color>
     <color name="scrim_black_60">#99000000</color>
     <color name="scrim_black_20">#33000000</color>
     <color name="scrim_black_25">#40000000</color>
@@ -20,4 +23,15 @@
     <color name="nav_surface_shadow">#1F000000</color>
     <color name="white_40">#66FFFFFF</color>
     <color name="white">#FFFFFFFF</color><color name="black">#FF000000</color><color name="transparent">#00000000</color>
+    <color name="icon_default">#FF18201C</color>
+    <color name="icon_delete">#FF000000</color>
+    <color name="notification_icon">#FFFFFFFF</color>
+    <color name="body_illustration_front_skin">#FFE8B18E</color>
+    <color name="body_illustration_back_skin">#FFDDA582</color>
+    <color name="body_illustration_outline">#FF6D7B73</color>
+    <color name="body_illustration_legwear">#FF424B47</color>
+    <color name="illustration_scrim_transparent">#00000000</color>
+    <color name="ai_icon_fill">#FF20B653</color>
+    <color name="ai_icon_on_fill">#FFFFFFFF</color>
+    <color name="chart_transparent">#00000000</color>
 </resources>

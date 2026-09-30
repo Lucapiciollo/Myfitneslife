@@ -384,7 +384,8 @@ abstract class BaseShellActivity : AppCompatActivity() {
                 ?: view.resources.getString(R.string.ai_action_requires_provider)
             view.contentDescription = "$label. ${view.resources.getString(R.string.ai_action_requires_provider)}."
             view.tooltipText = view.resources.getString(R.string.ai_action_provider_tooltip)
-            view.alpha = ((view.getTag(R.id.aiActionOriginalAlpha) as? Float) ?: 1f) * 0.45f
+            view.alpha = ((view.getTag(R.id.aiActionOriginalAlpha) as? Float) ?: 1f) *
+                resources.getFraction(R.fraction.alpha_ai_unavailable, 1, 1)
         } else {
             view.contentDescription = view.getTag(R.id.aiActionOriginalContentDescription) as? CharSequence
             view.tooltipText = view.getTag(R.id.aiActionOriginalTooltip) as? CharSequence

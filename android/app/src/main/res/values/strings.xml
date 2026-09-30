@@ -1,4 +1,6 @@
 <resources>
+    <string name="chart_percent_value_format">%.1f%%</string>
+    <string name="chart_decimal_value_format">%.1f</string>
     <string name="nav_home">Home</string>
     <string name="nav_food">Alimentazione</string>
     <string name="nav_progress">Progresso</string>
@@ -10,6 +12,9 @@
     <string name="dashboard_metric_weight">Peso</string>
     <string name="dashboard_metric_fat">Grasso</string>
     <string name="dashboard_metric_muscle">Massa muscolare</string>
+    <string name="dashboard_loading">Caricamento…</string>
+    <string name="dashboard_metric_unavailable">Non disponibile</string>
+    <string name="dashboard_metric_insufficient_data">Dati insufficienti</string>
     <string name="dashboard_next_meal_title">Prossimo pasto</string>
     <string name="dashboard_next_workout_title">Prossimo allenamento</string>
     <string name="profile_avatar_cd">Foto profilo</string>

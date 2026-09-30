@@ -63,7 +63,7 @@
                 android:text="MyFitness"
                 android:textColor="@color/white"
                 android:textStyle="bold"
-                android:textSize="24sp" />
+                android:textSize="@dimen/text_hero" />
 
             <com.google.android.material.textview.MaterialTextView
                 android:layout_width="wrap_content"
@@ -71,7 +71,7 @@
                 android:text="AI"
                 android:textColor="@color/accent_green"
                 android:textStyle="bold"
-                android:textSize="24sp" />
+                android:textSize="@dimen/text_hero" />
         </LinearLayout>
 
         <com.google.android.material.textview.MaterialTextView
@@ -81,7 +81,7 @@
             android:gravity="center"
             android:text="Il tuo percorso, inizia da qui."
             android:textColor="@color/white"
-            android:textSize="15sp" />
+            android:textSize="@dimen/text_card_title" />
 
         <Space
             android:layout_width="1dp"

@@ -41,7 +41,7 @@ object OpenAiCostSettingsBinder {
         }
         row.setOnClickListener { showCostDialog(activity, tracker, pricingStore, currentModel(), ::refresh) }
         card.addView(row, 0)
-        card.addView(View(activity).apply { setBackgroundColor(activity.getColor(R.color.divider)) }, 1, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, activity.resources.getDimensionPixelSize(R.dimen.space_1)).apply { bottomMargin = activity.resources.getDimensionPixelSize(R.dimen.space_8) })
+        card.addView(View(activity).apply { setBackgroundColor(activity.getColor(R.color.divider)) }, 1, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, activity.resources.getDimensionPixelSize(R.dimen.divider_thickness)).apply { bottomMargin = activity.resources.getDimensionPixelSize(R.dimen.space_8) })
         refresh()
     }
 
@@ -96,7 +96,8 @@ object OpenAiCostSettingsBinder {
         dialog.setOnShowListener {
             dialog.window?.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
             val scroll = content.findViewById<androidx.core.widget.NestedScrollView>(R.id.pricingEditorScroll)
-            val maxHeight = (activity.resources.displayMetrics.heightPixels * 0.45f).toInt()
+            val maxHeight = (activity.resources.displayMetrics.heightPixels *
+                activity.resources.getFraction(R.fraction.dialog_editor_max_height, 1, 1)).toInt()
             scroll.layoutParams = scroll.layoutParams.apply { height = minOf(activity.resources.getDimensionPixelSize(R.dimen.settings_pricing_editor_max_height), maxHeight) }
             dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                 val a = parseDecimal(input.text?.toString())

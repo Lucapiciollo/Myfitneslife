@@ -24,7 +24,7 @@
             android:layout_width="match_parent"
             android:layout_height="@dimen/border_width_default"
             android:layout_gravity="top"
-            android:background="#1f000000"
+            android:background="@color/nav_surface_shadow"
             android:visibility="gone"
             android:contentDescription="@null"
             app:backgroundTint="?android:attr/colorForeground" />
@@ -70,7 +70,7 @@
             android:layout_width="match_parent"
             android:layout_height="@dimen/border_width_default"
             android:layout_gravity="bottom"
-            android:background="#1f000000"
+            android:background="@color/nav_surface_shadow"
             android:visibility="gone"
             android:contentDescription="@null"
             app:backgroundTint="?android:attr/colorForeground" />

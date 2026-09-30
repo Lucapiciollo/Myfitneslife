@@ -151,9 +151,9 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         val card = MaterialCardView(this).apply {
             setCardBackgroundColor(getColor(R.color.white))
             radius = resources.getDimension(R.dimen.radius_card)
-            strokeWidth = dimen(R.dimen.space_1)
+            strokeWidth = dimen(R.dimen.border_width_default)
             setStrokeColor(getColor(R.color.divider))
-             cardElevation = 0f
+             cardElevation = resources.getDimension(R.dimen.elevation_none)
         }
         analysisCard = card
         val cardContent = LinearLayout(this).apply {
@@ -228,9 +228,9 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         val card = MaterialCardView(this).apply {
             setCardBackgroundColor(getColor(R.color.white))
             radius = resources.getDimension(R.dimen.radius_card)
-            strokeWidth = dimen(R.dimen.space_1)
+            strokeWidth = dimen(R.dimen.border_width_default)
             setStrokeColor(getColor(R.color.divider))
-             cardElevation = 0f
+             cardElevation = resources.getDimension(R.dimen.elevation_none)
             isClickable = true
             isFocusable = true
             setOnClickListener { startActivity(Intent(this@PhysicalEvolutionActivity, WeeklyReviewActivity::class.java)) }

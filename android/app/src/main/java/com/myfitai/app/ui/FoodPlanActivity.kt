@@ -190,12 +190,12 @@ class FoodPlanActivity : BaseShellActivity() {
         if (state.hasPlan && !generation.running) {
             button.backgroundTintList = ColorStateList.valueOf(getColor(R.color.surface_primary))
             button.setTextColor(getColor(R.color.accent_green_dark))
-            button.strokeWidth = resources.getDimensionPixelSize(R.dimen.space_1)
+            button.strokeWidth = resources.getDimensionPixelSize(R.dimen.border_width_default)
             button.strokeColor = ColorStateList.valueOf(getColor(R.color.accent_green))
         } else {
             button.backgroundTintList = ColorStateList.valueOf(getColor(R.color.accent_green))
             button.setTextColor(getColor(R.color.white))
-            button.strokeWidth = 0
+            button.strokeWidth = resources.getDimensionPixelSize(R.dimen.border_width_none)
         }
         val message = when {
             generation.running -> "Il piano viene generato e validato localmente prima del salvataggio."
@@ -295,9 +295,9 @@ class FoodPlanActivity : BaseShellActivity() {
     private fun supplementsCard(supplements: List<FoodSupplement>): MaterialCardView = MaterialCardView(this).apply {
         setCardBackgroundColor(getColor(R.color.white))
         radius = resources.getDimension(R.dimen.radius_card)
-        strokeWidth = resources.getDimensionPixelSize(R.dimen.space_1)
+        strokeWidth = resources.getDimensionPixelSize(R.dimen.border_width_default)
         setStrokeColor(getColor(R.color.divider))
-        cardElevation = 0f
+        cardElevation = resources.getDimension(R.dimen.elevation_none)
         val content = LinearLayout(this@FoodPlanActivity).apply {
             orientation = LinearLayout.VERTICAL
             val cardPadding = resources.getDimensionPixelSize(R.dimen.card_content_padding)
@@ -311,13 +311,13 @@ class FoodPlanActivity : BaseShellActivity() {
         content.addView(TextView(this@FoodPlanActivity).apply {
             text = "Dose, orario e valori nutrizionali"
             setTextAppearance(R.style.Text_MyFitAI_Caption)
-        }, marginTopParams(2))
+        }, marginTopParams(R.dimen.space_2))
 
         supplements.forEachIndexed { index, supplement ->
             if (index > 0) content.addView(View(this@FoodPlanActivity).apply {
                 setBackgroundColor(getColor(R.color.divider))
-            }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, resources.getDimensionPixelSize(R.dimen.space_1)).apply { topMargin = resources.getDimensionPixelSize(R.dimen.space_4) })
-            content.addView(supplementRow(supplement), marginTopParams(4))
+            }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, resources.getDimensionPixelSize(R.dimen.divider_thickness)).apply { topMargin = resources.getDimensionPixelSize(R.dimen.space_4) })
+            content.addView(supplementRow(supplement), marginTopParams(R.dimen.space_4))
         }
     }
 
@@ -340,7 +340,7 @@ class FoodPlanActivity : BaseShellActivity() {
             addView(TextView(this@FoodPlanActivity).apply {
                 text = details
                 setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
-            }, marginTopParams(2))
+            }, marginTopParams(R.dimen.space_2))
         }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
         addView(LinearLayout(this@FoodPlanActivity).apply {
             orientation = LinearLayout.VERTICAL
@@ -358,7 +358,7 @@ class FoodPlanActivity : BaseShellActivity() {
                 ).joinToString(" · ")
                 setTextAppearance(R.style.Text_MyFitAI_Micro)
                 gravity = android.view.Gravity.END
-            }, marginTopParams(2))
+            }, marginTopParams(R.dimen.space_2))
         }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT))
     }
 

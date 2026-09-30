@@ -80,6 +80,7 @@ class ProfileActivity : BaseShellActivity() {
         val leadLabels = resources.getStringArray(R.array.notification_lead_labels)
         val selectedLead = leadMinutes.indexOf(prefs.mealLeadMinutes).coerceAtLeast(0)
 
+        listOf(mealSwitch, reviewSwitch, aiSwitch).forEach { it.applyMyFitAiSwitchTints() }
         mealSwitch.isChecked = prefs.mealRemindersEnabled
         reviewSwitch.isChecked = prefs.weeklyReviewEnabled
         aiSwitch.isChecked = prefs.aiBackgroundUpdatesEnabled

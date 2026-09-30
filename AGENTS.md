@@ -16,13 +16,24 @@ Non anticipare fasi successive, non ampliare il perimetro e non segnare come com
 La UI navigabile è costruita sul mock approvato V2 `assets/MOCK_APPROVATO_MYFITAI_V2_COMPLETO.png`.
 L'integrazione dati e IA reale non va considerata completata finché non viene implementata e verificata secondo `DEVELOPMENT_PLAN.md`.
 
-## REGOLA VINCOLANTE: FEDELTÀ VISIVA 100%
-Il mock V2 è una specifica, non un'ispirazione. Prima di modificare una Activity classificare ogni elemento in:
+## REGOLA VINCOLANTE: fedeltà funzionale al mock e nuova specifica visuale
+Il mock V2 resta la specifica funzionale/informativa vincolante: contenuti, testi, azioni, route, ordine informativo, dati e comportamento non possono essere reinterpretati durante il restyling.
+
+Per lo stile visivo applicare la nuova specifica approvata in `ANDROID_UI_DESIGN_SYSTEM.md`. Essa prevale sul mock solo per palette e superfici, ruoli delle card, tipografia, spaziatura, forme, trattamento delle icone, grafici e motion. In caso di dubbio su contenuti, gerarchia informativa o comportamento prevalgono mock V2 e runtime attuale; in caso di dubbio puramente visivo prevale `ANDROID_UI_DESIGN_SYSTEM.md`.
+
+Prima di modificare una Activity classificare ogni elemento in:
 1. BACKGROUND/DECORAZIONE: layer non interattivo, separato.
 2. COMPONENTE REALE: testo, card, input, pulsante, grafico, icona, tab, lista, badge, immagine funzionale.
 
-È vietato trasformare una schermata intera in bitmap per simulare fedeltà. È vietato reinterpretare layout, colori, gerarchie, spacing o componenti.
-Confrontare mock e Activity su device/emulatore prima di considerare concluso il lavoro.
+È vietato trasformare una schermata intera in bitmap per simulare fedeltà. Non alterare contenuti, azioni, ordine informativo o componenti funzionali. Le decisioni estetiche autorizzate devono seguire la specifica visuale, non l'aspetto storico del mock.
+Confrontare funzionalmente mock e Activity e confrontare visivamente il runtime con `ANDROID_UI_DESIGN_SYSTEM.md` su device/emulatore prima di considerare concluso il lavoro.
+
+## Centralizzazione obbligatoria UI
+Prima della migrazione a Compose, consolidare un'unica sorgente editabile per i valori visivi. In convivenza Views/XML e Compose, risorse Android centrali (`colors.xml`, `dimens.xml` e risorse/stili condivisi) sono la fonte runtime: Compose le adatta a `MaterialTheme`, senza una seconda palette o scala dimensionale duplicata.
+
+È vietato inserire colori esadecimali/RGB, valori estetici dp/sp, raggi, elevazioni o durate motion direttamente nelle schermate, Activity, composable, widget o grafici quando rappresentano token condivisibili. La UI deve consumare ruoli semantici e token nominativi centralizzati. Centralizzare anche tipografia, forme, motion, stili e dimensioni adattive; preferire componenti riutilizzabili con API piccole e varianti semantiche. Eccezioni specifiche di un singolo elemento vanno motivate e non devono duplicare token esistenti.
+
+Non dichiarare centralizzati i token finché Views e Compose li leggono davvero dalla stessa fonte e non rimangono override visivi locali non giustificati.
 
 ## Tema approvato
 Tema unico chiaro: fondo caldo quasi bianco, surface bianche, verde MyFitAI, testo antracite. Niente mix casuale dark/light tra Activity.

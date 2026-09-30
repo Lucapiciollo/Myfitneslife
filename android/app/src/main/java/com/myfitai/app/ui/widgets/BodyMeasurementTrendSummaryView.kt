@@ -28,7 +28,7 @@ class BodyMeasurementTrendSummaryView @JvmOverloads constructor(
             delta = delta,
             pointCount = points.size,
             favorableDirection = null,
-            stableThreshold = 0.2f,
+            stableThreshold = resources.getFraction(R.fraction.chart_normalized_stability_threshold, 1, 1),
         )
         text = "${result.title}\n${result.message}"
     }

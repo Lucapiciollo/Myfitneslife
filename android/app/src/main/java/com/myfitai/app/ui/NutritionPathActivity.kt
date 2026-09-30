@@ -183,7 +183,8 @@ class NutritionPathActivity : BaseShellActivity() {
         row.addView(TextView(this).apply {
             text = "›"
             setTextColor(getColor(R.color.text_muted))
-            textSize = 18f
+            textSize = resources.getDimension(R.dimen.text_body_large) /
+                (resources.displayMetrics.density * resources.configuration.fontScale)
             gravity = Gravity.CENTER
             val chevronSize = resources.getDimensionPixelSize(R.dimen.nutrition_path_chevron_size)
             layoutParams = LinearLayout.LayoutParams(chevronSize, chevronSize)
@@ -193,7 +194,7 @@ class NutritionPathActivity : BaseShellActivity() {
                 setBackgroundColor(getColor(R.color.divider))
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
-                    resources.getDimensionPixelSize(R.dimen.space_1),
+                    resources.getDimensionPixelSize(R.dimen.divider_thickness),
                 )
             })
         }

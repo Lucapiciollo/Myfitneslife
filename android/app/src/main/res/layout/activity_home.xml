@@ -6,6 +6,7 @@
     android:background="@color/bg_primary">
 
     <ScrollView
+        android:id="@+id/homeScrollView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
@@ -35,7 +36,7 @@
                     android:orientation="horizontal">
                     <Space
                         android:layout_width="0dp"
-                        android:layout_height="1dp"
+                        android:layout_height="@dimen/divider_thickness"
                         android:layout_weight="1" />
                     <FrameLayout
                         android:layout_width="@dimen/dashboard_pill_height"
@@ -172,7 +173,7 @@
                      android:layout_marginTop="@dimen/space_12"
                      app:cardBackgroundColor="@color/surface_ai"
                      app:cardCornerRadius="@dimen/radius_card"
-                     app:cardElevation="0dp"
+                      app:cardElevation="@dimen/elevation_none"
                      app:strokeColor="@color/ai_soft_stroke"
                      app:strokeWidth="@dimen/border_width_default">
                      <LinearLayout
@@ -241,7 +242,7 @@
                      </LinearLayout>
                  </com.google.android.material.card.MaterialCardView>
 
-                <com.myfitai.app.ui.widgets.DashboardMetricsPanel
+                <androidx.compose.ui.platform.ComposeView
                     android:id="@+id/dashboardMetricsPanel"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -332,7 +333,7 @@
                      android:layout_marginTop="@dimen/space_12"
                      app:cardBackgroundColor="@color/white"
                      app:cardCornerRadius="@dimen/radius_card"
-                     app:cardElevation="0dp"
+                      app:cardElevation="@dimen/elevation_none"
                      app:strokeColor="@color/divider"
                      app:strokeWidth="@dimen/border_width_default">
                      <LinearLayout

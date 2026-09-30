@@ -103,7 +103,7 @@ class MealAlternativeActivity : BaseShellActivity() {
                 radius = resources.getDimension(R.dimen.radius_medium)
                 setCardBackgroundColor(getColor(R.color.white))
                 strokeColor = getColor(R.color.divider)
-                strokeWidth = resources.getDimensionPixelSize(R.dimen.space_1)
+                strokeWidth = resources.getDimensionPixelSize(R.dimen.border_width_default)
             }
             val body = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL

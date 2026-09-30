@@ -31,7 +31,9 @@ class HomeActivityCheckInDeviceTest {
         ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)).use { scenario ->
             try {
                 scenario.onActivity { activity ->
-                    assertTrue(activity.findViewById<View>(R.id.activityCheckInCard).visibility == View.VISIBLE)
+                assertTrue(activity.findViewById<View>(R.id.activityCheckInCard).visibility == View.VISIBLE)
+                assertTrue(activity.findViewById<View>(R.id.dashboardMetricsPanel) is androidx.compose.ui.platform.ComposeView)
+                assertTrue(activity.findViewById<View>(R.id.dashboardMetricsPanel).isShown)
                 }
 
                 val restTdee = readTdeeWhenAvailable(scenario)

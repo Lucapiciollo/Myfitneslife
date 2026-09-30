@@ -74,6 +74,7 @@ class SettingsActivity : BaseShellActivity() {
         val credentialStore = SecureAiCredentialStore(this)
 
         val useGeminiSwitch = findViewById<MaterialSwitch>(R.id.useGeminiSwitch)
+        useGeminiSwitch.applyMyFitAiSwitchTints()
         val geminiContainer = findViewById<View>(R.id.geminiKeyContainer)
         val openAiContainer = findViewById<View>(R.id.openAiKeyContainer)
         val openAiInput = findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.openAiApiKeyInput)
@@ -282,7 +283,7 @@ class SettingsActivity : BaseShellActivity() {
             .setTitle("Vuoi salvare i dati prima di procedere alla cancellazione del profilo?")
             .setMessage("Profilo: ${profile.name}\n$consequence\n\nPuoi salvare un backup JSON completo prima di eliminarlo.")
             .setNegativeButton("Annulla", null)
-            .setNeutralButton("Elimina senza backup") { _, _ -> confirmIrreversibleProfileDeletion(profile, isOnlyProfile) }
+            .setNeutralButton("Senza backup") { _, _ -> confirmIrreversibleProfileDeletion(profile, isOnlyProfile) }
             .setPositiveButton("Salva backup") { _, _ ->
                 profileAwaitingDeletionBackup = profile
                 deleteProfileBackupLauncher.launch("myfitai-${safeBackupName(profile.name)}.json")
@@ -395,11 +396,13 @@ class SettingsActivity : BaseShellActivity() {
             }
             val title = TextView(this).apply { text = label; setTextAppearance(R.style.Text_MyFitAI_SettingsLabel) }
             val automatic = MaterialSwitch(this).apply {
+                applyMyFitAiSwitchTints()
                 text = "Automatica"
                 setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
                 layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
             }
             val notifications = MaterialSwitch(this).apply {
+                applyMyFitAiSwitchTints()
                 text = "Notifiche"
                 setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
                 layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
@@ -454,7 +457,7 @@ class SettingsActivity : BaseShellActivity() {
             row.addView(automatic)
             row.addView(notifications)
             card.addView(row, index + 1)
-            if (index < rows.lastIndex) card.addView(View(this).apply { setBackgroundColor(getColor(R.color.divider)) }, index * 2 + 2, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, resources.getDimensionPixelSize(R.dimen.space_1)))
+            if (index < rows.lastIndex) card.addView(View(this).apply { setBackgroundColor(getColor(R.color.divider)) }, index * 2 + 2, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, resources.getDimensionPixelSize(R.dimen.divider_thickness)))
         }
     }
 
@@ -464,13 +467,13 @@ class SettingsActivity : BaseShellActivity() {
                 is MaterialCardView -> {
                     view.setCardBackgroundColor(getColor(R.color.white))
                     view.strokeColor = getColor(R.color.divider)
-                    view.strokeWidth = resources.getDimensionPixelSize(R.dimen.space_1)
-                    view.cardElevation = 0f
+                    view.strokeWidth = resources.getDimensionPixelSize(R.dimen.border_width_default)
+                    view.cardElevation = resources.getDimension(R.dimen.elevation_none)
                 }
                 is TextInputLayout -> {
                     view.boxBackgroundColor = getColor(R.color.white)
                     view.boxStrokeColor = getColor(R.color.myfitai_input_stroke)
-                    view.boxStrokeWidth = resources.getDimensionPixelSize(R.dimen.space_1)
+                    view.boxStrokeWidth = resources.getDimensionPixelSize(R.dimen.border_width_default)
                     view.boxStrokeWidthFocused = resources.getDimensionPixelSize(R.dimen.space_2)
                     view.hintTextColor = android.content.res.ColorStateList.valueOf(getColor(R.color.myfitai_input_hint))
                 }
@@ -560,6 +563,8 @@ class SettingsActivity : BaseShellActivity() {
             setTextAppearance(R.style.Text_MyFitAI_SettingsLabel)
         }
         val enabledSwitch = MaterialSwitch(this).apply {
+            applyMyFitAiSwitchTints()
+            setTextColor(getColor(R.color.text_primary))
             text = "Automatica"
             setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
             layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
@@ -676,7 +681,7 @@ class SettingsActivity : BaseShellActivity() {
         card.addView(
             View(this).apply { setBackgroundColor(getColor(R.color.divider)) },
             1,
-            LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, resources.getDimensionPixelSize(R.dimen.space_1)).apply { bottomMargin = resources.getDimensionPixelSize(R.dimen.space_12) },
+            LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, resources.getDimensionPixelSize(R.dimen.divider_thickness)).apply { bottomMargin = resources.getDimensionPixelSize(R.dimen.space_12) },
         )
     }
 
@@ -728,7 +733,7 @@ class SettingsActivity : BaseShellActivity() {
                 .show()
         }
         card.addView(row, 0)
-        card.addView(View(this).apply { setBackgroundColor(getColor(R.color.divider)) }, 1, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, resources.getDimensionPixelSize(R.dimen.space_1)).apply { bottomMargin = resources.getDimensionPixelSize(R.dimen.space_12) })
+        card.addView(View(this).apply { setBackgroundColor(getColor(R.color.divider)) }, 1, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, resources.getDimensionPixelSize(R.dimen.divider_thickness)).apply { bottomMargin = resources.getDimensionPixelSize(R.dimen.space_12) })
     }
 
     private fun showMealCountDialog() {
@@ -798,9 +803,9 @@ class SettingsActivity : BaseShellActivity() {
         val card = MaterialCardView(this).apply {
             setCardBackgroundColor(getColor(R.color.white))
             strokeColor = getColor(R.color.divider)
-            strokeWidth = resources.getDimensionPixelSize(R.dimen.space_1)
+            strokeWidth = resources.getDimensionPixelSize(R.dimen.border_width_default)
             radius = resources.getDimension(R.dimen.radius_card)
-            cardElevation = 0f
+            cardElevation = resources.getDimension(R.dimen.elevation_none)
         }
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -824,7 +829,10 @@ class SettingsActivity : BaseShellActivity() {
         TextView(this).apply {
             text = section.description
             setTextAppearance(R.style.Text_MyFitAI_Body)
-            setLineSpacing(0f, 1.16f)
+            setLineSpacing(
+                resources.getDimension(R.dimen.line_spacing_zero_extra),
+                resources.getFraction(R.fraction.text_line_spacing_comfortable, 1, 1),
+            )
             content.addView(this)
         }
         card.addView(content)
@@ -877,7 +885,7 @@ class SettingsActivity : BaseShellActivity() {
             if (index != actions.lastIndex) {
                 content.addView(View(this).apply { setBackgroundColor(getColor(R.color.divider)) }, LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
-                    resources.getDimensionPixelSize(R.dimen.space_1),
+                    resources.getDimensionPixelSize(R.dimen.divider_thickness),
                 ))
             }
         }

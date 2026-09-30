@@ -118,8 +118,8 @@ class MeasurementsActivity : BaseShellActivity() {
         findViewById<MaterialCardView>(R.id.dietImpactCard).apply {
             setCardBackgroundColor(getColor(R.color.white))
             strokeColor = getColor(R.color.divider)
-            strokeWidth = resources.getDimensionPixelSize(R.dimen.space_1)
-            cardElevation = 0f
+            strokeWidth = resources.getDimensionPixelSize(R.dimen.border_width_default)
+            cardElevation = resources.getDimension(R.dimen.elevation_none)
         }
         listOf(R.id.biaCard, R.id.bodyCard).forEach { id ->
             findViewById<View>(id).apply {
@@ -161,7 +161,7 @@ class MeasurementsActivity : BaseShellActivity() {
         ).forEachIndexed { index, (label, available) ->
             if (index > 0) rows.addView(View(this).apply {
                 setBackgroundColor(getColor(R.color.divider))
-                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, resources.getDimensionPixelSize(R.dimen.space_1))
+                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, resources.getDimensionPixelSize(R.dimen.divider_thickness))
             })
             rows.addView(impactRow(label, available))
         }

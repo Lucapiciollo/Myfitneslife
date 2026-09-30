@@ -320,6 +320,8 @@ class OnboardingWizardActivity : AppCompatActivity() {
         val card = card()
         val content = content(card)
         notificationSwitch = MaterialSwitch(this).apply {
+            applyMyFitAiSwitchTints()
+            setTextColor(getColor(R.color.text_primary))
             setTextAppearance(R.style.Text_MyFitAI_SettingsLabel)
             text = getString(R.string.onboarding_notifications_label)
             minHeight = dimension(R.dimen.control_min_height)
@@ -528,8 +530,8 @@ class OnboardingWizardActivity : AppCompatActivity() {
     private fun card(): MaterialCardView = MaterialCardView(this).apply {
         setCardBackgroundColor(getColor(R.color.white))
         strokeColor = getColor(R.color.divider)
-        strokeWidth = dimension(R.dimen.space_1)
-        cardElevation = 0f
+        strokeWidth = dimension(R.dimen.border_width_default)
+        cardElevation = resources.getDimension(R.dimen.elevation_none)
         radius = dimension(R.dimen.radius_card).toFloat()
         layoutParams = LinearLayout.LayoutParams(-1, -2).apply {
             topMargin = dimension(R.dimen.space_12)

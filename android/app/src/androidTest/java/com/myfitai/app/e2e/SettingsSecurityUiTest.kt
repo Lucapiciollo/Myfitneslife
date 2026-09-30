@@ -3,6 +3,7 @@ package com.myfitai.app.e2e
 import android.content.Intent
 import android.view.View
 import android.widget.TextView
+import com.google.android.material.materialswitch.MaterialSwitch
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -17,6 +18,8 @@ import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.ui.SettingsActivity
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -110,6 +113,60 @@ class SettingsSecurityUiTest {
         assertTrue(device.hasObject(By.text("Elimina misurazioni BIA")))
         assertTrue(device.hasObject(By.text("Elimina tutti i dati di attività")))
         device.pressBack()
+    }
+
+    @Test
+    fun threeActionDialog_keepsAllButtonsOnOneBottomRow() {
+        scenario.onActivity { activity ->
+            com.google.android.material.dialog.MaterialAlertDialogBuilder(activity)
+                .setTitle("Vuoi salvare i dati prima di procedere alla cancellazione del profilo?")
+                .setMessage("Conferma il comportamento della barra azioni con tre pulsanti.")
+                .setNegativeButton("Annulla", null)
+                .setNeutralButton("Senza backup", null)
+                .setPositiveButton("Salva backup", null)
+                .show()
+        }
+
+        val cancel = By.text("Annulla")
+        val withoutBackup = By.text("Senza backup")
+        val saveBackup = By.text("Salva backup")
+        assertTrue(device.wait(Until.hasObject(cancel), 2_000))
+        assertTrue(device.hasObject(withoutBackup))
+        assertTrue(device.hasObject(saveBackup))
+        val cancelBounds = device.findObject(cancel).visibleBounds
+        val withoutBackupBounds = device.findObject(withoutBackup).visibleBounds
+        val saveBackupBounds = device.findObject(saveBackup).visibleBounds
+        val rowTolerancePx = (8 * context.resources.displayMetrics.density).toInt()
+        assertTrue(kotlin.math.abs(cancelBounds.top - withoutBackupBounds.top) <= rowTolerancePx)
+        assertTrue(kotlin.math.abs(cancelBounds.top - saveBackupBounds.top) <= rowTolerancePx)
+        device.pressBack()
+    }
+
+    @Test
+    fun allSwitches_shareGreenEnabledAndGreyDisabledTints() {
+        scenario.onActivity { activity ->
+            val switches = mutableListOf<MaterialSwitch>()
+            fun collect(view: View) {
+                if (view is MaterialSwitch) switches += view
+                if (view is android.view.ViewGroup) {
+                    for (index in 0 until view.childCount) collect(view.getChildAt(index))
+                }
+            }
+            collect(activity.findViewById(android.R.id.content))
+            assertTrue("Expected the Settings screen to contain switches", switches.isNotEmpty())
+            val enabledChecked = intArrayOf(android.R.attr.state_enabled, android.R.attr.state_checked)
+            val enabledUnchecked = intArrayOf(android.R.attr.state_enabled, -android.R.attr.state_checked)
+            val disabledChecked = intArrayOf(-android.R.attr.state_enabled, android.R.attr.state_checked)
+            val expectedGreen = activity.getColor(com.myfitai.app.R.color.accent_green)
+            val expectedEnabledTrack = activity.getColor(com.myfitai.app.R.color.switch_unchecked_track)
+            val expectedDisabled = activity.getColor(com.myfitai.app.R.color.switch_disabled_track)
+            switches.forEach { switch ->
+                assertNotNull("Switch track tint list missing", switch.trackTintList)
+                assertEquals(expectedGreen, switch.trackTintList!!.getColorForState(enabledChecked, 0))
+                assertEquals(expectedEnabledTrack, switch.trackTintList!!.getColorForState(enabledUnchecked, 0))
+                assertEquals(expectedDisabled, switch.trackTintList!!.getColorForState(disabledChecked, 0))
+            }
+        }
     }
 
     private fun hasOpenAiSecurityStatus(): Boolean =

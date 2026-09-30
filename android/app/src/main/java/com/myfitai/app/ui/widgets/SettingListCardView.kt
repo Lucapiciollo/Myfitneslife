@@ -25,8 +25,8 @@ class SettingListCardView @JvmOverloads constructor(
     init {
         setCardBackgroundColor(context.getColor(R.color.surface_primary))
         radius = context.resources.getDimension(R.dimen.radius_card)
-        cardElevation = 0f
-        strokeWidth = context.resources.getDimensionPixelSize(R.dimen.space_1)
+        cardElevation = context.resources.getDimension(R.dimen.elevation_none)
+        strokeWidth = context.resources.getDimensionPixelSize(R.dimen.border_width_default)
         setStrokeColor(context.getColor(R.color.divider))
         addView(rows)
     }
@@ -35,7 +35,7 @@ class SettingListCardView @JvmOverloads constructor(
         if (rows.childCount > 0) {
             rows.addView(
                 View(context).apply { setBackgroundColor(context.getColor(R.color.divider)) },
-                LinearLayout.LayoutParams(-1, context.resources.getDimensionPixelSize(R.dimen.space_1)),
+                LinearLayout.LayoutParams(-1, context.resources.getDimensionPixelSize(R.dimen.divider_thickness)),
             )
         }
         rows.addView(row, LinearLayout.LayoutParams(-1, -2))

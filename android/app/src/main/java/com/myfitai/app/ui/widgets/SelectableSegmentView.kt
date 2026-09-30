@@ -42,7 +42,7 @@ open class SelectableSegmentView @JvmOverloads constructor(
                 maxLines = 1
                 gravity = Gravity.CENTER
                 cornerRadius = resources.getDimensionPixelSize(R.dimen.radius_small)
-                strokeWidth = 0
+                strokeWidth = resources.getDimensionPixelSize(R.dimen.border_width_none)
                 insetTop = 0
                 insetBottom = 0
                 minHeight = resources.getDimensionPixelSize(R.dimen.control_min_height)

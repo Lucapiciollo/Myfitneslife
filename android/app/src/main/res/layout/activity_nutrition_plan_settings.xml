@@ -24,7 +24,7 @@
                         <TextView style="@style/Text.MyFitAI.Section" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Generazione automatica" />
                         <TextView android:id="@+id/scheduleValue" style="@style/Text.MyFitAI.BodyCompact" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" />
                     </LinearLayout>
-                    <com.google.android.material.materialswitch.MaterialSwitch android:id="@+id/scheduleSwitch" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                    <com.google.android.material.materialswitch.MaterialSwitch android:id="@+id/scheduleSwitch" style="@style/Widget.MyFitAI.SettingsSwitch" android:layout_width="wrap_content" android:layout_height="wrap_content" />
                 </LinearLayout>
                   <com.google.android.material.button.MaterialButton android:id="@+id/scheduleButton" style="@style/Widget.MyFitAI.Button.Outlined" android:layout_width="match_parent" android:layout_height="@dimen/button_secondary_min_height" android:layout_marginTop="@dimen/space_10" android:text="Modifica frequenza e ora" android:textAllCaps="false" />
                   <com.google.android.material.button.MaterialButton android:id="@+id/nutritionPathButton" style="@style/Widget.MyFitAI.Button.Outlined" android:layout_width="match_parent" android:layout_height="@dimen/button_secondary_min_height" android:layout_marginTop="@dimen/space_8" android:text="Suggerisci il percorso nutrizionale" android:textAllCaps="false" />

@@ -53,7 +53,7 @@ class BiaTrendBinder(
         isAllCaps = false
         minHeight = dimension(R.dimen.control_compact_min_height)
         cornerRadius = dimension(R.dimen.radius_field)
-        strokeWidth = dimension(R.dimen.space_1)
+        strokeWidth = dimension(R.dimen.border_width_default)
         strokeColor = ColorStateList.valueOf(activity.getColor(R.color.divider))
         backgroundTintList = ColorStateList.valueOf(activity.getColor(R.color.white))
         setTextColor(activity.getColor(R.color.text_primary))

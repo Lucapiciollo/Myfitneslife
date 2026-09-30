@@ -1,0 +1,9 @@
+<resources>
+    <array name="chart_series_palette">
+        <item>@color/accent_green_dark</item>
+        <item>@color/accent_orange</item>
+        <item>@color/accent_blue</item>
+        <item>@color/semantic_positive</item>
+        <item>@color/text_primary</item>
+    </array>
+</resources>

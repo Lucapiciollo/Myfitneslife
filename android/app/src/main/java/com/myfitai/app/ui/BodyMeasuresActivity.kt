@@ -109,8 +109,8 @@ class BodyMeasuresActivity : BaseShellActivity() {
             findViewById<MaterialCardView>(id).apply {
                 setCardBackgroundColor(getColor(R.color.white))
                 strokeColor = getColor(R.color.divider)
-                strokeWidth = resources.getDimensionPixelSize(R.dimen.space_1)
-                cardElevation = 0f
+                strokeWidth = resources.getDimensionPixelSize(R.dimen.border_width_default)
+                cardElevation = resources.getDimension(R.dimen.elevation_none)
             }
         }
         findViewById<BodyMeasurementTrendSummaryView>(R.id.bodyTrendNote)
@@ -229,10 +229,10 @@ class BodyMeasuresActivity : BaseShellActivity() {
         val card = MaterialCardView(this).apply {
             tag = PROPORTION_CARD_TAG
             radius = resources.getDimension(R.dimen.radius_medium)
-            cardElevation = 0f
+            cardElevation = resources.getDimension(R.dimen.elevation_none)
             setCardBackgroundColor(getColor(R.color.white))
             strokeColor = getColor(R.color.divider)
-            strokeWidth = resources.getDimensionPixelSize(R.dimen.space_1)
+            strokeWidth = resources.getDimensionPixelSize(R.dimen.border_width_default)
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT,

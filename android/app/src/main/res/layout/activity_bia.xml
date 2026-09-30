@@ -187,7 +187,7 @@
                                 android:inputType="none"
                                 android:minHeight="@dimen/control_min_height"
                                 android:textColor="@color/text_primary"
-                                android:textSize="16sp"
+                                android:textSize="@dimen/text_body_large"
  />
                         </com.google.android.material.textfield.TextInputLayout>
                     </LinearLayout>
@@ -339,7 +339,7 @@
 
                     <Space
                         android:layout_width="@dimen/space_8"
-                        android:layout_height="1dp" />
+                        android:layout_height="@dimen/space_8" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/saveButton"
