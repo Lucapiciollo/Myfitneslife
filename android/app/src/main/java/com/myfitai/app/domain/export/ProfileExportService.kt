@@ -92,7 +92,7 @@ class ProfileExportService(
             } ?: error("Nessun piano completo per il periodo configurato disponibile")
             val shopping = ShoppingListEngine.aggregate(snapshot)
             val file = exportFile(profile.name, "dieta-settimanale", "pdf")
-            PdfExportRenderer.writeWeeklyPlanReport(file, profile.name, snapshot, shopping)
+            PdfExportRenderer(appContext).writeWeeklyPlanReport(file, profile.name, snapshot, shopping)
             return ExportedFile(file, "application/pdf")
         }
 
@@ -128,7 +128,7 @@ class ProfileExportService(
                     )
                 )
                 val file = exportFile(profile.name, "report-profilo", "pdf")
-                PdfExportRenderer.writeProfileReport(
+                PdfExportRenderer(appContext).writeProfileReport(
                     file,
                     PdfExportRenderer.ProfileReportInput(
                         profile = profile,

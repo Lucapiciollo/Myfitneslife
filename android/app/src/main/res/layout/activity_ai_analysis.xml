@@ -7,7 +7,7 @@
             <LinearLayout style="@style/Widget.MyFitAI.ScreenHeader">
                 <ImageButton android:id="@+id/backButton" android:layout_width="@dimen/icon_button_size" android:layout_height="@dimen/icon_button_size" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Indietro" android:padding="@dimen/space_8" android:src="@drawable/ic_arrow_back" app:tint="@color/text_primary" />
                 <TextView style="@style/Text.MyFitAI.ScreenTitle" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Analisi andamento" />
-                <Space android:layout_width="@dimen/icon_button_size" android:layout_height="1dp" />
+                <Space android:layout_width="@dimen/icon_button_size" android:layout_height="@dimen/layout_geometry_shim_thickness" />
             </LinearLayout>
             <com.myfitai.app.ui.widgets.SelectableSegmentView android:id="@+id/analysisRangeSegment" android:layout_width="match_parent" android:layout_height="@dimen/control_min_height" android:layout_marginTop="@dimen/space_12" />
             <com.google.android.material.card.MaterialCardView style="@style/Widget.MyFitAI.Card" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_16">

@@ -2,11 +2,15 @@ package com.myfitai.app.ui
 
 import android.os.Bundle
 import android.content.ClipboardManager
+import android.content.ClipData
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.net.Uri
 import android.view.View
 import android.view.WindowManager
+import android.view.Gravity
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -860,7 +864,6 @@ class SettingsActivity : BaseShellActivity() {
                 data.dataDeletionService::deleteRecordedData,
             ),
         )
-        val labels = actions.map { "Elimina ${it.label}" }.toTypedArray()
         var categoryDialog: androidx.appcompat.app.AlertDialog? = null
         val content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -868,16 +871,48 @@ class SettingsActivity : BaseShellActivity() {
             setPadding(inset, 0, inset, 0)
         }
         actions.forEachIndexed { index, action ->
-            val row = SettingRowView(this).apply {
-                setIcon(R.drawable.ic_delete_trash)
-                setLabel(labels[index])
-                contentDescription = labels[index]
-                setDescription(action.description)
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = android.view.Gravity.CENTER_VERTICAL
+                isClickable = true
+                isFocusable = true
+                val verticalPadding = resources.getDimensionPixelSize(R.dimen.space_8)
+                setPadding(0, verticalPadding, 0, verticalPadding)
+                contentDescription = "Elimina ${action.label}. ${action.description}"
                 setOnClickListener {
                     categoryDialog?.dismiss()
                     confirmDeletion(action, index == actions.lastIndex)
                 }
             }
+            row.addView(ImageView(this).apply {
+                setImageResource(R.drawable.ic_delete_trash)
+                imageTintList = android.content.res.ColorStateList.valueOf(getColor(R.color.text_secondary))
+                val iconSize = resources.getDimensionPixelSize(R.dimen.space_32)
+                layoutParams = LinearLayout.LayoutParams(iconSize, iconSize)
+            })
+            val textColumn = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                val startGap = resources.getDimensionPixelSize(R.dimen.space_16)
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                    marginStart = startGap
+                }
+            }
+            textColumn.addView(TextView(this).apply {
+                text = "Elimina ${action.label}"
+                setTextAppearance(R.style.Text_MyFitAI_SettingsLabel)
+            })
+            textColumn.addView(TextView(this).apply {
+                text = action.description
+                setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
+                maxLines = 2
+                ellipsize = android.text.TextUtils.TruncateAt.END
+            })
+            row.addView(textColumn)
+            row.addView(TextView(this).apply {
+                text = "›"
+                setTextAppearance(R.style.Text_MyFitAI_CardTitle)
+                setTextColor(getColor(R.color.text_muted))
+            })
             content.addView(row, LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT,
@@ -889,9 +924,13 @@ class SettingsActivity : BaseShellActivity() {
                 ))
             }
         }
+        val scroll = ScrollView(this).apply {
+            isFillViewport = true
+            addView(content)
+        }
         categoryDialog = MaterialAlertDialogBuilder(this)
             .setTitle("Scegli cosa eliminare")
-            .setView(normalizeRuntimeDialogContent(content))
+            .setView(normalizeRuntimeDialogContent(scroll))
             .setNegativeButton("Chiudi", null)
             .create()
         categoryDialog?.show()
@@ -949,12 +988,20 @@ class SettingsActivity : BaseShellActivity() {
         input.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
         input.isLongClickable = false
         input.requestFocus()
-        clipboard.clearPrimaryClip()
+        clearClipboard(clipboard)
         Toast.makeText(this, "Chiave incollata. Verifica e salva per registrarla.", Toast.LENGTH_SHORT).show()
     }
 
     private fun clearClipboard() {
-        (getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).clearPrimaryClip()
+        clearClipboard(getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager)
+    }
+
+    private fun clearClipboard(clipboard: ClipboardManager) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            clipboard.clearPrimaryClip()
+        } else {
+            clipboard.setPrimaryClip(ClipData.newPlainText("", ""))
+        }
     }
 
 

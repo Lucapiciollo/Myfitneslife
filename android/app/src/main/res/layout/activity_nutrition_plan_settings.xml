@@ -7,7 +7,7 @@
             <LinearLayout android:layout_width="match_parent" android:layout_height="@dimen/screen_header_height" android:gravity="center_vertical" android:background="@drawable/bg_screen_header" android:paddingHorizontal="@dimen/space_8">
                  <ImageButton android:id="@+id/backButton" android:layout_width="@dimen/icon_button_size" android:layout_height="@dimen/icon_button_size" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Indietro" android:padding="@dimen/space_8" android:src="@drawable/ic_arrow_back" app:tint="@color/text_primary" />
                 <TextView style="@style/Text.MyFitAI.ScreenTitle" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Configurazione alimentazione" />
-                 <Space android:layout_width="@dimen/icon_button_size" android:layout_height="1dp" />
+                  <Space android:layout_width="@dimen/icon_button_size" android:layout_height="@dimen/layout_geometry_shim_thickness" />
             </LinearLayout>
             <TextView style="@style/Text.MyFitAI.BodyCompact" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:text="Qui configuri come viene organizzato e generato il tuo piano. Le impostazioni non cambiano i dati storici." />
             <com.google.android.material.card.MaterialCardView style="@style/Widget.MyFitAI.Card" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_16">

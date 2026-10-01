@@ -42,7 +42,7 @@
                     android:text="Rilevazioni"
                     android:textColor="@color/text_primary"
                      style="@style/Text.MyFitAI.ScreenTitle" />
-                 <View android:layout_width="@dimen/icon_button_size" android:layout_height="1dp" />
+                  <View android:layout_width="@dimen/icon_button_size" android:layout_height="@dimen/layout_geometry_shim_thickness" />
             </LinearLayout>
 
                  <TextView

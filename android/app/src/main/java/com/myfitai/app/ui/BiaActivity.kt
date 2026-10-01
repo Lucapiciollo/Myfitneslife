@@ -689,7 +689,7 @@ class BiaActivity : BaseShellActivity() {
             val card = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 setBackgroundResource(R.drawable.bg_card)
-                elevation = 0f
+                elevation = resources.getDimension(R.dimen.elevation_none)
                 val horizontalPadding = resources.getDimensionPixelSize(R.dimen.space_16)
                 val verticalPadding = resources.getDimensionPixelSize(R.dimen.space_12)
                 setPadding(horizontalPadding, verticalPadding, horizontalPadding, verticalPadding)

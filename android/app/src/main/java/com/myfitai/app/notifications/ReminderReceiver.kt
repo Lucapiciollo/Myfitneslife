@@ -1,6 +1,7 @@
 package com.myfitai.app.notifications
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -26,6 +27,7 @@ class ReminderReceiver : BroadcastReceiver() {
         }
     }
 
+    @SuppressLint("MissingPermission") // canNotify checks POST_NOTIFICATIONS immediately before notification construction.
     private fun showMeal(context: Context, source: Intent) {
         if (!canNotify(context)) return
         val mealId = source.getLongExtra(EXTRA_MEAL_ID, -1L)
@@ -87,6 +89,7 @@ class ReminderReceiver : BroadcastReceiver() {
         NotificationManagerCompat.from(context).cancel(stableCode("meal-notification:$mealId"))
     }
 
+    @SuppressLint("MissingPermission") // canNotify checks POST_NOTIFICATIONS immediately before notification construction.
     private fun showWeeklyReview(context: Context) {
         if (!canNotify(context)) return
         val open = PendingIntent.getActivity(

@@ -123,7 +123,7 @@ class MeasurementsActivity : BaseShellActivity() {
         }
         listOf(R.id.biaCard, R.id.bodyCard).forEach { id ->
             findViewById<View>(id).apply {
-                elevation = 0f
+                elevation = resources.getDimension(R.dimen.elevation_none)
                 setBackgroundColor(getColor(R.color.white))
             }
         }

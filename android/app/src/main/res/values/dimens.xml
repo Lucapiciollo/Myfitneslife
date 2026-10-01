@@ -1,5 +1,6 @@
 <resources>
-    <dimen name="space_1">1dp</dimen><dimen name="space_2">2dp</dimen><dimen name="space_3">3dp</dimen><dimen name="space_4">4dp</dimen><dimen name="space_5">5dp</dimen><dimen name="space_6">6dp</dimen>
+    <dimen name="space_1">1dp</dimen>
+    <dimen name="space_2">2dp</dimen><dimen name="space_3">3dp</dimen><dimen name="space_4">4dp</dimen><dimen name="space_5">5dp</dimen><dimen name="space_6">6dp</dimen>
     <dimen name="space_8">8dp</dimen><dimen name="space_10">10dp</dimen><dimen name="space_12">12dp</dimen><dimen name="space_14">14dp</dimen><dimen name="space_18">18dp</dimen>
     <dimen name="space_16">16dp</dimen><dimen name="space_20">20dp</dimen><dimen name="space_24">24dp</dimen>
     <dimen name="space_28">28dp</dimen><dimen name="space_32">32dp</dimen><dimen name="space_40">40dp</dimen>
@@ -9,6 +10,10 @@
     <dimen name="radius_chip">20dp</dimen>
     <dimen name="radius_card">16dp</dimen><dimen name="radius_screen_header">18dp</dimen><dimen name="radius_field">12dp</dimen><dimen name="radius_dropdown">14dp</dimen><dimen name="radius_dialog">16dp</dimen>
     <dimen name="elevation_card">0dp</dimen><dimen name="elevation_dialog">8dp</dimen><dimen name="sticky_header_elevation">2dp</dimen>
+    <dimen name="home_hero_header_padding_horizontal">20dp</dimen>
+    <dimen name="home_hero_header_padding_top">16dp</dimen>
+    <dimen name="home_hero_header_padding_bottom">20dp</dimen>
+    <dimen name="home_hero_header_greeting_top">10dp</dimen>
     <dimen name="radius_pill">16dp</dimen>
     <dimen name="splash_corner_decoration_size">120dp</dimen>
     <dimen name="splash_bottom_decoration_size">160dp</dimen>
@@ -20,6 +25,7 @@
     <dimen name="advice_modal_horizontal_margin">16dp</dimen>
     <dimen name="advice_modal_vertical_margin">32dp</dimen>
     <dimen name="border_width_default">1dp</dimen>
+    <dimen name="layout_geometry_shim_thickness">1dp</dimen>
     <dimen name="border_width_focused">2dp</dimen>
     <dimen name="divider_thickness">1dp</dimen>
     <dimen name="body_marker_outline_width">2dp</dimen>
@@ -102,5 +108,5 @@
     <dimen name="chart_point_radius">4dp</dimen>
     <dimen name="chart_point_radius_compact">3dp</dimen>
     <dimen name="dashboard_metric_delta_column_width">20dp</dimen>
-    <dimen name="line_spacing_zero_extra">0</dimen>
+    <dimen name="line_spacing_zero_extra">0dp</dimen>
 </resources>

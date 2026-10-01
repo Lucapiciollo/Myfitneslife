@@ -81,7 +81,7 @@
                     android:minHeight="@dimen/workout_datetime_field_height"
                     android:textSize="@dimen/text_body_large" />
             </com.google.android.material.textfield.TextInputLayout>
-            <Space android:layout_width="@dimen/space_12" android:layout_height="1dp" />
+            <Space android:layout_width="@dimen/space_12" android:layout_height="@dimen/layout_geometry_shim_thickness" />
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/timeLayout"
                 style="@style/Widget.MyFitAI.Input"

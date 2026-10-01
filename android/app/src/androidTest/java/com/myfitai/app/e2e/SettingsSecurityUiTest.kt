@@ -109,9 +109,10 @@ class SettingsSecurityUiTest {
             deleteRow.performClick()
         }
         assertTrue(device.wait(Until.hasObject(By.text("Scegli cosa eliminare")), 3_000))
-        assertTrue(device.hasObject(By.text("Elimina piani alimentari salvati")))
-        assertTrue(device.hasObject(By.text("Elimina misurazioni BIA")))
-        assertTrue(device.hasObject(By.text("Elimina tutti i dati di attività")))
+        val deletionList = UiScrollable(UiSelector().scrollable(true))
+        assertTrue(deletionList.scrollIntoView(UiSelector().descriptionContains("piani alimentari salvati")))
+        assertTrue(deletionList.scrollIntoView(UiSelector().descriptionContains("misurazioni BIA")))
+        assertTrue(deletionList.scrollIntoView(UiSelector().descriptionContains("tutti i dati di attività")))
         device.pressBack()
     }
 
@@ -137,8 +138,8 @@ class SettingsSecurityUiTest {
         val withoutBackupBounds = device.findObject(withoutBackup).visibleBounds
         val saveBackupBounds = device.findObject(saveBackup).visibleBounds
         val rowTolerancePx = (8 * context.resources.displayMetrics.density).toInt()
-        assertTrue(kotlin.math.abs(cancelBounds.top - withoutBackupBounds.top) <= rowTolerancePx)
-        assertTrue(kotlin.math.abs(cancelBounds.top - saveBackupBounds.top) <= rowTolerancePx)
+        assertTrue("Cancel/neutral buttons should share the action row: $cancelBounds vs $withoutBackupBounds", kotlin.math.abs(cancelBounds.centerY() - withoutBackupBounds.centerY()) <= rowTolerancePx)
+        assertTrue("Cancel/positive buttons should share the action row: $cancelBounds vs $saveBackupBounds", kotlin.math.abs(cancelBounds.centerY() - saveBackupBounds.centerY()) <= rowTolerancePx)
         device.pressBack()
     }
 

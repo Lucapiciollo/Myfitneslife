@@ -11,6 +11,7 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.integerResource
@@ -94,8 +95,8 @@ private fun myFitAiTypography(): Typography {
 private fun textToken(@DimenRes id: Int): TextUnit {
     val context = LocalContext.current
     val rawPixels = context.resources.getDimension(id)
-    val fontScale = context.resources.configuration.fontScale
-    val densityScale = context.resources.displayMetrics.density * fontScale
+    val density = LocalDensity.current
+    val densityScale = density.density * density.fontScale
     return (rawPixels / densityScale).sp
 }
 

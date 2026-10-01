@@ -1,18 +1,18 @@
 <resources>
-    <color name="bg_primary">#F7F8F4</color><color name="bg_secondary">#F0F2EE</color>
-    <color name="surface_primary">#FFFFFF</color><color name="surface_secondary">#F3F4F1</color><color name="surface_soft">#E9ECE8</color>
-    <color name="accent_green">#20B653</color><color name="accent_green_dark">#11853A</color><color name="accent_blue">#4A8FD8</color><color name="accent_purple">#8B6ACB</color><color name="accent_orange">#E78A43</color>
-    <color name="text_primary">#18201C</color><color name="text_secondary">#59635D</color><color name="text_muted">#8B948E</color>
-    <color name="semantic_positive">#20B653</color><color name="semantic_warning">#D99A22</color><color name="semantic_error">#D94C46</color><color name="divider">#D8E2D9</color>
-    <color name="metric_label">#24323A</color><color name="metric_value">#0A1115</color><color name="metric_positive">#1A9A59</color>
-    <color name="dashboard_header_bg">#10241F</color><color name="admin_header_bg">#F0F2EE</color><color name="screen_header_bg">#FFFFFF</color><color name="pill_selected_bg">#DDE9DF</color><color name="chart_fill_start">#3020B653</color><color name="chart_fill_end">#0020B653</color>
-    <color name="surface_positive_soft">#F0F6F0</color><color name="positive_soft_stroke">#D4E3D6</color>
+    <color name="bg_primary">#F5F7F5</color><color name="bg_secondary">#EEF2EF</color>
+    <color name="surface_primary">#FFFFFF</color><color name="surface_secondary">#F1F5F2</color><color name="surface_soft">#E7EEE9</color>
+    <color name="accent_green">#176B4D</color><color name="accent_green_dark">#104B38</color><color name="accent_blue">#4A8FD8</color><color name="accent_purple">#8B6ACB</color><color name="accent_orange">#E78A43</color>
+    <color name="text_primary">#17231D</color><color name="text_secondary">#56645D</color><color name="text_muted">#839088</color>
+    <color name="semantic_positive">#176B4D</color><color name="semantic_warning">#D99A22</color><color name="semantic_error">#D94C46</color><color name="divider">#D9E3DC</color>
+    <color name="metric_label">#24323A</color><color name="metric_value">#0A1115</color><color name="metric_positive">#176B4D</color>
+    <color name="dashboard_header_bg">#F5F7F5</color><color name="admin_header_bg">#EEF2EF</color><color name="screen_header_bg">#FFFFFF</color><color name="pill_selected_bg">#E4EFE8</color><color name="chart_fill_start">#30176B4D</color><color name="chart_fill_end">#00176B4D</color>
+    <color name="surface_positive_soft">#EAF3EE</color><color name="positive_soft_stroke">#C9DED1</color>
     <color name="surface_warning_soft">#FFF7E8</color><color name="warning_soft_stroke">#E9D7AA</color>
     <color name="surface_error_soft">#FFF1EF</color><color name="error_soft_stroke">#EBC9C5</color>
     <color name="surface_info_soft">#EEF5FC</color><color name="info_soft_stroke">#C9DCEE</color>
     <color name="surface_ai">#F2EFF8</color><color name="ai_soft_stroke">#D9D0EB</color>
     <color name="dialog_control_neutral">#59635D</color>
-    <color name="dialog_action_primary">#11853A</color>
+    <color name="dialog_action_primary">#104B38</color>
     <color name="switch_disabled_thumb">#D7DCD8</color>
     <color name="switch_disabled_track">#AEB7B0</color>
     <color name="switch_unchecked_track">#B7E2C5</color>
@@ -23,7 +23,7 @@
     <color name="nav_surface_shadow">#1F000000</color>
     <color name="white_40">#66FFFFFF</color>
     <color name="white">#FFFFFFFF</color><color name="black">#FF000000</color><color name="transparent">#00000000</color>
-    <color name="icon_default">#FF18201C</color>
+    <color name="icon_default">#FF17231D</color>
     <color name="icon_delete">#FF000000</color>
     <color name="notification_icon">#FFFFFFFF</color>
     <color name="body_illustration_front_skin">#FFE8B18E</color>
@@ -31,7 +31,7 @@
     <color name="body_illustration_outline">#FF6D7B73</color>
     <color name="body_illustration_legwear">#FF424B47</color>
     <color name="illustration_scrim_transparent">#00000000</color>
-    <color name="ai_icon_fill">#FF20B653</color>
+    <color name="ai_icon_fill">#FF176B4D</color>
     <color name="ai_icon_on_fill">#FFFFFFFF</color>
     <color name="chart_transparent">#00000000</color>
 </resources>

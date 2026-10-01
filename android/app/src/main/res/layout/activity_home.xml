@@ -25,9 +25,9 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:background="@color/dashboard_header_bg"
-                android:paddingHorizontal="@dimen/space_20"
-                 android:paddingTop="@dimen/space_16"
-                 android:paddingBottom="@dimen/space_20">
+                android:paddingHorizontal="@dimen/home_hero_header_padding_horizontal"
+                 android:paddingTop="@dimen/home_hero_header_padding_top"
+                 android:paddingBottom="@dimen/home_hero_header_padding_bottom">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -57,23 +57,23 @@
                     android:id="@+id/greetingText"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                     android:layout_marginTop="@dimen/space_10"
+                     android:layout_marginTop="@dimen/home_hero_header_greeting_top"
                     android:text="@string/dashboard_greeting"
-                    android:textColor="@color/white"
+                    android:textColor="@color/text_primary"
                       android:textAppearance="@style/Text.MyFitAI.ScreenTitle" />
                 <TextView
                     android:id="@+id/todayLabel"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_4"
-                    android:textColor="@color/surface_soft"
+                    android:textColor="@color/text_secondary"
                     style="@style/Text.MyFitAI.Body" />
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_4"
                     android:text="@string/dashboard_subtitle"
-                    android:textColor="@color/surface_soft"
+                    android:textColor="@color/text_secondary"
                     style="@style/Text.MyFitAI.Body" />
             </LinearLayout>
 

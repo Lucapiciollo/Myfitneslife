@@ -150,7 +150,7 @@
                             android:inputType="numberDecimal"
                             android:maxLines="1" />
                     </com.google.android.material.textfield.TextInputLayout>
-                    <Space android:layout_width="@dimen/space_8" android:layout_height="1dp" />
+                    <Space android:layout_width="@dimen/space_8" android:layout_height="@dimen/layout_geometry_shim_thickness" />
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/weightLayout"
                         style="@style/Widget.MyFitAI.InputCompact"
@@ -266,7 +266,7 @@
                             android:focusable="false"
                             android:inputType="none" />
                     </com.google.android.material.textfield.TextInputLayout>
-                    <Space android:layout_width="@dimen/space_8" android:layout_height="1dp" />
+                    <Space android:layout_width="@dimen/space_8" android:layout_height="@dimen/layout_geometry_shim_thickness" />
                     <com.google.android.material.textfield.TextInputLayout
                         android:layout_width="0dp"
                         style="@style/Widget.MyFitAI.InputCompact"

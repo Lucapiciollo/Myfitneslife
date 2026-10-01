@@ -122,7 +122,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="@string/action_previous" />
-                <Space android:layout_width="@dimen/space_8" android:layout_height="1dp" />
+                <Space android:layout_width="@dimen/space_8" android:layout_height="@dimen/layout_geometry_shim_thickness" />
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/nextButton"
                     style="@style/Widget.MyFitAI.Button.Primary"

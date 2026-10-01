@@ -2,7 +2,7 @@
 <style name="Theme.MyFitAI" parent="Theme.Material3.Light.NoActionBar">
     <item name="android:fontFamily">sans</item><item name="android:windowLightStatusBar">true</item>
     <item name="android:statusBarColor">@color/bg_primary</item><item name="android:navigationBarColor">@color/bg_primary</item>
-    <item name="colorPrimary">@color/accent_green</item><item name="colorOnPrimary">@color/bg_primary</item>
+    <item name="colorPrimary">@color/accent_green_dark</item><item name="colorOnPrimary">@color/white</item>
     <item name="colorSurface">@color/surface_primary</item><item name="colorOnSurface">@color/text_primary</item>
     <item name="colorSurfaceDim">@color/white</item>
     <item name="colorSurfaceBright">@color/white</item>
@@ -30,8 +30,8 @@
     <item name="android:windowLightStatusBar">true</item>
     <item name="android:statusBarColor">@android:color/transparent</item>
     <item name="android:navigationBarColor">@android:color/transparent</item>
-    <item name="colorPrimary">@color/accent_green</item>
-    <item name="colorOnPrimary">@color/bg_primary</item>
+    <item name="colorPrimary">@color/accent_green_dark</item>
+    <item name="colorOnPrimary">@color/white</item>
     <item name="colorSurface">@color/white</item>
     <item name="colorOnSurface">@color/text_primary</item>
     <item name="materialSwitchStyle">@style/Widget.MyFitAI.SettingsSwitch</item>
@@ -190,17 +190,19 @@
 <style name="Widget.MyFitAI.Dialog.ButtonBar" parent="Widget.AppCompat.ButtonBar.AlertDialog">
     <item name="android:background">@color/white</item>
     <item name="allowStacking">false</item>
-    <item name="android:paddingStart">@dimen/space_8</item>
-    <item name="android:paddingEnd">@dimen/space_8</item>
+    <item name="android:orientation">horizontal</item>
+    <item name="android:paddingStart">@dimen/space_2</item>
+    <item name="android:paddingEnd">@dimen/space_2</item>
     <item name="android:paddingTop">@dimen/space_4</item>
     <item name="android:paddingBottom">@dimen/space_8</item>
+    <item name="android:minHeight">@dimen/space_40</item>
 </style>
 <style name="Widget.MyFitAI.Dialog.PositiveButton" parent="Widget.Material3.Button.TextButton.Dialog">
     <item name="android:textColor">@color/dialog_action_primary</item>
     <item name="android:minWidth">0dp</item>
     <item name="android:minHeight">@dimen/control_min_height</item>
-    <item name="android:paddingStart">@dimen/space_8</item>
-    <item name="android:paddingEnd">@dimen/space_8</item>
+    <item name="android:paddingStart">@dimen/space_2</item>
+    <item name="android:paddingEnd">@dimen/space_2</item>
     <item name="android:textSize">@dimen/text_caption</item>
     <item name="android:maxLines">1</item>
     <item name="android:ellipsize">end</item>
@@ -210,8 +212,8 @@
     <item name="android:textColor">@color/text_secondary</item>
     <item name="android:minWidth">0dp</item>
     <item name="android:minHeight">@dimen/control_min_height</item>
-    <item name="android:paddingStart">@dimen/space_8</item>
-    <item name="android:paddingEnd">@dimen/space_8</item>
+    <item name="android:paddingStart">@dimen/space_2</item>
+    <item name="android:paddingEnd">@dimen/space_2</item>
     <item name="android:textSize">@dimen/text_caption</item>
     <item name="android:maxLines">1</item>
     <item name="android:ellipsize">end</item>

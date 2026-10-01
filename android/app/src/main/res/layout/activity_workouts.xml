@@ -29,7 +29,7 @@
                     android:padding="@dimen/space_8"
                     android:src="@drawable/ic_arrow_back" />
                 <TextView android:id="@+id/title" style="@style/Text.MyFitAI.ScreenTitle" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:gravity="center" android:text="Allenamenti" />
-                <Space android:layout_width="@dimen/icon_button_size" android:layout_height="1dp" />
+                <Space android:layout_width="@dimen/icon_button_size" android:layout_height="@dimen/layout_geometry_shim_thickness" />
             </LinearLayout>
 
             <LinearLayout

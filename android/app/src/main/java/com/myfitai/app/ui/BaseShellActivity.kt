@@ -180,11 +180,6 @@ abstract class BaseShellActivity : AppCompatActivity() {
         refreshAiActionAvailability()
     }
 
-    @Deprecated("Use OnBackPressedDispatcher for in-app back handling")
-    override fun onBackPressed() {
-        handleBackNavigation()
-    }
-
     override fun setContentView(layoutResID: Int) {
         val content = layoutInflater.inflate(layoutResID, null, false)
         normalizeScreenHeader(content)

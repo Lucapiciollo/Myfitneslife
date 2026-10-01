@@ -42,7 +42,7 @@
                     android:layout_weight="1"
                     android:gravity="center"
                     android:text="Evoluzione fisica" />
-                <Space android:layout_width="@dimen/screen_header_icon_size" android:layout_height="1dp" />
+                <Space android:layout_width="@dimen/screen_header_icon_size" android:layout_height="@dimen/layout_geometry_shim_thickness" />
             </LinearLayout>
 
             <com.myfitai.app.ui.widgets.SelectableSegmentView
@@ -195,6 +195,7 @@
                 android:id="@+id/visualComparisonSection"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:orientation="vertical"
                 android:visibility="gone" />
 
              <com.google.android.material.card.MaterialCardView

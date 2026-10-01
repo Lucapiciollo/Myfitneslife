@@ -42,7 +42,7 @@
                     android:layout_weight="1"
                     android:gravity="center"
                     android:text="Percorso nutrizionale" />
-                <Space android:layout_width="@dimen/icon_button_size" android:layout_height="1dp" />
+                <Space android:layout_width="@dimen/icon_button_size" android:layout_height="@dimen/layout_geometry_shim_thickness" />
             </LinearLayout>
 
             <TextView

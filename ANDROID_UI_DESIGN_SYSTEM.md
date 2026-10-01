@@ -1,8 +1,8 @@
 # MyFitAI — Specifica visuale per modernizzazione UI
 
-Stato: **specifica approvata per pianificazione; implementazione non iniziata**.
+Stato: **C · Fitness premium approvato come nuova direzione visuale; implementazione incrementale in corso**. Lo stato verificato di token, fondazioni, componenti e schermate è registrato in `DEVELOPMENT_PLAN.md`.
 
-Questo documento definisce la direzione visuale per la migrazione incrementale da Android Views/XML a Jetpack Compose. È la fonte di verità per la nuova presentazione visuale; non dichiara Compose, token o componenti come già implementati.
+Questo documento definisce la direzione visuale per la modernizzazione incrementale dell'interfaccia Views/XML con Compose nei nuovi slice. È la fonte delle scelte di presentazione; l'implementazione effettivamente presente e verificata, inclusa la slice Compose pilota, è registrata in `DEVELOPMENT_PLAN.md`.
 
 ## Fonti di verità e confini
 
@@ -15,17 +15,50 @@ Questo documento definisce la direzione visuale per la migrazione incrementale d
 
 Il mock non va appiattito in una bitmap: ogni testo, controllo, card, grafico, icona funzionale, tab, lista e badge resta un componente UI reale. Asset decorativi e funzionali vanno identificati separatamente.
 
-## Direzione visuale — Calma Attiva
+## Direzione visuale — C · Fitness premium
 
-- Fondo caldo quasi bianco; superfici chiare, prevalentemente bianche, con tonalità delicate per distinguere gruppi o stati.
-- Verde MyFitAI come colore principale e per l'azione primaria; accenti secondari desaturati, usati con parsimonia e con semantica coerente.
-- Massimo un accento dominante per card e, in generale, 3–4 famiglie cromatiche per viewport.
-- Card distinguibili per ruolo: hero/riepilogo, metrica, insight, azione, lista e stato/avviso. Forme coerenti, bordi sottili ed elevazione leggera; evitare pile di card identiche e card annidate senza necessità.
-- Titoli principali e di sezione Bold; titoli card e label importanti SemiBold; corpo normale e leggibile; testo secondario con contrasto sufficiente.
-- Testi allineati su griglia, con wrapping naturale. Nessun clipping o ellissi su informazioni essenziali.
-- Icone Material coerenti solo quando chiariscono concetto, stato o azione; descrizioni accessibili appropriate. Niente emoji come icone di prodotto.
-- Motion breve, intenzionale, interrompibile e rispettoso delle preferenze di riduzione animazioni. La logica non deve dipendere dall'animazione.
-- No palette arcobaleno, neon, grandi aree nere o gradienti ripetuti. Il tema di prodotto resta chiaro e coerente tra Activity durante questa iniziativa.
+La tavola allegata dall'utente è riferimento di stile, non un mock dei dati dell'app. Usarne la grammatica visiva (fondo chiaro, verde bosco, superfici ordinate, card leggibili e gerarchia fitness) senza copiarne schermate, testo, immagini, metriche, valori o azioni.
+
+- Tema prevalentemente chiaro: canvas bianco/caldo molto chiaro, superfici bianche e grigi verdi appena tonali.
+- Verde bosco profondo come brand/azione primaria, con verde MyFitAI semantico per progressi e conferme; accenti ambra/rosso/blu solo per significati esistenti e con moderazione.
+- Testo antracite/verde molto scuro, secondari leggibili; niente grandi superfici nere.
+- Card premium con bordi sottili, elevazione quasi impercettibile, raggi moderati e ritmo verticale regolare. Differenziare hero, metrica, lista, insight e stato solo dove serve alla gerarchia corrente.
+- Titoli schermata/sezione chiari e decisi; label compatte ma leggibili; valori numerici in evidenza senza alterare le unità o il contesto.
+- Linee e marker puliti per serie temporali reali. Anelli solo per consumi/progressi che hanno target esplicito già presente nei dati.
+- Icone coerenti Material, esclusivamente per chiarire azioni o categorie già esistenti; evitare fotografie decorative o asset non licenziati.
+- Wrapping naturale e layout adattivo: niente clipping di dati, etichette o azioni su schermi piccoli o font scale aumentata.
+- Motion breve e funzionale, rispettoso di animator scale, battery saver e accessibilità.
+
+## Inventario e sequenza di copertura
+
+### Matrice schermate
+
+| Area | Activity/schermata | Stato/azioni da preservare |
+|---|---|---|
+| Avvio | `SplashActivity`, `OnboardingActivity`, `OnboardingWizardActivity` | avanzamento onboarding, form profilo, validazione e salvataggio |
+| Shell | `TabHostActivity`, `BaseShellActivity` | cinque tab, Activity root embedded, profilo attivo, back/exit, CTA IA |
+| Home | `HomeActivity` | metriche, trend, calorie/consumi, check-in, recupero, aspettativa, pasti/workout, azioni e stati vuoti |
+| Alimentazione | `FoodPlanActivity`, `NutritionPathActivity`, `NutritionPlanSettingsActivity`, `DietaryPreferencesActivity` | settimana/giorno, target, generazione, error/loading/empty, preferenze e schedulazione |
+| Pasti | `MealDetailActivity`, `MealAlternativeActivity`, `CheatEntryActivity`, `AdjustedPlanActivity` | tab dettaglio, ingredienti/pesi, alternative, inserimento extra, loading/error e preview piano adattato |
+| Spesa | `ShoppingListActivity` | aggregazione esistente, categorie/filtri, stato checkbox, reset e condivisione |
+| Allenamento | `WorkoutsActivity`, `NewWorkoutActivity` | settimana/giorno, rest/workout, inserimento/validazione/eliminazione |
+| Rilevazioni | `MeasurementsActivity`, `BiaActivity`, `BodyMeasuresActivity`, `NewBodyMeasurementActivity` | hub, form, storico, picker, import BIA, analisi, empty/loading/error |
+| Progressi e IA | `PhysicalEvolutionActivity`, `AiAnalysisActivity`, `WeeklyReviewActivity` | selettori periodo/metrica, grafici, stati dati insufficienti, analisi e review |
+| Profilo | `ProfileActivity`, `ProfileEditActivity` | profili, immagine/avatar, obiettivi, dati e preferenze |
+| Dati/sistema | `HistoryActivity`, `ExportActivity`, `NotificationsActivity`, `SettingsActivity`, `NutritionAdviceActivity` | storico/export/import, reminder, provider/chiavi protette, costi/config, dialog modale IA |
+
+Sono 30 Activity nel manifest includendo splash/host e flussi secondari. Il runtime attuale non dichiara bottom sheet di prodotto; usa AlertDialog, Material date/time picker, dropdown/PopupMenu, selettori custom e una schermata IA flottante. I componenti condivisi includono `BaseShellActivity`, `BottomNavBinder`, 23 custom View, grafici, controlli segmentati e le primitive Compose `MyFitAiCard`, `MyFitAiSectionTitle`, `MyFitAiStatusChip`, `MyFitAiButton`.
+
+### Ordine di restyling
+
+1. Token semantici centrali e tema Views/Compose in sincronia (slice attuale).
+2. Home, completando header e gerarchia delle sezioni con screenshot top/scroll, mantenendo l'attuale pannello metriche Compose e i restanti componenti Views.
+3. Primitive condivise e chrome: card, header, righe, CTA, bottom navigation, feedback/loading/empty/error.
+4. Tab e schermate per gruppi verticali: Alimentazione/pasti/spesa; Profilo/rilevazioni/BIA; Progressi/review/analisi; Allenamenti; IA/Altro/Settings/Export/History/Notifications.
+5. Form, picker, dropdown, dialog e modale IA; verifica integrazione con il tema comune.
+6. QA per slice con gli stessi dati: compilazione, test, route/tap/back/scroll/IME, stati, viewport compact, landscape e font scale; expanded solo se stabile.
+
+In ogni slice classificare decorazione/background separatamente da testo, card, input, pulsanti, grafici, icone, tab e liste funzionali. Nessuna schermata diventa bitmap; nessun dato o affordance viene aggiunto sulla base degli esempi illustrati nella tavola.
 
 ## Regola architetturale: un'unica sorgente di token
 
@@ -52,7 +85,7 @@ I valori letterali della palette saranno presenti solo nelle risorse centrali. �
 5. **Motion:** durate e curve nominate e condivise; supporto a reduced motion, battery saver e animator scale.
 6. **Grafici:** token condivisi per serie, fill, griglie, label, linee, marker e indicatori semantici. Il grafico non introduce colori o misure autonome.
 
-Le attuali risorse `colors.xml`, `dimens.xml` e `themes.xml` contengono già token parziali, ma la baseline ha riferimenti visuali diretti dalle Activity/widget, alcune misure di grafico definite nelle classi e due colori esadecimali inline nel layout `m3_alert_dialog.xml`. L'audit non li considera già normalizzati. Il consolidamento o la loro correzione appartiene alle successive fasi implementative, non è stato eseguito scrivendo questa specifica.
+Le risorse runtime centrali `colors.xml`, `dimens.xml`, `integers.xml`, `fractions.xml` e `themes.xml` sono state ampliate; il bridge Compose legge token Android tramite `MyFitAiTheme`. Una scansione dell'attuale UI non ha rilevato dimensioni dp/sp o colori hex inline in Kotlin, layout e drawable, mentre le Activity/widget usano riferimenti a risorse. Restano aperti l'inventario delle varianti e dei parametri visuali programmatici, la chiusura formale dell'audit globale e la certificazione multi-window; vedere `DEVELOPMENT_PLAN.md` per evidenze e limiti aggiornati. Questo non implica che il redesign di tutte le schermate sia completato.
 
 ## Componenti riutilizzabili previsti
 
