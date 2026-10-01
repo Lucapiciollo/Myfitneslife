@@ -36,6 +36,7 @@ import com.myfitai.app.ui.components.MetricDeltaTone
 import com.myfitai.app.ui.theme.setMyFitAiContent
 import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import com.myfitai.app.ui.widgets.TimeRangeSelectorView
+import com.myfitai.app.ui.widgets.ValueUnitFormatter
 import com.myfitai.app.ui.widgets.BodyMeasurementTrendView
 import com.myfitai.app.ui.widgets.WorkoutCardView
 import com.myfitai.app.ui.motion.UiMotion
@@ -661,6 +662,10 @@ class HomeActivity : BaseShellActivity() {
                 else -> "Obiettivo non impostato"
             }
         }
+        listOf(
+            R.id.caloriesBmrValue, R.id.caloriesBiaBmrValue, R.id.caloriesTdeeValue, R.id.caloriesTargetValue,
+            R.id.caloriesConsumedText, R.id.caloriesConsumedProteinText, R.id.caloriesRemainingText,
+        ).forEach { ValueUnitFormatter.apply(findViewById(it)) }
     }
 
     private fun showTdeeExplanation() {

@@ -43,6 +43,7 @@ class BodyMeasurementTrendView @JvmOverloads constructor(
         chart.setBackgroundColor(context.getColor(R.color.chart_transparent))
         chart.setDrawGridBackground(false)
         chart.setDrawBorders(false)
+        chart.setNoDataTextColor(context.getColor(R.color.chart_no_data_text))
     }
 
     fun setRealSeries(series: Series?, unit: String) {

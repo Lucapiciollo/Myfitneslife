@@ -247,6 +247,15 @@
 <style name="Text.MyFitAI.Body" parent="TextAppearance.Material3.BodyMedium"><item name="android:textColor">@color/text_secondary</item><item name="android:textSize">@dimen/text_body</item><item name="android:includeFontPadding">false</item></style>
 <style name="Text.MyFitAI.BodyCompact" parent="TextAppearance.Material3.BodySmall"><item name="android:textColor">@color/text_secondary</item><item name="android:textSize">@dimen/text_body_compact</item><item name="android:includeFontPadding">false</item></style>
 <style name="Text.MyFitAI.Caption" parent="TextAppearance.Material3.BodySmall"><item name="android:textColor">@color/text_muted</item></style>
+<style name="Text.MyFitAI.Supporting" parent="TextAppearance.Material3.BodySmall"><item name="android:textColor">@color/text_secondary</item><item name="android:textSize">@dimen/text_caption</item></style>
+<style name="Widget.MyFitAI.StatusChipText" parent="Text.MyFitAI.StatusValue">
+    <item name="android:textColor">@color/accent_green_dark</item>
+    <item name="android:background">@drawable/bg_chip_positive</item>
+    <item name="android:paddingStart">@dimen/space_12</item>
+    <item name="android:paddingEnd">@dimen/space_12</item>
+    <item name="android:paddingTop">@dimen/space_6</item>
+    <item name="android:paddingBottom">@dimen/space_6</item>
+</style>
 <style name="Text.MyFitAI.DialogChoice" parent="TextAppearance.Material3.BodyMedium"><item name="android:textColor">@color/text_primary</item><item name="android:textSize">@dimen/text_body</item><item name="android:includeFontPadding">false</item></style>
 <style name="Text.MyFitAI.KeyValueKey" parent="TextAppearance.Material3.BodyMedium">
     <item name="android:textColor">@color/text_secondary</item>

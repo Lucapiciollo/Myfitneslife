@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.AttributeSet
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
+import com.google.android.material.shape.AbsoluteCornerSize
 import com.myfitai.app.R
 
 /** Selettore di intervallo temporale riutilizzabile (1W/1M/3M/1Y, single-selection). */
@@ -17,6 +18,7 @@ class TimeRangeSelectorView @JvmOverloads constructor(
     init {
         isSingleSelection = true
         isSelectionRequired = true
+        setInnerCornerSize(AbsoluteCornerSize(resources.getDimension(R.dimen.radius_pill)))
     }
 
     fun setRanges(labels: List<String>, selectedIndex: Int = 0) {
@@ -39,12 +41,12 @@ class TimeRangeSelectorView @JvmOverloads constructor(
                 setTextColor(
                     android.content.res.ColorStateList(
                         arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
-                        intArrayOf(context.getColor(R.color.accent_green_dark), context.getColor(R.color.text_muted)),
+                        intArrayOf(context.getColor(R.color.segment_selected_text), context.getColor(R.color.segment_unselected_text)),
                     )
                 )
                 backgroundTintList = android.content.res.ColorStateList(
                     arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
-                    intArrayOf(context.getColor(R.color.pill_selected_bg), context.getColor(android.R.color.transparent)),
+                    intArrayOf(context.getColor(R.color.segment_selected_bg), context.getColor(android.R.color.transparent)),
                 )
             }
             addView(button)

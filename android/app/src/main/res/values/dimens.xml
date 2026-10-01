@@ -67,6 +67,8 @@
     <dimen name="progress_compact_size">26dp</dimen>
     <dimen name="progress_track_corner_radius">4dp</dimen>
     <dimen name="progress_track_thickness">6dp</dimen>
+    <dimen name="progress_indicator_gap_size">0dp</dimen>
+    <dimen name="progress_stop_indicator_size">0dp</dimen>
     <dimen name="onboarding_progress_track_thickness">4dp</dimen>
     <dimen name="body_marker_dot_size">10dp</dimen>
     <dimen name="dashboard_sheet_overlap">-16dp</dimen>
