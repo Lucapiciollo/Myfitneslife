@@ -775,11 +775,10 @@
                      android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12"
-                     app:cardBackgroundColor="@color/white"
-                    app:cardCornerRadius="@dimen/radius_card"
-                    app:cardElevation="@dimen/elevation_card"
-                    app:strokeColor="@color/divider"
-                    app:strokeWidth="@dimen/border_width_default">
+                     app:cardBackgroundColor="@color/surface_secondary"
+                    app:cardCornerRadius="@dimen/radius_medium"
+                    app:cardElevation="@dimen/elevation_none"
+                    app:strokeWidth="@dimen/border_width_none">
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -797,7 +796,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/space_8"
                             android:text="Kcal extra ancora da distribuire nei prossimi giorni."
-                            style="@style/Text.MyFitAI.Caption" />
+                            style="@style/Text.MyFitAI.Supporting" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
                 </LinearLayout>
@@ -830,70 +829,83 @@
 
                             <ImageButton
                                 android:id="@+id/weeklyExpectationHelpButton"
-                                 android:layout_width="@dimen/screen_header_icon_size"
-                                 android:layout_height="@dimen/screen_header_icon_size"
+                                android:layout_width="@dimen/screen_header_icon_size"
+                                android:layout_height="@dimen/screen_header_icon_size"
                                 android:background="@android:color/transparent"
                                 android:contentDescription="Spiega il possibile calo teorico"
-                                 android:padding="@dimen/space_8"
+                                android:padding="@dimen/space_8"
                                 android:src="@drawable/ic_help_outline"
                                 app:tint="@color/text_secondary" />
                         </LinearLayout>
 
-                        <TextView
-                            android:id="@+id/weeklyExpectationStatus"
+                        <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/space_12"
-                            android:text="Caricamento del piano settimanale…"
-                            style="@style/Text.MyFitAI.CardValue"
-                            android:textColor="@color/accent_green_dark" />
+                            android:background="@drawable/bg_panel_tonal"
+                            android:orientation="vertical"
+                            android:padding="@dimen/space_12">
 
+                            <TextView
+                                android:id="@+id/weeklyExpectationStatus"
+                                style="@style/Text.MyFitAI.CardValue"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="Caricamento del piano settimanale…"
+                                android:textColor="@color/accent_green_dark" />
+
+                            <TextView
+                                android:id="@+id/weeklyExpectationDetail"
+                                style="@style/Text.MyFitAI.Body"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/space_8" />
+
+                            <TextView
+                                android:id="@+id/weeklyExpectationCaution"
+                                style="@style/Text.MyFitAI.Supporting"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/space_8"
+                                android:text="Indicazione basata sul piano, non una previsione certa del peso." />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:divider="@drawable/divider_space_horizontal"
+                            android:orientation="horizontal"
+                            android:showDividers="middle">
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/weeklyExpectationActionButton"
+                                style="@style/Widget.MyFitAI.Button.Outlined"
+                                android:layout_width="0dp"
+                                android:layout_height="match_parent"
+                                android:layout_weight="1"
+                                android:layout_marginTop="@dimen/space_12"
+                                android:minHeight="@dimen/button_primary_min_height"
+                                android:text="Sì, traguardo raggiunto"
+                                android:textAllCaps="false"
+                                android:visibility="gone" />
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/weeklyExpectationNegativeButton"
+                                style="@style/Widget.MyFitAI.Button.Outlined"
+                                android:layout_width="0dp"
+                                android:layout_height="match_parent"
+                                android:layout_weight="1"
+                                android:layout_marginTop="@dimen/space_12"
+                                android:minHeight="@dimen/button_primary_min_height"
+                                android:text="No, da migliorare"
+                                android:textAllCaps="false"
+                                android:visibility="gone" />
+                        </LinearLayout>
                         <TextView
-                            android:id="@+id/weeklyExpectationDetail"
+                            android:id="@+id/weeklyExpectationOutcomeText"
+                            style="@style/Text.MyFitAI.Supporting"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/space_8"
-                            style="@style/Text.MyFitAI.Body" />
-
-                         <TextView
-                             android:id="@+id/weeklyExpectationCaution"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="@dimen/space_8"
-                            android:text="Indicazione basata sul piano, non una previsione certa del peso."
-                             style="@style/Text.MyFitAI.Micro" />
-                         <LinearLayout
-                             android:layout_width="match_parent"
-                             android:layout_height="wrap_content"
-                             android:layout_marginTop="@dimen/space_8"
-                             android:orientation="horizontal">
-                             <com.google.android.material.button.MaterialButton
-                                 android:id="@+id/weeklyExpectationActionButton"
-                                 style="@style/Widget.MyFitAI.Button.Text"
-                                 android:layout_width="0dp"
-                                 android:layout_height="wrap_content"
-                                 android:layout_weight="1"
-                                 android:text="Sì, traguardo raggiunto"
-                                 android:textAllCaps="false"
-                                 android:visibility="gone" />
-                             <com.google.android.material.button.MaterialButton
-                                 android:id="@+id/weeklyExpectationNegativeButton"
-                                 style="@style/Widget.MyFitAI.Button.Outlined"
-                                 android:layout_width="0dp"
-                                 android:layout_height="wrap_content"
-                                 android:layout_marginStart="@dimen/space_8"
-                                 android:layout_weight="1"
-                                 android:text="No, da migliorare"
-                                 android:textAllCaps="false"
-                                 android:visibility="gone" />
-                         </LinearLayout>
-                         <TextView
-                             android:id="@+id/weeklyExpectationOutcomeText"
-                             style="@style/Text.MyFitAI.Caption"
-                             android:layout_width="match_parent"
-                             android:layout_height="wrap_content"
-                             android:layout_marginTop="@dimen/space_4"
-                             android:visibility="gone" />
+                            android:visibility="gone" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 

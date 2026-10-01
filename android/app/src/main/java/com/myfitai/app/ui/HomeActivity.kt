@@ -531,6 +531,7 @@ class HomeActivity : BaseShellActivity() {
             value.text = "0 kcal"
             hint.text = "Nessun extra da distribuire: sei in pari con il recupero."
         }
+        ValueUnitFormatter.apply(value)
     }
 
     private fun renderUpcomingMeals(meals: List<HomeViewModel.NextMealState>) {
