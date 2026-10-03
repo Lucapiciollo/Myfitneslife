@@ -23,8 +23,11 @@ class MealCardView @JvmOverloads constructor(
     init {
         orientation = HORIZONTAL
         gravity = android.view.Gravity.CENTER_VERTICAL
+        setBackgroundResource(R.drawable.bg_panel_tonal)
+        val padding = resources.getDimensionPixelSize(R.dimen.space_12)
+        setPadding(padding, padding, padding, padding)
         val icon = ImageView(context).apply {
-            layoutParams = LayoutParams(resources.getDimensionPixelSize(R.dimen.icon_button_size), resources.getDimensionPixelSize(R.dimen.icon_button_size))
+            layoutParams = LayoutParams(resources.getDimensionPixelSize(R.dimen.vector_icon_size), resources.getDimensionPixelSize(R.dimen.vector_icon_size))
             setImageResource(R.drawable.ic_clock)
             importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
         }
@@ -34,23 +37,28 @@ class MealCardView @JvmOverloads constructor(
             orientation = VERTICAL
             layoutParams = LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f).apply {
                 marginStart = resources.getDimensionPixelSize(R.dimen.space_12)
+                marginEnd = resources.getDimensionPixelSize(R.dimen.space_12)
             }
         }
         timeView = TextView(context).apply {
-            setTextAppearance(R.style.Text_MyFitAI_CardValue)
+            setTextAppearance(R.style.Text_MyFitAI_CardTitle)
+            setTextColor(context.getColor(R.color.accent_green_dark))
         }
         textColumn.addView(timeView)
         titleView = TextView(context).apply {
-            layoutParams = LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply {
-                topMargin = resources.getDimensionPixelSize(R.dimen.space_2)
+            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
+                topMargin = resources.getDimensionPixelSize(R.dimen.space_4)
             }
-            setTextAppearance(R.style.Text_MyFitAI_Body)
+            setTextAppearance(R.style.Text_MyFitAI_BodyEmphasis)
             gravity = android.view.Gravity.START
             textAlignment = TEXT_ALIGNMENT_TEXT_START
         }
         textColumn.addView(titleView)
         kcalView = TextView(context).apply {
-            setTextAppearance(R.style.Text_MyFitAI_Body)
+            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
+                topMargin = resources.getDimensionPixelSize(R.dimen.space_2)
+            }
+            setTextAppearance(R.style.Text_MyFitAI_Supporting)
             gravity = android.view.Gravity.START
             textAlignment = TEXT_ALIGNMENT_TEXT_START
         }
