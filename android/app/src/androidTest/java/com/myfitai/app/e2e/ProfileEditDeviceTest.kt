@@ -65,7 +65,7 @@ class ProfileEditDeviceTest {
 
             scenario.onActivity { activity ->
                 val scroll = activity.findViewById<androidx.core.widget.NestedScrollView>(R.id.profileEditScroll)
-                assertTrue(activity.findViewById<android.view.View>(R.id.preferredFoodsInput).visibility == android.view.View.VISIBLE)
+                assertTrue(activity.findViewById<android.view.View>(R.id.wakeTimeInput).visibility == android.view.View.VISIBLE)
                 assertTrue(activity.findViewById<android.view.View>(R.id.saveProfileButton).visibility == android.view.View.VISIBLE)
                 scroll.fullScroll(android.view.View.FOCUS_DOWN)
             }
