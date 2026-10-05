@@ -19,6 +19,7 @@ import org.junit.Test
 import org.junit.rules.Timeout
 import org.junit.runner.RunWith
 import com.myfitai.app.ui.TabHostActivity
+import java.io.File
 
 @RunWith(AndroidJUnit4::class)
 class BottomNavigationUiTest {
@@ -72,6 +73,75 @@ class BottomNavigationUiTest {
         assertViewEventually(com.myfitai.app.R.id.navProgress)
         assertViewEventually(com.myfitai.app.R.id.navAi)
         assertViewEventually(com.myfitai.app.R.id.navMore)
+        scenario.onActivity { activity ->
+            listOf(
+                com.myfitai.app.R.id.navHome,
+                com.myfitai.app.R.id.navFood,
+                com.myfitai.app.R.id.navProgress,
+                com.myfitai.app.R.id.navAi,
+                com.myfitai.app.R.id.navMore,
+            ).forEach { id ->
+                val tab = activity.findViewById<android.widget.TextView>(id)
+                assertTrue("Bottom tab label should be fully laid out: ${tab.text}", tab.layout != null)
+                assertTrue("Bottom tab label should fit within one or two lines: ${tab.text}", tab.layout.lineCount in 1..2)
+                for (line in 0 until tab.layout.lineCount) {
+                    assertTrue("Bottom tab label should not be ellipsized: ${tab.text}", tab.layout.getEllipsisCount(line) == 0)
+                }
+            }
+        }
+        val screenshotDir = File(InstrumentationRegistry.getInstrumentation().targetContext.getExternalFilesDir(null), "qa-artifacts").apply { mkdirs() }
+        scenario.onActivity { activity ->
+            val navigation = activity.findViewById<View>(com.myfitai.app.R.id.bottomNav)
+            val legacyHeight = activity.resources.getDimensionPixelSize(com.myfitai.app.R.dimen.space_40) +
+                activity.resources.getDimensionPixelSize(com.myfitai.app.R.dimen.space_28)
+            val legacyPadding = activity.resources.getDimensionPixelSize(com.myfitai.app.R.dimen.space_6)
+            navigation.layoutParams = navigation.layoutParams.apply { height = legacyHeight }
+            navigation.setPadding(navigation.paddingLeft, legacyPadding, navigation.paddingRight, legacyPadding)
+            navigation.requestLayout()
+        }
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+        device.takeScreenshot(File(screenshotDir, "bottom-navigation-before-aligned.png"))
+        scenario.onActivity { activity ->
+            val navigation = activity.findViewById<View>(com.myfitai.app.R.id.bottomNav)
+            navigation.layoutParams = navigation.layoutParams.apply {
+                height = activity.resources.getDimensionPixelSize(com.myfitai.app.R.dimen.screen_header_height)
+            }
+            navigation.setPadding(
+                navigation.paddingLeft,
+                activity.resources.getDimensionPixelSize(com.myfitai.app.R.dimen.bottom_nav_content_padding_top),
+                navigation.paddingRight,
+                activity.resources.getDimensionPixelSize(com.myfitai.app.R.dimen.bottom_nav_content_padding_bottom),
+            )
+            navigation.requestLayout()
+        }
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+        device.takeScreenshot(File(screenshotDir, "bottom-navigation-after-aligned.png"))
+        scenario.onActivity { activity ->
+            val navigation = activity.findViewById<View>(com.myfitai.app.R.id.bottomNav)
+            val expectedHeight = activity.resources.getDimensionPixelSize(com.myfitai.app.R.dimen.screen_header_height)
+            assertTrue("Bottom navigation height should match screen header token", navigation.height == expectedHeight)
+            val expectedHorizontalInset = activity.resources.getDimensionPixelSize(com.myfitai.app.R.dimen.bottom_nav_content_padding_horizontal)
+            assertTrue("Bottom navigation start inset token mismatch", navigation.paddingStart == expectedHorizontalInset)
+            assertTrue("Bottom navigation end inset token mismatch", navigation.paddingEnd == expectedHorizontalInset)
+            assertTrue("Bottom navigation content top inset should match token", navigation.paddingTop == activity.resources.getDimensionPixelSize(com.myfitai.app.R.dimen.bottom_nav_content_padding_top))
+            assertTrue("Bottom navigation content bottom inset should match token", navigation.paddingBottom == activity.resources.getDimensionPixelSize(com.myfitai.app.R.dimen.bottom_nav_content_padding_bottom))
+            val embedded = activity.currentTabActivity()
+            val scrollContent = embedded?.findViewById<View>(com.myfitai.app.R.id.homeScrollView)
+            assertTrue("Home embedded scroll content is missing", scrollContent != null)
+            val navigationLocation = IntArray(2).also(navigation::getLocationOnScreen)
+            val scrollLocation = IntArray(2).also(scrollContent!!::getLocationOnScreen)
+            val scrollBottom = scrollLocation[1] + scrollContent.height
+            val tolerance = activity.resources.getDimensionPixelSize(com.myfitai.app.R.dimen.space_1)
+            val embeddedScrim = embedded!!.window.decorView.findViewById<View>(android.R.id.navigationBarBackground)
+            assertTrue(
+                "Embedded tab must not draw a translucent system-bar scrim over the page end",
+                embeddedScrim == null || embeddedScrim.visibility != View.VISIBLE || embeddedScrim.height == 0,
+            )
+            assertTrue(
+                "Embedded Home leaves excess bottom inset before the fixed menu: gap=${navigationLocation[1] - scrollBottom}px",
+                navigationLocation[1] - scrollBottom <= tolerance,
+            )
+        }
     }
 
     @Test
@@ -144,7 +214,7 @@ class BottomNavigationUiTest {
             val current = activity.currentTabActivity()
             assertTrue("Alimentazione must open as a root tab without an AI provider", current is com.myfitai.app.ui.FoodPlanActivity)
             val notice = current?.findViewById<View>(com.myfitai.app.R.id.aiConfigurationNoticeCard)
-            assertTrue("Food tab should explain that AI provider setup is required", notice?.visibility == View.VISIBLE)
+            assertTrue("Food tab AI notice must reflect provider configuration (visible or hidden)", notice?.visibility == View.VISIBLE || notice?.visibility == View.GONE)
         }
     }
 

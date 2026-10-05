@@ -1,4 +1,5 @@
 <resources>
+    <item name="protein_target_tag" type="id" />
     <item name="dashboardMetricsPanel" type="id" />
     <item name="nutritionAdviceButton" type="id" />
     <item name="motionVisibilityTarget" type="id" />

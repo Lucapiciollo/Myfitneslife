@@ -2,8 +2,10 @@
     <string name="chart_percent_value_format">%.1f%%</string>
     <string name="chart_decimal_value_format">%.1f</string>
     <string name="nav_home">Home</string>
-    <string name="nav_food">Alimentazione</string>
+    <string name="nav_food">Cibo</string>
+    <string name="nav_food_cd">Alimentazione</string>
     <string name="nav_progress">Progresso</string>
+    <string name="nav_progress_cd">Progressi corporei</string>
     <string name="nav_ai">IA</string>
     <string name="nav_more">Altro</string>
     <string name="dashboard_profile_cd">Profilo</string>

@@ -104,6 +104,7 @@ class WorkoutsActivity : BaseShellActivity() {
             )
         }
         findViewById<WeekDaySelectorView>(R.id.weekDaySelector).apply {
+            setSelectionStyle(WeekDaySelectorView.SelectionStyle.TONAL)
             setDays(days, selectedIndex = selectedDayIndex)
             setOnDaySelectedListener { index ->
                 selectedDayIndex = index

@@ -38,18 +38,19 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:paddingHorizontal="@dimen/space_16">
-            <com.google.android.material.card.MaterialCardView
-                style="@style/Widget.MyFitAI.FormCard"
-                android:layout_width="match_parent"
+             <com.google.android.material.card.MaterialCardView
+                 style="@style/Widget.MyFitAI.FormCard"
+                 app:cardBackgroundColor="@color/surface_primary"
+                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_12">
                 <LinearLayout
-                    style="@style/Widget.MyFitAI.CompactSectionContent"
+                    style="@style/Widget.MyFitAI.WhiteCardContent"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
                     <TextView style="@style/Text.MyFitAI.Section" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Preferenze e vincoli" />
-                    <TextView style="@style/Text.MyFitAI.SettingsDescription" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:text="Separa più alimenti con una virgola. Allergie, intolleranze ed esclusioni sono vincoli rigidi." />
+                    <TextView style="@style/Text.MyFitAI.SettingsDescription" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:background="@drawable/bg_panel_tonal" android:padding="@dimen/card_content_padding_compact" android:text="Separa più alimenti con una virgola. Allergie, intolleranze ed esclusioni sono vincoli rigidi." />
                     <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.InputCompact" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_12" android:hint="Alimenti preferiti">
                         <com.google.android.material.textfield.TextInputEditText android:id="@+id/preferredFoodsInput" style="@style/Widget.MyFitAI.InputEditTextCompact" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textCapSentences|textMultiLine" android:gravity="top|start" android:minLines="2" android:maxLines="4" />
                     </com.google.android.material.textfield.TextInputLayout>

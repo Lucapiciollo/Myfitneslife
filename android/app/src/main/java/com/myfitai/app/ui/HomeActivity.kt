@@ -37,6 +37,7 @@ import com.myfitai.app.ui.theme.setMyFitAiContent
 import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import com.myfitai.app.ui.widgets.TimeRangeSelectorView
 import com.myfitai.app.ui.widgets.ValueUnitFormatter
+import com.myfitai.app.ui.widgets.TargetProgressRingView
 import com.myfitai.app.ui.widgets.BodyMeasurementTrendView
 import com.myfitai.app.ui.widgets.WorkoutCardView
 import com.myfitai.app.ui.motion.UiMotion
@@ -242,8 +243,8 @@ class HomeActivity : BaseShellActivity() {
             ?: getString(R.string.dashboard_metric_unavailable)
         if (delta == null) {
             return DashboardMetricPresentation(
-                displayLabel, displayValue,
-                getString(R.string.dashboard_metric_insufficient_data),
+            displayLabel, displayValue,
+            getString(R.string.dashboard_metric_insufficient_data),
                 MetricDeltaTone.Neutral, trendIcon,
             )
         }
@@ -291,7 +292,6 @@ class HomeActivity : BaseShellActivity() {
                 child.id == R.id.aiConfigurationNoticeCard ||
                 child.id == R.id.biaDueNoticeCard ||
                 child.id == R.id.analysisHubCard ||
-                child.id == R.id.quickMeasurementsCard ||
                 child.id == R.id.quickActionsCard ||
                 child.id == R.id.activityCheckInCard ||
                 child.id == R.id.dashboardMetricsPanel ||
@@ -329,7 +329,6 @@ class HomeActivity : BaseShellActivity() {
     private fun moveOperationalSectionsToEnd() {
         val sections = listOf(
             findViewById<View>(R.id.analysisHubCard),
-            findViewById<View>(R.id.quickMeasurementsCard),
             findViewById<View>(R.id.quickActionsCard),
         )
         val parent = sections.firstOrNull()?.parent as? ViewGroup ?: return
@@ -589,46 +588,73 @@ class HomeActivity : BaseShellActivity() {
         findViewById<TextView>(R.id.caloriesBiaBmrValue).text = kcal(calories.biaBmr)
         findViewById<TextView>(R.id.caloriesTdeeValue).text = kcal(calories.tdee)
         findViewById<TextView>(R.id.caloriesTargetValue).text = kcal(calories.target)
-        findViewById<TextView>(R.id.caloriesConsumedText).text = calories.consumedKcal?.let { "$it kcal" } ?: "—"
-        findViewById<TextView>(R.id.caloriesConsumedProteinText).text =
-            calories.consumedProteinG?.let { NutritionEstimateFormatter.formatEstimatedMacro(it, "g") } ?: "—"
+        val caloriesConsumedText = findViewById<TextView>(R.id.caloriesConsumedText)
+        caloriesConsumedText.text = calories.consumedKcal?.toString() ?: "—"
         findViewById<TextView>(R.id.caloriesConsumptionNote).text = when {
             calories.consumedCount == 0 && calories.recordedCount > 0 -> "Gli elementi registrati risultano saltati."
             calories.consumedCount == 0 -> "Nessun alimento registrato come consumato oggi."
             calories.consumedCount < calories.recordedCount -> "Calorie e proteine sommano i soli elementi consumati (${calories.consumedCount})."
             else -> "Totale di ${calories.consumedCount} elementi segnati come consumati."
         }
-        findViewById<TextView>(R.id.caloriesRemainingText).apply {
-            val target = calories.target
-            text = if (calories.consumedKcal == null) {
-                "—"
-            } else if (target != null && target > 0) {
-                val remaining = target - calories.consumedKcal
-                if (remaining >= 0) "$remaining kcal" else "${-remaining} oltre"
-            } else {
-                "—"
-            }
+        val remainingValue = if (calories.consumedKcal != null && calories.target != null && calories.target > 0) {
+            calories.target - calories.consumedKcal
+        } else null
+        val remainingText = findViewById<TextView>(R.id.caloriesRemainingText).apply {
+            text = remainingValue?.let { if (it >= 0) it.toString() else (-it).toString() } ?: "—"
         }
         val target = calories.target ?: 0
+        val proteinTarget = calories.proteinTargetG?.let { kotlin.math.round(it).toInt() } ?: 0
+        findViewById<TextView>(R.id.caloriesConsumedMaximumText).text =
+            calories.target?.takeIf { it > 0 }?.toString().orEmpty()
+        findViewById<TextView>(R.id.caloriesConsumedProteinMaximumText).text =
+            proteinTarget.takeIf { it > 0 }?.toString().orEmpty()
+        findViewById<TextView>(R.id.caloriesRemainingMaximumText).text =
+            calories.target?.takeIf { it > 0 }?.toString().orEmpty()
         val consumedProgress = if (target > 0 && calories.consumedKcal != null) {
             (calories.consumedKcal * 100 / target).coerceIn(0, 100)
         } else {
             0
         }
-        val remainingProgress = if (target > 0 && calories.consumedKcal != null) {
-            ((target - calories.consumedKcal) * 100 / target).coerceIn(0, 100)
-        } else {
-            0
+        findViewById<TargetProgressRingView>(R.id.caloriesConsumedProgressRing).apply {
+            setRingDimensions(
+                resources.getDimensionPixelSize(R.dimen.home_calorie_ring_size),
+                resources.getDimensionPixelSize(R.dimen.home_calorie_ring_thickness),
+            )
+            visibility = if (target > 0) View.VISIBLE else View.GONE
+            setProgress(target, calories.consumedKcal ?: 0, target > 0 && calories.consumedKcal != null)
         }
-        findViewById<com.google.android.material.progressindicator.LinearProgressIndicator>(R.id.caloriesConsumedProgress).apply {
-            max = 100
-            progress = consumedProgress
-            setIndicatorColor(getColor(if (consumedProgress > 0) R.color.accent_green else R.color.divider))
+        val proteinConsumed = calories.consumedProteinG?.let { kotlin.math.round(it).toInt() }
+        val formattedProtein = calories.consumedProteinG?.let { NutritionEstimateFormatter.formatEstimatedMacro(it, "g") }
+        findViewById<TextView>(R.id.caloriesConsumedProteinText).text = when {
+            proteinConsumed == null -> "—"
+            formattedProtein?.startsWith("≈") == true -> "≈ $proteinConsumed"
+            else -> proteinConsumed.toString()
         }
-        findViewById<com.google.android.material.progressindicator.LinearProgressIndicator>(R.id.caloriesRemainingProgress).apply {
-            max = 100
-            progress = remainingProgress
-            setIndicatorColor(getColor(if (remainingProgress > 0) R.color.text_muted else R.color.divider))
+        findViewById<TargetProgressRingView>(R.id.caloriesConsumedProteinProgressRing).apply {
+            setTag(R.id.protein_target_tag, calories.proteinTargetG)
+            setRingDimensions(
+                resources.getDimensionPixelSize(R.dimen.home_macro_ring_size),
+                resources.getDimensionPixelSize(R.dimen.home_macro_ring_thickness),
+            )
+            visibility = if (proteinTarget > 0) View.VISIBLE else View.GONE
+            setProgress(proteinTarget, proteinConsumed ?: 0, proteinTarget > 0 && proteinConsumed != null)
+        }
+        findViewById<TargetProgressRingView>(R.id.caloriesRemainingProgressRing).apply {
+            setRingDimensions(
+                resources.getDimensionPixelSize(R.dimen.home_remaining_ring_size),
+                resources.getDimensionPixelSize(R.dimen.home_remaining_ring_thickness),
+            )
+            visibility = if (target > 0) View.VISIBLE else View.GONE
+            setProgress(target, if (calories.consumedKcal != null) target - calories.consumedKcal else 0, target > 0 && calories.consumedKcal != null)
+        }
+        caloriesConsumedText.visibility = if (target > 0) View.VISIBLE else View.GONE
+        findViewById<View>(R.id.caloriesSummaryBody).contentDescription = buildString {
+            append("BMR locale: ${kcal(calories.bmr)}. ")
+            append("BMR riportato dalla BIA: ${kcal(calories.biaBmr)}. ")
+            append("TDEE operativo ${kcal(calories.tdee)}. TDEE abituale ${kcal(calories.habitualTdee)}. ")
+            append("Target ${kcal(calories.target)}. ")
+            append("Consumate ${calories.consumedKcal?.let { kcal(it) } ?: "nessuna registrazione"}. ")
+            append("Proteine consumate ${calories.consumedProteinG?.let { NutritionEstimateFormatter.formatEstimatedMacro(it, "g") } ?: "non disponibili"}.")
         }
         val targetDifference = if (calories.targetBeforeAdaptation != null && calories.target != null) calories.targetBeforeAdaptation - calories.target else null
         findViewById<TextView>(R.id.caloriesTargetSourceText).text = when {
@@ -639,14 +665,6 @@ class HomeActivity : BaseShellActivity() {
             calories.targetFromWeeklyPlan -> "Target settimanale del piano · target specifico del giorno non disponibile"
             calories.target != null -> "Target calcolato dal profilo · nessun piano corrente"
             else -> "Target non disponibile: completa i dati richiesti nel profilo"
-        }
-        findViewById<android.view.View>(R.id.caloriesSummaryBody).contentDescription = buildString {
-            append("BMR locale: ${kcal(calories.bmr)}. ")
-            append("BMR riportato dalla BIA: ${kcal(calories.biaBmr)}. ")
-            append("TDEE operativo ${kcal(calories.tdee)}. TDEE abituale ${kcal(calories.habitualTdee)}. ")
-            append("Target ${kcal(calories.target)}. ")
-            append("Consumate ${calories.consumedKcal?.let { kcal(it) } ?: "nessuna registrazione"}. ")
-            append("Proteine consumate ${calories.consumedProteinG?.let { NutritionEstimateFormatter.formatEstimatedMacro(it, "g") } ?: "non disponibili"}.")
         }
         findViewById<TextView>(R.id.caloriesModeText).apply {
             val percent = calories.energyPercent?.let { p ->

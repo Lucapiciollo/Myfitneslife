@@ -7,22 +7,22 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import com.myfitai.app.R
 import com.myfitai.app.ui.theme.MyFitAiTheme
@@ -37,52 +37,88 @@ data class DashboardMetricPresentation(
     @param:DrawableRes val trendIcon: Int,
 )
 
-/** Three compact metric columns replacing the legacy custom View in the Home panel. */
+/** Three highlighted body metric tiles; source values, deltas and meanings are supplied by Home. */
 @Composable
 fun DashboardMetricsPanel(
     metrics: List<DashboardMetricPresentation>,
     modifier: Modifier = Modifier,
 ) {
     MyFitAiCard(
-        role = MyFitAiCardRole.Metric,
+        role = MyFitAiCardRole.Standard,
         modifier = modifier.fillMaxWidth(),
         contentPadding = MyFitAiCardPadding.Compact,
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(IntrinsicSize.Min),
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.space_8)),
-            verticalAlignment = Alignment.CenterVertically,
         ) {
             metrics.forEachIndexed { index, metric ->
-                if (index > 0) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxHeight()
-                            .width(dimensionResource(R.dimen.divider_thickness))
-                            .background(colorResource(R.color.divider)),
-                    )
-                }
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .fillMaxHeight(),
+                        .clip(MaterialTheme.shapes.medium)
+                        .background(colorResource(R.color.surface_secondary))
+                        .padding(dimensionResource(R.dimen.dashboard_metric_card_padding))
+                        .testTag("dashboardMetricTile$index"),
+                    horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.space_4)),
                 ) {
-                    Text(
-                        text = metric.label,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        text = metric.value,
-                        style = MaterialTheme.typography.titleSmall,
-                        color = colorResource(R.color.metric_value),
-                    )
+                    Box(
+                        modifier = Modifier
+                            .size(dimensionResource(R.dimen.dashboard_metric_tile_icon_size))
+                            .testTag("dashboardMetricIcon$index"),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(dimensionResource(R.dimen.dashboard_metric_tile_icon_size))
+                                .clip(CircleShape)
+                                .background(colorResource(R.color.surface_info_soft)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Image(
+                                painter = painterResource(metric.trendIcon),
+                                contentDescription = null,
+                                modifier = Modifier.size(dimensionResource(R.dimen.inline_icon_size)),
+                                colorFilter = ColorFilter.tint(colorResource(R.color.accent_green_dark)),
+                            )
+                        }
+                    }
+                    Box(
+                        modifier = Modifier.fillMaxWidth().testTag("dashboardMetricLabel$index"),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = metric.label,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            minLines = 3,
+                            maxLines = 3,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        )
+                    }
+                    Box(
+                        modifier = Modifier.fillMaxWidth().testTag("dashboardMetricValue$index"),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = metric.value,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = colorResource(R.color.metric_value),
+                            minLines = 2,
+                            maxLines = 2,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        )
+                    }
                     Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("dashboardMetricDelta$index")
+                            .clip(RoundedCornerShape(dimensionResource(R.dimen.radius_small)))
+                            .background(deltaContainer(metric.tone))
+                            .padding(horizontal = dimensionResource(R.dimen.space_4), vertical = dimensionResource(R.dimen.space_4)),
                         horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.space_2)),
-                        verticalAlignment = Alignment.Top,
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Image(
                             painter = painterResource(metric.trendIcon),
@@ -92,8 +128,12 @@ fun DashboardMetricsPanel(
                         )
                         Text(
                             text = metric.delta,
+                            modifier = Modifier.weight(1f),
                             style = MaterialTheme.typography.labelSmall,
                             color = deltaColor(metric.tone),
+                            minLines = 2,
+                            maxLines = 2,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                         )
                     }
                 }
@@ -107,6 +147,13 @@ private fun deltaColor(tone: MetricDeltaTone) = when (tone) {
     MetricDeltaTone.Positive -> colorResource(R.color.accent_green)
     MetricDeltaTone.Negative -> colorResource(R.color.semantic_error)
     MetricDeltaTone.Neutral -> colorResource(R.color.text_muted)
+}
+
+@Composable
+private fun deltaContainer(tone: MetricDeltaTone) = when (tone) {
+    MetricDeltaTone.Positive -> colorResource(R.color.surface_positive_soft)
+    MetricDeltaTone.Negative -> colorResource(R.color.surface_error_soft)
+    MetricDeltaTone.Neutral -> colorResource(R.color.surface_secondary)
 }
 
 @Preview(showBackground = true)

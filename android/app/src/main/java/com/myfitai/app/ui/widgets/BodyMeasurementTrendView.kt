@@ -25,6 +25,11 @@ class BodyMeasurementTrendView @JvmOverloads constructor(
     private var points: List<Point> = emptyList()
     private var onPointsChanged: ((List<Point>) -> Unit)? = null
 
+    /** True once the first real-series render has been requested, including a legitimate empty state. */
+    fun hasReceivedRealSeries(): Boolean = chart.xAxis.isEnabled
+
+    fun hasRealSeriesData(): Boolean = chart.data?.dataSets?.any { it.entryCount > 0 } == true
+
     init {
         addView(chart, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
         chart.description.isEnabled = false

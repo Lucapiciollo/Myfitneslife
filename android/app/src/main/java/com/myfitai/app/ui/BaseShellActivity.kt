@@ -5,12 +5,14 @@ import android.graphics.Typeface
 import android.text.SpannableStringBuilder
 import android.text.Spanned
 import android.text.style.StyleSpan
+import android.text.style.ForegroundColorSpan
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.AutoCompleteTextView
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
@@ -49,11 +51,20 @@ abstract class BaseShellActivity : AppCompatActivity() {
             ?: return
         val headerParent = header.parent as? ViewGroup ?: return
         val scrollContainer = headerParent.parent as? ViewGroup ?: return
+        // Promote only headers that scroll away with their content; fixed root-level headers stay inside the inset-aware shell.
+        if (scrollContainer !is ScrollView && scrollContainer !is androidx.core.widget.NestedScrollView) {
+            styleStickyHeader(header)
+            return
+        }
         val root = scrollContainer.parent as? ViewGroup ?: return
         if (root.indexOfChild(scrollContainer) < 0) return
 
         headerParent.removeView(header)
         root.addView(header, 0)
+        styleStickyHeader(header)
+    }
+
+    private fun styleStickyHeader(header: ViewGroup) {
         header.setBackgroundColor(getColor(R.color.white))
         header.setPadding(dimen(R.dimen.space_8), 0, dimen(R.dimen.space_8), 0)
         ViewCompat.setElevation(header, resources.getDimension(R.dimen.sticky_header_elevation))
@@ -98,12 +109,33 @@ abstract class BaseShellActivity : AppCompatActivity() {
                 text = formatHelpMessage(message)
                 setTextAppearance(R.style.Text_MyFitAI_Body)
                 setTextColor(getColor(R.color.text_primary))
+                setLineSpacing(dimen(R.dimen.space_4).toFloat(), 1.0f)
                 setPadding(dimen(R.dimen.space_4), dimen(R.dimen.space_8), dimen(R.dimen.space_4), dimen(R.dimen.space_8))
                 content.addView(this, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
             }
+            val scroll = object : ScrollView(this) {
+                private val displayHeight = resources.displayMetrics.heightPixels
+                private val maxContentHeight = resources.getFraction(
+                    R.fraction.dialog_editor_max_height,
+                    displayHeight,
+                    displayHeight,
+                ).toInt()
+
+                override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+                    val boundedHeight = MeasureSpec.makeMeasureSpec(
+                        minOf(maxContentHeight, MeasureSpec.getSize(heightMeasureSpec)),
+                        MeasureSpec.AT_MOST,
+                    )
+                    super.onMeasure(widthMeasureSpec, boundedHeight)
+                }
+            }.apply {
+                isFillViewport = false
+                isVerticalScrollBarEnabled = true
+                addView(content, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+            }
             MaterialAlertDialogBuilder(this)
                 .setTitle(title)
-                .setView(normalizeRuntimeDialogContent(content))
+                .setView(normalizeRuntimeDialogContent(scroll))
                 .setPositiveButton("Ho capito", null)
                 .show()
         }.onFailure {
@@ -145,6 +177,7 @@ abstract class BaseShellActivity : AppCompatActivity() {
                     val headingStart = length
                     append(heading)
                     setSpan(StyleSpan(Typeface.BOLD), headingStart, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    setSpan(ForegroundColorSpan(getColor(R.color.dialog_action_primary)), headingStart, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                     append("\n").append(description)
                 } else {
                     append(cleanParagraph)
@@ -200,7 +233,13 @@ abstract class BaseShellActivity : AppCompatActivity() {
         if (this !is NutritionAdviceActivity) UiMotion.screenEnter(content)
         ViewCompat.setOnApplyWindowInsetsListener(shell) { view, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            view.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            val embeddedTab = intent.getBooleanExtra(BottomNavBinder.EXTRA_EMBEDDED_TAB, false)
+            view.setPadding(
+                if (embeddedTab) 0 else systemBars.left,
+                if (embeddedTab) 0 else systemBars.top,
+                if (embeddedTab) 0 else systemBars.right,
+                if (embeddedTab) 0 else systemBars.bottom,
+            )
             insets
         }
         ViewCompat.requestApplyInsets(shell)

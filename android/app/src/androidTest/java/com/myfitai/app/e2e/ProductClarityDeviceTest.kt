@@ -9,6 +9,7 @@ import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
 import com.myfitai.app.R
+import com.myfitai.app.ui.DietaryPreferencesActivity
 import com.myfitai.app.ui.FoodPlanActivity
 import com.myfitai.app.ui.PhysicalEvolutionActivity
 import com.myfitai.app.ui.ProfileActivity
@@ -82,10 +83,31 @@ class ProductClarityDeviceTest {
         }).use {
             assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/rowFoodPreferences")), 5_000))
             device.findObject(By.res("com.myfitai.app:id/rowFoodPreferences")).click()
-            assertTrue(device.wait(Until.hasObject(By.textContains("Modifica")), 5_000))
+            assertTrue("Profile row must open the personal data editor", device.wait(Until.hasObject(By.textStartsWith("Modifica")), 5_000))
+            listOf("nameInput", "birthDateInput", "sexInput", "heightInput", "weightInput", "goalInput", "activityInput").forEach { id ->
+                assertTrue("Profile editor field missing: $id", device.hasObject(By.res("com.myfitai.app:id/$id")))
+            }
+            assertTitleBelowStatusBar(By.textStartsWith("Modifica"))
             device.pressBack()
             assertTrue(device.wait(Until.hasObject(By.text("Profilo")), 5_000))
         }
+    }
+
+    @Test
+    fun dietaryPreferencesTitleRespectsSystemInsets() {
+        ActivityScenario.launch<DietaryPreferencesActivity>(Intent(context, DietaryPreferencesActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        }).use {
+            assertTrue(device.wait(Until.hasObject(By.text("Preferenze alimentari")), 5_000))
+            assertTitleBelowStatusBar(By.text("Preferenze alimentari"))
+        }
+    }
+
+    private fun assertTitleBelowStatusBar(title: androidx.test.uiautomator.BySelector) {
+        val statusBarHeight = context.resources.getIdentifier("status_bar_height", "dimen", "android")
+            .let { if (it > 0) context.resources.getDimensionPixelSize(it) else 0 }
+        val titleTop = device.findObject(title).visibleBounds.top
+        assertTrue("Screen title must sit below the status bar: top=$titleTop status=$statusBarHeight", titleTop >= statusBarHeight)
     }
 
 }

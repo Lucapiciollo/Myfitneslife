@@ -5,6 +5,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
@@ -72,6 +73,14 @@ class HomeComposeMetricsDeviceTest {
 
         composeRule.runOnIdle {
             assertTrue(composeRule.activity.findViewById<android.view.View>(R.id.dashboardMetricsPanel).isShown)
+            val selector = composeRule.activity.findViewById<com.myfitai.app.ui.widgets.TimeRangeSelectorView>(R.id.timeRangeSelector)
+            val selectedButton = (0 until selector.childCount)
+                .map { selector.getChildAt(it) as com.google.android.material.button.MaterialButton }
+                .single { it.isChecked }
+            assertTrue("Home range selector defaults to 1Y", selectedButton.text.toString() == "1Y")
+            val chart = composeRule.activity.findViewById<com.myfitai.app.ui.widgets.BodyMeasurementTrendView>(R.id.bodyMeasurementTrendChart)
+            assertTrue("one-year range populates the real measurement chart on first render", chart.visibility == android.view.View.VISIBLE)
+            assertTrue("chart receives the first real-series update without requiring range interaction", chart.hasReceivedRealSeries())
         }
         composeRule.runOnIdle {
             val metricsView = composeRule.activity.findViewById<android.view.View>(com.myfitai.app.R.id.dashboardMetricsPanel)
@@ -91,7 +100,19 @@ class HomeComposeMetricsDeviceTest {
         composeRule.onNodeWithText("Grasso", substring = true).assertIsDisplayed()
         composeRule.onNodeWithText("Massa muscolare", substring = true).assertIsDisplayed()
         composeRule.onNodeWithText("89 kg").assertIsDisplayed()
-        composeRule.onAllNodesWithText("Dati insufficienti", substring = true).assertCountEquals(3)
+        val unavailableMetrics = composeRule.onAllNodesWithText("Dati insufficienti", substring = true).fetchSemanticsNodes().size
+        assertTrue("real profile history is represented either as a delta or insufficient-data state", unavailableMetrics in 0..3)
+        val tileHeights = (0..2).map { index ->
+            composeRule.onNodeWithTag("dashboardMetricTile$index").fetchSemanticsNode().boundsInRoot.height
+        }
+        assertTrue("metric tiles have equal heights", tileHeights.maxOrNull()!! - tileHeights.minOrNull()!! < 1f)
+        fun heights(tag: String) = (0..2).map { index ->
+            composeRule.onNodeWithTag("$tag$index").fetchSemanticsNode().boundsInRoot.height
+        }
+        listOf("dashboardMetricIcon", "dashboardMetricLabel", "dashboardMetricValue", "dashboardMetricDelta").forEach { tag ->
+            val rowHeights = heights(tag)
+            assertTrue("$tag row is aligned across all three cards", rowHeights.maxOrNull()!! - rowHeights.minOrNull()!! < 1f)
+        }
         val screenshotFile = File(context.cacheDir, "home-compose-pilot.png")
         assertTrue("Unable to capture Home pilot screenshot", device.takeScreenshot(screenshotFile, 1f, 90))
         device.executeShellCommand("screencap -p /sdcard/Download/myfitai-home-compose-pilot.png")

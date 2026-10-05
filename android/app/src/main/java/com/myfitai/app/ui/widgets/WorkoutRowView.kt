@@ -26,8 +26,9 @@ class WorkoutRowView @JvmOverloads constructor(
         gravity = android.view.Gravity.CENTER_VERTICAL
         minimumHeight = resources.getDimensionPixelSize(R.dimen.control_min_height)
         val rowPadding = resources.getDimensionPixelSize(R.dimen.space_8)
-        setPadding(0, rowPadding, 0, rowPadding)
-        background = null
+        val horizontalPadding = resources.getDimensionPixelSize(R.dimen.space_12)
+        setPadding(horizontalPadding, rowPadding, horizontalPadding, rowPadding)
+        background = context.getDrawable(R.drawable.bg_panel_tonal)
 
         val thumbnailSize = resources.getDimensionPixelSize(R.dimen.dashboard_thumbnail_size)
         photoThumbnail = ShapeableImageView(context).apply {

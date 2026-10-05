@@ -40,6 +40,29 @@ class QaSeederDeviceTest {
         saveScreenshot("qa_home")
     }
 
+    @Test
+    fun qaHomeLiveSeed_isNonDestructiveAndAppearsInNormalHome() {
+        context.startActivity(Intent().apply {
+            component = ComponentName(context.packageName, "${context.packageName}.qa.QaSeederActivity")
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        })
+        assertTrue(device.wait(Until.hasObject(By.text("SEED_QA_HOME_LIVE")), 8_000))
+        device.findObject(By.text("SEED_QA_HOME_LIVE")).click()
+        assertTrue(waitForSeedResult(90_000))
+        val result = device.findObject(By.desc("qa_status"))?.text.orEmpty()
+        assertTrue("seed creates a separate QA profile", result.contains("name=QA Home Live"))
+        assertTrue("seed records Room consumption through the domain service", result.contains("consumedKcal=1200 consumedMeals=2"))
+
+        device.pressHome()
+        instrumentation.startActivitySync(Intent(context, com.myfitai.app.ui.HomeActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        })
+        assertTrue("Home reads persisted consumed kcal", device.wait(Until.hasObject(By.text("1200")), 20_000))
+        assertTrue("Home reads the current plan target", device.hasObject(By.text("2213 kcal")))
+        assertTrue("Home calculates remaining kcal from persisted consumption", device.hasObject(By.text("1013")))
+        saveScreenshot("qa-home-live-seed")
+    }
+
     private fun saveScreenshot(name: String) {
         val dir = File(context.getExternalFilesDir(null), "qa-artifacts").apply { mkdirs() }
         device.takeScreenshot(File(dir, "$name.png"))

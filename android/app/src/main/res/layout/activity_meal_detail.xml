@@ -110,7 +110,9 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_16"
-                    android:gravity="center"
+                    android:background="@drawable/bg_error_soft"
+                    android:gravity="start|center_vertical"
+                    android:padding="@dimen/card_content_padding_compact"
                     android:visibility="gone" />
 
                 <com.google.android.material.button.MaterialButton

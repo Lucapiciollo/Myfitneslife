@@ -30,14 +30,20 @@
     <dimen name="divider_thickness">1dp</dimen>
     <dimen name="body_marker_outline_width">2dp</dimen>
     <dimen name="radius_square">0dp</dimen>
-    <dimen name="control_min_height">48dp</dimen><dimen name="screen_header_height">56dp</dimen><dimen name="profile_header_height">54dp</dimen><dimen name="bottom_nav_height">68dp</dimen>
-    <dimen name="bottom_nav_item_horizontal_padding">3dp</dimen>
-    <dimen name="bottom_nav_item_vertical_padding">4dp</dimen>
-    <dimen name="bottom_nav_icon_label_spacing">2dp</dimen>
+    <dimen name="control_min_height">48dp</dimen><dimen name="screen_header_height">56dp</dimen><dimen name="profile_header_height">54dp</dimen><dimen name="bottom_nav_height">64dp</dimen>
+    <dimen name="bottom_nav_content_padding_horizontal">@dimen/space_4</dimen>
+    <dimen name="bottom_nav_content_padding_top">@dimen/space_2</dimen>
+    <dimen name="bottom_nav_content_padding_bottom">@dimen/space_2</dimen>
+    <dimen name="bottom_nav_item_horizontal_padding">@dimen/space_8</dimen>
+    <dimen name="bottom_nav_item_vertical_padding">@dimen/space_4</dimen>
+    <dimen name="bottom_nav_icon_label_spacing">@dimen/space_2</dimen>
     <dimen name="control_compact_min_height">44dp</dimen>
     <dimen name="screen_header_icon_size">40dp</dimen>
     <dimen name="vector_icon_size">24dp</dimen>
-    <dimen name="bottom_nav_icon_size">20dp</dimen>
+    <dimen name="bottom_nav_icon_size">22dp</dimen>
+    <dimen name="bottom_nav_label_text_size">12sp</dimen>
+    <dimen name="bottom_nav_label_min_text_size">8sp</dimen>
+    <dimen name="home_scroll_bottom_padding">@dimen/space_4</dimen>
     <dimen name="trend_direction_icon_size">12dp</dimen>
     <dimen name="trend_indicator_icon_size">12dp</dimen>
     <dimen name="body_measurement_vector_width">120dp</dimen>
@@ -81,6 +87,13 @@
     <dimen name="dashboard_chart_height">140dp</dimen><dimen name="dashboard_thumbnail_size">72dp</dimen><dimen name="dashboard_pill_height">32dp</dimen>
     <dimen name="profile_avatar_size">72dp</dimen>
     <dimen name="brand_mark_size">28dp</dimen>
+    <dimen name="home_calorie_ring_size">72dp</dimen>
+    <dimen name="home_calorie_ring_thickness">6dp</dimen>
+    <dimen name="home_macro_ring_size">72dp</dimen>
+    <dimen name="home_macro_ring_thickness">6dp</dimen>
+    <dimen name="home_remaining_ring_size">72dp</dimen>
+    <dimen name="home_remaining_ring_thickness">6dp</dimen>
+    <dimen name="home_calorie_progress_min_width">120dp</dimen>
     <dimen name="motion_screen_offset">8dp</dimen>
     <dimen name="motion_reveal_offset">4dp</dimen>
     <dimen name="elevation_none">0dp</dimen>
@@ -110,5 +123,8 @@
     <dimen name="chart_point_radius">4dp</dimen>
     <dimen name="chart_point_radius_compact">3dp</dimen>
     <dimen name="dashboard_metric_delta_column_width">20dp</dimen>
+    <dimen name="dashboard_metric_card_padding">8dp</dimen>
+    <dimen name="dashboard_metric_tile_icon_size">28dp</dimen>
+    <dimen name="dashboard_metric_value_gap">6dp</dimen>
     <dimen name="line_spacing_zero_extra">0dp</dimen>
 </resources>

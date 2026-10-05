@@ -1,6 +1,7 @@
 package com.myfitai.app.e2e
 
 import android.content.Intent
+import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
@@ -19,25 +20,27 @@ class HomeQuickMeasurementsDeviceTest {
 
     @Test
     fun home_exposesDirectMeasurementAndHistoryActions() {
-        context.startActivity(Intent(context, HomeActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-        })
+        ActivityScenario.launch<HomeActivity>(Intent(context, HomeActivity::class.java)).use { scenario ->
+            scenario.onActivity { activity ->
+                activity.findViewById<android.widget.ScrollView>(com.myfitai.app.R.id.homeScrollView)
+                    .fullScroll(android.view.View.FOCUS_DOWN)
+            }
+            device.waitForIdle()
+            assertTrue(device.hasObject(By.res(context.packageName, "quickAddBiaButton")))
+            assertTrue(device.hasObject(By.res(context.packageName, "quickAddBodyMeasurementButton")))
+            assertTrue(device.hasObject(By.res(context.packageName, "quickOpenHistoryButton")))
 
-        assertTrue(device.wait(Until.hasObject(By.text("Rilevazioni rapide")), 10_000))
-        assertTrue(device.hasObject(By.res(context.packageName, "quickAddBiaButton")))
-        assertTrue(device.hasObject(By.res(context.packageName, "quickAddBodyMeasurementButton")))
-        assertTrue(device.hasObject(By.res(context.packageName, "quickOpenHistoryButton")))
+            device.findObject(By.res(context.packageName, "quickAddBiaButton")).click()
+            assertTrue(device.wait(Until.hasObject(By.text("Bioimpedenziometria")), 5_000))
+            device.pressBack()
 
-        device.findObject(By.res(context.packageName, "quickAddBiaButton")).click()
-        assertTrue(device.wait(Until.hasObject(By.text("Bioimpedenziometria")), 5_000))
-        device.pressBack()
+            device.findObject(By.res(context.packageName, "quickAddBodyMeasurementButton")).click()
+            assertTrue(device.wait(Until.hasObject(By.text("Nuova misurazione")), 5_000))
+            device.pressBack()
 
-        device.findObject(By.res(context.packageName, "quickAddBodyMeasurementButton")).click()
-        assertTrue(device.wait(Until.hasObject(By.text("Nuova misurazione")), 5_000))
-        device.pressBack()
-
-        device.findObject(By.res(context.packageName, "quickOpenHistoryButton")).click()
-        assertTrue(device.wait(Until.hasObject(By.text("Storico")), 5_000))
-        device.pressBack()
+            device.findObject(By.res(context.packageName, "quickOpenHistoryButton")).click()
+            assertTrue(device.wait(Until.hasObject(By.text("Storico")), 5_000))
+            device.pressBack()
+        }
     }
 }

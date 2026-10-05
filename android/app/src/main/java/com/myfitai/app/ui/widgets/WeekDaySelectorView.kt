@@ -14,12 +14,18 @@ class WeekDaySelectorView @JvmOverloads constructor(
     attrs: AttributeSet? = null,
 ) : LinearLayout(context, attrs) {
 
+    enum class SelectionStyle {
+        BRAND,
+        TONAL,
+    }
+
     data class Day(val abbreviation: String, val dayNumber: String)
 
     private var onDaySelected: ((Int) -> Unit)? = null
     private var selectedIndex: Int = 0
     private var selectionInitialized: Boolean = false
     private var renderedDays: List<Day> = emptyList()
+    private var selectionStyle = SelectionStyle.BRAND
     private val columns = mutableListOf<LinearLayout>()
 
     init {
@@ -87,11 +93,26 @@ class WeekDaySelectorView @JvmOverloads constructor(
         applySelectionStyle(animateSelection = true)
     }
 
+    fun setSelectionStyle(style: SelectionStyle) {
+        if (selectionStyle == style) return
+        selectionStyle = style
+        applySelectionStyle()
+    }
+
     private fun applySelectionStyle(animateSelection: Boolean = false) {
         columns.forEachIndexed { index, column ->
             val isSelected = index == selectedIndex
-            column.background = if (isSelected) context.getDrawable(R.drawable.bg_day_selected) else null
-            val textColor = context.getColor(if (isSelected) R.color.white else R.color.text_secondary)
+            column.background = if (isSelected) {
+                context.getDrawable(
+                    if (selectionStyle == SelectionStyle.TONAL) R.drawable.bg_day_selected_tonal
+                    else R.drawable.bg_day_selected,
+                )
+            } else null
+            val textColor = context.getColor(
+                if (isSelected && selectionStyle == SelectionStyle.BRAND) R.color.white
+                else if (isSelected) R.color.accent_green_dark
+                else R.color.text_secondary,
+            )
             (column.getChildAt(0) as TextView).setTextColor(textColor)
             (column.getChildAt(1) as TextView).setTextColor(textColor)
             UiMotion.selection(column, isSelected, animateSelection)

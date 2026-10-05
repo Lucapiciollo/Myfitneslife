@@ -87,6 +87,7 @@ class HomeViewModel(
         val habitualTdee: Int? = null,
         val consumedKcal: Int? = null,
         val consumedProteinG: Double? = null,
+        val proteinTargetG: Double? = null,
         val consumedCount: Int = 0,
         val recordedCount: Int = 0,
     )
@@ -138,7 +139,8 @@ class HomeViewModel(
         val activityCheckIn: DailyActivityCheckInEntity?,
     )
 
-    private val selectedRange = MutableStateFlow(1)
+    // Home's selector is initialized to 1Y; keep the chart query on the same range from first render.
+    private val selectedRange = MutableStateFlow(3)
 
     private val source = activeProfileStore.activeProfileId.flatMapLatest { profileId ->
         if (profileId <= 0L) {
@@ -234,6 +236,7 @@ class HomeViewModel(
         val todayTargetDay = snapshot?.version?.days
             ?.firstOrNull { it.dateEpochDay == LocalDate.now().toEpochDay() }
         val todayTarget = todayTargetDay?.targetKcal
+        val todayProteinTarget = todayTargetDay?.targetProteinG ?: snapshot?.version?.targetProteinG ?: dashboard.calories.proteinTargetG
         val todayBaseTarget = todayTargetDay?.baseTargetKcal ?: todayTargetDay?.targetKcal ?: snapshot?.version?.targetKcal
         val planTarget = todayTarget ?: snapshot?.version?.targetKcal ?: dashboard.calories.planTarget ?: dashboard.calories.target
         val displayedTarget = dashboard.calories.target ?: planTarget
@@ -263,6 +266,7 @@ class HomeViewModel(
                 energyPercent = displayedTargetPercent,
                 consumedKcal = consumedKcal?.let { Math.round(it).toInt() },
                 consumedProteinG = consumedProtein,
+                proteinTargetG = todayProteinTarget?.toDouble(),
                 consumedCount = consumed.consumedCount,
                 recordedCount = consumed.recordedCount,
             ),
@@ -438,6 +442,7 @@ class HomeViewModel(
             biaBmr = latestBia?.bmrKcal?.let { Math.round(it).toInt() },
             tdee = tdeeInt,
             target = targetInt,
+            proteinTargetG = metrics.operationalProteinG,
             planTarget = metrics.profileTargetKcal?.let { Math.round(it).toInt() },
             habitualTdee = metrics.habitualTdeeKcal?.let { Math.round(it).toInt() },
             goalLabel = goalLabel(ProfileCalculationMapper.goal(profile.goal)),

@@ -1,4 +1,8 @@
 <resources>
+    <declare-styleable name="TargetProgressRingView">
+        <attr name="ringSize" format="dimension" />
+        <attr name="ringThickness" format="dimension" />
+    </declare-styleable>
     <declare-styleable name="SettingRowView">
         <attr name="srIcon" format="reference" />
         <attr name="srLabel" format="string" />

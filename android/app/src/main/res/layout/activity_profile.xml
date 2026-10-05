@@ -32,17 +32,18 @@
             </LinearLayout>
 
              <com.google.android.material.card.MaterialCardView
-                 style="@style/Widget.MyFitAI.Card"
-                 app:cardBackgroundColor="@color/white"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-            <LinearLayout
-                style="@style/Widget.MyFitAI.HomeSectionContent"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingTop="@dimen/space_4">
+                  style="@style/Widget.MyFitAI.Card"
+                  app:cardBackgroundColor="@color/white"
+                 android:layout_width="match_parent"
+                 android:layout_height="wrap_content">
+             <LinearLayout
+                 style="@style/Widget.MyFitAI.HomeSectionContent"
+                 android:layout_width="match_parent"
+                 android:layout_height="wrap_content"
+                 android:gravity="center_vertical"
+                 android:orientation="horizontal"
+                 android:background="@drawable/bg_panel_tonal"
+                 android:paddingTop="@dimen/space_4">
                 <com.google.android.material.imageview.ShapeableImageView
                     android:id="@+id/profileAvatar"
                     android:layout_width="@dimen/profile_avatar_size"
@@ -63,8 +64,8 @@
                         android:text="Profilo"
                         android:textColor="@color/text_primary"
                          style="@style/Text.MyFitAI.CardTitle" />
-                     <TextView android:id="@+id/profileStats" style="@style/Text.MyFitAI.Body" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_2" android:text="Dati profilo" />
-                     <TextView android:id="@+id/profileGoal" style="@style/Text.MyFitAI.Body" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_2" android:text="Obiettivo non impostato" />
+                     <TextView android:id="@+id/profileStats" style="@style/Text.MyFitAI.Supporting" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_2" android:text="Dati profilo" />
+                      <TextView android:id="@+id/profileGoal" style="@style/Text.MyFitAI.BodyEmphasis" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_2" android:text="Obiettivo non impostato" />
                     <TextView
                         android:id="@+id/profileSwitcherHint"
                         android:layout_width="wrap_content"

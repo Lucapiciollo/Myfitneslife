@@ -9,7 +9,9 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.graphics.Insets
 import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.myfitai.app.R
@@ -24,16 +26,24 @@ class TabHostActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WindowCompat.getInsetsController(window, window.decorView).isAppearanceLightNavigationBars = true
+        if (android.os.Build.VERSION.SDK_INT >= 29) disableNavigationBarContrastScrim()
         currentTab = intent.getStringExtra(BottomNavBinder.EXTRA_SELECTED_TAB)
             ?.let { name -> BottomNavBinder.Tab.entries.firstOrNull { it.name == name } }
             ?: BottomNavBinder.Tab.HOME
         setContentView(R.layout.activity_tab_host)
+        window.navigationBarColor = getColor(R.color.surface_primary)
         content = findViewById(R.id.tabContent)
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(android.R.id.content)) { view, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             view.setPadding(bars.left, bars.top, bars.right, bars.bottom)
-            insets
+            // Embedded tab windows must not draw their own system-bar backgrounds over the page content.
+            WindowInsetsCompat.Builder(insets)
+                .setInsets(WindowInsetsCompat.Type.systemBars(), Insets.NONE)
+                .setInsetsIgnoringVisibility(WindowInsetsCompat.Type.systemBars(), Insets.NONE)
+                .build()
         }
+        ViewCompat.requestApplyInsets(findViewById(android.R.id.content))
         activityManager = LocalActivityManager(this, true)
         activityManager.dispatchCreate(savedInstanceState)
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
@@ -92,9 +102,16 @@ class TabHostActivity : AppCompatActivity() {
             )
         }
         val child = activityManager.startActivity(tab.name, childIntent) ?: return
+        child.navigationBarColor = android.graphics.Color.TRANSPARENT
+        if (android.os.Build.VERSION.SDK_INT >= 29) disableNavigationBarContrastScrim(child)
         child.decorView.findViewById<View>(R.id.bottomNav)?.visibility = View.GONE
         content.removeAllViews()
         content.addView(child.decorView, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+    }
+
+    @android.annotation.TargetApi(29)
+    private fun disableNavigationBarContrastScrim(target: android.view.Window = window) {
+        target.isNavigationBarContrastEnforced = false
     }
 
     override fun onResume() {

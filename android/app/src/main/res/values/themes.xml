@@ -1,7 +1,8 @@
 <resources>
 <style name="Theme.MyFitAI" parent="Theme.Material3.Light.NoActionBar">
     <item name="android:fontFamily">sans</item><item name="android:windowLightStatusBar">true</item>
-    <item name="android:statusBarColor">@color/bg_primary</item><item name="android:navigationBarColor">@color/bg_primary</item>
+    <item name="android:statusBarColor">@color/bg_primary</item>
+    <item name="android:navigationBarColor">@color/surface_primary</item>
     <item name="colorPrimary">@color/accent_green_dark</item><item name="colorOnPrimary">@color/white</item>
     <item name="colorSurface">@color/surface_primary</item><item name="colorOnSurface">@color/text_primary</item>
     <item name="colorSurfaceDim">@color/white</item>
@@ -365,7 +366,7 @@
     <item name="buttonTint">@color/accent_green</item>
     <item name="android:gravity">center_vertical</item>
 </style>
- <style name="Widget.MyFitAI.BottomNavItem" parent="@android:style/Widget.TextView"><item name="android:layout_width">0dp</item><item name="android:layout_height">match_parent</item><item name="android:layout_weight">1</item><item name="android:gravity">center</item><item name="android:paddingHorizontal">@dimen/bottom_nav_item_horizontal_padding</item><item name="android:paddingVertical">@dimen/bottom_nav_item_vertical_padding</item><item name="android:drawablePadding">@dimen/bottom_nav_icon_label_spacing</item><item name="android:includeFontPadding">false</item><item name="android:ellipsize">end</item><item name="android:maxLines">1</item><item name="android:textSize">@dimen/text_micro</item><item name="android:textColor">@color/accent_green_dark</item><item name="android:textStyle">bold</item><item name="android:minHeight">0dp</item></style>
+  <style name="Widget.MyFitAI.BottomNavItem" parent="@android:style/Widget.TextView"><item name="android:layout_width">0dp</item><item name="android:layout_height">match_parent</item><item name="android:layout_weight">1</item><item name="android:gravity">center</item><item name="android:paddingHorizontal">@dimen/bottom_nav_item_horizontal_padding</item><item name="android:paddingVertical">@dimen/bottom_nav_item_vertical_padding</item><item name="android:drawablePadding">@dimen/bottom_nav_icon_label_spacing</item><item name="android:includeFontPadding">false</item><item name="android:ellipsize">end</item><item name="android:breakStrategy">balanced</item><item name="android:hyphenationFrequency">normal</item><item name="android:maxLines">1</item><item name="android:textSize">@dimen/bottom_nav_label_text_size</item><item name="android:autoSizeTextType">uniform</item><item name="android:autoSizeMinTextSize">@dimen/bottom_nav_label_min_text_size</item><item name="android:autoSizeMaxTextSize">@dimen/bottom_nav_label_text_size</item><item name="android:autoSizeStepGranularity">0.5sp</item><item name="android:textColor">@color/accent_green_dark</item><item name="android:textStyle">bold</item><item name="android:minHeight">0dp</item></style>
  <style name="Widget.MyFitAI.Input" parent="Widget.Material3.TextInputLayout.OutlinedBox">
      <item name="boxBackgroundColor">@color/white</item>
      <item name="boxStrokeColor">@color/myfitai_input_stroke</item>

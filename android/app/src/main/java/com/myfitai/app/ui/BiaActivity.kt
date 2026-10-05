@@ -291,7 +291,7 @@ class BiaActivity : BaseShellActivity() {
     }
 
     private fun showValueDialog(key: String, label: String, unit: String, row: MeasurementRowView) {
-        val content = layoutInflater.inflate(R.layout.dialog_standard_value_input, null, false)
+        val content = layoutInflater.inflate(R.layout.dialog_bia_value_input, null, false)
         val inputLayout = content.findViewById<TextInputLayout>(R.id.valueInputLayout)
         val input = content.findViewById<TextInputEditText>(R.id.valueInput)
 

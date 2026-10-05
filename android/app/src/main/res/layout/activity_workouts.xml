@@ -83,10 +83,10 @@
                         android:id="@+id/daySummary"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                           android:background="@color/white"
-                         android:padding="@dimen/space_12"
+                        android:background="@drawable/bg_panel_tonal"
+                        android:padding="@dimen/card_content_padding_compact"
                         android:textColor="@color/text_primary"
-                        style="@style/Text.MyFitAI.Body" />
+                        style="@style/Text.MyFitAI.BodyEmphasis" />
                     <LinearLayout
                         android:id="@+id/workoutList"
                         android:layout_width="match_parent"
