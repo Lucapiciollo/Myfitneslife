@@ -119,6 +119,7 @@ class OnboardingWizardActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         setContentView(R.layout.activity_onboarding_wizard)
+        findViewById<android.view.ViewGroup>(android.R.id.content).getChildAt(0).applySystemBarInsetsAsPadding(includeIme = true)
         selectedProvider = if (aiSettings.useGemini) AiCredentialProvider.GEMINI else AiCredentialProvider.OPENAI
         bindShell()
         bindNavigation()

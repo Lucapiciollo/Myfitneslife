@@ -118,4 +118,27 @@ class OnboardingWizardDeviceTest {
         }
         return false
     }
+
+    @Test
+    fun wizardHeader_andActions_respectSystemBarInsets() {
+        instrumentation.startActivitySync(Intent(context, OnboardingWizardActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            putExtra(OnboardingWizardActivity.EXTRA_BOOTSTRAP, true)
+        })
+        assertTrue(device.wait(Until.hasObject(By.text("Configura MyFitAI")), 8_000))
+        val resources = context.resources
+        fun systemDimen(name: String): Int = resources.getIdentifier(name, "dimen", "android")
+            .let { if (it > 0) resources.getDimensionPixelSize(it) else 0 }
+        val statusBarHeight = systemDimen("status_bar_height")
+        val navigationBarHeight = systemDimen("navigation_bar_height")
+
+        val titleTop = device.findObject(By.text("Configura MyFitAI")).visibleBounds.top
+        assertTrue("Wizard title must sit below the status bar: top=$titleTop status=$statusBarHeight", titleTop >= statusBarHeight)
+
+        val next = device.findObject(By.res("com.myfitai.app:id/nextButton"))
+        if (next != null) {
+            val limit = device.displayHeight - navigationBarHeight
+            assertTrue("Primary action must stay above the navigation bar: bottom=${next.visibleBounds.bottom} limit=$limit", next.visibleBounds.bottom <= limit)
+        }
+    }
 }
