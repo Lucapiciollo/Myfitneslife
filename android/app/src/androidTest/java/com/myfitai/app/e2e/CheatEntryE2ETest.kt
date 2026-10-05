@@ -32,8 +32,8 @@ class CheatEntryE2ETest {
             component = ComponentName(context.packageName, "${context.packageName}.qa.QaSeederActivity")
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
         })
-        assertTrue(device.wait(Until.hasObject(By.text("SEED_6_MONTHS")), 8_000))
-        device.findObject(By.text("SEED_6_MONTHS")).click()
+        assertTrue(device.wait(Until.hasObject(By.text("SEED_QA_HOME_LIVE")), 8_000))
+        device.findObject(By.text("SEED_QA_HOME_LIVE")).click()
         assertTrue(waitForSeed())
 
         context.startActivity(Intent(context, CheatEntryActivity::class.java).apply {
@@ -81,14 +81,24 @@ class CheatEntryE2ETest {
 
     @Test
     fun modeSegment_switchesBetweenQuickAndDetailedContent() {
+        // Quick mode: only description/categories, when and the AI action.
+        assertTrue(device.wait(Until.gone(By.res("com.myfitai.app:id/labelPhotoCard")), 2_000))
+        assertTrue(device.wait(Until.gone(By.res("com.myfitai.app:id/quantityCard")), 2_000))
+        assertTrue(device.wait(Until.gone(By.res("com.myfitai.app:id/notesCard")), 2_000))
         device.findObject(By.text("Dettagliato")).click()
         assertTrue(device.wait(Until.hasObject(By.text("Etichetta nutrizionale (opzionale)")), 2_000))
+        assertTrue(scrollUntilVisible(By.text("Quantità")))
         assertTrue(scrollUntilVisible(By.text("Note (opzionale)")))
         assertTrue(device.wait(Until.hasObject(By.text("Note (opzionale)")), 2_000))
-        device.swipe(device.displayWidth / 2, (device.displayHeight * 0.25).toInt(), device.displayWidth / 2, (device.displayHeight * 0.78).toInt(), 20)
+        repeat(4) {
+            device.swipe(device.displayWidth / 2, (device.displayHeight * 0.25).toInt(), device.displayWidth / 2, (device.displayHeight * 0.78).toInt(), 20)
+        }
+        device.waitForIdle()
+        Thread.sleep(800L) // let the fling settle: a tap during inertia only stops the scroll
         assertTrue(device.wait(Until.hasObject(By.text("Rapido")), 2_000))
         device.findObject(By.text("Rapido")).click()
-        assertTrue(device.wait(Until.hasObject(By.text("Etichetta nutrizionale (opzionale)")), 2_000))
+        assertTrue(device.wait(Until.gone(By.res("com.myfitai.app:id/labelPhotoCard")), 2_000))
+        assertTrue(device.wait(Until.gone(By.res("com.myfitai.app:id/quantityCard")), 2_000))
         assertTrue(device.wait(Until.gone(By.res("com.myfitai.app:id/notesCard")), 2_000))
     }
 

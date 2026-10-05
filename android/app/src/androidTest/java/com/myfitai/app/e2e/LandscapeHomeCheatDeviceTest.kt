@@ -57,7 +57,8 @@ class LandscapeHomeCheatDeviceTest {
         })
         assertTrue(device.wait(Until.hasObject(By.text("Rapido")), 8_000))
         assertTrue(device.hasObject(By.text("Dettagliato")))
-        assertTrue(device.hasObject(By.text("Etichetta nutrizionale (opzionale)")))
+        device.findObject(By.text("Dettagliato")).click()
+        assertTrue(device.wait(Until.hasObject(By.text("Etichetta nutrizionale (opzionale)")), 3_000))
         assertTrue(device.hasObject(By.res("com.myfitai.app:id/addLabelPhotoButton")))
     }
 

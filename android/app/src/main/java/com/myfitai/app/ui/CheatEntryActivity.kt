@@ -58,6 +58,7 @@ class CheatEntryActivity : BaseShellActivity() {
     private var labelImage: AiImageInput? = null
     private var pendingCameraFile: File? = null
     private var labelProcessing = false
+    private var detailedMode = false
     private val labelTempStore by lazy { LabelImageTempStore(this) }
 
     private val galleryLauncher = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
@@ -79,7 +80,11 @@ class CheatEntryActivity : BaseShellActivity() {
 
         findViewById<SelectableSegmentView>(R.id.modeSegment).apply {
             setSegments(listOf("Rapido", "Dettagliato"), selectedIndex = 0)
-            setOnSegmentSelectedListener { index -> renderMode(detailed = index == 1) }
+            setOnSegmentSelectedListener { index ->
+                renderMode(detailed = index == 1)
+                // Quantity, label photo and notes only count in the detailed mode: a previous reading is no longer valid.
+                viewModel.invalidateUnderstanding()
+            }
         }
         renderMode(detailed = false)
 
@@ -160,7 +165,9 @@ class CheatEntryActivity : BaseShellActivity() {
     }
 
     private fun renderMode(detailed: Boolean) {
-        UiMotion.reveal(findViewById(R.id.labelPhotoCard), true)
+        detailedMode = detailed
+        UiMotion.reveal(findViewById(R.id.labelPhotoCard), detailed)
+        UiMotion.reveal(findViewById(R.id.quantityCard), detailed)
         UiMotion.reveal(findViewById(R.id.notesCard), detailed)
         findViewById<View>(R.id.modeSegment).contentDescription =
             if (detailed) "Modalità dettagliata selezionata" else "Modalità rapida selezionata"
@@ -332,19 +339,18 @@ class CheatEntryActivity : BaseShellActivity() {
             return null
         }
 
-        val baseNotes = findViewById<TextInputEditText>(R.id.notesInput).text?.toString()?.trim().orEmpty()
-        val clarification = findViewById<TextInputEditText>(R.id.clarificationInput).text?.toString()?.trim().orEmpty()
-        val notes = listOfNotNull(
-            baseNotes.takeIf { it.isNotBlank() },
-            clarification.takeIf { it.isNotBlank() }?.let { "Chiarimento utente dopo la prima lettura IA: $it" },
-        ).joinToString("\n").takeIf { it.isNotBlank() }
+        val notes = composeCheatNotes(
+            detailed = detailedMode,
+            notes = findViewById<TextInputEditText>(R.id.notesInput).text?.toString().orEmpty(),
+            clarification = findViewById<TextInputEditText>(R.id.clarificationInput).text?.toString().orEmpty(),
+        )
 
         return CheatAdjustmentService.Input(
             description = fullDescription,
-            quantityText = findViewById<AutoCompleteTextView>(R.id.quantityInput).text?.toString(),
+            quantityText = composeCheatQuantity(detailedMode, findViewById<AutoCompleteTextView>(R.id.quantityInput).text?.toString()),
             notes = notes,
             occurredAtEpochMillis = occurredAt,
-            labelImage = labelImage,
+            labelImage = labelImage.takeIf { detailedMode },
         )
     }
 
@@ -384,7 +390,7 @@ class CheatEntryActivity : BaseShellActivity() {
             visibility = if (state.running || state.error != null) View.VISIBLE else View.GONE
             text = when {
                 state.running && hasUnderstanding -> "Conferma dello sgarro e verifica dei pasti futuri…"
-                state.running && labelImage != null -> "L'IA sta leggendo descrizione ed etichetta per dirti cosa ha capito…"
+                state.running && detailedMode && labelImage != null -> "L'IA sta leggendo descrizione ed etichetta per dirti cosa ha capito…"
                 state.running -> "L'IA sta interpretando ciò che hai mangiato…"
                 state.error != null -> state.error
                 else -> ""
@@ -424,3 +430,21 @@ class CheatEntryActivity : BaseShellActivity() {
     }
 
 }
+
+/**
+ * Builds the notes sent with a cheat entry. The free-text notes field only exists in the detailed mode,
+ * so text typed there must be ignored when the quick mode is selected (the field is hidden).
+ * The AI clarification belongs to the understanding step and is independent from the mode.
+ */
+internal fun composeCheatNotes(detailed: Boolean, notes: String, clarification: String): String? =
+    listOfNotNull(
+        notes.trim().takeIf { detailed && it.isNotBlank() },
+        clarification.trim().takeIf { it.isNotBlank() }?.let { "Chiarimento utente dopo la prima lettura IA: $it" },
+    ).joinToString("\n").takeIf { it.isNotBlank() }
+
+/**
+ * Quantity is a detailed-mode field: when the quick mode is selected the (hidden) value must not be sent,
+ * so the AI estimates the portion from the description alone.
+ */
+internal fun composeCheatQuantity(detailed: Boolean, quantity: String?): String? =
+    quantity?.trim()?.takeIf { detailed && it.isNotBlank() }
