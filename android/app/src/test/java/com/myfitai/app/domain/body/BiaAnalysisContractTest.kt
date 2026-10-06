@@ -299,5 +299,55 @@ class BiaAnalysisContractTest {
         assertTrue(BiaAnalysisContract.validateBusiness(response).isSuccess)
     }
 
+    @Test
+    fun ba2_ignoresUnknownExtensionRecordsAndKeepsRequiredAnalysis() {
+        val response = BiaAnalysisContract.parse(envelope("""
+            BA2
+            B|STABLE
+            S|Stabile
+            C|Trend da monitorare
+            F|?
+            O|?
+            K|?
+            P|Ripeti la misura
+            L|LOW|Storico breve
+            X|Una
+            X|Due
+            X|Tre
+            D|Analisi informativa, non diagnosi medica
+            N|?
+            V|1|ok
+            Q|Provider metadata
+        """.trimIndent()))
+
+        assertEquals("STABLE", response.classification)
+        assertEquals(3, response.actions.size)
+        assertTrue(BiaAnalysisContract.validateBusiness(response).isSuccess)
+    }
+
+    @Test
+    fun ba2_preservesPipesInsideFreeTextFields() {
+        val response = BiaAnalysisContract.parse(envelope("""
+            BA2
+            B|STABLE
+            S|Stabile | da confermare
+            C|Trend da monitorare
+            F|?
+            O|?
+            K|?
+            P|Ripeti la misura
+            L|LOW|Storico breve
+            X|Una | azione
+            X|Due
+            X|Tre
+            D|Analisi informativa, non diagnosi medica
+            N|?
+            V|1|ok
+        """.trimIndent()))
+
+        assertEquals("Stabile | da confermare", response.verdict)
+        assertEquals("Una | azione", response.actions.first())
+    }
+
     private fun envelope(data: String): String = org.json.JSONObject().put("data", data).toString()
 }

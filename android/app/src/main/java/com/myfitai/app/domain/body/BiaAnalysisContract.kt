@@ -77,46 +77,58 @@ object BiaAnalysisContract {
             val parts = line.split('|')
             when (parts.firstOrNull()) {
                 "B" -> { require(parts.size == 2 && classification == null) { "BA2_B_INVALID" }; classification = parts[1] }
-                "S" -> { require(parts.size == 2 && verdict == null) { "BA2_S_INVALID" }; verdict = parts[1].cleanText() }
-                "C" -> { require(parts.size == 2 && what == null) { "BA2_C_INVALID" }; what = parts[1].cleanText() }
-                "F" -> { require(parts.size == 2 && fatLoss == null) { "BA2_F_INVALID" }; fatLoss = parts[1].cleanText() }
-                "O" -> { require(parts.size == 2 && objective == null) { "BA2_O_INVALID" }; objective = parts[1].cleanText() }
+                "S" -> { require(parts.size >= 2 && verdict == null) { "BA2_S_INVALID" }; verdict = parts.drop(1).joinToString("|").cleanText() }
+                "C" -> { require(parts.size >= 2 && what == null) { "BA2_C_INVALID" }; what = parts.drop(1).joinToString("|").cleanText() }
+                "F" -> { require(parts.size >= 2 && fatLoss == null) { "BA2_F_INVALID" }; fatLoss = parts.drop(1).joinToString("|").cleanText() }
+                "O" -> { require(parts.size >= 2 && objective == null) { "BA2_O_INVALID" }; objective = parts.drop(1).joinToString("|").cleanText() }
                 "K" -> {
                     require(parts.size >= 2 && calories == null) { "BA2_K_INVALID" }
                     calories = parts.drop(1).joinToString("|").cleanText()
                 }
-                "P" -> { require(parts.size == 2 && nextCheck == null) { "BA2_P_INVALID" }; nextCheck = parts[1].cleanText() }
+                "P" -> { require(parts.size >= 2 && nextCheck == null) { "BA2_P_INVALID" }; nextCheck = parts.drop(1).joinToString("|").cleanText() }
                 "L" -> {
                     require(parts.size >= 2 && reliability == null) { "BA2_L_ARITY_${parts.size}" }
                     reliability = normalizeReliability(parts[1])
                     reliabilityReason = parts.drop(2).joinToString("|").ifBlank { "?" }.cleanText()
                 }
-                "R" -> { require(parts.size == 7) { "BA2_R_ARITY_${parts.size}" }; comparisons += Comparison(parts[1].cleanText(), parts[2].cleanText(), parts[3].cleanText(), parts[4].cleanText(), parts[5].cleanText(), normalizeReliability(parts[6])) }
+                "R" -> {
+                    require(parts.size >= 7) { "BA2_R_ARITY_${parts.size}" }
+                    comparisons += Comparison(
+                        parts[1].cleanText(), parts[2].cleanText(), parts[3].cleanText(), parts[4].cleanText(),
+                        parts.subList(5, parts.lastIndex).joinToString("|").cleanText(), normalizeReliability(parts.last()),
+                    )
+                }
                 "H" -> {
                     require(parts.size >= 2) { "BA2_H_ARITY_${parts.size}" }
                     historical += HistoricalPeriod(parts[1].cleanText(), parts.getOrNull(2)?.cleanText() ?: "?")
                 }
                 "G" -> {
                     require(parts.size in 6..7) { "BA2_G_ARITY_${parts.size}" }
+                    val hasReliability = parts.last().uppercase() in setOf("HIGH", "MEDIUM", "LOW", "ALTA", "MEDIA", "BASSA", "?")
+                    val assumptionEndExclusive = if (hasReliability) parts.lastIndex else parts.size
                     scenarios += Scenario(
-                        parts[1].cleanText(), parts[2].cleanText(), parts[3].cleanText(),
-                        parts[4].cleanText(), parts[5].cleanText(), parts.getOrNull(6)?.let(::normalizeReliability) ?: "?",
+                        parts[1].cleanText(), parts[2].cleanText(), parts[3].cleanText(), parts[4].cleanText(),
+                        parts.subList(5, assumptionEndExclusive).joinToString("|").cleanText(),
+                        if (hasReliability) normalizeReliability(parts.last()) else "?",
                     )
                 }
-                "Y" -> { require(parts.size == 2) { "BA2_Y_ARITY_${parts.size}" }; positives += parts[1].cleanText() }
-                "M" -> { require(parts.size == 2) { "BA2_M_ARITY_${parts.size}" }; monitor += parts[1].cleanText() }
-                "X" -> { require(parts.size == 2) { "BA2_X_ARITY_${parts.size}" }; actions += parts[1].cleanText() }
+                "Y" -> { require(parts.size >= 2) { "BA2_Y_ARITY_${parts.size}" }; positives += parts.drop(1).joinToString("|").cleanText() }
+                "M" -> { require(parts.size >= 2) { "BA2_M_ARITY_${parts.size}" }; monitor += parts.drop(1).joinToString("|").cleanText() }
+                "X" -> { require(parts.size >= 2) { "BA2_X_ARITY_${parts.size}" }; actions += parts.drop(1).joinToString("|").cleanText() }
                 "D" -> {
                     require(parts.size >= 2 && safety.isBlank()) { "BA2_D_INVALID" }
                     safety = parts.drop(1).joinToString("|").cleanText()
                 }
-                "N" -> { require(parts.size == 2 && question == null) { "BA2_N_INVALID" }; question = parts[1].cleanText().takeIf { it != "?" } }
+                "N" -> { require(parts.size >= 2 && question == null) { "BA2_N_INVALID" }; question = parts.drop(1).joinToString("|").cleanText().takeIf { it != "?" } }
                 // V is agent self-validation metadata; appValidation remains authoritative.
                 "V" -> {
                     require(parts.size in 2..3 && parts[1].isNotBlank()) { "BA2_V_INVALID" }
                     validation = parts.getOrNull(2)?.cleanText() ?: "?"
                 }
-                else -> error("BIA_PROGRESS_RECORD_INVALID")
+                // Keep the required BA2 records authoritative while tolerating optional
+                // provider metadata/extension records. Required fields and business rules
+                // below still reject incomplete or malformed analyses.
+                else -> Unit
             }
         }
         return Interpretation(
