@@ -40,8 +40,10 @@ class AiJobWorker(appContext: Context, params: WorkerParameters) : CoroutineWork
     }
 
     private fun failure(type: AiJobType, profileId: Long, jobKey: String, message: String): Result {
-        AiJobNotifier.notifyFailure(applicationContext, type, profileId, jobKey, message)
-        return Result.failure(workDataOf(KEY_ERROR to message))
+        // WorkManager Data is capped at 10 KB: an oversized message would throw from the worker itself.
+        val safeMessage = message.take(MAX_ERROR_CHARS)
+        AiJobNotifier.notifyFailure(applicationContext, type, profileId, jobKey, safeMessage)
+        return Result.failure(workDataOf(KEY_ERROR to safeMessage))
     }
 
     companion object {
@@ -53,5 +55,6 @@ class AiJobWorker(appContext: Context, params: WorkerParameters) : CoroutineWork
         const val KEY_IMAGE_PATH = "image_path"
         const val KEY_AUTOMATIC = "automatic"
         const val MAX_RETRY_ATTEMPTS = 2
+        private const val MAX_ERROR_CHARS = 500
     }
 }

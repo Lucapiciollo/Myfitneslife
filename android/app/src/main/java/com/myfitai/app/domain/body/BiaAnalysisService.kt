@@ -1,9 +1,9 @@
 package com.myfitai.app.domain.body
 
-import com.myfitai.app.ai.AiRuntimeService
+import com.myfitai.app.ai.AiRuntimeGateway
 import com.myfitai.app.ai.AiStructuredRequest
 
-class BiaAnalysisService(private val aiRuntime: AiRuntimeService) {
+class BiaAnalysisService(private val aiRuntime: AiRuntimeGateway) {
     data class Report(val inputPayload: String, val measurementCount: Int)
     data class Result(
         val interpretation: BiaAnalysisContract.Interpretation,
@@ -41,7 +41,7 @@ Prima controlla coerenza BMI/peso, massa grassa, massa magra, acqua, duplicati, 
 
 Confronta corrente con precedente, finestre 30/90 giorni e inizio storico quando presenti. Classifica in base all'obiettivo: POSITIVE, PROBABLY_POSITIVE, STABLE, MONITOR, NEGATIVE o INSUFFICIENT_DATA. Calcola scenari di grasso solo se massa magra e percentuale grasso sono disponibili, usando massa magra / (1 - target body fat / 100); usa circa/intervalli e ipotesi esplicite. Verifica calorie con proteine*4 + carboidrati*4 + grassi*9, considerando arrotondamenti. Non modificare automaticamente tutti i parametri: dai esattamente tre azioni prioritarie quando i dati bastano.
 
-Rispondi in italiano con BA2 e solo i record del protocollo. Ogni testo deve essere breve, concreto e comprensibile. Usa ? per dati non ricevuti. Distingui misurato, calcolato, stima, ipotesi e mancante. Non mostrare ragionamenti interni.
+Rispondi in italiano con BA2 e solo i record del protocollo. Ogni testo deve essere breve, concreto e comprensibile. Scrivi sempre i valori numerici con cifre e unità, ad esempio 89,5 kg, 19,9 % o 2527 kcal: non scrivere mai i numeri in lettere. Non terminare i testi con punto e virgola. Usa ? per dati non ricevuti. Distingui misurato, calcolato, stima, ipotesi e mancante. Non mostrare ragionamenti interni.
 """.trimIndent()
     }
 }

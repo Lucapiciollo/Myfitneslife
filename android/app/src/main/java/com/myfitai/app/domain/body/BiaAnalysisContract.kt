@@ -52,7 +52,17 @@ object BiaAnalysisContract {
         get() = AiCompactEnvelope.schemaJson(PROTOCOL)
 
     fun parse(json: String): Interpretation {
-        val lines = normalizeData(AiCompactEnvelope.data(json)).lineSequence().map(String::trim).filter(String::isNotBlank).toList()
+        val data = AiCompactEnvelope.data(json)
+        val primary = runCatching { parseLines(normalizeData(data).lineSequence().map(String::trim).filter(String::isNotBlank).toList()) }
+        primary.getOrNull()?.let { return it }
+        // Some providers join every record with `|` on a single line instead of using newlines.
+        pipeStreamLines(data)?.let { streamed ->
+            runCatching { parseLines(listOf("BA2") + streamed) }.getOrNull()?.let { return it }
+        }
+        throw primary.exceptionOrNull() ?: IllegalArgumentException("BIA_PROGRESS_PIPE_INVALID")
+    }
+
+    private fun parseLines(lines: List<String>): Interpretation {
         require(lines.firstOrNull() == "BA2") { "BIA_PROGRESS_PIPE_INVALID" }
         var classification: String? = null
         var verdict: String? = null
@@ -74,9 +84,10 @@ object BiaAnalysisContract {
         val actions = mutableListOf<String>()
 
         lines.drop(1).forEach { line ->
-            val parts = line.split('|')
+            // Providers sometimes end a record with a stray separator; an empty tail is never data.
+            val parts = line.split('|').dropLastWhile { it.isBlank() }
             when (parts.firstOrNull()) {
-                "B" -> { require(parts.size == 2 && classification == null) { "BA2_B_INVALID" }; classification = parts[1] }
+                "B" -> { require(parts.size >= 2 && classification == null) { "BA2_B_INVALID" }; classification = normalizeClassification(parts[1]) }
                 "S" -> { require(parts.size >= 2 && verdict == null) { "BA2_S_INVALID" }; verdict = parts.drop(1).joinToString("|").cleanText() }
                 "C" -> { require(parts.size >= 2 && what == null) { "BA2_C_INVALID" }; what = parts.drop(1).joinToString("|").cleanText() }
                 "F" -> { require(parts.size >= 2 && fatLoss == null) { "BA2_F_INVALID" }; fatLoss = parts.drop(1).joinToString("|").cleanText() }
@@ -100,10 +111,10 @@ object BiaAnalysisContract {
                 }
                 "H" -> {
                     require(parts.size >= 2) { "BA2_H_ARITY_${parts.size}" }
-                    historical += HistoricalPeriod(parts[1].cleanText(), parts.getOrNull(2)?.cleanText() ?: "?")
+                    historical += HistoricalPeriod(parts[1].cleanText(), parts.drop(2).joinToString("|").ifBlank { "?" }.cleanText())
                 }
                 "G" -> {
-                    require(parts.size in 6..7) { "BA2_G_ARITY_${parts.size}" }
+                    require(parts.size >= 6) { "BA2_G_ARITY_${parts.size}" }
                     val hasReliability = parts.last().uppercase() in setOf("HIGH", "MEDIUM", "LOW", "ALTA", "MEDIA", "BASSA", "?")
                     val assumptionEndExclusive = if (hasReliability) parts.lastIndex else parts.size
                     scenarios += Scenario(
@@ -122,8 +133,8 @@ object BiaAnalysisContract {
                 "N" -> { require(parts.size >= 2 && question == null) { "BA2_N_INVALID" }; question = parts.drop(1).joinToString("|").cleanText().takeIf { it != "?" } }
                 // V is agent self-validation metadata; appValidation remains authoritative.
                 "V" -> {
-                    require(parts.size in 2..3 && parts[1].isNotBlank()) { "BA2_V_INVALID" }
-                    validation = parts.getOrNull(2)?.cleanText() ?: "?"
+                    require(parts.size >= 2 && parts[1].isNotBlank()) { "BA2_V_INVALID" }
+                    validation = parts.drop(2).joinToString("|").ifBlank { "?" }.cleanText()
                 }
                 // Keep the required BA2 records authoritative while tolerating optional
                 // provider metadata/extension records. Required fields and business rules
@@ -173,7 +184,7 @@ object BiaAnalysisContract {
         require(value.actions.all(String::isNotBlank)) { "EMPTY_ACTION" }
         require(value.safetyNote.isNotBlank()) { "SAFETY_NOTE_REQUIRED" }
         require(value.verdict.isNotBlank() && value.whatIsHappening.isNotBlank()) { "EMPTY_BIA_ANALYSIS" }
-        value.comparisons.forEach { require(it.reliability in reliabilityLevels) { "COMPARISON_RELIABILITY_INVALID" } }
+        value.comparisons.forEach { require(it.reliability == "?" || it.reliability in reliabilityLevels) { "COMPARISON_RELIABILITY_INVALID" } }
         value.scenarios.forEach { require(it.reliability == "?" || it.reliability in reliabilityLevels) { "SCENARIO_RELIABILITY_INVALID" } }
     }
 
@@ -185,18 +196,30 @@ object BiaAnalysisContract {
         }
     }
 
-    private fun String.cleanText(): String = replace('\n', ' ').replace('\r', ' ').trim().also { require(it.isNotBlank()) }
+    /** Records may end with a stray `;` used as a separator by some providers; it is not part of the text. */
+    private fun String.cleanText(): String =
+        replace('\n', ' ').replace('\r', ' ').trim().trimEnd(';').trim().also { require(it.isNotBlank()) }
 
-    private fun normalizeReliability(value: String): String = when (value.trim().uppercase()) {
+    private fun normalizeClassification(value: String): String = when (val key = value.trim().trimEnd(';', '.', ',').uppercase().replace(' ', '_').replace('-', '_')) {
+        "POSITIVO" -> "POSITIVE"
+        "PROBABILMENTE_POSITIVO" -> "PROBABLY_POSITIVE"
+        "STABILE" -> "STABLE"
+        "MONITORARE", "DA_MONITORARE" -> "MONITOR"
+        "NEGATIVO" -> "NEGATIVE"
+        "DATI_INSUFFICIENTI" -> "INSUFFICIENT_DATA"
+        else -> key
+    }
+
+    private fun normalizeReliability(value: String): String = when (val key = value.trim().trimEnd(';', '.', ',').uppercase()) {
         "ALTA", "HIGH" -> "HIGH"
         "MEDIA", "MEDIUM" -> "MEDIUM"
         "BASSA", "LOW" -> "LOW"
         "?" -> "?"
-        else -> value.trim().uppercase()
+        else -> key
     }
 
     /** Some provider responses collapse the compact records into one line. */
-    private fun normalizeData(value: String): String {
+    private fun cleanedBody(value: String): String {
         val cleaned = value
             .replace('\uFEFF'.toString(), "")
             .replace("```", "")
@@ -206,11 +229,56 @@ object BiaAnalysisContract {
             .replace("\\r", "\n")
             .replace('\r', '\n')
             .trim()
-        val body = cleaned.removePrefix("BA2").trimStart().removePrefix("|").trimStart()
-        if (!cleaned.startsWith("BA2") || body.isBlank()) return "BA2"
+        // The BA2 header is a protocol marker, not data: some responses omit it entirely.
+        return cleaned.removePrefix("BA2").trimStart().removePrefix("|").trimStart()
+    }
+
+    /** Record tag -> (minimum, maximum) number of fields, from the BA2 protocol. */
+    private val RECORD_FIELDS = mapOf(
+        "B" to (1 to 1), "S" to (1 to 1), "C" to (1 to 1), "F" to (1 to 1), "O" to (1 to 1), "K" to (1 to 1),
+        "P" to (1 to 1), "L" to (1 to 2), "R" to (6 to 6), "H" to (1 to 2), "G" to (5 to 6), "Y" to (1 to 1),
+        "M" to (1 to 1), "X" to (1 to 1), "D" to (1 to 1), "N" to (1 to 1), "V" to (1 to 2),
+    )
+
+    /**
+     * Rebuilds records from `TAG|field|TAG|field|...` written on one line. Surplus tokens that are not
+     * a record tag belong to the preceding field (free text that contained a stray separator).
+     */
+    private fun pipeStreamLines(value: String): List<String>? {
+        val body = cleanedBody(value)
+        if (body.contains('\n')) return null
+        val tokens = body.split('|').map(String::trim).dropLastWhile { it.isEmpty() }
+        if (tokens.size < 3 || tokens.first() !in RECORD_FIELDS) return null
+        val lines = mutableListOf<String>()
+        var index = 0
+        while (index < tokens.size) {
+            val tag = tokens[index]
+            val (min, max) = RECORD_FIELDS[tag] ?: return null
+            val fields = mutableListOf<String>()
+            index++
+            while (index < tokens.size && fields.size < max && (fields.size < min || tokens[index] !in RECORD_FIELDS)) {
+                fields += tokens[index]
+                index++
+            }
+            if (fields.size < min) return null
+            while (index < tokens.size && tokens[index] !in RECORD_FIELDS) {
+                fields[fields.lastIndex] = fields.last() + "|" + tokens[index]
+                index++
+            }
+            lines += (listOf(tag) + fields).joinToString("|")
+        }
+        return lines
+    }
+
+    private fun normalizeData(value: String): String {
+        val body = cleanedBody(value)
+        if (body.isBlank()) return "BA2"
         if (body.contains('\n')) return "BA2\n$body"
         return "BA2\n" + body.replace(
-            Regex("(?=(?:B|S|C|F|O|K|P|L|R|H|G|Y|M|X|D|N|V)\\|)"),
+            // A record tag is a single capital letter followed by `|` that does not continue a word or number
+            // (any kind of space, `|` or punctuation may precede it). The last letter of a value such as MEDIUM|
+            // is preceded by a letter, so it is never mistaken for an `M|` record.
+            Regex("(?<![\\p{L}\\p{N}])(?=[BSCFOKPLRHGYMXDNV]\\|)"),
             "\n",
         ).trim()
     }

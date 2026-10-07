@@ -220,6 +220,7 @@ class AppDataContainer private constructor(context: Context) {
                 plans = mealPlanRepository,
                 calculations = profileCalculationService,
                 scheduler = biaProgressCoachScheduler,
+                results = biaAnalysisResultRepository,
             ),
             AiJobType.BIA_IMPORT to BiaImportAiJobHandler(biaImportService, aiImageJobStore),
         ))

@@ -349,5 +349,160 @@ class BiaAnalysisContractTest {
         assertEquals("Una | azione", response.actions.first())
     }
 
+    @Test
+    fun ba2_acceptsCollapsedResponseWithoutBa2Header() {
+        val response = BiaAnalysisContract.parse(envelope(
+            "B|PROBABLY_POSITIVE S|Andamento favorevole C|Grasso in calo F|? O|? K|? P|Ripeti la misura L|MEDIUM|Storico coerente X|Una X|Due X|Tre D|Analisi informativa, non diagnosi medica N|? V|1|ok"
+        ))
+
+        assertEquals("PROBABLY_POSITIVE", response.classification)
+        assertEquals(3, response.actions.size)
+        val validation = BiaAnalysisContract.validateBusiness(response)
+        assertTrue(validation.exceptionOrNull()?.message ?: "validation failed", validation.isSuccess)
+    }
+
+    @Test
+    fun ba2_acceptsScenarioWithExtraPipeInsideAssumption() {
+        val response = BiaAnalysisContract.parse(envelope("""
+            BA2
+            B|STABLE
+            S|Stabile
+            C|Trend da monitorare
+            F|?
+            O|?
+            K|?
+            P|Ripeti la misura
+            L|LOW|Storico breve
+            G|Primo obiettivo|20%|86 kg|3 kg|Massa magra stabile | stima prudente|MEDIUM
+            G|Secondo obiettivo|18%|84 kg|5 kg|Ipotesi | con intervallo | ampio
+            X|Una
+            X|Due
+            X|Tre
+            D|Analisi informativa, non diagnosi medica
+            N|?
+            V|1|ok
+        """.trimIndent()))
+
+        assertEquals("Massa magra stabile | stima prudente", response.scenarios[0].assumption)
+        assertEquals("MEDIUM", response.scenarios[0].reliability)
+        assertEquals("?", response.scenarios[1].reliability)
+        assertTrue(BiaAnalysisContract.validateBusiness(response).isSuccess)
+    }
+
+    @Test
+    fun ba2_ignoresStrayTrailingSeparatorsAndTranslatesClassification() {
+        val response = BiaAnalysisContract.parse(envelope("""
+            BA2
+            B|Probabilmente positivo|
+            S|Stabile|
+            C|Trend da monitorare|
+            F|?|
+            O|?
+            K|?
+            P|Ripeti la misura
+            L|LOW|Storico breve|
+            R|Peso|90 kg|89 kg|-1 kg|Calo|?
+            X|Una|
+            X|Due
+            X|Tre
+            D|Analisi informativa, non diagnosi medica
+            N|?
+            V|1|ok|extra|campi
+        """.trimIndent()))
+
+        assertEquals("PROBABLY_POSITIVE", response.classification)
+        assertEquals("?", response.comparisons.single().reliability)
+        assertEquals("ok|extra|campi", response.agentValidation)
+        assertTrue(BiaAnalysisContract.validateBusiness(response).isSuccess)
+    }
+
+    @Test
+    fun ba2_collapsedResponseDoesNotSplitValuesEndingWithRecordLetters() {
+        val response = BiaAnalysisContract.parse(envelope(
+            "BA2 B|STABLE S|Stabile C|Trend da monitorare F|? O|? K|? P|Ripeti la misura L|MEDIUM|Storico coerente R|Peso|90 kg|89 kg|-1 kg|Calo|MEDIUM G|Obiettivo|20%|86 kg|3 kg|Ipotesi esplicita|MEDIA X|Una X|Due X|Tre D|Analisi informativa, non diagnosi medica N|? V|1|ok"
+        ))
+
+        assertEquals("MEDIUM", response.reliability)
+        assertEquals("Storico coerente", response.reliabilityReason)
+        assertEquals("MEDIUM", response.comparisons.single().reliability)
+        assertEquals("MEDIUM", response.scenarios.single().reliability)
+        assertEquals(3, response.actions.size)
+        val validation = BiaAnalysisContract.validateBusiness(response)
+        assertTrue(validation.exceptionOrNull()?.message ?: "validation failed", validation.isSuccess)
+    }
+
+    @Test
+    fun ba2_acceptsRecordsJoinedWithPipesOnASingleLine() {
+        val response = BiaAnalysisContract.parse(envelope(
+            "BA2|B|PROBABLY_POSITIVE|S|Andamento favorevole|C|Grasso in calo|F|?|O|?|K|?|P|Ripeti la misura|" +
+                "L|MEDIUM|Storico coerente|R|Peso|90 kg|89 kg|-1 kg|Calo|MEDIUM|H|30 giorni|" +
+                "G|Obiettivo|20%|86 kg|3 kg|Ipotesi esplicita|MEDIA|Y|Positivo|M|Da seguire|" +
+                "X|Una|X|Due|X|Tre|D|Analisi informativa, non diagnosi medica|N|?|V|1|ok|"
+        ))
+
+        assertEquals("PROBABLY_POSITIVE", response.classification)
+        assertEquals("Andamento favorevole", response.verdict)
+        assertEquals("MEDIUM", response.reliability)
+        assertEquals("Storico coerente", response.reliabilityReason)
+        assertEquals("Peso", response.comparisons.single().indicator)
+        assertEquals("?", response.historical.single().summary)
+        assertEquals("MEDIUM", response.scenarios.single().reliability)
+        assertEquals(listOf("Una", "Due", "Tre"), response.actions)
+        val validation = BiaAnalysisContract.validateBusiness(response)
+        assertTrue(validation.exceptionOrNull()?.message ?: "validation failed", validation.isSuccess)
+    }
+
+    @Test
+    fun ba2_pipeStreamKeepsStrayPipesInsideFreeText() {
+        val response = BiaAnalysisContract.parse(envelope(
+            "B|STABLE|S|Stabile | da confermare|C|Trend da monitorare|F|?|O|?|K|Calorie coerenti|macro da confermare|" +
+                "P|Ripeti la misura|L|LOW|Storico breve|X|Una|X|Due|X|Tre|D|Analisi informativa|non diagnosi medica|N|?|V|1"
+        ))
+
+        assertEquals("Stabile | da confermare", response.verdict)
+        assertEquals("Calorie coerenti|macro da confermare", response.caloriesAndMacros)
+        assertEquals("Analisi informativa|non diagnosi medica", response.safetyNote)
+        assertEquals(3, response.actions.size)
+    }
+
+    @Test
+    fun ba2_acceptsMixedRecordSeparators() {
+        val nbsp = "\u00A0"
+        val response = BiaAnalysisContract.parse(envelope(
+            "BA2|B|PROBABLY_POSITIVE${nbsp}S|Andamento favorevole;${nbsp}C|Grasso in calo|F|?|O|?|K|?|P|Ripeti la misura|" +
+                "L|MEDIUM|Storico coerente${nbsp}R|Peso|90 kg|89 kg|-1 kg|Calo|MEDIUM;${nbsp}" +
+                "X|Una${nbsp}X|Due|X|Tre${nbsp}D|Analisi informativa, non diagnosi medica|N|?|V|1|ok"
+        ))
+
+        assertEquals("PROBABLY_POSITIVE", response.classification)
+        assertEquals("MEDIUM", response.reliability)
+        assertEquals("MEDIUM", response.comparisons.single().reliability)
+        assertEquals(3, response.actions.size)
+        val validation = BiaAnalysisContract.validateBusiness(response)
+        assertTrue(validation.exceptionOrNull()?.message ?: "validation failed", validation.isSuccess)
+    }
+
+    @Test
+    fun ba2_stripsTrailingSemicolonFromUserVisibleText() {
+        val response = BiaAnalysisContract.parse(envelope(
+            "B|STABLE; S|Composizione stabile; C|Peso 89,5 kg; F|?; O|?; K|?; P|Ripeti la misura; L|LOW|Storico breve; X|Una; X|Due; X|Tre; D|Analisi informativa, non diagnosi medica; N|?; V|1|ok"
+        ))
+
+        assertEquals("STABLE", response.classification)
+        assertEquals("Composizione stabile", response.verdict)
+        assertEquals("Peso 89,5 kg", response.whatIsHappening)
+        assertEquals(listOf("Una", "Due", "Tre"), response.actions)
+    }
+
+    @Test
+    fun ba2_stillRejectsAnalysisWithoutRequiredRecords() {
+        val result = runCatching {
+            BiaAnalysisContract.parse(envelope("S|Solo verdetto C|Solo sintesi X|Una X|Due X|Tre"))
+        }
+
+        assertTrue(result.isFailure)
+        assertEquals("BIA_CLASSIFICATION_MISSING", result.exceptionOrNull()?.message)
+    }
+
     private fun envelope(data: String): String = org.json.JSONObject().put("data", data).toString()
 }

@@ -20,7 +20,12 @@ object AiCompactDiagnostics {
                     .joinToString("/") { "${it.key}x${it.value}" }
                 "$record:${rows.size}:$arities"
             }
-        "dataLength=${data.length} lineCount=${lines.size} expectedVersion=$expectedVersion " +
+        // Structure only: separator counts and the sequence of single-letter record tags, never the text.
+        val tagSequence = data.split('|').map(String::trim).filter { it.length == 1 && it[0].isUpperCase() }.take(48).joinToString("")
+        // Code points of the character before each `X|` candidate tag: shows which separator the provider used.
+        val separators = Regex("(.)[A-Z]\\|").findAll(data).map { it.groupValues[1].first().code }
+            .groupingBy { it }.eachCount().entries.sortedByDescending { it.value }.take(6).joinToString(",") { "${it.key}x${it.value}" }
+        "dataLength=${data.length} lineCount=${lines.size} pipes=${data.count { it == '|' }} spaces=${data.count { it == ' ' }} tags=$tagSequence sepCodes=$separators expectedVersion=$expectedVersion " +
             "firstLineLength=${first.length} firstLineMatches=${first == expectedVersion} " +
             "firstCharCode=${first.firstOrNull()?.code ?: "-"} lastLineLength=${last.length} " +
             "lastRecord=${last.substringBefore('|').take(24)} recordStats=$recordStats"
