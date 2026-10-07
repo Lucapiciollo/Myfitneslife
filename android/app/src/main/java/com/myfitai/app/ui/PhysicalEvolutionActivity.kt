@@ -66,7 +66,7 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         bindBottom(BottomNavBinder.Tab.PROGRESS)
         bindProgressAnalysisCard()
         findViewById<ImageButton>(R.id.otherIndicatorsHelpButton).setOnClickListener {
-            showHelp(
+            showHelpCard(
                 "Altri indicatori",
                 "Qui trovi valori aggiuntivi letti dalle rilevazioni BIA del profilo attivo. " +
                     "L'acqua corporea, il grasso e la massa muscolare mostrano lo storico registrato: " +
@@ -74,7 +74,7 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
             )
         }
         findViewById<ImageButton>(R.id.progressMetricHelpButton).setOnClickListener {
-            showHelp(
+            showHelpCard(
                 "Progresso",
                 "Il valore, la variazione e il grafico mostrano l'andamento della metrica selezionata " +
                     "usando le rilevazioni registrate nel profilo attivo. Se i dati sono insufficienti, " +
@@ -136,7 +136,7 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
                 background = null
                 contentDescription = "Spiega analisi progressi IA"
                 setOnClickListener {
-                    showHelp(
+                    showHelpCard(
                         "Analisi progressi IA",
                         "L'analisi IA interpreta i dati registrati nel tempo, come peso, grasso corporeo, " +
                             "massa muscolare, misure, allenamenti e sgarri. " +
@@ -215,7 +215,7 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
                 background = null
                 contentDescription = "Spiega review settimanale"
                 setOnClickListener {
-                    showHelp(
+                    showHelpCard(
                         "Review settimanale",
                         "Raccoglie alimentazione, allenamenti e variazioni corporee degli ultimi sette giorni. " +
                             "La sintesi IA viene generata solo sui dati registrati e non sostituisce una valutazione professionale.",
@@ -454,10 +454,6 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
                 analysisRequirementsText.text = ProgressAnalysisRequirements.message(missing)
             }
         }
-    }
-
-    private fun showHelp(title: String, message: String) {
-        showHelpCard(title, message)
     }
 
     private fun renderAnalysisDetails(patterns: List<ProgressAnalysisCompactContract.Pattern>) {

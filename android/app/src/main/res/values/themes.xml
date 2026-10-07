@@ -16,6 +16,68 @@
     <item name="materialSwitchStyle">@style/Widget.MyFitAI.SettingsSwitch</item>
     <item name="materialAlertDialogTheme">@style/ThemeOverlay.MyFitAI.AlertDialog</item>
     <item name="android:windowBackground">@color/bg_primary</item>
+    <!-- Framework PopupMenu (profile switcher) follows the same surface/rows as the dropdown popups. -->
+    <item name="android:popupMenuStyle">@style/Widget.MyFitAI.PopupMenu</item>
+    <item name="android:textAppearanceLargePopupMenu">@style/Text.MyFitAI.PopupMenuItem</item>
+</style>
+<!-- Shared help modal (HelpDialog): all help typography and spacing lives in this theme. -->
+<style name="Text.MyFitAI.HelpDialogTitle" parent="Text.MyFitAI.DialogTitle">
+    <item name="android:gravity">center</item>
+    <item name="android:textAlignment">center</item>
+    <item name="android:textSize">@dimen/text_screen_title</item>
+    <item name="android:paddingTop">@dimen/space_4</item>
+    <item name="android:paddingBottom">@dimen/space_12</item>
+</style>
+<style name="Text.MyFitAI.HelpMessage" parent="Text.MyFitAI.Body">
+    <item name="android:textColor">@color/text_primary</item>
+    <item name="android:lineSpacingExtra">@dimen/line_spacing_zero_extra</item>
+    <item name="android:breakStrategy">balanced</item>
+    <item name="android:hyphenationFrequency">normal</item>
+    <item name="android:includeFontPadding">false</item>
+    <item name="android:gravity">start</item>
+    <item name="android:paddingBottom">@dimen/space_12</item>
+</style>
+<style name="Text.MyFitAI.HelpSectionTitle" parent="Text.MyFitAI.Section">
+    <item name="android:textColor">@color/text_primary</item>
+    <item name="android:gravity">start</item>
+    <item name="android:includeFontPadding">false</item>
+    <item name="android:textSize">@dimen/text_card_title</item>
+    <item name="android:paddingBottom">@dimen/space_4</item>
+</style>
+<style name="Text.MyFitAI.HelpSectionValue" parent="Text.MyFitAI.BodyEmphasis">
+    <item name="android:textColor">@color/text_primary</item>
+    <item name="android:gravity">start</item>
+    <item name="android:includeFontPadding">false</item>
+    <item name="android:paddingStart">@dimen/help_text_indent</item>
+    <item name="android:paddingBottom">@dimen/space_4</item>
+</style>
+<style name="Text.MyFitAI.HelpSectionBody" parent="Text.MyFitAI.Body">
+    <item name="android:textColor">@color/text_secondary</item>
+    <item name="android:gravity">start</item>
+    <item name="android:paddingStart">@dimen/help_text_indent</item>
+    <item name="android:lineSpacingExtra">@dimen/line_spacing_zero_extra</item>
+    <item name="android:breakStrategy">balanced</item>
+    <item name="android:hyphenationFrequency">normal</item>
+    <item name="android:includeFontPadding">false</item>
+</style>
+<style name="Text.MyFitAI.HelpSectionSubtitle" parent="Text.MyFitAI.SettingsDescription">
+    <item name="android:textColor">@color/text_secondary</item>
+    <item name="android:gravity">start</item>
+    <item name="android:includeFontPadding">false</item>
+    <item name="android:paddingStart">@dimen/help_text_indent</item>
+    <item name="android:paddingBottom">@dimen/space_4</item>
+</style>
+<style name="Widget.MyFitAI.HelpSectionContent" parent="">
+    <item name="android:background">@color/white</item>
+    <item name="android:paddingTop">@dimen/space_12</item>
+    <item name="android:paddingBottom">@dimen/space_12</item>
+</style><style name="Text.MyFitAI.PopupMenuItem" parent="Text.MyFitAI.Body">
+    <item name="android:textColor">@color/text_primary</item>
+</style>
+<style name="Widget.MyFitAI.PopupMenu" parent="@android:style/Widget.Material.Light.PopupMenu">
+    <item name="android:popupBackground">@drawable/bg_dropdown_popup</item>
+    <item name="android:popupElevation">@dimen/elevation_dialog</item>
+    <item name="android:dropDownVerticalOffset">@dimen/space_4</item>
 </style>
 <style name="Theme.MyFitAI.NutritionAdviceModal" parent="Theme.Material3.Light.NoActionBar">
     <item name="android:fontFamily">sans</item>
@@ -177,6 +239,8 @@
     <item name="clockHandColor">@color/dialog_control_neutral</item>
 </style>
 <style name="MaterialAlertDialog.MyFitAI" parent="MaterialAlertDialog.Material3">
+    <item name="backgroundInsetTop">@dimen/dialog_vertical_inset</item>
+    <item name="backgroundInsetBottom">@dimen/dialog_vertical_inset</item>
     <item name="backgroundTint">@color/white</item>
     <item name="android:backgroundTint">@color/white</item>
     <item name="android:background">@color/white</item>
@@ -386,19 +450,21 @@
      <item name="buttonTint">@color/dialog_control_neutral</item>
      <item name="android:gravity">center_vertical</item>
  </style>
-  <style name="Widget.MyFitAI.InputDropdown" parent="Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
-      <item name="boxBackgroundColor">@color/white</item>
+   <style name="Widget.MyFitAI.InputDropdown" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+       <item name="boxBackgroundMode">outline</item>
+       <item name="boxBackgroundColor">@color/white</item>
       <item name="boxStrokeColor">@color/myfitai_input_stroke</item>
        <item name="boxStrokeWidth">@dimen/border_width_default</item>
        <item name="boxStrokeWidthFocused">@dimen/border_width_focused</item>
-       <item name="boxCornerRadiusTopStart">@dimen/radius_dropdown</item>
-       <item name="boxCornerRadiusTopEnd">@dimen/radius_dropdown</item>
-       <item name="boxCornerRadiusBottomStart">@dimen/radius_dropdown</item>
-       <item name="boxCornerRadiusBottomEnd">@dimen/radius_dropdown</item>
+       <item name="boxCornerRadiusTopStart">@dimen/radius_field</item>
+       <item name="boxCornerRadiusTopEnd">@dimen/radius_field</item>
+       <item name="boxCornerRadiusBottomStart">@dimen/radius_field</item>
+       <item name="boxCornerRadiusBottomEnd">@dimen/radius_field</item>
       <item name="hintTextColor">@color/myfitai_input_hint</item>
        <item name="android:minHeight">@dimen/control_min_height</item>
-       <item name="endIconTint">@color/text_secondary</item>
-       <item name="endIconCheckable">false</item>
+        <item name="endIconTint">@color/text_secondary</item>
+        <item name="endIconCheckable">false</item>
+        <item name="endIconMode">dropdown_menu</item>
   </style>
    <style name="Widget.MyFitAI.InputDropdownText" parent="Widget.AppCompat.AutoCompleteTextView">
        <item name="android:background">@color/transparent</item>
@@ -410,20 +476,20 @@
        <item name="android:textSize">@dimen/text_body</item>
        <item name="android:minHeight">@dimen/control_min_height</item>
        <item name="android:gravity">center_vertical</item>
-       <item name="android:includeFontPadding">true</item>
-       <item name="android:paddingStart">@dimen/space_14</item>
-       <item name="android:paddingEnd">@dimen/space_14</item>
- </style>
+        <item name="android:includeFontPadding">true</item>
+        <item name="android:paddingStart">@dimen/space_12</item>
+        <item name="android:paddingEnd">@dimen/space_12</item>
+  </style>
   <style name="Widget.MyFitAI.InputEditText" parent="Widget.Material3.TextInputEditText.OutlinedBox">
      <item name="android:textColor">@color/text_primary</item>
      <item name="android:textColorHint">@color/text_secondary</item>
       <item name="android:textSize">@dimen/text_body</item>
      <item name="android:backgroundTint">@color/transparent</item>
-      <item name="android:minHeight">@dimen/input_min_height</item>
-      <item name="android:paddingStart">@dimen/space_14</item>
-       <item name="android:paddingEnd">@dimen/space_14</item>
-  </style>
-  <style name="Widget.MyFitAI.CompactSectionContent" parent="">
+       <item name="android:minHeight">@dimen/control_min_height</item>
+       <item name="android:paddingStart">@dimen/space_12</item>
+        <item name="android:paddingEnd">@dimen/space_12</item>
+   </style>
+   <style name="Widget.MyFitAI.CompactSectionContent" parent="">
       <item name="android:paddingStart">@dimen/space_12</item>
       <item name="android:paddingEnd">@dimen/space_12</item>
        <item name="android:paddingTop">@dimen/space_10</item>

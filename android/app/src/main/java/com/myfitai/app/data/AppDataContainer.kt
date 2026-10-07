@@ -8,6 +8,8 @@ import com.myfitai.app.data.profile.MealCountPreferences
 import com.myfitai.app.data.profile.NutritionPlanUpdatePreferences
 import com.myfitai.app.data.profile.NutritionPlanSchedulePreferences
 import com.myfitai.app.data.profile.ProfilePhotoStore
+import com.myfitai.app.data.profile.TrainingProgramPreferences
+import com.myfitai.app.domain.calculation.DayEnergyProvider
 import com.myfitai.app.data.profile.WorkoutPreferences
 import com.myfitai.app.data.profile.AiAutomationPreferences
 import com.myfitai.app.data.repository.*
@@ -65,6 +67,7 @@ class AppDataContainer private constructor(context: Context) {
     val profilePhotoStore = ProfilePhotoStore(appContext)
     val biaFrequencyPreferences = BiaFrequencyPreferences(appContext)
     val workoutPreferences = WorkoutPreferences(appContext)
+    val trainingProgramPreferences = TrainingProgramPreferences(appContext)
     val progressAnalysisPreferences = ProgressAnalysisPreferences(appContext)
     val aiAutomationPreferences = AiAutomationPreferences(appContext)
     val aiJobScheduler = AiJobScheduler(appContext)
@@ -94,6 +97,14 @@ class AppDataContainer private constructor(context: Context) {
         bia = biaRepository,
         bodyMeasurements = bodyMeasurementRepository,
         activeProfileStore = activeProfileStore,
+    )
+
+    val dayEnergyProvider = DayEnergyProvider(
+        calculations = profileCalculationService,
+        profiles = userProfileRepository,
+        workouts = workoutRepository,
+        checkIns = dailyActivityCheckInRepository,
+        program = trainingProgramPreferences,
     )
 
     val personalResponseService = PersonalResponseService(
@@ -139,6 +150,7 @@ class AppDataContainer private constructor(context: Context) {
         aiAutomationPreferences = aiAutomationPreferences,
         mealCountPreferences = mealCountPreferences,
         workoutPreferences = workoutPreferences,
+        trainingProgramPreferences = trainingProgramPreferences,
         profilePhotoStore = profilePhotoStore,
         notificationScheduler = notificationScheduler,
     )
@@ -155,6 +167,8 @@ class AppDataContainer private constructor(context: Context) {
         personalResponse = personalResponseService,
         mealCountPreferences = mealCountPreferences,
         planReview = planReviewService,
+        trainingProgramPreferences = trainingProgramPreferences,
+        dailyActivityCheckIns = dailyActivityCheckInRepository,
     )
 
     val cheatAdjustmentService = CheatAdjustmentService(
@@ -233,6 +247,7 @@ class AppDataContainer private constructor(context: Context) {
         nutritionPlanSchedulePreferences = nutritionPlanSchedulePreferences,
         mealCountPreferences = mealCountPreferences,
         workoutPreferences = workoutPreferences,
+        trainingProgramPreferences = trainingProgramPreferences,
         biaFrequencyPreferences = biaFrequencyPreferences,
         aiAutomationPreferences = aiAutomationPreferences,
     )
@@ -242,6 +257,7 @@ class AppDataContainer private constructor(context: Context) {
         activeProfiles = activeProfileStore,
         mealCountPreferences = mealCountPreferences,
         workoutPreferences = workoutPreferences,
+        trainingProgramPreferences = trainingProgramPreferences,
         biaFrequencyPreferences = biaFrequencyPreferences,
         nutritionPlanSchedulePreferences = nutritionPlanSchedulePreferences,
         aiAutomationPreferences = aiAutomationPreferences,

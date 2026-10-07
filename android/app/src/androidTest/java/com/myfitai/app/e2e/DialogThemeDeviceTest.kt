@@ -65,10 +65,9 @@ class DialogThemeDeviceTest {
             assertTrue(device.hasObject(By.textContains("Consumo giornaliero (TDEE)")))
             val dir = File(context.getExternalFilesDir(null), "qa-artifacts").apply { mkdirs() }
             device.takeScreenshot(File(dir, "home-calorie-help-after.png"))
-            val bodyScroll = device.findObject(By.scrollable(true))
-            assertTrue("help body should scroll", bodyScroll != null)
-            bodyScroll.swipe(Direction.UP, 0.75f)
-            assertTrue(device.wait(Until.hasObject(By.textContains("per favorire la perdita di grasso.")), 2_000))
+            // The modal uses all the height it can get: long help scrolls only when it does not fit (e.g. large fonts).
+            device.findObject(By.scrollable(true))?.swipe(Direction.UP, 0.75f)
+            assertTrue("the last help line must be reachable", device.wait(Until.hasObject(By.textContains("per favorire la perdita di grasso.")), 2_000))
             device.takeScreenshot(File(dir, "home-calorie-help-after-scrolled.png"))
             assertTrue(device.hasObject(By.text("Ho capito")))
             device.pressBack()

@@ -5,6 +5,7 @@
     <color name="text_primary">#17231D</color><color name="text_secondary">#56645D</color><color name="text_muted">#839088</color>
     <color name="semantic_positive">#176B4D</color><color name="semantic_warning">#D99A22</color><color name="semantic_error">#D94C46</color><color name="divider">#D9E3DC</color>
     <color name="metric_label">#24323A</color><color name="metric_value">#0A1115</color><color name="metric_positive">#176B4D</color>
+    <color name="input_outline">#AAB8AF</color>
     <color name="dashboard_header_bg">#F5F7F5</color><color name="admin_header_bg">#EEF2EF</color><color name="screen_header_bg">#FFFFFF</color><color name="pill_selected_bg">#E4EFE8</color><color name="chart_fill_start">#30176B4D</color><color name="chart_fill_end">#00176B4D</color>
     <color name="segment_selected_bg">@color/accent_green_dark</color><color name="segment_selected_text">@color/white</color><color name="segment_unselected_text">@color/text_secondary</color><color name="chart_no_data_text">@color/text_secondary</color>
     <color name="surface_positive_soft">#EAF3EE</color><color name="positive_soft_stroke">#C9DED1</color>

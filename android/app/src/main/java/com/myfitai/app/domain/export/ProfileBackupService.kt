@@ -7,7 +7,10 @@ import com.myfitai.app.data.local.MyFitAiDatabase
 import com.myfitai.app.data.local.entity.*
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.profile.MealCountPreferences
+import com.myfitai.app.data.profile.TrainingProgramPreferences
 import com.myfitai.app.data.profile.WorkoutPreferences
+import com.myfitai.app.domain.calculation.TrainingEnergyPlanner
+import com.myfitai.app.domain.calculation.TrainingProgram
 import com.myfitai.app.data.profile.BiaFrequencyPreferences
 import com.myfitai.app.data.profile.NutritionPlanSchedulePreferences
 import com.myfitai.app.data.profile.AiAutomationPreferences
@@ -24,6 +27,7 @@ class ProfileBackupService(
     private val nutritionPlanSchedulePreferences: NutritionPlanSchedulePreferences? = null,
     private val aiAutomationPreferences: AiAutomationPreferences? = null,
     private val profilePhotoStore: ProfilePhotoStore? = null,
+    private val trainingProgramPreferences: TrainingProgramPreferences? = null,
 ) {
     private val resolver = context.applicationContext.contentResolver
 
@@ -109,6 +113,10 @@ class ProfileBackupService(
         val prefs = root.optJSONObject("profilePreferences") ?: return
         mealCountPreferences?.set(profileId, prefs.optInt("mealCount", MealCountPreferences.DEFAULT))
         workoutPreferences?.setEnabled(profileId, prefs.optBoolean("workoutsEnabled", WorkoutPreferences.DEFAULT_ENABLED))
+        // Older backups have no program: leave the profile's current one untouched.
+        TrainingProgram.fromJson(prefs.optJSONObject("trainingProgram"))?.let { trainingProgramPreferences?.set(profileId, it) }
+        TrainingEnergyPlanner.ActivityBasis.entries.firstOrNull { it.name == prefs.optString("trainingActivityBasis") }
+            ?.let { trainingProgramPreferences?.setActivityBasis(profileId, it) }
         biaFrequencyPreferences?.intervalDays = prefs.optInt("biaIntervalDays", BiaFrequencyPreferences.DEFAULT_INTERVAL_DAYS)
         prefs.optJSONObject("nutritionSchedule")?.let { schedule ->
             nutritionPlanSchedulePreferences?.setEnabled(profileId, schedule.optBoolean("enabled"))

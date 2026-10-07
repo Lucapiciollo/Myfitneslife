@@ -24,6 +24,26 @@ class WeeklyBodyExpectationTest {
     }
 
     @Test
+    fun perDayMaintenanceReplacesTheSingleValueForTrainingPrograms() {
+        // Rest days burn 2,200 and training days 2,600: eating 2,000 and 2,400 is the same 200 kcal deficit.
+        val maintenance = (0L..6L).associate { monday + it to if (it == 2L || it == 4L) 2_600 else 2_200 }
+        val planned = (0L..6L).map { monday + it to if (it == 2L || it == 4L) 2_400 else 2_000 }
+
+        val result = WeeklyBodyExpectation.calculate(
+            maintenanceKcal = 2_200,
+            weekStartEpochDay = monday,
+            plannedDays = planned,
+            maintenanceByDay = maintenance,
+        )
+
+        assertTrue(result.available)
+        assertEquals(1_400, result.theoreticalDeficitKcal)
+
+        val singleValue = WeeklyBodyExpectation.calculate(maintenanceKcal = 2_200, weekStartEpochDay = monday, plannedDays = planned)
+        assertEquals("a single rest-day TDEE would understate the deficit", 600, singleValue.theoreticalDeficitKcal)
+    }
+
+    @Test
     fun partialWeekDoesNotInventMissingDaysOrExtrapolateToFullWeek() {
         val result = WeeklyBodyExpectation.calculate(
             maintenanceKcal = 2_500,

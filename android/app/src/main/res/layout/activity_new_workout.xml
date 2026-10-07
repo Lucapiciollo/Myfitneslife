@@ -75,18 +75,17 @@
                 style="@style/Widget.MyFitAI.InputEditText"
                     android:id="@+id/dateInput"
                     android:layout_width="match_parent"
-                    android:layout_height="@dimen/workout_datetime_field_height"
+                    android:layout_height="wrap_content"
                     android:focusable="false"
                     android:gravity="center_vertical"
-                    android:minHeight="@dimen/workout_datetime_field_height"
-                    android:textSize="@dimen/text_body_large" />
+                    />
             </com.google.android.material.textfield.TextInputLayout>
             <Space android:layout_width="@dimen/space_12" android:layout_height="@dimen/layout_geometry_shim_thickness" />
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/timeLayout"
                 style="@style/Widget.MyFitAI.Input"
                 android:layout_width="0dp"
-                android:layout_height="@dimen/workout_datetime_field_height"
+                android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:hint="Ora"
                 app:endIconMode="custom"
@@ -95,11 +94,10 @@
                 style="@style/Widget.MyFitAI.InputEditText"
                     android:id="@+id/timeInput"
                     android:layout_width="match_parent"
-                    android:layout_height="@dimen/workout_datetime_field_height"
+                    android:layout_height="wrap_content"
                     android:focusable="false"
                     android:gravity="center_vertical"
-                    android:minHeight="@dimen/workout_datetime_field_height"
-                    android:textSize="@dimen/text_body_large" />
+                    />
             </com.google.android.material.textfield.TextInputLayout>
         </LinearLayout>
 

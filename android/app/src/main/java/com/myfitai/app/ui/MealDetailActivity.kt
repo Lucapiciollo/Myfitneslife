@@ -10,6 +10,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.myfitai.app.R
+import com.myfitai.app.ui.widgets.MealSlotIcons
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.domain.food.FoodConsumptionStatus
 import com.myfitai.app.domain.food.FoodIngredient
@@ -156,7 +157,10 @@ class MealDetailActivity : BaseShellActivity() {
         findViewById<TextView>(R.id.statProtein).text = NutritionEstimateFormatter.formatEstimatedMacro(meal.proteinG, "g")
         findViewById<TextView>(R.id.statCarbs).text = NutritionEstimateFormatter.formatEstimatedMacro(meal.carbsG, "g")
         findViewById<TextView>(R.id.statFat).text = NutritionEstimateFormatter.formatEstimatedMacro(meal.fatG, "g")
-        findViewById<ImageView>(R.id.mealImage).setImageResource(imageFor(meal))
+        findViewById<ImageView>(R.id.mealImage).apply {
+            setImageResource(MealSlotIcons.iconRes(meal.type, meal.timeMinutes))
+            contentDescription = MealSlotIcons.label(meal.type, meal.timeMinutes)
+        }
 
         val ingredientsList = ingredientsContainer as LinearLayout
         ingredientsList.removeAllViews()
@@ -217,15 +221,6 @@ class MealDetailActivity : BaseShellActivity() {
         "fats", "grassi" -> R.drawable.img_food_fats
         "condiments", "condimenti" -> R.drawable.img_food_condiments
         else -> R.drawable.img_food_carbs
-    }
-
-    private fun imageFor(meal: FoodMeal): Int = when (meal.type.trim().lowercase(Locale.ROOT)) {
-        "colazione", "breakfast" -> R.drawable.img_meal_breakfast
-        "spuntino", "snack" -> R.drawable.img_meal_snack
-        "pranzo", "lunch" -> R.drawable.img_meal_lunch
-        "pre-workout", "preworkout" -> R.drawable.img_meal_preworkout
-        "cena", "dinner" -> R.drawable.img_meal_dinner
-        else -> R.drawable.img_meal_lunch
     }
 
     private fun displayMealType(type: String): String = type.trim().ifBlank { "Pasto" }

@@ -503,7 +503,6 @@ class BiaActivity : BaseShellActivity() {
 
     private fun showImportPreview(preview: BiaImportContract.Preview, provider: String, model: String) {
         val content = layoutInflater.inflate(R.layout.dialog_bia_import_preview, null, false)
-        val scroll = content.findViewById<androidx.core.widget.NestedScrollView>(R.id.biaImportScroll)
         val meta = content.findViewById<TextView>(R.id.biaImportMeta)
         val date = content.findViewById<TextView>(R.id.biaImportDate)
 
@@ -551,16 +550,6 @@ class BiaActivity : BaseShellActivity() {
         date.text = preview.measuredAtEpochMillis?.let { timestamp ->
             "Data rilevata: ${SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.ITALIAN).format(Date(timestamp))}"
         } ?: "Data rilevata: non disponibile"
-
-        val scrollHeight = minOf(
-            resources.getDimensionPixelSize(R.dimen.bia_import_preview_max_height),
-            (resources.displayMetrics.heightPixels *
-                resources.getFraction(R.fraction.bia_import_preview_max_height_fraction, 1, 1)).toInt(),
-        )
-        scroll.layoutParams = (scroll.layoutParams
-            ?: android.view.ViewGroup.LayoutParams(android.view.ViewGroup.LayoutParams.MATCH_PARENT, scrollHeight)).apply {
-            height = scrollHeight
-        }
 
         val dialog = MaterialAlertDialogBuilder(this)
             .setTitle("Controlla importazione BIA")

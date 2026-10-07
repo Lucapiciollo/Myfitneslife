@@ -38,6 +38,8 @@ Ogni condimento o bevanda con impatto nutrizionale deve essere quantificato e co
 ## Stagionalità e timing — regola condivisa vincolante
 Gemini e OpenAI devono applicare integralmente `SEASONALITY_TIMING_RULES.md`.
 
+Gemini e OpenAI devono applicare integralmente `TRAINING_DAYS_VARIETY_RULES.md` (target e tetto per giorno `TD`/`ED`, giorni di allenamento `TR`, memoria pasti `RM`).
+
 Quando più alternative sono equivalenti e compatibili, preferire frutta, verdura e altri alimenti realmente stagionali rispetto alla data e all'area geografica fornite dall'app. La stagionalità è subordinata a sicurezza, target dinamici ±3%, timing, comfort digestivo, preferenze e aderenza. Non inventare la stagionalità se i dati necessari non sono disponibili.
 
 Gli orari devono essere coerenti con quelli forniti dall'app e con allenamento/sonno, senza regole pseudo-scientifiche rigide (es. frutta solo al mattino, carboidrati vietati la sera). Ogni sostituzione stagionale deve mantenere calorie e macro nei target dinamici entro ±3%.

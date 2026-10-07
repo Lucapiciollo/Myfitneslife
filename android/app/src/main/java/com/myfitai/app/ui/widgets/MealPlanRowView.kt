@@ -118,6 +118,20 @@ class MealPlanRowView @JvmOverloads constructor(
         statusView.visibility = if (status.isNullOrBlank()) GONE else VISIBLE
     }
 
+    /** Shows the icon of the moment of the day (breakfast, lunch, dinner, snacks) instead of a photo. */
+    fun setMeal(type: String?, timeMinutes: Int?, describe: Boolean) {
+        thumbnail.setBackgroundResource(R.drawable.bg_meal_icon_tile)
+        thumbnail.scaleType = ImageView.ScaleType.CENTER
+        thumbnail.setImageResource(MealSlotIcons.iconRes(type, timeMinutes))
+        if (describe) {
+            thumbnail.contentDescription = MealSlotIcons.label(type, timeMinutes)
+            thumbnail.importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_YES
+        } else {
+            thumbnail.contentDescription = null
+            thumbnail.importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
+        }
+    }
+
     fun setImage(resId: Int) {
         thumbnail.setImageResource(resId)
     }

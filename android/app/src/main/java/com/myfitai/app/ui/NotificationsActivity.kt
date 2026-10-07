@@ -6,6 +6,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import com.myfitai.app.R
+import com.myfitai.app.ui.widgets.MealSlotIcons
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.notifications.NotificationPreferences
 import com.myfitai.app.notifications.ReminderReceiver
@@ -62,15 +63,9 @@ class NotificationsActivity : BaseShellActivity() {
         findViewById<TextView>(R.id.notificationTime).text = time
         findViewById<TextView>(R.id.reminderTitle).text = if (lead > 0) "Tra $lead minuti: $mealType" else "È ora di $mealType"
         findViewById<TextView>(R.id.reminderText).text = mealTitle
-        findViewById<ImageView>(R.id.mealImage).setImageResource(
-            when (mealType.trim().lowercase(Locale.ROOT)) {
-                "colazione", "breakfast" -> R.drawable.img_meal_breakfast
-                "spuntino", "snack" -> R.drawable.img_meal_snack
-                "pranzo", "lunch" -> R.drawable.img_meal_lunch
-                "pre-workout", "preworkout" -> R.drawable.img_meal_preworkout
-                "cena", "dinner" -> R.drawable.img_meal_dinner
-                else -> R.drawable.img_meal_lunch
-            }
-        )
+        findViewById<ImageView>(R.id.mealImage).apply {
+            setImageResource(MealSlotIcons.iconRes(mealType, null))
+            contentDescription = MealSlotIcons.label(mealType, null)
+        }
     }
 }

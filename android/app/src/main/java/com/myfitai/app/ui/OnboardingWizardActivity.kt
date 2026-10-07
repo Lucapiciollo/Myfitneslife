@@ -31,6 +31,7 @@ import com.myfitai.app.ai.AiSettingsStore
 import com.myfitai.app.ai.GeminiByokProvider
 import com.myfitai.app.ai.OpenAiProvider
 import com.myfitai.app.data.AppDataContainer
+import com.myfitai.app.domain.calculation.TrainingEnergyPlanner
 import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.data.profile.NutritionPlanSchedulePreferences
 import com.myfitai.app.domain.food.DietaryProfile
@@ -229,7 +230,7 @@ class OnboardingWizardActivity : AppCompatActivity() {
         sexInput = dropdown(content, R.string.profile_sex_hint, listOf("Maschio", "Femmina"))
         heightInput = textInput(content, R.string.profile_height_hint, "numberDecimal", singleLine = true)
         weightInput = textInput(content, R.string.profile_weight_hint, "numberDecimal", singleLine = true)
-        activityInput = dropdown(content, R.string.profile_activity_hint, resources.getStringArray(R.array.profile_activity_levels).toList())
+        activityInput = dropdown(content, R.string.profile_activity_hint, resources.getStringArray(R.array.profile_activity_levels).toList(), R.string.profile_activity_helper)
         goalInput = dropdown(content, R.string.profile_goal_hint, resources.getStringArray(R.array.profile_goals).toList())
         nameInput?.setText(profile?.name.orEmpty())
         birthDateInput?.setText(birthDateEpochDay?.let { LocalDate.ofEpochDay(it).format(formatter) }.orEmpty())
@@ -466,7 +467,13 @@ class OnboardingWizardActivity : AppCompatActivity() {
                 goal = goal, activityLevel = activity, wakeTimeMinutes = wakeMinutes,
                 sleepTimeMinutes = sleepMinutes, dietaryPreferencesJson = dietaryJson,
                 photoPath = null, createdAtEpochMillis = now, updatedAtEpochMillis = now,
-            )).also { data.activeProfileStore.selectProfile(it, makeDefault = true) }
+            )).also {
+                data.activeProfileStore.selectProfile(it, makeDefault = true)
+                data.trainingProgramPreferences.setActivityBasis(it, TrainingEnergyPlanner.ActivityBasis.EVERYDAY_ONLY)
+            }
+        }
+        if (activity != existing.activityLevel) {
+            data.trainingProgramPreferences.setActivityBasis(existing.id, TrainingEnergyPlanner.ActivityBasis.EVERYDAY_ONLY)
         }
         data.userProfileRepository.update(existing.copy(
             name = name, birthDateEpochDay = birth, biologicalSex = sex,
@@ -592,10 +599,11 @@ class OnboardingWizardActivity : AppCompatActivity() {
         return input
     }
 
-    private fun dropdown(parent: LinearLayout, hintId: Int, values: List<String>): AutoCompleteTextView {
+    private fun dropdown(parent: LinearLayout, hintId: Int, values: List<String>, helperId: Int? = null): AutoCompleteTextView {
         val layout = layoutInflater.inflate(R.layout.view_onboarding_dropdown, parent, false) as TextInputLayout
         layout.apply {
             hint = getString(hintId)
+            helperId?.let { helperText = getString(it) }
             layoutParams = marginParams(top = if (parent.childCount == 0) 0 else R.dimen.space_8)
         }
         val input = layout.findViewById<AutoCompleteTextView>(R.id.onboardingDropdownInput).apply {

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Progress track -->
+    <path
+        android:pathData="M54,22 A32,32 0,1 1 53.9,22"
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="@color/positive_soft_stroke"
+        android:strokeWidth="7" />
+
+    <!-- Progress arc with a deliberate open gap for the terminal node -->
+    <path
+        android:pathData="M72.5,28.5 A32,32 0,1 1 78.5,71.5"
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="@color/accent_green_dark"
+        android:strokeWidth="7"
+        android:strokeLineCap="round" />
+
+    <!-- AI/network node: three connected points, simplified to remain legible at launcher size -->
+    <path
+        android:pathData="M46,52 L61,52 L61,63"
+        android:strokeColor="@color/accent_green_dark"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path android:pathData="M46,47 A5,5 0,1 0 46,57 A5,5 0,1 0 46,47" android:fillColor="@color/accent_green_dark" />
+    <path android:pathData="M61,47 A5,5 0,1 0 61,57 A5,5 0,1 0 61,47" android:fillColor="@color/accent_green_dark" />
+    <path android:pathData="M61,58 A5,5 0,1 0 61,68 A5,5 0,1 0 61,58" android:fillColor="@color/accent_green_dark" />
+
+    <!-- Progress terminal node -->
+    <path android:pathData="M78.5,64 A8,8 0,1 0 78.5,80 A8,8 0,1 0 78.5,64" android:fillColor="@color/white" />
+    <path android:pathData="M78.5,67 A5,5 0,1 0 78.5,77 A5,5 0,1 0 78.5,67" android:fillColor="@color/accent_green" />
+</vector>

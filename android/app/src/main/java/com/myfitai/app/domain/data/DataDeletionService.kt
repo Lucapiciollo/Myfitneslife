@@ -9,6 +9,7 @@ import com.myfitai.app.data.profile.MealCountPreferences
 import com.myfitai.app.data.profile.NutritionPlanSchedulePreferences
 import com.myfitai.app.data.profile.NutritionPlanUpdatePreferences
 import com.myfitai.app.data.profile.ProfilePhotoStore
+import com.myfitai.app.data.profile.TrainingProgramPreferences
 import com.myfitai.app.data.profile.WorkoutPreferences
 import com.myfitai.app.domain.ai.AiJobScheduler
 import com.myfitai.app.domain.ai.AiJobType
@@ -32,6 +33,7 @@ class DataDeletionService(
     private val aiAutomationPreferences: AiAutomationPreferences? = null,
     private val mealCountPreferences: MealCountPreferences? = null,
     private val workoutPreferences: WorkoutPreferences? = null,
+    private val trainingProgramPreferences: TrainingProgramPreferences? = null,
     private val profilePhotoStore: ProfilePhotoStore? = null,
     private val notificationScheduler: NotificationScheduler? = null,
 ) {
@@ -120,6 +122,7 @@ class DataDeletionService(
         nutritionPlanUpdatePreferences?.clearProfile(profileId)
         mealCountPreferences?.clearProfile(profileId)
         workoutPreferences?.clearProfile(profileId)
+        trainingProgramPreferences?.clearProfile(profileId)
     }
 
     private fun invalidateProgressAnalysis(profileId: Long) {

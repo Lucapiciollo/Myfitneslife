@@ -6,7 +6,8 @@ import kotlin.math.max
  * Indicative energy-balance estimate from the CURRENT saved weekly plan.
  *
  * TDEE from LocalCalculationEngine already includes habitual activity: adding workout
- * calories here would count the same activity twice. This is not a measurement of fat
+ * calories here would count the same activity twice. With a training program the caller passes
+ * the expenditure of each day (workouts already included once) in `maintenanceByDay`. This is not a measurement of fat
  * lost and must never be presented as an observed BIA change or a certain prediction.
  */
 object WeeklyBodyExpectation {
@@ -33,18 +34,21 @@ object WeeklyBodyExpectation {
         weekStartEpochDay: Long,
         plannedDays: List<Pair<Long, Int?>>,
         periodWeeks: Int = 1,
+        /** Expenditure per epoch day; a day listed here overrides [maintenanceKcal]. */
+        maintenanceByDay: Map<Long, Int> = emptyMap(),
     ): Result {
         require(periodWeeks in 1..4) { "INVALID_EXPECTATION_PERIOD_WEEKS" }
-        if (maintenanceKcal == null || maintenanceKcal <= 0) return Result(available = false)
+        if ((maintenanceKcal == null || maintenanceKcal <= 0) && maintenanceByDay.isEmpty()) return Result(available = false)
+        fun maintenanceOf(day: Long): Int? = (maintenanceByDay[day] ?: maintenanceKcal)?.takeIf { it > 0 }
         val periodDays = periodWeeks * 7
         val days = plannedDays
             .filter { (day, kcal) ->
-                day in weekStartEpochDay..(weekStartEpochDay + periodDays - 1) && kcal != null && kcal > 0
+                day in weekStartEpochDay..(weekStartEpochDay + periodDays - 1) && kcal != null && kcal > 0 && maintenanceOf(day) != null
             }
             .distinctBy { it.first }
         if (days.isEmpty()) return Result(available = false)
 
-        val deficit = days.sumOf { maintenanceKcal - requireNotNull(it.second) }
+        val deficit = days.sumOf { requireNotNull(maintenanceOf(it.first)) - requireNotNull(it.second) }
         val fullWeek = days.size == 7
         if (deficit <= 0) return Result(
             available = false,

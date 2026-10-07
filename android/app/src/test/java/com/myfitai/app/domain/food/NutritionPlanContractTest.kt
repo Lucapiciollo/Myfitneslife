@@ -2,6 +2,7 @@ package com.myfitai.app.domain.food
 
 import com.myfitai.app.domain.calculation.NutritionBusinessValidator
 import com.myfitai.app.data.local.entity.WorkoutEntity
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -161,6 +162,39 @@ class NutritionPlanContractTest {
         )
     }
 
+
+    @Test
+    fun perDayCeilingOverridesTheSingleCeilingAndRejectsOnlyTheOffendingDay() {
+        val plan = response()
+        val allHigh = (0L..6L).associate { week.plusDays(it).toEpochDay() to 2600.0 }
+        val oneLow = allHigh + (week.toEpochDay() to 2300.0)
+
+        // A rest day (ceiling 2300) cannot reach 2400 kcal even though the other days can.
+        val rejected = NutritionPlanContract.validateBusiness(plan, week, targets, dailyCeilingKcal = oneLow)
+        assertTrue(rejected.exceptionOrNull()?.message.orEmpty().startsWith("DEFICIT_PLAN_REACHES_MAINTENANCE:${week.toEpochDay()}"))
+
+        assertTrue(NutritionPlanContract.validateBusiness(plan, week, targets, dailyCeilingKcal = allHigh).isSuccess)
+        // The per-day ceilings take precedence over a stricter single ceiling.
+        assertTrue(
+            NutritionPlanContract.validateBusiness(plan, week, targets, maintenanceCeilingKcal = 2000.0, dailyCeilingKcal = allHigh).isSuccess,
+        )
+    }
+
+    @Test
+    fun daysWithoutAPerDayCeilingFallBackToTheSingleCeiling() {
+        val plan = response()
+        val onlyFirst = mapOf(week.toEpochDay() to 2600.0)
+
+        assertFalse(NutritionPlanContract.validateBusiness(plan, week, targets, maintenanceCeilingKcal = 2400.0, dailyCeilingKcal = onlyFirst).isSuccess)
+        assertTrue(NutritionPlanContract.validateBusiness(plan, week, targets, maintenanceCeilingKcal = 2600.0, dailyCeilingKcal = onlyFirst).isSuccess)
+    }
+
+    @Test
+    fun invalidPerDayCeilingIsRejectedAsInvalidInput() {
+        val result = NutritionPlanContract.validateBusiness(response(), week, targets, dailyCeilingKcal = mapOf(week.toEpochDay() to 0.0))
+
+        assertEquals("MAINTENANCE_CEILING_INVALID", result.exceptionOrNull()?.message)
+    }
     @Test
     fun wrongWeekDates_areRejected() {
         val original = response()

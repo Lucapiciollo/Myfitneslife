@@ -19,6 +19,7 @@ import com.myfitai.app.domain.food.NutritionPlanPeriod
 import com.myfitai.app.domain.shopping.ShoppingListEngine
 import com.myfitai.app.data.profile.NutritionPlanSchedulePreferences
 import com.myfitai.app.data.profile.MealCountPreferences
+import com.myfitai.app.data.profile.TrainingProgramPreferences
 import com.myfitai.app.data.profile.WorkoutPreferences
 import com.myfitai.app.data.profile.BiaFrequencyPreferences
 import com.myfitai.app.data.profile.AiAutomationPreferences
@@ -47,6 +48,7 @@ class ProfileExportService(
     private val workoutPreferences: WorkoutPreferences? = null,
     private val biaFrequencyPreferences: BiaFrequencyPreferences? = null,
     private val aiAutomationPreferences: AiAutomationPreferences? = null,
+    private val trainingProgramPreferences: TrainingProgramPreferences? = null,
 ) {
     enum class Format { JSON, CSV_ZIP, PDF, WEEKLY_PLAN_PDF }
     data class ExportedFile(val file: File, val mimeType: String)
@@ -229,6 +231,10 @@ class ProfileExportService(
             put("profilePreferences", JSONObject().apply {
                 put("mealCount", mealCountPreferences?.get(profileId) ?: MealCountPreferences.DEFAULT)
                 put("workoutsEnabled", workoutPreferences?.isEnabled(profileId) ?: WorkoutPreferences.DEFAULT_ENABLED)
+                trainingProgramPreferences?.let { prefs ->
+                    put("trainingProgram", prefs.get(profileId).toJson())
+                    put("trainingActivityBasis", prefs.activityBasis(profileId).name)
+                }
                 put("biaIntervalDays", biaFrequencyPreferences?.intervalDays ?: BiaFrequencyPreferences.DEFAULT_INTERVAL_DAYS)
                 nutritionPlanSchedulePreferences?.get(profileId)?.let { config -> put("nutritionSchedule", JSONObject().apply {
                     put("enabled", config.enabled); put("frequency", config.frequency.name); put("dayOfWeek", config.dayOfWeek.value); put("timeMinutes", config.timeMinutes)

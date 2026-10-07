@@ -5,26 +5,18 @@
     android:orientation="vertical"
     style="@style/Widget.MyFitAI.Dialog.Content">
 
-    <LinearLayout
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/valueInputLayout"
+        style="@style/Widget.MyFitAI.InputReadableCompact"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@drawable/bg_panel_tonal"
-        android:orientation="vertical"
-        android:padding="@dimen/card_content_padding_compact">
+        android:layout_height="wrap_content">
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/valueInputLayout"
-            style="@style/Widget.MyFitAI.InputReadableCompact"
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/valueInput"
+            style="@style/Widget.MyFitAI.InputEditTextReadableCompact"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" >
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/valueInput"
-                style="@style/Widget.MyFitAI.InputEditTextReadableCompact"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="numberDecimal"
-                android:maxLines="1" />
-        </com.google.android.material.textfield.TextInputLayout>
-    </LinearLayout>
+            android:layout_height="wrap_content"
+            android:inputType="numberDecimal"
+            android:maxLines="1" />
+    </com.google.android.material.textfield.TextInputLayout>
 </LinearLayout>

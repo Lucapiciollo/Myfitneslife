@@ -23,6 +23,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.myfitai.app.ui.dialog.HelpDialogSpec
+import com.myfitai.app.ui.dialog.HelpDialog
 import com.myfitai.app.R
 import com.myfitai.app.ai.AiProviderAccess
 import com.myfitai.app.data.AppDataContainer
@@ -100,52 +102,16 @@ abstract class BaseShellActivity : AppCompatActivity() {
         return true
     }
 
-    protected fun showHelpCard(title: String, message: String) {
-        runCatching {
-            val content = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-            }
-            TextView(this).apply {
-                text = formatHelpMessage(message)
-                setTextAppearance(R.style.Text_MyFitAI_Body)
-                setTextColor(getColor(R.color.text_primary))
-                setLineSpacing(dimen(R.dimen.space_4).toFloat(), 1.0f)
-                setPadding(dimen(R.dimen.space_4), dimen(R.dimen.space_8), dimen(R.dimen.space_4), dimen(R.dimen.space_8))
-                content.addView(this, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
-            }
-            val scroll = object : ScrollView(this) {
-                private val displayHeight = resources.displayMetrics.heightPixels
-                private val maxContentHeight = resources.getFraction(
-                    R.fraction.dialog_editor_max_height,
-                    displayHeight,
-                    displayHeight,
-                ).toInt()
+    /** Opens the shared help modal described by [spec]. */
+    protected fun showHelpDialog(spec: HelpDialogSpec) = HelpDialog.show(this, spec)
 
-                override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-                    val boundedHeight = MeasureSpec.makeMeasureSpec(
-                        minOf(maxContentHeight, MeasureSpec.getSize(heightMeasureSpec)),
-                        MeasureSpec.AT_MOST,
-                    )
-                    super.onMeasure(widthMeasureSpec, boundedHeight)
-                }
-            }.apply {
-                isFillViewport = false
-                isVerticalScrollBarEnabled = true
-                addView(content, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
-            }
-            MaterialAlertDialogBuilder(this)
-                .setTitle(title)
-                .setView(normalizeRuntimeDialogContent(scroll))
-                .setPositiveButton("Ho capito", null)
-                .show()
-        }.onFailure {
-            MaterialAlertDialogBuilder(this)
-                .setTitle(title)
-                .setMessage(message)
-                .setPositiveButton("Ho capito", null)
-                .show()
-        }
-    }
+    /** Shorthand for a text-only help modal. */
+    protected fun showHelpCard(
+        title: String,
+        message: String,
+        confirmLabel: String? = null,
+        highlightHeadings: Boolean = true,
+    ) = showHelpDialog(HelpDialogSpec(title, message, confirmLabel = confirmLabel, highlightHeadings = highlightHeadings))
 
     /** Applies the same inset/surface contract to programmatically-created dialog content. */
     fun normalizeRuntimeDialogContent(content: View): View {
@@ -162,28 +128,27 @@ abstract class BaseShellActivity : AppCompatActivity() {
                 width = ViewGroup.LayoutParams.MATCH_PARENT
             } ?: ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         }
-        return content
-    }
-
-    private fun formatHelpMessage(message: String): CharSequence {
-        val paragraphs = message.trim().split(Regex("\\n\\s*\\n")).filter { it.isNotBlank() }
-        return SpannableStringBuilder().apply {
-            paragraphs.forEachIndexed { index, paragraph ->
-                val cleanParagraph = paragraph.trim().removePrefix("• ").trim()
-                val separator = cleanParagraph.indexOf(": ")
-                if (separator > 0) {
-                    val heading = cleanParagraph.substring(0, separator)
-                    val description = cleanParagraph.substring(separator + 2).trim()
-                    val headingStart = length
-                    append(heading)
-                    setSpan(StyleSpan(Typeface.BOLD), headingStart, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-                    setSpan(ForegroundColorSpan(getColor(R.color.dialog_action_primary)), headingStart, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-                    append("\n").append(description)
-                } else {
-                    append(cleanParagraph)
-                }
-                if (index < paragraphs.lastIndex) append("\n\n")
+        // Cap the host height so long content scrolls inside itself and the dialog action bar keeps its full size.
+        // Content that is not already scrollable is wrapped so that, when it does not fit, it scrolls instead of being cut.
+        val scrollable = content is ScrollView || content is androidx.core.widget.NestedScrollView
+        val body: View = if (scrollable) {
+            content
+        } else {
+            androidx.core.widget.NestedScrollView(this).apply {
+                isFillViewport = false
+                clipToPadding = false
+                addView(content, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
             }
+        }
+        return com.myfitai.app.ui.widgets.DialogContentFrame(this).apply {
+            setBackgroundColor(getColor(R.color.white))
+            addView(
+                body,
+                android.widget.FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    if (scrollable) content.layoutParams?.height ?: ViewGroup.LayoutParams.WRAP_CONTENT else ViewGroup.LayoutParams.WRAP_CONTENT,
+                ),
+            )
         }
     }
 
@@ -443,7 +408,8 @@ abstract class BaseShellActivity : AppCompatActivity() {
         }
     }
 
-    protected fun confirmAiRequest(action: String, onConfirmed: () -> Unit) {
+    /** [details] is optional informational text shown under the standard notice; it never adds a button. */
+    protected fun confirmAiRequest(action: String, details: String? = null, onConfirmed: () -> Unit) {
         if (!aiProviderConfigured) {
             AiProviderAccess.requireConfigured(this)
             return
@@ -452,7 +418,8 @@ abstract class BaseShellActivity : AppCompatActivity() {
             .setTitle("Confermare richiesta IA?")
             .setMessage(
                 "$action invia una richiesta al provider IA e consuma la quota disponibile. " +
-                    "Il costo effettivo dipende dal provider, dal modello e dal tuo piano di billing.",
+                    "Il costo effettivo dipende dal provider, dal modello e dal tuo piano di billing." +
+                    details?.takeIf { it.isNotBlank() }?.let { "\n\n$it" }.orEmpty(),
             )
             .setNegativeButton("Annulla", null)
             .setPositiveButton("Conferma") { _, _ -> onConfirmed() }

@@ -37,6 +37,8 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import com.myfitai.app.domain.calculation.ProfileCalculationMapper
+import com.myfitai.app.domain.calculation.TrainingEnergyPreview
 import java.time.Instant
 import java.time.ZoneId
 
@@ -44,7 +46,7 @@ class FoodPlanActivity : BaseShellActivity() {
 
     private val data by lazy { AppDataContainer.get(this) }
     private val viewModel: FoodPlanViewModel by viewModels {
-         FoodPlanViewModel.Factory(data.mealPlanRepository, data.activeProfileStore, data.nutritionPlanGenerationService, data.profileCalculationService, data.notificationScheduler, data.foodConsumptionRepository, data.aiJobScheduler, data.userProfileRepository, data.biaRepository, data.bodyMeasurementRepository, data.dailyActivityCheckInRepository, data.nutritionPlanSchedulePreferences)
+         FoodPlanViewModel.Factory(data.mealPlanRepository, data.activeProfileStore, data.nutritionPlanGenerationService, data.profileCalculationService, data.notificationScheduler, data.foodConsumptionRepository, data.aiJobScheduler, data.userProfileRepository, data.biaRepository, data.bodyMeasurementRepository, data.dailyActivityCheckInRepository, data.nutritionPlanSchedulePreferences, data.dayEnergyProvider)
     }
 
     private val mealAlternativeLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -64,7 +66,13 @@ class FoodPlanActivity : BaseShellActivity() {
         findViewById<View>(R.id.shoppingButton).setOnClickListener {
             startActivity(Intent(this, ShoppingListActivity::class.java).putExtra(ShoppingListActivity.EXTRA_WEEK_START_EPOCH_DAY, viewModel.state.value.weekStart.toEpochDay()))
         }
-        findViewById<View>(R.id.cheatButton).setOnClickListener { go(CheatEntryActivity::class.java) }
+        findViewById<View>(R.id.cheatButton).setOnClickListener {
+            val state = viewModel.state.value
+            val selectedDate = state.selectedDay?.dateEpochDay
+                ?: state.weekStart.plusDays(state.selectedDayIndex.toLong()).toEpochDay()
+            startActivity(Intent(this, CheatEntryActivity::class.java)
+                .putExtra(CheatEntryActivity.EXTRA_OCCURRED_DATE_EPOCH_DAY, selectedDate))
+        }
         gateAiClick(findViewById(R.id.generatePlanButton)) { confirmPlanGeneration() }
         findViewById<View>(R.id.planSettingsButton).setOnClickListener { startActivity(Intent(this, NutritionPlanSettingsActivity::class.java)) }
         findViewById<View>(R.id.aiConfigurationNoticeButton).setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java).putExtra(BottomNavBinder.EXTRA_SELECTED_TAB, BottomNavBinder.Tab.AI.name)) }
@@ -106,9 +114,31 @@ class FoodPlanActivity : BaseShellActivity() {
     }
 
     private fun confirmPlanGeneration() {
-        confirmAiRequest("La generazione del piano alimentare") {
-            viewModel.generateCurrentWeek()
+        lifecycleScope.launch {
+            // Informational only: a missing summary never blocks the confirmation.
+            val details = runCatching { trainingPreviewText() }.getOrNull()
+            confirmAiRequest("La generazione del piano alimentare", details) {
+                viewModel.generateCurrentWeek()
+            }
         }
+    }
+
+    private suspend fun trainingPreviewText(): String? {
+        val profileId = data.activeProfileStore.currentIdOrNull() ?: return null
+        val program = data.trainingProgramPreferences.get(profileId)
+        if (program.isEmpty) return null
+        val profile = data.userProfileRepository.get(profileId) ?: return null
+        val snapshot = data.profileCalculationService.profileSnapshot(profileId, LocalDate.now()) ?: return null
+        val preview = TrainingEnergyPreview.build(
+            bmrKcal = snapshot.calculation.bmrKcal,
+            weightKg = snapshot.latestWeightKg?.toDouble(),
+            goal = ProfileCalculationMapper.goal(profile.goal),
+            activityLevel = ProfileCalculationMapper.activity(profile.activityLevel),
+            basis = data.trainingProgramPreferences.activityBasis(profileId),
+            program = program,
+            previousTargetKcal = snapshot.calculation.targetKcal,
+        ) ?: return null
+        return TrainingEnergyPreview.describe(preview)
     }
 
     private fun render(state: FoodPlanViewModel.State) {
@@ -161,7 +191,20 @@ class FoodPlanActivity : BaseShellActivity() {
         val dailyTotalCard = findViewById<View>(R.id.dailyTotalCard)
         val nutritionEstimateCard = findViewById<View>(R.id.nutritionEstimateCard)
         val generatedContentVisible = state.hasPlan
-        revealState(weekActionsCard, generatedContentVisible)
+        val selectedDate = state.weekStart.plusDays(state.selectedDayIndex.toLong())
+        revealState(weekActionsCard, generatedContentVisible || !selectedDate.isAfter(LocalDate.now()))
+        val shoppingButton = findViewById<View>(R.id.shoppingButton)
+        val cheatButton = findViewById<View>(R.id.cheatButton)
+        shoppingButton.visibility = if (generatedContentVisible) View.VISIBLE else View.GONE
+        val canRegisterCheat = !selectedDate.isAfter(LocalDate.now())
+        cheatButton.visibility = if (canRegisterCheat) View.VISIBLE else View.GONE
+        val showBothWeekActions = generatedContentVisible && canRegisterCheat
+        listOf(shoppingButton, cheatButton).forEach { action ->
+            action.layoutParams = (action.layoutParams as LinearLayout.LayoutParams).apply {
+                width = if (showBothWeekActions) 0 else LinearLayout.LayoutParams.MATCH_PARENT
+                weight = if (showBothWeekActions) 1f else 0f
+            }
+        }
         revealState(dailyTotalCard, generatedContentVisible)
         revealState(nutritionEstimateCard, generatedContentVisible)
 
@@ -230,7 +273,7 @@ class FoodPlanActivity : BaseShellActivity() {
             val changeEnabled = aiProviderConfigured && canChangeMeal(day.dateEpochDay, meal.timeMinutes) && meal.kcal != null
             val status = records.firstOrNull { it.mealId == meal.id }?.status
             val row = MealPlanRowView(this).apply {
-                setTitle(displayMealType(meal.type)); setKcal(NutritionEstimateFormatter.formatEstimatedKcal(meal.kcal)); setDescription(meal.title); setImage(imageFor(meal))
+                setTitle(displayMealType(meal.type)); setKcal(NutritionEstimateFormatter.formatEstimatedKcal(meal.kcal)); setDescription(meal.title); setMeal(meal.type, meal.timeMinutes, describe = false)
                 setStatus(when (status) {
                     FoodConsumptionStatus.CONSUMED.name -> "✓ Consumato"
                     FoodConsumptionStatus.SKIPPED.name -> "Saltato"
@@ -418,6 +461,8 @@ class FoodPlanActivity : BaseShellActivity() {
         findViewById<View>(R.id.dailyTotalRowBmr).visibility = if (calorieReference.bmrKcal != null) View.VISIBLE else View.GONE
         findViewById<TextView>(R.id.totalKcalBmr).text = formatKcal(calorieReference.bmrKcal)
         findViewById<TextView>(R.id.totalKcalTdee).text = formatKcal(calorieReference.tdeeKcal)
+        findViewById<TextView>(R.id.dailyTdeeLabel).text =
+            if (calorieReference.fromTrainingProgram) "TDEE · attività del giorno" else "TDEE · attività abituale"
         findViewById<TextView>(R.id.dailyTargetLabel).text = "Target operativo del giorno"
         findViewById<View>(R.id.dailyTotalRowTarget).visibility = if (dayTargetKcal != null || dayTargetProtein != null) View.VISIBLE else View.GONE
         findViewById<TextView>(R.id.totalKcalTarget).text = formatKcal(dayTargetKcal)
@@ -494,9 +539,6 @@ class FoodPlanActivity : BaseShellActivity() {
         return timeMinutes > now
     }
 
-    private fun imageFor(meal: FoodMeal): Int = when (meal.type.trim().lowercase(Locale.ROOT)) {
-        "colazione", "breakfast" -> R.drawable.img_meal_breakfast; "spuntino", "snack" -> R.drawable.img_meal_snack; "pranzo", "lunch" -> R.drawable.img_meal_lunch; "pre-workout", "preworkout" -> R.drawable.img_meal_preworkout; "cena", "dinner" -> R.drawable.img_meal_dinner; else -> R.drawable.img_meal_lunch
-    }
     private fun displayMealType(type: String): String = type.trim().ifBlank { "Pasto" }.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ITALIAN) else it.toString() }
     private fun formatWeekRange(start: LocalDate, end: LocalDate): String {
         val monthFormatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ITALIAN)

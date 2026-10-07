@@ -140,10 +140,13 @@ object NutritionPlanContract {
         // A deficit-oriented plan must never reach maintenance expenditure,
         // even when it falls within the target's percentage tolerance.
         maintenanceCeilingKcal: Double? = null,
+        // Per-date ceiling (that day's expenditure, e.g. training vs rest days); overrides the single ceiling.
+        dailyCeilingKcal: Map<Long, Double> = emptyMap(),
     ): Result<Unit> = runCatching {
         require(maintenanceCeilingKcal == null || (maintenanceCeilingKcal.isFinite() && maintenanceCeilingKcal > 0.0)) {
             "MAINTENANCE_CEILING_INVALID"
         }
+        require(dailyCeilingKcal.values.all { it.isFinite() && it > 0.0 }) { "MAINTENANCE_CEILING_INVALID" }
         require(response.weekStartEpochDay == expectedWeekStart.toEpochDay()) { "WEEK_START_MISMATCH" }
         val expectedLastDate = expectedWeekStart.plusWeeks(expectedPeriodWeeks.toLong()).minusDays(1)
         require(!expectedFirstDate.isBefore(expectedWeekStart) && !expectedFirstDate.isAfter(expectedLastDate)) { "GENERATION_START_INVALID" }
@@ -167,8 +170,9 @@ object NutritionPlanContract {
                 "TARGET_TOLERANCE_EXCEEDED:${day.dateEpochDay}:" +
                     "target=${expectedTargets.kcal.toInt()};actual=${day.totalKcal}"
             }
-            if (maintenanceCeilingKcal != null) {
-                require(day.totalKcal < maintenanceCeilingKcal) {
+            val dayCeilingKcal = dailyCeilingKcal[day.dateEpochDay] ?: maintenanceCeilingKcal
+            if (dayCeilingKcal != null) {
+                require(day.totalKcal < dayCeilingKcal) {
                     "DEFICIT_PLAN_REACHES_MAINTENANCE:${day.dateEpochDay}"
                 }
             }

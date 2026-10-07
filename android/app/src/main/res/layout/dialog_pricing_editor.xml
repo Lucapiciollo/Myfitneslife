@@ -12,10 +12,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-         android:background="@color/white"
-        android:paddingHorizontal="@dimen/space_20"
-        android:paddingTop="@dimen/space_8"
-        android:paddingBottom="@dimen/space_12">
+         android:background="@color/white">
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/pricingInputLayout"

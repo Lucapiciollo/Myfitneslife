@@ -101,6 +101,7 @@ class DailyActivityCheckInRepository(private val db: MyFitAiDatabase) {
         db.dailyActivityCheckInDao().observeForDay(profileId, dateEpochDay)
 
     suspend fun upsert(value: DailyActivityCheckInEntity): Long = db.dailyActivityCheckInDao().upsert(value)
+    suspend fun all(profileId: Long): List<DailyActivityCheckInEntity> = db.dailyActivityCheckInDao().observeAll(profileId)
 
     suspend fun deleteForDay(profileId: Long, dateEpochDay: Long) =
         db.dailyActivityCheckInDao().deleteForDay(profileId, dateEpochDay)
@@ -189,7 +190,11 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
         db.mealPlanDao().observeLatestVersionIdForWeek(profileId, weekStartEpochDay)
             .map { loadLatestSnapshot(profileId, weekStartEpochDay) }
     fun latestSnapshotForDisplayedWeek(profileId: Long, weekStartEpochDay: Long): Flow<com.myfitai.app.domain.food.FoodPlanSnapshot?> =
-        db.mealPlanDao().observePlans(profileId).map { plans ->
+        // A regeneration appends a version without touching the plan row, so the version table is observed too.
+        kotlinx.coroutines.flow.combine(
+            db.mealPlanDao().observePlans(profileId),
+            db.mealPlanDao().observeNewestVersionId(profileId),
+        ) { plans, _ -> plans }.map { plans ->
             plans.firstOrNull { it.weekStartEpochDay == weekStartEpochDay }
                 ?.let { loadLatestSnapshot(profileId, it.weekStartEpochDay) }
                 ?: plans.sortedByDescending { it.weekStartEpochDay }

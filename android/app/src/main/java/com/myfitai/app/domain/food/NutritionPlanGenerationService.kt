@@ -5,6 +5,8 @@ import com.myfitai.app.ai.AiStructuredRequest
 import com.myfitai.app.ai.AiUsageMetadata
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.profile.MealCountPreferences
+import com.myfitai.app.data.profile.TrainingProgramPreferences
+import com.myfitai.app.data.repository.DailyActivityCheckInRepository
 import com.myfitai.app.data.repository.CalorieRecoveryRepository
 import com.myfitai.app.data.repository.CheatEntryRepository
 import com.myfitai.app.data.repository.DayDraft
@@ -20,6 +22,8 @@ import com.myfitai.app.domain.calculation.LocalCalculationEngine
 import com.myfitai.app.domain.calculation.NutritionBusinessValidator
 import com.myfitai.app.domain.calculation.ProfileCalculationMapper
 import com.myfitai.app.domain.calculation.ProfileCalculationService
+import com.myfitai.app.domain.calculation.TrainingDayInputs
+import com.myfitai.app.domain.calculation.TrainingEnergyPlanner
 import com.myfitai.app.domain.personalization.PersonalResponseService
 import com.myfitai.app.domain.time.SystemTimeProvider
 import com.myfitai.app.domain.time.TimeProvider
@@ -41,6 +45,9 @@ class NutritionPlanGenerationService(
     private val personalResponse: PersonalResponseService,
     private val mealCountPreferences: MealCountPreferences? = null,
     private val planReview: PlanReviewService? = null,
+    /** Weekly training program. Null (or an empty program) keeps the single habitual target. */
+    private val trainingProgramPreferences: TrainingProgramPreferences? = null,
+    private val dailyActivityCheckIns: DailyActivityCheckInRepository? = null,
     private val time: TimeProvider = SystemTimeProvider,
 ) {
     sealed class GenerationException(message: String) : Exception(message) {
@@ -56,6 +63,8 @@ class NutritionPlanGenerationService(
         val model: String,
         val agentValidation: NutritionPlanContract.AgentValidation,
         val usage: AiUsageMetadata? = null,
+        /** Non-blocking note when meals repeat; null when the plan is fully varied. */
+        val varietyNotice: String? = null,
     )
 
     suspend fun generateWeek(weekStart: LocalDate): Result {
@@ -119,7 +128,7 @@ class NutritionPlanGenerationService(
             weightKg = weightKg,
             goal = resolvedGoal,
         )
-        val baseTargets = NutritionBusinessValidator.Targets(
+        val habitualTargets = NutritionBusinessValidator.Targets(
             kcal = finalTargetKcal,
             proteinG = finalMacros.proteinG,
             carbsG = finalMacros.carbsG,
@@ -130,10 +139,41 @@ class NutritionPlanGenerationService(
         val from = monday.atStartOfDay(zone).toInstant().toEpochMilli()
         val to = monday.plusWeeks(periodWeeks.toLong()).atStartOfDay(zone).toInstant().toEpochMilli() - 1
         val weekWorkouts = workouts.between(profileId, from, to).first()
+
+        // Program mode: one target and one calorie ceiling per day from the weekly training program.
+        // Without a program (or without the data to compute it) everything below stays as before.
+        val periodDates = NutritionPlanPeriod.dates(monday, periodWeeks)
+        val activityLevel = ProfileCalculationMapper.activity(profile.activityLevel)
+        val trainingDays = trainingProgramPreferences?.let { preferences ->
+            val bmr = calc.bmrKcal
+            if (bmr == null || activityLevel == null) {
+                null
+            } else {
+                TrainingEnergyPlanner.plan(
+                    dates = periodDates,
+                    inputs = TrainingEnergyPlanner.Inputs(
+                        bmrKcal = bmr,
+                        weightKg = weightKg,
+                        goal = resolvedGoal,
+                        activityLevel = activityLevel,
+                        activityBasis = preferences.activityBasis(profileId),
+                        program = preferences.get(profileId),
+                        registered = TrainingDayInputs.registeredWorkouts(weekWorkouts, zone),
+                        checkIns = trainingCheckIns(profileId, periodDates),
+                        adaptiveRatio = finalTargetKcal / resolvedTargetKcal!!,
+                    ),
+                )
+            }
+        }
+        val generatedTrainingDays = trainingDays?.filter { !it.date.isBefore(generationStart) }
+        val baseTargets = generatedTrainingDays?.takeIf { it.isNotEmpty() }
+            ?.let { days -> averageTargets(days.map { it.baseTargets }, habitualTargets) }
+            ?: habitualTargets
         val sportsMode = SportsNutritionClassifier.classify(profile.activityLevel, weekWorkouts)
         val mealsPerDay = mealCountPreferences?.get(profileId) ?: MealCountPreferences.DEFAULT
         val personalContext = personalResponse.promptContext(nowEpochMillis = time.nowEpochMillis())
         val dietaryProfile = DietaryProfile.parse(profile.dietaryPreferencesJson)
+        val recentMeals = MealVariety.memory(recentMealHistory(profileId, monday))
 
         val recoveryFrom = time.today().minusDays(CalorieRecoveryEngine.WINDOW_DAYS)
             .atStartOfDay(zone).toInstant().toEpochMilli()
@@ -161,16 +201,26 @@ class NutritionPlanGenerationService(
             goal = resolvedGoal,
             credits = credits,
             periodWeeks = periodWeeks,
+            dailyBase = trainingDays?.associate { it.date to it.baseTargets }.orEmpty(),
+            minimumKcal = if (trainingDays != null) calc.bmrKcal else null,
         )
         val dailyTargets = recoveryPlan.days
             .filter { !it.date.isBefore(generationStart) }
             .associate { it.date.toEpochDay() to it.targets }
         // The same app-authoritative ±3% tolerance applies to every goal.
         val targetTolerance = NutritionBusinessValidator.DEFAULT_TOLERANCE
+        // With a training program each day has its own expenditure, so the single ceiling would reject
+        // the larger target of a training day.
         val maintenanceCeilingKcal = calc.tdeeKcal?.takeIf {
-            resolvedGoal == LocalCalculationEngine.Goal.WEIGHT_LOSS ||
-                resolvedGoal == LocalCalculationEngine.Goal.RECOMPOSITION
+            trainingDays == null && (
+                resolvedGoal == LocalCalculationEngine.Goal.WEIGHT_LOSS ||
+                    resolvedGoal == LocalCalculationEngine.Goal.RECOMPOSITION
+                )
         }
+        val dailyCeilingKcal = generatedTrainingDays
+            ?.mapNotNull { day -> day.ceilingKcal?.let { day.date.toEpochDay() to it } }
+            ?.toMap()
+            .orEmpty()
 
         val request = AiStructuredRequest(
             systemPrompt = SYSTEM_PROMPT,
@@ -185,6 +235,8 @@ class NutritionPlanGenerationService(
                 maintenanceCeilingKcal = maintenanceCeilingKcal,
                 dietaryProfile = dietaryProfile,
                 recoveryPlan = recoveryPlan,
+                trainingDays = generatedTrainingDays,
+                recentMeals = recentMeals,
                 workoutContext = weekWorkouts.map { w ->
                     val dt = Instant.ofEpochMilli(w.startedAtEpochMillis).atZone(zone)
                     "${dt.toLocalDate()}@${dt.toLocalTime()}@${w.type}@${w.title}@${w.durationMinutes ?: 0}@${if (w.isRestDay) 1 else 0}"
@@ -230,6 +282,7 @@ class NutritionPlanGenerationService(
                         expectedFirstDate = generationStart,
                         expectedPeriodWeeks = periodWeeks,
                         maintenanceCeilingKcal = maintenanceCeilingKcal,
+                        dailyCeilingKcal = dailyCeilingKcal,
                     ).getOrThrow()
                     // The model must center the real M+S calorie sum on each daily target.
                     // Use the official ±3% guardrail only on the final business retry.
@@ -259,6 +312,7 @@ class NutritionPlanGenerationService(
                     expectedFirstDate = generationStart,
                     expectedPeriodWeeks = periodWeeks,
                     maintenanceCeilingKcal = maintenanceCeilingKcal,
+                    dailyCeilingKcal = dailyCeilingKcal,
                 ).getOrThrow()
             }
         }.getOrElse { throw GenerationException.InvalidAiOutput(it.message ?: "INVALID_COMPACT_PROTOCOL") }
@@ -271,6 +325,16 @@ class NutritionPlanGenerationService(
             tolerance = acceptedTolerance,
             belowOnly = false,
         )
+
+        // Variety is informative: repeated meals are allowed, so the result is a notice and warnings, never a rejection.
+        val varietyReport = MealVariety.check(
+            generated = response.days.map { day ->
+                MealVariety.DayMeals(day.dateEpochDay, day.meals.map { meal -> MealVariety.Meal(meal.type, meal.title, meal.ingredients.map { it.name }) })
+            },
+            trainingDays = generatedTrainingDays.orEmpty().filter { it.resolution.isTraining }.map { it.date.toEpochDay() }.toSet(),
+            recent = recentMeals,
+        )
+        val integrityWithVariety = integrity.copy(warnings = integrity.warnings + varietyReport.issues())
 
         val existing = plans.getPlanForWeek(profileId, monday.toEpochDay())
         val reviewReason = if (existing == null) {
@@ -316,20 +380,26 @@ class NutritionPlanGenerationService(
 
         val persistedTargets = averageTargets(dailyTargets.values.toList(), baseTargets)
         val dailyTargetsByEpochDay = recoveryPlan.days.associate { it.date.toEpochDay() to it.targets }
+        val programBaseKcalByDay = generatedTrainingDays
+            ?.associate { it.date.toEpochDay() to it.baseTargets.kcal.toInt() }
+            .orEmpty()
         val recoveryTokens = recoveryPlan.plannedBySource.entries
             .sortedBy { it.key }
             .joinToString(",") { (sourceId, kcal) -> CalorieRecoveryRepository.recoveryToken(sourceId, kcal) }
         val recoveryReason = if (recoveryPlan.plannedRecoveryKcal > 0) {
             ":RECOVERY=${recoveryPlan.plannedRecoveryKcal}:$recoveryTokens"
         } else ""
+        val trainingDayCount = generatedTrainingDays?.count { it.resolution.isTraining }
+        // Markers go after the recovery tokens: readers parse the first reason fields and search RC# tokens as text.
+        val trainingReason = if (trainingDays != null) ":TRAINING=${trainingDayCount ?: 0}" else ""
         val draft = PlanVersionDraft(
             source = validated.provider.name,
-            reason = "AI_GENERATION:${adaptive.decision.name}:${adaptive.reasonCode}:${adaptive.evidenceWindowDays}D$recoveryReason",
+            reason = "AI_GENERATION:${adaptive.decision.name}:${adaptive.reasonCode}:${adaptive.evidenceWindowDays}D$recoveryReason$trainingReason",
             targetKcal = persistedTargets.kcal.toInt(),
             targetProteinG = persistedTargets.proteinG.toFloat(),
             targetCarbsG = persistedTargets.carbsG.toFloat(),
             targetFatG = persistedTargets.fatG.toFloat(),
-            appValidationJson = integrity.toJson().toString(),
+            appValidationJson = integrityWithVariety.toJson().toString(),
             days = response.days.sortedBy { it.dateEpochDay }.map { day ->
                 val dayTargets = dailyTargetsByEpochDay[day.dateEpochDay] ?: baseTargets
                 DayDraft(
@@ -342,7 +412,7 @@ class NutritionPlanGenerationService(
                     targetProteinG = dayTargets.proteinG.toFloat(),
                     targetCarbsG = dayTargets.carbsG.toFloat(),
                     targetFatG = dayTargets.fatG.toFloat(),
-                    baseTargetKcal = adaptive.baseTargetKcal?.toInt(),
+                    baseTargetKcal = programBaseKcalByDay[day.dateEpochDay] ?: adaptive.baseTargetKcal?.toInt(),
                     meals = day.meals.sortedBy { it.timeMinutes }.map { meal ->
                         MealDraft(
                             type = meal.type,
@@ -387,7 +457,7 @@ class NutritionPlanGenerationService(
 
         val planId = existing?.id ?: plans.createPlan(profileId, monday.toEpochDay(), time.nowEpochMillis())
         val versionId = plans.appendVersion(profileId, planId, time.nowEpochMillis(), draft)
-        return Result(planId, versionId, validated.provider.name, validated.model, response.agentValidation, validated.usage)
+        return Result(planId, versionId, validated.provider.name, validated.model, response.agentValidation, validated.usage, varietyReport.notice())
     }
 
     private fun buildUserPrompt(
@@ -401,6 +471,8 @@ class NutritionPlanGenerationService(
         maintenanceCeilingKcal: Double?,
         dietaryProfile: DietaryProfile,
         recoveryPlan: CalorieRecoveryEngine.Result,
+        trainingDays: List<TrainingEnergyPlanner.Day>?,
+        recentMeals: List<MealVariety.Meal>,
         workoutContext: List<String>,
         personalContext: String,
         snapshot: ProfileCalculationService.Snapshot,
@@ -412,6 +484,15 @@ class NutritionPlanGenerationService(
         appendLine("T:${baseTargets.kcal.toInt()}|${fmt(baseTargets.proteinG)}|${fmt(baseTargets.carbsG)}|${fmt(baseTargets.fatG)}|${(targetTolerance * 100).toInt()}")
         dailyTargets.toSortedMap().forEach { (day, target) ->
             appendLine("TD:$day|${target.kcal.toInt()}|${fmt(target.proteinG)}|${fmt(target.carbsG)}|${fmt(target.fatG)}|${(targetTolerance * 100).toInt()}")
+        }
+        // ED = per-day calorie ceiling (that day's expenditure); it replaces E for the date. TR = a training day.
+        trainingDays?.forEach { day ->
+            val epochDay = day.date.toEpochDay()
+            day.ceilingKcal?.let { appendLine("ED:$epochDay|${it.toInt()}") }
+            day.resolution.session?.let { session ->
+                val start = session.startMinutes?.toString() ?: "?"
+                appendLine("TR:$epochDay|$start|${session.durationMinutes}|${session.intensity.name}")
+            }
         }
         appendLine("TARGET_POLICY:Center each daily TD kcal and macro target; aim within 1% where practical; the supplied 3% is a hard validation margin, not an extra calorie allowance. Do not aim systematically at TD+3% or subtract a second deficit.")
         appendLine("GOAL_OUTCOME_POLICY:If GOAL_OUTCOMES is present, treat it as user-confirmed evidence about previous periods. Evaluate whether meal composition, timing, adherence context and practical strategy should improve in the new plan. Do not diagnose, infer causality, override local targets, or change calories/macros because of an outcome alone. A NOT_REACHED result is a signal to review the plan and context, not permission for punitive restriction.")
@@ -438,8 +519,27 @@ class NutritionPlanGenerationService(
         appendLine("BMT:${bodyValuesDouble(bm) { it.recentTrend.delta }}")
         appendLine("RS:${snapshot.recompositionState.name}")
 
+        MealVariety.promptLines(recentMeals).forEach { appendLine(it) }
         workoutContext.forEach { appendLine("WO:${compact(it)}") }
         if (personalContext.isNotBlank()) appendLine("PC:${compact(personalContext)}")
+    }
+
+    private suspend fun recentMealHistory(profileId: Long, monday: LocalDate): List<MealVariety.DayMeals> =
+        (1..MealVariety.MEMORY_WEEKS).flatMap { weeksBack ->
+            plans.loadLatestSnapshot(profileId, monday.minusWeeks(weeksBack.toLong()).toEpochDay())?.version?.days.orEmpty()
+        }.map { day ->
+            MealVariety.DayMeals(
+                day.dateEpochDay,
+                day.meals.map { meal -> MealVariety.Meal(meal.type, meal.title, meal.ingredients.map { it.name }) },
+            )
+        }
+
+    private suspend fun trainingCheckIns(
+        profileId: Long,
+        dates: List<LocalDate>,
+    ): Map<LocalDate, com.myfitai.app.domain.calculation.TrainingDayResolver.CheckIn> {
+        val repository = dailyActivityCheckIns ?: return emptyMap()
+        return TrainingDayInputs.checkIns(repository.all(profileId), dates)
     }
 
     private fun averageTargets(
@@ -516,7 +616,8 @@ ${NutritionPlanCompactContract.PROTOCOL}
  E is the estimated maintenance expenditure (TDEE), or ? for a goal without a mandatory deficit. It is NOT the diet target: T and each TD are already adjusted for the user's chosen goal. If E is numeric, ensure the sum of meals plus caloric supplements is strictly BELOW E for every generated day; never fill all maintenance calories merely because the target tolerance permits it. T is the base local target. Every TD line is the AUTHORITATIVE target for that specific epoch day and overrides T for that day. CENTER the actual daily sum of meals and caloric supplements on that day's TD kcal AND protein/carbs/fat targets, ideally within 1% where practicable. The ±3% in T/TD is ONLY the app's outer acceptance margin for rounding and food composition, NOT bonus calories or a range to saturate. Do not systematically aim at its upper bound. The goal-specific deficit or surplus is already included in TD: never apply a second calorie adjustment. REC is informational only: available|planned|remaining|maxDailyPercent. Never calculate, increase or decrease recovery yourself and never compensate beyond TD. B0/B/BT order is weightKg|bodyFatPct|muscleMassKg|skeletalMuscleKg|bodyWaterPct|visceralFat and means baseline/current/recent-trend-delta. BM0/BM/BMD/BMT order is chest|waist|abdomen|shoulders|glutes|hips|armLeft|armRight|thighLeft|thighRight|calfLeft|calfRight and means baseline/current/previous-delta/recent-trend-delta. `?` means unavailable. Body/BIA signals are contextual only: use them jointly to inform food choice, distribution and timing, never to autonomously alter calories/macros, diagnose disease, dehydration, edema or muscle loss, or infer causality from one reading. Weight alone must never drive a dietary change. GOAL_OUTCOMES in the personal context are user-confirmed results for previous plan periods. Review them as evidence about strategy and adherence context for the new plan, but never treat them as causal proof, diagnosis, or permission to override local targets or apply punitive restriction.
 DP format is A=allergies;I=intolerances;E=excludedFoods;D=dislikedFoods;P=preferredFoods;S=dietStyle;N=free-text food preferences. A, I, E and S are HARD constraints: never output an ingredient that violates them. D, P and N are SOFT preferences only. Read them and follow them when possible, but never change, stretch or bypass the authoritative calorie and macro targets to satisfy them. Requests in N, including quantities, frequency goals and weekly objectives such as "pizza once per week" or "gelato twice per week", are suggestions rather than mandatory requirements. Include or distribute them only when they fit naturally within the daily TD targets; otherwise reduce, replace or omit them and keep the targets exact. Do not weaken, reinterpret or override hard constraints. The app independently validates every ingredient and rejects violations.
  Rules: generate exactly the dates in GENERATE_FROM (inclusive) through its end date, with exactly MEALS_PER_DAY meals per day. The complete record order is W, then for each requested date exactly one D followed by its M records, each meal's I records, and optional S/H records; after the final requested date emit exactly ONE V record as the final line. Never emit V inside a day or more than once. Use distinct meal slots with practical timing unless the supplied schedule requires different names. Never use `|` or line breaks inside a text field. All kcal/macros are numeric. D totals are transport hints only: the app recalculates authoritative daily kcal/protein/carbs/fat from all M records plus caloric S records. Therefore calculate the SUM of M+S values before emitting each D, refine portions to match that day's exact TD kcal and macros as closely as possible, and use the supplied tolerance only as a last-resort acceptance bound; do not rely on D values to satisfy the target. For every meal/supplement, kcal must remain coherent with 4*proteinG + 4*carbsG + 9*fatG within the app integrity tolerance. Count oils, dressings and caloric drinks. Protein powder is optional and its kcal/macros count. Creatine only when SM=SPORT and always 0 kcal/P/C/F. H may give cautious hydration guidance. No punitive compensation. V notes <= 8 words. Preparation must be a brief, precise and truthful sequence of steps using only ingredients explicitly present in the following I records. Every edible ingredient, condiment and caloric beverage used in the recipe must have its own I record with numeric quantity, unit and displayDose; never mention an omitted food in preparation (for example gruyere/gruviera must be an ingredient if used). Do not claim cooking, marinating, blending, melting or seasoning steps that are not supported by the listed ingredients. Skeleton: MFP1 -> W -> all requested dates (D -> M/I/S/H) -> V exactly once.
-VARIETY: prefer rotating protein sources, vegetables, fruit, grains and preparation methods across the requested dates. Avoid repeating the same meal title with the same ingredient set when practical, but repeated meals are allowed when needed for targets, safety, availability or user preferences. Variety is a quality preference, never a reason to break the authoritative targets or leave the requested period incomplete.
+VARIETY: RM=type|title lists meals the user was served in the last two weeks (most recent first). Do not reuse an RM meal or an equivalent one with the same main ingredients unless no reasonable alternative fits targets, allergies and preferences. Prefer rotating protein sources, vegetables, fruit, grains and preparation methods across the requested dates. Avoid repeating the same meal title with the same ingredient set when practical, but repeated meals are allowed when needed for targets, safety, availability or user preferences. Variety is a quality preference, never a reason to break the authoritative targets or leave the requested period incomplete.
+TRAINING DAYS (only when ED/TR records are present): WO=date@time@type@title@minutes@restFlag lists workouts the user logged; SM is the sports-nutrition mode. TR=epochDay|startMinutes(or ?)|durationMinutes|intensity marks a planned training day; every other requested date is a rest day. ED=epochDay|kcal is that date's calorie ceiling and replaces E for the date: keep M+S strictly below it. The TD of a training day already includes the cost of the workout, so never add or remove calories for it. Make training-day menus clearly different from rest-day menus (different meals, not only different portions); repeat a meal only when no reasonable alternative fits the targets, allergies and preferences. When startMinutes is known, you may make the meal before the workout lighter and easier to digest and the meal after it richer in protein and carbohydrate, using the existing meal slots and MEALS_PER_DAY without adding slots. Do not invent rigid carbohydrate rules or an anabolic window.
 """.trimIndent()
     }
 }

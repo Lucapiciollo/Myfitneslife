@@ -9,6 +9,8 @@
         android:allowBackup="false"
         android:fullBackupContent="false"
         android:label="MyFitAI"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
         android:theme="@style/Theme.MyFitAI">
 

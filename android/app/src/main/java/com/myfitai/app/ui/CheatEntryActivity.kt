@@ -73,6 +73,9 @@ class CheatEntryActivity : BaseShellActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        intent.takeIf { it.hasExtra(EXTRA_OCCURRED_DATE_EPOCH_DAY) }
+            ?.getLongExtra(EXTRA_OCCURRED_DATE_EPOCH_DAY, LocalDate.now().toEpochDay())
+            ?.let { selectedDate = LocalDate.ofEpochDay(it) }
         setContentView(R.layout.activity_cheat_entry)
         adaptLandscapeContent()
         bindBack()
@@ -418,8 +421,9 @@ class CheatEntryActivity : BaseShellActivity() {
         }
     }
 
-    private companion object {
-        const val LANDSCAPE_GRID_TAG = "cheat_landscape_grid"
+    companion object {
+        private const val LANDSCAPE_GRID_TAG = "cheat_landscape_grid"
+        const val EXTRA_OCCURRED_DATE_EPOCH_DAY = "cheat_occurred_date_epoch_day"
     }
 
     override fun onDestroy() {

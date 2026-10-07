@@ -18,14 +18,15 @@
 
             <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="@dimen/meal_detail_hero_image_height">
+                android:layout_height="@dimen/meal_detail_header_height">
                 <ImageView
                     android:id="@+id/mealImage"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:scaleType="centerCrop"
-                    android:src="@drawable/img_meal_lunch"
-                    android:contentDescription="Foto pasto" />
+                    android:layout_width="@dimen/meal_hero_icon_size"
+                    android:layout_height="@dimen/meal_hero_icon_size"
+                    android:layout_gravity="center"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/ic_meal_lunch"
+                    android:contentDescription="Pasto" />
                 <FrameLayout
                     android:id="@+id/backButton"
                     android:layout_width="@dimen/screen_header_icon_size"

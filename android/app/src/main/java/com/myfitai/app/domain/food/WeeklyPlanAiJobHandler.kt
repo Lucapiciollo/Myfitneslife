@@ -34,6 +34,7 @@ class WeeklyPlanAiJobHandler(
             runCatching { notifications.refresh() }
             AiJobOutcome.Success(
                 Data.Builder()
+                    .putString("notice", result.varietyNotice)
                     .putString(AiJobWorker.KEY_PROVIDER, "${result.provider} · ${result.model}")
                     .build()
             )

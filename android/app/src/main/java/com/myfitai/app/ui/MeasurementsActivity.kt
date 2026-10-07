@@ -47,11 +47,12 @@ class MeasurementsActivity : BaseShellActivity() {
         findViewById<MeasurementActionCardView>(R.id.biaCard).apply {
             setTitle("BIA")
             setHelp("Spiega dati BIA e dati insufficienti") {
-            MaterialAlertDialogBuilder(this@MeasurementsActivity)
-                .setTitle("Dati BIA e dati insufficienti")
-                .setMessage("La BIA può contribuire al calcolo di metabolismo, target e trend corporei quando sono disponibili valori coerenti, come peso, grasso corporeo o massa muscolare.\n\nLa dicitura \"Dati insufficienti\" compare quando mancano i valori necessari oppure quando esiste una sola rilevazione: una singola misura descrive solo lo stato attuale e non permette di calcolare una variazione affidabile nel tempo. Registra altre rilevazioni in date diverse per ottenere un confronto.")
-                .setPositiveButton("Chiudi", null)
-                .show()
+            showHelpCard(
+                "Dati BIA e dati insufficienti",
+                "La BIA può contribuire al calcolo di metabolismo, target e trend corporei quando sono disponibili valori coerenti, come peso, grasso corporeo o massa muscolare.\n\nLa dicitura \"Dati insufficienti\" compare quando mancano i valori necessari oppure quando esiste una sola rilevazione: una singola misura descrive solo lo stato attuale e non permette di calcolare una variazione affidabile nel tempo. Registra altre rilevazioni in date diverse per ottenere un confronto.",
+                confirmLabel = "Chiudi",
+                highlightHeadings = false,
+            )
             }
             setAddAction("Nuova rilevazione BIA") {
             startActivity(Intent(this@MeasurementsActivity, BiaActivity::class.java))

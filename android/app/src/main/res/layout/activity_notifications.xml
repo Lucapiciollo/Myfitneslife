@@ -116,9 +116,11 @@
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/notification_meal_image_height"
                 android:layout_marginTop="@dimen/space_12"
-                android:scaleType="centerCrop"
-                android:src="@drawable/img_meal_lunch"
-                android:contentDescription="Immagine pasto"
+                android:background="@drawable/bg_meal_icon_tile"
+                android:padding="@dimen/notification_meal_icon_padding"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_meal_lunch"
+                android:contentDescription="Pasto"
                 app:shapeAppearanceOverlay="@style/ShapeAppearance.MyFitAI.Thumbnail" />
         </LinearLayout>
 

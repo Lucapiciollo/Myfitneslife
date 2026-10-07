@@ -111,6 +111,7 @@
     <string name="profile_sex_hint">Sesso biologico</string>
     <string name="profile_height_hint">Altezza (cm)</string>
     <string name="profile_weight_hint">Peso (kg)</string>
+    <string name="profile_activity_helper">Attività di tutti i giorni, esclusi gli allenamenti: quelli si impostano a parte e aggiungono calorie solo nei giorni in cui ti alleni.</string>
     <string name="profile_activity_hint">Livello di attività</string>
     <string name="profile_goal_hint">Obiettivo (opzionale)</string>
     <string name="onboarding_food_preferences_title">Preferenze e vincoli alimentari</string>
@@ -162,4 +163,5 @@
     <string name="home_ai_not_configured_title">Configura il provider IA</string>
     <string name="home_ai_not_configured_message">Il profilo e i calcoli locali sono disponibili. Per generare il piano alimentare e usare le analisi IA, configura Gemini o OpenAI.</string>
     <string name="home_ai_not_configured_action">Apri configurazione IA</string>
+    <string name="help_dialog_confirm">Ho capito</string>
 </resources>

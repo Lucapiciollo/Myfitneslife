@@ -9,7 +9,7 @@
     <dimen name="radius_small">10dp</dimen><dimen name="radius_medium">14dp</dimen><dimen name="radius_large">22dp</dimen>
     <dimen name="radius_chip">20dp</dimen>
     <dimen name="radius_card">16dp</dimen><dimen name="radius_screen_header">18dp</dimen><dimen name="radius_field">12dp</dimen><dimen name="radius_dropdown">14dp</dimen><dimen name="radius_dialog">16dp</dimen>
-    <dimen name="elevation_card">0dp</dimen><dimen name="elevation_dialog">8dp</dimen><dimen name="sticky_header_elevation">2dp</dimen>
+    <dimen name="elevation_card">0dp</dimen><dimen name="elevation_dialog">8dp</dimen><dimen name="dialog_vertical_inset">24dp</dimen><dimen name="sticky_header_elevation">2dp</dimen>
     <dimen name="home_hero_header_padding_horizontal">20dp</dimen>
     <dimen name="home_hero_header_padding_top">16dp</dimen>
     <dimen name="home_hero_header_padding_bottom">20dp</dimen>
@@ -49,9 +49,9 @@
     <dimen name="body_measurement_vector_width">120dp</dimen>
     <dimen name="body_measurement_vector_height">260dp</dimen>
     <dimen name="inline_icon_size">18dp</dimen>
-    <dimen name="date_time_field_height">56dp</dimen>
-    <dimen name="input_min_height">52dp</dimen>
-    <dimen name="workout_datetime_field_height">64dp</dimen>
+    <dimen name="date_time_value_min_height">28sp</dimen>
+    <dimen name="help_text_indent">@dimen/space_12</dimen>
+
     <dimen name="weekly_screen_header_height">64dp</dimen>
     <dimen name="notification_header_height">40dp</dimen>
     <dimen name="notification_lock_icon_size">20dp</dimen>
@@ -65,9 +65,10 @@
     <dimen name="bia_trend_chart_height">240dp</dimen>
     <dimen name="body_measurement_illustration_height">290dp</dimen>
     <dimen name="body_measurement_chart_card_height">260dp</dimen>
-    <dimen name="meal_detail_hero_image_height">200dp</dimen>
-    <dimen name="bia_import_preview_max_height">300dp</dimen>
-    <dimen name="settings_pricing_editor_max_height">320dp</dimen>
+    <dimen name="meal_detail_header_height">88dp</dimen>
+    <dimen name="meal_icon_size">32dp</dimen>
+    <dimen name="meal_hero_icon_size">48dp</dimen>
+    <dimen name="notification_meal_icon_padding">45dp</dimen>
     <dimen name="progress_indicator_size">32dp</dimen>
     <dimen name="compact_progress_indicator_size">24dp</dimen>
     <dimen name="progress_compact_size">26dp</dimen>

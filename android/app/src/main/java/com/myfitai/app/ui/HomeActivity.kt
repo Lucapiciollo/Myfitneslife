@@ -71,6 +71,7 @@ class HomeActivity : BaseShellActivity() {
             activeProfileStore = data.activeProfileStore,
             dailyActivityCheckIns = data.dailyActivityCheckInRepository,
             profileCalculationService = data.profileCalculationService,
+            dayEnergy = data.dayEnergyProvider,
         )
     }
 
@@ -146,10 +147,10 @@ class HomeActivity : BaseShellActivity() {
         findViewById<android.view.View>(R.id.activityCheckInEditButton).setOnClickListener { showActivityCheckInDialog() }
         findViewById<android.view.View>(R.id.activityCheckInClearButton).setOnClickListener { viewModel.clearActivityCheckIn() }
         findViewById<android.view.View>(R.id.bodyOverviewHelpButton).setOnClickListener {
-            showHomeHelp("Panoramica del corpo", "Le tre card mostrano l'ultima rilevazione disponibile di peso, percentuale di grasso e massa muscolare. Il grafico mostra l'andamento del peso nel periodo selezionato.")
+            showHelpCard("Panoramica del corpo", "Le tre card mostrano l'ultima rilevazione disponibile di peso, percentuale di grasso e massa muscolare. Il grafico mostra l'andamento del peso nel periodo selezionato.")
         }
         findViewById<android.view.View>(R.id.weeklyExpectationHelpButton).setOnClickListener {
-            showHomeHelp(
+            showHelpCard(
                 "Possibile calo teorico",
                 "Confronta il consumo giornaliero stimato con le calorie dei giorni già presenti nel piano di questa settimana. " +
                     "Il risultato indica quanta energia potrebbe corrispondere a grasso, non quanto peso perderai davvero. " +
@@ -157,13 +158,13 @@ class HomeActivity : BaseShellActivity() {
             )
         }
         findViewById<android.view.View>(R.id.recoveryHelpButton).setOnClickListener {
-            showHomeHelp("Riserva di recupero", "Indica le calorie extra da distribuire nei giorni successivi quando hai consumato meno del previsto o hai registrato uno sgarro. È un supporto al riequilibrio, non una misura clinica.")
+            showHelpCard("Riserva di recupero", "Indica le calorie extra da distribuire nei giorni successivi quando hai consumato meno del previsto o hai registrato uno sgarro. È un supporto al riequilibrio, non una misura clinica.")
         }
         findViewById<android.view.View>(R.id.nextMealHelpButton).setOnClickListener {
-            showHomeHelp("Prossimo pasto", "Mostra il prossimo pasto previsto dal piano alimentare di oggi, con orario, nome e calorie quando disponibili.")
+            showHelpCard("Prossimo pasto", "Mostra il prossimo pasto previsto dal piano alimentare di oggi, con orario, nome e calorie quando disponibili.")
         }
         findViewById<android.view.View>(R.id.nextWorkoutHelpButton).setOnClickListener {
-            showHomeHelp("Prossimo allenamento", "Mostra il prossimo allenamento programmato, così puoi vedere rapidamente cosa è previsto oggi o nei prossimi giorni.")
+            showHelpCard("Prossimo allenamento", "Mostra il prossimo allenamento programmato, così puoi vedere rapidamente cosa è previsto oggi o nei prossimi giorni.")
         }
         findViewById<android.view.View>(R.id.todayMenuButton).setOnClickListener { showTodayMenu() }
         findViewById<android.view.View>(R.id.measurementsButton).setOnClickListener { go(MeasurementsActivity::class.java) }
@@ -544,7 +545,7 @@ class HomeActivity : BaseShellActivity() {
                 setTime("—")
                 setTitle("Nessun altro pasto pianificato")
                 setKcal("Apri il piano alimentare")
-                setImage(R.drawable.img_next_meal)
+                setMeal(null, null, describe = false)
             } else {
                 renderMeal(this, second)
             }
@@ -658,6 +659,7 @@ class HomeActivity : BaseShellActivity() {
         }
         val targetDifference = if (calories.targetBeforeAdaptation != null && calories.target != null) calories.targetBeforeAdaptation - calories.target else null
         findViewById<TextView>(R.id.caloriesTargetSourceText).text = when {
+            calories.trainingNote != null -> calories.trainingNote
             calories.activityAdjustmentKcal > 0 -> "TDEE abituale ${kcal(calories.habitualTdee)} · TDEE operativo ${kcal(calories.tdee)} · attività +${calories.activityAdjustmentKcal} kcal"
             currentCalories?.activityAdjustmentKcal == 0 && viewModel.state.value.activityCheckIn.status != "PLANNED_WORKOUT" -> "TDEE abituale ${kcal(calories.habitualTdee)} · TDEE operativo da riposo ${kcal(calories.tdee)}"
             targetDifference != null && targetDifference != 0 -> "Profilo ${kcal(calories.targetBeforeAdaptation)} · target attuale ${kcal(calories.target)}"
@@ -713,10 +715,6 @@ class HomeActivity : BaseShellActivity() {
         showHelpCard("Come calcoliamo le calorie", message)
     }
 
-    private fun showHomeHelp(title: String, message: String) {
-        showHelpCard(title, message)
-    }
-
     private fun renderNextMeal(next: HomeViewModel.NextMealState?) {
         currentNextMealId = next?.mealId
         findViewById<MealCardView>(R.id.nextMealCard).apply {
@@ -724,7 +722,7 @@ class HomeActivity : BaseShellActivity() {
                 setTime("—")
                 setTitle("Nessun pasto pianificato")
                 setKcal("Apri il piano alimentare")
-                setImage(R.drawable.img_next_meal)
+                setMeal(null, null, describe = false)
                 contentDescription = "Nessun pasto pianificato. Apri il piano alimentare"
                 return@apply
             }
@@ -745,7 +743,7 @@ class HomeActivity : BaseShellActivity() {
         card.setTime(listOfNotNull(dayLabel, time).joinToString(" "))
         card.setTitle(meal.title)
         card.setKcal(meal.kcal?.let { NutritionEstimateFormatter.formatEstimatedKcal(it) } ?: meal.type)
-        card.setImage(R.drawable.img_next_meal)
+        card.setMeal(meal.type, meal.timeMinutes, describe = true)
     }
 
     private fun renderNextWorkout(next: HomeViewModel.NextWorkoutState?) {

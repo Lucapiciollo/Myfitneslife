@@ -143,6 +143,10 @@ interface MealPlanDao {
     @Query("SELECT * FROM meal_plans WHERE profileId = :profileId ORDER BY weekStartEpochDay DESC, id DESC")
     fun observePlans(profileId: Long): Flow<List<MealPlanEntity>>
 
+    /** Changes whenever any plan version is appended, which `observePlans` alone does not signal. */
+    @Query("SELECT MAX(v.id) FROM meal_plan_versions v INNER JOIN meal_plans p ON p.id = v.planId WHERE p.profileId = :profileId")
+    fun observeNewestVersionId(profileId: Long): Flow<Long?>
+
     @Query("SELECT * FROM meal_plans WHERE profileId = :profileId AND weekStartEpochDay = :weekStart LIMIT 1")
     suspend fun getPlanForWeek(profileId: Long, weekStart: Long): MealPlanEntity?
 

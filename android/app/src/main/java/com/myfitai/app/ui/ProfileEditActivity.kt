@@ -19,6 +19,7 @@ import com.google.android.material.timepicker.MaterialTimePicker
 import com.google.android.material.timepicker.TimeFormat
 import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
+import com.myfitai.app.domain.calculation.TrainingEnergyPlanner
 import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.ui.profile.ProfileEditViewModel
 import kotlinx.coroutines.launch
@@ -31,6 +32,7 @@ import java.time.temporal.TemporalAdjusters
 
 class ProfileEditActivity : BaseShellActivity() {
 
+    private var confirmsEverydayLevel = false
     private val isBootstrap by lazy { intent.getBooleanExtra(EXTRA_BOOTSTRAP, false) }
     private val isCreate by lazy { isBootstrap || intent.getBooleanExtra(EXTRA_CREATE, false) }
     private val data by lazy { AppDataContainer.get(this) }
@@ -101,6 +103,7 @@ class ProfileEditActivity : BaseShellActivity() {
         sexInput.setMyFitAiDropdownItems(listOf("Maschio", "Femmina"))
         goalInput.setMyFitAiDropdownItems(resources.getStringArray(R.array.profile_goals).toList())
         activityInput.setMyFitAiDropdownItems(resources.getStringArray(R.array.profile_activity_levels).toList())
+        findViewById<TextInputLayout>(R.id.activityLayout).helperText = getString(R.string.profile_activity_helper)
     }
 
     private fun bindPickers() {
@@ -162,6 +165,8 @@ class ProfileEditActivity : BaseShellActivity() {
                 if (activity.isBlank()) fail(R.id.activityLayout, "Seleziona il livello di attività")
             }
             if (!valid) return@setOnClickListener
+            // A level chosen after reading the helper text already excludes workouts.
+            confirmsEverydayLevel = isCreate || activity != viewModel.profile.value?.activityLevel.orEmpty()
 
             viewModel.save(
                 name = name,
@@ -198,6 +203,9 @@ class ProfileEditActivity : BaseShellActivity() {
                 launch {
                     viewModel.saved.collect { savedEvent ->
                         val profileId = savedEvent.profileId
+                        if (confirmsEverydayLevel) {
+                            data.trainingProgramPreferences.setActivityBasis(profileId, TrainingEnergyPlanner.ActivityBasis.EVERYDAY_ONLY)
+                        }
                         Toast.makeText(this@ProfileEditActivity, if (isCreate) "Profilo creato" else "Profilo salvato", Toast.LENGTH_SHORT).show()
                         if (isCreate) {
                             startActivity(Intent(this@ProfileEditActivity, DietaryPreferencesActivity::class.java).apply {

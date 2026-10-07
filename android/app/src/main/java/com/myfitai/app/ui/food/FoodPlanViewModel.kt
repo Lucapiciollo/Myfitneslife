@@ -17,6 +17,7 @@ import com.myfitai.app.domain.food.FoodPlanSnapshot
 import com.myfitai.app.domain.food.NutritionPlanGenerationService
 import com.myfitai.app.domain.calculation.ProfileCalculationService
 import com.myfitai.app.domain.calculation.DailyActivityCheckInEngine
+import com.myfitai.app.domain.calculation.DayEnergyProvider
 import com.myfitai.app.domain.calculation.OperationalNutritionMetrics
 import com.myfitai.app.domain.ai.AiJobScheduler
 import com.myfitai.app.domain.ai.AiJobType
@@ -32,6 +33,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -59,12 +61,15 @@ class FoodPlanViewModel(
     private val bodyMeasurementRepository: BodyMeasurementRepository,
     private val dailyActivityCheckIns: DailyActivityCheckInRepository,
     private val schedulePreferences: NutritionPlanSchedulePreferences,
+    private val dayEnergy: DayEnergyProvider,
 ) : ViewModel() {
     data class CalorieReference(
         val bmrKcal: Double?,
         val tdeeKcal: Double?,
         val operationalTargetKcal: Double?,
         val operationalProteinG: Double?,
+        /** True when the values come from the training program, so the TDEE is the day's own expenditure. */
+        val fromTrainingProgram: Boolean = false,
     )
 
     private data class SourceData(
@@ -104,14 +109,16 @@ class FoodPlanViewModel(
             profileRepository.profile(profileId),
             biaRepository.all(profileId),
             bodyMeasurementRepository.all(profileId),
-            selectedDate.flatMapLatest { date -> dailyActivityCheckIns.observeForDay(profileId, date.toEpochDay()) },
-        ) { _, _, _, activityCheckIn ->
+            selectedDate.flatMapLatest { date -> dailyActivityCheckIns.observeForDay(profileId, date.toEpochDay()).map { date to it } },
+        ) { _, _, _, (date, activityCheckIn) ->
             val result = calculations.profileSnapshot(profileId)?.calculation
+            val programDay = dayEnergy.day(profileId, date)
             val metrics = OperationalNutritionMetrics.calculate(
                 calculation = result,
                 checkIn = activityCheckIn,
+                programDay = programDay,
             )
-            CalorieReference(result?.bmrKcal, metrics.operationalTdeeKcal, metrics.operationalTargetKcal, metrics.operationalProteinG)
+            CalorieReference(result?.bmrKcal, metrics.operationalTdeeKcal, metrics.operationalTargetKcal, metrics.operationalProteinG, programDay != null)
         }
     }
 
@@ -124,7 +131,9 @@ class FoodPlanViewModel(
                 }.collect { info ->
                     when (info?.state) {
                         WorkInfo.State.ENQUEUED, WorkInfo.State.RUNNING -> generationState.value = GenerationState(running = true)
-                        WorkInfo.State.SUCCEEDED -> generationState.value = GenerationState(successMessage = "Piano generato e validato.")
+                        WorkInfo.State.SUCCEEDED -> generationState.value = GenerationState(
+                            successMessage = listOfNotNull("Piano generato e validato.", info.outputData.getString("notice")).joinToString(" "),
+                        )
                         WorkInfo.State.FAILED -> generationState.value = GenerationState(error = friendlyGenerationError(info.outputData.getString("error")))
                         else -> Unit
                     }
@@ -270,11 +279,12 @@ class FoodPlanViewModel(
         private val bodyMeasurementRepository: BodyMeasurementRepository,
         private val dailyActivityCheckIns: DailyActivityCheckInRepository,
         private val schedulePreferences: NutritionPlanSchedulePreferences,
+        private val dayEnergy: DayEnergyProvider,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(FoodPlanViewModel::class.java))
-            return FoodPlanViewModel(repository, activeProfileStore, generationService, calculations, notificationScheduler, consumptionRepository, aiJobScheduler, profileRepository, biaRepository, bodyMeasurementRepository, dailyActivityCheckIns, schedulePreferences) as T
+            return FoodPlanViewModel(repository, activeProfileStore, generationService, calculations, notificationScheduler, consumptionRepository, aiJobScheduler, profileRepository, biaRepository, bodyMeasurementRepository, dailyActivityCheckIns, schedulePreferences, dayEnergy) as T
         }
     }
 }
