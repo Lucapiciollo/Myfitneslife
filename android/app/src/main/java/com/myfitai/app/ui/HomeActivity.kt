@@ -25,6 +25,7 @@ import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.domain.calculation.LocalCalculationEngine
 import com.myfitai.app.domain.calculation.DailyActivityCheckInEngine
 import com.myfitai.app.navigation.BottomNavBinder
+import com.myfitai.app.notifications.ExactAlarmAccess
 import com.myfitai.app.notifications.NotificationPreferences
 import com.myfitai.app.data.profile.BiaFrequencyPreferences
 import com.myfitai.app.data.profile.AiAutomationPreferences
@@ -360,6 +361,8 @@ class HomeActivity : BaseShellActivity() {
         renderPlanUpdateNotice()
         renderAiConfigurationNotice()
         renderBiaDueNotice(viewModel.state.value)
+        // After the notification permission question, so the two system prompts never overlap.
+        if (Build.VERSION.SDK_INT < 33 || NotificationPreferences(this).permissionPrompted) offerExactAlarmAccessOnce()
     }
 
     private fun renderPlanUpdateNotice() {
@@ -386,6 +389,20 @@ class HomeActivity : BaseShellActivity() {
     private fun revealState(view: android.view.View, visible: Boolean) {
         val previous = motionVisibilityTargets.put(view.id, visible)
         UiMotion.reveal(view, visible, animateChange = previous != null)
+    }
+
+    /** Explains once why meal reminders need the exact-alarm access and opens its settings page on request. */
+    private fun offerExactAlarmAccessOnce() {
+        val prefs = NotificationPreferences(this)
+        if (!prefs.mealRemindersEnabled || prefs.exactAlarmPrompted || ExactAlarmAccess.isAllowed(this)) return
+        val settings = ExactAlarmAccess.settingsIntent(this) ?: return
+        prefs.exactAlarmPrompted = true
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.exact_alarm_title)
+            .setMessage(R.string.exact_alarm_message)
+            .setNegativeButton(R.string.exact_alarm_later, null)
+            .setPositiveButton(R.string.exact_alarm_open_settings) { _, _ -> runCatching { startActivity(settings) } }
+            .show()
     }
 
     private fun requestNotificationPermissionOnce() {

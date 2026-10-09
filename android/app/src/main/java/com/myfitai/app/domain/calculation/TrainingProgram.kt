@@ -26,6 +26,13 @@ data class TrainingProgram(
 
     val isEmpty: Boolean get() = days.isEmpty()
 
+    /** Whether a program edit changes the inputs that determine per-day calorie targets. */
+    fun changesDailyCaloriesComparedTo(other: TrainingProgram): Boolean = when {
+        days != other.days -> true
+        days.isEmpty() -> false // duration/intensity have no energy cost until at least one training day is selected
+        else -> durationMinutes != other.durationMinutes || intensity != other.intensity
+    }
+
     /** Bit 0 = Monday ... bit 6 = Sunday. */
     val daysMask: Int get() = days.fold(0) { mask, day -> mask or (1 shl (day.value - 1)) }
 

@@ -49,7 +49,9 @@ class AiRuntimeService(context: Context) : AiRuntimeGateway {
             // Gemini 3.5 Flash-Lite currently rejects the weekly compact schema as a native
             // responseSchema. Request JSON-only for that workload and keep envelope/pipe parsing
             // plus business validation authoritative in the app.
-            useNativeSchema = if (selected.type == AiProviderType.GEMINI && request.schemaName.contains("weekly_nutrition")) {
+            useNativeSchema = if (selected.type == AiProviderType.GEMINI &&
+                (request.schemaName.contains("weekly_nutrition") || request.schemaName.contains("meal_alternatives"))
+            ) {
                 false
             } else {
                 request.useNativeSchema

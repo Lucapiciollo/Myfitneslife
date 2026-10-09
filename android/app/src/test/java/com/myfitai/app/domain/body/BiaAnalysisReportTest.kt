@@ -73,6 +73,30 @@ class BiaAnalysisReportTest {
     }
 
     @Test
+    fun latestReadingDeltaIsComputedAgainstPreviousWhileOlderIdsAreNotAnAnalysisEntry() {
+        val all = listOf(
+            reading(1, 0, weight = 90f),
+            reading(2, 10, weight = 89f),
+            reading(3, 20, weight = 88f),
+        )
+
+        val latest = BiaAnalysisReport.build(all)!!
+
+        assertEquals(3L, latest.latest.id)
+        assertEquals(-1f, latest.previousDelta.getValue("weightKg"), 0.001f)
+        assertEquals(listOf(1L, 2L, 3L), latest.history.map { it.id })
+        // The former per-history-row action is no longer an analysis target selector.
+        assertEquals(3L, BiaAnalysisReport.build(all)?.latest?.id)
+    }
+
+    @Test
+    fun latestReadingWithoutEarlierValuesHasNoFabricatedComparison() {
+        val report = BiaAnalysisReport.build(listOf(reading(1, 0), reading(2, 10, weight = null, fat = null, muscle = null)))
+
+        assertNull("a value-less reading must not be analysed or presented as an AI comparison", report)
+    }
+
+    @Test
     fun historySentToTheModelIsCappedToTheNewestRows() {
         val all = (1..60).map { reading(it.toLong(), it) }
 

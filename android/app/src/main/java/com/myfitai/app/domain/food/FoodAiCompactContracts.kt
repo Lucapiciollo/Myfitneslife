@@ -88,7 +88,7 @@ V|1_or_0|notes"""
     val schemaJson: String get() = AiCompactEnvelope.schemaJson(PROTOCOL)
 
     fun parse(json: String): MealAlternativeContract.Response {
-        val lines = compactLines(json, "MA1")
+        val lines = pipeStreamLines(json) ?: compactLines(json, "MA1")
         val alternatives = mutableListOf<MealAlternativeContract.Alternative>()
         var validation: NutritionPlanContract.AgentValidation? = null
         var current: AlternativeBuilder? = null
@@ -104,6 +104,58 @@ V|1_or_0|notes"""
         }
         flush()
         return MealAlternativeContract.Response(alternatives, requireNotNull(validation) { "MA_VALIDATION_MISSING" })
+    }
+
+    /** Gemini sometimes streams all MA1 pipe records on one line; split on known tags, not text. */
+    private fun pipeStreamLines(json: String): List<String>? {
+        val version = "MA1"
+        val data = runCatching { AiCompactEnvelope.data(json) }.getOrNull() ?: return null
+        val normalized = data
+            .replace("```json", "")
+            .replace("```", "")
+            .replace("\\r\\n", "\n")
+            .replace("\\n", "\n")
+            .replace("\\r", "\n")
+            .replace('\r', '\n')
+            .trim()
+        val headerSeparated = normalized.replace(Regex("^${Regex.escape(version)}\\s+(?=[AIV]\\|)"), "$version|")
+        val tokens = headerSeparated.replace('\n', '|').split('|').map(String::trim)
+        val arity = mapOf("A" to 8, "I" to 8, "V" to 3) // total tokens including the record tag
+        val records = mutableListOf<String>()
+        var index = tokens.indexOfFirst { it == "A" }
+        if (index < 0) return null
+        var validationCount = 0
+        var validationIsValid = true
+        val validationNotes = mutableListOf<String>()
+        while (index < tokens.size) {
+            val tag = tokens[index]
+            if (tag == version) {
+                index++
+                continue
+            }
+            val count = arity[tag]
+            if (count == null) {
+                // Ignore provider preamble/formatting only between complete records, never inside one.
+                index++
+                continue
+            }
+            if (index + count > tokens.size) return null
+            val fields = tokens.subList(index + 1, index + count)
+            if (tag == "V") {
+                if (fields[0] !in setOf("0", "1")) return null
+                validationCount++
+                validationIsValid = validationIsValid && fields[0] == "1"
+                fields.getOrNull(1)?.takeIf { it.isNotBlank() }?.let(validationNotes::add)
+            } else {
+                // Never allow meal or ingredient records after the agent validation tail.
+                if (validationCount > 0) return null
+                records += (listOf(tag) + fields).joinToString("|")
+            }
+            index += count
+        }
+        if (validationCount == 0 || records.count { it.startsWith("A|") } != 5) return null
+        val canonicalValidation = "V|${if (validationIsValid) 1 else 0}|${validationNotes.joinToString("; ").ifBlank { "?" }}"
+        return listOf(version) + records + canonicalValidation
     }
 
     private data class AlternativeBuilder(

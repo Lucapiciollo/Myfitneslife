@@ -678,7 +678,6 @@ class BiaActivity : BaseShellActivity() {
 
     private fun renderHistory(history: List<BiaMeasurementEntity>) {
         historyList.removeAllViews()
-        setAiActionEnabled(findViewById(R.id.analyzeBiaButton), history.any { hasAnalysisValue(it) })
         if (history.isEmpty()) {
             historySummary.text = "Nessuna misurazione BIA salvata per questo profilo."
             historySummary.visibility = View.GONE
@@ -687,6 +686,7 @@ class BiaActivity : BaseShellActivity() {
             reviewSavedBiaAnalysisButton.visibility = View.GONE
             return
         }
+        setAiActionEnabled(findViewById(R.id.analyzeBiaButton), hasAnalysisValue(history.first()))
         historySummary.visibility = View.VISIBLE
         findViewById<View>(R.id.historyEmptyText).visibility = View.GONE
         findViewById<View>(R.id.analyzeBiaButton).visibility = View.VISIBLE
@@ -697,7 +697,7 @@ class BiaActivity : BaseShellActivity() {
             val saved = data.biaAnalysisResultRepository.latestForMeasurement(profileId, latest.id)
             if (saved == null) {
                 findViewById<View>(R.id.analyzeBiaButton).visibility = View.VISIBLE
-                setAiActionEnabled(findViewById(R.id.analyzeBiaButton), history.any { hasAnalysisValue(it) })
+                setAiActionEnabled(findViewById(R.id.analyzeBiaButton), hasAnalysisValue(history.first()))
                 reviewSavedBiaAnalysisButton.visibility = View.GONE
             } else {
                 findViewById<View>(R.id.analyzeBiaButton).visibility = View.GONE
@@ -738,14 +738,6 @@ class BiaActivity : BaseShellActivity() {
                     setPadding(0, resources.getDimensionPixelSize(R.dimen.space_6), 0, 0)
                 })
             }
-            if (hasAnalysisValue(item)) {
-                card.addView(MaterialButton(this).apply {
-                    setText(R.string.bia_analyze_measurement_action)
-                    setAiActionEnabled(this)
-                    gateAiClick(this) { analyzeBiaWithAi(this, item) }
-                    contentDescription = getString(R.string.bia_analysis_accessibility_date, SimpleDateFormat("dd/MM/yyyy", Locale.ITALIAN).format(Date(item.measuredAtEpochMillis)))
-                })
-            }
             card.addView(TextView(this).apply {
                 text = "Tocca per modificare · Tieni premuto per eliminare"
                 setTextAppearance(R.style.Text_MyFitAI_Micro)
@@ -761,12 +753,12 @@ class BiaActivity : BaseShellActivity() {
         }
     }
 
-    private fun analyzeBiaWithAi(button: View, selectedMeasurement: BiaMeasurementEntity? = null) {
+    private fun analyzeBiaWithAi(button: View) {
         if (biaAnalysisJobKey != null || backgroundBiaAnalysisRunning) {
             Toast.makeText(this, "Un'analisi BIA è già in corso.", Toast.LENGTH_SHORT).show()
             return
         }
-        val target = selectedMeasurement ?: viewModel.history.value.firstOrNull()
+        val target = viewModel.history.value.firstOrNull()
         if (target == null || BiaAnalysisReport.measurementValues(target).isEmpty()) {
             Toast.makeText(this, "Nessuna rilevazione BIA con valori da analizzare.", Toast.LENGTH_LONG).show()
             return

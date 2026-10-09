@@ -57,9 +57,12 @@ class AiExecutionService {
                 }
                 if (attempt >= maxSchemaRetries) throw Failure.InvalidSchema(schemaResult.errors)
                 attempt++
+                val compactVersion = compactProtocolVersion(request.schemaName)
+                val retryRule = compactVersion?.let { "The data value must begin with $it and follow its requested pipe records, one record per line." }
+                    ?: "The data value must follow its requested compact protocol, one record per line."
                 currentRequest = request.copy(
                     userPrompt = request.userPrompt + if (compact) {
-                        "\nFIX: return exactly one JSON object with exactly one property named data, whose value is a string containing the pipe protocol. Do not include schema, status, metadata or any other property. Return no prose or markdown."
+                        "\nFIX: return exactly one JSON object with exactly one property named data, whose value is a string containing the pipe protocol. $retryRule Do not include schema, status, metadata or any other property. Return no prose or markdown."
                     } else {
                         "\nPrevious output was INVALID_SCHEMA. Return exactly one valid JSON object. Do not use markdown. Do not wrap the JSON in code fences. Do not add text before or after the JSON. All strings must be valid JSON strings with escaped special characters."
                     }
@@ -92,14 +95,28 @@ class AiExecutionService {
                 }
                 if (compact && attempt < maxSchemaRetries) {
                     attempt++
-                    currentRequest = request.copy(
-                        userPrompt = request.userPrompt + "\nFIX:${reason.take(80)}. Return exactly one JSON envelope. The data value must begin with BA2 and contain one pipe record per line. Never concatenate records, never add markdown or code fences."
-                    )
+                    val compactVersion = compactProtocolVersion(request.schemaName)
+                    val retryRule = compactVersion?.let { "The data value must begin with $it and follow its requested pipe records, one record per line." }
+                        ?: "The data value must follow its requested compact protocol, one record per line."
+                    currentRequest = request.copy(userPrompt = request.userPrompt + "\nFIX:${reason.take(80)}. Return exactly one JSON envelope with one data property. $retryRule No markdown or code fences.")
                     continue
                 }
                 throw Failure.BusinessRejected(reason)
             }
             return ValidatedResponse(raw.provider, raw.model, raw.jsonText, raw.usage)
         }
+    }
+
+    private fun compactProtocolVersion(schemaName: String): String? = when {
+        schemaName.contains("weekly_nutrition") -> "MFP1"
+        schemaName.contains("cheat_understanding") -> "CU1"
+        schemaName.contains("cheat_adjustment") -> "CA1"
+        schemaName.contains("meal_alternatives") -> "MA1"
+        schemaName.contains("nutrition_advice") -> "NA1"
+        schemaName.contains("weekly_review") -> "WR1"
+        schemaName.contains("progress_coach") -> "BA2"
+        schemaName.contains("bia") -> "BIA1"
+        schemaName.contains("body_proportion") -> "BP1"
+        else -> null
     }
 }

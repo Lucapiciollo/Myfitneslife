@@ -109,4 +109,5 @@ class TrainingProgramSettingsDeviceTest {
             data.trainingProgramPreferences.set(profileId, original, synchronous = true)
         }
     }
+
 }

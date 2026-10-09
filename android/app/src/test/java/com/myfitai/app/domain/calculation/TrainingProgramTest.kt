@@ -12,6 +12,22 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class TrainingProgramTest {
+    @Test
+    fun onlyCalorieRelevantFieldsRequireRegeneratingThePlan() {
+        val original = TrainingProgram(
+            days = setOf(DayOfWeek.MONDAY, DayOfWeek.FRIDAY),
+            durationMinutes = 60,
+            intensity = DailyActivityCheckInEngine.Intensity.MODERATE,
+            startMinutes = 8 * 60,
+        )
+
+        assertFalse(original.changesDailyCaloriesComparedTo(original.copy(startMinutes = 9 * 60)))
+        assertTrue(original.changesDailyCaloriesComparedTo(original.copy(days = setOf(DayOfWeek.MONDAY))))
+        assertTrue(original.changesDailyCaloriesComparedTo(original.copy(durationMinutes = 90)))
+        assertTrue(original.changesDailyCaloriesComparedTo(original.copy(intensity = DailyActivityCheckInEngine.Intensity.HARD)))
+        assertFalse(TrainingProgram().changesDailyCaloriesComparedTo(TrainingProgram(durationMinutes = 90)))
+    }
+
     private val program = TrainingProgram(
         days = setOf(DayOfWeek.WEDNESDAY, DayOfWeek.MONDAY, DayOfWeek.FRIDAY),
         durationMinutes = 75,

@@ -46,6 +46,53 @@ class CompactAgentProtocolsTest {
         assertEquals("Riso", value.alternatives.first().ingredients.first().name)
     }
 
+    @Test fun mealAlternatives_recoversHeaderlessSingleLineRecordStream() {
+        val payload = buildString {
+            repeat(5) { i ->
+                append("A|Opzione $i|500|30|60|15|prepara|breve|")
+                append("I|Riso|80|g|80 g|DRY|HIGH|CEREALS|")
+            }
+            append("V|1|corretto")
+        }
+
+        val value = MealAlternativeCompactContract.parse(envelope(payload))
+
+        assertEquals(5, value.alternatives.size)
+        assertEquals("Opzione 0", value.alternatives.first().title)
+        assertEquals("CEREALS", value.alternatives.first().ingredients.single().category)
+        assertTrue(value.agentValidation.valid)
+    }
+
+    @Test fun mealAlternatives_splitsAttachedHeaderFromFirstRecord() {
+        val payload = buildString {
+            append("MA1 A|Opzione 1|500|30|60|15|prepara|breve|")
+            append("I|Riso|80|g|80 g|DRY|HIGH|CEREALS|")
+            repeat(4) { i ->
+                append("A|Opzione ${i + 2}|500|30|60|15|prepara|breve|")
+                append("I|Riso $i|80|g|80 g|DRY|HIGH|CEREALS|")
+            }
+            append("V|1|corretto")
+        }
+
+        assertEquals(5, MealAlternativeCompactContract.parse(envelope(payload)).alternatives.size)
+    }
+
+    @Test fun mealAlternatives_mergesMultipleValidationRecordsWithoutLosingBusinessChecks() {
+        val payload = buildString {
+            appendLine("MA1")
+            repeat(5) { i ->
+                appendLine("A|Opzione $i|500|30|60|15|prepara|breve")
+                appendLine("I|Riso|80|g|80 g|DRY|HIGH|CEREALS")
+            }
+            appendLine("V|1|valid")
+            append("V|1|notes")
+        }
+        val value = MealAlternativeCompactContract.parse(envelope(payload))
+        assertEquals(5, value.alternatives.size)
+        assertTrue(value.agentValidation.valid)
+        assertTrue(value.agentValidation.notes.contains("valid"))
+    }
+
     @Test fun nutritionAdvice_parsesFiveOptions() {
         val payload = buildString {
             appendLine("NA1")

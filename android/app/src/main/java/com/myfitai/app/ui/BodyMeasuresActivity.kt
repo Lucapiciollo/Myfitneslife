@@ -31,6 +31,7 @@ import com.myfitai.app.ui.widgets.SelectableSegmentView
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.transformWhile
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -71,6 +72,8 @@ class BodyMeasuresActivity : BaseShellActivity() {
     private var selectedRangeIndex = 2
     private var profileHeightCm: Float? = null
     private var latestProportionReport: BodyProportionEngine.Report? = null
+    private var latestProportionMeasurementId: Long? = null
+    private var latestProportionJobKey: String? = null
     private val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.ITALIAN)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -92,7 +95,7 @@ class BodyMeasuresActivity : BaseShellActivity() {
             findViewById<SelectableSegmentView>(R.id.measureSegment).getChildAt(2)?.performClick()
         }
         if (intent.getBooleanExtra(EXTRA_ANALYZE_PROPORTIONS, false)) {
-            window.decorView.postDelayed({ findViewById<MaterialButton>(proportionAiButtonId)?.performClick() }, 250L)
+            window.decorView.post { findViewById<MaterialButton>(proportionAiButtonId)?.performClick() }
         }
     }
 
@@ -264,7 +267,7 @@ class BodyMeasuresActivity : BaseShellActivity() {
         })
         content.addView(MaterialButton(this).apply {
             id = View.generateViewId().also { proportionAiButtonId = it }
-            text = "Interpreta con IA"
+            text = "Confronta ultima rilevazione con IA"
             isAllCaps = false
             gateAiClick(this) { analyzeProportionsWithAi(this) }
             layoutParams = LinearLayout.LayoutParams(
@@ -278,17 +281,33 @@ class BodyMeasuresActivity : BaseShellActivity() {
 
     private fun renderProportions() {
         if (proportionStatusId == View.NO_ID) return
-        val report = BodyProportionEngine.analyze(measurements.firstOrNull(), profileHeightCm)
+        val latest = measurements.firstOrNull()
+        val previous = measurements.drop(1).firstOrNull()
+        val report = BodyProportionEngine.analyze(latest, profileHeightCm, previous)
+        val previousReport = previous?.let { BodyProportionEngine.analyze(it, profileHeightCm) }
+        val comparableRatioCount = if (previousReport == null) 0 else report.ratios.count { current ->
+            previousReport.ratios.any { it.key == current.key }
+        }
         latestProportionReport = report
+        latestProportionMeasurementId = latest?.id
 
-        findViewById<TextView>(proportionStatusId).text = when (report.status) {
+        findViewById<TextView>(proportionStatusId).text = when {
+            report.availableMeasurements > 0 && previous == null -> "Ultima rilevazione: ${report.availableMeasurements} valori · nessuna precedente da confrontare"
+            report.comparison.isNotEmpty() -> "Confronto tra le ultime due rilevazioni · ${report.comparison.size} misure confrontabili"
+            else -> when (report.status) {
             BodyProportionEngine.BalanceStatus.BALANCED -> "Equilibrio destra/sinistra: buono"
             BodyProportionEngine.BalanceStatus.MILD_IMBALANCE -> "Lieve differenza destra/sinistra"
             BodyProportionEngine.BalanceStatus.NOTICEABLE_IMBALANCE -> "Differenza destra/sinistra da monitorare"
             BodyProportionEngine.BalanceStatus.INSUFFICIENT_DATA -> "Dati insufficienti per valutare l'equilibrio"
+            }
         }
 
         val details = buildList {
+            if (previous != null && report.comparison.isEmpty()) add("Rilevazione precedente presente, ma non ci sono misure omogenee da confrontare.")
+            if (previous == null) add("Registra un'altra misurazione per ottenere un confronto nel tempo.")
+            report.comparison.forEach { c ->
+                add("${c.label}: ${formatMeasureValue(c.previous, c.unit)} → ${formatMeasureValue(c.current, c.unit)} (${formatSigned(c.difference)} ${c.unit}) vs precedente")
+            }
             report.asymmetries.forEach { a ->
                 add("${a.label}: ${formatPercent(a.percent)}${a.largerSide?.let { " · lato $it maggiore" } ?: ""}")
             }
@@ -297,36 +316,63 @@ class BodyMeasuresActivity : BaseShellActivity() {
         findViewById<TextView>(proportionDetailsId).text = if (details.isEmpty()) {
             "Inserisci misure bilaterali e circonferenze per ottenere rapporti più completi."
         } else details.joinToString("\n")
-        findViewById<TextView>(proportionNoteId).text = report.note
-        setAiActionEnabled(findViewById(proportionAiButtonId), report.availableMeasurements > 0)
+        findViewById<TextView>(proportionNoteId).text = listOfNotNull(
+            report.note,
+            "Confrontabili: ${report.comparison.size} misure lineari, $comparableRatioCount rapporti, ${report.asymmetries.size} coppie simmetriche.",
+        ).joinToString(" ")
+        findViewById<MaterialButton>(proportionAiButtonId).apply {
+            text = "Confronta ultima rilevazione con IA"
+            setAiActionEnabled(this, report.availableMeasurements > 0)
+        }
     }
 
     private fun analyzeProportionsWithAi(button: MaterialButton) {
         val report = latestProportionReport ?: return
         if (report.availableMeasurements <= 0) return
-        confirmAiRequest("L'interpretazione IA delle proporzioni corporee") {
+        if (latestProportionJobKey != null) return
+        confirmAiRequest("Il confronto IA delle misure corporee") {
             setAiActionEnabled(button, false)
             button.text = "Analisi in corso…"
             val profileId = data.activeProfileStore.currentIdOrNull() ?: return@confirmAiRequest
-            val reportJson = org.json.JSONObject().put("status", report.status.name).put("maxAsymmetry", report.maxAsymmetryPercent ?: org.json.JSONObject.NULL).put("availableMeasurements", report.availableMeasurements).put("note", report.note).put("ratios", org.json.JSONArray().apply { report.ratios.forEach { put(org.json.JSONObject().put("key", it.key).put("label", it.label).put("value", it.value).put("description", it.description)) } }).put("asymmetries", org.json.JSONArray().apply { report.asymmetries.forEach { put(org.json.JSONObject().put("key", it.key).put("label", it.label).put("percent", it.percent).put("largerSide", it.largerSide ?: org.json.JSONObject.NULL)) } }).toString()
-            val jobKey = "${System.currentTimeMillis()}"
-            data.aiJobScheduler.enqueue(AiJobType.BODY_PROPORTIONS, profileId, jobKey, params = androidx.work.Data.Builder().putString(BodyProportionsAiJobHandler.KEY_REPORT, reportJson).build())
+            val latest = measurements.firstOrNull()
+            val previous = measurements.drop(1).firstOrNull()
+        val reportJson = bodyProportionReportJson(report, latest, previous)
+            val jobKey = "body-proportions:${latestProportionMeasurementId ?: System.currentTimeMillis()}"
+            latestProportionJobKey = jobKey
+            val enqueued = runCatching {
+                data.aiJobScheduler.enqueue(AiJobType.BODY_PROPORTIONS, profileId, jobKey, params = androidx.work.Data.Builder().putString(BodyProportionsAiJobHandler.KEY_REPORT, reportJson).build())
+            }
+            if (enqueued.isFailure) {
+                latestProportionJobKey = null
+                setAiActionEnabled(button)
+                button.text = "Confronta ultima rilevazione con IA"
+                Toast.makeText(this, "Impossibile avviare l'analisi. Riprova.", Toast.LENGTH_LONG).show()
+                return@confirmAiRequest
+            }
             lifecycleScope.launch {
-                data.aiJobScheduler.observe(AiJobType.BODY_PROPORTIONS, profileId, jobKey).collect { info ->
+                data.aiJobScheduler.observe(AiJobType.BODY_PROPORTIONS, profileId, jobKey)
+                    .transformWhile { info ->
+                        emit(info)
+                        info?.state?.isFinished != true
+                    }
+                    .collect { info ->
                     when (info?.state) {
                         androidx.work.WorkInfo.State.SUCCEEDED -> {
-                            val p = org.json.JSONObject(info.outputData.getString(BodyProportionsAiJobHandler.KEY_PAYLOAD).orEmpty())
-                            MaterialAlertDialogBuilder(this@BodyMeasuresActivity)
-                                .setTitle("Analisi proporzioni")
-                                .setMessage(p.getString("summary"))
-                                .setPositiveButton("Chiudi", null)
-                                .show()
+                            runCatching {
+                                val p = org.json.JSONObject(info.outputData.getString(BodyProportionsAiJobHandler.KEY_PAYLOAD).orEmpty())
+                                validateBodyProportionsPayload(p, report)
+                                showBodyProportionsResult(p)
+                            }.onFailure {
+                                Toast.makeText(this@BodyMeasuresActivity, "Risultato dell'analisi non valido. Riprova.", Toast.LENGTH_LONG).show()
+                            }
+                            latestProportionJobKey = null
                             setAiActionEnabled(button)
-                            button.text = "Interpreta con IA"
+                            button.text = "Confronta ultima rilevazione con IA"
                         }
                         androidx.work.WorkInfo.State.FAILED, androidx.work.WorkInfo.State.CANCELLED -> {
+                            latestProportionJobKey = null
                             setAiActionEnabled(button)
-                            button.text = "Interpreta con IA"
+                            button.text = "Confronta ultima rilevazione con IA"
                             Toast.makeText(this@BodyMeasuresActivity, "Analisi non riuscita. Riprova.", Toast.LENGTH_LONG).show()
                         }
                         else -> Unit
@@ -334,6 +380,93 @@ class BodyMeasuresActivity : BaseShellActivity() {
                 }
             }
         }
+    }
+
+    private fun formatMeasureValue(value: Float, unit: String): String =
+        String.format(Locale.ITALIAN, "%.1f %s", value, unit)
+
+    private fun bodyProportionReportJson(
+        report: BodyProportionEngine.Report,
+        latest: BodyMeasurementEntity?,
+        previous: BodyMeasurementEntity?,
+    ): String = org.json.JSONObject()
+        .put("status", report.status.name)
+        .put("maxAsymmetry", report.maxAsymmetryPercent ?: org.json.JSONObject.NULL)
+        .put("availableMeasurements", report.availableMeasurements)
+        .put("note", report.note)
+        .put("currentDate", report.currentDate ?: "?")
+        .put("previousDate", report.previousDate ?: "?")
+        .put("comparison", org.json.JSONArray().apply {
+            report.comparison.forEach { comparison ->
+                put(org.json.JSONObject().put("key", comparison.key).put("label", comparison.label)
+                    .put("previous", comparison.previous).put("current", comparison.current)
+                    .put("difference", comparison.difference).put("unit", comparison.unit))
+            }
+        })
+        .put("ratios", org.json.JSONArray().apply {
+            report.ratios.forEach { put(org.json.JSONObject().put("key", it.key).put("label", it.label).put("value", it.value).put("description", it.description)) }
+        })
+        .put("asymmetries", org.json.JSONArray().apply {
+            report.asymmetries.forEach { put(org.json.JSONObject().put("key", it.key).put("label", it.label).put("percent", it.percent).put("largerSide", it.largerSide ?: org.json.JSONObject.NULL)) }
+        })
+        .toString()
+
+    /** Local business validation is authoritative; agentValidation is only the model's self-assessment. */
+    private fun validateBodyProportionsPayload(payload: org.json.JSONObject, source: BodyProportionEngine.Report) {
+        val summary = payload.getString("summary").trim()
+        require(summary.isNotBlank() && summary.length <= 500) { "BODY_SUMMARY_INVALID" }
+        require(payload.optString("agentValidation").isNotBlank()) { "BODY_VALIDATION_MISSING" }
+        val observations = payload.optJSONArray("observations") ?: org.json.JSONArray()
+        val monitor = payload.optJSONArray("monitorNext") ?: org.json.JSONArray()
+        require(observations.length() <= 5 && monitor.length() <= 5) { "BODY_OUTPUT_TOO_MANY_ITEMS" }
+        val text = buildList {
+            add(summary)
+            for (i in 0 until observations.length()) add(observations.getString(i).also { require(it.isNotBlank() && it.length <= 240) })
+            for (i in 0 until monitor.length()) add(monitor.getString(i).also { require(it.isNotBlank() && it.length <= 240) })
+        }.joinToString(" ").lowercase(Locale.ROOT)
+        require(listOf("diagnosi", "diagnostica", "patologia", "postura scorretta", "causa certa", "ideale perfetto").none { it in text }) { "BODY_UNSUPPORTED_CLAIM" }
+        val comparison = payload.optString("comparison")
+        require(comparison.isNotBlank() && comparison.length <= 400) { "BODY_COMPARISON_INVALID" }
+        val comparisonText = comparison.lowercase(Locale.ROOT)
+        if (source.comparison.isEmpty()) {
+            require("insufficient" in comparisonText || "non è possibile" in comparisonText || "non e possibile" in comparisonText) {
+                "BODY_MISSING_COMPARISON_UNCERTAINTY"
+            }
+        } else {
+            require("insufficient" !in comparisonText && "dati insufficienti" !in comparisonText) { "BODY_FALSE_INSUFFICIENT_COMPARISON" }
+            val namedComparisons = source.comparison.count { item -> item.label.lowercase(Locale.ROOT) in comparisonText }
+            require(namedComparisons >= minOf(1, source.comparison.size)) { "BODY_COMPARISON_NOT_GROUNDED" }
+        }
+    }
+
+    private fun showBodyProportionsResult(payload: org.json.JSONObject) {
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(resources.getDimensionPixelSize(R.dimen.space_16), 0, resources.getDimensionPixelSize(R.dimen.space_16), resources.getDimensionPixelSize(R.dimen.space_8))
+        }
+        fun section(title: String, text: String) {
+            if (text.isBlank()) return
+            content.addView(TextView(this).apply {
+                this.text = title
+                setTextAppearance(R.style.Text_MyFitAI_SettingsLabel)
+            })
+            content.addView(TextView(this).apply {
+                this.text = text
+                setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
+                setPadding(0, resources.getDimensionPixelSize(R.dimen.space_4), 0, resources.getDimensionPixelSize(R.dimen.space_8))
+            })
+        }
+        section("Confronto ultima e precedente", payload.optString("appComparison"))
+        section("Interpretazione del confronto", payload.optString("comparison"))
+        section("Interpretazione IA", payload.optString("summary"))
+        section("Osservazioni", payload.optJSONArray("observations")?.let { a -> (0 until a.length()).joinToString("\n") { "• ${a.optString(it)}" } }.orEmpty())
+        section("Da monitorare", payload.optJSONArray("monitorNext")?.let { a -> (0 until a.length()).joinToString("\n") { "• ${a.optString(it)}" } }.orEmpty())
+        section("Autovalutazione IA", payload.optString("agentValidation"))
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Confronto misure corporee")
+            .setView(normalizeRuntimeDialogContent(content))
+            .setPositiveButton("Chiudi", null)
+            .show()
     }
 
     private fun renderTrend() {

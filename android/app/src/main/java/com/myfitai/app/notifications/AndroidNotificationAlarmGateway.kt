@@ -25,7 +25,7 @@ class AndroidNotificationAlarmGateway(context: Context) : NotificationAlarmGatew
     }
 
     private fun scheduleWithBestPrecision(triggerAtEpochMillis: Long, pending: PendingIntent) {
-        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()) {
+        if (ExactAlarmAccess.isAllowed(appContext)) {
             runCatching {
                 alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtEpochMillis, pending)
             }.onFailure {

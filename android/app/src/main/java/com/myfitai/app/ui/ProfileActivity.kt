@@ -19,6 +19,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.google.android.material.imageview.ShapeableImageView
+import com.myfitai.app.notifications.ExactAlarmAccess
 import com.myfitai.app.notifications.NotificationPreferences
 import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
@@ -95,6 +96,14 @@ class ProfileActivity : BaseShellActivity() {
         }
         if (Build.VERSION.SDK_INT >= 33 && !permissionGranted) {
             openAndroidSettings.visibility = android.view.View.VISIBLE
+        } else if (prefs.mealRemindersEnabled && !ExactAlarmAccess.isAllowed(this)) {
+            // Notifications are allowed but the system may still delay them: offer the alarm access instead.
+            statusText.text = getString(R.string.exact_alarm_status_missing)
+            (openAndroidSettings as? android.widget.TextView)?.text = getString(R.string.exact_alarm_open_settings)
+            openAndroidSettings.visibility = android.view.View.VISIBLE
+            openAndroidSettings.setOnClickListener {
+                ExactAlarmAccess.settingsIntent(this)?.let { runCatching { startActivity(it) } }
+            }
         }
 
         MaterialAlertDialogBuilder(this)

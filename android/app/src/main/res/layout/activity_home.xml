@@ -111,7 +111,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/space_4"
-                            android:text="Hai modificato dati importanti. Apri il piano per rigenerarlo con le nuove informazioni."
+                            android:text="Hai modificato dati o impostazioni che influenzano le calorie. Apri il piano per rigenerarlo con i nuovi target."
                             android:textColor="@color/text_primary" />
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/planUpdateNoticeButton"

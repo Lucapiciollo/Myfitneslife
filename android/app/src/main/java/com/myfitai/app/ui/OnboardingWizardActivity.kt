@@ -475,6 +475,15 @@ class OnboardingWizardActivity : AppCompatActivity() {
         if (activity != existing.activityLevel) {
             data.trainingProgramPreferences.setActivityBasis(existing.id, TrainingEnergyPlanner.ActivityBasis.EVERYDAY_ONLY)
         }
+        val calorieInputsChanged = goal != existing.goal || activity != existing.activityLevel ||
+            birth != existing.birthDateEpochDay || sex != existing.biologicalSex ||
+            height != existing.heightCm || weight != existing.currentWeightKg
+        if (calorieInputsChanged) {
+            val weekStart = LocalDate.now().with(java.time.temporal.TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).toEpochDay()
+            if (data.mealPlanRepository.getPlanForWeek(existing.id, weekStart) != null) {
+                data.nutritionPlanUpdatePreferences.setPending(existing.id, true)
+            }
+        }
         data.userProfileRepository.update(existing.copy(
             name = name, birthDateEpochDay = birth, biologicalSex = sex,
             heightCm = height, currentWeightKg = weight,

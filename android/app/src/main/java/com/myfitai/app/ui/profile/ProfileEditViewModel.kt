@@ -96,8 +96,7 @@ class ProfileEditViewModel(
                         current.birthDateEpochDay != birthDateEpochDay ||
                         current.biologicalSex != biologicalSex ||
                         current.heightCm != heightCm ||
-                        current.currentWeightKg != currentWeightKg ||
-                        current.dietaryPreferencesJson != dietaryPreferencesJson
+                        current.currentWeightKg != currentWeightKg
                     val updated = current.copy(
                         name = name.trim(),
                         birthDateEpochDay = birthDateEpochDay,

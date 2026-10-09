@@ -106,6 +106,7 @@ class BiaAnalysisAiJobHandlerTest {
         assertEquals(BiaAnalysisReport.MAX_HISTORY_ROWS, historyLine.split("date=").size - 1)
     }
 
+
     @Test
     fun analysingAnOlderReading_ignoresLaterOnes() = runBlocking {
         val ids = (1..5).map { biaRepository.insert(fullReading(it)) }

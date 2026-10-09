@@ -170,14 +170,16 @@ class FoodPlanActivity : BaseShellActivity() {
 
         val empty = findViewById<TextView>(R.id.emptyPlanText)
         val providerConfigured = aiProviderConfigured
+        val planUpdatePending = data.activeProfileStore.currentIdOrNull()
+            ?.let(data.nutritionPlanUpdatePreferences::isPending) == true
         val aiConfigurationNoticeCard = findViewById<View>(R.id.aiConfigurationNoticeCard)
         revealState(aiConfigurationNoticeCard, !providerConfigured)
         val goalChangedNotice = findViewById<TextView>(R.id.goalChangedNotice)
-        revealState(goalChangedNotice, currentWeek && state.goalChangedSinceGeneration)
+        revealState(goalChangedNotice, currentWeek && (state.goalChangedSinceGeneration || planUpdatePending))
         val day = state.selectedDay
         val dayMealsCard = findViewById<View>(R.id.dayMealsCard)
         val hasDayContent = day != null && (day.meals.isNotEmpty() || day.supplements.isNotEmpty() || !day.hydrationNote.isNullOrBlank())
-        val hasPlanStateMessage = state.goalChangedSinceGeneration || state.generation.running || state.generation.error != null || state.generation.successMessage != null
+        val hasPlanStateMessage = state.goalChangedSinceGeneration || planUpdatePending || state.generation.running || state.generation.error != null || state.generation.successMessage != null
         // Keep the merged plan/meals card visible while the first plan is being
         // generated, so the running state and progress indicator are not hidden
         // just because no persisted plan exists yet.
@@ -208,13 +210,13 @@ class FoodPlanActivity : BaseShellActivity() {
         revealState(dailyTotalCard, generatedContentVisible)
         revealState(nutritionEstimateCard, generatedContentVisible)
 
-        renderGeneration(state, currentWeek, periodCanBeGenerated)
+        renderGeneration(state, currentWeek, periodCanBeGenerated, planUpdatePending)
         renderPlanScheduleStatus()
         renderMeals(state.weekStart, day, state.consumptionRecords)
         renderTotals(day, state.snapshot?.version, state.consumptionRecords, state.calorieReference)
     }
 
-    private fun renderGeneration(state: FoodPlanViewModel.State, currentWeek: Boolean, periodCanBeGenerated: Boolean) {
+    private fun renderGeneration(state: FoodPlanViewModel.State, currentWeek: Boolean, periodCanBeGenerated: Boolean, planUpdatePending: Boolean) {
         if (state.generation.successMessage != null) {
             data.activeProfileStore.currentIdOrNull()?.let { profileId ->
                 data.nutritionPlanUpdatePreferences.setPending(profileId, false)
@@ -244,7 +246,7 @@ class FoodPlanActivity : BaseShellActivity() {
             generation.running -> "Il piano viene generato e validato localmente prima del salvataggio."
             generation.error != null -> generation.error
             generation.successMessage != null -> listOfNotNull(generation.successMessage, generation.usageMessage).joinToString("\n")
-            state.goalChangedSinceGeneration -> "I dati del profilo sono cambiati: puoi rigenerare il piano per aggiornarlo."
+            state.goalChangedSinceGeneration || planUpdatePending -> "Hai modificato impostazioni che influenzano le calorie: rigenera il piano per applicare i nuovi target."
             else -> null
         }
         stateDot.background = getDrawable(
@@ -252,7 +254,7 @@ class FoodPlanActivity : BaseShellActivity() {
                 generation.error != null -> R.drawable.bg_status_dot_error
                 generation.running -> R.drawable.bg_status_dot_warning
                 generation.successMessage != null -> R.drawable.bg_status_dot_success
-                state.goalChangedSinceGeneration -> R.drawable.bg_status_dot_warning
+                state.goalChangedSinceGeneration || planUpdatePending -> R.drawable.bg_status_dot_warning
                 else -> R.drawable.bg_status_dot_neutral
             }
         )

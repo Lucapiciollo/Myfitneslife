@@ -127,11 +127,33 @@ class MealAlternativeActivity : BaseShellActivity() {
                  val verticalPadding = resources.getDimensionPixelSize(R.dimen.space_6)
                  setPadding(horizontalPadding, verticalPadding, horizontalPadding, verticalPadding)
             })
-            body.addView(TextView(this).apply {
-                text = alternative.ingredients.joinToString(" · ") { it.displayDose }
-                setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
-                setPadding(0, resources.getDimensionPixelSize(R.dimen.space_6), 0, 0)
-            })
+            val ingredients = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setBackgroundResource(R.drawable.bg_card)
+                val padding = resources.getDimensionPixelSize(R.dimen.space_10)
+                setPadding(padding, padding, padding, padding)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ).apply { topMargin = resources.getDimensionPixelSize(R.dimen.space_8) }
+                contentDescription = "Ingredienti e dosi"
+            }
+            alternative.ingredients.forEach { ingredient ->
+                val line = LinearLayout(this).apply {
+                    orientation = LinearLayout.VERTICAL
+                    setPadding(0, resources.getDimensionPixelSize(R.dimen.space_3), 0, resources.getDimensionPixelSize(R.dimen.space_3))
+                }
+                line.addView(TextView(this).apply {
+                    text = ingredient.name
+                    setTextAppearance(R.style.Text_MyFitAI_SettingsLabel)
+                })
+                line.addView(TextView(this).apply {
+                    text = "${com.myfitai.app.domain.food.MealAlternativeIngredientDisplay.practicalDose(ingredient)} · ${com.myfitai.app.domain.food.MealAlternativeIngredientDisplay.weightState(ingredient)}"
+                    setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
+                })
+                ingredients.addView(line)
+            }
+            body.addView(ingredients)
             body.addView(TextView(this).apply {
                 text = alternative.reason
                 setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)

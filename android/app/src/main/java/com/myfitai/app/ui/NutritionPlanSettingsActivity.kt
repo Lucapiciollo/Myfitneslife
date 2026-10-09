@@ -4,6 +4,8 @@ import android.os.Bundle
 import android.view.View
 import android.widget.TextView
 import android.widget.Toast
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -21,6 +23,9 @@ import java.util.Locale
 class NutritionPlanSettingsActivity : BaseShellActivity() {
     private val data by lazy { AppDataContainer.get(this) }
     private val profileId get() = data.activeProfileStore.currentIdOrNull()
+    private var originalTrainingProgram: TrainingProgram? = null
+    private var planUpdateWasPending = false
+    private var calorieProgramChanged = false
     private val trainingDayChips by lazy {
         linkedMapOf(
             R.id.trainingDayMonday to DayOfWeek.MONDAY,
@@ -40,6 +45,8 @@ class NutritionPlanSettingsActivity : BaseShellActivity() {
         setContentView(R.layout.activity_nutrition_plan_settings)
         bindBack()
         val id = profileId ?: return
+        originalTrainingProgram = data.trainingProgramPreferences.get(id)
+        planUpdateWasPending = data.nutritionPlanUpdatePreferences.isPending(id)
         val switch = findViewById<MaterialSwitch>(R.id.scheduleSwitch)
         switch.setOnCheckedChangeListener { _, enabled -> data.nutritionPlanSchedulePreferences.setEnabled(id, enabled); refresh() }
         findViewById<View>(R.id.mealCountButton).setOnClickListener { chooseMealCount(id) }
@@ -77,6 +84,14 @@ class NutritionPlanSettingsActivity : BaseShellActivity() {
         trainingDayChips.forEach { (chipId, day) -> findViewById<Chip>(chipId).isChecked = day in program.days }
         renderingTraining = false
         findViewById<TextView>(R.id.trainingProgramValue).text = program.summary()
+        findViewById<TextView>(R.id.trainingProgramNotice).text = if (
+            planUpdateWasPending || calorieProgramChanged ||
+            originalTrainingProgram?.changesDailyCaloriesComparedTo(program) == true
+        ) {
+            "Il programma modifica le calorie giornaliere. Rigenera il piano alimentare per applicare i nuovi target."
+        } else {
+            "Salvato nel profilo. Alla prossima generazione il piano usa calorie e menu diversi nei giorni di allenamento."
+        }
         findViewById<MaterialButton>(R.id.trainingTimeButton).text = program.startMinutes
             ?.let { "Orario abituale: %02d:%02d".format(it / 60, it % 60) }
             ?: "Orario abituale (facoltativo)"
@@ -84,7 +99,7 @@ class NutritionPlanSettingsActivity : BaseShellActivity() {
 
     private fun saveTrainingDays(id: Long) {
         val days = trainingDayChips.filter { (chipId, _) -> findViewById<Chip>(chipId).isChecked }.values.toSet()
-        data.trainingProgramPreferences.set(id, data.trainingProgramPreferences.get(id).copy(days = days))
+        saveTrainingProgram(id, data.trainingProgramPreferences.get(id).copy(days = days))
         renderTrainingProgram(id)
     }
 
@@ -94,7 +109,7 @@ class NutritionPlanSettingsActivity : BaseShellActivity() {
         MaterialAlertDialogBuilder(this)
             .setTitle("Durata abituale")
             .setSingleChoiceItems(options.map { "$it min" }.toTypedArray(), options.indexOf(current.durationMinutes)) { dialog, which ->
-                data.trainingProgramPreferences.set(id, data.trainingProgramPreferences.get(id).copy(durationMinutes = options[which]))
+                saveTrainingProgram(id, data.trainingProgramPreferences.get(id).copy(durationMinutes = options[which]))
                 dialog.dismiss()
                 chooseTrainingIntensity(id)
             }
@@ -109,7 +124,7 @@ class NutritionPlanSettingsActivity : BaseShellActivity() {
         MaterialAlertDialogBuilder(this)
             .setTitle("Intensità abituale")
             .setSingleChoiceItems(labels.toTypedArray(), values.indexOf(current.intensity)) { dialog, which ->
-                data.trainingProgramPreferences.set(id, data.trainingProgramPreferences.get(id).copy(intensity = values[which]))
+                saveTrainingProgram(id, data.trainingProgramPreferences.get(id).copy(intensity = values[which]))
                 dialog.dismiss()
                 renderTrainingProgram(id)
                 Toast.makeText(this, "Programma allenamenti aggiornato", Toast.LENGTH_SHORT).show()
@@ -130,6 +145,7 @@ class NutritionPlanSettingsActivity : BaseShellActivity() {
                 if (which == 0) {
                     showTrainingTimePicker(id, current.startMinutes)
                 } else {
+                    // Time affects meal timing only, not daily calorie targets; don't ask to regenerate.
                     data.trainingProgramPreferences.set(id, data.trainingProgramPreferences.get(id).copy(startMinutes = null))
                     renderTrainingProgram(id)
                 }
@@ -148,6 +164,7 @@ class NutritionPlanSettingsActivity : BaseShellActivity() {
             .build()
             .also { picker ->
                 picker.addOnPositiveButtonClickListener {
+                    // Time affects meal timing only, not daily calorie targets; don't ask to regenerate.
                     data.trainingProgramPreferences.set(id, data.trainingProgramPreferences.get(id).copy(startMinutes = picker.hour * 60 + picker.minute))
                     renderTrainingProgram(id)
                 }
@@ -159,6 +176,23 @@ class NutritionPlanSettingsActivity : BaseShellActivity() {
         val values = intArrayOf(4, 5, 6)
         MaterialAlertDialogBuilder(this).setTitle("Pasti al giorno").setSingleChoiceItems(values.map { "$it pasti" }.toTypedArray(), values.indexOf(data.mealCountPreferences.get(id))) { dialog, which -> data.mealCountPreferences.set(id, values[which]); refresh(); dialog.dismiss() }.setNegativeButton("Annulla", null).show()
     }
+
+    private fun saveTrainingProgram(id: Long, updated: TrainingProgram) {
+        val before = data.trainingProgramPreferences.get(id)
+        val priorProgram = originalTrainingProgram ?: before
+        data.trainingProgramPreferences.set(id, updated)
+        calorieProgramChanged = priorProgram.changesDailyCaloriesComparedTo(updated)
+        lifecycleScope.launch {
+            if (data.mealPlanRepository.getPlanForWeek(
+                    id,
+                    java.time.LocalDate.now().with(java.time.temporal.TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).toEpochDay(),
+                ) != null
+            ) {
+                data.nutritionPlanUpdatePreferences.setPending(id, planUpdateWasPending || calorieProgramChanged)
+            }
+        }
+    }
+
     private fun chooseFrequency(id: Long) {
         val values = NutritionPlanSchedulePreferences.Frequency.entries
         val labels = arrayOf("Ogni giorno", "Ogni settimana", "Ogni 2 settimane", "Ogni mese")

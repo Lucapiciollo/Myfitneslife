@@ -25,6 +25,7 @@ class BiaDeviceVisualTest {
     private val context = instrumentation.targetContext
     private val device = UiDevice.getInstance(instrumentation)
 
+
     @Test
     fun dateAndTimePickers_showStandardNeutralDialogTheme() {
         instrumentation.startActivitySync(Intent(context, BiaActivity::class.java).apply {

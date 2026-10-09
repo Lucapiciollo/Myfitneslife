@@ -154,7 +154,12 @@ class MealAlternativeService(
         appendLine("CURRENT:${meal.title}|${meal.kcal}kcal|P${meal.proteinG}|C${meal.carbsG}|F${meal.fatG}")
         appendLine("TARGET_KCAL_EXACT:$targetKcal")
         appendLine("DP:${dietaryProfile.toPromptCompact()}")
-        appendLine("Return exactly 5 alternatives. A/I/E/S in DP are hard constraints. D/P are soft preferences. Every alternative kcal MUST equal TARGET_KCAL_EXACT exactly. Keep macros close and include caloric condiments.")
+        appendLine("OUTPUT_FORMAT: The data string MUST start with MA1 on a line by itself. For each of exactly 5 alternatives output one A record followed immediately by one or more I records. Finish with exactly one V record. Never repeat MA1 as an alternative tag; never use MFP1, D/F/M/H records, JSON inside data, markdown, or prose.")
+        appendLine("A record has exactly 8 pipe-separated fields including its tag: A|title|kcal|proteinG|carbsG|fatG|preparation|reason")
+        appendLine("I record has exactly 8 fields including its tag: I|name|quantity|unit|displayDose|weightState|nutritionConfidence|category")
+        appendLine("V record has exactly 3 fields including its tag and must be last: V|1_or_0|notes")
+        appendLine("FORMAT_EXAMPLE_ONLY: copy the record structure shown in SYSTEM_PROMPT; do not copy example foods or numbers.")
+        appendLine("A/I/E/S in DP are hard constraints. D/P are soft preferences. Every alternative kcal MUST equal TARGET_KCAL_EXACT exactly. Keep macros close and include caloric condiments; list every ingredient separately with numeric dose and practical displayDose.")
     }
 
     private fun ensureNotPast(dayEpochDay: Long, mealTimeMinutes: Int?) {

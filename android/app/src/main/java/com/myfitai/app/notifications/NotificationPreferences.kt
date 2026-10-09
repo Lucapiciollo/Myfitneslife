@@ -21,6 +21,11 @@ class NotificationPreferences(context: Context) : NotificationSettings {
         get() = prefs.getInt(KEY_MEAL_LEAD, 15).coerceIn(0, 120)
         set(value) = prefs.edit().putInt(KEY_MEAL_LEAD, value.coerceIn(0, 120)).apply()
 
+    /** The exact-alarm access is explained once; the notification settings keep offering it afterwards. */
+    var exactAlarmPrompted: Boolean
+        get() = prefs.getBoolean(KEY_EXACT_ALARM_PROMPTED, false)
+        set(value) = prefs.edit().putBoolean(KEY_EXACT_ALARM_PROMPTED, value).apply()
+
     var permissionPrompted: Boolean
         get() = prefs.getBoolean(KEY_PERMISSION_PROMPTED, false)
         set(value) = prefs.edit().putBoolean(KEY_PERMISSION_PROMPTED, value).apply()
@@ -39,6 +44,7 @@ class NotificationPreferences(context: Context) : NotificationSettings {
         private const val KEY_AI_BACKGROUND_ENABLED = "ai_background_updates_enabled"
         private const val KEY_MEAL_LEAD = "meal_lead_minutes"
         private const val KEY_PERMISSION_PROMPTED = "permission_prompted"
+        private const val KEY_EXACT_ALARM_PROMPTED = "exact_alarm_prompted"
         private const val KEY_REQUEST_CODES = "scheduled_request_codes"
     }
 }

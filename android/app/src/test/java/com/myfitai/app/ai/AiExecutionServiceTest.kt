@@ -68,6 +68,30 @@ class AiExecutionServiceTest {
         }
     }
 
+    @Test
+    fun compactBusinessRetryNamesTheProtocolForTheRequestedSchema() {
+        runBlocking {
+            val provider = object : AiProvider {
+                override val type = AiProviderType.OPENAI
+                var calls = 0
+                var retryPrompt = ""
+                override suspend fun generateStructured(request: AiStructuredRequest): AiRawResponse {
+                    calls++
+                    if (calls == 2) retryPrompt = request.userPrompt
+                    val data = if (calls == 1) "{\"data\":\"bad\"}" else "{\"data\":\"ok\"}"
+                    return AiRawResponse(type, "fake", data)
+                }
+            }
+            AiExecutionService().execute(
+                provider,
+                AiStructuredRequest("system", "user", "myfitai_meal_alternatives_pipe_v1", AiCompactEnvelope.schemaJson("MA1 test")),
+                maxSchemaRetries = 1,
+                businessValidator = { value -> if (value.contains("bad")) Result.failure(IllegalArgumentException("MA1_INVALID")) else Result.success(Unit) },
+            )
+            assertTrue("retry prompt must request MA1, got: ${provider.retryPrompt}", provider.retryPrompt.contains("MA1"))
+        }
+    }
+
     @Test(expected = AiExecutionService.Failure.BusinessRejected::class)
     fun execute_doesNotBypassBusinessValidation() {
         runBlocking {

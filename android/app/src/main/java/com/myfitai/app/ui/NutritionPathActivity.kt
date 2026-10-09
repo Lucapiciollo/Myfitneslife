@@ -206,9 +206,18 @@ class NutritionPathActivity : BaseShellActivity() {
         lifecycleScope.launch {
             val id = data.activeProfileStore.currentIdOrNull() ?: return@launch
             val profile = data.userProfileRepository.get(id) ?: return@launch
+            val updatedGoal = canonical(path)
+            if (profile.goal != updatedGoal) {
+                val weekStart = java.time.LocalDate.now()
+                    .with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY))
+                    .toEpochDay()
+                if (data.mealPlanRepository.getPlanForWeek(id, weekStart) != null) {
+                    data.nutritionPlanUpdatePreferences.setPending(id, true)
+                }
+            }
             data.userProfileRepository.update(
                 profile.copy(
-                    goal = canonical(path),
+                    goal = updatedGoal,
                     updatedAtEpochMillis = System.currentTimeMillis(),
                 )
             )

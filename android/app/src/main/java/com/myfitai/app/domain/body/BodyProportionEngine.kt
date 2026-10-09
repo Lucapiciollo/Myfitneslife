@@ -41,9 +41,25 @@ object BodyProportionEngine {
         val asymmetries: List<Asymmetry>,
         val availableMeasurements: Int,
         val note: String,
+        val comparison: List<MeasurementComparison> = emptyList(),
+        val currentDate: String? = null,
+        val previousDate: String? = null,
     )
 
-    fun analyze(measurement: BodyMeasurementEntity?, heightCm: Float?): Report {
+    data class MeasurementComparison(
+        val key: String,
+        val label: String,
+        val previous: Float,
+        val current: Float,
+        val difference: Float,
+        val unit: String = "cm",
+    )
+
+    fun analyze(
+        measurement: BodyMeasurementEntity?,
+        heightCm: Float?,
+        previous: BodyMeasurementEntity? = null,
+    ): Report {
         if (measurement == null) return insufficient()
 
         val ratios = buildList {
@@ -87,7 +103,33 @@ object BodyProportionEngine {
             asymmetries = asymmetries,
             availableMeasurements = values,
             note = "I rapporti sono descrittivi e non rappresentano un ideale estetico o una valutazione medica. Lo stato di equilibrio usa solo le differenze destra/sinistra misurate.",
+            comparison = previous?.let { compare(measurement, it) }.orEmpty(),
+            currentDate = measurement.measuredAtEpochMillis.asUtcDate(),
+            previousDate = previous?.measuredAtEpochMillis?.asUtcDate(),
         )
+    }
+
+    private fun compare(current: BodyMeasurementEntity, previous: BodyMeasurementEntity): List<MeasurementComparison> {
+        val fields = listOf(
+            Triple("weight", "Peso", current.weightKg to previous.weightKg),
+            Triple("chest", "Torace", current.chestCm to previous.chestCm),
+            Triple("waist", "Vita", current.waistCm to previous.waistCm),
+            Triple("abdomen", "Addome", current.abdomenCm to previous.abdomenCm),
+            Triple("shoulders", "Spalle", current.shouldersCm to previous.shouldersCm),
+            Triple("hips", "Fianchi", current.hipsCm to previous.hipsCm),
+            Triple("glutes", "Glutei", current.glutesCm to previous.glutesCm),
+            Triple("armLeft", "Braccio sinistro", current.armLeftCm to previous.armLeftCm),
+            Triple("armRight", "Braccio destro", current.armRightCm to previous.armRightCm),
+            Triple("thighLeft", "Coscia sinistra", current.thighLeftCm to previous.thighLeftCm),
+            Triple("thighRight", "Coscia destra", current.thighRightCm to previous.thighRightCm),
+            Triple("calfLeft", "Polpaccio sinistro", current.calfLeftCm to previous.calfLeftCm),
+            Triple("calfRight", "Polpaccio destro", current.calfRightCm to previous.calfRightCm),
+        )
+        return fields.mapNotNull { (key, label, values) ->
+            val now = values.first ?: return@mapNotNull null
+            val before = values.second ?: return@mapNotNull null
+            MeasurementComparison(key, label, before, now, now - before, if (key == "weight") "kg" else "cm")
+        }
     }
 
     private fun ratio(key: String, label: String, numerator: Float?, denominator: Float?): Ratio? {
@@ -121,6 +163,8 @@ object BodyProportionEngine {
         availableMeasurements = 0,
         note = "Dati insufficienti per analizzare le proporzioni.",
     )
+
+    private fun Long.asUtcDate(): String = java.time.Instant.ofEpochMilli(this).atZone(java.time.ZoneOffset.UTC).toLocalDate().toString()
 
     private fun format(value: Float): String = "%.3f".format(java.util.Locale.US, value)
 }
