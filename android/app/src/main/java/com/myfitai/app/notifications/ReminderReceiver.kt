@@ -14,66 +14,69 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.myfitai.app.R
-import com.myfitai.app.ui.MealDetailActivity
+import com.myfitai.app.ui.FoodPlanActivity
 import com.myfitai.app.ui.WeeklyReviewActivity
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 class ReminderReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         ensureChannels(context)
         when (intent.action) {
-            ACTION_MEAL -> showMeal(context, intent)
+            ACTION_MENU_PREVIEW -> {
+                showMenuPreview(context, intent)
+                rescheduleNextMenuPreview(context)
+            }
             ACTION_SNOOZE -> snooze(context, intent)
             ACTION_WEEKLY_REVIEW -> showWeeklyReview(context)
         }
     }
 
-    @SuppressLint("MissingPermission") // canNotify checks POST_NOTIFICATIONS immediately before notification construction.
-    private fun showMeal(context: Context, source: Intent) {
-        if (!canNotify(context)) return
-        val mealId = source.getLongExtra(EXTRA_MEAL_ID, -1L)
-        if (mealId <= 0L) return
-        val type = source.getStringExtra(EXTRA_MEAL_TYPE).orEmpty().ifBlank { "Pasto" }
-        val title = source.getStringExtra(EXTRA_MEAL_TITLE).orEmpty().ifBlank { "Apri il piano per i dettagli" }
-        val profileId = source.getLongExtra(EXTRA_PROFILE_ID, -1L)
+    /** The nightly alarm is one-shot; after firing, calculate and schedule the next planned menu. */
+    private fun rescheduleNextMenuPreview(context: Context) {
+        val pending = goAsync()
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+            try {
+                com.myfitai.app.data.AppDataContainer.get(context).notificationScheduler.refresh()
+            } finally {
+                pending.finish()
+            }
+        }
+    }
 
-        val openPending = PendingIntent.getActivity(
+    @SuppressLint("MissingPermission")
+    private fun showMenuPreview(context: Context, source: Intent) {
+        if (!canNotify(context)) return
+        val menuDate = source.getLongExtra(EXTRA_MENU_DATE_EPOCH_DAY, Long.MIN_VALUE)
+        if (menuDate == Long.MIN_VALUE) return
+        val meals = source.getStringArrayExtra(EXTRA_MENU_MEALS).orEmpty().filter(String::isNotBlank)
+        val dateLabel = java.time.LocalDate.ofEpochDay(menuDate).format(java.time.format.DateTimeFormatter.ofPattern("EEEE d MMMM", java.util.Locale.ITALIAN))
+            .replaceFirstChar { it.titlecase(java.util.Locale.ITALIAN) }
+        val preview = meals.take(MAX_PREVIEW_MEALS).joinToString("\n") { "• $it" }
+            .ifBlank { context.getString(R.string.notifications_menu_preview_empty) }
+        val open = PendingIntent.getActivity(
             context,
-            stableCode("open:$mealId"),
-            Intent(context, MealDetailActivity::class.java)
-                .putExtra(MealDetailActivity.EXTRA_MEAL_ID, mealId)
+            stableCode("open-menu:${source.getLongExtra(EXTRA_PROFILE_ID, -1L)}:$menuDate"),
+            Intent(context, com.myfitai.app.ui.TabHostActivity::class.java)
+                .putExtra(com.myfitai.app.navigation.BottomNavBinder.EXTRA_SELECTED_TAB, com.myfitai.app.navigation.BottomNavBinder.Tab.FOOD.name)
+                .putExtra(FoodPlanActivity.EXTRA_WEEK_START_EPOCH_DAY, menuDate)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
-
-        val snoozePending = PendingIntent.getBroadcast(
-            context,
-            stableCode("snooze-action:$mealId"),
-            Intent(context, ReminderReceiver::class.java).apply {
-                action = ACTION_SNOOZE
-                putExtra(EXTRA_MEAL_ID, mealId)
-                putExtra(EXTRA_MEAL_TYPE, type)
-                putExtra(EXTRA_MEAL_TITLE, title)
-                putExtra(EXTRA_PROFILE_ID, profileId)
-            },
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
-
-        val lead = NotificationPreferences(context).mealLeadMinutes
-        val prefix = if (lead > 0) "Tra $lead minuti: $type" else "È ora di $type"
         val notification = NotificationCompat.Builder(context, CHANNEL_MEALS)
             .setSmallIcon(R.drawable.ic_notification_small)
-            .setContentTitle(prefix)
-            .setContentText(title)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(title))
-            .setContentIntent(openPending)
+            .setContentTitle(context.getString(R.string.notifications_menu_preview_title, dateLabel))
+            .setContentText(meals.firstOrNull() ?: context.getString(R.string.notifications_menu_preview_empty))
+            .setStyle(NotificationCompat.BigTextStyle().bigText(preview))
+            .setContentIntent(open)
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
-            .addAction(0, "Apri pasto", openPending)
-            .addAction(0, "Posticipa 10 min", snoozePending)
+            .addAction(0, context.getString(R.string.notifications_menu_preview_open), open)
             .build()
-
-        NotificationManagerCompat.from(context).notify(stableCode("meal-notification:$mealId"), notification)
+        NotificationManagerCompat.from(context).notify(stableCode("menu-preview:${source.getLongExtra(EXTRA_PROFILE_ID, -1L)}:$menuDate"), notification)
     }
 
     private fun snooze(context: Context, source: Intent) {
@@ -122,15 +125,20 @@ class ReminderReceiver : BroadcastReceiver() {
     }
 
     companion object {
-        const val ACTION_MEAL = "com.myfitai.app.action.MEAL_REMINDER"
+        /** Legacy action identity retained only so the scheduler can cancel alarms created by older app versions. */
+        const val ACTION_LEGACY_MEAL = "com.myfitai.app.action.MEAL_REMINDER"
+        const val ACTION_MENU_PREVIEW = "com.myfitai.app.action.MENU_PREVIEW_REMINDER"
         const val ACTION_SNOOZE = "com.myfitai.app.action.SNOOZE_MEAL"
         const val ACTION_WEEKLY_REVIEW = "com.myfitai.app.action.WEEKLY_REVIEW"
         const val EXTRA_MEAL_ID = "meal_id"
         const val EXTRA_MEAL_TYPE = "meal_type"
         const val EXTRA_MEAL_TITLE = "meal_title"
         const val EXTRA_PROFILE_ID = "profile_id"
+        const val EXTRA_MENU_DATE_EPOCH_DAY = "menu_date_epoch_day"
+        const val EXTRA_MENU_MEALS = "menu_meals"
         const val CHANNEL_MEALS = "meal_reminders"
         const val CHANNEL_REVIEW = "weekly_review"
+        private const val MAX_PREVIEW_MEALS = 6
 
         fun stableCode(value: String): Int = value.hashCode() and 0x7fffffff
     }

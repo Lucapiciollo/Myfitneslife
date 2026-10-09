@@ -97,7 +97,7 @@ abstract class BaseShellActivity : AppCompatActivity() {
             .putExtra(BottomNavBinder.EXTRA_SELECTED_TAB, BottomNavBinder.Tab.FOOD.name)
             .putExtra(BottomNavBinder.EXTRA_TAB_ROOT, true)
             .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NO_ANIMATION)
-        weekStartEpochDay?.let { intent.putExtra(FoodPlanActivity.EXTRA_WEEK_START_EPOCH_DAY, it) }
+        weekStartEpochDay?.let { intent.putExtra(FoodPlanActivity.EXTRA_SELECTED_DATE_EPOCH_DAY, it) }
         startActivity(intent)
         return true
     }

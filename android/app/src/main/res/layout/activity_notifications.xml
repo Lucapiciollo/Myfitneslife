@@ -136,15 +136,5 @@
             android:textStyle="bold"
             android:textAllCaps="false" />
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/snoozeButton"
-            style="@style/Widget.Material3.Button.TextButton"
-            android:layout_width="match_parent"
-            android:layout_height="@dimen/button_secondary_min_height"
-            android:layout_marginTop="@dimen/space_8"
-            android:background="@drawable/bg_frosted_pill_soft"
-            android:text="Posticipa 10 min"
-            android:textColor="@color/white"
-            android:textAllCaps="false" />
     </LinearLayout>
 </FrameLayout>

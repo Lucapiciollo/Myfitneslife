@@ -66,19 +66,55 @@ class NotificationSchedulerTest {
     }
 
     @Test
-    fun refresh_schedulesOnlyFutureMealsWithinSixtyDayHorizonWithLeadTime() = runBlocking {
-        insertPlan(today, listOf(
-            meal("Past", 600, 700),
-            meal("Future", 1200, 1140),
-        ))
-        insertPlan(today.plusDays(61), listOf(meal("Outside horizon", 600, 1200)))
-        settings.mealLeadMinutes = 15
+    fun refresh_schedulesOneEveningPreviewForTomorrowMenu() = runBlocking {
+        insertPlan(today.plusDays(1), listOf(meal("Colazione domani", 480, 400), meal("Pranzo domani", 720, 700)))
+        insertPlan(today.plusDays(2), listOf(meal("Menu dopodomani", 720, 800)))
+        insertPlan(today.plusDays(61), listOf(meal("Fuori orizzonte", 720, 800)))
+        settings.menuReminderHour = 20
 
         scheduler().refresh(time.nowEpochMillis())
 
-        assertEquals(listOf("Future"), alarms.meals.map { it.mealTitle })
-        assertEquals(today.atTime(19, 45).toInstant(ZoneOffset.UTC).toEpochMilli(), alarms.meals.single().triggerAtEpochMillis)
+        assertEquals(1, alarms.meals.size)
+        assertEquals(today.plusDays(1).toEpochDay(), alarms.meals.single().menuDateEpochDay)
+        assertEquals(listOf("Pasto: Colazione domani", "Pasto: Pranzo domani"), alarms.meals.single().mealTitles)
+        assertEquals(today.atTime(20, 0).toInstant(ZoneOffset.UTC).toEpochMilli(), alarms.meals.single().triggerAtEpochMillis)
         assertEquals(alarms.meals.map { it.requestCode }.toSet(), settings.scheduledRequestCodes())
+        assertEquals(1, alarms.cancelledLegacyMealCodes.size)
+        assertTrue(settings.menuPreviewMigrationDone)
+    }
+
+    @Test
+    fun repeatedRefreshReplacesMenuPreviewInsteadOfAccumulatingAlarms() = runBlocking {
+        insertPlan(today.plusDays(1), listOf(meal("Menu domani", 600, 700)))
+
+        scheduler().refresh(time.nowEpochMillis())
+        scheduler().refresh(time.nowEpochMillis())
+
+        assertEquals(1, alarms.meals.map { it.requestCode }.distinct().size)
+        assertEquals(1, settings.scheduledRequestCodes().size)
+        assertTrue(alarms.cancelledCodes.isNotEmpty())
+    }
+
+    @Test
+    fun refresh_skipsTomorrowWithoutMenuAndSelectsNextPlannedMenu() = runBlocking {
+        insertPlan(today.plusDays(3), listOf(meal("Menu sabato", 600, 700)))
+
+        scheduler().refresh(time.nowEpochMillis())
+
+        assertEquals(1, alarms.meals.size)
+        assertEquals(today.plusDays(3).toEpochDay(), alarms.meals.single().menuDateEpochDay)
+    }
+
+    @Test
+    fun refresh_whenConfiguredHourPassedSchedulesNextDayForMenuAfterThatEvening() = runBlocking {
+        insertPlan(today.plusDays(1), listOf(meal("Menu domani", 600, 700)))
+        insertPlan(today.plusDays(2), listOf(meal("Menu dopodomani", 600, 700)))
+        val afterReminder = today.atTime(20, 1).toInstant(ZoneOffset.UTC).toEpochMilli()
+
+        scheduler().refresh(afterReminder)
+
+        assertEquals(today.plusDays(2).toEpochDay(), alarms.meals.single().menuDateEpochDay)
+        assertEquals(today.plusDays(1).atTime(20, 0).toInstant(ZoneOffset.UTC).toEpochMilli(), alarms.meals.single().triggerAtEpochMillis)
     }
 
     @Test
@@ -164,7 +200,8 @@ private data class FixedNotificationTime(private val now: Long) : TimeProvider {
 private class FakeNotificationSettings : NotificationSettings {
     override var mealRemindersEnabled = true
     override var weeklyReviewEnabled = false
-    override var mealLeadMinutes = 15
+    override var menuReminderHour = 20
+    override var menuPreviewMigrationDone = false
     private var codes: Set<Int> = emptySet()
     override fun scheduledRequestCodes(): Set<Int> = codes
     override fun replaceScheduledRequestCodes(values: Set<Int>) { codes = values }
@@ -175,8 +212,10 @@ private class FakeNotificationAlarmGateway : NotificationAlarmGateway {
     val weekly = mutableListOf<WeeklyReviewReminderSpec>()
     val snoozes = mutableListOf<SnoozeReminderSpec>()
     val cancelledCodes = mutableListOf<Int>()
+    val cancelledLegacyMealCodes = mutableListOf<Int>()
     override fun scheduleMeal(spec: MealReminderSpec) { meals += spec }
     override fun scheduleWeeklyReview(spec: WeeklyReviewReminderSpec) { weekly += spec }
     override fun scheduleSnooze(spec: SnoozeReminderSpec) { snoozes += spec }
+    override fun cancelLegacyMeal(requestCode: Int) { cancelledLegacyMealCodes += requestCode }
     override fun cancel(requestCode: Int) { cancelledCodes += requestCode }
 }

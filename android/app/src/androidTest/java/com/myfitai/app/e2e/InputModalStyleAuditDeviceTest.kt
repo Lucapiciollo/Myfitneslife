@@ -131,10 +131,10 @@ class InputModalStyleAuditDeviceTest {
         ActivityScenario.launch<ProfileActivity>(Intent(context, ProfileActivity::class.java)).use {
             assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/rowNotifications")), 8_000))
             device.findObject(By.res("com.myfitai.app:id/rowNotifications")).click()
-            assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/mealLeadInput")), 5_000))
-            val bounds = device.findObject(By.res("com.myfitai.app:id/mealLeadInput")).visibleBounds
+            assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/menuReminderTimeInput")), 5_000))
+            val bounds = device.findObject(By.res("com.myfitai.app:id/menuReminderTimeInput")).visibleBounds
             val dialogLeft = device.findObject(By.res("com.myfitai.app:id/mealRemindersSwitch")).visibleBounds
-            report.appendLine("notification_dialog\tmealLeadInput\tdropdown-bounds\th=${bounds.height()}\tleft=${bounds.left}\tswitchLeft=${dialogLeft.left}")
+            report.appendLine("notification_dialog\tmenuReminderTimeInput\tdropdown-bounds\th=${bounds.height()}\tleft=${bounds.left}\tswitchLeft=${dialogLeft.left}")
             device.takeScreenshot(File(dir, "audit-notification_dialog.png"))
             device.pressBack()
         }

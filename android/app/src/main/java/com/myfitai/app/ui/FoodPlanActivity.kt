@@ -61,6 +61,9 @@ class FoodPlanActivity : BaseShellActivity() {
         setContentView(R.layout.activity_food_plan)
         bindBottom(BottomNavBinder.Tab.FOOD)
         intent.takeIf { it.hasExtra(EXTRA_WEEK_START_EPOCH_DAY) }?.getLongExtra(EXTRA_WEEK_START_EPOCH_DAY, LocalDate.now().toEpochDay())?.let(viewModel::selectWeek)
+        intent.takeIf { it.hasExtra(EXTRA_SELECTED_DATE_EPOCH_DAY) }
+            ?.getLongExtra(EXTRA_SELECTED_DATE_EPOCH_DAY, LocalDate.now().toEpochDay())
+            ?.let { viewModel.selectWeekAndDay(it) }
         findViewById<View>(R.id.prevWeekButton).setOnClickListener { viewModel.previousWeek() }
         findViewById<View>(R.id.nextWeekButton).setOnClickListener { viewModel.nextWeek() }
         findViewById<View>(R.id.shoppingButton).setOnClickListener {
@@ -85,6 +88,10 @@ class FoodPlanActivity : BaseShellActivity() {
 
     fun selectWeekFromNavigation(weekStartEpochDay: Long) {
         viewModel.selectWeek(weekStartEpochDay)
+    }
+
+    fun selectDateFromNavigation(dateEpochDay: Long) {
+        viewModel.selectWeekAndDay(dateEpochDay)
     }
 
     private fun bindFoodHelp() {
@@ -548,5 +555,8 @@ class FoodPlanActivity : BaseShellActivity() {
     }
     private fun formatMacro(value: Float): String = if (value % 1f == 0f) value.toInt().toString() else String.format(Locale.ITALIAN, "%.1f", value)
     private fun formatMacro(value: Double): String = if (value % 1.0 == 0.0) value.toInt().toString() else String.format(Locale.ITALIAN, "%.1f", value)
-    companion object { const val EXTRA_WEEK_START_EPOCH_DAY = "week_start_epoch_day" }
+    companion object {
+        const val EXTRA_WEEK_START_EPOCH_DAY = "week_start_epoch_day"
+        const val EXTRA_SELECTED_DATE_EPOCH_DAY = "selected_date_epoch_day"
+    }
 }

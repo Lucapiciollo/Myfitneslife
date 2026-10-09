@@ -41,28 +41,16 @@
     <string name="action_cancel">Annulla</string>
     <string name="action_save">Salva</string>
     <string name="notifications_dialog_title">Notifiche</string>
-    <string name="notifications_dialog_description">Scegli quali promemoria locali ricevere e con quanto anticipo.</string>
+    <string name="notifications_dialog_description">Scegli quali promemoria locali ricevere e a che ora vedere il menu del prossimo giorno pianificato.</string>
     <string name="notifications_meal_reminders">Promemoria pasti</string>
     <string name="notifications_weekly_review">Review settimanale</string>
     <string name="notifications_ai_background">Aggiornamenti IA in background</string>
     <string name="notifications_ai_background_description">Notifica quando una dieta, analisi, review o altro job IA termina.</string>
-    <string name="notifications_lead_time">Anticipo promemoria pasti</string>
-    <string-array name="notification_lead_labels">
-        <item>Al momento del pasto</item>
-        <item>5 minuti prima</item>
-        <item>10 minuti prima</item>
-        <item>15 minuti prima</item>
-        <item>30 minuti prima</item>
-        <item>60 minuti prima</item>
-    </string-array>
-    <integer-array name="notification_lead_minutes">
-        <item>0</item>
-        <item>5</item>
-        <item>10</item>
-        <item>15</item>
-        <item>30</item>
-        <item>60</item>
-    </integer-array>
+    <string name="notifications_menu_reminder_time">Ora del promemoria menu</string>
+    <string name="notifications_menu_reminder_description">Ogni sera riceverai l’anteprima del menu del prossimo giorno pianificato.</string>
+    <string name="notifications_menu_preview_title">Menu in programma · %1$s</string>
+    <string name="notifications_menu_preview_empty">Apri il piano per consultare il menu.</string>
+    <string name="notifications_menu_preview_open">Apri menu</string>
     <string name="settings_desc_guide">Panoramica del percorso e dei calcoli locali</string>
     <string name="settings_desc_profile">Impostazioni generali del profilo e dell\'app</string>
     <string name="settings_desc_measurements">BIA, misure corporee e storico</string>

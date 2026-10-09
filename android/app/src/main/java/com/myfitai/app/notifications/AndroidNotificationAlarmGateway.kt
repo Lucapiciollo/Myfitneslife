@@ -10,7 +10,7 @@ class AndroidNotificationAlarmGateway(context: Context) : NotificationAlarmGatew
     private val alarmManager = appContext.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
     override fun scheduleMeal(spec: MealReminderSpec) {
-        val pending = mealIntent(spec.requestCode, spec.mealId, spec.mealType, spec.mealTitle, spec.profileId)
+        val pending = menuIntent(spec)
         scheduleWithBestPrecision(spec.triggerAtEpochMillis, pending)
     }
 
@@ -19,8 +19,20 @@ class AndroidNotificationAlarmGateway(context: Context) : NotificationAlarmGatew
         alarmManager.setInexactRepeating(AlarmManager.RTC_WAKEUP, spec.triggerAtEpochMillis, AlarmManager.INTERVAL_DAY * 7, pending)
     }
 
+    /** Legacy snooze hook retained for compatibility; the new menu-preview flow doesn't invoke it. */
     override fun scheduleSnooze(spec: SnoozeReminderSpec) {
-        val pending = mealIntent(spec.requestCode, spec.mealId, spec.mealType, spec.mealTitle, spec.profileId)
+        val pending = PendingIntent.getBroadcast(
+            appContext,
+            spec.requestCode,
+            Intent(appContext, ReminderReceiver::class.java).apply {
+                action = ReminderReceiver.ACTION_SNOOZE
+                putExtra(ReminderReceiver.EXTRA_MEAL_ID, spec.mealId)
+                putExtra(ReminderReceiver.EXTRA_MEAL_TYPE, spec.mealType)
+                putExtra(ReminderReceiver.EXTRA_MEAL_TITLE, spec.mealTitle)
+                putExtra(ReminderReceiver.EXTRA_PROFILE_ID, spec.profileId)
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
         scheduleWithBestPrecision(spec.triggerAtEpochMillis, pending)
     }
 
@@ -37,17 +49,32 @@ class AndroidNotificationAlarmGateway(context: Context) : NotificationAlarmGatew
     }
 
     override fun cancel(requestCode: Int) {
-        listOf(ReminderReceiver.ACTION_MEAL, ReminderReceiver.ACTION_WEEKLY_REVIEW).forEach { action ->
+        listOf(ReminderReceiver.ACTION_LEGACY_MEAL, ReminderReceiver.ACTION_MENU_PREVIEW, ReminderReceiver.ACTION_WEEKLY_REVIEW).forEach { action ->
             val pending = PendingIntent.getBroadcast(appContext, requestCode, Intent(appContext, ReminderReceiver::class.java).apply { this.action = action }, PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE)
             if (pending != null) { alarmManager.cancel(pending); pending.cancel() }
         }
     }
 
-    private fun mealIntent(requestCode: Int, mealId: Long, mealType: String, mealTitle: String, profileId: Long): PendingIntent = PendingIntent.getBroadcast(appContext, requestCode, Intent(appContext, ReminderReceiver::class.java).apply {
-        action = ReminderReceiver.ACTION_MEAL
-        putExtra(ReminderReceiver.EXTRA_MEAL_ID, mealId)
-        putExtra(ReminderReceiver.EXTRA_MEAL_TYPE, mealType)
-        putExtra(ReminderReceiver.EXTRA_MEAL_TITLE, mealTitle)
-        putExtra(ReminderReceiver.EXTRA_PROFILE_ID, profileId)
-    }, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+    override fun cancelLegacyMeal(requestCode: Int) {
+        val pending = PendingIntent.getBroadcast(
+            appContext,
+            requestCode,
+            Intent(appContext, ReminderReceiver::class.java).apply { action = ReminderReceiver.ACTION_LEGACY_MEAL },
+            PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE,
+        ) ?: return
+        alarmManager.cancel(pending)
+        pending.cancel()
+    }
+
+    private fun menuIntent(spec: MealReminderSpec): PendingIntent = PendingIntent.getBroadcast(
+        appContext,
+        spec.requestCode,
+        Intent(appContext, ReminderReceiver::class.java).apply {
+            action = ReminderReceiver.ACTION_MENU_PREVIEW
+            putExtra(ReminderReceiver.EXTRA_MENU_DATE_EPOCH_DAY, spec.menuDateEpochDay)
+            putExtra(ReminderReceiver.EXTRA_MENU_MEALS, spec.mealTitles.toTypedArray())
+            putExtra(ReminderReceiver.EXTRA_PROFILE_ID, spec.profileId)
+        },
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+    )
 }

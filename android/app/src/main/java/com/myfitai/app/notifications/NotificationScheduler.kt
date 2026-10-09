@@ -26,6 +26,7 @@ class NotificationScheduler(
             settings.replaceScheduledRequestCodes(emptySet())
             return 0
         }
+        cancelLegacyMealAlarms(profileId)
         if (settings.mealRemindersEnabled) scheduleMealReminders(profileId, nowEpochMillis, newCodes)
         if (settings.weeklyReviewEnabled) scheduleWeeklyReview(nowEpochMillis, newCodes)
         settings.replaceScheduledRequestCodes(newCodes)
@@ -40,26 +41,66 @@ class NotificationScheduler(
     private suspend fun scheduleMealReminders(profileId: Long, now: Long, tracked: MutableSet<Int>) {
         val zone = time.zoneId
         val today = Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
-        val horizon = today.plusDays(60)
-        val leadMillis = settings.mealLeadMinutes * 60_000L
+        cancelStaleMenuPreviewCodes(profileId, today)
+        val plannedDates = plannedMenuDates(profileId, today)
+        val schedule = MenuReminderTiming.next(now, settings.menuReminderHour, plannedDates, zone) ?: return
+        val menuDate = schedule.menuDate
+        val meals = menuForDate(profileId, menuDate).orEmpty()
+        if (meals.isEmpty()) return
+        // One stable PendingIntent per profile: rescheduling must replace, never accumulate previews.
+        val requestCode = stableCode("menu-preview:$profileId")
+        alarmGateway.scheduleMeal(
+            MealReminderSpec(
+                requestCode = requestCode,
+                triggerAtEpochMillis = schedule.triggerAtEpochMillis,
+                menuDateEpochDay = menuDate.toEpochDay(),
+                mealTitles = meals.take(MAX_PREVIEW_MEALS).map { "${it.type}: ${it.title}" },
+                profileId = profileId,
+            ),
+        )
+        tracked += requestCode
+    }
+
+    private suspend fun cancelLegacyMealAlarms(profileId: Long) {
+        if (settings.menuPreviewMigrationDone) return
+        plans.legacyMealAlarmIds(profileId).forEach { legacy ->
+            alarmGateway.cancelLegacyMeal(stableCode("meal:$profileId:${legacy.versionId}:${legacy.mealId}"))
+        }
+        settings.menuPreviewMigrationDone = true
+    }
+
+    /** Clean IDs used by pre-stable-key builds, so upgrades cannot retain more than one menu-preview alarm. */
+    private fun cancelStaleMenuPreviewCodes(profileId: Long, from: LocalDate) {
+        for (offset in -1..MENU_SEARCH_HORIZON_DAYS) {
+            alarmGateway.cancel(stableCode("menu-preview:$profileId:${from.plusDays(offset.toLong())}"))
+        }
+    }
+
+    private suspend fun plannedMenuDates(profileId: Long, from: LocalDate): List<LocalDate> {
+        val dates = mutableListOf<LocalDate>()
+        val firstMenuDate = from.plusDays(1)
+        val horizon = from.plusDays(MENU_SEARCH_HORIZON_DAYS.toLong())
         plans.plans(profileId).first().forEach { row ->
             val weekDate = LocalDate.ofEpochDay(row.weekStartEpochDay)
-            if (weekDate.isAfter(horizon) || weekDate.plusDays(6).isBefore(today)) return@forEach
+            if (weekDate.isAfter(horizon) || weekDate.plusDays(6).isBefore(firstMenuDate)) return@forEach
             val snapshot = plans.loadLatestSnapshot(profileId, row.weekStartEpochDay) ?: return@forEach
-            snapshot.version.days.forEach dayLoop@{ day ->
+            snapshot.version.days.forEach { day ->
                 val date = LocalDate.ofEpochDay(day.dateEpochDay)
-                if (date.isAfter(horizon)) return@dayLoop
-                day.meals.forEach mealLoop@{ meal ->
-                    val minutes = meal.timeMinutes ?: return@mealLoop
-                    if (minutes !in 0..1439) return@mealLoop
-                    val trigger = date.atStartOfDay(zone).plusMinutes(minutes.toLong()).toInstant().toEpochMilli() - leadMillis
-                    if (trigger <= now) return@mealLoop
-                    val requestCode = stableCode("meal:$profileId:${snapshot.version.id}:${meal.id}")
-                    alarmGateway.scheduleMeal(MealReminderSpec(requestCode, trigger, meal.id, meal.type, meal.title, profileId))
-                    tracked += requestCode
-                }
+                if (!date.isBefore(firstMenuDate) && !date.isAfter(horizon) && day.meals.isNotEmpty()) dates += date
             }
         }
+        return dates.distinct().sorted()
+    }
+
+    private suspend fun menuForDate(profileId: Long, date: LocalDate): List<com.myfitai.app.domain.food.FoodMeal>? {
+        val rows = plans.plans(profileId).first().sortedByDescending { it.weekStartEpochDay }
+        for (row in rows) {
+            val snapshot = plans.loadLatestSnapshot(profileId, row.weekStartEpochDay) ?: continue
+            snapshot.version.days.firstOrNull { it.dateEpochDay == date.toEpochDay() }?.let { day ->
+                if (day.meals.isNotEmpty()) return day.meals
+            }
+        }
+        return null
     }
 
     private fun scheduleWeeklyReview(now: Long, tracked: MutableSet<Int>) {
@@ -82,4 +123,9 @@ class NotificationScheduler(
     }
 
     private fun stableCode(value: String): Int = value.hashCode() and 0x7fffffff
+
+    private companion object {
+        const val MENU_SEARCH_HORIZON_DAYS = 60
+        const val MAX_PREVIEW_MEALS = 6
+    }
 }

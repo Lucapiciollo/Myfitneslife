@@ -1,6 +1,7 @@
 package com.myfitai.app.data.local.dao
 
 import androidx.room.Dao
+import androidx.room.ColumnInfo
 import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
@@ -8,6 +9,11 @@ import androidx.room.Query
 import androidx.room.Update
 import com.myfitai.app.data.local.entity.*
 import kotlinx.coroutines.flow.Flow
+
+data class LegacyMealAlarmId(
+    @ColumnInfo(name = "versionId") val versionId: Long,
+    @ColumnInfo(name = "mealId") val mealId: Long,
+)
 
 @Dao
 interface UserProfileDao {
@@ -143,6 +149,9 @@ interface MealPlanDao {
     @Query("SELECT * FROM meal_plans WHERE profileId = :profileId ORDER BY weekStartEpochDay DESC, id DESC")
     fun observePlans(profileId: Long): Flow<List<MealPlanEntity>>
 
+    @Query("SELECT v.id AS versionId, m.id AS mealId FROM meals m INNER JOIN meal_plan_days d ON d.id = m.dayId INNER JOIN meal_plan_versions v ON v.id = d.versionId INNER JOIN meal_plans p ON p.id = v.planId WHERE p.profileId = :profileId")
+    suspend fun getLegacyMealAlarmIds(profileId: Long): List<LegacyMealAlarmId>
+
     /** Changes whenever any plan version is appended, which `observePlans` alone does not signal. */
     @Query("SELECT MAX(v.id) FROM meal_plan_versions v INNER JOIN meal_plans p ON p.id = v.planId WHERE p.profileId = :profileId")
     fun observeNewestVersionId(profileId: Long): Flow<Long?>
@@ -185,6 +194,7 @@ interface MealPlanDao {
     @Query("DELETE FROM meal_plans WHERE profileId = :profileId")
     suspend fun deleteByProfile(profileId: Long)
 }
+
 
 @Dao
 interface CheatEntryDao {

@@ -214,6 +214,15 @@ class FoodPlanViewModel(
         }
     }
 
+    fun selectWeekAndDay(dateEpochDay: Long) {
+        if (generationState.value.running) return
+        val date = LocalDate.ofEpochDay(dateEpochDay)
+        val monday = planWeekMonday(date)
+        selectedWeekStart.value = monday
+        selectedDayIndex.value = (date.toEpochDay() - monday.toEpochDay()).toInt().coerceIn(0, 6)
+        clearGenerationMessage()
+    }
+
 
     fun clearGenerationMessage() { if (!generationState.value.running) generationState.value = GenerationState() }
 
