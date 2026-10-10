@@ -13,6 +13,10 @@ object FoodConsumptionMetrics {
         val recordedCount: Int,
     )
 
+    /** Historical consumption remains valid when a newer meal-plan version is created. */
+    fun recordsForDate(records: List<FoodConsumptionEntity>, dateEpochDay: Long): List<FoodConsumptionEntity> =
+        records.filter { it.plannedDateEpochDay == dateEpochDay }
+
     fun dayTotals(records: List<FoodConsumptionEntity>): Totals {
         val consumed = records.filter { it.status == FoodConsumptionStatus.CONSUMED.name }
         val skipped = records.count { it.status == FoodConsumptionStatus.SKIPPED.name }

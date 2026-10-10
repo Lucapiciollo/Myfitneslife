@@ -5,6 +5,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.myfitai.app.ai.AiExecutionService
+import com.myfitai.app.ai.AiImageInput
 import com.myfitai.app.ai.AiRuntimeGateway
 import com.myfitai.app.ai.AiStructuredRequest
 import com.myfitai.app.ai.AiProviderType
@@ -131,12 +132,76 @@ class AiWorkflowIntegrationTest {
             occurredAtEpochMillis = SixMonthHistoryFixture.epoch(SixMonthHistoryFixture.TODAY.minusDays(10), 20),
         )
         val understanding = services().cheat.analyze(input)
+        val request = gateway.requests.last { it.schemaName == "myfitai_cheat_understanding_pipe_v1" }
+        assertEquals("Nutrition-label image attached: false", request.userPrompt.lineSequence().first { it.contains("image attached:") })
+        assertTrue(request.systemPrompt.contains("Your entire scope is nutritional estimation"))
         assertEquals(before, db.cheatEntryDao().observeAll(profileId).first().size)
 
         val result = services().cheat.registerAndAdapt(input, understanding)
         assertEquals(before + 1, db.cheatEntryDao().observeAll(profileId).first().size)
         assertTrue("The confirmed deviation should adapt eligible future meals", result.adapted)
         assertTrue("The adaptation must append an immutable plan version", result.newVersionId != null)
+    }
+
+    @Test
+    fun cheatFoodPhoto_usesSameEstimateContractAndCalorieAdaptationFlow() = runBlocking {
+        val profileId = store.currentIdOrNull()!!
+        val before = db.cheatEntryDao().observeAll(profileId).first().size
+        val photo = AiImageInput(mimeType = "image/jpeg", base64Data = "Zm9v")
+        val eventDate = SixMonthHistoryFixture.TODAY.minusDays(10)
+        val weekStart = eventDate.minusDays((eventDate.dayOfWeek.value - 1).toLong())
+        val plans = MealPlanRepository(db)
+        val targetsBefore = plans.loadLatestSnapshot(profileId, weekStart.toEpochDay())!!.version.days.sumOf { it.targetKcal ?: 0 }
+        val input = CheatAdjustmentService.Input(
+            description = "Pizza margherita",
+            quantityText = "una pizza",
+            notes = null,
+            occurredAtEpochMillis = SixMonthHistoryFixture.epoch(eventDate, 20),
+            foodImage = photo,
+        )
+
+        val service = services().cheat
+        val understanding = service.analyze(input)
+        val request = gateway.requests.last { it.schemaName == "myfitai_cheat_understanding_pipe_v1" }
+        assertEquals(photo, request.image)
+        assertTrue(request.userPrompt.contains("Food or nutrition-label photo attached: true"))
+        assertTrue(request.systemPrompt.contains("Your entire scope is nutritional estimation"))
+        assertTrue(request.systemPrompt.contains("refuse the entire request"))
+        assertTrue(request.systemPrompt.contains(NutritionAdviceService.OUT_OF_SCOPE_MESSAGE))
+        assertEquals("Pizza margherita, una porzione", understanding.understoodFood)
+        assertEquals(750, understanding.estimate.kcal)
+        assertEquals(before, db.cheatEntryDao().observeAll(profileId).first().size)
+
+        val result = service.registerAndAdapt(input.copy(foodImage = null), understanding)
+        val saved = db.cheatEntryDao().observeAll(profileId).first().last()
+        val targetsAfter = plans.loadLatestSnapshot(profileId, weekStart.toEpochDay())!!.version.days.sumOf { it.targetKcal ?: 0 }
+        assertEquals(understanding.estimate.kcal, saved.estimatedKcal)
+        assertEquals(understanding.estimate.kcal, result.estimatedKcal)
+        assertTrue("The confirmed photo estimate should use the existing weekly calorie adaptation", result.adapted)
+        assertNotNull(result.newVersionId)
+        assertTrue("The confirmed surplus should reduce future weekly targets", targetsAfter < targetsBefore)
+    }
+
+    @Test
+    fun unrelatedPhoto_returnsStandardOutOfScopeMessageWithoutPersisting() = runBlocking {
+        val profileId = store.currentIdOrNull()!!
+        val before = db.cheatEntryDao().observeAll(profileId).first().size
+        gateway.nextCheatUnderstandingResponse = JSONObject().put(
+            "data",
+            "CU1\nU|${NutritionAdviceService.OUT_OF_SCOPE_MESSAGE}\nE|0|0|0|0|low|OUT_OF_SCOPE_IMAGE",
+        ).toString()
+        val input = CheatAdjustmentService.Input(
+            description = "Pizza margherita",
+            quantityText = "una pizza",
+            notes = null,
+            occurredAtEpochMillis = SixMonthHistoryFixture.epoch(SixMonthHistoryFixture.TODAY.minusDays(10), 20),
+            foodImage = AiImageInput(mimeType = "image/jpeg", base64Data = "Zm9v"),
+        )
+
+        val error = runCatching { services().cheat.analyze(input) }.exceptionOrNull()
+
+        assertEquals(NutritionAdviceService.OUT_OF_SCOPE_MESSAGE, error?.message)
+        assertEquals(before, db.cheatEntryDao().observeAll(profileId).first().size)
     }
 
     @Test
@@ -248,6 +313,7 @@ private data class FixedTimeProvider(private val now: Long) : TimeProvider {
 
 private class FakeAiRuntimeGateway : AiRuntimeGateway {
     val requests = mutableListOf<AiStructuredRequest>()
+    var nextCheatUnderstandingResponse: String? = null
 
     override suspend fun execute(
         request: AiStructuredRequest,
@@ -259,7 +325,7 @@ private class FakeAiRuntimeGateway : AiRuntimeGateway {
             "myfitai_weekly_nutrition_pipe_v1" -> weeklyPlan(request.userPrompt)
             "myfitai_meal_alternatives_pipe_v1" -> alternatives(request.userPrompt)
             "myfitai_nutrition_advice_pipe_v1" -> advice()
-            "myfitai_cheat_understanding_pipe_v1" -> understanding()
+            "myfitai_cheat_understanding_pipe_v1" -> nextCheatUnderstandingResponse.also { nextCheatUnderstandingResponse = null } ?: understanding()
             "myfitai_cheat_adjustment_pipe_v1" -> noAdaptation(request.userPrompt)
             "myfitai_weekly_review_pipe_v1" -> review(request.userPrompt)
             else -> error("Unsupported test schema ${request.schemaName}")

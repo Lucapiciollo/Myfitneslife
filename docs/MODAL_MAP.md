@@ -134,7 +134,7 @@ I test non confermano mai D01-D11, per regola di QA non distruttivo.
 | ID | Titolo | Attivazione | Tipo | Sorgente | Test |
 |---|---|---|---|---|---|
 | S01 | Importa BIA da foto | BIA, `importPhotoButton`; apre X03/X04 | items | `BiaActivity.kt:389` | - |
-| S02 | Foto etichetta nutrizionale | Sgarro (Dettagliato), `addLabelPhotoButton`; apre X03/X04 | items | `CheatEntryActivity.kt:197` | `CheatEntryE2ETest` (instabile, vedi §11) |
+| S02 | Foto del piatto o etichetta nutrizionale | Sgarro (Dettagliato), `addLabelPhotoButton`; apre X03/X04 | items | `CheatEntryActivity.kt:197` | `CheatEntryE2ETest` (instabile, vedi §11) |
 | S03 | Foto profilo | Profilo, tap sull'avatar; apre X03/X04 | items | `ProfileActivity.kt:225` | `ProfileSummaryVisualDeviceTest` |
 | S04 | Metrica BIA | BIA andamento, `metricButton` | single | `BiaTrendBinder.kt:83,120` | - |
 | S05 | Prossimi pasti | Home, `todayMenuButton` | items | `HomeActivity.kt:168,573` | - |

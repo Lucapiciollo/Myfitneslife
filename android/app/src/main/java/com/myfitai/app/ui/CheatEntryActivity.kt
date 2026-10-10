@@ -29,8 +29,8 @@ import com.myfitai.app.R
 import com.myfitai.app.ai.AiImageInput
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.domain.food.CheatAdjustmentService
-import com.myfitai.app.domain.food.LabelImageProcessor
-import com.myfitai.app.domain.food.LabelImageTempStore
+import com.myfitai.app.domain.food.CheatPhotoProcessor
+import com.myfitai.app.domain.food.CheatPhotoTempStore
 import com.myfitai.app.ui.food.CheatEntryViewModel
 import com.myfitai.app.ui.motion.UiMotion
 import com.myfitai.app.ui.widgets.SelectableSegmentView
@@ -55,20 +55,20 @@ class CheatEntryActivity : BaseShellActivity() {
 
     private var selectedDate: LocalDate = LocalDate.now()
     private var selectedTime: LocalTime = LocalTime.now().withSecond(0).withNano(0)
-    private var labelImage: AiImageInput? = null
+    private var foodImage: AiImageInput? = null
     private var pendingCameraFile: File? = null
-    private var labelProcessing = false
+    private var photoProcessing = false
     private var detailedMode = false
-    private val labelTempStore by lazy { LabelImageTempStore(this) }
+    private val photoTempStore by lazy { CheatPhotoTempStore(this) }
 
     private val galleryLauncher = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        if (uri != null) prepareLabelFromUri(uri)
+        if (uri != null) preparePhotoFromUri(uri)
     }
 
     private val cameraLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
         val file = pendingCameraFile
         pendingCameraFile = null
-        if (success && file != null) prepareLabelFromFile(file) else labelTempStore.delete(file)
+        if (success && file != null) preparePhotoFromFile(file) else photoTempStore.delete(file)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -95,7 +95,7 @@ class CheatEntryActivity : BaseShellActivity() {
         quantityInput.setMyFitAiDropdownItems(listOf("Piccolo", "Medio", "Grande"))
         quantityInput.setText("Medio", false)
 
-        bindLabelPhoto()
+        bindCheatPhoto()
         renderDateTime()
         bindPickers()
         gateAiClick(findViewById(R.id.analyzeButton)) { analyze() }
@@ -186,77 +186,77 @@ class CheatEntryActivity : BaseShellActivity() {
         return null
     }
 
-    private fun bindLabelPhoto() {
-        gateAiClick(findViewById(R.id.addLabelPhotoButton)) { if (!labelProcessing) showLabelSourceDialog() }
+    private fun bindCheatPhoto() {
+        gateAiClick(findViewById(R.id.addLabelPhotoButton)) { if (!photoProcessing) showPhotoSourceDialog() }
         findViewById<View>(R.id.removeLabelPhotoButton).setOnClickListener {
-            labelImage = null
+            foodImage = null
             viewModel.invalidateUnderstanding()
-            renderLabelState()
+            renderPhotoState()
         }
-        renderLabelState()
+        renderPhotoState()
     }
 
-    private fun showLabelSourceDialog() {
+    private fun showPhotoSourceDialog() {
         MaterialAlertDialogBuilder(this)
-            .setTitle("Foto etichetta nutrizionale")
+            .setTitle("Aggiungi foto allo sgarro")
             .setItems(arrayOf("Scatta foto", "Scegli dalla galleria")) { _, which ->
                 when (which) {
-                    0 -> launchLabelCamera()
+                    0 -> launchPhotoCamera()
                     1 -> galleryLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                 }
             }
             .show()
     }
 
-    private fun launchLabelCamera() {
-        val file = labelTempStore.create()
+    private fun launchPhotoCamera() {
+        val file = photoTempStore.create()
         pendingCameraFile = file
         cameraLauncher.launch(FileProvider.getUriForFile(this, "$packageName.fileprovider", file))
     }
 
-    private fun prepareLabelFromUri(uri: Uri) {
-        setLabelProcessing(true)
+    private fun preparePhotoFromUri(uri: Uri) {
+        setPhotoProcessing(true)
         lifecycleScope.launch {
-            runCatching { withContext(Dispatchers.IO) { LabelImageProcessor.fromUri(this@CheatEntryActivity, uri) } }
+            runCatching { withContext(Dispatchers.IO) { CheatPhotoProcessor.fromUri(this@CheatEntryActivity, uri) } }
                 .onSuccess {
-                    labelImage = it
+                    foodImage = it
                     viewModel.invalidateUnderstanding()
-                    setLabelProcessing(false)
+                    setPhotoProcessing(false)
                 }
                 .onFailure {
-                    labelImage = null
+                    foodImage = null
                     viewModel.invalidateUnderstanding()
-                    setLabelProcessing(false, "Impossibile leggere la foto. Riprova con l'etichetta ben visibile.")
+                    setPhotoProcessing(false, "Impossibile leggere la foto. Riprova con un'immagine nitida e ben illuminata.")
                 }
         }
     }
 
-    private fun prepareLabelFromFile(file: File) {
-        setLabelProcessing(true)
+    private fun preparePhotoFromFile(file: File) {
+        setPhotoProcessing(true)
         lifecycleScope.launch {
-            runCatching { withContext(Dispatchers.IO) { LabelImageProcessor.fromFile(file) } }
+            runCatching { withContext(Dispatchers.IO) { CheatPhotoProcessor.fromFile(file) } }
                 .onSuccess {
-                    labelImage = it
+                    foodImage = it
                     viewModel.invalidateUnderstanding()
-                    setLabelProcessing(false)
+                    setPhotoProcessing(false)
                 }
                 .onFailure {
-                    labelImage = null
+                    foodImage = null
                     viewModel.invalidateUnderstanding()
-                    setLabelProcessing(false, "Impossibile leggere la foto. Riprova con l'etichetta ben visibile.")
+                    setPhotoProcessing(false, "Impossibile leggere la foto. Riprova con un'immagine nitida e ben illuminata.")
                 }
             // Il file della fotocamera non sopravvive alla preparazione del payload in memoria.
-            withContext(Dispatchers.IO) { runCatching { labelTempStore.delete(file) } }
+            withContext(Dispatchers.IO) { runCatching { photoTempStore.delete(file) } }
         }
     }
 
-    private fun setLabelProcessing(processing: Boolean, error: String? = null) {
-        labelProcessing = processing
+    private fun setPhotoProcessing(processing: Boolean, error: String? = null) {
+        photoProcessing = processing
         findViewById<View>(R.id.addLabelPhotoButton).isEnabled = !processing
         if (processing) {
             UiMotion.reveal(findViewById(R.id.labelPhotoStatusRow), true, animateChange = false)
             findViewById<TextView>(R.id.labelPhotoStatus).apply {
-                text = "Preparazione etichetta…"
+                text = "Preparazione foto…"
                 setTextColor(getColor(R.color.text_secondary))
             }
         } else if (error != null) {
@@ -265,14 +265,14 @@ class CheatEntryActivity : BaseShellActivity() {
                 text = error
                 setTextColor(getColor(R.color.text_secondary))
             }
-        } else renderLabelState()
+        } else renderPhotoState()
     }
 
-    private fun renderLabelState() {
-        val attached = labelImage != null
+    private fun renderPhotoState() {
+        val attached = foodImage != null
         UiMotion.reveal(findViewById(R.id.labelPhotoStatusRow), attached)
         findViewById<TextView>(R.id.labelPhotoStatus).apply {
-            text = "Etichetta pronta ✓ · solo memoria temporanea"
+            text = "Foto pronta ✓ · solo memoria temporanea"
             setTextColor(getColor(R.color.accent_green))
         }
         UiMotion.reveal(findViewById(R.id.removeLabelPhotoButton), attached)
@@ -320,12 +320,12 @@ class CheatEntryActivity : BaseShellActivity() {
     private fun confirm() {
         val input = buildInput() ?: return
         confirmAiRequest("La conferma dello sgarro e la distribuzione del surplus nella settimana") {
-            viewModel.confirm(input.copy(labelImage = null))
+            viewModel.confirm(input.copy(foodImage = null))
         }
     }
 
     private fun buildInput(): CheatAdjustmentService.Input? {
-        if (labelProcessing) {
+        if (photoProcessing) {
             showStatus("Attendi il completamento della foto dell'etichetta.")
             return null
         }
@@ -353,7 +353,7 @@ class CheatEntryActivity : BaseShellActivity() {
             quantityText = composeCheatQuantity(detailedMode, findViewById<AutoCompleteTextView>(R.id.quantityInput).text?.toString()),
             notes = notes,
             occurredAtEpochMillis = occurredAt,
-            labelImage = labelImage.takeIf { detailedMode },
+            foodImage = foodImage.takeIf { detailedMode },
         )
     }
 
@@ -371,11 +371,11 @@ class CheatEntryActivity : BaseShellActivity() {
 
     private fun renderState(state: CheatEntryViewModel.State) {
         val hasUnderstanding = state.understanding != null
-        setAiActionEnabled(findViewById(R.id.analyzeButton), !state.running && !labelProcessing)
-        setAiActionEnabled(findViewById(R.id.reevaluateButton), !state.running && !labelProcessing)
-        setAiActionEnabled(findViewById(R.id.confirmButton), !state.running && !labelProcessing)
-        setAiActionEnabled(findViewById(R.id.addLabelPhotoButton), !state.running && !labelProcessing)
-        findViewById<View>(R.id.removeLabelPhotoButton).isEnabled = !state.running && !labelProcessing
+        setAiActionEnabled(findViewById(R.id.analyzeButton), !state.running && !photoProcessing)
+        setAiActionEnabled(findViewById(R.id.reevaluateButton), !state.running && !photoProcessing)
+        setAiActionEnabled(findViewById(R.id.confirmButton), !state.running && !photoProcessing)
+        setAiActionEnabled(findViewById(R.id.addLabelPhotoButton), !state.running && !photoProcessing)
+        findViewById<View>(R.id.removeLabelPhotoButton).isEnabled = !state.running && !photoProcessing
         findViewById<ProgressBar>(R.id.progress).visibility = if (state.running) View.VISIBLE else View.GONE
         findViewById<View>(R.id.aiUnderstandingCard).visibility = if (hasUnderstanding) View.VISIBLE else View.GONE
         findViewById<View>(R.id.analyzeButton).visibility = if (hasUnderstanding) View.GONE else View.VISIBLE
@@ -393,7 +393,7 @@ class CheatEntryActivity : BaseShellActivity() {
             visibility = if (state.running || state.error != null) View.VISIBLE else View.GONE
             text = when {
                 state.running && hasUnderstanding -> "Conferma dello sgarro e verifica dei pasti futuri…"
-                state.running && detailedMode && labelImage != null -> "L'IA sta leggendo descrizione ed etichetta per dirti cosa ha capito…"
+                state.running && detailedMode && foodImage != null -> "L'IA sta valutando descrizione e foto per dirti cosa ha capito…"
                 state.running -> "L'IA sta interpretando ciò che hai mangiato…"
                 state.error != null -> state.error
                 else -> ""
@@ -401,7 +401,7 @@ class CheatEntryActivity : BaseShellActivity() {
         }
 
         val result = state.result ?: return
-        labelImage = null
+        foodImage = null
         viewModel.consumeResult()
         startActivity(
             Intent(this, AdjustedPlanActivity::class.java)
@@ -427,9 +427,9 @@ class CheatEntryActivity : BaseShellActivity() {
     }
 
     override fun onDestroy() {
-        pendingCameraFile?.let { runCatching { labelTempStore.delete(it) } }
+        pendingCameraFile?.let { runCatching { photoTempStore.delete(it) } }
         pendingCameraFile = null
-        labelImage = null
+        foodImage = null
         super.onDestroy()
     }
 

@@ -114,7 +114,7 @@ class InputModalStyleAuditDeviceTest {
         ActivityScenario.launch<CheatEntryActivity>(Intent(context, CheatEntryActivity::class.java)).use { scenario ->
             assertTrue(device.wait(Until.hasObject(By.text("Dettagliato")), 8_000))
             device.findObject(By.text("Dettagliato")).click()
-            assertTrue(device.wait(Until.hasObject(By.text("Etichetta nutrizionale (opzionale)")), 3_000))
+            assertTrue(device.wait(Until.hasObject(By.text("Foto del piatto o etichetta (opzionale)")), 3_000))
             Thread.sleep(600)
             scenario.onActivity { activity ->
                 collect("cheat_detailed", activity)
