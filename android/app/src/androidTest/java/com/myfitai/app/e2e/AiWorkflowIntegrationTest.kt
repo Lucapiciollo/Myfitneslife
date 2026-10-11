@@ -153,19 +153,25 @@ class AiWorkflowIntegrationTest {
         val plans = MealPlanRepository(db)
         val targetsBefore = plans.loadLatestSnapshot(profileId, weekStart.toEpochDay())!!.version.days.sumOf { it.targetKcal ?: 0 }
         val input = CheatAdjustmentService.Input(
-            description = "Pizza margherita",
-            quantityText = "una pizza",
+            description = "",
+            quantityText = null,
             notes = null,
             occurredAtEpochMillis = SixMonthHistoryFixture.epoch(eventDate, 20),
             foodImage = photo,
+            photoFingerprint = CheatAdjustmentService.photoFingerprint(photo),
         )
 
         val service = services().cheat
         val understanding = service.analyze(input)
         val request = gateway.requests.last { it.schemaName == "myfitai_cheat_understanding_pipe_v1" }
         assertEquals(photo, request.image)
+        assertTrue(input.photoFingerprint?.matches(Regex("[0-9a-f]{64}")) == true)
+        assertTrue(request.userPrompt.contains("User description: not provided; identify the visible food from the attached photo"))
+        assertTrue(request.userPrompt.contains("Quantity hint: "))
         assertTrue(request.userPrompt.contains("Food or nutrition-label photo attached: true"))
         assertTrue(request.systemPrompt.contains("Your entire scope is nutritional estimation"))
+        assertTrue(request.systemPrompt.contains("A food photo alone is sufficient input"))
+        assertTrue(request.systemPrompt.contains("automatically identify visible foods"))
         assertTrue(request.systemPrompt.contains("refuse the entire request"))
         assertTrue(request.systemPrompt.contains(NutritionAdviceService.OUT_OF_SCOPE_MESSAGE))
         assertEquals("Pizza margherita, una porzione", understanding.understoodFood)
@@ -176,10 +182,71 @@ class AiWorkflowIntegrationTest {
         val saved = db.cheatEntryDao().observeAll(profileId).first().last()
         val targetsAfter = plans.loadLatestSnapshot(profileId, weekStart.toEpochDay())!!.version.days.sumOf { it.targetKcal ?: 0 }
         assertEquals(understanding.estimate.kcal, saved.estimatedKcal)
+        assertEquals(understanding.understoodFood, saved.description)
         assertEquals(understanding.estimate.kcal, result.estimatedKcal)
         assertTrue("The confirmed photo estimate should use the existing weekly calorie adaptation", result.adapted)
         assertNotNull(result.newVersionId)
         assertTrue("The confirmed surplus should reduce future weekly targets", targetsAfter < targetsBefore)
+    }
+
+    @Test
+    fun cheatPhotoOnly_changedPhotoInvalidatesPreviouslyReviewedEstimate() = runBlocking {
+        val photo = AiImageInput(mimeType = "image/jpeg", base64Data = "Zm9v")
+        val input = CheatAdjustmentService.Input(
+            description = "",
+            quantityText = null,
+            notes = null,
+            occurredAtEpochMillis = SixMonthHistoryFixture.epoch(SixMonthHistoryFixture.TODAY.minusDays(10), 20),
+            foodImage = photo,
+            photoFingerprint = CheatAdjustmentService.photoFingerprint(photo),
+        )
+        val service = services().cheat
+        val preview = service.analyze(input)
+        val changed = input.copy(foodImage = null, photoFingerprint = "0".repeat(64))
+
+        val error = runCatching { service.registerAndAdapt(changed, preview) }.exceptionOrNull()
+
+        assertTrue(error is CheatAdjustmentService.AdjustmentException.PreviewStale)
+    }
+
+    @Test
+    fun cheatPhotoOnly_allowsAutomaticEstimationWithoutDescriptionOrQuantity() = runBlocking {
+        val photo = AiImageInput(mimeType = "image/jpeg", base64Data = "Zm9v")
+        val input = CheatAdjustmentService.Input(
+            description = "",
+            quantityText = null,
+            notes = null,
+            occurredAtEpochMillis = SixMonthHistoryFixture.epoch(SixMonthHistoryFixture.TODAY.minusDays(10), 20),
+            foodImage = photo,
+            photoFingerprint = CheatAdjustmentService.photoFingerprint(photo),
+        )
+
+        val service = services().cheat
+        val beforeRequests = gateway.requests.size
+        val result = service.analyze(input)
+
+        assertEquals("Pizza margherita, una porzione", result.understoodFood)
+        assertEquals(750, result.estimate.kcal)
+        assertEquals(1, gateway.requests.size - beforeRequests)
+        assertTrue(gateway.requests.last().userPrompt.contains("Quantity hint: "))
+        assertTrue(gateway.requests.last().systemPrompt.contains("A food photo alone is sufficient input"))
+    }
+
+    @Test
+    fun cheatWithoutDescriptionOrPhoto_isRejectedBeforeAiRequest() = runBlocking {
+        val service = services().cheat
+        val beforeRequests = gateway.requests.size
+        val input = CheatAdjustmentService.Input(
+            description = " ",
+            quantityText = null,
+            notes = null,
+            occurredAtEpochMillis = SixMonthHistoryFixture.epoch(SixMonthHistoryFixture.TODAY.minusDays(10), 20),
+        )
+
+        val error = runCatching { service.analyze(input) }.exceptionOrNull()
+
+        assertTrue(error is CheatAdjustmentService.AdjustmentException.NeedsInput)
+        assertEquals(beforeRequests, gateway.requests.size)
     }
 
     @Test

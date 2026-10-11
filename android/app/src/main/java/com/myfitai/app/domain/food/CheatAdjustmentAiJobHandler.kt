@@ -13,6 +13,7 @@ class CheatAdjustmentAiJobHandler(private val service: CheatAdjustmentService) :
             quantityText = params.getString(KEY_QUANTITY),
             notes = params.getString(KEY_NOTES),
             occurredAtEpochMillis = params.getLong(KEY_OCCURRED_AT, 0L),
+            photoFingerprint = params.getString(KEY_PHOTO_FINGERPRINT),
         )
         val estimate = CheatAdjustmentContract.Estimate(
             kcal = params.getInt(KEY_KCAL, 0),
@@ -38,6 +39,6 @@ class CheatAdjustmentAiJobHandler(private val service: CheatAdjustmentService) :
 
     companion object {
         const val KEY_DESCRIPTION = "description"; const val KEY_QUANTITY = "quantity"; const val KEY_NOTES = "notes"; const val KEY_OCCURRED_AT = "occurred_at"
-        const val KEY_KCAL = "kcal"; const val KEY_PROTEIN = "protein"; const val KEY_CARBS = "carbs"; const val KEY_FAT = "fat"; const val KEY_CONFIDENCE = "confidence"; const val KEY_ESTIMATE_NOTES = "estimate_notes"; const val KEY_UNDERSTOOD = "understood"; const val KEY_AGENT_PROVIDER = "agent_provider"; const val KEY_AGENT_MODEL = "agent_model"; const val KEY_FINGERPRINT = "fingerprint"; const val KEY_PAYLOAD = "payload"
+        const val KEY_KCAL = "kcal"; const val KEY_PROTEIN = "protein"; const val KEY_CARBS = "carbs"; const val KEY_FAT = "fat"; const val KEY_CONFIDENCE = "confidence"; const val KEY_ESTIMATE_NOTES = "estimate_notes"; const val KEY_UNDERSTOOD = "understood"; const val KEY_AGENT_PROVIDER = "agent_provider"; const val KEY_AGENT_MODEL = "agent_model"; const val KEY_PHOTO_FINGERPRINT = "photo_fingerprint"; const val KEY_FINGERPRINT = "fingerprint"; const val KEY_PAYLOAD = "payload"
     }
 }
