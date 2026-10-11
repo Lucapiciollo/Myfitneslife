@@ -42,7 +42,7 @@ class CheatEntryViewModel(
         val profileId = activeProfileStore.currentIdOrNull() ?: run { _state.value = State(error = "Nessun profilo attivo"); return }
         val jobKey = input.occurredAtEpochMillis.toString()
         val params = androidx.work.Data.Builder().putString(CheatUnderstandingAiJobHandler.KEY_DESCRIPTION, input.description).putString(CheatUnderstandingAiJobHandler.KEY_QUANTITY, input.quantityText).putString(CheatUnderstandingAiJobHandler.KEY_NOTES, input.notes).putLong(CheatUnderstandingAiJobHandler.KEY_OCCURRED_AT, input.occurredAtEpochMillis)
-        input.labelImage?.let { params.putString(com.myfitai.app.domain.ai.AiJobWorker.KEY_IMAGE_PATH, imageStore.write(it)) }
+        input.foodImage?.let { params.putString(com.myfitai.app.domain.ai.AiJobWorker.KEY_IMAGE_PATH, imageStore.write(it)) }
         aiJobScheduler.enqueue(AiJobType.CHEAT_UNDERSTANDING, profileId, jobKey, params = params.build())
         viewModelScope.launch {
             aiJobScheduler.observe(AiJobType.CHEAT_UNDERSTANDING, profileId, jobKey).collect { info ->

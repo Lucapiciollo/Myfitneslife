@@ -16,7 +16,7 @@ class CheatUnderstandingAiJobHandler(private val service: CheatAdjustmentService
             quantityText = params.getString(KEY_QUANTITY),
             notes = params.getString(KEY_NOTES),
             occurredAtEpochMillis = params.getLong(KEY_OCCURRED_AT, 0L),
-            labelImage = image,
+            foodImage = image,
         )
         val result = service.analyze(input)
         val payload = JSONObject().put("understoodFood", result.understoodFood).put("kcal", result.estimate.kcal).put("proteinG", result.estimate.proteinG).put("carbsG", result.estimate.carbsG).put("fatG", result.estimate.fatG).put("confidence", result.estimate.confidence).put("notes", result.estimate.notes).put("provider", result.provider).put("model", result.model).toString()

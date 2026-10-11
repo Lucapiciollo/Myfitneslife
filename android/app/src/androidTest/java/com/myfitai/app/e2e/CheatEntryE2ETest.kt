@@ -68,11 +68,11 @@ class CheatEntryE2ETest {
     }
 
     @Test
-    fun labelPhotoDialog_isReachableWithoutOpeningCamera() {
+    fun detailedPhotoDialog_isReachableWithoutOpeningCamera() {
         device.findObject(By.text("Dettagliato")).click()
-        assertTrue(device.wait(Until.hasObject(By.text("Etichetta nutrizionale (opzionale)")), 2_000))
+        assertTrue(device.wait(Until.hasObject(By.text("Foto del piatto o etichetta (opzionale)")), 2_000))
         device.findObject(By.res("com.myfitai.app:id/addLabelPhotoButton")).click()
-        assertTrue(device.wait(Until.hasObject(By.text("Foto etichetta nutrizionale")), 3_000))
+        assertTrue(device.wait(Until.hasObject(By.text("Aggiungi foto allo sgarro")), 3_000))
         assertTrue(device.hasObject(By.text("Scatta foto")))
         assertTrue(device.hasObject(By.text("Scegli dalla galleria")))
         device.pressBack()
@@ -86,7 +86,7 @@ class CheatEntryE2ETest {
         assertTrue(device.wait(Until.gone(By.res("com.myfitai.app:id/quantityCard")), 2_000))
         assertTrue(device.wait(Until.gone(By.res("com.myfitai.app:id/notesCard")), 2_000))
         device.findObject(By.text("Dettagliato")).click()
-        assertTrue(device.wait(Until.hasObject(By.text("Etichetta nutrizionale (opzionale)")), 2_000))
+        assertTrue(device.wait(Until.hasObject(By.text("Foto del piatto o etichetta (opzionale)")), 2_000))
         assertTrue(scrollUntilVisible(By.text("Quantità")))
         assertTrue(scrollUntilVisible(By.text("Note (opzionale)")))
         assertTrue(device.wait(Until.hasObject(By.text("Note (opzionale)")), 2_000))

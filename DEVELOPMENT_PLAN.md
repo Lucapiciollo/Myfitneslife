@@ -33,7 +33,7 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 - [x] Check-in attività giornaliero A+C implementato: card Home isolata per profilo/giorno, stato riposo o allenamento previsto, durata/intensità, aggiustamento locale conservativo fino a +225 kcal, target operativo distinto dal target del piano, backup/export JSON inclusi.
 - [x] TDEE giornaliero del check-in corretto: `REST` usa il livello sedentario minimo (`BMR × 1,20`), `PLANNED_WORKOUT` usa il TDEE abituale più una sola aggiunta prudente dell'attività; Home distingue TDEE abituale, TDEE operativo, target piano e target operativo senza doppio conteggio.
 - [x] Default TDEE giornaliero corretto: in assenza di check-in l'app considera il giorno come riposo operativo; il TDEE abituale del profilo resta disponibile solo come riferimento e non viene più mostrato automaticamente come TDEE operativo.
-- [x] Chiarezza informativa su target e consumo: Home distingue BMR, TDEE, target attuale/provenienza e consumi registrati della versione del piano corrente; assenza di consumi validi non appare come zero. Riepilogo giornaliero Alimentazione confronta BMR/TDEE, target, menu e consumate con sole kcal/proteine; il target base pre-adattamento è salvato per giorno insieme al target effettivo senza cambiare la validazione nutrizionale.
+- [x] Chiarezza informativa su target e consumo: Home distingue BMR, TDEE, target attuale/provenienza e consumi registrati oggi, mantenendoli nel totale anche dopo una nuova versione del piano; assenza di consumi validi non appare come zero. Riepilogo giornaliero Alimentazione confronta BMR/TDEE, target, menu e consumate con sole kcal/proteine; il target base pre-adattamento è salvato per giorno insieme al target effettivo senza cambiare la validazione nutrizionale.
 - [x] Progresso/Home ancorano gli intervalli a oggi; valori/delta secondari usano lo stesso periodo, mentre l'ultimo valore misurato resta distinguibile anche se fuori range. Stati vuoti per zero/una/multiple rilevazioni e date del grafico etichettate nel periodo annuale.
 - [x] Modifica profilo resa raggiungibile dalla scheda Profilo tramite un'unica voce `Profilo e preferenze`; duplicate voci profilo/modifica rimosse da Impostazioni. Percorsi Rilevazioni, privacy, provider e amministrazione restano nelle Impostazioni.
 - [x] CTA duplicata di rigenerazione rimossa da Alimentazione; avviso per dati profilo aggiornati resta informativo vicino all'unica CTA Genera/Rigenera.
@@ -124,6 +124,7 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 ### Sgarro / deviazione
 - [x] Descrizione testuale.
 - [x] Foto etichetta opzionale e temporanea.
+- [ ] Foto del piatto/porzione: scope IA limitato alla nutrizione, rifiuto con messaggio standard per immagini non pertinenti, immagine ridotta a 1024 px/JPEG 70 e stesso contratto CU1/calcolo locale; build e test device ancora da eseguire.
 - [x] Preview di comprensione prima della conferma.
 - [x] Possibilità di chiarire e rivalutare.
 - [x] Persistenza solo dopo conferma.
@@ -178,6 +179,8 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 - [x] DB v11: migratione di riparazione idempotente per database v10 creati da build intermedie senza le colonne BIA opzionali estese.
 
 ## QA E VERIFICA
+
+- [ ] Verificare su device il conteggio Home dopo aver segnato un pasto come consumato e dopo una nuova versione del piano; aggiunto test unitario per mantenere nel totale giornaliero i consumi delle versioni precedenti.
 
 ### Ultimo stato noto
 - `:app:assembleDebug` e `:app:assembleRelease` verdi sull'HEAD remoto allineato, con Gradle 9.6.0, Java 17 e Android SDK locale.

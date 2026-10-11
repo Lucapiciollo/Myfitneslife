@@ -33,6 +33,25 @@ class FoodConsumptionMetricsTest {
         assertEquals(2, totals.recordedCount)
     }
 
+    @Test
+    fun recordsForDate_keepsConsumedMealsFromOlderPlanVersions() {
+        val records = listOf(
+            record(status = FoodConsumptionStatus.CONSUMED, kcal = 500, protein = 30f, carbs = 60f, fat = 12f)
+                .copy(planVersionId = 20L, plannedDateEpochDay = 23_000L),
+            record(status = FoodConsumptionStatus.CONSUMED, kcal = 400, protein = 25f, carbs = 45f, fat = 10f)
+                .copy(planVersionId = 21L, plannedDateEpochDay = 23_000L),
+            record(status = FoodConsumptionStatus.CONSUMED, kcal = 300, protein = 20f, carbs = 30f, fat = 8f)
+                .copy(planVersionId = 21L, plannedDateEpochDay = 23_001L),
+        )
+
+        val today = FoodConsumptionMetrics.recordsForDate(records, 23_000L)
+        val totals = FoodConsumptionMetrics.dayTotals(today)
+
+        assertEquals(listOf(20L, 21L), today.map { it.planVersionId })
+        assertEquals(900.0, totals.kcal, 0.001)
+        assertEquals(2, totals.consumedCount)
+    }
+
     private fun record(status: FoodConsumptionStatus, kcal: Int, protein: Float, carbs: Float, fat: Float) = FoodConsumptionEntity(
         profileId = 1L,
         planId = 10L,

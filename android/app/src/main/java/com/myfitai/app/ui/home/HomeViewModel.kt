@@ -188,15 +188,9 @@ class HomeViewModel(
         if (profileId <= 0L) {
             flowOf(emptyList())
         } else {
-            val weekStart = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).toEpochDay()
-            mealPlanRepository.latestSnapshot(profileId, weekStart).flatMapLatest { snapshot ->
-                if (snapshot == null) flowOf(emptyList<FoodConsumptionEntity>())
-                else foodConsumptionRepository.forDay(profileId, LocalDate.now().toEpochDay()).map { records ->
-                    records.filter { it.planVersionId == snapshot.version.id }
-                        .takeIf { filtered -> filtered.isNotEmpty() }
-                        .orEmpty()
-                }
-            }
+            // Consumption is a historical fact. Keep counting it if the weekly plan
+            // gets a new version after the user marked a meal as consumed.
+            foodConsumptionRepository.forDay(profileId, LocalDate.now().toEpochDay())
         }
     }
 
@@ -253,10 +247,10 @@ class HomeViewModel(
         val displayedTargetPercent = if (displayedTarget != null && dashboard.calories.tdee != null && dashboard.calories.tdee > 0) {
             Math.round((displayedTarget - dashboard.calories.tdee) * 100.0 / dashboard.calories.tdee).toInt()
         } else null
-        val currentVersionConsumptions = snapshot?.let { current ->
-            dashboard.consumptionRecords.filter { it.planVersionId == current.version.id }
-        }.orEmpty()
-        val todayRecords = currentVersionConsumptions.filter { it.plannedDateEpochDay == LocalDate.now().toEpochDay() }
+        val todayRecords = FoodConsumptionMetrics.recordsForDate(
+            dashboard.consumptionRecords,
+            LocalDate.now().toEpochDay(),
+        )
         val consumed = FoodConsumptionMetrics.dayTotals(todayRecords)
         val consumedRows = todayRecords.filter {
             it.status == com.myfitai.app.domain.food.FoodConsumptionStatus.CONSUMED.name

@@ -15,7 +15,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class LabelImageFlowTest {
+class CheatPhotoFlowTest {
     private val context = ApplicationProvider.getApplicationContext<android.content.Context>()
     private val files = mutableListOf<File>()
 
@@ -25,10 +25,10 @@ class LabelImageFlowTest {
     }
 
     @Test
-    fun validLabel_isConvertedToInMemoryJpegPayload() {
+    fun validPhoto_isConvertedToInMemoryJpegPayload() {
         val source = tempImage(2400, 1200)
-        val payload = LabelImageProcessor.fromFile(source)
-        LabelImageTempStore(context).delete(source)
+        val payload = CheatPhotoProcessor.fromFile(source)
+        CheatPhotoTempStore(context).delete(source)
 
         assertEqualsJpeg(payload)
         assertTrue(payload.base64Data.isNotBlank())
@@ -36,21 +36,21 @@ class LabelImageFlowTest {
     }
 
     @Test
-    fun unreadableLabel_isRejectedWithoutPayload() {
-        val source = File.createTempFile("invalid-label-", ".jpg", context.cacheDir)
+    fun unreadablePhoto_isRejectedWithoutPayload() {
+        val source = File.createTempFile("invalid-photo-", ".jpg", context.cacheDir)
         files += source
         source.writeText("not an image")
 
-        val result = runCatching { LabelImageProcessor.fromFile(source) }
+        val result = runCatching { CheatPhotoProcessor.fromFile(source) }
 
         assertTrue(result.isFailure)
     }
 
     @Test
     fun tempStore_deletesOnlyOwnedCameraFiles() {
-        val store = LabelImageTempStore(context)
+        val store = CheatPhotoTempStore(context)
         val owned = store.create()
-        val external = File.createTempFile("external-label-", ".jpg", context.cacheDir)
+        val external = File.createTempFile("external-photo-", ".jpg", context.cacheDir)
         files += external
         assertTrue(owned.exists())
         assertTrue(external.exists())
@@ -63,7 +63,7 @@ class LabelImageFlowTest {
     }
 
     private fun tempImage(width: Int, height: Int): File {
-        val file = LabelImageTempStore(context).create()
+        val file = CheatPhotoTempStore(context).create()
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         bitmap.eraseColor(Color.WHITE)
         FileOutputStream(file).use { output -> bitmap.compress(Bitmap.CompressFormat.JPEG, 90, output) }
@@ -76,6 +76,10 @@ class LabelImageFlowTest {
         assertTrue(payload.mimeType == "image/jpeg")
         assertTrue(payload.base64Data.length > 100)
         // Android's Base64 decoder confirms the payload is binary image data, not a path.
-        assertTrue(android.util.Base64.decode(payload.base64Data, android.util.Base64.NO_WRAP).size > 100)
+        val bytes = android.util.Base64.decode(payload.base64Data, android.util.Base64.NO_WRAP)
+        assertTrue(bytes.size > 100)
+        val decoded = requireNotNull(android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size))
+        assertTrue(maxOf(decoded.width, decoded.height) <= 1024)
+        decoded.recycle()
     }
 }
