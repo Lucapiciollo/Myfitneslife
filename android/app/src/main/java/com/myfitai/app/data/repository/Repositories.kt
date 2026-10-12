@@ -186,6 +186,14 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
         val dateEpochDay: Long,
         val meal: com.myfitai.app.domain.food.FoodMeal,
     )
+    data class HistoricalMealContext(
+        val planId: Long,
+        val weekStartEpochDay: Long,
+        val planVersionId: Long,
+        val versionNumber: Int,
+        val dateEpochDay: Long,
+        val meal: com.myfitai.app.domain.food.FoodMeal,
+    )
     fun plans(profileId: Long): Flow<List<MealPlanEntity>> = db.mealPlanDao().observePlans(profileId)
     suspend fun legacyMealAlarmIds(profileId: Long): List<LegacyMealAlarmId> = db.mealPlanDao().getLegacyMealAlarmIds(profileId)
     fun versions(profileId: Long, planId: Long): Flow<List<MealPlanVersionEntity>> = db.mealPlanDao().observeVersions(profileId, planId)
@@ -431,6 +439,46 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
                 ingredients = ingredients,
             ),
         )
+    }
+
+    suspend fun historicalMeals(profileId: Long, excludedMealId: Long): List<HistoricalMealContext> = db.withTransaction {
+        val dao = db.mealPlanDao()
+        dao.getHistoricalMealRows(profileId, excludedMealId).map { row ->
+            HistoricalMealContext(
+                planId = row.planId,
+                weekStartEpochDay = row.weekStartEpochDay,
+                planVersionId = row.planVersionId,
+                versionNumber = row.versionNumber,
+                dateEpochDay = row.dateEpochDay,
+                meal = com.myfitai.app.domain.food.FoodMeal(
+                    id = row.mealId,
+                    dayId = row.mealDayId,
+                    sortOrder = row.mealSortOrder,
+                    type = row.mealType,
+                    title = row.mealTitle,
+                    timeMinutes = row.mealTimeMinutes,
+                    kcal = row.mealKcal,
+                    proteinG = row.mealProteinG,
+                    carbsG = row.mealCarbsG,
+                    fatG = row.mealFatG,
+                    preparation = row.mealPreparation,
+                    ingredients = dao.getIngredients(profileId, row.mealId).map { ingredient ->
+                        com.myfitai.app.domain.food.FoodIngredient(
+                            id = ingredient.id,
+                            mealId = ingredient.mealId,
+                            name = ingredient.name,
+                            quantity = ingredient.quantity,
+                            unit = ingredient.unit,
+                            displayDose = ingredient.displayDose,
+                            weightState = ingredient.weightState,
+                            nutritionConfidence = ingredient.nutritionConfidence,
+                            category = ingredient.category,
+                            sortOrder = ingredient.sortOrder,
+                        )
+                    },
+                ),
+            )
+        }
     }
 
     private fun serializeSupplements(values: List<SupplementDraft>): String? {

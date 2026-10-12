@@ -14,6 +14,10 @@ import com.myfitai.app.data.local.MyFitAiDatabase
 import com.myfitai.app.data.local.entity.FoodConsumptionEntity
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.repository.MealPlanRepository
+import com.myfitai.app.data.repository.DayDraft
+import com.myfitai.app.data.repository.IngredientDraft
+import com.myfitai.app.data.repository.MealDraft
+import com.myfitai.app.data.repository.PlanVersionDraft
 import com.myfitai.app.domain.calculation.ProfileCalculationService
 import com.myfitai.app.domain.food.CheatAdjustmentService
 import com.myfitai.app.domain.food.MealAlternativeService
@@ -37,6 +41,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.time.LocalDate
 import java.time.ZoneOffset
+import kotlin.math.abs
 
 @RunWith(AndroidJUnit4::class)
 class AiWorkflowIntegrationTest {
@@ -104,6 +109,100 @@ class AiWorkflowIntegrationTest {
         assertEquals(before.version.days.first().supplements, after.version.days.first().supplements)
         assertEquals(before.version.days.first().hydrationNote, after.version.days.first().hydrationNote)
         assertFalse(before.version.days.first().meals.last().title == after.version.days.first().meals.last().title)
+    }
+
+    @Test
+    fun localMealAlternatives_matchCaloriesSlotTimeDeduplicateAndApplyWithoutAi() = runBlocking {
+        val profileId = store.currentIdOrNull()!!
+        val week = SixMonthHistoryFixture.TODAY
+        val mealPlans = MealPlanRepository(db)
+        val planId = mealPlans.createPlan(profileId, week.toEpochDay(), time.nowEpochMillis())
+        val original = historyDay(week, meal(title = "Pasto target", type = "Pranzo", kcal = 500, time = 780))
+        mealPlans.appendVersion(profileId, planId, time.nowEpochMillis(), draft(listOf(original)))
+        val sourceSnapshot = mealPlans.loadLatestSnapshot(profileId, week.toEpochDay())!!
+        val sourceMeal = sourceSnapshot.version.days.single().meals.single()
+
+        val historicalWeek = week.minusDays(7)
+        val historyPlanId = mealPlans.createPlan(profileId, historicalWeek.toEpochDay(), time.nowEpochMillis() - 20_000)
+        val oldVersionDay = historyDay(
+            historicalWeek,
+            meal(title = "Riso e pollo", type = "Pranzo", kcal = 450, time = 690),
+            meal(title = "Riso e pollo", type = "Pranzo", kcal = 455, time = 700), // duplicate recipe, newer version
+            meal(title = "Pasta fuori soglia", type = "Pranzo", kcal = 444, time = 700),
+            meal(title = "Cena incompatibile", type = "Cena", kcal = 500, time = 720),
+            meal(title = "Pranzo tardi", type = "Pranzo", kcal = 500, time = 950),
+        )
+        mealPlans.appendVersion(profileId, historyPlanId, time.nowEpochMillis() - 1_000, draft(listOf(oldVersionDay)))
+        val newestVersionDay = historyDay(
+            historicalWeek,
+            meal(title = "Riso e pollo", type = "Pranzo", kcal = 455, time = 700), // duplicate of the historical recipe
+            meal(title = "Zuppa e pane", type = "Pranzo", kcal = 530, time = 780),
+        )
+        mealPlans.appendVersion(profileId, historyPlanId, time.nowEpochMillis(), draft(listOf(newestVersionDay)))
+
+        val callsBefore = gateway.requests.size
+        val matches = services().mealAlternative.historicalAlternatives(week.toEpochDay(), week.toEpochDay(), sourceMeal.id)
+
+        assertEquals(listOf("Zuppa e pane", "Riso e pollo"), matches.map { it.meal.title })
+        assertEquals(callsBefore, gateway.requests.size)
+        assertTrue(matches.all { it.meal.type == "Pranzo" && abs(it.meal.timeMinutes!! - sourceMeal.timeMinutes!!) <= 120 })
+        val applied = services().mealAlternative.applyHistorical(week.toEpochDay(), week.toEpochDay(), sourceMeal.id, matches.first())
+        val after = mealPlans.loadLatestSnapshot(profileId, week.toEpochDay())!!
+
+        assertTrue(after.version.id > sourceSnapshot.version.id)
+        assertEquals("Zuppa e pane", after.version.days.first().meals.first().title)
+        assertTrue(after.version.reason.orEmpty().startsWith("HISTORY_MEAL_SWAP:"))
+        assertEquals("LOCAL_HISTORY_SWAP", after.version.source)
+        assertEquals(matches.first().meal.ingredients.map { it.name }, after.version.days.first().meals.first().ingredients.map { it.name })
+        assertEquals(callsBefore, gateway.requests.size)
+        assertEquals(applied.title, "Zuppa e pane")
+    }
+
+    @Test
+    fun localMealAlternatives_excludesCandidatesViolatingCurrentHardConstraints() = runBlocking {
+        val profileId = store.currentIdOrNull()!!
+        val profile = com.myfitai.app.data.repository.UserProfileRepository(db).get(profileId)!!
+        com.myfitai.app.data.repository.UserProfileRepository(db).update(
+            profile.copy(dietaryPreferencesJson = com.myfitai.app.domain.food.DietaryProfile(allergies = listOf("arachidi")).toJson()),
+        )
+        val week = SixMonthHistoryFixture.TODAY
+        val mealPlans = MealPlanRepository(db)
+        val planId = mealPlans.createPlan(profileId, week.toEpochDay(), time.nowEpochMillis())
+        mealPlans.appendVersion(profileId, planId, time.nowEpochMillis(), draft(listOf(historyDay(week, meal("Target", "Pranzo", 500, 780)))))
+        val source = mealPlans.loadLatestSnapshot(profileId, week.toEpochDay())!!.version.days.single().meals.single()
+        val historyWeek = week.minusDays(7)
+        val historyPlanId = mealPlans.createPlan(profileId, historyWeek.toEpochDay(), time.nowEpochMillis())
+        mealPlans.appendVersion(profileId, historyPlanId, time.nowEpochMillis(), draft(listOf(historyDay(
+            historyWeek,
+            meal("Riso e arachidi", "Pranzo", 500, 720, ingredientNames = listOf("Riso", "Arachidi")),
+            meal("Riso e pollo", "Pranzo", 500, 720, ingredientNames = listOf("Riso", "Pollo")),
+        ))))
+
+        val matches = services().mealAlternative.historicalAlternatives(week.toEpochDay(), week.toEpochDay(), source.id)
+
+        assertEquals(listOf("Riso e pollo"), matches.map { it.meal.title })
+    }
+
+    @Test
+    fun applyingHistoricalAlternative_rejectsStaleTargetVersion() = runBlocking {
+        val profileId = store.currentIdOrNull()!!
+        val week = SixMonthHistoryFixture.TODAY
+        val mealPlans = MealPlanRepository(db)
+        val targetPlanId = mealPlans.createPlan(profileId, week.toEpochDay(), time.nowEpochMillis())
+        mealPlans.appendVersion(profileId, targetPlanId, time.nowEpochMillis(), draft(listOf(historyDay(week, meal("Target", "Pranzo", 500, 780)))))
+        val sourceMeal = mealPlans.loadLatestSnapshot(profileId, week.toEpochDay())!!.version.days.single().meals.single()
+        val historyWeek = week.minusDays(7)
+        val historyPlanId = mealPlans.createPlan(profileId, historyWeek.toEpochDay(), time.nowEpochMillis())
+        mealPlans.appendVersion(profileId, historyPlanId, time.nowEpochMillis(), draft(listOf(historyDay(historyWeek, meal("Storico", "Pranzo", 500, 780)))))
+        val match = services().mealAlternative.historicalAlternatives(week.toEpochDay(), week.toEpochDay(), sourceMeal.id).single()
+        val targetSnapshot = mealPlans.loadLatestSnapshot(profileId, week.toEpochDay())!!
+        mealPlans.appendVersion(profileId, targetPlanId, time.nowEpochMillis() + 1, draft(targetSnapshot.version.days.map { it.toDraftForTest() }))
+
+        val error = runCatching {
+            services().mealAlternative.applyHistorical(week.toEpochDay(), week.toEpochDay(), sourceMeal.id, match)
+        }.exceptionOrNull()
+
+        assertTrue(error is MealAlternativeService.AlternativeException.StalePlan)
     }
 
     @Test
@@ -362,6 +461,96 @@ class AiWorkflowIntegrationTest {
             val planId = plans.createPlan(profileId, plan.weekStart.toEpochDay(), plan.createdAtEpochMillis)
             plan.versions.forEach { version -> plans.appendVersion(profileId, planId, plan.createdAtEpochMillis, version) }
         }
+    }
+
+    private fun historyDay(date: LocalDate, vararg meals: JSONObject) = DayDraft(
+        dateEpochDay = date.toEpochDay(),
+        totalKcal = meals.sumOf { it.getInt("kcal") },
+        proteinG = meals.sumOf { it.getDouble("proteinG") }.toFloat(),
+        carbsG = meals.sumOf { it.getDouble("carbsG") }.toFloat(),
+        fatG = meals.sumOf { it.getDouble("fatG") }.toFloat(),
+        meals = meals.mapIndexed { index, value ->
+            MealDraft(
+                type = value.getString("type"),
+                title = value.getString("title"),
+                timeMinutes = value.getInt("timeMinutes"),
+                kcal = value.getInt("kcal"),
+                proteinG = value.getDouble("proteinG").toFloat(),
+                carbsG = value.getDouble("carbsG").toFloat(),
+                fatG = value.getDouble("fatG").toFloat(),
+                preparation = value.getString("preparation"),
+                ingredients = value.getJSONArray("ingredients").let { array ->
+                    buildList {
+                        for (i in 0 until array.length()) {
+                            val ingredient = array.getJSONObject(i)
+                            add(IngredientDraft(ingredient.getString("name"), ingredient.getDouble("quantity").toFloat(), ingredient.getString("unit"), ingredient.getString("displayDose"), ingredient.getString("weightState"), ingredient.getString("nutritionConfidence"), ingredient.getString("category")))
+                        }
+                    }
+                },
+            )
+        },
+    )
+
+    private fun com.myfitai.app.domain.food.FoodPlanDay.toDraftForTest() = DayDraft(
+        dateEpochDay = dateEpochDay,
+        totalKcal = totalKcal,
+        proteinG = proteinG,
+        carbsG = carbsG,
+        fatG = fatG,
+        meals = meals.map { meal ->
+            MealDraft(meal.type, meal.title, meal.timeMinutes, meal.kcal, meal.proteinG, meal.carbsG, meal.fatG, meal.preparation, meal.ingredients.map { ingredient ->
+                IngredientDraft(ingredient.name, ingredient.quantity, ingredient.unit, ingredient.displayDose, ingredient.weightState, ingredient.nutritionConfidence, ingredient.category)
+            })
+        },
+        supplements = supplements.map { supplement ->
+            com.myfitai.app.data.repository.SupplementDraft(supplement.kind, supplement.name, supplement.dose, supplement.unit, supplement.timeMinutes, supplement.kcal, supplement.proteinG, supplement.carbsG, supplement.fatG, supplement.notes)
+        },
+        hydrationNote = hydrationNote,
+        targetKcal = targetKcal,
+        targetProteinG = targetProteinG,
+        targetCarbsG = targetCarbsG,
+        targetFatG = targetFatG,
+        baseTargetKcal = baseTargetKcal,
+    )
+
+    private fun draft(days: List<DayDraft>) = PlanVersionDraft(
+        source = "fixture",
+        reason = "fixture",
+        targetKcal = days.sumOf { it.totalKcal ?: 0 },
+        targetProteinG = days.sumOf { (it.proteinG ?: 0f).toDouble() }.toFloat(),
+        targetCarbsG = days.sumOf { (it.carbsG ?: 0f).toDouble() }.toFloat(),
+        targetFatG = days.sumOf { (it.fatG ?: 0f).toDouble() }.toFloat(),
+        days = days,
+    )
+
+    private fun meal(
+        title: String,
+        type: String,
+        kcal: Int,
+        time: Int,
+        ingredientNames: List<String> = listOf("Pollo", "Riso"),
+    ) = JSONObject().apply {
+        put("title", title)
+        put("type", type)
+        put("kcal", kcal)
+        put("timeMinutes", time)
+        put("proteinG", 30.0)
+        put("carbsG", 50.0)
+        put("fatG", 12.0)
+        put("preparation", "Preparazione storica")
+        put("ingredients", JSONArray().apply {
+            ingredientNames.forEach { name ->
+                put(JSONObject().apply {
+                    put("name", name)
+                    put("quantity", 100.0)
+                    put("unit", "g")
+                    put("displayDose", "100 g")
+                    put("weightState", "RAW")
+                    put("nutritionConfidence", "HIGH")
+                    put("category", "fixture")
+                })
+            }
+        })
     }
 
     private data class Services(

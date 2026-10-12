@@ -81,6 +81,10 @@ data class DietaryProfile(
 object FoodConstraintValidator {
     data class Violation(val ingredient: String, val constraint: String, val kind: String)
 
+    fun hasHardConstraints(profile: DietaryProfile): Boolean =
+        profile.allergies.isNotEmpty() || profile.intolerances.isNotEmpty() ||
+            profile.excludedFoods.isNotEmpty() || !profile.dietStyle.isNullOrBlank()
+
     fun validate(plan: NutritionPlanContract.Response, profile: DietaryProfile): Result<Unit> = runCatching {
         val violations = plan.days.flatMap { day ->
             val mealViolations = day.meals.flatMap { meal ->
@@ -125,10 +129,6 @@ object FoodConstraintValidator {
             }
         }
     }
-
-    private fun hasHardConstraints(profile: DietaryProfile): Boolean =
-        profile.allergies.isNotEmpty() || profile.intolerances.isNotEmpty() ||
-            profile.excludedFoods.isNotEmpty() || !profile.dietStyle.isNullOrBlank()
 
     private fun proteinSourceIsAmbiguous(name: String): Boolean {
         val normalized = DietaryProfile.normalize(name)

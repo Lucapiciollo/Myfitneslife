@@ -79,18 +79,20 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_16"
                 android:gravity="center"
-                android:orientation="horizontal">
+                android:orientation="horizontal"
+                android:visibility="gone">
 
                 <ProgressBar
                     android:layout_width="@dimen/progress_compact_size"
                     android:layout_height="@dimen/progress_compact_size" />
 
                 <TextView
+                    android:id="@+id/loadingText"
                     style="@style/Text.MyFitAI.BodyCompact"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="@dimen/space_8"
-                    android:text="Sto preparando 5 alternative equivalenti…" />
+                    android:text="@string/meal_alternatives_searching_local" />
             </LinearLayout>
 
             <TextView
@@ -108,6 +110,16 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_12"
                 android:orientation="vertical" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/askAiButton"
+                style="@style/Widget.MyFitAI.Button.Outlined"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/button_secondary_min_height"
+                android:layout_marginTop="@dimen/space_8"
+                android:text="@string/meal_alternatives_ask_ai"
+                android:textAllCaps="false"
+                android:visibility="gone" />
 
             <TextView
                 android:id="@+id/statusText"

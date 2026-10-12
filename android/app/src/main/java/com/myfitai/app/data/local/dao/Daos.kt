@@ -168,6 +168,9 @@ interface MealPlanDao {
     @Query("SELECT v.* FROM meal_plan_versions v INNER JOIN meal_plans p ON p.id = v.planId WHERE p.id = :planId AND p.profileId = :profileId ORDER BY v.versionNumber DESC, v.id DESC")
     fun observeVersions(profileId: Long, planId: Long): Flow<List<MealPlanVersionEntity>>
 
+    @Query("SELECT p.id AS planId, p.weekStartEpochDay AS weekStartEpochDay, v.id AS planVersionId, v.versionNumber AS versionNumber, d.dateEpochDay AS dateEpochDay, m.id AS mealId, m.dayId AS mealDayId, m.sortOrder AS mealSortOrder, m.type AS mealType, m.title AS mealTitle, m.timeMinutes AS mealTimeMinutes, m.kcal AS mealKcal, m.proteinG AS mealProteinG, m.carbsG AS mealCarbsG, m.fatG AS mealFatG, m.preparation AS mealPreparation FROM meals m INNER JOIN meal_plan_days d ON d.id = m.dayId INNER JOIN meal_plan_versions v ON v.id = d.versionId INNER JOIN meal_plans p ON p.id = v.planId WHERE p.profileId = :profileId AND m.id != :excludedMealId ORDER BY v.createdAtEpochMillis DESC, v.id DESC, d.dateEpochDay DESC, m.sortOrder ASC")
+    suspend fun getHistoricalMealRows(profileId: Long, excludedMealId: Long): List<HistoricalMealRow>
+
     @Query("SELECT v.* FROM meal_plan_versions v INNER JOIN meal_plans p ON p.id = v.planId WHERE p.id = :planId AND p.profileId = :profileId ORDER BY v.versionNumber DESC, v.id DESC LIMIT 1")
     suspend fun getLatestVersion(profileId: Long, planId: Long): MealPlanVersionEntity?
 
@@ -215,6 +218,25 @@ data class MealContextRow(
     val planId: Long,
     val planVersionId: Long,
     val dayId: Long,
+    val dateEpochDay: Long,
+    val mealId: Long,
+    val mealDayId: Long,
+    val mealSortOrder: Int,
+    val mealType: String,
+    val mealTitle: String,
+    val mealTimeMinutes: Int?,
+    val mealKcal: Int?,
+    val mealProteinG: Float?,
+    val mealCarbsG: Float?,
+    val mealFatG: Float?,
+    val mealPreparation: String?,
+)
+
+data class HistoricalMealRow(
+    val planId: Long,
+    val weekStartEpochDay: Long,
+    val planVersionId: Long,
+    val versionNumber: Int,
     val dateEpochDay: Long,
     val mealId: Long,
     val mealDayId: Long,
