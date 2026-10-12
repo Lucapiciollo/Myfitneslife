@@ -1,6 +1,7 @@
 package com.myfitai.app.data.local.dao
 
 import androidx.room.Dao
+import androidx.room.ColumnInfo
 import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
@@ -8,6 +9,11 @@ import androidx.room.Query
 import androidx.room.Update
 import com.myfitai.app.data.local.entity.*
 import kotlinx.coroutines.flow.Flow
+
+data class LegacyMealAlarmId(
+    @ColumnInfo(name = "versionId") val versionId: Long,
+    @ColumnInfo(name = "mealId") val mealId: Long,
+)
 
 @Dao
 interface UserProfileDao {
@@ -143,6 +149,9 @@ interface MealPlanDao {
     @Query("SELECT * FROM meal_plans WHERE profileId = :profileId ORDER BY weekStartEpochDay DESC, id DESC")
     fun observePlans(profileId: Long): Flow<List<MealPlanEntity>>
 
+    @Query("SELECT v.id AS versionId, m.id AS mealId FROM meals m INNER JOIN meal_plan_days d ON d.id = m.dayId INNER JOIN meal_plan_versions v ON v.id = d.versionId INNER JOIN meal_plans p ON p.id = v.planId WHERE p.profileId = :profileId")
+    suspend fun getLegacyMealAlarmIds(profileId: Long): List<LegacyMealAlarmId>
+
     /** Changes whenever any plan version is appended, which `observePlans` alone does not signal. */
     @Query("SELECT MAX(v.id) FROM meal_plan_versions v INNER JOIN meal_plans p ON p.id = v.planId WHERE p.profileId = :profileId")
     fun observeNewestVersionId(profileId: Long): Flow<Long?>
@@ -158,6 +167,9 @@ interface MealPlanDao {
 
     @Query("SELECT v.* FROM meal_plan_versions v INNER JOIN meal_plans p ON p.id = v.planId WHERE p.id = :planId AND p.profileId = :profileId ORDER BY v.versionNumber DESC, v.id DESC")
     fun observeVersions(profileId: Long, planId: Long): Flow<List<MealPlanVersionEntity>>
+
+    @Query("SELECT p.id AS planId, p.weekStartEpochDay AS weekStartEpochDay, v.id AS planVersionId, v.versionNumber AS versionNumber, d.dateEpochDay AS dateEpochDay, m.id AS mealId, m.dayId AS mealDayId, m.sortOrder AS mealSortOrder, m.type AS mealType, m.title AS mealTitle, m.timeMinutes AS mealTimeMinutes, m.kcal AS mealKcal, m.proteinG AS mealProteinG, m.carbsG AS mealCarbsG, m.fatG AS mealFatG, m.preparation AS mealPreparation FROM meals m INNER JOIN meal_plan_days d ON d.id = m.dayId INNER JOIN meal_plan_versions v ON v.id = d.versionId INNER JOIN meal_plans p ON p.id = v.planId WHERE p.profileId = :profileId AND m.id != :excludedMealId ORDER BY v.createdAtEpochMillis DESC, v.id DESC, d.dateEpochDay DESC, m.sortOrder ASC")
+    suspend fun getHistoricalMealRows(profileId: Long, excludedMealId: Long): List<HistoricalMealRow>
 
     @Query("SELECT v.* FROM meal_plan_versions v INNER JOIN meal_plans p ON p.id = v.planId WHERE p.id = :planId AND p.profileId = :profileId ORDER BY v.versionNumber DESC, v.id DESC LIMIT 1")
     suspend fun getLatestVersion(profileId: Long, planId: Long): MealPlanVersionEntity?
@@ -186,6 +198,7 @@ interface MealPlanDao {
     suspend fun deleteByProfile(profileId: Long)
 }
 
+
 @Dao
 interface CheatEntryDao {
     @Query("SELECT * FROM cheat_entries WHERE profileId = :profileId ORDER BY occurredAtEpochMillis DESC, id DESC")
@@ -205,6 +218,25 @@ data class MealContextRow(
     val planId: Long,
     val planVersionId: Long,
     val dayId: Long,
+    val dateEpochDay: Long,
+    val mealId: Long,
+    val mealDayId: Long,
+    val mealSortOrder: Int,
+    val mealType: String,
+    val mealTitle: String,
+    val mealTimeMinutes: Int?,
+    val mealKcal: Int?,
+    val mealProteinG: Float?,
+    val mealCarbsG: Float?,
+    val mealFatG: Float?,
+    val mealPreparation: String?,
+)
+
+data class HistoricalMealRow(
+    val planId: Long,
+    val weekStartEpochDay: Long,
+    val planVersionId: Long,
+    val versionNumber: Int,
     val dateEpochDay: Long,
     val mealId: Long,
     val mealDayId: Long,

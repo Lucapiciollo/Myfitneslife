@@ -24,30 +24,9 @@ class ReminderReceiverTest {
 
     @After
     fun tearDown() {
-        manager.cancel(ReminderReceiver.stableCode("meal-notification:9001"))
+        val date = java.time.LocalDate.of(2026, 10, 9).toEpochDay()
+        manager.cancel(ReminderReceiver.stableCode("menu-preview:9002:$date"))
         manager.cancel(ReminderReceiver.stableCode("weekly-review-notification"))
-    }
-
-    @Test
-    fun mealBroadcast_createsMealChannelAndNotificationWhenPermissionAllows() {
-        receiver.onReceive(context, Intent(context, ReminderReceiver::class.java).apply {
-            action = ReminderReceiver.ACTION_MEAL
-            putExtra(ReminderReceiver.EXTRA_MEAL_ID, 9001L)
-            putExtra(ReminderReceiver.EXTRA_MEAL_TYPE, "Pranzo")
-            putExtra(ReminderReceiver.EXTRA_MEAL_TITLE, "Riso e pollo")
-            putExtra(ReminderReceiver.EXTRA_PROFILE_ID, 1L)
-        })
-
-        assertNotNull(manager.getNotificationChannel(ReminderReceiver.CHANNEL_MEALS))
-        if (Build.VERSION.SDK_INT < 33 || ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
-            val deadline = System.currentTimeMillis() + 2_000L
-            var posted = false
-            while (System.currentTimeMillis() < deadline && !posted) {
-                posted = manager.activeNotifications.any { it.id == ReminderReceiver.stableCode("meal-notification:9001") }
-                if (!posted) Thread.sleep(50L)
-            }
-            assertTrue(posted)
-        }
     }
 
     @Test
@@ -58,5 +37,36 @@ class ReminderReceiverTest {
 
         assertNotNull(manager.getNotificationChannel(ReminderReceiver.CHANNEL_REVIEW))
         assertEquals(ReminderReceiver.CHANNEL_REVIEW, manager.getNotificationChannel(ReminderReceiver.CHANNEL_REVIEW)?.id)
+    }
+
+    @Test
+    fun menuPreviewBroadcast_postsTomorrowMenuAndUsesMenuSpecificAction() {
+        val menuDate = java.time.LocalDate.of(2026, 10, 9).toEpochDay()
+        val notificationId = ReminderReceiver.stableCode("menu-preview:9002:$menuDate")
+        try {
+            receiver.onReceive(context, Intent(context, ReminderReceiver::class.java).apply {
+                action = ReminderReceiver.ACTION_MENU_PREVIEW
+                putExtra(ReminderReceiver.EXTRA_MENU_DATE_EPOCH_DAY, menuDate)
+                putExtra(ReminderReceiver.EXTRA_MENU_MEALS, arrayOf("Colazione: Yogurt e frutta", "Pranzo: Riso e pollo"))
+                putExtra(ReminderReceiver.EXTRA_PROFILE_ID, 9002L)
+            })
+
+            if (Build.VERSION.SDK_INT < 33 || ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+                val deadline = System.currentTimeMillis() + 2_000L
+                var posted = false
+                while (System.currentTimeMillis() < deadline && !posted) {
+                    posted = manager.activeNotifications.any { it.id == notificationId }
+                    if (!posted) Thread.sleep(50L)
+                }
+                assertTrue("menu-preview notification is posted", posted)
+                val notification = manager.activeNotifications.first { it.id == notificationId }.notification
+                assertTrue(notification.extras.getCharSequence(android.app.Notification.EXTRA_TITLE).toString().contains("Menu in programma"))
+                assertTrue(notification.extras.getCharSequence(android.app.Notification.EXTRA_BIG_TEXT).toString().contains("Yogurt e frutta"))
+                assertEquals(1, notification.actions?.size ?: 0)
+                assertEquals("Apri menu", notification.actions?.firstOrNull()?.title)
+            }
+        } finally {
+            manager.cancel(notificationId)
+        }
     }
 }

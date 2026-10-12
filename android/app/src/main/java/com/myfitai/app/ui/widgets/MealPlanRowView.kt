@@ -9,7 +9,7 @@ import com.google.android.material.imageview.ShapeableImageView
 import com.google.android.material.shape.ShapeAppearanceModel
 import com.myfitai.app.R
 
-/** Riga pasto riutilizzabile per il Piano alimentare: foto, titolo+kcal, descrizione e cambio IA. */
+/** Riga pasto riutilizzabile per il Piano alimentare: slot, titolo+kcal, descrizione e ricerca alternative. */
 class MealPlanRowView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
@@ -94,7 +94,7 @@ class MealPlanRowView @JvmOverloads constructor(
             setColorFilter(context.getColor(R.color.accent_green_dark))
             val iconPadding = resources.getDimensionPixelSize(R.dimen.space_8)
             setPadding(iconPadding, iconPadding, iconPadding, iconPadding)
-            contentDescription = "Cambia pasto con IA"
+            contentDescription = "Cerca alternative per il pasto"
             isClickable = true
             isFocusable = true
         }

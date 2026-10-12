@@ -61,6 +61,9 @@ class FoodPlanActivity : BaseShellActivity() {
         setContentView(R.layout.activity_food_plan)
         bindBottom(BottomNavBinder.Tab.FOOD)
         intent.takeIf { it.hasExtra(EXTRA_WEEK_START_EPOCH_DAY) }?.getLongExtra(EXTRA_WEEK_START_EPOCH_DAY, LocalDate.now().toEpochDay())?.let(viewModel::selectWeek)
+        intent.takeIf { it.hasExtra(EXTRA_SELECTED_DATE_EPOCH_DAY) }
+            ?.getLongExtra(EXTRA_SELECTED_DATE_EPOCH_DAY, LocalDate.now().toEpochDay())
+            ?.let { viewModel.selectWeekAndDay(it) }
         findViewById<View>(R.id.prevWeekButton).setOnClickListener { viewModel.previousWeek() }
         findViewById<View>(R.id.nextWeekButton).setOnClickListener { viewModel.nextWeek() }
         findViewById<View>(R.id.shoppingButton).setOnClickListener {
@@ -85,6 +88,10 @@ class FoodPlanActivity : BaseShellActivity() {
 
     fun selectWeekFromNavigation(weekStartEpochDay: Long) {
         viewModel.selectWeek(weekStartEpochDay)
+    }
+
+    fun selectDateFromNavigation(dateEpochDay: Long) {
+        viewModel.selectWeekAndDay(dateEpochDay)
     }
 
     private fun bindFoodHelp() {
@@ -272,8 +279,8 @@ class FoodPlanActivity : BaseShellActivity() {
         val container = findViewById<LinearLayout>(R.id.mealsContainer)
         container.removeAllViews()
         day?.meals?.sortedWith(compareBy<FoodMeal> { it.timeMinutes ?: Int.MAX_VALUE }.thenBy { it.sortOrder })?.forEach { meal ->
-            val changeEnabled = aiProviderConfigured && canChangeMeal(day.dateEpochDay, meal.timeMinutes) && meal.kcal != null
-            val status = records.firstOrNull { it.mealId == meal.id }?.status
+        val changeEnabled = canChangeMeal(day.dateEpochDay, meal.timeMinutes) && meal.kcal != null
+        val status = records.firstOrNull { it.mealId == meal.id }?.status
             val row = MealPlanRowView(this).apply {
                 setTitle(displayMealType(meal.type)); setKcal(NutritionEstimateFormatter.formatEstimatedKcal(meal.kcal)); setDescription(meal.title); setMeal(meal.type, meal.timeMinutes, describe = false)
                 setStatus(when (status) {
@@ -523,7 +530,6 @@ class FoodPlanActivity : BaseShellActivity() {
 
     private fun openMeal(mealId: Long) = startActivity(Intent(this, MealDetailActivity::class.java).putExtra(MealDetailActivity.EXTRA_MEAL_ID, mealId))
     private fun openMealAlternatives(weekStart: LocalDate, day: FoodPlanDay, meal: FoodMeal) {
-        if (!aiProviderConfigured) return
         mealAlternativeLauncher.launch(Intent(this, MealAlternativeActivity::class.java)
             .putExtra(MealAlternativeActivity.EXTRA_WEEK_START_EPOCH_DAY, weekStart.toEpochDay())
             .putExtra(MealAlternativeActivity.EXTRA_DAY_EPOCH_DAY, day.dateEpochDay)
@@ -548,5 +554,8 @@ class FoodPlanActivity : BaseShellActivity() {
     }
     private fun formatMacro(value: Float): String = if (value % 1f == 0f) value.toInt().toString() else String.format(Locale.ITALIAN, "%.1f", value)
     private fun formatMacro(value: Double): String = if (value % 1.0 == 0.0) value.toInt().toString() else String.format(Locale.ITALIAN, "%.1f", value)
-    companion object { const val EXTRA_WEEK_START_EPOCH_DAY = "week_start_epoch_day" }
+    companion object {
+        const val EXTRA_WEEK_START_EPOCH_DAY = "week_start_epoch_day"
+        const val EXTRA_SELECTED_DATE_EPOCH_DAY = "selected_date_epoch_day"
+    }
 }

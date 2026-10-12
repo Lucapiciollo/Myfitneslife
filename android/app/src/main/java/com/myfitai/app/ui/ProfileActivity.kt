@@ -74,17 +74,17 @@ class ProfileActivity : BaseShellActivity() {
         val aiSwitch = content.findViewById<com.google.android.material.materialswitch.MaterialSwitch>(R.id.aiBackgroundUpdatesSwitch)
         val statusText = content.findViewById<TextView>(R.id.notificationsStatusText)
         val openAndroidSettings = content.findViewById<android.view.View>(R.id.openAndroidNotificationSettingsButton)
-        val leadInput = content.findViewById<com.google.android.material.textfield.MaterialAutoCompleteTextView>(R.id.mealLeadInput)
-        val leadMinutes = resources.getIntArray(R.array.notification_lead_minutes)
-        val leadLabels = resources.getStringArray(R.array.notification_lead_labels)
-        val selectedLead = leadMinutes.indexOf(prefs.mealLeadMinutes).coerceAtLeast(0)
+        val menuTimeInput = content.findViewById<com.google.android.material.textfield.MaterialAutoCompleteTextView>(R.id.menuReminderTimeInput)
+        val menuHours = intArrayOf(18, 19, 20, 21, 22)
+        val menuLabels = menuHours.map { "%02d:00".format(it) }
+        val selectedMenuHour = menuHours.indexOf(prefs.menuReminderHour).coerceAtLeast(0)
 
         listOf(mealSwitch, reviewSwitch, aiSwitch).forEach { it.applyMyFitAiSwitchTints() }
         mealSwitch.isChecked = prefs.mealRemindersEnabled
         reviewSwitch.isChecked = prefs.weeklyReviewEnabled
         aiSwitch.isChecked = prefs.aiBackgroundUpdatesEnabled
-        leadInput.setMyFitAiDropdownItems(leadLabels.toList())
-        leadInput.setText(leadLabels[selectedLead.coerceAtMost(leadLabels.lastIndex)], false)
+        menuTimeInput.setMyFitAiDropdownItems(menuLabels)
+        menuTimeInput.setText(menuLabels[selectedMenuHour.coerceAtMost(menuLabels.lastIndex)], false)
         val permissionGranted = Build.VERSION.SDK_INT < 33 || ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
         statusText.text = if (NotificationManagerCompat.from(this).areNotificationsEnabled() && permissionGranted) {
             getString(R.string.notifications_status_enabled)
@@ -114,7 +114,7 @@ class ProfileActivity : BaseShellActivity() {
                 prefs.mealRemindersEnabled = mealSwitch.isChecked
                 prefs.weeklyReviewEnabled = reviewSwitch.isChecked
                 prefs.aiBackgroundUpdatesEnabled = aiSwitch.isChecked
-                prefs.mealLeadMinutes = leadMinutes.getOrElse(leadLabels.indexOf(leadInput.text.toString())) { prefs.mealLeadMinutes }
+                prefs.menuReminderHour = menuHours.getOrElse(menuLabels.indexOf(menuTimeInput.text.toString())) { prefs.menuReminderHour }
                 lifecycleScope.launch {
                     val count = runCatching { data.notificationScheduler.refresh() }.getOrDefault(0)
                     Toast.makeText(this@ProfileActivity, getString(R.string.notifications_updated_count, count), Toast.LENGTH_SHORT).show()

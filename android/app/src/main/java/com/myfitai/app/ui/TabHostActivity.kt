@@ -79,6 +79,9 @@ class TabHostActivity : AppCompatActivity() {
         intent.getLongExtra(FoodPlanActivity.EXTRA_WEEK_START_EPOCH_DAY, Long.MIN_VALUE)
             .takeIf { it != Long.MIN_VALUE }
             ?.let { currentFoodPlanActivity()?.selectWeekFromNavigation(it) }
+        intent.getLongExtra(FoodPlanActivity.EXTRA_SELECTED_DATE_EPOCH_DAY, Long.MIN_VALUE)
+            .takeIf { it != Long.MIN_VALUE }
+            ?.let { currentFoodPlanActivity()?.selectDateFromNavigation(it) }
     }
 
     fun showExitConfirmation() {
@@ -99,6 +102,12 @@ class TabHostActivity : AppCompatActivity() {
             childIntent.putExtra(
                 FoodPlanActivity.EXTRA_WEEK_START_EPOCH_DAY,
                 intent.getLongExtra(FoodPlanActivity.EXTRA_WEEK_START_EPOCH_DAY, LocalDate.now().toEpochDay()),
+            )
+        }
+        if (tab == BottomNavBinder.Tab.FOOD && intent.hasExtra(FoodPlanActivity.EXTRA_SELECTED_DATE_EPOCH_DAY)) {
+            childIntent.putExtra(
+                FoodPlanActivity.EXTRA_SELECTED_DATE_EPOCH_DAY,
+                intent.getLongExtra(FoodPlanActivity.EXTRA_SELECTED_DATE_EPOCH_DAY, LocalDate.now().toEpochDay()),
             )
         }
         val child = activityManager.startActivity(tab.name, childIntent) ?: return

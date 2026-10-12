@@ -80,6 +80,18 @@ class CheatEntryE2ETest {
     }
 
     @Test
+    fun photoOnlyDoesNotRequireDescriptionBeforeAiConfirmation() {
+        device.findObject(By.text("Dettagliato")).click()
+        assertTrue(scrollUntilVisible(By.res("com.myfitai.app:id/addLabelPhotoButton")))
+        assertTrue(device.findObject(By.res("com.myfitai.app:id/descriptionInput")).text.isNullOrEmpty())
+        assertTrue(device.hasObject(By.textContains("Puoi allegare una foto e lasciare vuoti descrizione e quantità")))
+        // Opening the chooser is non-mutating; the photo-only AI workflow is tested against isolated Room fixtures.
+        device.findObject(By.res("com.myfitai.app:id/addLabelPhotoButton")).click()
+        assertTrue(device.wait(Until.hasObject(By.text("Aggiungi foto allo sgarro")), 3_000))
+        device.pressBack()
+    }
+
+    @Test
     fun modeSegment_switchesBetweenQuickAndDetailedContent() {
         // Quick mode: only description/categories, when and the AI action.
         assertTrue(device.wait(Until.gone(By.res("com.myfitai.app:id/labelPhotoCard")), 2_000))

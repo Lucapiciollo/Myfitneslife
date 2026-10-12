@@ -41,28 +41,36 @@
     <string name="action_cancel">Annulla</string>
     <string name="action_save">Salva</string>
     <string name="notifications_dialog_title">Notifiche</string>
-    <string name="notifications_dialog_description">Scegli quali promemoria locali ricevere e con quanto anticipo.</string>
+    <string name="notifications_dialog_description">Scegli quali promemoria locali ricevere e a che ora vedere il menu del prossimo giorno pianificato.</string>
     <string name="notifications_meal_reminders">Promemoria pasti</string>
     <string name="notifications_weekly_review">Review settimanale</string>
     <string name="notifications_ai_background">Aggiornamenti IA in background</string>
     <string name="notifications_ai_background_description">Notifica quando una dieta, analisi, review o altro job IA termina.</string>
-    <string name="notifications_lead_time">Anticipo promemoria pasti</string>
-    <string-array name="notification_lead_labels">
-        <item>Al momento del pasto</item>
-        <item>5 minuti prima</item>
-        <item>10 minuti prima</item>
-        <item>15 minuti prima</item>
-        <item>30 minuti prima</item>
-        <item>60 minuti prima</item>
-    </string-array>
-    <integer-array name="notification_lead_minutes">
-        <item>0</item>
-        <item>5</item>
-        <item>10</item>
-        <item>15</item>
-        <item>30</item>
-        <item>60</item>
-    </integer-array>
+    <string name="notifications_menu_reminder_time">Ora del promemoria menu</string>
+    <string name="notifications_menu_reminder_description">Ogni sera riceverai l’anteprima del menu del prossimo giorno pianificato.</string>
+    <string name="notifications_menu_preview_title">Menu in programma · %1$s</string>
+    <string name="notifications_menu_preview_empty">Apri il piano per consultare il menu.</string>
+    <string name="notifications_menu_preview_open">Apri menu</string>
+    <string name="cheat_photo_description">Puoi allegare una foto e lasciare vuoti descrizione e quantità: avvieremo automaticamente la stima IA. Potrai controllare e correggere ciò che ha riconosciuto prima di salvare.</string>
+    <string name="cheat_photo_ai_action">La stima IA dello sgarro dalla foto</string>
+    <string name="cheat_text_ai_action">La valutazione IA dello sgarro</string>
+    <string name="cheat_description_or_photo_required">Descrivi cosa hai mangiato oppure aggiungi una foto</string>
+    <string name="cheat_photo_processing">Attendi che termini la preparazione della foto.</string>
+    <string name="cheat_photo_ai_progress">L’IA sta riconoscendo il cibo e stimando la porzione dalla foto…</string>
+    <string name="meal_alternatives_ask_ai">Non trovi quello che cerchi? Chiedi ad AI</string>
+    <string name="meal_alternatives_local_rule">Alternative dallo storico del tuo profilo entro ±10% delle calorie, per lo stesso tipo di pasto e orario compatibile. La ricerca è locale e non usa IA.</string>
+    <string name="meal_alternatives_searching_local">Cerco pasti compatibili nel tuo storico…</string>
+    <string name="meal_alternatives_generating_ai">L’IA sta preparando nuove alternative…</string>
+    <string name="meal_alternatives_ai_rule">Queste proposte sono state generate dall’IA; tipo/orario, calorie, ingredienti e vincoli sono stati controllati localmente.</string>
+    <string name="meal_alternatives_ai_source">Proposta nuova generata dall’IA</string>
+    <string name="meal_alternatives_no_local_matches">Nessun pasto compatibile trovato nello storico. Puoi chiedere all’IA una proposta nuova.</string>
+    <string name="meal_alternatives_search_error">Impossibile cercare nello storico dei pasti.</string>
+    <string name="meal_alternatives_ai_action">La generazione IA di nuove alternative per questo pasto</string>
+    <string name="meal_alternatives_history_source">Dallo storico · %1$s · versione %2$d</string>
+    <string name="meal_alternatives_replace">Usa questo pasto</string>
+    <string name="meal_alternatives_confirm_title">Sostituire il pasto?</string>
+    <string name="meal_alternatives_confirm_message">Verrà creata una nuova versione del piano usando questo pasto dallo storico. Le versioni precedenti resteranno conservate.</string>
+    <string name="meal_alternatives_applying_local">Sto salvando il cambio in una nuova versione del piano…</string>
     <string name="settings_desc_guide">Panoramica del percorso e dei calcoli locali</string>
     <string name="settings_desc_profile">Impostazioni generali del profilo e dell\'app</string>
     <string name="settings_desc_measurements">BIA, misure corporee e storico</string>

@@ -17,9 +17,10 @@ class CheatUnderstandingAiJobHandler(private val service: CheatAdjustmentService
             notes = params.getString(KEY_NOTES),
             occurredAtEpochMillis = params.getLong(KEY_OCCURRED_AT, 0L),
             foodImage = image,
+            photoFingerprint = params.getString(KEY_PHOTO_FINGERPRINT),
         )
         val result = service.analyze(input)
-        val payload = JSONObject().put("understoodFood", result.understoodFood).put("kcal", result.estimate.kcal).put("proteinG", result.estimate.proteinG).put("carbsG", result.estimate.carbsG).put("fatG", result.estimate.fatG).put("confidence", result.estimate.confidence).put("notes", result.estimate.notes).put("provider", result.provider).put("model", result.model).toString()
+        val payload = JSONObject().put("understoodFood", result.understoodFood).put("kcal", result.estimate.kcal).put("proteinG", result.estimate.proteinG).put("carbsG", result.estimate.carbsG).put("fatG", result.estimate.fatG).put("confidence", result.estimate.confidence).put("notes", result.estimate.notes).put("provider", result.provider).put("model", result.model).put("fingerprint", result.inputFingerprint).toString()
         AiJobOutcome.Success(Data.Builder().putString(KEY_PAYLOAD, payload).putString(AiJobWorker.KEY_PROVIDER, "${result.provider} · ${result.model}").build())
     } catch (error: CheatAdjustmentService.AdjustmentException.NeedsInput) {
         AiJobOutcome.Failure("Completa prima: ${error.fields.joinToString()}")
@@ -27,5 +28,5 @@ class CheatUnderstandingAiJobHandler(private val service: CheatAdjustmentService
         AiJobOutcome.Failure(error.message ?: "Valutazione sgarro non disponibile")
     }
 
-    companion object { const val KEY_DESCRIPTION = "description"; const val KEY_QUANTITY = "quantity"; const val KEY_NOTES = "notes"; const val KEY_OCCURRED_AT = "occurred_at"; const val KEY_PAYLOAD = "payload" }
+    companion object { const val KEY_DESCRIPTION = "description"; const val KEY_QUANTITY = "quantity"; const val KEY_NOTES = "notes"; const val KEY_OCCURRED_AT = "occurred_at"; const val KEY_PHOTO_FINGERPRINT = "photo_fingerprint"; const val KEY_PAYLOAD = "payload" }
 }

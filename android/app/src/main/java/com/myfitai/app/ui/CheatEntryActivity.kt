@@ -59,6 +59,7 @@ class CheatEntryActivity : BaseShellActivity() {
     private var pendingCameraFile: File? = null
     private var photoProcessing = false
     private var detailedMode = false
+    private var autoAnalyzePhoto = false
     private val photoTempStore by lazy { CheatPhotoTempStore(this) }
 
     private val galleryLauncher = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
@@ -220,8 +221,11 @@ class CheatEntryActivity : BaseShellActivity() {
             runCatching { withContext(Dispatchers.IO) { CheatPhotoProcessor.fromUri(this@CheatEntryActivity, uri) } }
                 .onSuccess {
                     foodImage = it
+                    autoAnalyzePhoto = true
                     viewModel.invalidateUnderstanding()
                     setPhotoProcessing(false)
+                    findViewById<TextInputEditText>(R.id.descriptionInput).error = null
+                    maybeAutoAnalyzePhoto()
                 }
                 .onFailure {
                     foodImage = null
@@ -237,8 +241,11 @@ class CheatEntryActivity : BaseShellActivity() {
             runCatching { withContext(Dispatchers.IO) { CheatPhotoProcessor.fromFile(file) } }
                 .onSuccess {
                     foodImage = it
+                    autoAnalyzePhoto = true
                     viewModel.invalidateUnderstanding()
                     setPhotoProcessing(false)
+                    findViewById<TextInputEditText>(R.id.descriptionInput).error = null
+                    maybeAutoAnalyzePhoto()
                 }
                 .onFailure {
                     foodImage = null
@@ -312,9 +319,20 @@ class CheatEntryActivity : BaseShellActivity() {
 
     private fun analyze() {
         val input = buildInput() ?: return
-        confirmAiRequest("La valutazione dello sgarro") {
+        val action = if (input.foodImage != null) {
+            getString(R.string.cheat_photo_ai_action)
+        } else {
+            getString(R.string.cheat_text_ai_action)
+        }
+        confirmAiRequest(action) {
             viewModel.analyze(input)
         }
+    }
+
+    private fun maybeAutoAnalyzePhoto() {
+        if (!autoAnalyzePhoto) return
+        autoAnalyzePhoto = false
+        analyze()
     }
 
     private fun confirm() {
@@ -326,34 +344,44 @@ class CheatEntryActivity : BaseShellActivity() {
 
     private fun buildInput(): CheatAdjustmentService.Input? {
         if (photoProcessing) {
-            showStatus("Attendi il completamento della foto dell'etichetta.")
+            showStatus(getString(R.string.cheat_photo_processing))
             return null
         }
         val description = findViewById<TextInputEditText>(R.id.descriptionInput).text?.toString()?.trim().orEmpty()
-        if (description.isBlank()) {
-            findViewById<TextInputEditText>(R.id.descriptionInput).error = "Descrivi cosa hai mangiato"
+        val image = foodImage.takeIf { detailedMode }
+        if (description.isBlank() && image == null) {
+            findViewById<TextInputEditText>(R.id.descriptionInput).error = getString(R.string.cheat_description_or_photo_required)
             return null
         }
         val category = selectedCategory()
-        val fullDescription = if (category == null || description.startsWith(category, ignoreCase = true)) description else "$category — $description"
+        val fullDescription = when {
+            description.isBlank() && image != null -> ""
+            category == null || description.startsWith(category, ignoreCase = true) -> description
+            else -> "$category — $description"
+        }
         val occurredAt = selectedDate.atTime(selectedTime).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
         if (occurredAt > System.currentTimeMillis() + 60_000L) {
             showStatus("La data dello sgarro non può essere nel futuro.")
             return null
         }
 
-        val notes = composeCheatNotes(
-            detailed = detailedMode,
-            notes = findViewById<TextInputEditText>(R.id.notesInput).text?.toString().orEmpty(),
-            clarification = findViewById<TextInputEditText>(R.id.clarificationInput).text?.toString().orEmpty(),
-        )
+        val notes = listOfNotNull(
+            composeCheatNotes(
+                detailed = detailedMode,
+                notes = findViewById<TextInputEditText>(R.id.notesInput).text?.toString().orEmpty(),
+                clarification = findViewById<TextInputEditText>(R.id.clarificationInput).text?.toString().orEmpty(),
+            ),
+            category?.takeIf { description.isBlank() && image != null }?.let { "Categoria selezionata dall'utente: $it" },
+        ).joinToString("\n").ifBlank { null }
 
         return CheatAdjustmentService.Input(
             description = fullDescription,
-            quantityText = composeCheatQuantity(detailedMode, findViewById<AutoCompleteTextView>(R.id.quantityInput).text?.toString()),
+            quantityText = if (description.isBlank() && image != null) null else
+                composeCheatQuantity(detailedMode, findViewById<AutoCompleteTextView>(R.id.quantityInput).text?.toString()),
             notes = notes,
             occurredAtEpochMillis = occurredAt,
-            foodImage = foodImage.takeIf { detailedMode },
+            foodImage = image,
+            photoFingerprint = CheatAdjustmentService.photoFingerprint(image),
         )
     }
 
@@ -393,7 +421,7 @@ class CheatEntryActivity : BaseShellActivity() {
             visibility = if (state.running || state.error != null) View.VISIBLE else View.GONE
             text = when {
                 state.running && hasUnderstanding -> "Conferma dello sgarro e verifica dei pasti futuri…"
-                state.running && detailedMode && foodImage != null -> "L'IA sta valutando descrizione e foto per dirti cosa ha capito…"
+                state.running && detailedMode && foodImage != null -> getString(R.string.cheat_photo_ai_progress)
                 state.running -> "L'IA sta interpretando ciò che hai mangiato…"
                 state.error != null -> state.error
                 else -> ""
@@ -405,7 +433,7 @@ class CheatEntryActivity : BaseShellActivity() {
         viewModel.consumeResult()
         startActivity(
             Intent(this, AdjustedPlanActivity::class.java)
-                .putExtra(AdjustedPlanActivity.EXTRA_DESCRIPTION, findViewById<TextInputEditText>(R.id.descriptionInput).text?.toString().orEmpty())
+                .putExtra(AdjustedPlanActivity.EXTRA_DESCRIPTION, state.understanding?.understoodFood ?: findViewById<TextInputEditText>(R.id.descriptionInput).text?.toString().orEmpty())
                 .putExtra(AdjustedPlanActivity.EXTRA_ESTIMATE, result.estimateSummary)
                 .putExtra(AdjustedPlanActivity.EXTRA_ADAPTED, result.adapted)
                 .putExtra(AdjustedPlanActivity.EXTRA_SUMMARY, result.adaptationSummary)

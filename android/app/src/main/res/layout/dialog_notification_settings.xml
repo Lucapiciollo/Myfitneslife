@@ -58,20 +58,28 @@
         android:text="@string/notifications_ai_background_description"
         />
 
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_12"
+        style="@style/Text.MyFitAI.SettingsDescription"
+        android:text="@string/notifications_menu_reminder_description"
+        />
+
     <com.google.android.material.textfield.TextInputLayout
         style="@style/Widget.MyFitAI.InputDropdown"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/space_12"
-        android:hint="@string/notifications_lead_time"
+        android:hint="@string/notifications_menu_reminder_time"
         app:endIconMode="dropdown_menu">
 
         <com.google.android.material.textfield.MaterialAutoCompleteTextView
-            android:id="@+id/mealLeadInput"
+            android:id="@+id/menuReminderTimeInput"
             style="@style/Widget.MyFitAI.InputDropdownText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="none"
-            android:contentDescription="@string/notifications_lead_time" />
+            android:contentDescription="@string/notifications_menu_reminder_time" />
     </com.google.android.material.textfield.TextInputLayout>
 </LinearLayout>

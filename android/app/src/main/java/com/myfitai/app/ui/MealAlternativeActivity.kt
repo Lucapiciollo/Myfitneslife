@@ -8,6 +8,7 @@ import android.widget.TextView
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.domain.food.MealAlternativeContract
@@ -22,6 +23,7 @@ import java.util.Locale
 class MealAlternativeActivity : BaseShellActivity() {
     private val data by lazy { AppDataContainer.get(this) }
     private var generated: MealAlternativeService.Alternatives? = null
+    private var historicalAlternatives: List<MealAlternativeService.HistoricalAlternative> = emptyList()
     private var applying = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -29,10 +31,6 @@ class MealAlternativeActivity : BaseShellActivity() {
         setContentView(R.layout.activity_meal_alternative)
         bindBack()
         bindBottom(BottomNavBinder.Tab.FOOD)
-        if (!aiProviderConfigured) {
-            showError("Nessun provider IA configurato. Configura Gemini o OpenAI nella scheda IA per generare alternative.")
-            return
-        }
 
         val weekStart = intent.getLongExtra(EXTRA_WEEK_START_EPOCH_DAY, Long.MIN_VALUE)
         val day = intent.getLongExtra(EXTRA_DAY_EPOCH_DAY, Long.MIN_VALUE)
@@ -52,8 +50,52 @@ class MealAlternativeActivity : BaseShellActivity() {
             return
         }
 
+        val askAiButton = findViewById<MaterialButton>(R.id.askAiButton)
+        askAiButton.visibility = View.GONE
+        askAiButton.isEnabled = aiProviderConfigured
+        askAiButton.setOnClickListener {
+            if (!aiProviderConfigured) {
+                com.myfitai.app.ai.AiProviderAccess.requireConfigured(this)
+            } else {
+                generateWithAi(weekStart, day, mealId)
+            }
+        }
+
+        findViewById<TextView>(R.id.constraintText).text = getString(R.string.meal_alternatives_local_rule)
+        findViewById<TextView>(R.id.loadingText).text = getString(R.string.meal_alternatives_searching_local)
+        findViewById<View>(R.id.loadingRow).visibility = View.VISIBLE
+        lifecycleScope.launch {
+            runCatching { data.mealAlternativeService.historicalAlternatives(weekStart, day, mealId) }
+                .onSuccess { matches ->
+                    historicalAlternatives = matches
+                    findViewById<View>(R.id.loadingRow).visibility = View.GONE
+                    findViewById<MaterialButton>(R.id.askAiButton).visibility = View.VISIBLE
+                    findViewById<TextView>(R.id.constraintText).text = getString(R.string.meal_alternatives_local_rule)
+                    if (matches.isEmpty()) {
+                        findViewById<TextView>(R.id.statusText).apply {
+                            text = getString(R.string.meal_alternatives_no_local_matches)
+                            visibility = View.VISIBLE
+                        }
+                    } else {
+                        findViewById<TextView>(R.id.statusText).visibility = View.GONE
+                        renderAlternatives(matches.map { it.meal.toAlternative() }, matches)
+                    }
+                }
+                .onFailure { error ->
+                    findViewById<View>(R.id.loadingRow).visibility = View.GONE
+                    findViewById<MaterialButton>(R.id.askAiButton).visibility = View.VISIBLE
+                    showError(error.message ?: getString(R.string.meal_alternatives_search_error))
+                }
+        }
+    }
+
+    private fun generateWithAi(weekStart: Long, day: Long, mealId: Long) {
         val jobKey = "$weekStart-$day-$mealId"
-        confirmAiRequest("La generazione delle alternative per questo pasto") {
+        confirmAiRequest(getString(R.string.meal_alternatives_ai_action)) {
+            findViewById<View>(R.id.askAiButton).isEnabled = false
+            findViewById<View>(R.id.alternativesContainer).visibility = View.GONE
+            findViewById<TextView>(R.id.statusText).visibility = View.GONE
+            findViewById<TextView>(R.id.loadingText).text = getString(R.string.meal_alternatives_generating_ai)
             val profileId = data.activeProfileStore.currentIdOrNull() ?: return@confirmAiRequest
             data.aiJobScheduler.enqueue(AiJobType.MEAL_ALTERNATIVES, profileId, jobKey)
             lifecycleScope.launch {
@@ -61,7 +103,7 @@ class MealAlternativeActivity : BaseShellActivity() {
                     when (info?.state) {
                         WorkInfo.State.ENQUEUED, WorkInfo.State.RUNNING -> findViewById<View>(R.id.loadingRow).visibility = View.VISIBLE
                         WorkInfo.State.SUCCEEDED -> renderPayload(info.outputData.getString(MealAlternativesAiJobHandler.KEY_PAYLOAD))
-                        WorkInfo.State.FAILED -> showError(info.outputData.getString("error") ?: "Impossibile generare alternative.")
+                        WorkInfo.State.FAILED -> showAiError(info.outputData.getString("error") ?: "Impossibile generare alternative.")
                         else -> Unit
                     }
                 }
@@ -84,19 +126,26 @@ class MealAlternativeActivity : BaseShellActivity() {
                 }
             }
             generated = MealAlternativeService.Alternatives(root.getLong("planId"), root.getLong("sourceVersionId"), root.getLong("weekStartEpochDay"), root.getLong("dayEpochDay"), root.getLong("mealId"), root.getString("mealType"), root.optInt("mealTimeMinutes").takeIf { !root.isNull("mealTimeMinutes") }, root.getInt("targetKcal"), alternatives, root.getString("provider"), root.getString("model"))
-            findViewById<View>(R.id.loadingRow).visibility = View.GONE
+                    findViewById<View>(R.id.loadingRow).visibility = View.GONE
+                    findViewById<TextView>(R.id.constraintText).text = getString(R.string.meal_alternatives_ai_rule)
+                    findViewById<MaterialButton>(R.id.askAiButton).visibility = View.GONE
+                    findViewById<View>(R.id.alternativesContainer).visibility = View.VISIBLE
             findViewById<TextView>(R.id.providerText).apply { text = "${generated?.provider} · ${generated?.model}"; visibility = View.VISIBLE }
             renderAlternatives(alternatives)
         }.onFailure { showError("Impossibile leggere le alternative.") }
     }
 
-    private fun renderAlternatives(items: List<MealAlternativeContract.Alternative>) {
+    private fun renderAlternatives(
+        items: List<MealAlternativeContract.Alternative>,
+        history: List<MealAlternativeService.HistoricalAlternative> = emptyList(),
+    ) {
         if (items.isEmpty()) {
             showError("Nessuna alternativa disponibile per questo pasto.")
             return
         }
         val container = findViewById<LinearLayout>(R.id.alternativesContainer)
-        val applyEnabled = aiProviderConfigured
+        val isHistory = history.isNotEmpty()
+        val applyEnabled = isHistory || aiProviderConfigured
         container.removeAllViews()
         items.forEachIndexed { index, alternative ->
             val card = MaterialCardView(this).apply {
@@ -155,15 +204,28 @@ class MealAlternativeActivity : BaseShellActivity() {
             }
             body.addView(ingredients)
             body.addView(TextView(this).apply {
-                text = alternative.reason
+                text = history.getOrNull(index)?.let { match ->
+                    val date = java.time.LocalDate.ofEpochDay(match.sourceDateEpochDay)
+                        .format(java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ITALIAN))
+                    getString(R.string.meal_alternatives_history_source, date, match.sourceVersionNumber)
+                } ?: alternative.reason.ifBlank { getString(R.string.meal_alternatives_ai_source) }
                 setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
                 setPadding(0, resources.getDimensionPixelSize(R.dimen.space_5), 0, 0)
             })
             body.addView(MaterialButton(this).apply {
-                text = "Sostituisci"
+                text = getString(R.string.meal_alternatives_replace)
                 isAllCaps = false
                 setAiActionEnabled(this, applyEnabled)
-                setOnClickListener { applyAlternative(alternative) }
+                setOnClickListener {
+                    history.getOrNull(index)?.let { match ->
+                        MaterialAlertDialogBuilder(this@MealAlternativeActivity)
+                            .setTitle(R.string.meal_alternatives_confirm_title)
+                            .setMessage(R.string.meal_alternatives_confirm_message)
+                            .setNegativeButton(R.string.action_cancel, null)
+                            .setPositiveButton(R.string.meal_alternatives_replace) { _, _ -> applyHistoricalAlternative(match) }
+                            .show()
+                    } ?: applyAlternative(alternative)
+                }
             }, LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 resources.getDimensionPixelSize(R.dimen.button_primary_min_height),
@@ -176,10 +238,48 @@ class MealAlternativeActivity : BaseShellActivity() {
         }
     }
 
+    private fun applyHistoricalAlternative(alternative: MealAlternativeService.HistoricalAlternative) {
+        if (applying) return
+        applying = true
+        setButtonsEnabled(false)
+        findViewById<MaterialButton>(R.id.askAiButton).isEnabled = false
+        findViewById<TextView>(R.id.statusText).apply {
+            visibility = View.VISIBLE
+            text = getString(R.string.meal_alternatives_applying_local)
+        }
+        val weekStart = intent.getLongExtra(EXTRA_WEEK_START_EPOCH_DAY, Long.MIN_VALUE)
+        val day = intent.getLongExtra(EXTRA_DAY_EPOCH_DAY, Long.MIN_VALUE)
+        val mealId = intent.getLongExtra(EXTRA_MEAL_ID, -1L)
+        val profileId = data.activeProfileStore.currentIdOrNull() ?: run {
+            applying = false
+            showError(getString(R.string.meal_alternatives_search_error))
+            return
+        }
+        data.aiJobScheduler.cancel(AiJobType.MEAL_ALTERNATIVES, profileId, "$weekStart-$day-$mealId")
+        lifecycleScope.launch {
+            runCatching { data.mealAlternativeService.applyHistorical(weekStart, day, mealId, alternative) }
+                .onSuccess {
+                    runCatching { data.notificationScheduler.refresh() }
+                    setResult(Activity.RESULT_OK)
+                    finish()
+                }
+                .onFailure { error ->
+                    applying = false
+                    setButtonsEnabled(true)
+                    showError(error.message ?: getString(R.string.meal_alternatives_search_error))
+                    findViewById<MaterialButton>(R.id.askAiButton).apply {
+                        visibility = View.VISIBLE
+                        isEnabled = aiProviderConfigured
+                    }
+                }
+        }
+    }
+
     private fun applyAlternative(alternative: MealAlternativeContract.Alternative) {
         val source = generated ?: return
         if (applying) return
         applying = true
+        findViewById<MaterialButton>(R.id.askAiButton).isEnabled = false
         setButtonsEnabled(false)
         findViewById<TextView>(R.id.statusText).apply {
             visibility = View.VISIBLE
@@ -196,6 +296,10 @@ class MealAlternativeActivity : BaseShellActivity() {
                     applying = false
                     setButtonsEnabled(true)
                     showError(error.message ?: "Impossibile sostituire il pasto.")
+                    findViewById<MaterialButton>(R.id.askAiButton).apply {
+                        visibility = View.VISIBLE
+                        isEnabled = aiProviderConfigured
+                    }
                 }
         }
     }
@@ -214,12 +318,49 @@ class MealAlternativeActivity : BaseShellActivity() {
 
     private fun showError(message: String) {
         findViewById<View>(R.id.loadingRow).visibility = View.GONE
-        findViewById<View>(R.id.alternativesContainer).visibility = View.GONE
+        findViewById<View>(R.id.alternativesContainer).visibility = if (generated != null) View.VISIBLE else View.GONE
         findViewById<TextView>(R.id.statusText).apply {
             visibility = View.VISIBLE
             text = message
         }
     }
+
+    private fun showAiError(message: String) {
+        findViewById<View>(R.id.loadingRow).visibility = View.GONE
+        if (historicalAlternatives.isNotEmpty()) {
+            findViewById<View>(R.id.alternativesContainer).visibility = View.VISIBLE
+            renderAlternatives(historicalAlternatives.map { it.meal.toAlternative() }, historicalAlternatives)
+        }
+        findViewById<TextView>(R.id.statusText).apply {
+            visibility = View.VISIBLE
+            text = message
+        }
+        findViewById<MaterialButton>(R.id.askAiButton).apply {
+            visibility = View.VISIBLE
+            isEnabled = aiProviderConfigured
+        }
+    }
+
+    private fun com.myfitai.app.domain.food.FoodMeal.toAlternative() = MealAlternativeContract.Alternative(
+        title = title,
+        kcal = kcal ?: 0,
+        proteinG = proteinG ?: 0f,
+        carbsG = carbsG ?: 0f,
+        fatG = fatG ?: 0f,
+        preparation = preparation.orEmpty(),
+        reason = "",
+        ingredients = ingredients.map { ingredient ->
+            MealAlternativeContract.Ingredient(
+                name = ingredient.name,
+                quantity = ingredient.quantity,
+                unit = ingredient.unit,
+                displayDose = ingredient.displayDose.orEmpty(),
+                weightState = ingredient.weightState.orEmpty(),
+                nutritionConfidence = ingredient.nutritionConfidence.orEmpty(),
+                category = ingredient.category.orEmpty(),
+            )
+        },
+    )
 
     companion object {
         const val EXTRA_AI_JOB_KEY = "meal_alt_ai_job_key"

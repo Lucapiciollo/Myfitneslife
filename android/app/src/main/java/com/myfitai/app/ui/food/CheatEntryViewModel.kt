@@ -43,6 +43,7 @@ class CheatEntryViewModel(
         val jobKey = input.occurredAtEpochMillis.toString()
         val params = androidx.work.Data.Builder().putString(CheatUnderstandingAiJobHandler.KEY_DESCRIPTION, input.description).putString(CheatUnderstandingAiJobHandler.KEY_QUANTITY, input.quantityText).putString(CheatUnderstandingAiJobHandler.KEY_NOTES, input.notes).putLong(CheatUnderstandingAiJobHandler.KEY_OCCURRED_AT, input.occurredAtEpochMillis)
         input.foodImage?.let { params.putString(com.myfitai.app.domain.ai.AiJobWorker.KEY_IMAGE_PATH, imageStore.write(it)) }
+        input.photoFingerprint?.let { params.putString(CheatUnderstandingAiJobHandler.KEY_PHOTO_FINGERPRINT, it) }
         aiJobScheduler.enqueue(AiJobType.CHEAT_UNDERSTANDING, profileId, jobKey, params = params.build())
         viewModelScope.launch {
             aiJobScheduler.observe(AiJobType.CHEAT_UNDERSTANDING, profileId, jobKey).collect { info ->
@@ -64,7 +65,7 @@ class CheatEntryViewModel(
         }
         runCatching {
             val root = org.json.JSONObject(payload)
-            _state.value = State(understanding = CheatAdjustmentService.Understanding(root.getString("understoodFood"), CheatAdjustmentContract.Estimate(root.getInt("kcal"), root.getDouble("proteinG").toFloat(), root.getDouble("carbsG").toFloat(), root.getDouble("fatG").toFloat(), root.getString("confidence"), root.getString("notes")), root.getString("provider"), root.getString("model"), ""))
+            _state.value = State(understanding = CheatAdjustmentService.Understanding(root.getString("understoodFood"), CheatAdjustmentContract.Estimate(root.getInt("kcal"), root.getDouble("proteinG").toFloat(), root.getDouble("carbsG").toFloat(), root.getDouble("fatG").toFloat(), root.getString("confidence"), root.getString("notes")), root.getString("provider"), root.getString("model"), root.optString("fingerprint")))
         }.onFailure { error ->
             _state.value = State(error = error.message?.takeIf { it.isNotBlank() } ?: "Risposta IA non valida.")
         }
@@ -93,7 +94,8 @@ class CheatEntryViewModel(
             .putString(CheatAdjustmentAiJobHandler.KEY_UNDERSTOOD, understanding.understoodFood)
             .putString(CheatAdjustmentAiJobHandler.KEY_AGENT_PROVIDER, understanding.provider)
             .putString(CheatAdjustmentAiJobHandler.KEY_AGENT_MODEL, understanding.model)
-            .putString(CheatAdjustmentAiJobHandler.KEY_FINGERPRINT, service.inputFingerprint(input))
+            .putString(CheatAdjustmentAiJobHandler.KEY_PHOTO_FINGERPRINT, input.photoFingerprint)
+            .putString(CheatAdjustmentAiJobHandler.KEY_FINGERPRINT, understanding.inputFingerprint)
             .build()
         aiJobScheduler.enqueue(AiJobType.CHEAT_ADJUSTMENT, profileId, jobKey, params = params)
         viewModelScope.launch {
