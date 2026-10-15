@@ -11,6 +11,7 @@ import androidx.test.uiautomator.Until
 import com.myfitai.app.R
 import com.myfitai.app.ui.SettingsActivity
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertNull
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
@@ -37,7 +38,7 @@ class SettingsDeviceVisualTest {
                 assertTrue(activity.findViewById<android.view.View>(R.id.dataSectionCard).visibility == android.view.View.VISIBLE)
                 assertTrue(activity.findViewById<android.view.View>(R.id.aiSectionCard).visibility == android.view.View.VISIBLE)
                 assertTrue(activity.findViewById<android.view.View>(R.id.useGeminiSwitch).visibility == android.view.View.VISIBLE)
-                assertTrue("Profile editing is presented from Profile, not duplicated in Settings", activity.findViewById<android.view.View>(R.id.rowFoodPreferences) == null)
+                assertNull("Food preferences are edited from Profile, not duplicated in Settings", activity.findViewById<android.view.View>(R.id.rowFoodPreferences))
             }
         }
     }

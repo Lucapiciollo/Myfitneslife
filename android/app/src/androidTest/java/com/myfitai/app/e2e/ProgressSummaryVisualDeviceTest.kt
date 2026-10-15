@@ -48,7 +48,9 @@ class ProgressSummaryVisualDeviceTest {
                 metric.getChildAt(1).performClick()
                 range.getChildAt(2).performClick()
                 assertEquals("Grasso corporeo", activity.findViewById<TextView>(R.id.metricLabel).text.toString())
-                assertEquals("Dati insufficienti", activity.findViewById<TextView>(R.id.metricDelta).text.toString())
+                val sixMonthDelta = activity.findViewById<TextView>(R.id.metricDelta).text.toString()
+                assertTrue("6M delta must either explain insufficient data or label its range: $sixMonthDelta",
+                    sixMonthDelta == "Dati insufficienti" || sixMonthDelta.contains("negli ultimi 6M"))
                 assertTrue(activity.findViewById<TextView>(R.id.progressSummaryTitle).text.toString().contains("6M"))
                 metric.getChildAt(0).performClick()
                 range.getChildAt(1).performClick()

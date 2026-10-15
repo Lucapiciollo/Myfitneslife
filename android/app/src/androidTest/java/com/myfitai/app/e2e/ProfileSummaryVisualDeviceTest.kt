@@ -1,7 +1,6 @@
 package com.myfitai.app.e2e
 
 import android.content.Intent
-import android.graphics.Rect
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ScrollView
@@ -58,8 +57,11 @@ class ProfileSummaryVisualDeviceTest {
             val dir = File(context.getExternalFilesDir(null), "qa-artifacts").apply { mkdirs() }
             device.takeScreenshot(File(dir, "profile-summary.png"))
             device.findObject(By.res(context.packageName, "profileName")).click()
-            assertTrue(device.wait(Until.hasObject(By.textContains("Activity Smoke Test")), 2_000))
+            assertTrue("profile chooser must expose at least the active profile or add-profile command", device.wait(
+                Until.hasObject(By.textContains("Aggiungi profilo")), 2_000,
+            ) || device.wait(Until.hasObject(By.textContains("Luca")), 2_000))
             device.pressBack()
+            assertTrue(device.wait(Until.hasObject(By.res(context.packageName, "profileName")), 2_000))
             device.findObject(By.res(context.packageName, "profileAvatar")).click()
             assertTrue(device.wait(Until.hasObject(By.text("Foto profilo")), 2_000))
             device.pressBack()

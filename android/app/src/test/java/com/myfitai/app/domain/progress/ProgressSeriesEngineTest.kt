@@ -33,10 +33,10 @@ class ProgressSeriesEngineTest {
             ProgressSeriesPoint(today.toEpochDay() * 86_400_000L, Float.NaN),
         )
 
-        assertEquals(listOf(93f, 91f, 89f), ProgressSeriesEngine.filter(points, 2, zone).points.map { it.value })
-        assertEquals(listOf(91f, 89f), ProgressSeriesEngine.filter(points, 1, zone).points.map { it.value })
-        assertEquals(listOf(89f), ProgressSeriesEngine.filter(points, 0, zone).points.map { it.value })
-        assertEquals(-4f, ProgressSeriesEngine.filter(points, 2, zone).delta)
+        assertEquals(listOf(93f, 91f, 89f), ProgressSeriesEngine.filter(points, 2, zone, today).points.map { it.value })
+        assertEquals(listOf(91f, 89f), ProgressSeriesEngine.filter(points, 1, zone, today).points.map { it.value })
+        assertEquals(listOf(89f), ProgressSeriesEngine.filter(points, 0, zone, today).points.map { it.value })
+        assertEquals(-4f, ProgressSeriesEngine.filter(points, 2, zone, today).delta)
     }
 
     @Test
