@@ -60,12 +60,7 @@ class BodyMeasurementTrendView @JvmOverloads constructor(
         chart.xAxis.isDrawGridLines = false
         chart.xAxis.labelRotationAngle = context.resources.getInteger(R.integer.chart_x_axis_label_rotation_degrees).toFloat()
         chart.xAxis.granularity = context.resources.getInteger(R.integer.chart_x_axis_granularity).toFloat()
-        chart.xAxis.setLabelCount(context.resources.getInteger(R.integer.chart_x_axis_label_count), true)
-        chart.xAxis.valueFormatter = object : IAxisValueFormatter {
-            override fun getFormattedValue(value: Float, axis: AxisBase?): String {
-                return series?.points?.getOrNull(value.toInt())?.label.orEmpty()
-            }
-        }
+        applyDateAxis(series?.points.orEmpty())
         chart.axisLeft.valueFormatter = object : IAxisValueFormatter {
             override fun getFormattedValue(value: Float, axis: AxisBase?): String =
                 if (unit == "%") resources.getString(R.string.chart_percent_value_format, value)
@@ -140,11 +135,7 @@ class BodyMeasurementTrendView @JvmOverloads constructor(
         chart.xAxis.position = info.appdev.charting.components.XAxis.XAxisPosition.BOTTOM
         chart.xAxis.labelRotationAngle = context.resources.getInteger(R.integer.chart_x_axis_label_rotation_degrees).toFloat()
         chart.xAxis.granularity = context.resources.getInteger(R.integer.chart_x_axis_granularity).toFloat()
-        chart.xAxis.setLabelCount(context.resources.getInteger(R.integer.chart_x_axis_label_count), false)
-        chart.xAxis.valueFormatter = object : IAxisValueFormatter {
-            override fun getFormattedValue(value: Float, axis: AxisBase?): String =
-                metricPoints.getOrNull(value.toInt())?.label.orEmpty()
-        }
+        applyDateAxis(metricPoints)
         chart.axisLeft.valueFormatter = object : IAxisValueFormatter {
             override fun getFormattedValue(value: Float, axis: AxisBase?): String = ChartAccessibility.axisValue(value, unit)
         }
@@ -193,6 +184,25 @@ class BodyMeasurementTrendView @JvmOverloads constructor(
         chart.invalidate()
     }
 
+    /** Asse delle date: solo etichette di punti reali, distinte e in ordine (al massimo una per punto), mai ripetute. */
+    private fun applyDateAxis(axisPoints: List<Point>) {
+        val shownLabels = ChartDateAxis.selectIndices(
+            axisPoints.map { it.label },
+            context.resources.getInteger(R.integer.chart_x_axis_label_count),
+        ).associateWith { axisPoints[it].label }
+        chart.xAxis.setLabelCount(shownLabels.size.coerceAtLeast(1), false)
+        chart.xAxis.valueFormatter = object : IAxisValueFormatter {
+            override fun getFormattedValue(value: Float, axis: AxisBase?): String {
+                val index = Math.round(value)
+                return if (kotlin.math.abs(value - index) < AXIS_INDEX_EPSILON) shownLabels[index].orEmpty() else ""
+            }
+        }
+    }
+
     private fun chartDp(dimenRes: Int): Float =
         resources.getDimension(dimenRes) / resources.displayMetrics.density
+
+    private companion object {
+        const val AXIS_INDEX_EPSILON = 0.001f
+    }
 }

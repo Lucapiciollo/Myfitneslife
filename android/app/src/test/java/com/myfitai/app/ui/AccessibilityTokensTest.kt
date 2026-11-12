@@ -82,9 +82,22 @@ class AccessibilityTokensTest {
             "control_min_height", "control_compact_min_height", "screen_header_icon_size",
             "body_trend_range_control_height", "week_navigation_icon_size", "shopping_filter_segment_height",
             "icon_button_size", "button_secondary_min_height", "button_primary_min_height",
+            "time_range_selector_min_height",
         )
         val failures = tokens.filter { dp(it) < 48f }.map { "$it = ${dp(it)}dp (< 48dp)" }
         assertTrue("Token di controlli interattivi sotto 48dp:\n" + failures.joinToString("\n"), failures.isEmpty())
+    }
+
+    @Test
+    fun periodSelectorsInLayoutsHaveNoFixedHeight() {
+        // Con font 1,3x/2x un'altezza fissa taglia il testo: i selettori di periodo sono wrap_content con altezza minima 48dp.
+        val offenders = File(resDir, "layout").listFiles { f -> f.extension == "xml" }.orEmpty().flatMap { file ->
+            Regex("""<com\.myfitai\.app\.ui\.widgets\.TimeRangeSelectorView[^>]*>""").findAll(file.readText()).mapNotNull { match ->
+                val height = Regex("""android:layout_height="([^"]+)"""").find(match.value)?.groupValues?.get(1)
+                if (height != "wrap_content") "${file.name}: layout_height=$height" else null
+            }.toList()
+        }
+        assertTrue("TimeRangeSelectorView con altezza non wrap_content:\n" + offenders.joinToString("\n"), offenders.isEmpty())
     }
 
     @Test

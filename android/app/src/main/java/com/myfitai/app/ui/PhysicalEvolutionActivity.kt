@@ -27,6 +27,7 @@ import com.myfitai.app.ui.progress.PhysicalEvolutionState
 import com.myfitai.app.ui.progress.PhysicalEvolutionViewModel
 import com.myfitai.app.ui.progress.ProgressMetricState
 import com.myfitai.app.ui.widgets.ChartAccessibility
+import com.myfitai.app.ui.widgets.ChartDateAxis
 import com.myfitai.app.ui.widgets.ChartValuesDialog
 import com.myfitai.app.ui.widgets.SelectableSegmentView
 import com.myfitai.app.ui.widgets.TimeRangeSelectorView
@@ -542,7 +543,7 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         val rangeLabel = resources.getStringArray(R.array.chart_range_labels)[rangeIndex]
         findViewById<TextView>(R.id.metricDelta).text = filtered.delta?.let { "${signed(it)} $unit negli ultimi $rangeLabel" } ?: "Dati insufficienti"
         renderChart(metricName, unit, filtered)
-        renderDateLabels(filtered, rangeIndex)
+        renderDateLabels(filtered)
         renderSecondary(R.id.otherIndicatorFatValue, R.id.otherIndicatorFatDelta, state.bodyFat, viewModel.filtered(state.bodyFat, dateRangePeriod(rangeIndex)), "%", rangeLabel)
         renderSecondary(R.id.otherIndicatorMuscleValue, R.id.otherIndicatorMuscleDelta, state.muscle, viewModel.filtered(state.muscle, dateRangePeriod(rangeIndex)), "kg", rangeLabel)
         renderSecondary(R.id.otherIndicatorWaterValue, R.id.otherIndicatorWaterDelta, state.bodyWater, viewModel.filtered(state.bodyWater, dateRangePeriod(rangeIndex)), "%", rangeLabel)
@@ -621,15 +622,20 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         findViewById<TextView>(deltaId).text = periodMetric.delta?.let { "${signed(it)} $unit · $rangeLabel" } ?: "—"
     }
 
-    private fun renderDateLabels(metric: ProgressMetricState, selectedRangeIndex: Int) {
-        val ids = intArrayOf(R.id.dateLabel1, R.id.dateLabel2, R.id.dateLabel3, R.id.dateLabel4, R.id.dateLabel5)
-        val points = metric.series
-        val formatter = DateTimeFormatter.ofPattern(if (selectedRangeIndex == 3) "dd/MM/yy" else "dd/MM")
-        ids.forEachIndexed { index, id ->
-            val point = if (points.isEmpty()) null else points[((points.lastIndex * index) / 4).coerceIn(0, points.lastIndex)]
-            findViewById<TextView>(id).text = point?.let {
-                Instant.ofEpochMilli(it.timestamp).atZone(ZoneId.systemDefault()).format(formatter)
-            } ?: "—"
+    private fun renderDateLabels(metric: ProgressMetricState) {
+        val views = intArrayOf(R.id.dateLabel1, R.id.dateLabel2, R.id.dateLabel3, R.id.dateLabel4, R.id.dateLabel5)
+            .map { findViewById<TextView>(it) }
+        // Solo etichette di punti reali e distinte (al massimo una per punto); gli slot in eccesso spariscono.
+        val labels = ChartDateAxis.labels(metric.series.map { it.timestamp }, ZoneId.systemDefault(), views.size)
+        views.forEachIndexed { slot, view ->
+            val label = labels.getOrNull(slot)
+            view.visibility = if (label != null || slot == 0) View.VISIBLE else View.GONE
+            view.text = label?.text ?: "—"
+            view.gravity = when {
+                slot == 0 -> android.view.Gravity.START
+                slot == labels.lastIndex -> android.view.Gravity.END
+                else -> android.view.Gravity.CENTER_HORIZONTAL
+            }
         }
     }
 
