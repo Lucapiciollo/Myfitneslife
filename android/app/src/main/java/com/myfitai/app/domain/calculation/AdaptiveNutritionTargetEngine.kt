@@ -32,6 +32,8 @@ object AdaptiveNutritionTargetEngine {
         val muscleMass: Evidence,
         val waist: Evidence,
         val abdomen: Evidence,
+        /** Minimo di sicurezza ([SafetyCalorieFloor]); il target adattato non scende mai sotto. */
+        val minimumKcal: Double? = null,
     )
 
     data class Result(
@@ -41,6 +43,8 @@ object AdaptiveNutritionTargetEngine {
         val energyFactor: Double?,
         val reasonCode: String,
         val baseTargetKcal: Double? = targetKcal,
+        /** True se il minimo di sicurezza ha alzato il target adattato. */
+        val floorApplied: Boolean = false,
     )
 
     fun adjust(input: Input): Result {
@@ -90,8 +94,9 @@ object AdaptiveNutritionTargetEngine {
             else -> baseFactor
         }.coerceIn(minFactor(input.goal), maxFactor(input.goal))
 
+        val clamp = SafetyCalorieFloor.clamp(tdee * factor, input.minimumKcal)
         return Result(
-            targetKcal = tdee * factor,
+            targetKcal = clamp.kcal,
             decision = decision,
             evidenceWindowDays = evidenceDays,
             energyFactor = factor,
@@ -102,6 +107,7 @@ object AdaptiveNutritionTargetEngine {
                 else -> "NO_CHANGE"
             },
             baseTargetKcal = base,
+            floorApplied = clamp.applied,
         )
     }
 

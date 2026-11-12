@@ -2,6 +2,7 @@ package com.myfitai.app.domain.food
 
 import com.myfitai.app.domain.calculation.LocalCalculationEngine
 import com.myfitai.app.domain.calculation.NutritionBusinessValidator
+import com.myfitai.app.domain.calculation.SafetyCalorieFloor
 import java.time.LocalDate
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -46,12 +47,16 @@ object CalorieRecoveryEngine {
         periodWeeks: Int = 1,
         /** Per-date base targets (e.g. training vs rest days). Dates not listed use [baseTargets]. */
         dailyBase: Map<LocalDate, NutritionBusinessValidator.Targets> = emptyMap(),
-        /** Safety floor: recovery never pushes a day below this value (e.g. the BMR). */
-        minimumKcal: Double? = null,
+        /**
+         * Safety floor: recovery never pushes a day below min(this value, the day's base target).
+         * Default = soglia assoluta prudente ([SafetyCalorieFloor]); i chiamanti con BMR/sesso noti passano
+         * [SafetyCalorieFloor.minimumKcal]. Non e piu possibile pianificare un recupero senza minimo.
+         */
+        minimumKcal: Double = SafetyCalorieFloor.MIN_KCAL_OTHER,
     ): Result {
         require(baseTargets.kcal > 0.0)
         require(weightKg > 0.0)
-        require(minimumKcal == null || (minimumKcal.isFinite() && minimumKcal >= 0.0)) { "MINIMUM_KCAL_INVALID" }
+        require(minimumKcal.isFinite() && minimumKcal >= 0.0) { "MINIMUM_KCAL_INVALID" }
 
         val dates = NutritionPlanPeriod.dates(monday, periodWeeks)
         val validCredits = credits
@@ -63,7 +68,7 @@ object CalorieRecoveryEngine {
         fun capFor(date: LocalDate): Int {
             val base = baseFor(date).kcal
             val byRatio = (base * MAX_DAILY_REDUCTION_RATIO).roundToInt().coerceAtLeast(0)
-            val byFloor = minimumKcal?.let { (base - it).toInt().coerceAtLeast(0) } ?: Int.MAX_VALUE
+            val byFloor = (base - minimumKcal).toInt().coerceAtLeast(0)
             return min(byRatio, byFloor)
         }
         val recoveryByDate = dates.associateWith { 0 }.toMutableMap()
@@ -105,7 +110,7 @@ object CalorieRecoveryEngine {
             val base = baseFor(date)
             val effectiveKcal = (base.kcal - recovery)
                 .coerceAtLeast(base.kcal * (1.0 - MAX_DAILY_REDUCTION_RATIO))
-                .let { value -> minimumKcal?.let { maxOf(value, minOf(it, base.kcal)) } ?: value }
+                .let { value -> maxOf(value, minOf(minimumKcal, base.kcal)) }
             val macros = LocalCalculationEngine.calculateMacrosForTarget(effectiveKcal, weightKg, goal)
             DayPlan(
                 date = date,

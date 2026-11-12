@@ -7,6 +7,8 @@ import com.myfitai.app.data.repository.UserProfileRepository
 import kotlinx.coroutines.flow.first
 import java.time.LocalDate
 import java.time.Period
+import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
 
 /**
@@ -97,6 +99,8 @@ class ProfileCalculationService(
 
         val latestBia = biaHistory.lastOrNull()
         val latestBody = bodyHistory.lastOrNull()
+        // Grasso per il BMR: ultima riga che lo contiene (non solo l'ultima BIA), con limite di eta del dato.
+        val katchSource = KatchBodyFatSelector.select(biaHistory, today, ZoneId.systemDefault())
         // A standalone weigh-in or hips-only visit must not erase the last waist reading.
         val latestAvailableWaist = bodyHistory.lastOrNull { it.waistCm != null }?.waistCm
         // Unica regola di selezione del peso: motore, UI e contesto IA leggono lo stesso risultato.
@@ -114,12 +118,11 @@ class ProfileCalculationService(
                 weightKg = weightKg,
                 heightCm = profile.heightCm?.toDouble(),
                 ageYears = ageYears,
-                biologicalSex = when (profile.biologicalSex?.trim()?.lowercase()) {
-                    "maschio", "male", "m" -> LocalCalculationEngine.BiologicalSex.MALE
-                    "femmina", "female", "f" -> LocalCalculationEngine.BiologicalSex.FEMALE
-                    else -> null
-                },
-                bodyFatPercent = latestBia?.bodyFatPercent?.toDouble(),
+                biologicalSex = ProfileCalculationMapper.sex(profile.biologicalSex),
+                bodyFatPercent = katchSource.bodyFatPercent?.toDouble(),
+                bodyFatReferenceWeightKg = katchSource.referenceWeightKg?.toDouble(),
+                bodyFatMeasuredAtEpochMillis = katchSource.measuredAtEpochMillis,
+                bodyFatFallbackReason = katchSource.fallbackReason,
                 activityLevel = ProfileCalculationMapper.activity(profile.activityLevel),
                 goal = ProfileCalculationMapper.goal(profile.goal),
                 waistCm = latestAvailableWaist?.toDouble(),
@@ -208,5 +211,43 @@ class ProfileCalculationService(
 
     companion object {
         const val RECENT_WINDOW_DAYS = 56
+    }
+}
+
+/**
+ * Sceglie il grasso corporeo per Katch-McArdle: l'ultima rilevazione BIA che lo contiene (anche se la BIA
+ * piu recente e solo-peso), ma solo se non piu vecchia di [MAX_AGE_DAYS]; oltre si passa a Mifflin e lo si
+ * dichiara. Il peso restituito e quello della STESSA riga, cosi massa magra = peso x (1 - grasso) coerente.
+ * Giorni calcolati su date locali (ChronoUnit), non su millisecondi, per non dipendere dal DST.
+ * [MAX_AGE_DAYS] e un'IPOTESI REVERSIBILE (180 giorni).
+ */
+object KatchBodyFatSelector {
+    const val MAX_AGE_DAYS = 180L
+    const val REASON_MISSING = "BODY_FAT_MISSING"
+    const val REASON_TOO_OLD = "BODY_FAT_TOO_OLD"
+
+    data class Selection(
+        val bodyFatPercent: Float?,
+        val referenceWeightKg: Float?,
+        val measuredAtEpochMillis: Long?,
+        val ageDays: Long?,
+        val fallbackReason: String?,
+    )
+
+    fun select(
+        biaHistory: List<com.myfitai.app.data.local.entity.BiaMeasurementEntity>,
+        today: LocalDate,
+        zone: ZoneId,
+    ): Selection {
+        val row = biaHistory
+            .filter { it.bodyFatPercent != null }
+            .maxByOrNull { it.measuredAtEpochMillis }
+            ?: return Selection(null, null, null, null, REASON_MISSING)
+        val measuredDay = java.time.Instant.ofEpochMilli(row.measuredAtEpochMillis).atZone(zone).toLocalDate()
+        val ageDays = ChronoUnit.DAYS.between(measuredDay, today)
+        if (ageDays > MAX_AGE_DAYS) {
+            return Selection(null, null, row.measuredAtEpochMillis, ageDays, REASON_TOO_OLD)
+        }
+        return Selection(row.bodyFatPercent, row.weightKg, row.measuredAtEpochMillis, ageDays, null)
     }
 }
