@@ -23,6 +23,8 @@ class NutritionAdviceService(
     private val foodConsumptions: FoodConsumptionRepository,
     private val activeProfileStore: ActiveProfileStore,
     private val time: TimeProvider = SystemTimeProvider,
+    /** D1 PoC switch: PIPE (default, production) or the typed JSON contract. Nothing enables JSON yet. */
+    private val contractMode: NutritionAdviceContractMode = NutritionAdviceContractMode.DEFAULT,
 ) {
     data class Result(
         val accepted: Boolean,
@@ -63,24 +65,27 @@ class NutritionAdviceService(
         val targetCarbsG = todayPlan?.targetCarbsG ?: snapshot?.version?.targetCarbsG
         val targetFatG = todayPlan?.targetFatG ?: snapshot?.version?.targetFatG
 
+        val userPrompt = buildPrompt(
+            normalized,
+            profile,
+            dietaryProfile,
+            snapshot,
+            todayPlan,
+            deviations,
+            consumed,
+            actual,
+            targetKcal,
+            targetProteinG,
+            targetCarbsG,
+            targetFatG,
+            minuteOfDay,
+            mealWindow(minuteOfDay),
+        )
+        if (contractMode == NutritionAdviceContractMode.JSON) return askTypedJson(userPrompt, dietaryProfile)
+
         val request = AiStructuredRequest(
             systemPrompt = SYSTEM_PROMPT,
-            userPrompt = buildPrompt(
-                normalized,
-                profile,
-                dietaryProfile,
-                snapshot,
-                todayPlan,
-                deviations,
-                consumed,
-                actual,
-                targetKcal,
-                targetProteinG,
-                targetCarbsG,
-                targetFatG,
-                minuteOfDay,
-                mealWindow(minuteOfDay),
-            ),
+            userPrompt = userPrompt,
             schemaName = NutritionAdviceContract.SCHEMA_NAME,
             schemaJson = NutritionAdviceContract.schemaJson,
             maxOutputTokens = 1_100,
@@ -113,6 +118,18 @@ class NutritionAdviceService(
         }
         if (!response.inScope) return refused()
         return Result(true, response.answer, response.suggestions, response.assumptions, "${validated.provider.name} · ${validated.model}")
+    }
+
+    /** Typed JSON path (D1 PoC): same failure mapping as the pipe path, validated output instead of a raw string. */
+    private suspend fun askTypedJson(userPrompt: String, dietaryProfile: DietaryProfile): Result {
+        val execution = runCatching { NutritionAdviceJsonContract.execute(aiRuntime, userPrompt, dietaryProfile) }.getOrElse {
+            // Transient transport errors and cancellation must reach the job worker (WorkManager retry).
+            com.myfitai.app.domain.ai.AiJobFailures.rethrowIfRetryableOrCancelled(it)
+            return Result(false, "Consiglio nutrizionale non disponibile in questo momento.", emptyList(), "", null)
+        }
+        val response = execution.output.value
+        if (!response.inScope) return refused()
+        return Result(true, response.answer, response.suggestions, response.assumptions, "${execution.response.provider.name} · ${execution.response.model}")
     }
 
     private fun buildPrompt(
@@ -201,6 +218,6 @@ class NutritionAdviceService(
             "meal", "food"
         )
 
-        private val SYSTEM_PROMPT = """Nutrition advice only. ${AiUserContext.INPUT_DESCRIPTION} Out of scope includes goal selection, deficit/surplus decisions, body-progress interpretation, BIA interpretation, and deviation/cheat compensation; for any of those use S=0 and exact answer "Posso rispondere solo a richieste di consiglio alimentare e nutrizionale.", no options. In scope: use app context only; M rows are planned meals, never consumed; C is the user's explicitly recorded plan consumption; D rows are recorded deviations; A is C plus D; R is the remaining daily target after actual intake. DP uses A=allergies, I=intolerances, E=excluded foods, D=disliked, P=preferred, S=diet style, N=notes. T and R are the effective daily calorie and macro targets, including any current plan adaptation. A/I/E/S are HARD constraints and must never be violated; D/P are soft preferences. Every O record MUST list in foodsCsv every food or ingredient implied by the option, comma-separated, so the app can independently reject hard-constraint violations. Do not treat planned food as eaten. For each option, propose a realistic next-meal or snack solution that fits the positive R kcal allowance and preserves the remaining protein/carbs/fat balance; do not spend the same calories twice. If R is low or negative, explain the constraint and return the lightest compliant alternatives instead of recommending an excess. If Q names a desired food, keep all options centered on it only when it does not violate a hard constraint; otherwise explain the conflict and suggest compliant alternatives. For generic requests use N meal window strongly, then R target fit, balance, calorie impact, practicality. No diagnosis, invented conditions, fasting, punitive restriction, or moral food labels. Return exactly 5 options, each with whole-meal kcal/P/C/F. Answer <=120 chars; title <=45; reason <=70; assumptions only if essential <=80. Plan changes only after app confirmation."""
+        internal val SYSTEM_PROMPT = """Nutrition advice only. ${AiUserContext.INPUT_DESCRIPTION} Out of scope includes goal selection, deficit/surplus decisions, body-progress interpretation, BIA interpretation, and deviation/cheat compensation; for any of those use S=0 and exact answer "Posso rispondere solo a richieste di consiglio alimentare e nutrizionale.", no options. In scope: use app context only; M rows are planned meals, never consumed; C is the user's explicitly recorded plan consumption; D rows are recorded deviations; A is C plus D; R is the remaining daily target after actual intake. DP uses A=allergies, I=intolerances, E=excluded foods, D=disliked, P=preferred, S=diet style, N=notes. T and R are the effective daily calorie and macro targets, including any current plan adaptation. A/I/E/S are HARD constraints and must never be violated; D/P are soft preferences. Every O record MUST list in foodsCsv every food or ingredient implied by the option, comma-separated, so the app can independently reject hard-constraint violations. Do not treat planned food as eaten. For each option, propose a realistic next-meal or snack solution that fits the positive R kcal allowance and preserves the remaining protein/carbs/fat balance; do not spend the same calories twice. If R is low or negative, explain the constraint and return the lightest compliant alternatives instead of recommending an excess. If Q names a desired food, keep all options centered on it only when it does not violate a hard constraint; otherwise explain the conflict and suggest compliant alternatives. For generic requests use N meal window strongly, then R target fit, balance, calorie impact, practicality. No diagnosis, invented conditions, fasting, punitive restriction, or moral food labels. Return exactly 5 options, each with whole-meal kcal/P/C/F. Answer <=120 chars; title <=45; reason <=70; assumptions only if essential <=80. Plan changes only after app confirmation."""
     }
 }
