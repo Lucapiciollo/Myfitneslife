@@ -71,14 +71,19 @@ class BottomNavigationUiTest {
         assertViewEventually(com.myfitai.app.R.id.navHome)
         assertViewEventually(com.myfitai.app.R.id.navFood)
         assertViewEventually(com.myfitai.app.R.id.navProgress)
-        assertViewEventually(com.myfitai.app.R.id.navAi)
         assertViewEventually(com.myfitai.app.R.id.navMore)
         scenario.onActivity { activity ->
+            assertTrue("The AI tab was removed from the bottom navigation", activity.findViewById<View>(
+                activity.resources.getIdentifier("navAi", "id", activity.packageName),
+            ) == null)
+            assertTrue(
+                "Bottom navigation must contain exactly the four root tabs",
+                (activity.findViewById<android.view.ViewGroup>(com.myfitai.app.R.id.bottomNav)).childCount == 4,
+            )
             listOf(
                 com.myfitai.app.R.id.navHome,
                 com.myfitai.app.R.id.navFood,
                 com.myfitai.app.R.id.navProgress,
-                com.myfitai.app.R.id.navAi,
                 com.myfitai.app.R.id.navMore,
             ).forEach { id ->
                 val tab = activity.findViewById<android.widget.TextView>(id)
@@ -150,20 +155,33 @@ class BottomNavigationUiTest {
         clickTab(com.myfitai.app.R.id.navFood)
         dismissFoodGateOrVerifyFoodRoot()
         clickAndWait("navProgress", "evolutionChart")
-        clickAndWait("navAi", "settingsContent")
-        assertCurrentTabViewEventually(com.myfitai.app.R.id.aiSectionCard)
-        scenario.onActivity { activity ->
-            assertTrue(activity.currentTabActivity()?.findViewById<View>(com.myfitai.app.R.id.aiSectionCard)?.visibility == View.VISIBLE)
-            assertTrue(activity.currentTabActivity()?.findViewById<View>(com.myfitai.app.R.id.aiRootSectionCard)?.visibility == View.VISIBLE)
-        }
         clickAndWait("navMore", "settingsContent")
+        scenario.onActivity { activity ->
+            val more = activity.currentTabActivity()
+            assertTrue("Altro exposes the AI entry card", more?.findViewById<View>(com.myfitai.app.R.id.aiEntriesCard)?.visibility == View.VISIBLE)
+            assertTrue("Altro exposes Impostazioni IA", more?.findViewById<View>(com.myfitai.app.R.id.rowAiSettings)?.visibility == View.VISIBLE)
+            assertTrue("The AI configuration no longer lives inside Altro", more?.findViewById<View>(com.myfitai.app.R.id.activeProviderText) == null)
+        }
         // Tapping the already-active tab must be a no-op: the Settings root stays on screen.
         clickTab(com.myfitai.app.R.id.navMore)
         assertCurrentTabViewEventually(com.myfitai.app.R.id.settingsContent)
         assertCurrentTabViewEventually(com.myfitai.app.R.id.rowMeasurements)
-        scenario.onActivity { activity ->
-            assertTrue(activity.currentTabActivity()?.findViewById<View>(com.myfitai.app.R.id.aiRootSectionCard)?.visibility != View.VISIBLE)
-        }
+    }
+
+    @Test
+    fun legacyAiTabExtraOpensHomeWithAiSettingsOnTop() {
+        scenario.close()
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        scenario = ActivityScenario.launch(Intent(context, TabHostActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            putExtra(com.myfitai.app.navigation.BottomNavBinder.EXTRA_SELECTED_TAB, "AI")
+        })
+        assertTrue(
+            "The legacy AI tab value must open Impostazioni IA instead of crashing",
+            device.wait(Until.hasObject(By.res("com.myfitai.app:id/aiScopeBanner")), 8_000),
+        )
+        device.pressBack()
+        assertTrue("Back returns to the Home tab underneath", device.wait(Until.hasObject(By.res("com.myfitai.app:id/navHome")), 5_000))
     }
 
     @Test

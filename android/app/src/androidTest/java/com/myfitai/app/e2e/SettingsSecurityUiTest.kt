@@ -54,9 +54,6 @@ class SettingsSecurityUiTest {
         }
         ActiveProfileStore(context).selectProfile(profile.id)
         scenario = ActivityScenario.launch(SettingsActivity::class.java)
-        scenario.onActivity { activity ->
-            assertTrue(activity.findViewById<TextView>(com.myfitai.app.R.id.activeProviderText).text.isNotBlank())
-        }
     }
 
     @org.junit.After
@@ -65,53 +62,17 @@ class SettingsSecurityUiTest {
     }
 
     @Test
-    fun settings_showsUnconfiguredProviderAndProtectedKeyStatus() {
+    fun aiConfigurationLivesInDedicatedScreensNotInAltro() {
         scenario.onActivity { activity ->
-            val providerText = activity.findViewById<TextView>(com.myfitai.app.R.id.activeProviderText).text.toString()
-            assertTrue(providerText.contains("Provider") || providerText.contains("Gemini"))
-            val geminiStatus = activity.findViewById<TextView>(com.myfitai.app.R.id.geminiKeyStatusText).text.toString()
-            val openAiStatus = activity.findViewById<TextView>(com.myfitai.app.R.id.openAiKeyStatusText).text.toString()
-            assertTrue(geminiStatus.contains("Gemini") || openAiStatus.contains("OpenAI"))
-            val providerSwitch = activity.findViewById<com.google.android.material.materialswitch.MaterialSwitch>(com.myfitai.app.R.id.useGeminiSwitch)
-            if (providerSwitch.isChecked) providerSwitch.performClick()
-            assertTrue(activity.findViewById<View>(com.myfitai.app.R.id.openAiApiKeyInput).visibility == View.VISIBLE)
-        }
-    }
-
-    @Test
-    fun apiKeyInputs_areAccessibleButStayProtected() {
-        scenario.onActivity { activity ->
-            assertTrue(
-                "FLAG_SECURE must stay enabled on the credentials screen",
-                activity.window.attributes.flags and android.view.WindowManager.LayoutParams.FLAG_SECURE != 0,
-            )
-            listOf(com.myfitai.app.R.id.geminiApiKeyInput, com.myfitai.app.R.id.openAiApiKeyInput).forEach { id ->
-                val input = activity.findViewById<android.widget.EditText>(id)
-                assertTrue(
-                    "API key field must be focusable by accessibility services",
-                    input.importantForAccessibility != View.IMPORTANT_FOR_ACCESSIBILITY_NO &&
-                        input.importantForAccessibility != View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS,
-                )
-                assertTrue("API key field needs an accessible label", !input.contentDescription.isNullOrBlank())
-                assertTrue(
-                    "API key field must keep the protected password input",
-                    input.inputType and android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD != 0,
-                )
-                assertTrue("No stored value may be loaded into the field", input.text.isNullOrEmpty())
+            val res = activity.resources
+            listOf("aiSectionCard", "aiRootSectionCard", "useGeminiSwitch", "geminiApiKeyInput", "openAiApiKeyInput", "activeProviderText").forEach { name ->
+                assertTrue("Altro must not contain $name", res.getIdentifier(name, "id", activity.packageName) == 0 ||
+                    activity.findViewById<View>(res.getIdentifier(name, "id", activity.packageName)) == null)
             }
-        }
-    }
-
-    @Test
-    fun aiScreen_separatesSharedConfigurationFromProfileAutomations() {
-        scenario.onActivity { activity ->
+            assertTrue(activity.findViewById<View>(com.myfitai.app.R.id.rowAiSettings).visibility == View.VISIBLE)
             assertEquals(
-                "Configurazione app, condivisa da tutti i profili",
-                activity.findViewById<TextView>(com.myfitai.app.R.id.aiConfigGroupHeader).text.toString(),
-            )
-            assertTrue(
-                activity.findViewById<TextView>(com.myfitai.app.R.id.aiAutomationsHeader).text.toString()
-                    .startsWith("Automazioni del profilo attivo"),
+                "Intelligenza artificiale",
+                activity.findViewById<TextView>(com.myfitai.app.R.id.aiSectionHeader).text.toString(),
             )
         }
     }

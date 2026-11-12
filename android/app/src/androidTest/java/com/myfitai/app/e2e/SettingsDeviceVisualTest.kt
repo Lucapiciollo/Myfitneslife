@@ -27,7 +27,6 @@ class SettingsDeviceVisualTest {
         ActivityScenario.launch<SettingsActivity>(Intent(context, SettingsActivity::class.java)).use { scenario ->
             scenario.onActivity { activity ->
                 assertTrue(activity.window.attributes.flags and WindowManager.LayoutParams.FLAG_SECURE != 0)
-                assertTrue(activity.findViewById<android.view.View>(R.id.activeProviderText).visibility == android.view.View.VISIBLE)
             }
 
             assertTrue(device.wait(Until.hasObject(By.text("Impostazioni")), 5_000))
@@ -36,9 +35,12 @@ class SettingsDeviceVisualTest {
 
             scenario.onActivity { activity ->
                 assertTrue(activity.findViewById<android.view.View>(R.id.dataSectionCard).visibility == android.view.View.VISIBLE)
-                assertTrue(activity.findViewById<android.view.View>(R.id.aiSectionCard).visibility == android.view.View.VISIBLE)
-                assertTrue(activity.findViewById<android.view.View>(R.id.useGeminiSwitch).visibility == android.view.View.VISIBLE)
-                assertNull("Food preferences are edited from Profile, not duplicated in Settings", activity.findViewById<android.view.View>(R.id.rowFoodPreferences))
+                assertTrue(activity.findViewById<android.view.View>(R.id.aiEntriesCard).visibility == android.view.View.VISIBLE)
+                assertTrue(activity.findViewById<android.view.View>(R.id.rowAiSettings).visibility == android.view.View.VISIBLE)
+                assertNull("The AI provider configuration moved to Impostazioni IA", activity.findViewById<android.view.View>(R.id.activeProviderText))
+                assertNull("Provider/keys no longer live inside Altro", activity.findViewById<android.view.View>(R.id.geminiApiKeyInput))
+                assertNull("Food preferences are edited from Profile, not duplicated in Settings", activity.findViewById<android.view.View>(R.id.rowDietaryPreferences))
+                assertNull("Personal data is edited from Profile, not duplicated in Settings", activity.findViewById<android.view.View>(R.id.rowPersonalData))
             }
         }
     }

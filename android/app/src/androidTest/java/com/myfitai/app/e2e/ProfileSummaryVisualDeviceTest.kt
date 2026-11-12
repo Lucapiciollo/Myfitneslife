@@ -41,7 +41,7 @@ class ProfileSummaryVisualDeviceTest {
                 listOf(name, stats, goal, hint).forEach { assertTrue(it.text.isNotBlank()) }
                 assertTrue("profile name action missing", name.hasOnClickListeners())
                 assertTrue("avatar action missing", avatar.hasOnClickListeners())
-                listOf(R.id.rowFoodPreferences, R.id.rowNotifications, R.id.rowExport).forEach { id ->
+                listOf(R.id.rowPersonalData, R.id.rowDietaryPreferences, R.id.rowNotifications, R.id.rowExport).forEach { id ->
                     assertTrue("profile row $id action missing", activity.findViewById<View>(id).hasOnClickListeners())
                 }
 
@@ -75,7 +75,7 @@ class ProfileSummaryVisualDeviceTest {
             scenario.onActivity { activity ->
                 val scroll = descendants(activity.findViewById<ViewGroup>(android.R.id.content)).filterIsInstance<ScrollView>().single()
                 scroll.fullScroll(View.FOCUS_DOWN)
-                listOf(R.id.rowFoodPreferences, R.id.rowNotifications, R.id.rowExport).forEach { id ->
+                listOf(R.id.rowPersonalData, R.id.rowDietaryPreferences, R.id.rowNotifications, R.id.rowExport).forEach { id ->
                     assertTrue("profile row $id not reachable", activity.findViewById<View>(id).isShown)
                 }
             }

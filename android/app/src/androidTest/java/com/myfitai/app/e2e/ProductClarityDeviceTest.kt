@@ -81,8 +81,8 @@ class ProductClarityDeviceTest {
         ActivityScenario.launch<ProfileActivity>(Intent(context, ProfileActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
         }).use {
-            assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/rowFoodPreferences")), 5_000))
-            device.findObject(By.res("com.myfitai.app:id/rowFoodPreferences")).click()
+            assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/rowPersonalData")), 5_000))
+            device.findObject(By.res("com.myfitai.app:id/rowPersonalData")).click()
             assertTrue("Profile row must open the personal data editor", device.wait(Until.hasObject(By.textStartsWith("Modifica")), 5_000))
             listOf("nameInput", "birthDateInput", "sexInput", "heightInput", "weightInput", "goalInput", "activityInput").forEach { id ->
                 assertTrue("Profile editor field missing: $id", device.hasObject(By.res("com.myfitai.app:id/$id")))
@@ -111,11 +111,12 @@ class ProductClarityDeviceTest {
             scenario.onActivity { activity ->
                 val gear = activity.findViewById<View>(R.id.profileAiSettingsButton)
                 assertEquals(
-                    "Configurazione IA dell'app, condivisa da tutti i profili",
+                    "Impostazioni IA",
                     gear.contentDescription?.toString(),
                 )
                 assertTrue("Profile editor row must not promise dietary preferences it does not edit",
-                    !context.getString(R.string.profile_desc_food_preferences).contains("alimentari", ignoreCase = true))
+                    !context.getString(R.string.profile_desc_personal_data).contains("alimentari", ignoreCase = true))
+                assertEquals("Dati personali", context.getString(R.string.profile_row_personal_data))
             }
             assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/rowDietaryPreferences")), 5_000))
             device.findObject(By.res("com.myfitai.app:id/rowDietaryPreferences")).click()
@@ -123,7 +124,7 @@ class ProductClarityDeviceTest {
             device.pressBack()
             assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/profileAiSettingsButton")), 5_000))
             device.findObject(By.res("com.myfitai.app:id/profileAiSettingsButton")).click()
-            assertTrue("Gear must open the shared AI configuration", device.wait(Until.hasObject(By.text("Configurazione app, condivisa da tutti i profili")), 5_000))
+            assertTrue("Gear must open Impostazioni IA, shared by all profiles", device.wait(Until.hasObject(By.res("com.myfitai.app:id/aiScopeBanner")), 5_000))
             device.pressBack()
             assertTrue("Back from the AI screen must return to the Profile", device.wait(Until.hasObject(By.res("com.myfitai.app:id/profileName")), 5_000))
         }

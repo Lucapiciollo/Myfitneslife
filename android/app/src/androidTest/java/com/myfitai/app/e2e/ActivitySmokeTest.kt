@@ -35,6 +35,8 @@ import com.myfitai.app.ui.HomeActivity
 import com.myfitai.app.ui.MeasurementsActivity
 import com.myfitai.app.ui.NewBodyMeasurementActivity
 import com.myfitai.app.ui.NutritionPathActivity
+import com.myfitai.app.ui.AiAutomationsActivity
+import com.myfitai.app.ui.AiSettingsActivity
 import com.myfitai.app.ui.NutritionPlanSettingsActivity
 import com.myfitai.app.ui.NewWorkoutActivity
 import com.myfitai.app.ui.NotificationsActivity
@@ -91,6 +93,8 @@ class ActivitySmokeTest {
         smoke(HomeActivity::class.java)
         smoke(PhysicalEvolutionActivity::class.java)
         smoke(SettingsActivity::class.java)
+        smoke(AiSettingsActivity::class.java)
+        smoke(AiAutomationsActivity::class.java)
         smoke(ProfileActivity::class.java)
         smoke(ProfileEditActivity::class.java)
         smoke(MeasurementsActivity::class.java)
