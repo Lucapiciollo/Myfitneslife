@@ -8,6 +8,7 @@ import androidx.core.view.ViewCompat
 import com.myfitai.app.domain.body.BodyMeasurementHistoryText
 import android.widget.AutoCompleteTextView
 import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
@@ -24,7 +25,11 @@ import com.myfitai.app.data.local.entity.BiaMeasurementEntity
 import com.myfitai.app.domain.body.BodyWeightHistory
 import com.myfitai.app.domain.body.BodyProportionEngine
 import com.myfitai.app.domain.body.BodyProportionAnalysisService
+import com.myfitai.app.ai.AiFailure
+import com.myfitai.app.ai.AiFailureMessages
 import com.myfitai.app.domain.ai.AiJobType
+import com.myfitai.app.domain.ai.AiJobWorker
+import com.myfitai.app.navigation.AiSettingsEntry
 import com.myfitai.app.domain.body.BodyProportionsAiJobHandler
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.ui.body.BodyMeasurementsViewModel
@@ -78,6 +83,14 @@ class BodyMeasuresActivity : BaseShellActivity() {
     private var latestProportionReport: BodyProportionEngine.Report? = null
     private var latestProportionMeasurementId: Long? = null
     private var latestProportionJobKey: String? = null
+    private var proportionCancelAction: (() -> Unit)? = null
+    private lateinit var proportionWaitPanel: View
+    private lateinit var proportionFailurePanel: View
+    private lateinit var proportionFailureMessage: TextView
+    private lateinit var proportionFailureDetails: TextView
+    private lateinit var proportionRetryButton: MaterialButton
+    private lateinit var proportionSettingsButton: MaterialButton
+    private lateinit var proportionDetailsToggle: MaterialButton
     private val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.ITALIAN)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -279,6 +292,8 @@ class BodyMeasuresActivity : BaseShellActivity() {
                 resources.getDimensionPixelSize(R.dimen.button_secondary_min_height),
             ).apply { topMargin = resources.getDimensionPixelSize(R.dimen.space_12) }
         })
+        content.addView(buildProportionWaitPanel())
+        content.addView(buildProportionFailurePanel())
         card.addView(content)
         container.addView(card)
     }
@@ -330,6 +345,86 @@ class BodyMeasuresActivity : BaseShellActivity() {
         }
     }
 
+    /** Attesa IA nelle Proporzioni: spinner con descrizione, testo annunciato (live region) e Annulla. */
+    private fun buildProportionWaitPanel(): LinearLayout {
+        val ctx = this
+        return LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            visibility = View.GONE
+            setPadding(0, resources.getDimensionPixelSize(R.dimen.space_12), 0, 0)
+            addView(LinearLayout(ctx).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                val size = resources.getDimensionPixelSize(R.dimen.progress_indicator_size)
+                addView(ProgressBar(ctx).apply {
+                    isIndeterminate = true
+                    contentDescription = getString(R.string.proportions_wait_progress_cd)
+                }, LinearLayout.LayoutParams(size, size))
+                addView(TextView(ctx).apply {
+                    text = getString(R.string.proportions_wait_message)
+                    setTextAppearance(R.style.Text_MyFitAI_Body)
+                    accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
+                    setPadding(resources.getDimensionPixelSize(R.dimen.space_12), 0, 0, 0)
+                }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            })
+            addView(inlineActionButton(R.string.proportions_wait_cancel, getString(R.string.proportions_wait_cancel_cd)) {
+                proportionCancelAction?.invoke()
+            })
+        }.also { proportionWaitPanel = it }
+    }
+
+    /** Errore persistente in scheda (non Toast): frase della tabella centrale, azioni solo se applicabili, dettagli espandibili. */
+    private fun buildProportionFailurePanel(): LinearLayout {
+        val ctx = this
+        return LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            visibility = View.GONE
+            setPadding(0, resources.getDimensionPixelSize(R.dimen.space_12), 0, 0)
+            addView(TextView(ctx).apply {
+                setTextAppearance(R.style.Text_MyFitAI_Body)
+                accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
+                proportionFailureMessage = this
+            })
+            addView(inlineActionButton(R.string.ai_failure_retry, null) {
+                findViewById<MaterialButton>(proportionAiButtonId)?.let(::analyzeProportionsWithAi)
+            }.also { proportionRetryButton = it })
+            addView(inlineActionButton(R.string.ai_failure_action_open_settings, null) {
+                AiSettingsEntry.open(ctx)
+            }.also { proportionSettingsButton = it })
+            addView(TextView(ctx).apply {
+                setTextAppearance(R.style.Text_MyFitAI_Micro)
+                visibility = View.GONE
+                proportionFailureDetails = this
+            })
+            addView(inlineActionButton(R.string.ai_failure_details, null) {
+                val details = proportionFailureDetails
+                val show = details.visibility != View.VISIBLE
+                details.visibility = if (show) View.VISIBLE else View.GONE
+                proportionDetailsToggle.text = getString(if (show) R.string.ai_failure_details_hide else R.string.ai_failure_details)
+            }.also { proportionDetailsToggle = it })
+        }.also { proportionFailurePanel = it }
+    }
+
+    private fun showProportionWaiting(waiting: Boolean) {
+        proportionWaitPanel.visibility = if (waiting) View.VISIBLE else View.GONE
+        if (waiting) proportionFailurePanel.visibility = View.GONE
+    }
+
+    private fun showProportionFailure(presentation: AiFailureMessages.Presentation) {
+        proportionWaitPanel.visibility = View.GONE
+        proportionFailureMessage.text = getString(presentation.messageRes)
+        proportionRetryButton.visibility = if (presentation.canRetry) View.VISIBLE else View.GONE
+        val settingsLabel = presentation.action.labelRes
+        proportionSettingsButton.visibility = if (settingsLabel != null) View.VISIBLE else View.GONE
+        settingsLabel?.let { proportionSettingsButton.text = getString(it) }
+        val code = presentation.technicalCode
+        proportionFailureDetails.visibility = View.GONE
+        proportionDetailsToggle.text = getString(R.string.ai_failure_details)
+        proportionDetailsToggle.visibility = if (code != null) View.VISIBLE else View.GONE
+        proportionFailureDetails.text = code?.let { getString(R.string.ai_failure_details_code, it) }.orEmpty()
+        proportionFailurePanel.visibility = View.VISIBLE
+    }
+
     private fun analyzeProportionsWithAi(button: MaterialButton) {
         val report = latestProportionReport ?: return
         if (report.availableMeasurements <= 0) return
@@ -337,7 +432,13 @@ class BodyMeasuresActivity : BaseShellActivity() {
         confirmAiRequest("Il confronto IA delle misure corporee") {
             setAiActionEnabled(button, false)
             button.text = "Analisi in corso…"
-            val profileId = data.activeProfileStore.currentIdOrNull() ?: return@confirmAiRequest
+            showProportionWaiting(true)
+            val profileId = data.activeProfileStore.currentIdOrNull() ?: run {
+                showProportionWaiting(false)
+                setAiActionEnabled(button)
+                button.text = "Confronta ultima rilevazione con IA"
+                return@confirmAiRequest
+            }
             val latest = measurements.firstOrNull()
             val previous = measurements.drop(1).firstOrNull()
         val reportJson = bodyProportionReportJson(report, latest, previous)
@@ -350,9 +451,11 @@ class BodyMeasuresActivity : BaseShellActivity() {
                 latestProportionJobKey = null
                 setAiActionEnabled(button)
                 button.text = "Confronta ultima rilevazione con IA"
-                Toast.makeText(this, "Impossibile avviare l'analisi. Riprova.", Toast.LENGTH_LONG).show()
+                showProportionFailure(AiFailureMessages.couldNotStart())
                 return@confirmAiRequest
             }
+            // Annulla usa solo l'API pubblica dello scheduler: il job risultera' CANCELLED e l'osservatore sotto ripristina la scheda.
+            proportionCancelAction = { data.aiJobScheduler.cancel(AiJobType.BODY_PROPORTIONS, profileId, jobKey) }
             lifecycleScope.launch {
                 data.aiJobScheduler.observe(AiJobType.BODY_PROPORTIONS, profileId, jobKey)
                     .transformWhile { info ->
@@ -362,22 +465,28 @@ class BodyMeasuresActivity : BaseShellActivity() {
                     .collect { info ->
                     when (info?.state) {
                         androidx.work.WorkInfo.State.SUCCEEDED -> {
+                            proportionCancelAction = null
+                            showProportionWaiting(false)
                             runCatching {
                                 val p = org.json.JSONObject(info.outputData.getString(BodyProportionsAiJobHandler.KEY_PAYLOAD).orEmpty())
                                 validateBodyProportionsPayload(p, report)
                                 showBodyProportionsResult(p)
                             }.onFailure {
-                                Toast.makeText(this@BodyMeasuresActivity, "Risultato dell'analisi non valido. Riprova.", Toast.LENGTH_LONG).show()
+                                showProportionFailure(AiFailureMessages.forFailure(AiFailure.BusinessRuleViolated(null)))
                             }
                             latestProportionJobKey = null
                             setAiActionEnabled(button)
                             button.text = "Confronta ultima rilevazione con IA"
                         }
                         androidx.work.WorkInfo.State.FAILED, androidx.work.WorkInfo.State.CANCELLED -> {
+                            proportionCancelAction = null
                             latestProportionJobKey = null
                             setAiActionEnabled(button)
                             button.text = "Confronta ultima rilevazione con IA"
-                            Toast.makeText(this@BodyMeasuresActivity, "Analisi non riuscita. Riprova.", Toast.LENGTH_LONG).show()
+                            showProportionFailure(
+                                if (info.state == androidx.work.WorkInfo.State.CANCELLED) AiFailureMessages.forFailure(AiFailure.Cancelled)
+                                else AiFailureMessages.resolve(info.outputData.getString(AiJobWorker.KEY_ERROR)),
+                            )
                         }
                         else -> Unit
                     }
@@ -609,10 +718,10 @@ class BodyMeasuresActivity : BaseShellActivity() {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.END
                 setPadding(0, resources.getDimensionPixelSize(R.dimen.space_6), 0, 0)
-                addView(historyActionButton(R.string.measure_history_edit, getString(R.string.measure_history_edit_cd, dateText)) {
+                addView(inlineActionButton(R.string.measure_history_edit, getString(R.string.measure_history_edit_cd, dateText)) {
                     openEdit(measurement)
                 })
-                addView(historyActionButton(R.string.measure_history_delete, getString(R.string.measure_history_delete_cd, dateText)) {
+                addView(inlineActionButton(R.string.measure_history_delete, getString(R.string.measure_history_delete_cd, dateText)) {
                     confirmDelete(measurement)
                 })
             })
@@ -620,10 +729,10 @@ class BodyMeasuresActivity : BaseShellActivity() {
         }
     }
 
-    private fun historyActionButton(label: Int, description: String, onClick: () -> Unit): MaterialButton =
+    private fun inlineActionButton(label: Int, description: String?, onClick: () -> Unit): MaterialButton =
         MaterialButton(this, null, androidx.appcompat.R.attr.borderlessButtonStyle).apply {
             text = getString(label)
-            contentDescription = description
+            description?.let { contentDescription = it }
             isAllCaps = false
             minimumHeight = resources.getDimensionPixelSize(R.dimen.control_min_height)
             minHeight = resources.getDimensionPixelSize(R.dimen.control_min_height)

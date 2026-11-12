@@ -308,4 +308,32 @@
     <string name="measure_field_thigh_right">coscia destra</string>
     <string name="measure_field_calf_left">polpaccio sinistro</string>
     <string name="measure_field_calf_right">polpaccio destro</string>
+
+    <!-- Errori IA: tabella centrale AiFailureMessages -->
+    <string name="ai_failure_network">Rete assente o provider non raggiungibile: riprova più tardi.</string>
+    <string name="ai_failure_unavailable">Il servizio IA è temporaneamente non disponibile: riprova più tardi.</string>
+    <string name="ai_failure_quota">Quota esaurita: apri Impostazioni IA per controllare il tuo piano.</string>
+    <string name="ai_failure_auth">Chiave non valida o non autorizzata: controllala in Impostazioni IA.</string>
+    <string name="ai_failure_not_configured">Provider IA non configurato: aggiungi una chiave in Impostazioni IA.</string>
+    <string name="ai_failure_model">Il modello scelto non è accessibile con questa chiave: controlla le Impostazioni IA.</string>
+    <string name="ai_failure_invalid_response">Risposta non valida: l\'IA non ha prodotto un risultato utilizzabile e nulla è stato salvato.</string>
+    <string name="ai_failure_blocked">Contenuto bloccato dal provider: la richiesta non è stata elaborata.</string>
+    <string name="ai_failure_truncated">Risposta interrotta prima del completamento: nulla è stato salvato.</string>
+    <string name="ai_failure_empty">Il provider non ha restituito alcun contenuto: nulla è stato salvato.</string>
+    <string name="ai_failure_rejected">Risposta respinta dai controlli dell\'app: l\'analisi non è stata salvata.</string>
+    <string name="ai_failure_paid_retry">L\'operazione si è interrotta dopo un tentativo già consumato e non viene ripetuta in automatico.</string>
+    <string name="ai_failure_cancelled">Analisi annullata.</string>
+    <string name="ai_failure_generic">Analisi non riuscita: nessun dato è stato modificato.</string>
+    <string name="ai_failure_start">Non è stato possibile avviare l\'analisi.</string>
+    <string name="ai_failure_retry">Riprova</string>
+    <string name="ai_failure_action_open_settings">Apri Impostazioni IA</string>
+    <string name="ai_failure_details">Dettagli</string>
+    <string name="ai_failure_details_hide">Nascondi dettagli</string>
+    <string name="ai_failure_details_code">Codice: %1$s</string>
+
+    <!-- Proporzioni corporee: attesa IA -->
+    <string name="proportions_wait_message">Analisi in corso: può richiedere fino a un minuto.</string>
+    <string name="proportions_wait_progress_cd">Analisi IA in corso</string>
+    <string name="proportions_wait_cancel">Annulla analisi</string>
+    <string name="proportions_wait_cancel_cd">Annulla l\'analisi IA in corso</string>
 </resources>
