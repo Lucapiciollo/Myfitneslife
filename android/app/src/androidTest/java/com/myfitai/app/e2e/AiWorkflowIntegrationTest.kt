@@ -206,6 +206,31 @@ class AiWorkflowIntegrationTest {
     }
 
     @Test
+    fun unreadableDietaryPreferences_blockPlanAdviceAlternativesAndApplyWithoutCallingAi() = runBlocking {
+        val week = SixMonthHistoryFixture.TODAY
+        val generation = services().generation
+        generation.generateWeek(week)
+        val profileId = store.currentIdOrNull()!!
+        val meal = MealPlanRepository(db).loadLatestSnapshot(profileId, week.toEpochDay())!!.version.days.first().meals.last()
+        val alternatives = services().mealAlternative.generate(week.toEpochDay(), week.toEpochDay(), meal.id)
+
+        val profiles = com.myfitai.app.data.repository.UserProfileRepository(db)
+        profiles.update(profiles.get(profileId)!!.copy(dietaryPreferencesJson = "Allergico alle noci, niente lattosio"))
+        val callsBefore = gateway.requests.size
+
+        val planError = runCatching { services().generation.generateWeek(week.plusDays(7)) }.exceptionOrNull()
+        assertTrue("plan error=$planError", planError is NutritionPlanGenerationService.GenerationException.ConstraintsUnreadable)
+        val advice = services().advice.ask("Mi va un gelato")
+        assertFalse(advice.accepted)
+        assertEquals(com.myfitai.app.domain.food.DietaryProfile.UNREADABLE_MESSAGE, advice.answer)
+        val generateError = runCatching { services().mealAlternative.generate(week.toEpochDay(), week.toEpochDay(), meal.id) }.exceptionOrNull()
+        assertTrue("alt error=$generateError", generateError is MealAlternativeService.AlternativeException.ConstraintsUnreadable)
+        val applyError = runCatching { services().mealAlternative.apply(alternatives, alternatives.items.first()) }.exceptionOrNull()
+        assertTrue("apply error=$applyError", applyError is MealAlternativeService.AlternativeException.ConstraintsUnreadable)
+        assertEquals(callsBefore, gateway.requests.size)
+    }
+
+    @Test
     fun advice_isNutritionScopedFiveSuggestionsAndDoesNotPersistConversation() = runBlocking {
         val service = services().advice
         val before = db.cheatEntryDao().observeAll(store.currentIdOrNull()!!).first().size

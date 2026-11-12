@@ -82,10 +82,19 @@ class NutritionGuardrailsIntegrationTest {
     }
 
     @Test
-    fun planMealTitleIsCheckedEvenWhenIngredientsLookClean() {
-        val profile = DietaryProfile(intolerances = listOf("glutine"))
-        assertTrue(FoodConstraintValidator.validate(plan("Pasta al pomodoro", listOf("Riso", "Pomodori")), profile).isFailure)
-        assertTrue(FoodConstraintValidator.validate(plan("Pasto post allenamento", listOf("Riso", "Pomodori")), profile).isSuccess)
+    fun planMealTitle_onlyStrongUnambiguousTermsProduceAViolation() {
+        val gluten = DietaryProfile(intolerances = listOf("glutine"))
+        // Strong term in the title (seitan, orzo, grano...) is a violation even when the ingredient list looks clean.
+        assertTrue(FoodConstraintValidator.validate(plan("Spezzatino di seitan", listOf("Riso", "Pomodori")), gluten).isFailure)
+        assertTrue(FoodConstraintValidator.validate(plan("Insalata di orzo", listOf("Riso", "Pomodori")), gluten).isFailure)
+        // Ambiguous staple in the title ("Pasta al pomodoro") is decided by the ingredients, which are authoritative.
+        assertTrue(FoodConstraintValidator.validate(plan("Pasta al pomodoro", listOf("Pasta di riso", "Pomodori")), gluten).isSuccess)
+        assertTrue(FoodConstraintValidator.validate(plan("Pasta al pomodoro", listOf("Pasta integrale", "Pomodori")), gluten).isFailure)
+        assertTrue(FoodConstraintValidator.validate(plan("Pasto post allenamento", listOf("Riso", "Pomodori")), gluten).isSuccess)
+
+        val lactose = DietaryProfile(intolerances = listOf("lattosio"))
+        assertTrue(FoodConstraintValidator.validate(plan("Yogurt e frutta", listOf("Yogurt senza lattosio", "Mela")), lactose).isSuccess)
+        assertTrue(FoodConstraintValidator.validate(plan("Toast con mozzarella", listOf("Pane", "Tacchino")), lactose).isFailure)
     }
 
     @Test

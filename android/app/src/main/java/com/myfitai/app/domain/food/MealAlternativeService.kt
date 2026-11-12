@@ -63,7 +63,10 @@ class MealAlternativeService(
         class StalePlan : AlternativeException("Il piano è cambiato: genera di nuovo le alternative.")
         class InvalidAlternative : AlternativeException("L'alternativa non rispetta i vincoli del pasto o del profilo.")
         /** Saved allergies/intolerances/exclusions cannot be read: alternatives are blocked instead of unchecked. */
-        class ConstraintsUnreadable : AlternativeException(DietaryProfile.UNREADABLE_MESSAGE)
+        class ConstraintsUnreadable : AlternativeException(DietaryProfile.UNREADABLE_MESSAGE) {
+            /** Stable machine code, never part of the user text. */
+            val code: String = DietaryProfile.UNREADABLE_CODE
+        }
     }
 
     suspend fun generate(weekStartEpochDay: Long, dayEpochDay: Long, mealId: Long): Alternatives {
@@ -138,7 +141,7 @@ class MealAlternativeService(
                     slot(candidate.meal) == slot(sourceMeal) &&
                     timeCompatible(sourceMeal, candidate.meal) &&
                     candidate.meal.ingredients.isNotEmpty() &&
-                    FoodConstraintValidator.validateIngredientNames(candidate.meal.ingredients.map { it.name } + candidate.meal.title, dietaryProfile).isEmpty()
+                    FoodConstraintValidator.validateIngredientNames(candidate.meal.ingredients.map { it.name }, dietaryProfile, titles = listOf(candidate.meal.title)).isEmpty()
             }
             .filter { it.meal.id != sourceMeal.id && seen.add(recipeKey(it.meal)) }
             .map { candidate ->
@@ -187,7 +190,7 @@ class MealAlternativeService(
             abs(candidateKcal - targetKcal) > targetKcal * LOCAL_CALORIE_TOLERANCE ||
             slot(historyMeal) != slot(sourceMeal) ||
             !timeCompatible(sourceMeal, historyMeal) ||
-            FoodConstraintValidator.validateIngredientNames(historyMeal.ingredients.map { it.name } + historyMeal.title, dietaryProfile).isNotEmpty()
+            FoodConstraintValidator.validateIngredientNames(historyMeal.ingredients.map { it.name }, dietaryProfile, titles = listOf(historyMeal.title)).isNotEmpty()
         ) throw AlternativeException.InvalidAlternative()
         val persistedAlternative = plans.historicalMeals(profileId, sourceMeal.id).firstOrNull {
             it.planId == alternative.sourcePlanId &&

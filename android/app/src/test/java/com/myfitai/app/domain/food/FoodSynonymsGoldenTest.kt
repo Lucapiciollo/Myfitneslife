@@ -197,4 +197,82 @@ class FoodSynonymsGoldenTest {
     fun noConstraintsMeansNoViolations() {
         assertEquals(emptyList<FoodConstraintValidator.Violation>(), FoodConstraintValidator.validateIngredientNames(listOf("Mozzarella", "Pasta"), DietaryProfile()))
     }
+
+    // ---- Round 2 (revisore): vincoli non in elenco, etichette vegane, falsi positivi, falsi negativi residui ----
+
+    @Test
+    fun unlistedMultiWordConstraints_useGroupExpansionOrPrudentTermMatching() {
+        assertAllViolate(Kind.INTOLERANCE, "latticini e derivati", listOf("Mozzarella", "Yogurt greco", "Burro", "Latte intero", "Panna"))
+        assertAllViolate(Kind.ALLERGY, "latte e derivati", listOf("Ricotta", "Parmigiano", "Latte scremato", "Burro"))
+        assertAllViolate(Kind.EXCLUDED, "latte e derivati", listOf("Ricotta", "Parmigiano", "Latte scremato", "Burro"))
+        assertAllViolate(Kind.ALLERGY, "frutta con guscio", listOf("Noci", "Mandorle", "Pistacchi", "Nocciole"))
+        assertAllViolate(Kind.ALLERGY, "pesce azzurro", listOf("Sardine", "Sgombro", "Acciughe", "Alici"))
+        assertNoneViolate(Kind.ALLERGY, "pesce azzurro", listOf("Petto di pollo", "Riso"))
+    }
+
+    @Test
+    fun parentheticalConstraintSplitByCommaStillWorks() {
+        val profile = DietaryProfile(allergies = DietaryProfile.csv("frutta a guscio (noci, mandorle)"))
+        val violations = FoodConstraintValidator.validateIngredientNames(listOf("Noci", "Mandorle", "Pistacchi", "Riso"), profile)
+        assertTrue(violations.any { it.ingredient == "Noci" })
+        assertTrue(violations.any { it.ingredient == "Mandorle" })
+        assertTrue(violations.any { it.ingredient == "Pistacchi" })
+        assertTrue(violations.none { it.ingredient == "Riso" })
+    }
+
+    @Test
+    fun unknownConstraintFallsBackToEverySignificantWord() {
+        assertAllViolate(Kind.ALLERGY, "kiwi giallo", listOf("Kiwi", "Kiwi giallo", "Macedonia con kiwi"))
+        assertNoneViolate(Kind.ALLERGY, "kiwi giallo", listOf("Mela", "Riso"))
+        assertAllViolate(Kind.INTOLERANCE, "cavolfiore e broccoli", listOf("Cavolfiore", "Broccoli al vapore"))
+    }
+
+    @Test
+    fun veganLabelOnlyWaivesTheAdjacentWord() {
+        assertAllViolate(Kind.ALLERGY, "pesce", listOf("Insalata di vegetali con tonno"))
+        assertAllViolate(Kind.INTOLERANCE, "latticini", listOf("Burger vegetale con formaggio", "Insalata vegetale e mozzarella"))
+        assertNoneViolate(Kind.INTOLERANCE, "latticini", listOf("Formaggio vegetale", "Formaggio a base vegetale", "Yogurt vegetale", "Bevanda vegana"))
+        assertTrue(dietViolates("Vegetariano", "Burger vegetale con prosciutto"))
+        assertTrue(!dietViolates("Vegetariano", "Hamburger vegetale"))
+        assertTrue(!dietViolates("Vegano", "Formaggio vegano"))
+    }
+
+    @Test
+    fun freeFromLabelAlsoOnlyWaivesTheAdjacentWord() {
+        assertNoneViolate(Kind.INTOLERANCE, "lattosio", listOf("Yogurt greco senza lattosio", "Yogurt (non contiene lattosio)", "Yogurt privo di lattosio"))
+        assertAllViolate(Kind.INTOLERANCE, "lattosio", listOf("Yogurt senza lattosio con burro e mozzarella"))
+        assertNoneViolate(Kind.INTOLERANCE, "glutine", listOf("Spaghetti senza glutine", "Pane (non contiene glutine)", "Cracker privo di glutine"))
+    }
+
+    @Test
+    fun riceBasedProductsAreNotGluten() = assertNoneViolate(
+        Kind.INTOLERANCE, "glutine",
+        listOf("Pasta di riso", "Cracker di riso", "Gallette di riso", "Biscotti di riso", "Pane di riso", "Fette biscottate di riso", "Farina di riso"),
+    )
+
+    @Test
+    fun certainResidualFalseNegativesAreCovered() {
+        assertAllViolate(Kind.ALLERGY, "molluschi", listOf("Polipo", "Insalata di polipo"))
+        assertAllViolate(Kind.INTOLERANCE, "glutine", listOf("Cotoletta", "Panko", "Bagel", "Salsa di soia", "Tiramisu"))
+        assertAllViolate(Kind.ALLERGY, "soia", listOf("Salsa di soia"))
+        assertAllViolate(Kind.INTOLERANCE, "lattosio", listOf("Cappuccino", "Tiramisu"))
+        assertAllViolate(Kind.ALLERGY, "uova", listOf("Tiramisu"))
+        listOf("Cotoletta", "Ragu", "Polpette", "Carpaccio di manzo", "Polpette al sugo").forEach {
+            assertTrue("vegetariano non intercetta $it", dietViolates("Vegetariano", it))
+            assertTrue("pescetariano non intercetta $it", dietViolates("Pescetariano", it))
+        }
+        assertTrue(!dietViolates("Pescetariano", "Polpette di pesce"))
+        assertTrue(!dietViolates("Vegetariano", "Polpette di melanzane"))
+        assertTrue(!dietViolates("Vegetariano", "Carpaccio di zucchine"))
+        assertTrue(!dietViolates("Vegetariano", "Ragu di lenticchie"))
+    }
+
+    @Test
+    fun legacyStyleKeyIsMappedToDietStyle() {
+        val profile = DietaryProfile.parse("{\"style\":\"vegano\"}")
+        assertEquals(DietaryProfile.Status.OK, profile.status)
+        assertEquals("vegano", profile.dietStyle)
+        assertTrue(dietViolates("vegano", "Burro"))
+        assertEquals("Vegetariano", DietaryProfile.parse("{\"dietStyle\":\"Vegetariano\",\"style\":\"vegano\"}").dietStyle)
+    }
 }
