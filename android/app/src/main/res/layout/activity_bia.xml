@@ -54,6 +54,55 @@
                 android:layout_height="@dimen/control_min_height"
                 android:layout_marginTop="@dimen/space_8" />
 
+            <!-- Invito non invasivo dopo un salvataggio: nessuna richiesta IA e nessun cambio di schermata senza il tuo consenso. -->
+            <LinearLayout
+                android:id="@+id/biaGoalAdviceCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_8"
+                android:background="@drawable/bg_ai"
+                android:orientation="vertical"
+                android:padding="@dimen/space_12"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/biaGoalAdviceText"
+                    style="@style/Text.MyFitAI.Body"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:accessibilityLiveRegion="polite"
+                    android:text="@string/bia_k4_goal_title" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_4"
+                    android:gravity="end"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/biaGoalAdviceNo"
+                        style="@style/Widget.MyFitAI.Button.Text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:contentDescription="@string/bia_k4_goal_no_cd"
+                        android:minHeight="@dimen/control_min_height"
+                        android:text="@string/bia_k4_goal_no"
+                        android:textAllCaps="false" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/biaGoalAdviceYes"
+                        style="@style/Widget.MyFitAI.Button.Outlined"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/space_8"
+                        android:contentDescription="@string/bia_k4_goal_yes_cd"
+                        android:minHeight="@dimen/control_min_height"
+                        android:text="@string/bia_k4_goal_yes"
+                        android:textAllCaps="false" />
+                </LinearLayout>
+            </LinearLayout>
+
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/aiConfigurationNoticeCard"
                 android:layout_width="match_parent"
@@ -322,6 +371,18 @@
                     android:paddingHorizontal="@dimen/space_4"
                     android:text="Tocca un valore per inserirlo o modificarlo." />
 
+                <!-- Errori di validazione del salvataggio: un valore per riga, annunciati; il testo non dipende dal colore. -->
+                <TextView
+                    android:id="@+id/biaFormErrorText"
+                    style="@style/Text.MyFitAI.Body"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_8"
+                    android:accessibilityLiveRegion="polite"
+                    android:background="@drawable/bg_error_soft"
+                    android:padding="@dimen/space_12"
+                    android:visibility="gone" />
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -356,7 +417,14 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_8"
+                    android:accessibilityLiveRegion="polite"
                      android:visibility="gone" />
+
+                <LinearLayout
+                    android:id="@+id/importPanelsHost"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
             </LinearLayout>
 
             <LinearLayout
@@ -385,33 +453,10 @@
                       android:visibility="gone" />
 
                   <LinearLayout
-                      android:id="@+id/biaAnalysisProgressContainer"
+                      android:id="@+id/analysisPanelsHost"
                       android:layout_width="match_parent"
                       android:layout_height="wrap_content"
-                      android:layout_marginTop="@dimen/space_8"
-                      android:orientation="vertical"
-                      android:visibility="gone"
-                      android:padding="@dimen/space_12"
-                      android:background="@drawable/bg_card">
-                      <TextView
-                          android:id="@+id/biaAnalysisProgressTitle"
-                          style="@style/Text.MyFitAI.SettingsLabel"
-                          android:layout_width="match_parent"
-                          android:layout_height="wrap_content" />
-                      <TextView
-                          android:id="@+id/biaAnalysisProgressText"
-                          style="@style/Text.MyFitAI.SettingsDescription"
-                          android:layout_width="match_parent"
-                          android:layout_height="wrap_content"
-                          android:layout_marginTop="@dimen/space_4" />
-                      <ProgressBar
-                          android:id="@+id/biaAnalysisProgressBar"
-                          style="?android:attr/progressBarStyleHorizontal"
-                          android:layout_width="match_parent"
-                          android:layout_height="wrap_content"
-                          android:layout_marginTop="@dimen/space_8"
-                          android:indeterminate="true" />
-                  </LinearLayout>
+                      android:orientation="vertical" />
 
                   <com.google.android.material.textview.MaterialTextView
                       android:id="@+id/historySummary"
@@ -424,13 +469,24 @@
                       android:textColor="@color/text_primary"
                      android:visibility="gone" />
 
+                  <TextView
+                      android:id="@+id/biaAnalysisObsoleteNotice"
+                      style="@style/Text.MyFitAI.Body"
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:layout_marginTop="@dimen/space_8"
+                      android:background="@drawable/bg_card"
+                      android:padding="@dimen/space_12"
+                      android:text="@string/bia_k4_obsolete_notice"
+                      android:visibility="gone" />
+
                   <com.google.android.material.button.MaterialButton
                       android:id="@+id/analyzeBiaButton"
                     style="@style/Widget.MyFitAI.Button.Outlined"
                     android:layout_width="match_parent"
                     android:layout_height="@dimen/button_secondary_min_height"
                     android:layout_marginTop="@dimen/space_8"
-                     android:text="Analisi sportiva BIA"
+                     android:text="@string/bia_analysis_action"
                      android:textAllCaps="false"
                       android:visibility="gone" />
 

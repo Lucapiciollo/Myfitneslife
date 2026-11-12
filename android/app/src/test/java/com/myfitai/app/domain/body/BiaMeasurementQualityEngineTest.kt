@@ -2,8 +2,11 @@ package com.myfitai.app.domain.body
 
 import com.myfitai.app.data.local.entity.BiaMeasurementEntity
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.ZoneOffset
 
 class BiaMeasurementQualityEngineTest {
@@ -38,6 +41,56 @@ class BiaMeasurementQualityEngineTest {
 
         assertEquals(BiaMeasurementQualityEngine.Level.HIGH, result.level)
         assertEquals(100, result.score)
+    }
+
+    @Test
+    fun undeclaredConditionsInBothReadings_doNotCountAsCoherent() {
+        val previous = sample(epoch(2026, 9, 8, 7, 30), false, false, false, false)
+        val current = sample(epoch(2026, 9, 15, 7, 45), false, false, false, false)
+
+        val result = BiaMeasurementQualityEngine.evaluate(current, previous, ZoneOffset.UTC)
+
+        // Solo l'orario (40): nessun punto per le condizioni "non dichiarate".
+        assertEquals(40, result.score)
+        assertEquals(BiaMeasurementQualityEngine.Level.LOW, result.level)
+        assertTrue(result.reasons.none { it.startsWith("Condizione coerente") })
+        assertEquals(4, result.reasons.count { it.startsWith("Condizione non dichiarata") })
+        assertEquals("Condizioni di misura non dichiarate", result.summary)
+    }
+
+    @Test
+    fun declaredInBothReadings_countsAsCoherent_andSummaryHasNoScore() {
+        val previous = sample(epoch(2026, 9, 8, 7, 30), true, true, true, false)
+        val current = sample(epoch(2026, 9, 15, 7, 45), true, true, true, false)
+
+        val result = BiaMeasurementQualityEngine.evaluate(current, previous, ZoneOffset.UTC)
+
+        assertEquals(85, result.score)
+        assertEquals(BiaMeasurementQualityEngine.Level.HIGH, result.level)
+        assertEquals("Condizioni e orario coerenti", result.summary)
+        assertTrue(!result.summary.contains("/100"))
+    }
+
+    @Test
+    fun readingsMoreThanNinetyDaysApart_areNeverHigh_acrossDstChange() {
+        val rome = ZoneId.of("Europe/Rome")
+        fun at(date: LocalDate) = date.atTime(8, 0).atZone(rome).toInstant().toEpochMilli()
+        // 27 luglio -> 25 ottobre 2026 = 90 giorni di calendario (fine ora legale il 25 ottobre): ancora HIGH.
+        val ninety = BiaMeasurementQualityEngine.evaluate(
+            sample(at(LocalDate.of(2026, 10, 25)), true, true, true, true),
+            sample(at(LocalDate.of(2026, 7, 27)), true, true, true, true),
+            rome,
+        )
+        assertEquals(BiaMeasurementQualityEngine.Level.HIGH, ninety.level)
+        // 26 luglio: 91 giorni -> al massimo MEDIA, con motivo dichiarato.
+        val ninetyOne = BiaMeasurementQualityEngine.evaluate(
+            sample(at(LocalDate.of(2026, 10, 25)), true, true, true, true),
+            sample(at(LocalDate.of(2026, 7, 26)), true, true, true, true),
+            rome,
+        )
+        assertEquals(BiaMeasurementQualityEngine.Level.MEDIUM, ninetyOne.level)
+        assertEquals("Letture distanti nel tempo", ninetyOne.summary)
+        assertTrue(ninetyOne.reasons.any { it.startsWith("Letture distanti oltre 90") })
     }
 
     @Test

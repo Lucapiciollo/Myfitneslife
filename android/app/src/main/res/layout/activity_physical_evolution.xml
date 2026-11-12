@@ -109,6 +109,19 @@
                         android:layout_height="@dimen/dashboard_chart_height"
                         android:layout_marginTop="@dimen/space_16" />
                     <TextView
+                        android:id="@+id/evolutionChartExplanation"
+                        style="@style/Text.MyFitAI.Caption"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_4" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/evolutionChartTableButton"
+                        style="@style/Widget.MyFitAI.Button.Text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:minHeight="@dimen/control_min_height"
+                        android:text="@string/chart_table_show" />
+                    <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/space_4"
@@ -127,7 +140,7 @@
                     <com.myfitai.app.ui.widgets.TimeRangeSelectorView
                         android:id="@+id/timeRangeSelector"
                         android:layout_width="wrap_content"
-                        android:layout_height="@dimen/dashboard_pill_height"
+                        android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/space_12" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>

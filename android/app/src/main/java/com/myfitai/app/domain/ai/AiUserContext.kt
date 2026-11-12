@@ -2,6 +2,8 @@ package com.myfitai.app.domain.ai
 
 import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.domain.calculation.LocalCalculationEngine
+import com.myfitai.app.domain.calculation.ProfileCalculationMapper
+import com.myfitai.app.domain.calculation.SafetyCalorieFloor
 import java.time.LocalDate
 import java.time.Period
 import java.util.Locale
@@ -33,8 +35,7 @@ object AiUserContext {
     const val SAFETY_RAPID_LOSS_PERCENT_PER_WEEK = 1.0
     const val SAFETY_RAPID_LOSS_MIN_SPAN_DAYS = 14
     const val SAFETY_RAPID_LOSS_WINDOW_DAYS = 28
-    const val SAFETY_MIN_TARGET_KCAL_FEMALE = 1200.0
-    const val SAFETY_MIN_TARGET_KCAL_OTHER = 1500.0
+    // Soglie kcal minime: definite una sola volta in SafetyCalorieFloor.
     private const val DAY_MILLIS = 86_400_000.0
 
     /**
@@ -55,7 +56,7 @@ object AiUserContext {
         if (goal == LocalCalculationEngine.Goal.WEIGHT_LOSS) {
             if (bmi != null && bmi < SAFETY_LOW_BMI) reasons += "LOW_BMI_WEIGHT_LOSS"
             if (rapidWeightLoss(weightObservations)) reasons += "RAPID_WEIGHT_LOSS"
-            val floor = if (isFemale(biologicalSex)) SAFETY_MIN_TARGET_KCAL_FEMALE else SAFETY_MIN_TARGET_KCAL_OTHER
+            val floor = SafetyCalorieFloor.absoluteMinimumKcal(ProfileCalculationMapper.sex(biologicalSex))
             if (targetKcal != null && targetKcal < floor) reasons += "EXTREME_LOW_TARGET"
         }
         return SafetyFlag(reasons.isNotEmpty(), reasons)
@@ -71,8 +72,6 @@ object AiUserContext {
         val weeklyLossPercent = (first.second - latest.second) / first.second * 100.0 / (spanDays / 7.0)
         return weeklyLossPercent > SAFETY_RAPID_LOSS_PERCENT_PER_WEEK
     }
-
-    private fun isFemale(sex: String?): Boolean = sex?.trim()?.lowercase() in setOf("femmina", "female", "f")
 
     fun profileLine(
         profile: UserProfileEntity,

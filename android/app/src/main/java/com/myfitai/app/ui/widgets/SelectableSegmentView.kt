@@ -31,6 +31,13 @@ open class SelectableSegmentView @JvmOverloads constructor(
     open fun setSegments(labels: List<String>, selectedIndex: Int = 0) {
         clearOnButtonCheckedListeners()
         removeAllViews()
+        // K3d: altezza a contenuto (min = control_min_height + inset della traccia) cosi' con font 1,3x/2x
+        // le etichette vanno a capo senza essere tagliate e il target resta >= 48dp.
+        minimumHeight = resources.getDimensionPixelSize(R.dimen.control_min_height) + 2 * resources.getDimensionPixelSize(R.dimen.space_4)
+        layoutParams?.takeIf { it.height != LayoutParams.WRAP_CONTENT }?.let { params ->
+            params.height = LayoutParams.WRAP_CONTENT
+            layoutParams = params
+        }
         val safeIndex = selectedIndex.coerceIn(0, (labels.size - 1).coerceAtLeast(0))
         labels.forEachIndexed { index, label ->
             val button = MaterialButton(context, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
@@ -39,7 +46,7 @@ open class SelectableSegmentView @JvmOverloads constructor(
                 contentDescription = label
                 setTextAppearance(R.style.Text_MyFitAI_BodyEmphasis)
                 isAllCaps = false
-                maxLines = 1
+                maxLines = 2
                 gravity = Gravity.CENTER
                 cornerRadius = resources.getDimensionPixelSize(R.dimen.radius_small)
                 strokeWidth = resources.getDimensionPixelSize(R.dimen.border_width_none)

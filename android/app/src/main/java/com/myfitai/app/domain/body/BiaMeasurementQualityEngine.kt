@@ -3,6 +3,7 @@ package com.myfitai.app.domain.body
 import com.myfitai.app.data.local.entity.BiaMeasurementEntity
 import java.time.Instant
 import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 import kotlin.math.abs
 
 object BiaMeasurementQualityEngine {
@@ -12,13 +13,20 @@ object BiaMeasurementQualityEngine {
         val level: Level,
         val score: Int,
         val reasons: List<String>,
+        /** Motivo principale in una riga, pronto per la UI (senza punteggio). */
+        val summary: String = "",
     )
 
+    /** Oltre questa distanza tra le due letture il confronto non puo essere di qualita ALTA (ipotesi reversibile). */
+    const val MAX_GAP_DAYS_FOR_HIGH = 90L
+
     fun evaluate(current: BiaMeasurementEntity, previous: BiaMeasurementEntity?, zoneId: ZoneId = ZoneId.systemDefault()): Result {
-        if (previous == null) return Result(Level.INSUFFICIENT, 0, listOf("Manca una rilevazione precedente confrontabile"))
+        if (previous == null) return Result(Level.INSUFFICIENT, 0, listOf("Manca una rilevazione precedente confrontabile"), "Manca una rilevazione precedente")
 
         var score = 0
         val reasons = mutableListOf<String>()
+        var undeclared = false
+        var different = false
 
         val conditionPairs = listOf(
             Triple(current.fasting, previous.fasting, "digiuno"),
@@ -27,11 +35,20 @@ object BiaMeasurementQualityEngine {
             Triple(current.noRecentWorkout, previous.noRecentWorkout, "assenza di allenamento recente"),
         )
         conditionPairs.forEach { (a, b, label) ->
-            if (a == b) {
-                score += 15
-                reasons += "Condizione coerente: $label"
-            } else {
-                reasons += "Condizione diversa: $label"
+            when {
+                // Coerente solo se dichiarata in entrambe le letture: "non dichiarato" in entrambe non e una prova.
+                a && b -> {
+                    score += 15
+                    reasons += "Condizione coerente: $label"
+                }
+                a != b -> {
+                    different = true
+                    reasons += "Condizione diversa: $label"
+                }
+                else -> {
+                    undeclared = true
+                    reasons += "Condizione non dichiarata: $label"
+                }
             }
         }
 
@@ -56,12 +73,31 @@ object BiaMeasurementQualityEngine {
             else -> reasons += "Orario molto diverso"
         }
 
-        val level = when {
+        // Giorni di calendario locali (non millisecondi/86400000): il cambio ora legale non sposta il conteggio.
+        val gapDays = abs(
+            ChronoUnit.DAYS.between(
+                Instant.ofEpochMilli(previous.measuredAtEpochMillis).atZone(zoneId).toLocalDate(),
+                Instant.ofEpochMilli(current.measuredAtEpochMillis).atZone(zoneId).toLocalDate(),
+            ),
+        )
+        val tooFarApart = gapDays > MAX_GAP_DAYS_FOR_HIGH
+        if (tooFarApart) reasons += "Letture distanti oltre $MAX_GAP_DAYS_FOR_HIGH giorni"
+
+        var level = when {
             score >= 80 -> Level.HIGH
             score >= 55 -> Level.MEDIUM
             else -> Level.LOW
         }
-        return Result(level, score.coerceIn(0, 100), reasons)
+        if (tooFarApart && level == Level.HIGH) level = Level.MEDIUM
+        val summary = when {
+            tooFarApart -> "Letture distanti nel tempo"
+            level == Level.HIGH -> "Condizioni e orario coerenti"
+            hourDelta > 6f -> "Orario molto diverso"
+            different -> "Condizioni di misura diverse"
+            undeclared -> "Condizioni di misura non dichiarate"
+            else -> "Orario poco simile"
+        }
+        return Result(level, score.coerceIn(0, 100), reasons, summary)
     }
 
     fun label(level: Level): String = when (level) {

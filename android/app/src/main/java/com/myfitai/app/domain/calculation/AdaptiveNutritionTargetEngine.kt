@@ -1,5 +1,6 @@
 package com.myfitai.app.domain.calculation
 
+import com.myfitai.app.domain.body.BiaNoiseThresholds
 import kotlin.math.abs
 
 /**
@@ -32,6 +33,8 @@ object AdaptiveNutritionTargetEngine {
         val muscleMass: Evidence,
         val waist: Evidence,
         val abdomen: Evidence,
+        /** Minimo di sicurezza ([SafetyCalorieFloor]); il target adattato non scende mai sotto. */
+        val minimumKcal: Double? = null,
     )
 
     data class Result(
@@ -41,6 +44,8 @@ object AdaptiveNutritionTargetEngine {
         val energyFactor: Double?,
         val reasonCode: String,
         val baseTargetKcal: Double? = targetKcal,
+        /** True se il minimo di sicurezza ha alzato il target adattato. */
+        val floorApplied: Boolean = false,
     )
 
     fun adjust(input: Input): Result {
@@ -64,16 +69,18 @@ object AdaptiveNutritionTargetEngine {
         }
 
         val weeklyWeightPct = weeklyWeightPercent(input.weight, input.currentWeightKg)
-        val muscleDecline = input.muscleMass.usableDelta() <= -0.5
+        // Grasso e muscolo (BIA): "cambiamento reale" solo oltre il rumore dichiarato in BiaNoiseThresholds,
+        // con lo stesso operatore di LocalCalculationEngine, BiaTrendBinder e MeasurementTrendInterpreter.
+        val muscleDecline = input.muscleMass.reliableDelta(KEY_MUSCLE) < 0.0
         val rapidWeightLoss = weeklyWeightPct != null && weeklyWeightPct <= -1.0
-        val favorableFatSignal = input.bodyFat.usableDelta() <= -0.5
+        val favorableFatSignal = input.bodyFat.reliableDelta(KEY_FAT) < 0.0
         val favorableCircumferenceSignal = input.waist.usableDelta() <= -1.0 || input.abdomen.usableDelta() <= -1.0
         val favorable = favorableFatSignal || favorableCircumferenceSignal
 
         val stalledWeight = weeklyWeightPct != null && abs(weeklyWeightPct) < 0.15
         val stalledWaist = input.waist.isStable(0.5)
         val stalledAbdomen = input.abdomen.isStable(0.5)
-        val stalledFat = input.bodyFat.isStable(0.3)
+        val stalledFat = input.bodyFat.isStableWithinNoise(KEY_FAT)
         val stallSignals = listOf(stalledWaist, stalledAbdomen, stalledFat).count { it } >= 2
         val sustainedStall = evidenceDays >= STALL_EVIDENCE_DAYS && stalledWeight && stallSignals
 
@@ -90,8 +97,9 @@ object AdaptiveNutritionTargetEngine {
             else -> baseFactor
         }.coerceIn(minFactor(input.goal), maxFactor(input.goal))
 
+        val clamp = SafetyCalorieFloor.clamp(tdee * factor, input.minimumKcal)
         return Result(
-            targetKcal = tdee * factor,
+            targetKcal = clamp.kcal,
             decision = decision,
             evidenceWindowDays = evidenceDays,
             energyFactor = factor,
@@ -102,6 +110,7 @@ object AdaptiveNutritionTargetEngine {
                 else -> "NO_CHANGE"
             },
             baseTargetKcal = base,
+            floorApplied = clamp.applied,
         )
     }
 
@@ -113,6 +122,13 @@ object AdaptiveNutritionTargetEngine {
     }
 
     private fun Evidence.usableDelta(): Double = delta?.takeIf { count >= 2 && spanDays >= MIN_EVIDENCE_DAYS } ?: 0.0
+
+    /** Delta solo se supera il rumore BIA della metrica, altrimenti 0 (nessun cambiamento affidabile). */
+    private fun Evidence.reliableDelta(key: String): Double =
+        usableDelta().takeIf { BiaNoiseThresholds.isReliableChange(key, it) } ?: 0.0
+
+    private fun Evidence.isStableWithinNoise(key: String): Boolean =
+        count >= 2 && spanDays >= MIN_EVIDENCE_DAYS && delta?.let { !BiaNoiseThresholds.isReliableChange(key, it) } == true
 
     private fun Evidence.isStable(threshold: Double): Boolean =
         count >= 2 && spanDays >= MIN_EVIDENCE_DAYS && delta?.let { abs(it) < threshold } == true
@@ -132,4 +148,6 @@ object AdaptiveNutritionTargetEngine {
     const val MIN_EVIDENCE_DAYS = 21
     const val STALL_EVIDENCE_DAYS = 28
     private const val STEP = 0.025
+    private const val KEY_FAT = "bodyFatPercent"
+    private const val KEY_MUSCLE = "muscleMassKg"
 }

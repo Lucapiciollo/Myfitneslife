@@ -22,6 +22,8 @@ class MeasurementRowView @JvmOverloads constructor(
         gravity = android.view.Gravity.CENTER_VERTICAL
         val rowPadding = resources.getDimensionPixelSize(R.dimen.space_8)
         setPadding(0, rowPadding, 0, rowPadding)
+        // K3d: le righe sono tappabili (apertura dialog valore): target minimo 48dp, si espande con font grande.
+        minimumHeight = resources.getDimensionPixelSize(R.dimen.control_min_height)
 
         iconView = ImageView(context).apply {
             layoutParams = LayoutParams(resources.getDimensionPixelSize(R.dimen.space_2), resources.getDimensionPixelSize(R.dimen.space_2)).apply {

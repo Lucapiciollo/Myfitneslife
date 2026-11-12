@@ -26,6 +26,9 @@ import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.ui.progress.PhysicalEvolutionState
 import com.myfitai.app.ui.progress.PhysicalEvolutionViewModel
 import com.myfitai.app.ui.progress.ProgressMetricState
+import com.myfitai.app.ui.widgets.ChartAccessibility
+import com.myfitai.app.ui.widgets.ChartDateAxis
+import com.myfitai.app.ui.widgets.ChartValuesDialog
 import com.myfitai.app.ui.widgets.SelectableSegmentView
 import com.myfitai.app.ui.widgets.TimeRangeSelectorView
 import com.myfitai.app.ui.widgets.WeightTrendChartView
@@ -85,11 +88,15 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
 
         findViewById<WeightTrendChartView>(R.id.evolutionChart).showYAxisLabels()
         findViewById<SelectableSegmentView>(R.id.metricSegment).apply {
-            setSegments(listOf("Peso", "Grasso", "Massa muscolare"), 0)
+            setSegments(listOf(getString(R.string.metric_weight), "Grasso", getString(R.string.metric_muscle)), 0)
             setOnSegmentSelectedListener { metricIndex = it; render(latestState) }
         }
         findViewById<TimeRangeSelectorView>(R.id.timeRangeSelector).apply {
-            setRanges(listOf("1M", "3M", "6M", "1Y"), 1)
+            setRanges(resources.getStringArray(R.array.chart_range_labels).toList(), 1)
+            // "1A" e' una sigla: il nome accessibile dice l'intervallo per esteso.
+            resources.getStringArray(R.array.chart_range_descriptions).forEachIndexed { index, description ->
+                getChildAt(index)?.contentDescription = description
+            }
             setOnRangeSelectedListener { rangeIndex = it; render(latestState) }
         }
         lifecycleScope.launch {
@@ -419,7 +426,7 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
                 classification?.let {
                     val start = result.length
                     result.append(it)
-                    result.setSpan(ForegroundColorSpan(classificationColor(classificationValue)), start, result.length, 0)
+                    result.setSpan(ForegroundColorSpan(classificationColor(classificationValue, prefs.lastConfidence(profileId))), start, result.length, 0)
                 }
                 confidence?.let {
                     if (result.isNotEmpty()) result.append(" · ")
@@ -523,14 +530,20 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
     private fun render(state: PhysicalEvolutionState) {
         val selected = when (metricIndex) { 1 -> state.bodyFat; 2 -> state.muscle; else -> state.weight }
         val filtered = viewModel.filtered(selected, rangeIndex)
-        val unit = if (metricIndex == 1) "%" else "kg"
-        findViewById<TextView>(R.id.metricLabel).text = listOf("Peso", "Grasso corporeo", "Massa muscolare")[metricIndex]
+        val metric = ChartAccessibility.EvolutionMetric.fromIndex(metricIndex)
+        val unit = metric.unit
+        val metricName = when (metric) {
+            ChartAccessibility.EvolutionMetric.WEIGHT -> getString(R.string.metric_weight)
+            ChartAccessibility.EvolutionMetric.BODY_FAT -> getString(R.string.metric_body_fat)
+            ChartAccessibility.EvolutionMetric.MUSCLE -> getString(R.string.metric_muscle)
+        }
+        findViewById<TextView>(R.id.metricLabel).text = metricName
         val latestObserved = viewModel.latest(selected)
         findViewById<TextView>(R.id.metricValue).text = (latestObserved ?: filtered.value)?.let { "${fmt(it)} $unit" } ?: "—"
-        val rangeLabel = listOf("1M", "3M", "6M", "1Y")[rangeIndex]
+        val rangeLabel = resources.getStringArray(R.array.chart_range_labels)[rangeIndex]
         findViewById<TextView>(R.id.metricDelta).text = filtered.delta?.let { "${signed(it)} $unit negli ultimi $rangeLabel" } ?: "Dati insufficienti"
-        findViewById<WeightTrendChartView>(R.id.evolutionChart).setData(filtered.series.map { it.value })
-        renderDateLabels(filtered, rangeIndex)
+        renderChart(metricName, unit, filtered)
+        renderDateLabels(filtered)
         renderSecondary(R.id.otherIndicatorFatValue, R.id.otherIndicatorFatDelta, state.bodyFat, viewModel.filtered(state.bodyFat, dateRangePeriod(rangeIndex)), "%", rangeLabel)
         renderSecondary(R.id.otherIndicatorMuscleValue, R.id.otherIndicatorMuscleDelta, state.muscle, viewModel.filtered(state.muscle, dateRangePeriod(rangeIndex)), "kg", rangeLabel)
         renderSecondary(R.id.otherIndicatorWaterValue, R.id.otherIndicatorWaterDelta, state.bodyWater, viewModel.filtered(state.bodyWater, dateRangePeriod(rangeIndex)), "%", rangeLabel)
@@ -558,6 +571,45 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         ) View.GONE else View.VISIBLE
     }
 
+    /** Grafico della sola metrica scelta, con valori reali: legenda e asse con unita', descrizione e tabella per l'accessibilita'. */
+    private fun renderChart(metricName: String, unit: String, metric: ProgressMetricState) {
+        val chart = findViewById<WeightTrendChartView>(R.id.evolutionChart)
+        chart.setMetricSeries(metricName, unit, metric.series.map { it.value })
+        findViewById<TextView>(R.id.evolutionChartExplanation).text = ChartAccessibility.explanation(
+            normalized = false,
+            real = getString(R.string.chart_explanation_real),
+            normalizedText = getString(R.string.chart_explanation_normalized),
+            label = metricName.lowercase(Locale.ITALIAN),
+            unit = unit,
+        )
+        val tableFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.ITALIAN)
+        val points = metric.series.map {
+            ChartAccessibility.Point(Instant.ofEpochMilli(it.timestamp).atZone(ZoneId.systemDefault()).format(tableFormatter), it.value)
+        }
+        val showTable = {
+            ChartValuesDialog.show(
+                this,
+                getString(R.string.chart_table_title, metricName),
+                ChartAccessibility.tableRows(unit, points),
+                getString(R.string.chart_table_empty),
+                getString(R.string.chart_table_close),
+            )
+        }
+        chart.bindAccessibility(
+            ChartAccessibility.summary(
+                ChartAccessibility.SummaryTemplates(
+                    empty = getString(R.string.chart_summary_empty),
+                    single = getString(R.string.chart_summary_single),
+                    multiple = getString(R.string.chart_summary_multiple),
+                ),
+                metricName, unit, points,
+            ),
+            getString(R.string.chart_table_show),
+            showTable,
+        )
+        findViewById<View>(R.id.evolutionChartTableButton).setOnClickListener { showTable() }
+    }
+
     private fun renderSecondary(
         valueId: Int,
         deltaId: Int,
@@ -570,15 +622,20 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         findViewById<TextView>(deltaId).text = periodMetric.delta?.let { "${signed(it)} $unit · $rangeLabel" } ?: "—"
     }
 
-    private fun renderDateLabels(metric: ProgressMetricState, selectedRangeIndex: Int) {
-        val ids = intArrayOf(R.id.dateLabel1, R.id.dateLabel2, R.id.dateLabel3, R.id.dateLabel4, R.id.dateLabel5)
-        val points = metric.series
-        val formatter = DateTimeFormatter.ofPattern(if (selectedRangeIndex == 3) "dd/MM/yy" else "dd/MM")
-        ids.forEachIndexed { index, id ->
-            val point = if (points.isEmpty()) null else points[((points.lastIndex * index) / 4).coerceIn(0, points.lastIndex)]
-            findViewById<TextView>(id).text = point?.let {
-                Instant.ofEpochMilli(it.timestamp).atZone(ZoneId.systemDefault()).format(formatter)
-            } ?: "—"
+    private fun renderDateLabels(metric: ProgressMetricState) {
+        val views = intArrayOf(R.id.dateLabel1, R.id.dateLabel2, R.id.dateLabel3, R.id.dateLabel4, R.id.dateLabel5)
+            .map { findViewById<TextView>(it) }
+        // Solo etichette di punti reali e distinte (al massimo una per punto); gli slot in eccesso spariscono.
+        val labels = ChartDateAxis.labels(metric.series.map { it.timestamp }, ZoneId.systemDefault(), views.size)
+        views.forEachIndexed { slot, view ->
+            val label = labels.getOrNull(slot)
+            view.visibility = if (label != null || slot == 0) View.VISIBLE else View.GONE
+            view.text = label?.text ?: "—"
+            view.gravity = when {
+                slot == 0 -> android.view.Gravity.START
+                slot == labels.lastIndex -> android.view.Gravity.END
+                else -> android.view.Gravity.CENTER_HORIZONTAL
+            }
         }
     }
 
@@ -601,14 +658,19 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         classificationLabel(ProgressAnalysisCompactContract.Classification.valueOf(value))
     }.getOrDefault(value)
 
-    private fun classificationColor(value: String?): Int = when (runCatching {
+    /**
+     * Unfavourable classifications (MR / NT) are red only when the confidence is not low: a weak signal is shown
+     * with the warning colour. The label and the confidence are always written in words next to the colour.
+     */
+    private fun classificationColor(value: String?, confidence: String?): Int = when (runCatching {
         value?.let { ProgressAnalysisCompactContract.Classification.valueOf(it) }
     }.getOrNull()) {
         ProgressAnalysisCompactContract.Classification.POSITIVE_RECOMPOSITION,
         ProgressAnalysisCompactContract.Classification.STABLE,
         ProgressAnalysisCompactContract.Classification.WEIGHT_LOSS -> getColor(R.color.semantic_positive)
         ProgressAnalysisCompactContract.Classification.WEIGHT_LOSS_WITH_MUSCLE_RISK,
-        ProgressAnalysisCompactContract.Classification.NEGATIVE_TREND -> getColor(R.color.semantic_error)
+        ProgressAnalysisCompactContract.Classification.NEGATIVE_TREND ->
+            if (confidence == ProgressAnalysisCompactContract.Confidence.LOW.name) getColor(R.color.semantic_warning) else getColor(R.color.semantic_error)
         else -> getColor(R.color.text_secondary)
     }
 

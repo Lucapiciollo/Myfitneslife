@@ -37,8 +37,9 @@
     <dimen name="bottom_nav_item_horizontal_padding">@dimen/space_8</dimen>
     <dimen name="bottom_nav_item_vertical_padding">@dimen/space_4</dimen>
     <dimen name="bottom_nav_icon_label_spacing">@dimen/space_2</dimen>
-    <dimen name="control_compact_min_height">44dp</dimen>
-    <dimen name="screen_header_icon_size">40dp</dimen>
+    <!-- K3d target tocco: tutti i controlli interattivi >= 48dp (guardia: AccessibilityTokensTest). -->
+    <dimen name="control_compact_min_height">@dimen/control_min_height</dimen>
+    <dimen name="screen_header_icon_size">@dimen/control_min_height</dimen>
     <dimen name="vector_icon_size">24dp</dimen>
     <dimen name="bottom_nav_icon_size">22dp</dimen>
     <dimen name="bottom_nav_label_text_size">12sp</dimen>
@@ -56,10 +57,11 @@
     <dimen name="notification_header_height">40dp</dimen>
     <dimen name="notification_lock_icon_size">20dp</dimen>
     <dimen name="notification_meal_image_height">170dp</dimen>
-    <dimen name="week_navigation_icon_size">36dp</dimen>
+    <dimen name="week_navigation_icon_size">@dimen/control_min_height</dimen>
     <dimen name="settings_section_header_height">40dp</dimen>
-    <dimen name="shopping_filter_segment_height">36dp</dimen>
-    <dimen name="body_trend_range_control_height">40dp</dimen>
+    <dimen name="shopping_filter_segment_height">@dimen/control_min_height</dimen>
+    <dimen name="body_trend_range_control_height">@dimen/control_min_height</dimen>
+    <dimen name="time_range_selector_min_height">@dimen/control_min_height</dimen>
     <dimen name="food_meal_row_min_height">72dp</dimen>
     <dimen name="food_plan_status_dot_size">12dp</dimen>
     <dimen name="bia_trend_chart_height">240dp</dimen>
@@ -112,7 +114,8 @@
     <dimen name="text_body_compact">13sp</dimen>
     <dimen name="text_label">14sp</dimen>
     <dimen name="text_caption">12sp</dimen>
-    <dimen name="text_micro">11sp</dimen>
+    <!-- K3d: testo informativo minimo 12sp (ANDROID_UI_DESIGN_SYSTEM.md non fissa un valore per il microcopy, nessuna deroga necessaria). -->
+    <dimen name="text_micro">12sp</dimen>
     <dimen name="text_illustration_label">10sp</dimen>
     <dimen name="text_screen_date">12sp</dimen>
 
@@ -123,6 +126,9 @@
     <dimen name="chart_line_width_emphasis">2.4dp</dimen>
     <dimen name="chart_point_radius">4dp</dimen>
     <dimen name="chart_point_radius_compact">3dp</dimen>
+    <dimen name="chart_point_hole_radius">2dp</dimen>
+    <dimen name="chart_dash_length">8dp</dimen>
+    <dimen name="chart_dash_gap">4dp</dimen>
     <dimen name="dashboard_metric_delta_column_width">20dp</dimen>
     <dimen name="dashboard_metric_card_padding">8dp</dimen>
     <dimen name="dashboard_metric_tile_icon_size">28dp</dimen>

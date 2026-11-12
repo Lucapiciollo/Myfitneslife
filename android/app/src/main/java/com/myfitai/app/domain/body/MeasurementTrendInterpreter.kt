@@ -21,6 +21,13 @@ object MeasurementTrendInterpreter {
         favorableDirection: Direction? = null,
         stableThreshold: Float = 0.2f,
         qualityLabel: String? = null,
+        /**
+         * Chiave di [BiaNoiseThresholds] (es. "weightKg"). Se la metrica ha una soglia dichiarata decide lei
+         * ("stabile" = |delta| <= soglia, [degraded] la raddoppia); altrimenti resta [stableThreshold], usata
+         * da metriche non BIA (circonferenze normalizzate).
+         */
+        metricKey: String? = null,
+        degraded: Boolean = false,
     ): Result {
         if (delta == null || pointCount < 2) {
             return Result(
@@ -31,8 +38,15 @@ object MeasurementTrendInterpreter {
             )
         }
 
+        val declared = metricKey != null && BiaNoiseThresholds.forMetric(metricKey, degraded) != null
+        // Il delta Float arriva da sottrazioni di Float: si arrotonda a 2 decimali per non far decidere il rumore numerico.
+        val isStable = if (declared) {
+            !BiaNoiseThresholds.isReliableChange(metricKey!!, Math.round(delta * 100.0) / 100.0, degraded)
+        } else {
+            abs(delta) < stableThreshold
+        }
         val direction = when {
-            abs(delta) < stableThreshold -> Direction.STABLE
+            isStable -> Direction.STABLE
             delta > 0f -> Direction.UP
             else -> Direction.DOWN
         }

@@ -23,6 +23,7 @@ import com.myfitai.app.domain.calculation.NutritionBusinessValidator
 import com.myfitai.app.domain.calculation.ProfileCalculationMapper
 
 import com.myfitai.app.domain.calculation.ProfileCalculationService
+import com.myfitai.app.domain.calculation.SafetyCalorieFloor
 import com.myfitai.app.domain.calculation.TrainingDayInputs
 import com.myfitai.app.domain.calculation.TrainingEnergyPlanner
 import com.myfitai.app.domain.personalization.PersonalResponseService
@@ -122,6 +123,9 @@ class NutritionPlanGenerationService(
 
         val resolvedGoal = goal!!
         val weightKg = snapshot.latestWeightKg!!.toDouble()
+        // Minimo unico (max(BMR, 1200/1500)) per adattamento e recupero, con o senza programma di allenamento.
+        val safetyMinimumKcal = calc.minimumKcal
+            ?: SafetyCalorieFloor.minimumKcal(calc.bmrKcal, ProfileCalculationMapper.sex(profile.biologicalSex))
         val adaptive = AdaptiveNutritionTargetEngine.adjust(
             AdaptiveNutritionTargetEngine.Input(
                 goal = resolvedGoal,
@@ -133,6 +137,7 @@ class NutritionPlanGenerationService(
                 muscleMass = snapshot.biaMetrics.muscleMass.toAdaptiveEvidence(),
                 waist = snapshot.bodyMetrics.waist.toAdaptiveEvidence(),
                 abdomen = snapshot.bodyMetrics.abdomen.toAdaptiveEvidence(),
+                minimumKcal = safetyMinimumKcal,
             )
         )
         val finalTargetKcal = adaptive.targetKcal ?: resolvedTargetKcal!!
@@ -215,7 +220,7 @@ class NutritionPlanGenerationService(
             credits = credits,
             periodWeeks = periodWeeks,
             dailyBase = trainingDays?.associate { it.date to it.baseTargets }.orEmpty(),
-            minimumKcal = if (trainingDays != null) calc.bmrKcal else null,
+            minimumKcal = safetyMinimumKcal,
         )
         val dailyTargets = recoveryPlan.days
             .filter { !it.date.isBefore(generationStart) }

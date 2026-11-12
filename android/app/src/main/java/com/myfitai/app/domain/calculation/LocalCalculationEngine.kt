@@ -52,6 +52,15 @@ object LocalCalculationEngine {
         val activityLevel: ActivityLevel?,
         val goal: Goal?,
         val waistCm: Double? = null,
+        /**
+         * Peso della STESSA rilevazione BIA da cui arriva [bodyFatPercent]. Se presente la massa magra di
+         * Katch-McArdle usa questo peso e non il peso piu recente con una percentuale di grasso vecchia.
+         */
+        val bodyFatReferenceWeightKg: Double? = null,
+        /** Data (epoch millis) della rilevazione da cui arriva [bodyFatPercent], solo per dichiararla nel risultato. */
+        val bodyFatMeasuredAtEpochMillis: Long? = null,
+        /** Motivo per cui il grasso non e stato usato (BODY_FAT_MISSING / BODY_FAT_TOO_OLD), solo per dichiararlo. */
+        val bodyFatFallbackReason: String? = null,
     )
 
     data class Result(
@@ -64,6 +73,16 @@ object LocalCalculationEngine {
         val carbsG: Double?,
         val waistHeightRatio: Double?,
         val bmrMethod: String?,
+        /** Target prima del minimo di sicurezza (null se non calcolabile). */
+        val unclampedTargetKcal: Double? = targetKcal,
+        /** Minimo di sicurezza applicabile ([SafetyCalorieFloor]); null se il BMR non e calcolabile. */
+        val minimumKcal: Double? = null,
+        /** True se il target e stato portato al minimo di sicurezza. */
+        val floorApplied: Boolean = false,
+        /** Data della rilevazione del grasso considerata per il BMR (usata se KATCH, scartata se MIFFLIN con motivo). */
+        val bmrBodyFatMeasuredAtEpochMillis: Long? = null,
+        /** Perche si e usato Mifflin invece di Katch-McArdle; null se Katch o nessun grasso disponibile senza motivo. */
+        val bmrFallbackReason: String? = null,
     )
 
     data class MacroTargets(
@@ -97,7 +116,12 @@ object LocalCalculationEngine {
         val bmrWithMethod = calculateBmr(input, weight, height)
         val bmr = bmrWithMethod?.first
         val tdee = if (bmr != null && input.activityLevel != null) bmr * input.activityLevel.multiplier else null
-        val targetKcal = if (tdee != null && input.goal != null) tdee * goalEnergyFactor(input.goal) else null
+        val unclampedTarget = if (tdee != null && input.goal != null) tdee * goalEnergyFactor(input.goal) else null
+        val minimumKcal = if (bmr != null) SafetyCalorieFloor.minimumKcal(bmr, input.biologicalSex) else null
+        val clamp = if (unclampedTarget != null && SafetyCalorieFloor.appliesTo(input.goal)) {
+            SafetyCalorieFloor.clamp(unclampedTarget, minimumKcal)
+        } else null
+        val targetKcal = clamp?.kcal ?: unclampedTarget
 
         val macros = if (targetKcal != null && weight != null && input.goal != null) {
             calculateMacrosForTarget(targetKcal, weight, input.goal)
@@ -117,6 +141,11 @@ object LocalCalculationEngine {
             carbsG = macros?.carbsG,
             waistHeightRatio = waistHeightRatio,
             bmrMethod = bmrWithMethod?.second,
+            unclampedTargetKcal = unclampedTarget,
+            minimumKcal = minimumKcal,
+            floorApplied = clamp?.applied == true,
+            bmrBodyFatMeasuredAtEpochMillis = input.bodyFatMeasuredAtEpochMillis,
+            bmrFallbackReason = if (bmrWithMethod?.second == "MIFFLIN_ST_JEOR") input.bodyFatFallbackReason else null,
         )
     }
 
@@ -127,7 +156,9 @@ object LocalCalculationEngine {
     private fun calculateBmr(input: Input, weight: Double?, height: Double?): Pair<Double, String>? {
         val bodyFat = input.bodyFatPercent?.takeIf { it in 2.0..70.0 }
         if (weight != null && bodyFat != null) {
-            val leanMassKg = weight * (1.0 - bodyFat / 100.0)
+            // Peso e grasso della stessa rilevazione; senza peso di riferimento resta il peso corrente.
+            val referenceWeight = input.bodyFatReferenceWeightKg.validPositive() ?: weight
+            val leanMassKg = referenceWeight * (1.0 - bodyFat / 100.0)
             return (370.0 + 21.6 * leanMassKg) to "KATCH_MCARDLE"
         }
 
@@ -152,6 +183,16 @@ object LocalCalculationEngine {
     /**
      * Ricalcola i macro a partire da un target calorico già deciso localmente.
      * Serve anche quando l'AdaptiveNutritionTargetEngine applica una piccola correzione al target.
+     *
+     * DECISIONE DI PRODOTTO APERTA (audit calcoli, voce 7), NON implementata: le proteine sono 2,0 g/kg di peso
+     * reale senza tenere conto di IMC >= 29 o dell'eta, e con target bassi i carboidrati si riducono molto
+     * (donna sedentaria 78 kg: 43,8 g). Proposta da confermare: tetto proteico = min(2,0 g/kg; 35% delle kcal)
+     * e minimo carboidrati dichiarato (es. 100 g, esente con kcal basse). Un tetto che dipende dalle kcal del
+     * giorno romperebbe l'invariante "le proteine non scalano con le calorie" (giorni riposo/allenamento uguali,
+     * recupero sgarro che non riduce le proteine), quindi andrebbe calcolato UNA volta sul target abituale e
+     * passato come proteine esplicite a: DayEnergyEngine, TrainingEnergyPlanner, CalorieRecoveryEngine e
+     * NutritionPlanGenerationService (piu OperationalNutritionMetrics per il percorso senza programma), con
+     * relativi test e golden D/U da rivedere (D: carbo 143,0 -> circa 145,2).
      */
     fun calculateMacrosForTarget(targetKcal: Double, weightKg: Double, goal: Goal): MacroTargets {
         require(targetKcal.isFinite() && targetKcal > 0.0) { "TARGET_KCAL_INVALID" }
@@ -173,7 +214,12 @@ object LocalCalculationEngine {
         return MacroTargets(proteinG, fatG, carbsG)
     }
 
-    fun trend(values: List<TimedValue>, stableThreshold: Double = 0.05): TrendStats {
+    /**
+     * [metricKey] (chiavi di [BiaNoiseThresholds]): se la metrica ha una soglia di rumore dichiarata e quella a
+     * decidere "stabile" (stesso operatore di tutti i motori: |delta| <= soglia = stabile). Senza chiave o senza
+     * soglia dichiarata resta [stableThreshold] (valore storico 0,05, per metriche non BIA).
+     */
+    fun trend(values: List<TimedValue>, stableThreshold: Double = 0.05, metricKey: String? = null): TrendStats {
         val ordered = values.sortedWith(compareBy<TimedValue> { it.timestamp }.thenBy { it.value })
         if (ordered.isEmpty()) {
             return TrendStats(0, null, null, null, null, TrendDirection.UNKNOWN)
@@ -182,8 +228,14 @@ object LocalCalculationEngine {
         val first = ordered.first().value
         val latest = ordered.last().value
         val delta = if (ordered.size >= 2) latest - first else null
+        val declaredThreshold = metricKey?.let { BiaNoiseThresholds.forMetric(it) }
         val direction = when {
             delta == null -> TrendDirection.UNKNOWN
+            metricKey != null && declaredThreshold != null -> when {
+                !BiaNoiseThresholds.isReliableChange(metricKey, delta) -> TrendDirection.STABLE
+                delta < 0.0 -> TrendDirection.DOWN
+                else -> TrendDirection.UP
+            }
             abs(delta) <= stableThreshold -> TrendDirection.STABLE
             delta < 0.0 -> TrendDirection.DOWN
             else -> TrendDirection.UP
@@ -228,6 +280,13 @@ object LocalCalculationEngine {
 }
 
 object ProfileCalculationMapper {
+    /** Unica mappatura del sesso salvato nel profilo (stringa libera) verso l'enum del motore. */
+    fun sex(value: String?): LocalCalculationEngine.BiologicalSex? = when (value?.trim()?.lowercase()) {
+        "maschio", "male", "m" -> LocalCalculationEngine.BiologicalSex.MALE
+        "femmina", "female", "f" -> LocalCalculationEngine.BiologicalSex.FEMALE
+        else -> null
+    }
+
     fun activity(value: String?): LocalCalculationEngine.ActivityLevel? = when (value?.trim()?.lowercase()) {
         "sedentario" -> LocalCalculationEngine.ActivityLevel.SEDENTARY
         "leggermente attivo" -> LocalCalculationEngine.ActivityLevel.LIGHT

@@ -25,6 +25,8 @@ import com.myfitai.app.notifications.NotificationPreferences
 import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.data.local.entity.UserProfileEntity
+import com.myfitai.app.domain.calculation.WeightReading
+import com.myfitai.app.domain.calculation.WeightSource
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.ui.widgets.SettingRowView
 import kotlinx.coroutines.Dispatchers
@@ -189,7 +191,14 @@ class ProfileActivity : BaseShellActivity() {
 
     private fun renderProfile(profile: UserProfileEntity) {
         findViewById<TextView>(R.id.profileName).text = "${profile.name}  ▾"
-        findViewById<TextView>(R.id.profileStats).text = buildStats(profile)
+        findViewById<TextView>(R.id.profileStats).text = buildStats(profile, null)
+        // Peso risolto (BIA/misura piu recente, altrimenti profilo) con fonte: stessa regola del motore e dei prompt IA.
+        lifecycleScope.launch {
+            val reading = data.profileCalculationService.profileSnapshot(profile.id)?.weight
+            if (currentProfile?.id == profile.id) {
+                findViewById<TextView>(R.id.profileStats).text = buildStats(profile, reading)
+            }
+        }
         findViewById<TextView>(R.id.profileGoal).text = profile.goal?.let { "Obiettivo: $it" } ?: "Obiettivo non impostato"
 
         val avatar = findViewById<ShapeableImageView>(R.id.profileAvatar)
@@ -197,7 +206,7 @@ class ProfileActivity : BaseShellActivity() {
         if (file?.exists() == true) avatar.setImageURI(Uri.fromFile(file)) else avatar.setImageResource(R.drawable.ic_profile_unknown)
     }
 
-    private fun buildStats(profile: UserProfileEntity): String {
+    private fun buildStats(profile: UserProfileEntity, weight: WeightReading?): String {
         val parts = mutableListOf<String>()
         profile.birthDateEpochDay?.let {
             val birth = LocalDate.ofEpochDay(it)
@@ -205,7 +214,19 @@ class ProfileActivity : BaseShellActivity() {
         }
         profile.biologicalSex?.let { parts += it }
         profile.heightCm?.let { parts += "${formatNumber(it)} cm" }
-        profile.currentWeightKg?.let { parts += "${formatNumber(it)} kg" }
+        // Prima della risoluzione (weight == null) il peso non si mostra: il peso statico del profilo puo essere vecchio.
+        weight?.valueKg?.let { kg ->
+            val value = formatNumber(kg)
+            val date = weight.measuredAtEpochMillis?.let {
+                java.time.Instant.ofEpochMilli(it).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+                    .format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+            }
+            parts += when (weight.source) {
+                WeightSource.BIA -> getString(R.string.profile_weight_from_bia, value, date.orEmpty())
+                WeightSource.MISURA -> getString(R.string.profile_weight_from_measure, value, date.orEmpty())
+                else -> getString(R.string.profile_weight_from_profile, value)
+            }
+        }
         return parts.ifEmpty { listOf("Completa i dati del profilo") }.joinToString("  |  ")
     }
 

@@ -18,6 +18,7 @@ import com.myfitai.app.data.repository.CalorieRecoveryRepository
 import com.myfitai.app.data.repository.CheatEntryRepository
 import com.myfitai.app.data.repository.FoodConsumptionRepository
 import com.myfitai.app.data.repository.MealPlanRepository
+import com.myfitai.app.data.repository.MealPlanWeekSelector
 import com.myfitai.app.data.repository.UserProfileRepository
 import com.myfitai.app.data.repository.WorkoutRepository
 import com.myfitai.app.data.repository.BodyExpectationGoalRepository
@@ -30,6 +31,11 @@ import com.myfitai.app.domain.calculation.WeightResolver
 import com.myfitai.app.domain.calculation.WeightSource
 import com.myfitai.app.domain.calculation.OperationalNutritionMetrics
 import com.myfitai.app.domain.calculation.WeeklyBodyExpectation
+import com.myfitai.app.domain.display.DayChange
+import com.myfitai.app.domain.display.DayTargetResolver
+import com.myfitai.app.domain.display.WeeklyMaintenance
+import com.myfitai.app.domain.time.SystemTimeProvider
+import com.myfitai.app.domain.time.TimeProvider
 import com.myfitai.app.domain.food.CalorieRecoveryEngine
 import com.myfitai.app.domain.food.FoodConsumptionMetrics
 import com.myfitai.app.domain.food.FoodMeal
@@ -50,7 +56,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
-import java.time.LocalTime
 import java.time.Period
 import java.time.ZoneId
 import java.time.temporal.TemporalAdjusters
@@ -71,6 +76,7 @@ class HomeViewModel(
     private val dailyActivityCheckIns: com.myfitai.app.data.repository.DailyActivityCheckInRepository,
     private val profileCalculationService: ProfileCalculationService,
     private val dayEnergy: DayEnergyProvider,
+    private val time: TimeProvider = SystemTimeProvider,
 ) : ViewModel() {
 
     /** [source] e la provenienza del dato (per grasso e muscolo e sempre BIA); l'etichetta testuale e in strings.xml. */
@@ -87,6 +93,10 @@ class HomeViewModel(
         val targetFromCurrentPlan: Boolean = false,
         val targetFromWeeklyPlan: Boolean = false,
         val targetBeforeAdaptation: Int? = null,
+        /** Profile + activity target, without plan adaptation or recovery; shown only as a labelled reference. */
+        val theoreticalTarget: Int? = null,
+        /** Where [target] comes from: the plan day (adaptation and recovery included) or the theoretical figure. */
+        val targetSource: DayTargetResolver.Source = DayTargetResolver.Source.NONE,
         val planTarget: Int? = null,
         val activityAdjustmentKcal: Int = 0,
         val habitualTdee: Int? = null,
@@ -111,6 +121,8 @@ class HomeViewModel(
     data class RecoveryState(val pendingKcal: Int = 0, val creditCount: Int = 0, val nextExpiry: LocalDate? = null)
     data class DashboardState(
         val loading: Boolean = true,
+        /** The day the numbers refer to; it changes at midnight so the screen re-renders even with identical values. */
+        val todayEpochDay: Long = 0L,
         val profileName: String? = null,
         val goal: String? = null,
         val weight: MetricState = MetricState(null, null),
@@ -149,7 +161,13 @@ class HomeViewModel(
     // Home's selector is initialized to 1Y; keep the chart query on the same range from first render.
     private val selectedRange = MutableStateFlow(3)
 
-    private val source = activeProfileStore.activeProfileId.flatMapLatest { profileId ->
+    // Today as a flow: it changes at midnight, so no source below keeps the day the screen was created on.
+    private val today: StateFlow<LocalDate> =
+        DayChange.todayFlow(time).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), time.today())
+
+    private val profileAndDay = combine(activeProfileStore.activeProfileId, today) { profileId, day -> profileId to day }
+
+    private val source = profileAndDay.flatMapLatest { (profileId, day) ->
         if (profileId <= 0L) {
             flowOf(Source(null, emptyList(), emptyList(), emptyList(), null))
         } else {
@@ -158,65 +176,53 @@ class HomeViewModel(
                 biaRepository.all(profileId),
                 bodyRepository.all(profileId),
                 workoutRepository.all(profileId),
-                dailyActivityCheckIns.observeForDay(profileId, LocalDate.now().toEpochDay()),
+                dailyActivityCheckIns.observeForDay(profileId, day.toEpochDay()),
             ) { profile, bia, body, workouts, activity -> Source(profile, bia, body, workouts, activity) }
         }
     }
 
-    private val upcomingMealsSource = activeProfileStore.activeProfileId.flatMapLatest { profileId ->
+    private val upcomingMealsSource = profileAndDay.flatMapLatest { (profileId, _) ->
         if (profileId <= 0L) {
             flowOf<List<NextMealState>>(emptyList())
         } else {
-            mealPlanRepository.plans(profileId).flatMapLatest {
-                flow { emit(findUpcomingMeals(profileId, limit = 2)) }
+            mealPlanRepository.plans(profileId).flatMapLatest { plans ->
+                flow { emit(findUpcomingMeals(profileId, plans.map { it.weekStartEpochDay }, limit = 2)) }
             }
         }
     }
 
-    private val recoverySource = activeProfileStore.activeProfileId.flatMapLatest { profileId ->
+    private val recoverySource = profileAndDay.flatMapLatest { (profileId, day) ->
         if (profileId <= 0L) {
             flowOf(RecoveryState())
         } else {
-            val zone = ZoneId.systemDefault()
-            val windowStart = LocalDate.now().minusDays(CalorieRecoveryEngine.WINDOW_DAYS)
+            val zone = time.zoneId
+            val windowStart = day.minusDays(CalorieRecoveryEngine.WINDOW_DAYS)
                 .atStartOfDay(zone).toInstant().toEpochMilli()
-            val now = System.currentTimeMillis()
+            val now = time.nowEpochMillis()
             cheatRepository.between(profileId, windowStart, now).map { entries ->
                 computeRecovery(profileId, entries)
             }
         }
     }
 
-    private val consumedTodaySource = activeProfileStore.activeProfileId.flatMapLatest { profileId ->
+    private val consumedTodaySource = profileAndDay.flatMapLatest { (profileId, day) ->
         if (profileId <= 0L) {
             flowOf(emptyList())
         } else {
             // Consumption is a historical fact. Keep counting it if the weekly plan
             // gets a new version after the user marked a meal as consumed.
-            foodConsumptionRepository.forDay(profileId, LocalDate.now().toEpochDay())
+            foodConsumptionRepository.forDay(profileId, day.toEpochDay())
         }
     }
 
-    private val weeklyPlanSource = activeProfileStore.activeProfileId.flatMapLatest { profileId ->
+    // Same plan-for-the-week rule as the Food screen: a multi-week period is stored on its first week,
+    // so week 2..N must fall back to the plan whose days cover it. Versions are observed too.
+    private val weeklyPlanSource = profileAndDay.flatMapLatest { (profileId, day) ->
         if (profileId <= 0L) {
             flowOf<com.myfitai.app.domain.food.FoodPlanSnapshot?>(null)
         } else {
-            mealPlanRepository.plans(profileId).flatMapLatest { plans ->
-                val monday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-                val weekStart = monday.toEpochDay()
-                val plan = plans.firstOrNull { it.weekStartEpochDay == weekStart }
-                if (plan == null) {
-                    flowOf<com.myfitai.app.domain.food.FoodPlanSnapshot?>(null)
-                } else {
-                    // Observe versions too: regenerating a week can append a version
-                    // without changing the parent meal-plan row.
-                    mealPlanRepository.versions(profileId, plan.id).flatMapLatest {
-                        flow {
-                            emit(mealPlanRepository.loadLatestSnapshot(profileId, weekStart))
-                        }
-                    }
-                }
-            }
+            val weekStart = day.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).toEpochDay()
+            mealPlanRepository.latestSnapshotForDisplayedWeek(profileId, weekStart)
         }
     }
 
@@ -233,11 +239,10 @@ class HomeViewModel(
     ) { source, rangeIndex, upcomingMeals, recovery, consumption ->
         buildState(source, rangeIndex, upcomingMeals, recovery, consumption)
     }.combine(weeklyPlanSource) { dashboard, snapshot ->
-        val monday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        val todayDate = today.value
+        val monday = todayDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         val todayTargetDay = snapshot?.version?.days
-            ?.firstOrNull { it.dateEpochDay == LocalDate.now().toEpochDay() }
-        val todayTarget = todayTargetDay?.targetKcal
-        val todayProteinTarget = todayTargetDay?.targetProteinG ?: snapshot?.version?.targetProteinG ?: dashboard.calories.proteinTargetG
+            ?.firstOrNull { it.dateEpochDay == todayDate.toEpochDay() }
         val todayBaseTarget = todayTargetDay?.baseTargetKcal ?: todayTargetDay?.targetKcal ?: snapshot?.version?.targetKcal
         // With a training program each day has its own expenditure; without one this stays empty (legacy).
         val expectationWeeks = activeProfileStore.currentIdOrNull()?.let(nutritionPlanSchedulePreferences::periodWeeks) ?: 1
@@ -245,14 +250,23 @@ class HomeViewModel(
             ?.let { id -> dayEnergy.days(id, (0L until expectationWeeks * 7L).map { monday.plusDays(it) }) }
             ?.associate { it.date.toEpochDay() to Math.round(it.energy.tdeeKcal).toInt() }
             .orEmpty()
-        val planTarget = todayTarget ?: snapshot?.version?.targetKcal ?: dashboard.calories.planTarget ?: dashboard.calories.target
-        val displayedTarget = dashboard.calories.target ?: planTarget
+        // ONE target for the day, shared with Food: the plan day's (adaptation and recovery included) when the
+        // plan has it, otherwise the theoretical one (dashboard.calories.target is the theoretical figure here).
+        val resolved = DayTargetResolver.resolve(
+            theoreticalKcal = dashboard.calories.target?.toDouble(),
+            theoreticalProteinG = dashboard.calories.proteinTargetG,
+            planDayKcal = todayTargetDay?.targetKcal,
+            planDayProteinG = (todayTargetDay?.targetProteinG ?: snapshot?.version?.targetProteinG)?.toDouble(),
+            planWeekKcal = snapshot?.version?.targetKcal,
+        )
+        val planTarget = todayTargetDay?.targetKcal ?: snapshot?.version?.targetKcal ?: dashboard.calories.planTarget ?: dashboard.calories.target
+        val displayedTarget = resolved.kcal
         val displayedTargetPercent = if (displayedTarget != null && dashboard.calories.tdee != null && dashboard.calories.tdee > 0) {
             Math.round((displayedTarget - dashboard.calories.tdee) * 100.0 / dashboard.calories.tdee).toInt()
         } else null
         val todayRecords = FoodConsumptionMetrics.recordsForDate(
             dashboard.consumptionRecords,
-            LocalDate.now().toEpochDay(),
+            todayDate.toEpochDay(),
         )
         val consumed = FoodConsumptionMetrics.dayTotals(todayRecords)
         val consumedRows = todayRecords.filter {
@@ -263,8 +277,11 @@ class HomeViewModel(
         val consumedProtein = consumedRows.takeIf { rows -> rows.isNotEmpty() && rows.all { it.proteinG != null } }
             ?.sumOf { it.proteinG!!.toDouble() }
         dashboard.copy(
+            todayEpochDay = todayDate.toEpochDay(),
             calories = dashboard.calories.copy(
                 target = displayedTarget,
+                theoreticalTarget = resolved.theoreticalKcal,
+                targetSource = resolved.source,
                 targetFromCurrentPlan = todayTargetDay != null,
                 targetFromWeeklyPlan = snapshot != null,
                 targetBeforeAdaptation = todayBaseTarget,
@@ -273,12 +290,13 @@ class HomeViewModel(
                 energyPercent = displayedTargetPercent,
                 consumedKcal = consumedKcal?.let { Math.round(it).toInt() },
                 consumedProteinG = consumedProtein,
-                proteinTargetG = todayProteinTarget?.toDouble(),
+                proteinTargetG = resolved.proteinG,
                 consumedCount = consumed.consumedCount,
                 recordedCount = consumed.recordedCount,
             ),
             weeklyExpectation = WeeklyBodyExpectation.calculate(
-                maintenanceKcal = dashboard.calories.tdee,
+                // Habitual TDEE for every day without a day-specific figure: today's check-in must not move the week.
+                maintenanceKcal = WeeklyMaintenance.baseKcal(dashboard.calories.habitualTdee, dashboard.calories.tdee),
                 weekStartEpochDay = monday.toEpochDay(),
                 plannedDays = snapshot?.version?.days.orEmpty().map { it.dateEpochDay to it.totalKcal },
                 periodWeeks = expectationWeeks,
@@ -303,7 +321,7 @@ class HomeViewModel(
 
     fun clearActivityCheckIn() {
         val profileId = activeProfileStore.currentIdOrNull() ?: return
-        viewModelScope.launch { dailyActivityCheckIns.deleteForDay(profileId, LocalDate.now().toEpochDay()) }
+        viewModelScope.launch { dailyActivityCheckIns.deleteForDay(profileId, time.today().toEpochDay()) }
     }
 
     private fun saveActivityCheckIn(status: String, durationMinutes: Int?, intensity: String?, adjustmentKcal: Int) {
@@ -312,7 +330,7 @@ class HomeViewModel(
             val now = System.currentTimeMillis()
             dailyActivityCheckIns.upsert(DailyActivityCheckInEntity(
                 profileId = profileId,
-                dateEpochDay = LocalDate.now().toEpochDay(),
+                dateEpochDay = time.today().toEpochDay(),
                 status = status,
                 durationMinutes = durationMinutes,
                 intensity = intensity,
@@ -326,7 +344,7 @@ class HomeViewModel(
     fun confirmExpectation(status: String, note: String? = null) {
         val profileId = activeProfileStore.currentIdOrNull() ?: return
         val result = state.value.weeklyExpectation
-        val monday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        val monday = time.today().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         viewModelScope.launch {
             val now = System.currentTimeMillis()
             val existing = bodyExpectationGoalRepository.getForPeriod(profileId, monday.toEpochDay())
@@ -368,8 +386,8 @@ class HomeViewModel(
         ) { points -> filterRange(points, rangePeriod) }
         val fatInRange = filterRange(fatValues, rangePeriod)
         val muscleInRange = filterRange(muscleValues, rangePeriod)
-        val fatTrend = LocalCalculationEngine.trend(fatInRange.map { LocalCalculationEngine.TimedValue(it.first, it.second.toDouble()) })
-        val muscleTrend = LocalCalculationEngine.trend(muscleInRange.map { LocalCalculationEngine.TimedValue(it.first, it.second.toDouble()) })
+        val fatTrend = LocalCalculationEngine.trend(fatInRange.map { LocalCalculationEngine.TimedValue(it.first, it.second.toDouble()) }, metricKey = "bodyFatPercent")
+        val muscleTrend = LocalCalculationEngine.trend(muscleInRange.map { LocalCalculationEngine.TimedValue(it.first, it.second.toDouble()) }, metricKey = "muscleMassKg")
         val weightSeries = weightSeriesData.points.map { it.second }
         val fatSeries = fatInRange.map { it.second }
         val muscleSeries = muscleInRange.map { it.second }
@@ -423,7 +441,7 @@ class HomeViewModel(
         val profile = source.profile ?: return CalorieState()
         val latestBia = source.bia.maxByOrNull { it.measuredAtEpochMillis }
         val calculation = profileCalculationService.profileSnapshot(profile.id)?.calculation
-        val programDay = dayEnergy.day(profile.id, LocalDate.now())
+        val programDay = dayEnergy.day(profile.id, time.today())
         val metrics = OperationalNutritionMetrics.calculate(calculation, source.activityCheckIn, programDay)
         val tdeeInt = metrics.operationalTdeeKcal?.let { Math.round(it).toInt() }
         val targetInt = metrics.operationalTargetKcal?.let { Math.round(it).toInt() }
@@ -455,14 +473,19 @@ class HomeViewModel(
         null -> null
     }
 
-    private suspend fun findUpcomingMeals(profileId: Long, limit: Int): List<NextMealState> {
-        val today = LocalDate.now()
-        val nowMinutes = LocalTime.now().hour * 60 + LocalTime.now().minute
+    private suspend fun findUpcomingMeals(profileId: Long, planWeekStarts: List<Long>, limit: Int): List<NextMealState> {
+        val today = time.today()
+        val nowMinutes = time.currentTime().let { it.hour * 60 + it.minute }
         val currentWeek = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-        val snapshots = listOfNotNull(
-            mealPlanRepository.loadLatestSnapshot(profileId, currentWeek.toEpochDay()),
-            mealPlanRepository.loadLatestSnapshot(profileId, currentWeek.plusWeeks(1).toEpochDay()),
-        )
+        // Same plan-for-the-week rule as Food; a period plan can answer for both weeks, so de-duplicate by version.
+        val snapshots = listOf(currentWeek, currentWeek.plusWeeks(1)).mapNotNull { week ->
+            MealPlanWeekSelector.pick(
+                planWeekStarts = planWeekStarts,
+                weekStartEpochDay = week.toEpochDay(),
+                load = { start -> mealPlanRepository.loadLatestSnapshot(profileId, start) },
+                coveredDays = { snapshot -> snapshot.version.days.map { it.dateEpochDay } },
+            )
+        }.distinctBy { it.version.id }
 
         val result = mutableListOf<NextMealState>()
         for (snapshot in snapshots) {
@@ -492,7 +515,7 @@ class HomeViewModel(
         profileId: Long,
         entries: List<com.myfitai.app.data.local.entity.CheatEntryEntity>,
     ): RecoveryState {
-        val monday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        val monday = time.today().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         var pending = 0
         var credits = 0
         var nextExpiry: LocalDate? = null
@@ -559,7 +582,7 @@ class HomeViewModel(
             points = values.map { ProgressSeriesPoint(it.first, it.second) },
             range = range,
             zoneId = zone,
-            asOfDate = LocalDate.now(zone),
+            asOfDate = time.today(),
         ).points.map { it.timestamp to it.value }
     }
 

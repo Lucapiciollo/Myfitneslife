@@ -40,6 +40,8 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import com.myfitai.app.domain.display.DisplayNumberFormatter
+import com.myfitai.app.domain.display.DayTargetResolver
 import com.myfitai.app.domain.calculation.ProfileCalculationMapper
 import com.myfitai.app.domain.calculation.TrainingEnergyPreview
 import java.time.Instant
@@ -471,15 +473,33 @@ class FoodPlanActivity : BaseShellActivity() {
             .replaceFirstChar { it.uppercase() }
         findViewById<TextView>(R.id.dailyTotalTitle).text = "Totale giornaliero · $dayLabel"
         val planTargetKcal = day.targetKcal ?: version?.targetKcal
-        val dayTargetKcal = calorieReference.operationalTargetKcal ?: planTargetKcal
         val planTargetProtein = day.targetProteinG ?: version?.targetProteinG
-        val dayTargetProtein = calorieReference.operationalProteinG ?: planTargetProtein
+        // Same single target as Home: the plan day's (adaptation and recovery included), or the labelled theoretical one.
+        val resolvedTarget = DayTargetResolver.resolve(
+            theoreticalKcal = calorieReference.operationalTargetKcal,
+            theoreticalProteinG = calorieReference.operationalProteinG,
+            planDayKcal = day.targetKcal,
+            planDayProteinG = planTargetProtein?.toDouble(),
+            planWeekKcal = version?.targetKcal,
+        )
+        val dayTargetKcal = resolvedTarget.kcal
+        val dayTargetProtein = resolvedTarget.proteinG
+        val targetLabel = getString(
+            if (resolvedTarget.source == DayTargetResolver.Source.PLAN_DAY) R.string.food_target_label_plan_day
+            else R.string.food_target_label_theoretical,
+        )
+        val targetSourceLabel = getString(
+            when (resolvedTarget.source) {
+                DayTargetResolver.Source.PLAN_DAY -> R.string.food_target_source_plan_day
+                DayTargetResolver.Source.PLAN_WEEK -> R.string.food_target_source_plan_week
+                else -> R.string.food_target_source_theoretical
+            },
+        )
         val baseTargetKcal = day.baseTargetKcal ?: planTargetKcal
         findViewById<TextView>(R.id.dailyTotalLegend).text =
             "BMR: ${calorieReference.bmrKcal?.let { formatKcal(it) } ?: "non disponibile"} a riposo · " +
              "TDEE operativo: ${calorieReference.tdeeKcal?.let { formatKcal(it) } ?: "non disponibile"}, calcolato sull'attività del giorno. " +
-                 "Target operativo: ${calorieReference.operationalTargetKcal?.let { formatKcal(it) } ?: "non disponibile"}. " +
-                 "Target del piano: ${planTargetKcal?.let { formatKcal(it) } ?: "non disponibile"}."
+                 getString(R.string.food_target_legend, formatKcal(resolvedTarget.kcal), targetSourceLabel, formatKcal(resolvedTarget.theoreticalKcal))
         val rows = listOf(
             R.id.dailyTotalRowBmr,
             R.id.dailyTotalRowTdee,
@@ -493,7 +513,7 @@ class FoodPlanActivity : BaseShellActivity() {
         findViewById<TextView>(R.id.totalKcalTdee).text = formatKcal(calorieReference.tdeeKcal)
         findViewById<TextView>(R.id.dailyTdeeLabel).text =
             if (calorieReference.fromTrainingProgram) "TDEE · attività del giorno" else "TDEE · attività abituale"
-        findViewById<TextView>(R.id.dailyTargetLabel).text = "Target operativo del giorno"
+        findViewById<TextView>(R.id.dailyTargetLabel).text = targetLabel
         findViewById<View>(R.id.dailyTotalRowTarget).visibility = if (dayTargetKcal != null || dayTargetProtein != null) View.VISIBLE else View.GONE
         findViewById<TextView>(R.id.totalKcalTarget).text = formatKcal(dayTargetKcal)
         findViewById<TextView>(R.id.totalProteinTarget).text = formatValue(dayTargetProtein, "g")
@@ -503,7 +523,7 @@ class FoodPlanActivity : BaseShellActivity() {
         findViewById<TextView>(R.id.totalProteinConsumed).text = formatConsumed(consumedProtein, "g")
         findViewById<View>(R.id.dailyTotalRowBmr).contentDescription = calorieReference.bmrKcal?.let { "Metabolismo a riposo, ${formatKcal(it)}" }
          findViewById<View>(R.id.dailyTotalRowTdee).contentDescription = calorieReference.tdeeKcal?.let { "TDEE operativo del giorno, ${formatKcal(it)}" }
-        findViewById<View>(R.id.dailyTotalRowTarget).contentDescription = "Target operativo del giorno: ${formatKcal(dayTargetKcal)}, target piano ${formatKcal(planTargetKcal)}, proteine operative ${formatValue(dayTargetProtein, "g")}"
+        findViewById<View>(R.id.dailyTotalRowTarget).contentDescription = getString(R.string.food_target_description, targetLabel, formatKcal(dayTargetKcal), formatValue(dayTargetProtein, "g"), formatKcal(resolvedTarget.theoreticalKcal))
         findViewById<View>(R.id.dailyTotalRowPlanned).contentDescription = "Nel menu: ${NutritionEstimateFormatter.formatEstimatedKcal(totals.kcal)}, proteine ${NutritionEstimateFormatter.formatEstimatedMacro(totals.proteinG, "g")}"
         findViewById<View>(R.id.dailyTotalRowConsumed).contentDescription = "Consumate: ${formatConsumed(consumedKcal, "kcal")}, proteine ${formatConsumed(consumedProtein, "g")}"
         findViewById<View>(R.id.dailyTotalRowPlanned).visibility = if (totals.kcal != null || totals.proteinG != null) View.VISIBLE else View.GONE
@@ -535,17 +555,17 @@ class FoodPlanActivity : BaseShellActivity() {
             
             "BMR a riposo: energia stimata senza applicare il livello di attività.\n\n" +
                     "TDEE operativo: stima locale calcolata sul profilo e sull'attività del giorno; senza check-in viene usato il riposo. Non è una misurazione dell'allenamento singolo.\n\n" +
-                    "Target operativo: calorie e proteine coerenti con il TDEE operativo. Il target del piano salvato resta visibile separatamente e non viene riscritto automaticamente.\n\n" +
+                    "Target del giorno: se il piano ha una voce per quel giorno è il target del piano, con adattamento e recupero già applicati, uguale a quello mostrato in Home. Senza piano per il giorno è il target teorico (profilo e attività), indicato come tale; viene mostrato anche il teorico quando differisce.\n\n" +
                     "Piano: somma nutrizionale degli alimenti e degli integratori programmati.\n\n" +
                     "Consumate: somma dei soli elementi segnati come consumati nel giorno selezionato. Le portate non registrate non vengono conteggiate come zero effettivo."
         )
     }
 
-    private fun formatKcal(value: Number?): String = value?.let { "${kotlin.math.round(it.toDouble()).toInt()} kcal" } ?: "—"
+    private fun formatKcal(value: Number?): String = value?.let { DisplayNumberFormatter.kcal(it.toDouble()) } ?: "-"
 
     private fun formatValue(value: Number?, unit: String): String = value?.let {
-        if (unit == "kcal") "${it.toInt()} $unit" else "${formatMacro(it.toDouble())} $unit"
-    } ?: "—"
+        if (unit == "kcal") DisplayNumberFormatter.kcal(it.toDouble()) else "${formatMacro(it.toDouble())} $unit"
+    } ?: "-"
 
     private fun formatConsumed(value: Double?, unit: String): String = formatValue(value, unit)
 
@@ -573,8 +593,8 @@ class FoodPlanActivity : BaseShellActivity() {
         val monthFormatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.ITALIAN)
         return if (start.month == end.month) "${start.dayOfMonth} – ${end.dayOfMonth} ${end.format(monthFormatter).replaceFirstChar { it.uppercase() }}" else "${start.format(DateTimeFormatter.ofPattern("d MMM", Locale.ITALIAN))} – ${end.format(DateTimeFormatter.ofPattern("d MMM", Locale.ITALIAN))} ${end.year}"
     }
-    private fun formatMacro(value: Float): String = if (value % 1f == 0f) value.toInt().toString() else String.format(Locale.ITALIAN, "%.1f", value)
-    private fun formatMacro(value: Double): String = if (value % 1.0 == 0.0) value.toInt().toString() else String.format(Locale.ITALIAN, "%.1f", value)
+    private fun formatMacro(value: Float): String = DisplayNumberFormatter.decimal(value)
+    private fun formatMacro(value: Double): String = DisplayNumberFormatter.decimal(value)
     companion object {
         const val EXTRA_WEEK_START_EPOCH_DAY = "week_start_epoch_day"
         const val EXTRA_SELECTED_DATE_EPOCH_DAY = "selected_date_epoch_day"

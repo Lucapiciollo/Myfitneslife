@@ -19,6 +19,18 @@ class TimeRangeSelectorView @JvmOverloads constructor(
         isSingleSelection = true
         isSelectionRequired = true
         setInnerCornerSize(AbsoluteCornerSize(resources.getDimension(R.dimen.radius_pill)))
+        minimumHeight = minHeightPx()
+    }
+
+    private fun minHeightPx(): Int = resources.getDimensionPixelSize(R.dimen.time_range_selector_min_height)
+
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+        // Garanzia finale: anche se un contenitore stringe l'altezza, il selettore non scende sotto il minimo.
+        val minHeight = minHeightPx()
+        if (measuredHeight < minHeight && MeasureSpec.getMode(heightMeasureSpec) != MeasureSpec.EXACTLY) {
+            super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(minHeight, MeasureSpec.EXACTLY))
+        }
     }
 
     fun setRanges(labels: List<String>, selectedIndex: Int = 0) {
@@ -35,8 +47,15 @@ class TimeRangeSelectorView @JvmOverloads constructor(
                     resources.getDimensionPixelSize(R.dimen.space_16), 0,
                     resources.getDimensionPixelSize(R.dimen.space_16), 0,
                 )
-                minHeight = resources.getDimensionPixelSize(R.dimen.control_min_height)
-                minimumHeight = resources.getDimensionPixelSize(R.dimen.control_min_height)
+                // Niente inset verticali del tema Material: la vista (e il suo target di tocco) e' alta almeno 48dp reali,
+                // a contenuto cosi' con font 1,3x/2x il testo non si taglia.
+                insetTop = 0
+                insetBottom = 0
+                maxLines = 2
+                gravity = android.view.Gravity.CENTER
+                minHeight = minHeightPx()
+                minimumHeight = minHeightPx()
+                layoutParams = LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.MATCH_PARENT)
                 contentDescription = "Intervallo $label"
                 setTextColor(
                     android.content.res.ColorStateList(
