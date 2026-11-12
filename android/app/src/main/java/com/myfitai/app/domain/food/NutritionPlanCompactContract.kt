@@ -23,6 +23,13 @@ object NutritionPlanCompactContract {
         """.trimIndent()
     ).toString()
 
+    /**
+     * Meal titles must name the dish (K6): the persisted plan is read by the user as a menu, and generic titles
+     * ("Colazione leggera") hide what to eat. Checked, non-blocking, by [MealTitleQuality] (GENERIC_MEAL_TITLE).
+     */
+    const val TITLE_RULE = "M title = the dish named with its 1-2 main ingredients, e.g. Merluzzo al forno con zucchine or Yogurt greco con mela. " +
+        "Never a title that is only the meal name or an adjective (Colazione leggera, Spuntino mattutino, Pranzo equilibrato, Cena leggera)."
+
     const val PROTOCOL = """MFP1
 W|weekStartEpochDay
   D|dateEpochDay|totalKcal|proteinG|carbsG|fatG (one record for each requested date, followed by exactly MEALS_PER_DAY M records; the period can contain 7, 14 or 28 dates)
@@ -30,7 +37,8 @@ M|type|title|timeMinutes|kcal|proteinG|carbsG|fatG|preparation
 I|name|quantity|unit|displayDose|weightState|nutritionConfidence|category
 S|kind|name|dose|unit|timeMinutes|kcal|proteinG|carbsG|fatG|notes
 H|hydrationNote
-V|1_or_0|notes"""
+V|1_or_0|notes
+$TITLE_RULE"""
 
     fun parseEnvelope(jsonText: String, mealsPerDay: Int = NutritionPlanContract.REQUIRED_MEALS_PER_DAY): NutritionPlanContract.Response {
         val root = JSONObject(jsonText)

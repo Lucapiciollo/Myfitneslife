@@ -62,8 +62,9 @@ class SafetyCalorieFloorTest {
         assertEquals(1161.78, r.unclampedTargetKcal!!, 0.01)
         assertEquals(1200.0, r.targetKcal!!, 0.001)
         assertTrue(r.floorApplied)
-        // I macro derivano dal target gia clampato: carbo = (1200 - 100*4 - 40*9) / 4.
-        assertEquals(110.0, r.carbsG!!, 0.01)
+        // K6: I macro derivano dal target gia clampato (1200 kcal): proteine = max(min(100; 90); 60) = 90, grassi =
+        // max(30; 26,7) = 30, carbo = (1200 - 360 - 270) / 4 = 142,5 (prima 110).
+        assertEquals(142.5, r.carbsG!!, 0.01)
     }
 
     @Test

@@ -50,6 +50,84 @@ data class AppNutritionValidation(
     }
 }
 
+/**
+ * Non-blocking quality check of meal titles (K6): a title must name the dish ("Merluzzo al forno con zucchine"), not
+ * only the slot or an adjective ("Colazione leggera"). The check is a CLOSED list of words (slot names, adjectives,
+ * connectors) plus a comparison with the meal's own ingredients; it never blocks and never rewrites a title.
+ *
+ * Declared limit: a legitimate dish name whose words do not appear in the ingredient names (e.g. "Frittata" with
+ * "Uova") is listed too. The warning is informative and the list is capped.
+ */
+object MealTitleQuality {
+    const val CODE = "GENERIC_MEAL_TITLE"
+    const val MAX_LISTED = 6
+    private const val MIN_PREFIX_SHARE = 0.6
+
+    private val SLOT_WORDS = setOf(
+        "colazione", "spuntino", "merenda", "pranzo", "cena", "pasto", "mattina", "mattutino", "mattutina",
+        "pomeriggio", "pomeridiano", "pomeridiana", "sera", "serale", "mezzogiorno", "prima", "seconda", "primo", "secondo",
+        "breakfast", "lunch", "dinner", "snack", "meta", "mid", "pre", "post", "workout", "allenamento",
+    )
+    private val ADJECTIVES = setOf(
+        "leggero", "leggera", "leggeri", "leggere", "equilibrato", "equilibrata", "equilibrati", "equilibrate",
+        "bilanciato", "bilanciata", "bilanciati", "bilanciate", "proteico", "proteica", "proteici", "proteiche",
+        "sano", "sana", "sani", "sane", "salutare", "completo", "completa", "nutriente", "veloce", "semplice",
+        "light", "classico", "classica", "tipico", "tipica", "ricco", "ricca", "energetico", "energetica",
+        "saziante", "genuino", "genuina", "fresco", "fresca", "abbondante", "ideale", "base",
+    )
+    private val CONNECTORS = setOf("di", "del", "della", "dello", "dei", "delle", "e", "ed", "il", "la", "lo", "un", "una", "a", "da", "in", "per", "con", "al", "alla")
+    private val GENERIC_WORDS = SLOT_WORDS + ADJECTIVES + CONNECTORS
+    private val IGNORED_FOR_MATCH = CONNECTORS + setOf("allo", "alle", "agli", "dal", "dalla", "sul", "sulla", "su")
+
+    private fun tokens(text: String): List<String> =
+        java.text.Normalizer.normalize(text.lowercase(), java.text.Normalizer.Form.NFD)
+            .replace(Regex("\\p{M}+"), "")
+            .replace("yoghurt", "yogurt")
+            .split(Regex("[^a-z]+"))
+            .filter { it.isNotEmpty() }
+
+    /** True when every word of the title is a slot name, an adjective or a connector (or the title has no word). */
+    fun isGeneric(title: String): Boolean = tokens(title).all { it in GENERIC_WORDS }
+
+    private fun sameWord(a: String, b: String): Boolean {
+        if (a == b) return true
+        val shortest = minOf(a.length, b.length)
+        if (shortest < 4) return false
+        val prefix = a.commonPrefixWith(b).length
+        return prefix >= shortest - 1 && prefix >= MIN_PREFIX_SHARE * maxOf(a.length, b.length)
+    }
+
+    /** True when no word of the title appears (same word or inflection) in any ingredient name of the meal. */
+    fun mentionsNoIngredient(title: String, ingredientNames: List<String>): Boolean {
+        if (ingredientNames.isEmpty()) return false
+        val titleWords = tokens(title).filter { it !in IGNORED_FOR_MATCH && it !in GENERIC_WORDS && it.length >= 3 }
+        val ingredientWords = ingredientNames.flatMap(::tokens).filter { it !in IGNORED_FOR_MATCH && it.length >= 3 }
+        return titleWords.none { word -> ingredientWords.any { sameWord(word, it) } }
+    }
+
+    fun isWeak(meal: NutritionPlanContract.GeneratedMeal): Boolean =
+        isGeneric(meal.title) || mentionsNoIngredient(meal.title, meal.ingredients.map { it.name })
+
+    /** Titles (distinct, in plan order) that are generic or name none of the meal's ingredients. */
+    fun weakTitles(response: NutritionPlanContract.Response): List<String> =
+        response.days.flatMap { it.meals }.filter(::isWeak).map { it.title.trim() }.distinct()
+
+    /** One non-blocking warning listing the weak titles (at most [MAX_LISTED], then `+N`); null when all are fine. */
+    fun warning(response: NutritionPlanContract.Response): NutritionValidationIssue? {
+        val titles = weakTitles(response)
+        if (titles.isEmpty()) return null
+        val shown = titles.take(MAX_LISTED).joinToString("; ")
+        val hidden = titles.size - MAX_LISTED
+        return NutritionValidationIssue(
+            code = CODE,
+            severity = Severity.WARNING,
+            message = "Titoli dei pasti generici: il titolo dovrebbe nominare il piatto con i suoi ingredienti principali",
+            mealTitle = shown + if (hidden > 0) "; +$hidden" else "",
+            actual = titles.size.toDouble(),
+        )
+    }
+}
+
 object NutritionIntegrityValidator {
     const val VERSION = "nutrition-integrity-v2"
     private const val KCAL_TOLERANCE_RATIO = 0.15
@@ -95,7 +173,7 @@ object NutritionIntegrityValidator {
             valid = errors.isEmpty(),
             validatorVersion = VERSION,
             issues = errors,
-            warnings = warnings,
+            warnings = warnings + listOfNotNull(MealTitleQuality.warning(response)),
             deviations = evaluated.days,
             attempts = evaluated.attempt + 1,
             tolerancePolicy = evaluated.tolerancePolicy,

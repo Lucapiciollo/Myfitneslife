@@ -131,4 +131,17 @@ class NutritionPlanCompactContractTest {
 
         assertTrue(runCatching { NutritionPlanCompactContract.parsePayload(payload) }.isFailure)
     }
+
+    @Test
+    fun protocolInstructsTheModelToNameTheDishWithItsMainIngredients() {
+        val protocol = NutritionPlanCompactContract.PROTOCOL
+        assertEquals("MFP1", protocol.lineSequence().first())
+        assertTrue(protocol.contains(NutritionPlanCompactContract.TITLE_RULE))
+        assertTrue(protocol.contains("1-2 main ingredients"))
+        assertTrue(protocol.contains("Merluzzo al forno con zucchine"))
+        assertTrue(protocol.contains("Never a title that is only the meal name or an adjective"))
+        // The rule's own bad examples are the ones the app flags afterwards.
+        listOf("Colazione leggera", "Spuntino mattutino", "Pranzo equilibrato", "Cena leggera")
+            .forEach { assertTrue(it, MealTitleQuality.isGeneric(it) && protocol.contains(it)) }
+    }
 }

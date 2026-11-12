@@ -37,7 +37,8 @@ class LocalCalculationEngineTest {
         assertEquals(2716.2, result.tdeeKcal!!, 0.3)
         assertEquals(2580.4, result.targetKcal!!, 0.4)
         assertEquals(160.0, result.proteinG!!, 0.01)
-        assertEquals(64.0, result.fatG!!, 0.01)
+        // K6: grassi = max(0,6*80 = 48; 0,20*2580,4/9 = 57,34) = 57,34 (prima 0,8 g/kg = 64).
+        assertEquals(57.34, result.fatG!!, 0.01)
         assertEquals(0.4889, result.waistHeightRatio!!, 0.001)
     }
 

@@ -32,7 +32,9 @@ data class TrainingSession(
  *   day expenditure = BMR x everyday-activity factor (workouts excluded) + workout cost
  *   day target      = goal factor x day expenditure, never below the BMR
  *
- * Protein and fat stay per kilogram of body weight; carbohydrates absorb the difference.
+ * Protein and fat come from ONE [MacroPolicy.Anchor] (computed once on the habitual target and passed in
+ * explicitly) and never change between days; carbohydrates absorb the difference. Without an explicit anchor
+ * the anchor is derived from the rest-day target, so rest and training days still share protein and fat.
  * Nothing is delegated to the LLM and nothing here is persisted.
  */
 object DayEnergyEngine {
@@ -45,6 +47,8 @@ object DayEnergyEngine {
         val lifestyleMultiplier: Double,
         val goal: Goal,
         val session: TrainingSession?,
+        /** Protein/fat decided once on the habitual target; null = derived from this input's rest-day target. */
+        val macroAnchor: MacroPolicy.Anchor? = null,
     )
 
     data class DayEnergy(
@@ -103,7 +107,8 @@ object DayEnergyEngine {
         val tdee = lifestyleKcal + exercise
         val computed = tdee * LocalCalculationEngine.goalEnergyFactor(input.goal)
         val target = max(computed, input.bmrKcal)
-        val macros = LocalCalculationEngine.calculateMacrosForTarget(target, input.weightKg, input.goal)
+        val anchor = input.macroAnchor ?: restDayAnchor(input)
+        val macros = MacroPolicy.targetsFor(target, anchor)
         return DayEnergy(
             kind = if (input.session != null) DayKind.TRAINING else DayKind.REST,
             session = input.session,
@@ -119,6 +124,12 @@ object DayEnergyEngine {
         )
     }
 
+    /** Default anchor: the protein/fat policy applied to the day WITHOUT workouts, identical for every day type. */
+    private fun restDayAnchor(input: Input): MacroPolicy.Anchor {
+        val restKcal = max(input.bmrKcal * input.lifestyleMultiplier * LocalCalculationEngine.goalEnergyFactor(input.goal), input.bmrKcal)
+        return MacroPolicy.anchorFor(restKcal, input.weightKg, input.goal)
+    }
+
     /** @return null if any day cannot be computed, so a partial week is never presented as complete. */
     fun forDates(
         dates: List<LocalDate>,
@@ -126,10 +137,11 @@ object DayEnergyEngine {
         weightKg: Double,
         lifestyleMultiplier: Double,
         goal: Goal,
+        macroAnchor: MacroPolicy.Anchor? = null,
         resolutionFor: (LocalDate) -> TrainingDayResolver.Resolution,
     ): List<DayPlan>? = dates.map { date ->
         val resolution = resolutionFor(date)
-        val energy = calculate(Input(bmrKcal, weightKg, lifestyleMultiplier, goal, resolution.session)) ?: return null
+        val energy = calculate(Input(bmrKcal, weightKg, lifestyleMultiplier, goal, resolution.session, macroAnchor)) ?: return null
         DayPlan(date, resolution, energy)
     }
 

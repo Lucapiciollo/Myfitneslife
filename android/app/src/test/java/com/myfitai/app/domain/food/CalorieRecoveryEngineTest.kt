@@ -83,6 +83,32 @@ class CalorieRecoveryEngineTest {
     }
 
     @Test
+    fun recovery_keepsTheHabitualProteinAndFatOfTheBaseTargetNotAPerKilogramRecalculation() {
+        val monday = LocalDate.of(2026, 9, 14)
+        // K6: base macros of the real case (78 kg, 1381 kcal): protein 103,6 g (30% kcal), fat 46,8 g. A per-kg recalculation
+        // (2,0 g/kg) would put 156 g of protein back on every recovery day.
+        val realBase = NutritionBusinessValidator.Targets(1381.0, 103.575, 136.375, 46.8)
+
+        val result = CalorieRecoveryEngine.plan(
+            monday, monday, realBase, 78.0, LocalCalculationEngine.Goal.WEIGHT_LOSS,
+            listOf(CalorieRecoveryEngine.Credit(1, monday.minusDays(1), 500)),
+            minimumKcal = 1200.0,
+        )
+
+        assertTrue(result.plannedRecoveryKcal > 0)
+        result.days.forEach { day ->
+            assertEquals(103.575, day.targets.proteinG, 0.0)
+            assertEquals(46.8, day.targets.fatG, 0.0)
+            assertEquals(
+                (day.targets.kcal - 103.575 * 4 - 46.8 * 9) / 4.0,
+                day.targets.carbsG,
+                1e-9,
+            )
+        }
+        assertTrue(result.days.any { it.recoveredKcal > 0 && it.targets.carbsG < realBase.carbsG })
+    }
+
+    @Test
     fun recovery_neverPushesADayBelowTheSafetyFloor() {
         val monday = LocalDate.of(2026, 9, 14)
         val lowBase = NutritionBusinessValidator.Targets(1600.0, 180.0, 100.0, 70.0)
