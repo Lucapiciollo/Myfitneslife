@@ -41,6 +41,20 @@ object ProfileAgeRule {
         }
     }
 
+    /**
+     * Testo localizzato dello stato; null se [Status.VALID]. [resolve] riceve la risorsa e i limiti
+     * (min, max) da inserire nei segnaposto %1$d/%2$d, così il range non è mai scritto a mano nelle stringhe.
+     */
+    fun message(status: Status, resolve: (messageRes: Int, minAge: Int, maxAge: Int) -> String): String? =
+        status.messageRes?.let { resolve(it, MIN_AGE_YEARS, MAX_AGE_YEARS) }
+
+    /**
+     * Stato da mostrare come avviso sul profilo già salvato: una data assente non è un'età errata
+     * (il servizio la richiede solo quando serve), quindi viene trattata come VALID.
+     */
+    fun warningStatus(birthEpochDay: Long?, today: LocalDate): Status =
+        check(birthEpochDay, today).takeIf { it != Status.MISSING } ?: Status.VALID
+
     fun isValid(birthEpochDay: Long?, today: LocalDate): Boolean = check(birthEpochDay, today) == Status.VALID
 
     /** Vero solo se la data è presente ma l'età calcolata è fuori range (o la data è futura). */

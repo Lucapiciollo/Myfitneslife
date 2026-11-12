@@ -397,7 +397,7 @@ class OnboardingWizardActivity : AppCompatActivity() {
         val weight = parseFloat(weightInput?.text?.toString())
         val errors = buildList {
             if (name.isBlank()) add(getString(R.string.validation_required_name))
-            ProfileAgeRule.check(birthDateEpochDay, LocalDate.now()).messageRes?.let { add(getString(it)) }
+            ProfileAgeRule.message(ProfileAgeRule.check(birthDateEpochDay, LocalDate.now())) { res, min, max -> getString(res, min, max) }?.let { add(it) }
             if (sex !in setOf("Maschio", "Femmina")) add(getString(R.string.validation_required_sex))
             if (height == null || height !in 80f..250f) add(getString(R.string.validation_invalid_height))
             if (weight == null || weight !in 20f..400f) add(getString(R.string.validation_invalid_weight))
@@ -455,7 +455,7 @@ class OnboardingWizardActivity : AppCompatActivity() {
         val name = nameInput?.text?.toString()?.trim().orEmpty()
         val birth = birthDateEpochDay
         // Ultima difesa prima di scrivere: nessun salvataggio con età fuori 14-120.
-        ProfileAgeRule.check(birth, LocalDate.now()).messageRes?.let { throw IllegalArgumentException(getString(it)) }
+        ProfileAgeRule.message(ProfileAgeRule.check(birth, LocalDate.now())) { res, min, max -> getString(res, min, max) }?.let { throw IllegalArgumentException(it) }
         val sex = sexInput?.text?.toString()?.trim().orEmpty()
         val height = parseFloat(heightInput?.text?.toString())
         val weight = parseFloat(weightInput?.text?.toString())

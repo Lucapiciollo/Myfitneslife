@@ -27,12 +27,43 @@ class PlanPrerequisitesTest {
 
     @Test
     fun invalidAge_mapsToReadableBirthDateCause() {
-        for (birth in listOf(today.minusYears(13), today.minusYears(121), today, today.plusDays(1))) {
+        for (birth in listOf(today.minusYears(13), today.minusYears(121), today)) {
             val problems = PlanPrerequisites.profileProblems(profile(birth = birth.toEpochDay()), 70f, today)
             assertEquals(listOf(PlanPrerequisite.BIRTH_DATE_INVALID), problems)
         }
         assertTrue(PlanPrerequisites.profileProblems(profile(birth = today.minusYears(14).toEpochDay()), 70f, today).isEmpty())
         assertTrue(PlanPrerequisites.profileProblems(profile(birth = today.minusYears(120).toEpochDay()), 70f, today).isEmpty())
+    }
+
+    @Test
+    fun futureBirthDate_saysTheRealCauseNotTheAgeRange() {
+        val problems = PlanPrerequisites.profileProblems(profile(birth = today.plusDays(1).toEpochDay()), 70f, today)
+        assertEquals(listOf(PlanPrerequisite.BIRTH_DATE_FUTURE), problems)
+        val text = PlanPrerequisites.message(problems)
+        assertEquals("Completa prima: controlla la data di nascita: la data non può essere nel futuro", text)
+        assertFalse(text.contains("14"))
+        assertEquals(PlanPrerequisite.Destination.PROFILE_EDITOR, PlanPrerequisite.BIRTH_DATE_FUTURE.destination)
+        assertTrue(PlanPrerequisites.needsProfileEditor(text))
+    }
+
+    @Test
+    fun ageGate_blocksInvalidAgeIndependentlyOfAnyExistingPlan() {
+        // Il gate riceve solo profilo, peso e data: un piano già salvato non può aggirarlo (nuovo comportamento).
+        for (birth in listOf(today.minusYears(13), today.minusYears(121), today, today.plusDays(1))) {
+            val gate = PlanPrerequisites.ageGate(profile(birth = birth.toEpochDay()), 70f, today)
+            assertTrue(gate != null && gate.isNotEmpty())
+            val error = NutritionPlanGenerationService.GenerationException.NeedsInput(gate!!)
+            assertTrue(error.message!!.startsWith("Completa prima: controlla la data di nascita"))
+        }
+    }
+
+    @Test
+    fun ageGate_letsValidOrMissingAgePass() {
+        assertEquals(null, PlanPrerequisites.ageGate(profile(), 70f, today))
+        assertEquals(null, PlanPrerequisites.ageGate(profile(birth = today.minusYears(14).toEpochDay()), 70f, today))
+        assertEquals(null, PlanPrerequisites.ageGate(profile(birth = today.minusYears(120).toEpochDay()), 70f, today))
+        // Data assente: non è un'età errata, la gestiscono i prerequisiti generali.
+        assertEquals(null, PlanPrerequisites.ageGate(profile(birth = null), 70f, today))
     }
 
     @Test

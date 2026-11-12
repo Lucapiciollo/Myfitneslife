@@ -75,6 +75,34 @@ class ProfileAgeRuleTest {
     }
 
     @Test
+    fun warningStatus_ignoresMissingDateButFlagsOutOfRange() {
+        assertEquals(ProfileAgeRule.Status.VALID, ProfileAgeRule.warningStatus(null, today))
+        assertEquals(ProfileAgeRule.Status.VALID, ProfileAgeRule.warningStatus(birthYearsAgo(30), today))
+        assertEquals(ProfileAgeRule.Status.TOO_YOUNG, ProfileAgeRule.warningStatus(birthYearsAgo(13), today))
+        assertEquals(ProfileAgeRule.Status.TOO_OLD, ProfileAgeRule.warningStatus(birthYearsAgo(121), today))
+        assertEquals(ProfileAgeRule.Status.FUTURE, ProfileAgeRule.warningStatus(today.plusDays(1).toEpochDay(), today))
+    }
+
+    @Test
+    fun message_passesRuleLimitsToPlaceholders() {
+        assertNull(ProfileAgeRule.message(ProfileAgeRule.Status.VALID) { _, _, _ -> "x" })
+        val seen = ProfileAgeRule.message(ProfileAgeRule.Status.TOO_OLD) { res, min, max -> "$res:$min:$max" }
+        assertEquals("${R.string.profile_birth_date_invalid}:14:120", seen)
+    }
+
+    @Test
+    fun stringsXml_usesPlaceholdersNotHandWrittenRange() {
+        val xml = java.io.File("src/main/res/values/strings.xml").readText()
+        fun value(name: String) = Regex("<string name=\"$name\">(.*?)</string>").find(xml)!!.groupValues[1]
+        for (name in listOf("profile_birth_date_invalid", "food_plan_profile_age_warning")) {
+            val text = value(name)
+            assertTrue(name, text.contains("%1\$d") && text.contains("%2\$d"))
+            assertFalse(name, Regex("\\b(14|120)\\b").containsMatchIn(text))
+        }
+        assertTrue(value("profile_birth_date_future").contains("nel futuro"))
+    }
+
+    @Test
     fun engineIgnoresAgeOutsideRuleRange() {
         fun bmrFor(age: Int) = LocalCalculationEngine.calculate(
             LocalCalculationEngine.Input(

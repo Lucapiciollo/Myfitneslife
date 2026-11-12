@@ -14,6 +14,7 @@ enum class PlanPrerequisite(val cause: String, val destination: Destination) {
         "controlla la data di nascita: l'età deve essere compresa tra ${ProfileAgeRule.MIN_AGE_YEARS} e ${ProfileAgeRule.MAX_AGE_YEARS} anni",
         Destination.PROFILE_EDITOR,
     ),
+    BIRTH_DATE_FUTURE("controlla la data di nascita: la data non può essere nel futuro", Destination.PROFILE_EDITOR),
     SEX("seleziona il sesso biologico nel profilo", Destination.PROFILE_EDITOR),
     HEIGHT("inserisci l'altezza nel profilo", Destination.PROFILE_EDITOR),
     WEIGHT("inserisci il peso nel profilo", Destination.PROFILE_EDITOR),
@@ -43,10 +44,23 @@ object PlanPrerequisites {
         when (ProfileAgeRule.check(profile.birthDateEpochDay, today)) {
             ProfileAgeRule.Status.VALID -> Unit
             ProfileAgeRule.Status.MISSING -> add(PlanPrerequisite.BIRTH_DATE_MISSING)
+            ProfileAgeRule.Status.FUTURE -> add(PlanPrerequisite.BIRTH_DATE_FUTURE)
             else -> add(PlanPrerequisite.BIRTH_DATE_INVALID)
         }
         if (profile.biologicalSex.isNullOrBlank()) add(PlanPrerequisite.SEX)
         if (profile.heightCm == null) add(PlanPrerequisite.HEIGHT)
         if (latestWeightKg == null) add(PlanPrerequisite.WEIGHT)
     }
+
+    /**
+     * Gate dell'età prima di ogni generazione, indipendente dall'esistenza di un piano precedente:
+     * con data di nascita presente ma età fuori 14-120 (o futura) i target locali non sono affidabili.
+     * Null se l'età è valida o assente (l'assenza è gestita dai prerequisiti generali).
+     */
+    fun ageGate(profile: UserProfileEntity, latestWeightKg: Float?, today: LocalDate): List<PlanPrerequisite>? =
+        if (ProfileAgeRule.isPresentButInvalid(profile.birthDateEpochDay, today)) {
+            profileProblems(profile, latestWeightKg, today)
+        } else {
+            null
+        }
 }

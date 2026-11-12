@@ -18,6 +18,8 @@ import com.myfitai.app.domain.food.NutritionPlanGenerationService
 import com.myfitai.app.domain.calculation.ProfileCalculationService
 import com.myfitai.app.domain.food.PlanPrerequisites
 import com.myfitai.app.domain.profile.ProfileAgeRule
+import com.myfitai.app.domain.time.SystemTimeProvider
+import com.myfitai.app.domain.time.TimeProvider
 import com.myfitai.app.domain.calculation.DailyActivityCheckInEngine
 import com.myfitai.app.domain.calculation.DayEnergyProvider
 import com.myfitai.app.domain.calculation.OperationalNutritionMetrics
@@ -64,6 +66,7 @@ class FoodPlanViewModel(
     private val dailyActivityCheckIns: DailyActivityCheckInRepository,
     private val schedulePreferences: NutritionPlanSchedulePreferences,
     private val dayEnergy: DayEnergyProvider,
+    private val time: TimeProvider = SystemTimeProvider,
 ) : ViewModel() {
     data class CalorieReference(
         val bmrKcal: Double?,
@@ -169,9 +172,8 @@ class FoodPlanViewModel(
                     (bia.maxOfOrNull { it.measuredAtEpochMillis } ?: Long.MIN_VALUE)
                         .coerceAtLeast(bodyMeasurements.maxOfOrNull { it.measuredAtEpochMillis } ?: Long.MIN_VALUE)
                         .takeUnless { it == Long.MIN_VALUE },
-                    // Data assente: la segnala il servizio solo se serve davvero; qui avvisiamo solo date fuori range.
-                    profile?.let { ProfileAgeRule.check(it.birthDateEpochDay, LocalDate.now()) }
-                        ?.takeIf { it != ProfileAgeRule.Status.MISSING } ?: ProfileAgeRule.Status.VALID,
+                    // Stessa fonte di data del servizio (TimeProvider); data assente = nessun avviso.
+                    profile?.let { ProfileAgeRule.warningStatus(it.birthDateEpochDay, time.today()) } ?: ProfileAgeRule.Status.VALID,
                 )
             }
         }
@@ -304,11 +306,12 @@ class FoodPlanViewModel(
         private val dailyActivityCheckIns: DailyActivityCheckInRepository,
         private val schedulePreferences: NutritionPlanSchedulePreferences,
         private val dayEnergy: DayEnergyProvider,
+        private val time: TimeProvider = SystemTimeProvider,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(FoodPlanViewModel::class.java))
-            return FoodPlanViewModel(repository, activeProfileStore, generationService, calculations, notificationScheduler, consumptionRepository, aiJobScheduler, profileRepository, biaRepository, bodyMeasurementRepository, dailyActivityCheckIns, schedulePreferences, dayEnergy) as T
+            return FoodPlanViewModel(repository, activeProfileStore, generationService, calculations, notificationScheduler, consumptionRepository, aiJobScheduler, profileRepository, biaRepository, bodyMeasurementRepository, dailyActivityCheckIns, schedulePreferences, dayEnergy, time) as T
         }
     }
 }

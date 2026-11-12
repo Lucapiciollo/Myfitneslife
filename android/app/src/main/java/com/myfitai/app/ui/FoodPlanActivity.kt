@@ -128,7 +128,7 @@ class FoodPlanActivity : BaseShellActivity() {
         if (viewModel.state.value.profileAgeStatus != ProfileAgeRule.Status.VALID) {
             MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.food_plan_profile_age_dialog_title)
-                .setMessage(R.string.food_plan_profile_age_warning)
+                .setMessage(getString(R.string.food_plan_profile_age_warning, ProfileAgeRule.MIN_AGE_YEARS, ProfileAgeRule.MAX_AGE_YEARS))
                 .setPositiveButton(R.string.food_plan_open_profile) { _, _ -> openProfileEditor() }
                 .setNegativeButton(R.string.action_cancel, null)
                 .show()
@@ -266,7 +266,7 @@ class FoodPlanActivity : BaseShellActivity() {
         val message = when {
             generation.running -> "Il piano viene generato e validato localmente prima del salvataggio."
             generation.error != null -> if (generation.fixProfile) "${generation.error}\n${getString(R.string.food_plan_profile_fix_hint)}" else generation.error
-            ageWarning -> getString(R.string.food_plan_profile_age_warning)
+            ageWarning -> getString(R.string.food_plan_profile_age_warning, ProfileAgeRule.MIN_AGE_YEARS, ProfileAgeRule.MAX_AGE_YEARS)
             generation.successMessage != null -> listOfNotNull(generation.successMessage, generation.usageMessage).joinToString("\n")
             state.goalChangedSinceGeneration || planUpdatePending -> "Hai modificato impostazioni che influenzano le calorie: rigenera il piano per applicare i nuovi target."
             else -> null

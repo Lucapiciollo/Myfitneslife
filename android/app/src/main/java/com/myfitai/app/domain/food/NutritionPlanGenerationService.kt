@@ -21,7 +21,7 @@ import com.myfitai.app.domain.calculation.AdaptiveNutritionTargetEngine
 import com.myfitai.app.domain.calculation.LocalCalculationEngine
 import com.myfitai.app.domain.calculation.NutritionBusinessValidator
 import com.myfitai.app.domain.calculation.ProfileCalculationMapper
-import com.myfitai.app.domain.profile.ProfileAgeRule
+
 import com.myfitai.app.domain.calculation.ProfileCalculationService
 import com.myfitai.app.domain.calculation.TrainingDayInputs
 import com.myfitai.app.domain.calculation.TrainingEnergyPlanner
@@ -94,9 +94,7 @@ class NutritionPlanGenerationService(
             ?: throw GenerationException.NeedsInput(listOf(PlanPrerequisite.PROFILE_DATA))
         val profileProblems = PlanPrerequisites.profileProblems(profile, snapshot.latestWeightKg, time.today())
         // Età fuori 14-120: i target locali non sono affidabili, anche se esiste un piano precedente.
-        if (ProfileAgeRule.isPresentButInvalid(profile.birthDateEpochDay, time.today())) {
-            throw GenerationException.NeedsInput(profileProblems)
-        }
+        PlanPrerequisites.ageGate(profile, snapshot.latestWeightKg, time.today())?.let { throw GenerationException.NeedsInput(it) }
 
         val calc = snapshot.calculation
         val existingPlan = plans.loadLatestSnapshot(profileId, monday.toEpochDay())

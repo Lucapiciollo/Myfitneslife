@@ -38,7 +38,11 @@ class ProfileEditActivity : BaseShellActivity() {
     private val isCreate by lazy { isBootstrap || intent.getBooleanExtra(EXTRA_CREATE, false) }
     private val data by lazy { AppDataContainer.get(this) }
     private val viewModel: ProfileEditViewModel by viewModels {
-        ProfileEditViewModel.Factory(data.userProfileRepository, data.activeProfileStore, allowCreate = isCreate)
+        // Il ViewModel sopravvive alla rotazione: la lambda cattura solo l'application context, non l'Activity.
+        val appContext = applicationContext
+        ProfileEditViewModel.Factory(data.userProfileRepository, data.activeProfileStore, allowCreate = isCreate, ageMessage = { status ->
+            ProfileAgeRule.message(status) { res, min, max -> appContext.getString(res, min, max) }.orEmpty()
+        })
     }
 
     private lateinit var nameInput: TextInputEditText
@@ -156,7 +160,7 @@ class ProfileEditActivity : BaseShellActivity() {
 
             if (name.isBlank()) fail(R.id.nameLayout, "Inserisci un nome")
             if (birthDateEpochDay != null) {
-                ProfileAgeRule.check(birthDateEpochDay, LocalDate.now()).messageRes?.let { fail(R.id.birthDateLayout, getString(it)) }
+                ProfileAgeRule.message(ProfileAgeRule.check(birthDateEpochDay, LocalDate.now()), ::ageText)?.let { fail(R.id.birthDateLayout, it) }
             }
             if (height != null && (height < 80f || height > 250f)) fail(R.id.heightLayout, "Altezza non valida")
             if (weight != null && (weight < 20f || weight > 400f)) fail(R.id.weightLayout, "Peso non valido")
@@ -264,12 +268,14 @@ class ProfileEditActivity : BaseShellActivity() {
         showBirthDateIssue()
     }
 
+    private fun ageText(messageRes: Int, minAge: Int, maxAge: Int): String = getString(messageRes, minAge, maxAge)
+
     /** Mostra l'errore sulla data di nascita solo se presente ma con età fuori 14-120 (o nel futuro). */
     private fun showBirthDateIssue() {
         val layout = findViewById<TextInputLayout>(R.id.birthDateLayout)
         val epochDay = birthDateEpochDay
         layout.error = if (epochDay != null) {
-            ProfileAgeRule.check(epochDay, LocalDate.now()).messageRes?.let(::getString)
+            ProfileAgeRule.message(ProfileAgeRule.check(epochDay, LocalDate.now()), ::ageText)
         } else {
             null
         }
