@@ -3,8 +3,12 @@ package com.myfitai.app.ui
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import android.view.Gravity
+import androidx.core.view.ViewCompat
+import com.myfitai.app.domain.body.BodyMeasurementHistoryText
 import android.widget.AutoCompleteTextView
 import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
@@ -21,11 +25,17 @@ import com.myfitai.app.data.local.entity.BiaMeasurementEntity
 import com.myfitai.app.domain.body.BodyWeightHistory
 import com.myfitai.app.domain.body.BodyProportionEngine
 import com.myfitai.app.domain.body.BodyProportionAnalysisService
+import com.myfitai.app.ai.AiFailure
+import com.myfitai.app.ai.AiFailureMessages
 import com.myfitai.app.domain.ai.AiJobType
+import com.myfitai.app.domain.ai.AiJobWorker
+import com.myfitai.app.navigation.AiSettingsEntry
 import com.myfitai.app.domain.body.BodyProportionsAiJobHandler
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.ui.body.BodyMeasurementsViewModel
 import com.myfitai.app.ui.widgets.BodyMeasurementTrendView
+import com.myfitai.app.ui.widgets.ChartAccessibility
+import com.myfitai.app.ui.widgets.ChartValuesDialog
 import com.myfitai.app.ui.widgets.BodyMeasurementTrendSummaryView
 import com.myfitai.app.ui.widgets.MeasurementRowView
 import com.myfitai.app.ui.widgets.SelectableSegmentView
@@ -75,6 +85,14 @@ class BodyMeasuresActivity : BaseShellActivity() {
     private var latestProportionReport: BodyProportionEngine.Report? = null
     private var latestProportionMeasurementId: Long? = null
     private var latestProportionJobKey: String? = null
+    private var proportionCancelAction: (() -> Unit)? = null
+    private lateinit var proportionWaitPanel: View
+    private lateinit var proportionFailurePanel: View
+    private lateinit var proportionFailureMessage: TextView
+    private lateinit var proportionFailureDetails: TextView
+    private lateinit var proportionRetryButton: MaterialButton
+    private lateinit var proportionSettingsButton: MaterialButton
+    private lateinit var proportionDetailsToggle: MaterialButton
     private val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.ITALIAN)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -148,7 +166,11 @@ class BodyMeasuresActivity : BaseShellActivity() {
 
     private fun bindRangeSelector() {
         val rangeSegment = findViewById<SelectableSegmentView>(R.id.trendRangeSegment)
-        rangeSegment.setSegments(listOf("1M", "3M", "6M", "1Y"), selectedIndex = selectedRangeIndex)
+        rangeSegment.setSegments(resources.getStringArray(R.array.chart_range_labels).toList(), selectedIndex = selectedRangeIndex)
+        // "1A" e' una sigla: il nome accessibile dice l'intervallo per esteso.
+        resources.getStringArray(R.array.chart_range_descriptions).forEachIndexed { index, description ->
+            rangeSegment.getChildAt(index)?.contentDescription = description
+        }
         rangeSegment.setOnSegmentSelectedListener { index ->
             selectedRangeIndex = index
             renderTrend()
@@ -276,6 +298,8 @@ class BodyMeasuresActivity : BaseShellActivity() {
                 resources.getDimensionPixelSize(R.dimen.button_secondary_min_height),
             ).apply { topMargin = resources.getDimensionPixelSize(R.dimen.space_12) }
         })
+        content.addView(buildProportionWaitPanel())
+        content.addView(buildProportionFailurePanel())
         card.addView(content)
         container.addView(card)
     }
@@ -327,6 +351,86 @@ class BodyMeasuresActivity : BaseShellActivity() {
         }
     }
 
+    /** Attesa IA nelle Proporzioni: spinner con descrizione, testo annunciato (live region) e Annulla. */
+    private fun buildProportionWaitPanel(): LinearLayout {
+        val ctx = this
+        return LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            visibility = View.GONE
+            setPadding(0, resources.getDimensionPixelSize(R.dimen.space_12), 0, 0)
+            addView(LinearLayout(ctx).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                val size = resources.getDimensionPixelSize(R.dimen.progress_indicator_size)
+                addView(ProgressBar(ctx).apply {
+                    isIndeterminate = true
+                    contentDescription = getString(R.string.proportions_wait_progress_cd)
+                }, LinearLayout.LayoutParams(size, size))
+                addView(TextView(ctx).apply {
+                    text = getString(R.string.proportions_wait_message)
+                    setTextAppearance(R.style.Text_MyFitAI_Body)
+                    accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
+                    setPadding(resources.getDimensionPixelSize(R.dimen.space_12), 0, 0, 0)
+                }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            })
+            addView(inlineActionButton(R.string.proportions_wait_cancel, getString(R.string.proportions_wait_cancel_cd)) {
+                proportionCancelAction?.invoke()
+            })
+        }.also { proportionWaitPanel = it }
+    }
+
+    /** Errore persistente in scheda (non Toast): frase della tabella centrale, azioni solo se applicabili, dettagli espandibili. */
+    private fun buildProportionFailurePanel(): LinearLayout {
+        val ctx = this
+        return LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            visibility = View.GONE
+            setPadding(0, resources.getDimensionPixelSize(R.dimen.space_12), 0, 0)
+            addView(TextView(ctx).apply {
+                setTextAppearance(R.style.Text_MyFitAI_Body)
+                accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
+                proportionFailureMessage = this
+            })
+            addView(inlineActionButton(R.string.ai_failure_retry, null) {
+                findViewById<MaterialButton>(proportionAiButtonId)?.let(::analyzeProportionsWithAi)
+            }.also { proportionRetryButton = it })
+            addView(inlineActionButton(R.string.ai_failure_action_open_settings, null) {
+                AiSettingsEntry.open(ctx)
+            }.also { proportionSettingsButton = it })
+            addView(TextView(ctx).apply {
+                setTextAppearance(R.style.Text_MyFitAI_Micro)
+                visibility = View.GONE
+                proportionFailureDetails = this
+            })
+            addView(inlineActionButton(R.string.ai_failure_details, null) {
+                val details = proportionFailureDetails
+                val show = details.visibility != View.VISIBLE
+                details.visibility = if (show) View.VISIBLE else View.GONE
+                proportionDetailsToggle.text = getString(if (show) R.string.ai_failure_details_hide else R.string.ai_failure_details)
+            }.also { proportionDetailsToggle = it })
+        }.also { proportionFailurePanel = it }
+    }
+
+    private fun showProportionWaiting(waiting: Boolean) {
+        proportionWaitPanel.visibility = if (waiting) View.VISIBLE else View.GONE
+        if (waiting) proportionFailurePanel.visibility = View.GONE
+    }
+
+    private fun showProportionFailure(presentation: AiFailureMessages.Presentation) {
+        proportionWaitPanel.visibility = View.GONE
+        proportionFailureMessage.text = getString(presentation.messageRes)
+        proportionRetryButton.visibility = if (presentation.canRetry) View.VISIBLE else View.GONE
+        val settingsLabel = presentation.action.labelRes
+        proportionSettingsButton.visibility = if (settingsLabel != null) View.VISIBLE else View.GONE
+        settingsLabel?.let { proportionSettingsButton.text = getString(it) }
+        val code = presentation.technicalCode
+        proportionFailureDetails.visibility = View.GONE
+        proportionDetailsToggle.text = getString(R.string.ai_failure_details)
+        proportionDetailsToggle.visibility = if (code != null) View.VISIBLE else View.GONE
+        proportionFailureDetails.text = code?.let { getString(R.string.ai_failure_details_code, it) }.orEmpty()
+        proportionFailurePanel.visibility = View.VISIBLE
+    }
+
     private fun analyzeProportionsWithAi(button: MaterialButton) {
         val report = latestProportionReport ?: return
         if (report.availableMeasurements <= 0) return
@@ -334,7 +438,13 @@ class BodyMeasuresActivity : BaseShellActivity() {
         confirmAiRequest("Il confronto IA delle misure corporee") {
             setAiActionEnabled(button, false)
             button.text = "Analisi in corso…"
-            val profileId = data.activeProfileStore.currentIdOrNull() ?: return@confirmAiRequest
+            showProportionWaiting(true)
+            val profileId = data.activeProfileStore.currentIdOrNull() ?: run {
+                showProportionWaiting(false)
+                setAiActionEnabled(button)
+                button.text = "Confronta ultima rilevazione con IA"
+                return@confirmAiRequest
+            }
             val latest = measurements.firstOrNull()
             val previous = measurements.drop(1).firstOrNull()
         val reportJson = bodyProportionReportJson(report, latest, previous)
@@ -347,9 +457,11 @@ class BodyMeasuresActivity : BaseShellActivity() {
                 latestProportionJobKey = null
                 setAiActionEnabled(button)
                 button.text = "Confronta ultima rilevazione con IA"
-                Toast.makeText(this, "Impossibile avviare l'analisi. Riprova.", Toast.LENGTH_LONG).show()
+                showProportionFailure(AiFailureMessages.couldNotStart())
                 return@confirmAiRequest
             }
+            // Annulla usa solo l'API pubblica dello scheduler: il job risultera' CANCELLED e l'osservatore sotto ripristina la scheda.
+            proportionCancelAction = { data.aiJobScheduler.cancel(AiJobType.BODY_PROPORTIONS, profileId, jobKey) }
             lifecycleScope.launch {
                 data.aiJobScheduler.observe(AiJobType.BODY_PROPORTIONS, profileId, jobKey)
                     .transformWhile { info ->
@@ -359,22 +471,28 @@ class BodyMeasuresActivity : BaseShellActivity() {
                     .collect { info ->
                     when (info?.state) {
                         androidx.work.WorkInfo.State.SUCCEEDED -> {
+                            proportionCancelAction = null
+                            showProportionWaiting(false)
                             runCatching {
                                 val p = org.json.JSONObject(info.outputData.getString(BodyProportionsAiJobHandler.KEY_PAYLOAD).orEmpty())
                                 validateBodyProportionsPayload(p, report)
                                 showBodyProportionsResult(p)
                             }.onFailure {
-                                Toast.makeText(this@BodyMeasuresActivity, "Risultato dell'analisi non valido. Riprova.", Toast.LENGTH_LONG).show()
+                                showProportionFailure(AiFailureMessages.forFailure(AiFailure.BusinessRuleViolated(null)))
                             }
                             latestProportionJobKey = null
                             setAiActionEnabled(button)
                             button.text = "Confronta ultima rilevazione con IA"
                         }
                         androidx.work.WorkInfo.State.FAILED, androidx.work.WorkInfo.State.CANCELLED -> {
+                            proportionCancelAction = null
                             latestProportionJobKey = null
                             setAiActionEnabled(button)
                             button.text = "Confronta ultima rilevazione con IA"
-                            Toast.makeText(this@BodyMeasuresActivity, "Analisi non riuscita. Riprova.", Toast.LENGTH_LONG).show()
+                            showProportionFailure(
+                                if (info.state == androidx.work.WorkInfo.State.CANCELLED) AiFailureMessages.forFailure(AiFailure.Cancelled)
+                                else AiFailureMessages.resolve(info.outputData.getString(AiJobWorker.KEY_ERROR)),
+                            )
                         }
                         else -> Unit
                     }
@@ -497,30 +615,38 @@ class BodyMeasuresActivity : BaseShellActivity() {
             "${formatSigned(it)} ${selectedMetric.unit} nel periodo"
         } ?: "Dati insufficienti nel periodo"
 
+        // Il grafico mostra SOLO la metrica scelta nel menu "Misura", con valori reali e unita'; le altre restano fuori.
+        val axisPattern = if (selectedRangeIndex == 3) "dd/MM/yy" else "dd/MM"
         val chartPoints = periodPoints.map { (measurement, value) ->
-            BodyMeasurementTrendView.Point(entityDate(measurement).format(DateTimeFormatter.ofPattern("dd/MM", Locale.ITALIAN)), value)
+            BodyMeasurementTrendView.Point(entityDate(measurement).format(DateTimeFormatter.ofPattern(axisPattern, Locale.ITALIAN)), value)
         }
-        val allSeries = Metric.entries.mapNotNull { metric ->
-            val points = measurements
-                .asReversed()
-                .mapNotNull { measurement ->
-                    val value = if (metric == Metric.WEIGHT) {
-                        BodyWeightHistory.weightFor(measurement, biaHistory)?.kg
-                    } else {
-                        metric.value(measurement)
-                    }
-                    value?.let { measurement to it }
-                }
-                .filter { (measurement, _) -> !entityDate(measurement).isBefore(fromDate) }
-                .map { (measurement, value) ->
-                    BodyMeasurementTrendView.Point(entityDate(measurement).format(DateTimeFormatter.ofPattern("dd/MM", Locale.ITALIAN)), value)
-                }
-            points.takeIf { it.isNotEmpty() }?.let { BodyMeasurementTrendView.Series(metric.label, it) }
+        val tablePoints = periodPoints.map { (measurement, value) ->
+            ChartAccessibility.Point(entityDate(measurement).format(dateFormatter), value)
         }
-        findViewById<BodyMeasurementTrendView>(R.id.bodyMeasurementTrendChart).apply {
-            setPoints(chartPoints)
-            setNormalizedSeries(allSeries)
+        val chart = findViewById<BodyMeasurementTrendView>(R.id.bodyMeasurementTrendChart)
+        chart.setMetricSeries(selectedMetric.label, selectedMetric.unit, chartPoints)
+        findViewById<TextView>(R.id.trendChartExplanation).text = ChartAccessibility.explanation(
+            normalized = false,
+            real = getString(R.string.chart_explanation_real),
+            normalizedText = getString(R.string.chart_explanation_normalized),
+            label = selectedMetric.label.lowercase(Locale.ITALIAN),
+            unit = selectedMetric.unit,
+        )
+        val showTable = {
+            ChartValuesDialog.show(
+                this,
+                getString(R.string.chart_table_title, selectedMetric.label),
+                ChartAccessibility.tableRows(selectedMetric.unit, tablePoints),
+                getString(R.string.chart_table_empty),
+                getString(R.string.chart_table_close),
+            )
         }
+        chart.bindAccessibility(
+            ChartAccessibility.summary(chartSummaryTemplates(), selectedMetric.label, selectedMetric.unit, tablePoints),
+            getString(R.string.chart_table_show),
+            showTable,
+        )
+        findViewById<View>(R.id.trendTableButton).setOnClickListener { showTable() }
         findViewById<BodyMeasurementTrendSummaryView>(R.id.bodyTrendNote).apply {
             text = if (periodPoints.size >= 2) {
                 "Andamento calcolato sulle rilevazioni disponibili nel periodo selezionato."
@@ -529,6 +655,12 @@ class BodyMeasuresActivity : BaseShellActivity() {
             }
         }
     }
+
+    private fun chartSummaryTemplates() = ChartAccessibility.SummaryTemplates(
+        empty = getString(R.string.chart_summary_empty),
+        single = getString(R.string.chart_summary_single),
+        multiple = getString(R.string.chart_summary_multiple),
+    )
 
     private fun renderHistory() {
         val container = findViewById<LinearLayout>(R.id.historyList)
@@ -545,6 +677,12 @@ class BodyMeasuresActivity : BaseShellActivity() {
         }
 
         measurements.forEachIndexed { index, measurement ->
+            val dateText = entityDate(measurement).format(dateFormatter)
+            val valuesText = historyValues(measurement)
+            val waistDelta = measurement.waistCm?.let { current ->
+                previousAvailableValue(index) { it.waistCm }?.let { current - it }
+            }
+            val waistNote = waistDelta?.let { "Vita ${formatSigned(it)} cm rispetto al valore precedente disponibile" }
             val card = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 val horizontalPadding = resources.getDimensionPixelSize(R.dimen.space_16)
@@ -556,7 +694,19 @@ class BodyMeasuresActivity : BaseShellActivity() {
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                 ).apply { bottomMargin = resources.getDimensionPixelSize(R.dimen.space_8) }
                 setOnClickListener { openEdit(measurement) }
-                contentDescription = "Modifica misura corporea"
+                // Descrizione con data e valori (non piu' generica) e azioni esposte ai servizi di accessibilita':
+                // l'eliminazione non dipende piu' dalla sola pressione prolungata.
+                contentDescription = BodyMeasurementHistoryText.cardDescription(
+                    getString(R.string.measure_history_card_description), dateText, valuesText, waistNote,
+                )
+                ViewCompat.addAccessibilityAction(this, getString(R.string.measure_history_edit)) { _, _ ->
+                    openEdit(measurement)
+                    true
+                }
+                ViewCompat.addAccessibilityAction(this, getString(R.string.measure_history_delete)) { _, _ ->
+                    confirmDelete(measurement)
+                    true
+                }
                 setOnLongClickListener {
                     confirmDelete(measurement)
                     true
@@ -564,36 +714,51 @@ class BodyMeasuresActivity : BaseShellActivity() {
             }
 
             card.addView(TextView(this).apply {
-                text = entityDate(measurement).format(dateFormatter)
+                text = dateText
                 setTextAppearance(R.style.Text_MyFitAI_SettingsLabel)
             })
 
             card.addView(TextView(this).apply {
-                text = historyValues(measurement)
+                text = valuesText
                 setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
                 setPadding(0, resources.getDimensionPixelSize(R.dimen.space_5), 0, 0)
             })
 
-            val waistDelta = measurement.waistCm?.let { current ->
-                previousAvailableValue(index) { it.waistCm }?.let { current - it }
-            }
-            if (waistDelta != null) {
+            if (waistDelta != null && waistNote != null) {
                 card.addView(TextView(this).apply {
-                    text = "Vita ${formatSigned(waistDelta)} cm rispetto al valore precedente disponibile"
+                    text = waistNote
                     setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
                     setTextColor(getColor(if (waistDelta <= 0f) R.color.semantic_positive else R.color.text_secondary))
                     setPadding(0, resources.getDimensionPixelSize(R.dimen.space_6), 0, 0)
                 })
             }
 
-            card.addView(TextView(this).apply {
-                text = "Tocca per modificare · Tieni premuto per eliminare"
-                setTextAppearance(R.style.Text_MyFitAI_Micro)
+            // Azioni visibili (sostituiscono il suggerimento "Tieni premuto"), con area di tocco di almeno 48 dp.
+            card.addView(LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.END
                 setPadding(0, resources.getDimensionPixelSize(R.dimen.space_6), 0, 0)
+                addView(inlineActionButton(R.string.measure_history_edit, getString(R.string.measure_history_edit_cd, dateText)) {
+                    openEdit(measurement)
+                })
+                addView(inlineActionButton(R.string.measure_history_delete, getString(R.string.measure_history_delete_cd, dateText)) {
+                    confirmDelete(measurement)
+                })
             })
             container.addView(card)
         }
     }
+
+    private fun inlineActionButton(label: Int, description: String?, onClick: () -> Unit): MaterialButton =
+        MaterialButton(this, null, androidx.appcompat.R.attr.borderlessButtonStyle).apply {
+            text = getString(label)
+            description?.let { contentDescription = it }
+            isAllCaps = false
+            minimumHeight = resources.getDimensionPixelSize(R.dimen.control_min_height)
+            minHeight = resources.getDimensionPixelSize(R.dimen.control_min_height)
+            minimumWidth = resources.getDimensionPixelSize(R.dimen.control_min_height)
+            setOnClickListener { onClick() }
+        }
 
     private fun previousAvailableValue(
         currentIndex: Int,
@@ -601,25 +766,8 @@ class BodyMeasuresActivity : BaseShellActivity() {
     ): Float? = measurements.drop(currentIndex + 1).firstNotNullOfOrNull(selector)
 
     private fun historyValues(value: BodyMeasurementEntity): String {
-        val items = listOfNotNull(
-            BodyWeightHistory.weightFor(value, biaHistory)?.let {
-                if (it.fromBia) "Peso BIA (stessa data) ${formatKg(it.kg)}"
-                else "Peso corporeo ${formatKg(it.kg)}"
-            },
-            value.hipsCm?.let { "Fianchi ${formatCm(it)}" },
-            value.chestCm?.let { "Torace ${formatCm(it)}" },
-            value.waistCm?.let { "Vita ${formatCm(it)}" },
-            value.abdomenCm?.let { "Addome ${formatCm(it)}" },
-            value.shouldersCm?.let { "Spalle ${formatCm(it)}" },
-            value.glutesCm?.let { "Glutei ${formatCm(it)}" },
-            value.armLeftCm?.let { "Braccio sx ${formatCm(it)}" },
-            value.armRightCm?.let { "Braccio dx ${formatCm(it)}" },
-            value.thighLeftCm?.let { "Coscia sx ${formatCm(it)}" },
-            value.thighRightCm?.let { "Coscia dx ${formatCm(it)}" },
-            value.calfLeftCm?.let { "Polpaccio sx ${formatCm(it)}" },
-            value.calfRightCm?.let { "Polpaccio dx ${formatCm(it)}" },
-        )
-        return items.ifEmpty { listOf("Rilevazione senza valori") }.joinToString(" · ")
+        val weight = BodyWeightHistory.weightFor(value, biaHistory)
+        return BodyMeasurementHistoryText.values(value, weight?.kg, weight?.fromBia == true)
     }
 
     private fun openEdit(measurement: BodyMeasurementEntity) {
@@ -630,8 +778,8 @@ class BodyMeasuresActivity : BaseShellActivity() {
 
     private fun confirmDelete(measurement: BodyMeasurementEntity) {
         MaterialAlertDialogBuilder(this)
-            .setTitle("Elimina misurazione?")
-            .setMessage("La rilevazione del ${entityDate(measurement).format(dateFormatter)} verrà rimossa dallo storico. Questa operazione non è reversibile.")
+            .setTitle(R.string.measure_history_delete_title)
+            .setMessage(getString(R.string.measure_history_delete_message, entityDate(measurement).format(dateFormatter)))
             .setNegativeButton("Annulla", null)
             .setPositiveButton("Elimina") { _, _ -> viewModel.delete(measurement) }
             .show()

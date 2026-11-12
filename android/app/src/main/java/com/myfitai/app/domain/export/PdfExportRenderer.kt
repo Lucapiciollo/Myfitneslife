@@ -10,6 +10,7 @@ import androidx.core.content.ContextCompat
 import com.myfitai.app.R
 import com.myfitai.app.data.local.entity.BiaMeasurementEntity
 import com.myfitai.app.data.local.entity.BodyMeasurementEntity
+import com.myfitai.app.domain.display.DisplayNumberFormatter
 import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.domain.body.BodyProportionEngine
 import com.myfitai.app.domain.calculation.LocalCalculationEngine
@@ -358,7 +359,7 @@ internal class PdfExportRenderer(context: Context) {
                 "Muscolo" to formatKg(input.latestBia?.muscleMassKg),
                 "Acqua" to formatPercent(input.latestBia?.bodyWaterPercent),
                 "Grasso viscerale" to format1(input.latestBia?.visceralFatLevel?.toDouble()),
-                "BMR BIA" to input.latestBia?.bmrKcal?.let { "${it.toInt()} kcal" }.orDash(),
+                "BMR BIA" to input.latestBia?.bmrKcal?.let { DisplayNumberFormatter.kcal(it.toDouble()) }.orDash(),
             ), rowHeight = geometry.reportDataRowHeight)
 
             drawCard(canvas, pageMargin, 150f, contentWidth, 225f)
@@ -944,8 +945,9 @@ internal class PdfExportRenderer(context: Context) {
     private fun formatGram(value: Float): String = "${formatNumber(value)} g"
     private fun pairCm(left: Float?, right: Float?): String = if (left == null && right == null) "-" else "${left?.let(::formatNumber) ?: "-"} / ${right?.let(::formatNumber) ?: "-"} cm"
     private fun format1(value: Double?): String = value?.let { String.format(Locale.ITALIAN, "%.1f", it) }.orDash()
-    private fun formatKcal(value: Double?): String = value?.let { "${it.toInt()} kcal" }.orDash()
-    private fun formatNumber(value: Float): String = if (value % 1f == 0f) value.toInt().toString() else String.format(Locale.ITALIAN, "%.1f", value)
+    // Same rounding (half-up) and separators as Home and Food: the PDF no longer truncates 2067,7 to 2067.
+    private fun formatKcal(value: Double?): String = value?.let { DisplayNumberFormatter.kcal(it) }.orDash()
+    private fun formatNumber(value: Float): String = DisplayNumberFormatter.decimal(value)
     private fun formatSigned(value: Float): String = String.format(Locale.ITALIAN, if (value > 0f) "+%.1f" else "%.1f", value)
     private fun String?.orDash(): String = this?.takeIf { it.isNotBlank() } ?: "-"
 }

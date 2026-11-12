@@ -7,6 +7,7 @@ import com.myfitai.app.data.local.entity.BodyMeasurementEntity
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.repository.BodyMeasurementRepository
 import com.myfitai.app.domain.food.NutritionPathTrigger
+import com.myfitai.app.domain.body.BodyValueRanges
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.SharedFlow
@@ -32,6 +33,11 @@ class BodyMeasurementsViewModel(
 
     private val _saved = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val saved: SharedFlow<Unit> = _saved.asSharedFlow()
+
+    private val _goalAdvice = MutableSharedFlow<NutritionPathTrigger.Advice>(extraBufferCapacity = 1)
+
+    /** Optional invite for a goal advice after saving (see [NutritionPathTrigger.Advice]); never navigates by itself. */
+    val goalAdvice: SharedFlow<NutritionPathTrigger.Advice> = _goalAdvice.asSharedFlow()
 
     private val _deleted = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val deleted: SharedFlow<Unit> = _deleted.asSharedFlow()
@@ -69,8 +75,14 @@ class BodyMeasurementsViewModel(
             _error.tryEmit("Inserisci almeno una misura")
             return
         }
-        if (values.filterNotNull().any { !it.isFinite() || it <= 0f || it > 300f }) {
-            _error.tryEmit("Controlla i valori inseriti")
+        val circumferences = listOf(
+            "Torace" to chestCm, "Vita" to waistCm, "Addome" to abdomenCm, "Spalle" to shouldersCm, "Glutei" to glutesCm,
+            "Braccio sinistro" to armLeftCm, "Braccio destro" to armRightCm, "Coscia sinistra" to thighLeftCm,
+            "Coscia destra" to thighRightCm, "Polpaccio sinistro" to calfLeftCm, "Polpaccio destro" to calfRightCm,
+            "Fianchi" to hipsCm,
+        )
+        BodyValueRanges.validateMeasurements(circumferences, weightKg)?.let {
+            _error.tryEmit(it)
             return
         }
 
@@ -101,7 +113,9 @@ class BodyMeasurementsViewModel(
                     )
                 if (existing != null) repository.update(measurement) else repository.insert(measurement)
             }.onSuccess {
-                nutritionPathTrigger?.maybeEnqueue(profileId)
+                // No paid AI job here: only the optional invite (or the "queued" notice if the explicit automation is on).
+                runCatching { nutritionPathTrigger?.onMeasurementsChanged(profileId) }.getOrNull()
+                    ?.let { _goalAdvice.tryEmit(it) }
                 _saved.tryEmit(Unit)
             }.onFailure {
                 _error.tryEmit("Impossibile salvare o aggiornare la misurazione")

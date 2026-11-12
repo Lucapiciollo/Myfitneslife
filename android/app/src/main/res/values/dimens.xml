@@ -123,6 +123,9 @@
     <dimen name="chart_line_width_emphasis">2.4dp</dimen>
     <dimen name="chart_point_radius">4dp</dimen>
     <dimen name="chart_point_radius_compact">3dp</dimen>
+    <dimen name="chart_point_hole_radius">2dp</dimen>
+    <dimen name="chart_dash_length">8dp</dimen>
+    <dimen name="chart_dash_gap">4dp</dimen>
     <dimen name="dashboard_metric_delta_column_width">20dp</dimen>
     <dimen name="dashboard_metric_card_padding">8dp</dimen>
     <dimen name="dashboard_metric_tile_icon_size">28dp</dimen>

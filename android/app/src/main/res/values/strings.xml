@@ -155,6 +155,33 @@
     <string name="bia_frequency_title">Frequenza rilevazione BIA</string>
     <string name="bia_analysis_accessibility_date">Analizza la rilevazione BIA del %1$s</string>
     <string name="bia_analysis_disclaimer">Analisi informativa, non diagnosi medica.</string>
+    <string name="bia_analysis_dialog_title">Analisi nutrizionale BIA</string>
+    <string name="bia_analysis_action">Analisi nutrizionale BIA</string>
+    <string name="bia_analysis_review_saved_action">Rivedi ultima analisi salvata</string>
+    <string name="bia_analysis_close">Chiudi</string>
+    <string name="bia_analysis_section_verdict">Verdetto</string>
+    <string name="bia_analysis_section_happening">Cosa sta succedendo</string>
+    <string name="bia_analysis_section_fat_loss">Stima del grasso perso</string>
+    <string name="bia_analysis_section_objective">Obiettivo e calorie</string>
+    <string name="bia_analysis_section_comparisons">Confronto rilevazioni</string>
+    <string name="bia_analysis_section_scenarios">Scenari indicativi (calcolati dall\'app)</string>
+    <string name="bia_analysis_scenario_line">%1$s\nGrasso obiettivo: %2$s; peso: %3$s; da perdere: %4$s\n%5$s</string>
+    <string name="bia_analysis_section_positives">Punti positivi</string>
+    <string name="bia_analysis_section_monitor">Da monitorare</string>
+    <string name="bia_analysis_section_actions_three">Tre azioni prioritarie</string>
+    <string name="bia_analysis_section_actions_now">Cosa fare adesso</string>
+    <string name="bia_analysis_section_actions_data">Dati da raccogliere</string>
+    <string name="bia_analysis_section_next_check">Prossimo controllo</string>
+    <string name="bia_analysis_section_reliability">Affidabilità</string>
+    <string name="bia_analysis_section_safety">Nota di sicurezza</string>
+    <string name="bia_analysis_section_question">Domanda finale</string>
+    <string name="bia_analysis_section_saved">Analisi salvata</string>
+    <string name="bia_analysis_section_saved_locally">Analisi salvata localmente</string>
+    <string name="bia_analysis_offline">Disponibile offline per questa rilevazione.</string>
+    <string name="bia_reliability_high">Alta</string>
+    <string name="bia_reliability_medium">Media</string>
+    <string name="bia_reliability_low">Bassa</string>
+    <string name="bia_reliability_unknown">Non valutabile</string>
     <string name="notifications_status_enabled">Notifiche Android abilitate. Dopo il salvataggio i promemoria vengono riprogrammati.</string>
     <string name="notifications_status_disabled">Notifiche Android bloccate: abilita il permesso nelle impostazioni di sistema.</string>
     <string name="notifications_updated_count">Promemoria aggiornati: %1$d</string>
@@ -280,4 +307,112 @@
     <string name="profile_weight_from_bia">%1$s kg (BIA del %2$s)</string>
     <string name="profile_weight_from_measure">%1$s kg (misura del %2$s)</string>
     <string name="profile_weight_from_profile">%1$s kg (dal profilo)</string>
+
+    <!-- Misure corporee: storico accessibile -->
+    <string name="measure_history_card_description">Misurazione del %1$s. %2$s.</string>
+    <string name="measure_history_edit">Modifica</string>
+    <string name="measure_history_delete">Elimina</string>
+    <string name="measure_history_edit_cd">Modifica la misurazione del %1$s</string>
+    <string name="measure_history_delete_cd">Elimina la misurazione del %1$s</string>
+    <string name="measure_history_delete_title">Elimina misurazione?</string>
+    <string name="measure_history_delete_message">La rilevazione del %1$s verrà rimossa dallo storico. Questa operazione non è reversibile.</string>
+
+    <!-- Misure corporee: uscita dal form con modifiche -->
+    <string name="measure_discard_title">Salvare le modifiche?</string>
+    <string name="measure_discard_message">Hai inserito o cambiato dei valori che non sono ancora stati salvati.</string>
+    <string name="measure_discard_save">Salva</string>
+    <string name="measure_discard_exit">Esci senza salvare</string>
+    <string name="measure_discard_keep">Continua</string>
+
+    <!-- Misure corporee: validazione inline -->
+    <string name="measure_error_out_of_range">Valore non plausibile per %1$s: controlla (%2$s–%3$s %4$s)</string>
+    <string name="measure_error_not_a_number">Inserisci un numero, per esempio 86,5</string>
+    <string name="measure_error_future_date">La data non può essere nel futuro: scegli oggi o un giorno passato</string>
+    <string name="measure_error_none">Inserisci almeno una misura</string>
+    <string name="measure_field_weight">peso corporeo</string>
+    <string name="measure_field_chest">torace</string>
+    <string name="measure_field_waist">vita</string>
+    <string name="measure_field_abdomen">addome</string>
+    <string name="measure_field_shoulders">spalle</string>
+    <string name="measure_field_hips">fianchi</string>
+    <string name="measure_field_glutes">glutei</string>
+    <string name="measure_field_arm_left">braccio sinistro</string>
+    <string name="measure_field_arm_right">braccio destro</string>
+    <string name="measure_field_thigh_left">coscia sinistra</string>
+    <string name="measure_field_thigh_right">coscia destra</string>
+    <string name="measure_field_calf_left">polpaccio sinistro</string>
+    <string name="measure_field_calf_right">polpaccio destro</string>
+
+    <!-- Errori IA: tabella centrale AiFailureMessages -->
+    <string name="ai_failure_network">Rete assente o provider non raggiungibile: riprova più tardi.</string>
+    <string name="ai_failure_unavailable">Il servizio IA è temporaneamente non disponibile: riprova più tardi.</string>
+    <string name="ai_failure_quota">Quota esaurita: apri Impostazioni IA per controllare il tuo piano.</string>
+    <string name="ai_failure_auth">Chiave non valida o non autorizzata: controllala in Impostazioni IA.</string>
+    <string name="ai_failure_not_configured">Provider IA non configurato: aggiungi una chiave in Impostazioni IA.</string>
+    <string name="ai_failure_model">Il modello scelto non è accessibile con questa chiave: controlla le Impostazioni IA.</string>
+    <string name="ai_failure_invalid_response">Risposta non valida: l\'IA non ha prodotto un risultato utilizzabile e nulla è stato salvato.</string>
+    <string name="ai_failure_blocked">Contenuto bloccato dal provider: la richiesta non è stata elaborata.</string>
+    <string name="ai_failure_truncated">Risposta interrotta prima del completamento: nulla è stato salvato.</string>
+    <string name="ai_failure_empty">Il provider non ha restituito alcun contenuto: nulla è stato salvato.</string>
+    <string name="ai_failure_rejected">Risposta respinta dai controlli dell\'app: l\'analisi non è stata salvata.</string>
+    <string name="ai_failure_paid_retry">L\'operazione si è interrotta dopo un tentativo già consumato e non viene ripetuta in automatico.</string>
+    <string name="ai_failure_cancelled">Analisi annullata.</string>
+    <string name="ai_failure_generic">Analisi non riuscita: nessun dato è stato modificato.</string>
+    <string name="ai_failure_start">Non è stato possibile avviare l\'analisi.</string>
+    <string name="ai_failure_retry">Riprova</string>
+    <string name="ai_failure_action_open_settings">Apri Impostazioni IA</string>
+    <string name="ai_failure_details">Dettagli</string>
+    <string name="ai_failure_details_hide">Nascondi dettagli</string>
+    <string name="ai_failure_details_code">Codice: %1$s</string>
+
+    <!-- Proporzioni corporee: attesa IA -->
+    <string name="proportions_wait_message">Analisi in corso: può richiedere fino a un minuto.</string>
+    <string name="proportions_wait_progress_cd">Analisi IA in corso</string>
+    <string name="proportions_wait_cancel">Annulla analisi</string>
+    <string name="proportions_wait_cancel_cd">Annulla l\'analisi IA in corso</string>
+    <!-- Grafici: descrizione, tabella dei valori, legenda -->
+    <string name="chart_series_default_label">Misura</string>
+    <string name="chart_summary_empty">%1$s, nessuna rilevazione nel periodo selezionato</string>
+    <string name="chart_summary_single">%1$s, 1 rilevazione del %2$s: %3$s</string>
+    <string name="chart_summary_multiple">%1$s, %2$d rilevazioni dal %3$s al %4$s, da %5$s a %6$s</string>
+    <string name="chart_table_show">Mostra tabella dei valori</string>
+    <string name="chart_table_title">Valori del grafico: %1$s</string>
+    <string name="chart_table_empty">Nessuna rilevazione nel periodo selezionato.</string>
+    <string name="chart_table_close">Chiudi</string>
+    <string name="chart_explanation_real">Il grafico mostra i valori reali di %1$s in %2$s, non variazioni percentuali.</string>
+    <string name="chart_explanation_normalized">Il grafico mostra la variazione percentuale di %1$s rispetto alla prima rilevazione.</string>
+    <string name="metric_weight">Peso</string>
+    <string name="metric_body_fat">Grasso corporeo</string>
+    <string name="metric_muscle">Massa muscolare</string>
+    <string-array name="chart_range_labels">
+        <item>1M</item>
+        <item>3M</item>
+        <item>6M</item>
+        <item>1A</item>
+    </string-array>
+    <string-array name="chart_range_descriptions">
+        <item>Intervallo 1 mese</item>
+        <item>Intervallo 3 mesi</item>
+        <item>Intervallo 6 mesi</item>
+        <item>Intervallo 1 anno</item>
+    </string-array>
+    <string name="home_remaining_label">Rimangono (kcal)</string>
+    <string name="home_over_target_label">Oltre il target (kcal)</string>
+    <string name="home_remaining_description">Rimangono %1$s su un target di %2$s</string>
+    <string name="home_over_target_description">Oltre il target di %1$s: consumate %2$s su un target di %3$s</string>
+    <string name="dashboard_delta_up_description">aumentato di %1$s rispetto alla rilevazione precedente</string>
+    <string name="dashboard_delta_down_description">diminuito di %1$s rispetto alla rilevazione precedente</string>
+    <string name="dashboard_delta_flat_description">invariato rispetto alla rilevazione precedente</string>
+    <string name="target_source_plan_day">Target del giorno dal piano alimentare, con adattamento e recupero</string>
+    <string name="target_source_plan_day_theoretical">Target del giorno dal piano alimentare, con adattamento e recupero. Target teorico senza adattamento: %1$s</string>
+    <string name="target_source_theoretical">Target teorico da profilo e attività, senza adattamento né recupero: nessun piano per oggi</string>
+    <string name="target_source_plan_week">Target settimanale del piano. Target specifico del giorno non disponibile</string>
+    <string name="target_source_none">Target non disponibile: completa i dati richiesti nel profilo</string>
+    <string name="food_target_label_plan_day">Target del giorno (piano)</string>
+    <string name="food_target_label_theoretical">Target teorico del giorno</string>
+    <string name="food_target_legend">Target del giorno: %1$s (%2$s). Target teorico senza adattamento né recupero: %3$s.</string>
+    <string name="food_target_source_plan_day">dal piano, con adattamento e recupero</string>
+    <string name="food_target_source_theoretical">nessun piano per questo giorno</string>
+    <string name="food_target_source_plan_week">target settimanale del piano</string>
+    <string name="food_target_description">%1$s: %2$s, proteine %3$s, target teorico %4$s</string>
 </resources>

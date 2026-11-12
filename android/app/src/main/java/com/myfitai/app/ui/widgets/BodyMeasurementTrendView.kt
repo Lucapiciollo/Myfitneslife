@@ -22,6 +22,7 @@ class BodyMeasurementTrendView @JvmOverloads constructor(
     data class Series(val label: String, val points: List<Point>)
 
     private val chart = LineChart(context)
+    private val accessibilityBinder = ChartAccessibilityBinder(this)
     private var points: List<Point> = emptyList()
     private var onPointsChanged: ((List<Point>) -> Unit)? = null
 
@@ -32,6 +33,8 @@ class BodyMeasurementTrendView @JvmOverloads constructor(
 
     init {
         addView(chart, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
+        // Il grafico disegnato non e' leggibile dai servizi di accessibilita': vale la descrizione del contenitore.
+        chart.importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
         chart.description.isEnabled = false
         chart.legend.isEnabled = true
         chart.legend.textColor = context.getColor(R.color.text_secondary)
@@ -104,7 +107,7 @@ class BodyMeasurementTrendView @JvmOverloads constructor(
             return
         }
         val entries = points.mapIndexed { index, point -> EntryFloat(index.toFloat(), point.value) }.toMutableList()
-        val dataSet = LineDataSet<EntryFloat>(entries, "measurement").apply {
+        val dataSet = LineDataSet<EntryFloat>(entries, context.getString(R.string.chart_series_default_label)).apply {
             color = context.getColor(R.color.accent_green_dark)
             lineWidth = chartDp(R.dimen.chart_line_width_emphasis)
             isDrawCircles = true
@@ -121,8 +124,52 @@ class BodyMeasurementTrendView @JvmOverloads constructor(
         onPointsChanged?.invoke(points)
     }
 
-    fun setNormalizedSeries(series: List<Series>) {
-        val colors = resources.obtainTypedArray(R.array.chart_series_palette)
+    /** Descrizione sintetica e azione "Mostra tabella dei valori" per i servizi di accessibilita'. */
+    fun bindAccessibility(summary: String, showTableLabel: String, onShowTable: (() -> Unit)?) =
+        accessibilityBinder.bind(summary, showTableLabel, onShowTable)
+
+    /**
+     * Una sola metrica con valori reali: legenda = metrica scelta con unita', asse Y con unita', asse delle date visibile.
+     * Le altre metriche restano fuori dal grafico.
+     */
+    fun setMetricSeries(label: String, unit: String, metricPoints: List<Point>) {
+        this.points = metricPoints
+        chart.xAxis.isEnabled = true
+        chart.xAxis.textColor = context.getColor(R.color.text_secondary)
+        chart.xAxis.isDrawGridLines = false
+        chart.xAxis.position = info.appdev.charting.components.XAxis.XAxisPosition.BOTTOM
+        chart.xAxis.labelRotationAngle = context.resources.getInteger(R.integer.chart_x_axis_label_rotation_degrees).toFloat()
+        chart.xAxis.granularity = context.resources.getInteger(R.integer.chart_x_axis_granularity).toFloat()
+        chart.xAxis.setLabelCount(context.resources.getInteger(R.integer.chart_x_axis_label_count), false)
+        chart.xAxis.valueFormatter = object : IAxisValueFormatter {
+            override fun getFormattedValue(value: Float, axis: AxisBase?): String =
+                metricPoints.getOrNull(value.toInt())?.label.orEmpty()
+        }
+        chart.axisLeft.valueFormatter = object : IAxisValueFormatter {
+            override fun getFormattedValue(value: Float, axis: AxisBase?): String = ChartAccessibility.axisValue(value, unit)
+        }
+        if (metricPoints.isEmpty()) {
+            chart.clear()
+            chart.invalidate()
+            onPointsChanged?.invoke(metricPoints)
+            return
+        }
+        val entries = metricPoints.mapIndexed { index, point -> EntryFloat(index.toFloat(), point.value) }.toMutableList()
+        val dataSet = LineDataSet<EntryFloat>(entries, ChartAccessibility.legend(label, unit)).apply {
+            color = context.getColor(R.color.accent_green_dark)
+            lineWidth = chartDp(R.dimen.chart_line_width_emphasis)
+            isDrawValues = false
+            isHighlight = true
+            lineMode = LineDataSet.Mode.CUBIC_BEZIER
+            isDrawFilled = false
+            applySeriesStyle(0, context)
+        }
+        chart.data = LineData(dataSet)
+        chart.invalidate()
+        onPointsChanged?.invoke(metricPoints)
+    }
+
+    fun setNormalizedSeries(series: List<Series>) {        val colors = resources.obtainTypedArray(R.array.chart_series_palette)
         val dataSets = series.mapIndexedNotNull { index, item ->
             val baseline = item.points.firstOrNull()?.value?.takeIf { it != 0f } ?: return@mapIndexedNotNull null
             val entries = item.points.mapIndexed { pointIndex, point ->
@@ -134,12 +181,11 @@ class BodyMeasurementTrendView @JvmOverloads constructor(
             LineDataSet<EntryFloat>(entries, item.label).apply {
                 color = colors.getColor(index % colors.length(), context.getColor(R.color.text_primary))
                 lineWidth = chartDp(R.dimen.chart_line_width)
-                isDrawCircles = true
-                circleRadius = chartDp(R.dimen.chart_point_radius_compact)
                 isDrawValues = false
                 isHighlight = false
                 lineMode = LineDataSet.Mode.CUBIC_BEZIER
                 isDrawFilled = false
+                applySeriesStyle(index, context)
             }
         }
         colors.recycle()

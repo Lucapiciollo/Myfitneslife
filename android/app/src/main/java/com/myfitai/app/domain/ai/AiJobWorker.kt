@@ -25,7 +25,10 @@ class AiJobWorker(appContext: Context, params: WorkerParameters) : CoroutineWork
         )
         return when (decision) {
             is AiJobDecision.Success -> {
-                AiJobNotifier.notifySuccess(applicationContext, type, profileId, jobKey, decision.output.getString(KEY_PROVIDER))
+                // A skipped run (nothing new to analyse) did not produce anything: no "ready" notification.
+                if (!decision.output.getBoolean(KEY_SKIPPED, false)) {
+                    AiJobNotifier.notifySuccess(applicationContext, type, profileId, jobKey, decision.output.getString(KEY_PROVIDER))
+                }
                 Result.success(decision.output)
             }
             is AiJobDecision.Retry -> Result.retry()
@@ -48,6 +51,7 @@ class AiJobWorker(appContext: Context, params: WorkerParameters) : CoroutineWork
         const val KEY_PROVIDER = "provider"
         const val KEY_IMAGE_PATH = "image_path"
         const val KEY_AUTOMATIC = "automatic"
+        const val KEY_SKIPPED = "skipped"
         const val MAX_RETRY_ATTEMPTS = 2
         private const val MAX_ERROR_CHARS = 500
     }

@@ -42,7 +42,11 @@ class DataDeletionService(
     suspend fun deleteFoodConsumptions() = withProfile { db.foodConsumptionDao().deleteByProfile(it) }
 
     suspend fun deleteBiaMeasurements() = withProfile { profileId ->
-        db.biaMeasurementDao().deleteByProfile(profileId)
+        // The AI analyses refer to the readings: removing only the readings would leave orphan results.
+        db.withTransaction {
+            db.biaAnalysisResultDao().deleteByProfile(profileId)
+            db.biaMeasurementDao().deleteByProfile(profileId)
+        }
         invalidateProgressAnalysis(profileId)
     }
 
