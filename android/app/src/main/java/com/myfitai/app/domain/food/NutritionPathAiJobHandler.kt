@@ -33,7 +33,8 @@ Suggerisci un percorso e massimo due alternative. Testi in italiano. Protocollo:
             userPrompt = buildString {
                 appendLine("U:${AiUserContext.profileLine(profile, java.time.LocalDate.now(), snapshot.latestWeightKg)}")
                 appendLine("LC:${AiUserContext.calculationLine(snapshot.calculation)}")
-                appendLine("P:${profile.biologicalSex ?: "?"}|${profile.birthDateEpochDay ?: "?"}|${profile.heightCm ?: "?"}|${profile.currentWeightKg ?: "?"}|${profile.activityLevel ?: "?"}|${profile.goal ?: "?"}")
+                // Peso risolto (WeightResolver), stessa fonte della riga U e del motore; non il peso statico del profilo.
+                appendLine("P:${profile.biologicalSex ?: "?"}|${profile.birthDateEpochDay ?: "?"}|${profile.heightCm ?: "?"}|${snapshot.latestWeightKg ?: "?"}|${profile.activityLevel ?: "?"}|${profile.goal ?: "?"}")
                 val b = snapshot.biaMetrics
                 appendLine("BIA:${snapshot.latestBiaTimestamp ?: "?"}|${b.weight.current ?: "?"}|${b.bodyFat.current ?: "?"}|${b.muscleMass.current ?: "?"}|${b.skeletalMuscle.current ?: "?"}|${b.bodyWater.current ?: "?"}|${b.visceralFat.current ?: "?"}")
                 appendLine("BIA_ALL:${listOf(b.bmr, b.fatMass, b.leanMass, b.bodyWaterKg, b.subcutaneousFat, b.boneMass, b.proteinPercent, b.proteinKg, b.bodyAge, b.bmi).joinToString("|") { it.current?.toString() ?: "?" }}")

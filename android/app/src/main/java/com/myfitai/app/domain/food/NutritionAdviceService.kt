@@ -4,6 +4,8 @@ import com.myfitai.app.ai.AiCompactEnvelope
 import com.myfitai.app.ai.AiRuntimeGateway
 import com.myfitai.app.ai.AiStructuredRequest
 import com.myfitai.app.data.profile.ActiveProfileStore
+import com.myfitai.app.data.repository.BiaRepository
+import com.myfitai.app.data.repository.BodyMeasurementRepository
 import com.myfitai.app.data.repository.CheatEntryRepository
 import com.myfitai.app.data.repository.FoodConsumptionRepository
 import com.myfitai.app.data.repository.MealPlanRepository
@@ -11,6 +13,7 @@ import com.myfitai.app.data.repository.UserProfileRepository
 import com.myfitai.app.domain.time.SystemTimeProvider
 import com.myfitai.app.domain.time.TimeProvider
 import com.myfitai.app.domain.ai.AiUserContext
+import com.myfitai.app.domain.calculation.WeightResolver
 import kotlinx.coroutines.flow.first
 import java.util.Locale
 
@@ -23,6 +26,9 @@ class NutritionAdviceService(
     private val foodConsumptions: FoodConsumptionRepository,
     private val activeProfileStore: ActiveProfileStore,
     private val time: TimeProvider = SystemTimeProvider,
+    /** Se presenti, il peso nel prompt e quello risolto da WeightResolver (come motore e UI), non il peso statico del profilo. */
+    private val bia: BiaRepository? = null,
+    private val bodyMeasurements: BodyMeasurementRepository? = null,
 ) {
     data class Result(
         val accepted: Boolean,
@@ -62,6 +68,9 @@ class NutritionAdviceService(
         val targetProteinG = todayPlan?.targetProteinG ?: snapshot?.version?.targetProteinG
         val targetCarbsG = todayPlan?.targetCarbsG ?: snapshot?.version?.targetCarbsG
         val targetFatG = todayPlan?.targetFatG ?: snapshot?.version?.targetFatG
+        val effectiveWeightKg = if (bia != null && bodyMeasurements != null) {
+            WeightResolver.resolve(bia.all(profileId).first(), bodyMeasurements.all(profileId).first(), profile.currentWeightKg, profileId).valueKg
+        } else null
 
         val request = AiStructuredRequest(
             systemPrompt = SYSTEM_PROMPT,
@@ -80,6 +89,7 @@ class NutritionAdviceService(
                 targetFatG,
                 minuteOfDay,
                 mealWindow(minuteOfDay),
+                effectiveWeightKg,
             ),
             schemaName = NutritionAdviceContract.SCHEMA_NAME,
             schemaJson = NutritionAdviceContract.schemaJson,
@@ -130,8 +140,9 @@ class NutritionAdviceService(
         targetFatG: Float?,
         minuteOfDay: Int,
         mealWindow: String,
+        effectiveWeightKg: Float?,
     ): String = buildString {
-        appendLine("U:${AiUserContext.profileLine(profile, time.today())}")
+        appendLine("U:${AiUserContext.profileLine(profile, time.today(), effectiveWeightKg)}")
         appendLine("Q:${clean(question)}")
         appendLine("N:$minuteOfDay;$mealWindow")
         appendLine("DP:${clean(dietaryProfile.toPromptCompact())}")

@@ -204,7 +204,12 @@ object LocalCalculationEngine {
         return MacroTargets(proteinG, fatG, carbsG)
     }
 
-    fun trend(values: List<TimedValue>, stableThreshold: Double = 0.05): TrendStats {
+    /**
+     * [metricKey] (chiavi di [BiaNoiseThresholds]): se la metrica ha una soglia di rumore dichiarata e quella a
+     * decidere "stabile" (stesso operatore di tutti i motori: |delta| <= soglia = stabile). Senza chiave o senza
+     * soglia dichiarata resta [stableThreshold] (valore storico 0,05, per metriche non BIA).
+     */
+    fun trend(values: List<TimedValue>, stableThreshold: Double = 0.05, metricKey: String? = null): TrendStats {
         val ordered = values.sortedWith(compareBy<TimedValue> { it.timestamp }.thenBy { it.value })
         if (ordered.isEmpty()) {
             return TrendStats(0, null, null, null, null, TrendDirection.UNKNOWN)
@@ -213,8 +218,14 @@ object LocalCalculationEngine {
         val first = ordered.first().value
         val latest = ordered.last().value
         val delta = if (ordered.size >= 2) latest - first else null
+        val declaredThreshold = metricKey?.let { BiaNoiseThresholds.forMetric(it) }
         val direction = when {
             delta == null -> TrendDirection.UNKNOWN
+            metricKey != null && declaredThreshold != null -> when {
+                !BiaNoiseThresholds.isReliableChange(metricKey, delta) -> TrendDirection.STABLE
+                delta < 0.0 -> TrendDirection.DOWN
+                else -> TrendDirection.UP
+            }
             abs(delta) <= stableThreshold -> TrendDirection.STABLE
             delta < 0.0 -> TrendDirection.DOWN
             else -> TrendDirection.UP

@@ -273,4 +273,11 @@
     <string name="dietary_notice_limited">%1$s: non verificabile in modo affidabile (nichel, solfiti)</string>
     <string name="dietary_notice_unknown_style">%1$s: regime non riconosciuto, non applicato al controllo</string>
     <string name="dietary_message_added_with_notice">%1$s. %2$s</string>
+    <string name="bia_trend_noise_hint">Variazioni sotto %1$s possono dipendere da idratazione e orario: non sono un cambiamento reale.</string>
+    <string name="bia_trend_noise_unit_points">punti percentuali</string>
+    <string name="bia_trend_quality_line">Qualit&#224; confronto: %1$s (%2$s)</string>
+    <string name="bia_trend_quality_unavailable">Qualit&#224; confronto: non valutabile</string>
+    <string name="profile_weight_from_bia">%1$s kg (BIA del %2$s)</string>
+    <string name="profile_weight_from_measure">%1$s kg (misura del %2$s)</string>
+    <string name="profile_weight_from_profile">%1$s kg (dal profilo)</string>
 </resources>

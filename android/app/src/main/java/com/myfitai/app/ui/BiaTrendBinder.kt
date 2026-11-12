@@ -9,6 +9,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.myfitai.app.R
 import com.myfitai.app.data.local.entity.BiaMeasurementEntity
 import com.myfitai.app.domain.body.BiaMeasurementQualityEngine
+import com.myfitai.app.domain.body.BiaNoiseThresholds
 import com.myfitai.app.domain.body.MeasurementTrendInterpreter
 import com.myfitai.app.ui.widgets.BodyMeasurementTrendView
 import com.myfitai.app.ui.widgets.SelectableSegmentView
@@ -28,15 +29,17 @@ class BiaTrendBinder(
         val unit: String,
         val favorableDirection: MeasurementTrendInterpreter.Direction?,
         val stableThreshold: Float,
+        /** Chiave di BiaNoiseThresholds; null = metrica senza soglia di rumore dichiarata (si usa stableThreshold). */
+        val noiseKey: String?,
         val value: (BiaMeasurementEntity) -> Float?,
     ) {
-        WEIGHT("Peso", "kg", null, 0.2f, { it.weightKg }),
-        BODY_FAT("Grasso corporeo", "%", MeasurementTrendInterpreter.Direction.DOWN, 0.2f, { it.bodyFatPercent }),
-        MUSCLE("Massa muscolare", "kg", MeasurementTrendInterpreter.Direction.UP, 0.2f, { it.muscleMassKg }),
-        SKELETAL("Muscolo scheletrico", "kg", MeasurementTrendInterpreter.Direction.UP, 0.2f, { it.skeletalMuscleKg }),
-        WATER("Acqua corporea", "%", null, 0.3f, { it.bodyWaterPercent }),
-        VISCERAL("Grasso viscerale", "", MeasurementTrendInterpreter.Direction.DOWN, 0.2f, { it.visceralFatLevel }),
-        BMR("BMR", "kcal", null, 20f, { it.bmrKcal }),
+        WEIGHT("Peso", "kg", null, 0.2f, "weightKg", { it.weightKg }),
+        BODY_FAT("Grasso corporeo", "%", MeasurementTrendInterpreter.Direction.DOWN, 0.2f, "bodyFatPercent", { it.bodyFatPercent }),
+        MUSCLE("Massa muscolare", "kg", MeasurementTrendInterpreter.Direction.UP, 0.2f, "muscleMassKg", { it.muscleMassKg }),
+        SKELETAL("Muscolo scheletrico", "kg", MeasurementTrendInterpreter.Direction.UP, 0.2f, "skeletalMuscleKg", { it.skeletalMuscleKg }),
+        WATER("Acqua corporea", "%", null, 0.3f, null, { it.bodyWaterPercent }),
+        VISCERAL("Grasso viscerale", "", MeasurementTrendInterpreter.Direction.DOWN, 0.2f, null, { it.visceralFatLevel }),
+        BMR("BMR", "kcal", null, 20f, null, { it.bmrKcal }),
     }
 
     private var history: List<BiaMeasurementEntity> = emptyList()
@@ -165,10 +168,11 @@ class BiaTrendBinder(
         val previous = history.drop(1).firstOrNull()
         val quality = latest?.let { BiaMeasurementQualityEngine.evaluate(it, previous) }
         qualityText.text = quality?.let {
-            "Qualità confronto: ${BiaMeasurementQualityEngine.label(it.level)} (${it.score}/100)\n" +
-                it.reasons.take(3).joinToString(" · ")
-        } ?: "Qualità confronto: non valutabile"
+            activity.getString(R.string.bia_trend_quality_line, BiaMeasurementQualityEngine.label(it.level), it.summary)
+        } ?: activity.getString(R.string.bia_trend_quality_unavailable)
 
+        // Con comparabilita bassa la soglia di rumore raddoppia (come nel contesto inviato all'IA).
+        val degraded = quality?.level == BiaMeasurementQualityEngine.Level.LOW
         val interpretation = MeasurementTrendInterpreter.interpret(
             label = selectedMetric.label,
             delta = periodDelta,
@@ -176,8 +180,16 @@ class BiaTrendBinder(
             favorableDirection = selectedMetric.favorableDirection,
             stableThreshold = selectedMetric.stableThreshold,
             qualityLabel = quality?.let { BiaMeasurementQualityEngine.label(it.level).lowercase(Locale.ITALIAN) },
+            metricKey = selectedMetric.noiseKey,
+            degraded = degraded,
         )
-        trendNote.text = "${interpretation.title}\n${interpretation.message}"
+        val noiseHint = selectedMetric.noiseKey
+            ?.let { BiaNoiseThresholds.forMetric(it, degraded) }
+            ?.let { threshold ->
+                val unit = if (selectedMetric.unit == "%") activity.getString(R.string.bia_trend_noise_unit_points) else selectedMetric.unit
+                activity.getString(R.string.bia_trend_noise_hint, format(threshold.toFloat(), unit))
+            }
+        trendNote.text = listOfNotNull("${interpretation.title}\n${interpretation.message}", noiseHint).joinToString("\n")
     }
 
     private fun dateOf(item: BiaMeasurementEntity): LocalDate =

@@ -51,7 +51,7 @@ class AdaptiveNutritionTargetEngineTest {
 
     @Test
     fun muscleDeclineReducesDeficit() {
-        val result = AdaptiveNutritionTargetEngine.adjust(input(muscleDelta = -0.8, waistDelta = -1.5))
+        val result = AdaptiveNutritionTargetEngine.adjust(input(muscleDelta = -1.2, waistDelta = -1.5))
         assertEquals(AdaptiveNutritionTargetEngine.Decision.REDUCE_DEFICIT, result.decision)
         assertEquals(2450.0, result.targetKcal!!, 0.01)
     }

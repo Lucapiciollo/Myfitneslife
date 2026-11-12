@@ -186,6 +186,8 @@ class AppDataContainer private constructor(context: Context) {
         cheats = cheatEntryRepository,
         foodConsumptions = foodConsumptionRepository,
         activeProfileStore = activeProfileStore,
+        bia = biaRepository,
+        bodyMeasurements = bodyMeasurementRepository,
     )
 
     val mealAlternativeService = MealAlternativeService(

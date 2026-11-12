@@ -152,7 +152,18 @@ class WeeklyReviewService(
         val monday = monday(weekStart)
         val metrics = buildLocalMetrics(profileId, monday)
         val historyContext = personalResponse.promptContext(lookbackDays = 56, profileId = profileId)
-        val userContext = profiles?.get(profileId)?.let { AiUserContext.profileLine(it, time.today()) }.orEmpty()
+        val userContext = profiles?.get(profileId)?.let { profile ->
+            // Peso con la stessa regola del resto dell'app (WeightResolver), non il peso statico del profilo,
+            // e senza letture posteriori alla settimana recensita.
+            val weekEnd = monday.plusDays(7).atStartOfDay(time.zoneId).toInstant().toEpochMilli() - 1
+            val observations = WeightResolver.observations(
+                bia.all(profileId).first(),
+                bodyMeasurements.all(profileId).first(),
+                profileId,
+            ).filter { it.measuredAtEpochMillis <= weekEnd }
+            val effectiveWeight = WeightResolver.resolve(observations, profile.currentWeightKg).valueKg
+            AiUserContext.profileLine(profile, time.today(), effectiveWeight)
+        }.orEmpty()
         val request = AiStructuredRequest(
             systemPrompt = SYSTEM_PROMPT,
             userPrompt = buildPrompt(metrics, historyContext, userContext),
