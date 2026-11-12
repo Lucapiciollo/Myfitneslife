@@ -1,25 +1,15 @@
 package com.myfitai.app.ai
 
 /**
- * Short compact agents use bounded responses; nutrition plans do not have a fixed
- * app-level output budget, because the amount of requested days and meals varies.
- * Null means no explicit application cap; it does not override model/provider limits.
+ * Output budget of a request. The cap of every contract lives in [AiContractRegistry] (exact schemaName):
+ * short compact agents use bounded responses, while the weekly plan has no fixed application budget because the
+ * amount of requested days and meals varies. Null means no explicit application cap; it does not override
+ * model/provider limits. A schemaName that is not registered is passed through unchanged here and is rejected
+ * by [AiRuntimeService] / [AiExecutionService] (never guessed from its name).
  */
 internal object AiOutputTokenPolicy {
     fun effectiveLimit(schemaName: String, requested: Int?): Int? {
-        if (!schemaName.contains("_pipe_") || schemaName.contains("weekly_nutrition")) {
-            return requested
-        }
-        val compactCap = when {
-            "cheat_adjustment" in schemaName -> 2_500
-            "meal_alternatives" in schemaName -> 2_200
-            "nutrition_advice" in schemaName -> 900
-            "weekly_review" in schemaName -> 700
-            "cheat_understanding" in schemaName -> 500
-            "body_proportion" in schemaName -> 500
-            "bia" in schemaName -> if ("progress_coach" in schemaName) 2_200 else 350
-            else -> 1_500
-        }
-        return requested?.let { minOf(it, compactCap) }
+        val cap = AiContractRegistry.find(schemaName)?.maxOutputTokens ?: return requested
+        return requested?.let { minOf(it, cap) } ?: cap
     }
 }

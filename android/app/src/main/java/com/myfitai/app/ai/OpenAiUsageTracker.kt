@@ -80,7 +80,13 @@ class OpenAiUsageTrackingProvider(
 
     override suspend fun generateStructured(request: AiStructuredRequest): AiRawResponse {
         val response = delegate.generateStructured(request)
-        runCatching { tracker.record(response) }
+        try {
+            tracker.record(response)
+        } catch (cancelled: kotlinx.coroutines.CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            // Usage tracking is best effort and must never fail a paid response.
+        }
         return response
     }
 }

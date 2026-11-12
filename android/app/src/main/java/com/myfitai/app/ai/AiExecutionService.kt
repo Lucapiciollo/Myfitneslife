@@ -1,5 +1,9 @@
 package com.myfitai.app.ai
 
+import kotlinx.coroutines.CancellationException
+import org.json.JSONException
+import org.json.JSONObject
+
 /**
  * Provider -> structured envelope -> local validators -> authoritative app business validator.
  *
@@ -9,8 +13,17 @@ package com.myfitai.app.ai
  * billed response). Once a response was already consumed (schema/business retry), a later transient error is
  * NOT retried by the job: it becomes [Failure.PaidRetryBudgetConsumed], so a restart can never re-spend the
  * schema/business retry budget.
+ *
+ * Every failure is one of the categories of [AiFailure] (the only classification). The contract of a request
+ * is looked up by exact schemaName in [AiContractRegistry]: an unregistered schema fails with
+ * [Failure.ContractNotRegistered] before any provider call. Diagnostics never contain model text: only
+ * schemaName, outcome category, attempt and duration ([AiDiagnosticEvent]).
  */
-class AiExecutionService {
+class AiExecutionService(
+    private val contracts: (String) -> AiContractRegistry.Spec? = AiContractRegistry::find,
+    private val diagnostics: (AiDiagnosticEvent) -> Unit = AiDiagnostics::log,
+    private val nowMillis: () -> Long = System::currentTimeMillis,
+) {
     data class ValidatedResponse(
         val provider: AiProviderType,
         val model: String,
@@ -18,10 +31,17 @@ class AiExecutionService {
         val usage: AiUsageMetadata? = null,
     )
 
+    /** Typed exceptions whose message is always a stable code (never model text). Classified by [AiFailure.classify]. */
     sealed class Failure(message: String) : Exception(message) {
         class InvalidSchema(val errors: List<String>) : Failure("INVALID_SCHEMA")
         class OutputTruncated : Failure("OUTPUT_TRUNCATED")
         class BusinessRejected(val reason: String) : Failure(reason)
+        /** Refusal, safety block, blocked prompt or content filter. The provider text is not kept. */
+        class Refused(val reason: AiFailure.RefusalReason) : Failure("REFUSED")
+        class EmptyOutput : Failure("EMPTY_OUTPUT")
+        class MalformedJson : Failure("MALFORMED_JSON")
+        /** The request used a schemaName absent from [AiContractRegistry]. [schemaName] is chosen by the app, not the model. */
+        class ContractNotRegistered(val schemaName: String) : Failure("CONTRACT_NOT_REGISTERED")
         /** A transient transport error happened after a paid response was already consumed: do not restart the job. */
         class PaidRetryBudgetConsumed(cause: Throwable) : Failure("TRANSIENT_AFTER_PAID_RETRY") {
             init { initCause(cause) }
@@ -35,103 +55,91 @@ class AiExecutionService {
         businessValidator: (String) -> Result<Unit> = { Result.success(Unit) },
     ): ValidatedResponse {
         require(maxSchemaRetries in 0..2)
-        val compact = request.schemaName.contains("_pipe_")
+        val startedAt = nowMillis()
         var attempt = 0
-        var currentRequest = request
-        while (true) {
-            val raw = try {
-                provider.generateStructured(currentRequest)
-            } catch (error: AiTransportException) {
-                if (attempt > 0 && error.isTransient()) throw Failure.PaidRetryBudgetConsumed(error)
-                throw error
-            }
-            // A token-limited answer is incomplete, not a schema/business failure.
-            // Never persist an incomplete nutrition plan or retry the same inadequate budget.
-            if (raw.finishReason == "MAX_TOKENS" || raw.finishReason == "max_output_tokens") {
-                throw Failure.OutputTruncated()
-            }
-            val schemaResult = CanonicalJsonSchemaValidator.validate(raw.jsonText, request.schemaJson)
-            if (!schemaResult.valid) {
-                if (provider.type == AiProviderType.GEMINI) {
-                    val text = raw.jsonText
-                    val diagnostics = runCatching {
-                        org.json.JSONObject(text)
-                    }.exceptionOrNull()?.let { error ->
-                        if (error is org.json.JSONException) JsonParseDiagnostics.diagnose(text, error) else null
-                    }
-                    val summary = diagnostics?.let {
-                        "outputLength=${it.outputLength} outputShape=${it.outputShape} exceptionType=${it.exceptionType} " +
-                            "exceptionMessage=${it.exceptionMessage} parserPosition=${it.parserPosition ?: "-"} " +
-                            "category=${it.category} leadingFence=${it.hasLeadingFence} trailingFence=${it.hasTrailingFence} " +
-                            "startsObject=${it.startsWithObjectBrace} endsObject=${it.endsWithObjectBrace} nullByte=${it.containsNullByte} " +
-                            "bom=${it.containsBom} trailingAfterObject=${it.hasTrailingCharactersAfterObject} " +
-                            "firstCode=${it.firstCharCode ?: "-"} lastCode=${it.lastCharCode ?: "-"} " +
-                            "firstNonWhitespaceCode=${it.firstNonWhitespaceCharCode ?: "-"} lastNonWhitespaceCode=${it.lastNonWhitespaceCharCode ?: "-"}"
-                    }.orEmpty()
-                    android.util.Log.w(
-                        "MyFitAiCanonicalValidation",
-                        "schemaName=${request.schemaName} $summary errors=${schemaResult.errors.take(12).joinToString(" | ").take(1200)}",
-                    )
+        fun report(outcome: String) = diagnostics(AiDiagnosticEvent(request.schemaName, outcome, attempt, nowMillis() - startedAt))
+        try {
+            val spec = contracts(request.schemaName) ?: throw Failure.ContractNotRegistered(request.schemaName)
+            val compact = spec.format == AiContractRegistry.Format.COMPACT_PIPE
+            var currentRequest = request
+            while (true) {
+                val raw = try {
+                    provider.generateStructured(currentRequest)
+                } catch (error: AiTransportException) {
+                    if (attempt > 0 && AiFailure.classify(error).retryable) throw Failure.PaidRetryBudgetConsumed(error)
+                    throw error
                 }
-                if (attempt >= maxSchemaRetries) throw Failure.InvalidSchema(schemaResult.errors)
-                attempt++
-                val compactVersion = compactProtocolVersion(request.schemaName)
-                val retryRule = compactVersion?.let { "The data value must begin with $it and follow its requested pipe records, one record per line." }
-                    ?: "The data value must follow its requested compact protocol, one record per line."
-                currentRequest = request.copy(
-                    userPrompt = request.userPrompt + if (compact) {
-                        "\nFIX: return exactly one JSON object with exactly one property named data, whose value is a string containing the pipe protocol. $retryRule Do not include schema, status, metadata or any other property. Return no prose or markdown."
-                    } else {
-                        "\nPrevious output was INVALID_SCHEMA. Return exactly one valid JSON object. Do not use markdown. Do not wrap the JSON in code fences. Do not add text before or after the JSON. All strings must be valid JSON strings with escaped special characters."
-                    }
-                )
-                continue
-            }
+                // An abnormal end (token limit, safety/refusal, unknown reason) is never a success and never a
+                // schema/business failure: an incomplete or blocked answer must not be persisted or retried blindly.
+                AiFailure.fromFinishReason(raw.finishReason)?.let { throw it.toException() }
+                if (raw.jsonText.isBlank()) throw Failure.EmptyOutput()
 
-            val business = businessValidator(raw.jsonText)
-            if (business.isFailure) {
-                val reason = business.exceptionOrNull()?.message ?: "BUSINESS_VALIDATION_FAILED"
-                if (compact && provider.type == AiProviderType.GEMINI) {
-                    val version = compactProtocolVersion(request.schemaName) ?: "?"
-                    android.util.Log.w(
-                        "MyFitAiCompactValidation",
-                        "schemaName=${request.schemaName} reason=${reason.take(120)} " +
-                            AiCompactDiagnostics.describe(raw.jsonText, version),
-                    )
+                val parseable = try {
+                    JSONObject(raw.jsonText)
+                    true
+                } catch (_: JSONException) {
+                    false
                 }
-                if (compact && attempt < maxSchemaRetries) {
+                val schemaResult = CanonicalJsonSchemaValidator.validate(raw.jsonText, request.schemaJson)
+                if (!schemaResult.valid) {
+                    if (attempt >= maxSchemaRetries) {
+                        throw if (parseable) Failure.InvalidSchema(schemaResult.errors) else Failure.MalformedJson()
+                    }
                     attempt++
-                    val compactVersion = compactProtocolVersion(request.schemaName)
-                    val retryRule = compactVersion?.let { "The data value must begin with $it and follow its requested pipe records, one record per line." }
-                        ?: "The data value must follow its requested compact protocol, one record per line."
-                    currentRequest = request.copy(userPrompt = request.userPrompt + "\nFIX:${reason.take(80)}. Return exactly one JSON envelope with one data property. $retryRule No markdown or code fences.")
+                    currentRequest = request.copy(
+                        userPrompt = request.userPrompt + if (compact) {
+                            "\nFIX: return exactly one JSON object with exactly one property named data, whose value is a string containing the pipe protocol. ${spec.retryRule()} Do not include schema, status, metadata or any other property. Return no prose or markdown."
+                        } else {
+                            "\nPrevious output was INVALID_SCHEMA. Return exactly one valid JSON object. Do not use markdown. Do not wrap the JSON in code fences. Do not add text before or after the JSON. All strings must be valid JSON strings with escaped special characters."
+                        }
+                    )
                     continue
                 }
-                throw Failure.BusinessRejected(reason)
+
+                val business = businessValidator(raw.jsonText)
+                if (business.isFailure) {
+                    val reason = business.exceptionOrNull()?.message ?: "BUSINESS_VALIDATION_FAILED"
+                    if (compact && attempt < maxSchemaRetries) {
+                        attempt++
+                        currentRequest = request.copy(userPrompt = request.userPrompt + "\nFIX:${reason.take(80)}. Return exactly one JSON envelope with one data property. ${spec.retryRule()} No markdown or code fences.")
+                        continue
+                    }
+                    throw Failure.BusinessRejected(reason)
+                }
+                report("OK")
+                return ValidatedResponse(raw.provider, raw.model, raw.jsonText, raw.usage)
             }
-            return ValidatedResponse(raw.provider, raw.model, raw.jsonText, raw.usage)
+        } catch (cancelled: CancellationException) {
+            report(AiFailure.Cancelled.code)
+            throw cancelled
+        } catch (error: Throwable) {
+            report(AiFailure.classify(error).code)
+            throw error
         }
     }
+}
 
-    /** Exact schemaName -> protocol header. Substring matching mislabelled bia_raw (B2) and progress_analysis (PA1). */
-    private fun compactProtocolVersion(schemaName: String): String? = COMPACT_PROTOCOLS[schemaName]
+/** What is logged about an AI call: no prompt, no response, no key, no provider text. */
+data class AiDiagnosticEvent(
+    val schemaName: String,
+    /** `OK` or the stable [AiFailure.code] of the failure. */
+    val outcome: String,
+    /** Number of schema/business retries already spent (0 = first response was final). */
+    val attempt: Int,
+    val durationMs: Long,
+)
 
-    companion object {
-        /** Exact schemaName -> protocol header; the single source of truth (also checked by tests against the contracts). */
-        internal val COMPACT_PROTOCOLS: Map<String, String> = mapOf(
-            "myfitai_bia_raw_pipe_v2" to "B2",
-            "myfitai_bia_pipe_v1" to "BIA1",
-            "myfitai_bia_progress_coach_pipe_v2" to "BA2",
-            "myfitai_progress_analysis_pipe_v1" to "PA1",
-            "myfitai_body_proportion_pipe_v1" to "BP1",
-            "myfitai_weekly_review_pipe_v1" to "WR1",
-            "myfitai_meal_alternatives_pipe_v1" to "MA1",
-            "myfitai_nutrition_advice_pipe_v1" to "NA1",
-            "myfitai_cheat_understanding_pipe_v1" to "CU1",
-            "myfitai_cheat_adjustment_pipe_v1" to "CA1",
-            "myfitai_plan_review_pipe_v1" to "PR1",
-            "myfitai_nutrition_path_pipe_v1" to "NP1",
-            "myfitai_weekly_nutrition_pipe_v1" to "MFP1",
-        )
+internal object AiDiagnostics {
+    private const val TAG = "MyFitAiAi"
+
+    fun format(event: AiDiagnosticEvent): String =
+        "schemaName=${event.schemaName} outcome=${event.outcome} attempt=${event.attempt} durationMs=${event.durationMs}"
+
+    fun log(event: AiDiagnosticEvent) {
+        try {
+            if (event.outcome == "OK") android.util.Log.i(TAG, format(event)) else android.util.Log.w(TAG, format(event))
+        } catch (_: RuntimeException) {
+            // android.util.Log is not available in plain JVM unit tests; diagnostics must never break an AI call.
+        }
     }
 }

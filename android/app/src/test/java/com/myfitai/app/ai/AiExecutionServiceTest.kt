@@ -20,10 +20,22 @@ import com.myfitai.app.domain.review.WeeklyReviewCompactContract
 import com.myfitai.app.domain.review.WeeklyReviewContract
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AiExecutionServiceTest {
+    /** Test-only contracts for the generic mechanics; real schemas are covered by the registry test. */
+    private val testSpecs = listOf(
+        AiContractRegistry.Spec("test_schema", AiContractRegistry.Format.NATIVE_JSON, null, null, false),
+        AiContractRegistry.Spec("test_pipe_schema", AiContractRegistry.Format.COMPACT_PIPE, "TP1", null, false),
+    ).associateBy { it.schemaName }
+    private val events = mutableListOf<AiDiagnosticEvent>()
+
+    private fun service() = AiExecutionService(
+        contracts = { name -> testSpecs[name] ?: AiContractRegistry.find(name) },
+        diagnostics = { events += it },
+    )
 
     private val schema = """
         {
@@ -54,8 +66,7 @@ class AiExecutionServiceTest {
                     "{\"status\":\"ok\",\"value\":2}"
                 )
             )
-            val service = AiExecutionService()
-            val result = service.execute(
+            val result = service().execute(
                 provider = provider,
                 request = AiStructuredRequest("system", "user", "test_schema", schema),
                 maxSchemaRetries = 1,
@@ -69,7 +80,7 @@ class AiExecutionServiceTest {
     fun compactSchemaRetry_requiresOnlyDataEnvelopeProperty() {
         runBlocking {
             val provider = CompactRetryProvider()
-            AiExecutionService().execute(
+            service().execute(
                 provider = provider,
                 request = AiStructuredRequest(
                     systemPrompt = "system",
@@ -100,7 +111,7 @@ class AiExecutionServiceTest {
                     return AiRawResponse(type, "fake", data)
                 }
             }
-            AiExecutionService().execute(
+            service().execute(
                 provider,
                 AiStructuredRequest("system", "user", "myfitai_meal_alternatives_pipe_v1", AiCompactEnvelope.schemaJson("MA1 test")),
                 maxSchemaRetries = 1,
@@ -127,22 +138,6 @@ class AiExecutionServiceTest {
         NutritionPlanCompactContract.SCHEMA_NAME to NutritionPlanCompactContract.PROTOCOL,
     ).map { (schema, protocol) -> schema to protocol.lineSequence().first().trim() }
 
-    @Test
-    fun protocolTable_matchesTheHeaderDeclaredByEveryContract() {
-        contractProtocols.forEach { (schema, header) ->
-            assertEquals(schema, header, AiExecutionService.COMPACT_PROTOCOLS[schema])
-        }
-        // No missing and no stale entries.
-        assertEquals(contractProtocols.map { it.first }.toSet(), AiExecutionService.COMPACT_PROTOCOLS.keys)
-    }
-
-    @Test
-    fun everyDeclaredPipeSchemaHasAProtocolEntry() {
-        listOf(
-            CheatAdjustmentContract.SCHEMA_NAME, CheatUnderstandingContract.SCHEMA_NAME, MealAlternativeContract.SCHEMA_NAME,
-            NutritionAdviceContract.SCHEMA_NAME, WeeklyReviewContract.SCHEMA_NAME,
-        ).forEach { schema -> assertTrue("$schema missing from protocol table", schema in AiExecutionService.COMPACT_PROTOCOLS) }
-    }
     private fun retryPrompt(schemaName: String, firstResponse: String, validator: (String) -> Result<Unit>): String = runBlocking {
         val provider = object : AiProvider {
             override val type = AiProviderType.OPENAI
@@ -154,7 +149,7 @@ class AiExecutionServiceTest {
                 return AiRawResponse(type, "fake", if (calls == 1) firstResponse else "{\"data\":\"ok\"}")
             }
         }
-        AiExecutionService().execute(
+        service().execute(
             provider,
             AiStructuredRequest("system", "user", schemaName, AiCompactEnvelope.schemaJson("test")),
             maxSchemaRetries = 1,
@@ -182,16 +177,121 @@ class AiExecutionServiceTest {
     }
 
     @Test
-    fun unknownCompactSchemaFallsBackToGenericRetryRule() {
-        val prompt = retryPrompt("myfitai_unknown_pipe_v1", "{\"data\":\"x\",\"extra\":1}") { Result.success(Unit) }
-        assertTrue(prompt.contains("must follow its requested compact protocol"))
-        assertTrue(!prompt.contains("must begin with"))
+    fun unregisteredSchemaFailsBeforeAnyProviderCallWithNoSilentFallback() {
+        val provider = FakeProvider(listOf("{\"data\":\"ok\"}"))
+        val error = runCatching {
+            runBlocking {
+                service().execute(provider, AiStructuredRequest("s", "u", "myfitai_unknown_pipe_v1", AiCompactEnvelope.schemaJson("t")))
+            }
+        }.exceptionOrNull()
+        assertTrue("got $error", error is AiExecutionService.Failure.ContractNotRegistered)
+        assertEquals(0, provider.calls)
+        assertEquals(listOf("CONTRACT_NOT_REGISTERED"), events.map { it.outcome })
+    }
+
+    @Test
+    fun substringOfARegisteredNameIsNotARegisteredSchema() {
+        val provider = FakeProvider(listOf("{\"data\":\"ok\"}"))
+        val error = runCatching {
+            runBlocking {
+                service().execute(provider, AiStructuredRequest("s", "u", "x_myfitai_bia_pipe_v1_y", AiCompactEnvelope.schemaJson("t")))
+            }
+        }.exceptionOrNull()
+        assertTrue("got $error", error is AiExecutionService.Failure.ContractNotRegistered)
+        assertEquals(0, provider.calls)
+    }
+
+    private fun failureOfResponse(raw: AiRawResponse): Throwable? {
+        val provider = object : AiProvider {
+            override val type = AiProviderType.GEMINI
+            override suspend fun generateStructured(request: AiStructuredRequest) = raw
+        }
+        return runCatching {
+            runBlocking { service().execute(provider, AiStructuredRequest("s", "u", "test_schema", schema), maxSchemaRetries = 2) }
+        }.exceptionOrNull()
+    }
+
+    @Test
+    fun finishReasonIsClassifiedAndNeverASuccessWhenAbnormal() {
+        val json = "{\"status\":\"ok\",\"value\":2}"
+        fun raw(reason: String?) = AiRawResponse(AiProviderType.GEMINI, "fake", json, finishReason = reason)
+        assertTrue(failureOfResponse(raw("MAX_TOKENS")) is AiExecutionService.Failure.OutputTruncated)
+        assertTrue(failureOfResponse(raw("length")) is AiExecutionService.Failure.OutputTruncated)
+        assertTrue(failureOfResponse(raw("max_output_tokens")) is AiExecutionService.Failure.OutputTruncated)
+        assertTrue(failureOfResponse(raw("SAFETY")) is AiExecutionService.Failure.Refused)
+        assertTrue(failureOfResponse(raw("content_filter")) is AiExecutionService.Failure.Refused)
+        assertTrue(failureOfResponse(raw("SOMETHING_NEW")) is AiTransportException.InvalidResponse)
+        assertNull(failureOfResponse(raw("STOP")))
+        assertNull(failureOfResponse(raw(null)))
+        assertNull(failureOfResponse(raw("completed")))
+    }
+
+    @Test
+    fun blankOutputIsEmptyOutputNotASchemaRetry() {
+        val provider = FakeProvider(listOf("   "))
+        val error = runCatching {
+            runBlocking { service().execute(provider, AiStructuredRequest("s", "u", "test_schema", schema), maxSchemaRetries = 2) }
+        }.exceptionOrNull()
+        assertTrue("got $error", error is AiExecutionService.Failure.EmptyOutput)
+        assertEquals(1, provider.calls)
+    }
+
+    @Test
+    fun unparseableJsonIsRetriedThenReportedAsMalformedJson() {
+        val provider = FakeProvider(listOf("not json at all"))
+        val error = runCatching {
+            runBlocking { service().execute(provider, AiStructuredRequest("s", "u", "test_schema", schema), maxSchemaRetries = 1) }
+        }.exceptionOrNull()
+        assertTrue("got $error", error is AiExecutionService.Failure.MalformedJson)
+        assertEquals(2, provider.calls)
+    }
+
+    @Test
+    fun validJsonWithWrongShapeIsStillInvalidSchema() {
+        val provider = FakeProvider(listOf("{\"status\":\"bad\"}"))
+        val error = runCatching {
+            runBlocking { service().execute(provider, AiStructuredRequest("s", "u", "test_schema", schema), maxSchemaRetries = 0) }
+        }.exceptionOrNull()
+        assertTrue("got $error", error is AiExecutionService.Failure.InvalidSchema)
+    }
+
+    @Test
+    fun cancellationIsAlwaysRethrownUntouched() {
+        val cancelled = kotlinx.coroutines.CancellationException("stop")
+        val provider = object : AiProvider {
+            override val type = AiProviderType.OPENAI
+            override suspend fun generateStructured(request: AiStructuredRequest): AiRawResponse = throw cancelled
+        }
+        val error = runCatching {
+            runBlocking { service().execute(provider, AiStructuredRequest("s", "u", "test_schema", schema)) }
+        }.exceptionOrNull()
+        assertTrue(error === cancelled)
+        assertEquals(listOf("CANCELLED"), events.map { it.outcome })
+    }
+
+    @Test
+    fun diagnosticsCarryOnlySchemaOutcomeAttemptAndDuration() {
+        val marker = "ZZ-MODEL-TEXT-ZZ"
+        val provider = FakeProvider(listOf("{\"status\":\"$marker\"}", "{\"status\":\"$marker\",\"value\":1}"))
+        runBlocking { service().execute(provider, AiStructuredRequest("s", "u", "test_schema", schema), maxSchemaRetries = 1) }
+        val failing = FakeProvider(listOf("{\"status\":\"$marker\"}"))
+        runCatching {
+            runBlocking { service().execute(failing, AiStructuredRequest("s", "u", "test_schema", schema), maxSchemaRetries = 1) }
+        }
+        assertEquals(listOf("OK", "INVALID_SCHEMA"), events.map { it.outcome })
+        assertEquals(listOf(1, 1), events.map { it.attempt })
+        events.forEach {
+            assertEquals("test_schema", it.schemaName)
+            assertTrue(it.durationMs >= 0)
+            assertTrue(!it.toString().contains(marker))
+            assertTrue(!AiDiagnostics.format(it).contains(marker))
+        }
     }
 
     @Test(expected = AiExecutionService.Failure.BusinessRejected::class)
     fun execute_doesNotBypassBusinessValidation() {
         runBlocking {
-            AiExecutionService().execute(
+            service().execute(
                 provider = FakeProvider(listOf("{\"status\":\"ok\",\"value\":2}")),
                 request = AiStructuredRequest("system", "user", "test_schema", schema),
                 businessValidator = { Result.failure(IllegalArgumentException("OUT_OF_TOLERANCE")) },
@@ -207,7 +307,7 @@ class AiExecutionServiceTest {
                 override suspend fun generateStructured(request: AiStructuredRequest) =
                     AiRawResponse(type, "fake", "{", finishReason = "MAX_TOKENS")
             }
-            AiExecutionService().execute(
+            service().execute(
                 provider = provider,
                 request = AiStructuredRequest("system", "user", "test_schema", schema),
                 maxSchemaRetries = 2,
@@ -228,7 +328,7 @@ class AiExecutionServiceTest {
         val provider = ScriptedProvider(script.toList())
         val error = runCatching {
             runBlocking {
-                AiExecutionService().execute(provider, AiStructuredRequest("s", "u", "test_schema", schema), maxSchemaRetries = 2)
+                service().execute(provider, AiStructuredRequest("s", "u", "test_schema", schema), maxSchemaRetries = 2)
             }
         }.exceptionOrNull()
         return provider to error

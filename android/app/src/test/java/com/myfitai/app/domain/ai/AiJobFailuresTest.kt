@@ -1,6 +1,7 @@
 package com.myfitai.app.domain.ai
 
 import com.myfitai.app.ai.AiExecutionService
+import com.myfitai.app.ai.AiFailure
 import com.myfitai.app.ai.AiProviderType
 import com.myfitai.app.ai.AiTransportException
 import com.myfitai.app.ai.AiTransportFailureKind
@@ -104,5 +105,43 @@ class AiJobFailuresTest {
         }
         AiJobFailures.rethrowIfRetryableOrCancelled(IllegalStateException("x"))
         AiJobFailures.rethrowIfRetryableOrCancelled(http(429, AiTransportFailureKind.QUOTA_EXHAUSTED))
+    }
+
+    @Test
+    fun newFailureCategories_arePermanentAndForwardOnlyTheirStableCode() {
+        mapOf(
+            AiExecutionService.Failure.Refused(AiFailure.RefusalReason.MODEL_REFUSAL) to "REFUSED",
+            AiExecutionService.Failure.EmptyOutput() to "EMPTY_OUTPUT",
+            // Kept on the legacy code the UI already maps until it consumes AiFailure directly.
+            AiExecutionService.Failure.MalformedJson() to "INVALID_SCHEMA",
+            AiExecutionService.Failure.ContractNotRegistered(marker) to "CONTRACT_NOT_REGISTERED",
+        ).forEach { (error, expected) ->
+            assertFalse("$error", AiJobFailures.isTransient(error))
+            assertTrue("$error", AiJobFailures.toOutcome(error) is AiJobOutcome.Failure)
+            assertEquals(expected, AiJobFailures.safeMessage(error, "f"))
+            assertFalse(AiJobFailures.safeMessage(error, "f").contains(marker))
+        }
+    }
+
+    @Test
+    fun transportFailures_surfaceTheClosedUserMessageTable() {
+        assertEquals("Provider non raggiungibile", AiJobFailures.safeMessage(AiTransportException.Network(), "f"))
+        assertEquals("Risposta provider non interpretabile", AiJobFailures.safeMessage(AiTransportException.InvalidResponse(), "f"))
+        assertEquals(AiFailure.Quota.userMessage, AiJobFailures.safeMessage(http(429, AiTransportFailureKind.QUOTA_EXHAUSTED), "f"))
+        assertEquals(AiFailure.Auth.userMessage, AiJobFailures.safeMessage(http(401, AiTransportFailureKind.INVALID_API_KEY), "f"))
+        assertEquals(
+            "Provider non raggiungibile",
+            (AiJobFailures.toOutcome(AiTransportException.Network()) as AiJobOutcome.Retry).message,
+        )
+        assertEquals(
+            "Provider temporaneamente non disponibile",
+            (AiJobFailures.toOutcome(http(503, AiTransportFailureKind.PROVIDER_UNAVAILABLE)) as AiJobOutcome.Retry).message,
+        )
+    }
+
+    @Test
+    fun knownCodes_isTheSetOwnedByTheTaxonomy() {
+        assertEquals(AiFailure.BUSINESS_CODES, AiJobFailures.KNOWN_CODES)
+        assertEquals("NEEDS_INPUT: profilo attivo", AiJobFailures.safeMessage(CheatAdjustmentService.AdjustmentException.NeedsInput(listOf("profilo attivo")), "f"))
     }
 }

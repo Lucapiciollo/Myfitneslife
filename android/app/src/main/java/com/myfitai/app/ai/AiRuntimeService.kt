@@ -26,6 +26,7 @@ class AiRuntimeService(context: Context) : AiRuntimeGateway {
         maxSchemaRetries: Int,
         businessValidator: (String) -> Result<Unit>,
     ): AiExecutionService.ValidatedResponse {
+        val spec = AiContractRegistry.require(request.schemaName)
         val selected = AiProviderSelector.create(appContext, config())
             ?: throw AiTransportException.NotConfigured(config().selectedProvider())
         val provider: AiProvider = when (selected.type) {
@@ -34,7 +35,7 @@ class AiRuntimeService(context: Context) : AiRuntimeGateway {
             else -> selected
         }
 
-        val compact = request.schemaName.contains("_pipe_")
+        val compact = spec.format == AiContractRegistry.Format.COMPACT_PIPE
         val scopedRequest = request.copy(
             systemPrompt = AiResponseLanguage.scope(
                 globalScope = GLOBAL_NUTRITION_SCOPE,
@@ -47,11 +48,9 @@ class AiRuntimeService(context: Context) : AiRuntimeGateway {
             // Compact workloads already constrain output locally; omit the provider field.
             thinkingBudget = if (compact) null else request.thinkingBudget,
             // Gemini 3.5 Flash-Lite currently rejects the weekly compact schema as a native
-            // responseSchema. Request JSON-only for that workload and keep envelope/pipe parsing
-            // plus business validation authoritative in the app.
-            useNativeSchema = if (selected.type == AiProviderType.GEMINI &&
-                (request.schemaName.contains("weekly_nutrition") || request.schemaName.contains("meal_alternatives"))
-            ) {
+            // responseSchema. Request JSON-only for the contracts flagged in the registry and keep
+            // envelope/pipe parsing plus business validation authoritative in the app.
+            useNativeSchema = if (selected.type == AiProviderType.GEMINI && !spec.geminiNativeSchema) {
                 false
             } else {
                 request.useNativeSchema
