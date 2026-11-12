@@ -88,8 +88,8 @@ class SettingsActivity : BaseShellActivity() {
         val activeProviderText = findViewById<TextView>(R.id.activeProviderText)
         val geminiStatus = findViewById<TextView>(R.id.geminiKeyStatusText)
         val openAiStatus = findViewById<TextView>(R.id.openAiKeyStatusText)
-        geminiInput.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
-        openAiInput.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+        geminiInput.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
+        openAiInput.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
         geminiInput.isLongClickable = false
         openAiInput.isLongClickable = false
         useGeminiSwitch.isChecked = settings.useGemini
@@ -384,7 +384,20 @@ class SettingsActivity : BaseShellActivity() {
 
     private fun bindAiAutomationControls() {
         val profileId = data.activeProfileStore.currentIdOrNull() ?: return
-        val card = findViewById<LinearLayout>(R.id.aiSectionCard)
+        // Gruppo separato dalla configurazione condivisa dell'app: qui vivono solo gli interruttori del profilo attivo.
+        val card = findViewById<LinearLayout>(R.id.aiAutomationsSection)
+        findViewById<View>(R.id.aiAutomationsGroup).visibility = View.VISIBLE
+        val automationsHeader = findViewById<TextView>(R.id.aiAutomationsHeader)
+        androidx.core.view.ViewCompat.setAccessibilityHeading(automationsHeader, true)
+        androidx.core.view.ViewCompat.setAccessibilityHeading(findViewById<TextView>(R.id.aiConfigGroupHeader), true)
+        lifecycleScope.launch {
+            val name = data.userProfileRepository.get(profileId)?.name?.trim().orEmpty()
+            automationsHeader.text = if (name.isBlank()) {
+                getString(R.string.ai_group_profile_automations_title)
+            } else {
+                getString(R.string.ai_group_profile_automations_title_named, name)
+            }
+        }
         val preferences = data.aiAutomationPreferences
         val rows = listOf(
             AiAutomationPreferences.Feature.BIA_PROGRESS_COACH to "Progress Coach BIA",
@@ -459,8 +472,8 @@ class SettingsActivity : BaseShellActivity() {
             row.addView(frequency)
             row.addView(automatic)
             row.addView(notifications)
-            card.addView(row, index + 1)
-            if (index < rows.lastIndex) card.addView(View(this).apply { setBackgroundColor(getColor(R.color.divider)) }, index * 2 + 2, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, resources.getDimensionPixelSize(R.dimen.divider_thickness)))
+            card.addView(row)
+            if (index < rows.lastIndex) card.addView(View(this).apply { setBackgroundColor(getColor(R.color.divider)) }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, resources.getDimensionPixelSize(R.dimen.divider_thickness)))
         }
     }
 
@@ -912,7 +925,7 @@ class SettingsActivity : BaseShellActivity() {
         }
         input.setText(text)
         input.setSelection(text.length)
-        input.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+        input.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
         input.isLongClickable = false
         input.requestFocus()
         clearClipboard(clipboard)

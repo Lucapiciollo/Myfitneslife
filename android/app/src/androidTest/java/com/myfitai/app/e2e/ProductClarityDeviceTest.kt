@@ -103,6 +103,32 @@ class ProductClarityDeviceTest {
         }
     }
 
+    @Test
+    fun profileExposesDedicatedFoodPreferencesEntryAndSharedAiGear() {
+        ActivityScenario.launch<ProfileActivity>(Intent(context, ProfileActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        }).use { scenario ->
+            scenario.onActivity { activity ->
+                val gear = activity.findViewById<View>(R.id.profileAiSettingsButton)
+                assertEquals(
+                    "Configurazione IA dell'app, condivisa da tutti i profili",
+                    gear.contentDescription?.toString(),
+                )
+                assertTrue("Profile editor row must not promise dietary preferences it does not edit",
+                    !context.getString(R.string.profile_desc_food_preferences).contains("alimentari", ignoreCase = true))
+            }
+            assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/rowDietaryPreferences")), 5_000))
+            device.findObject(By.res("com.myfitai.app:id/rowDietaryPreferences")).click()
+            assertTrue("Dedicated row must open the food preferences screen", device.wait(Until.hasObject(By.text("Preferenze alimentari")), 5_000))
+            device.pressBack()
+            assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/profileAiSettingsButton")), 5_000))
+            device.findObject(By.res("com.myfitai.app:id/profileAiSettingsButton")).click()
+            assertTrue("Gear must open the shared AI configuration", device.wait(Until.hasObject(By.text("Configurazione app, condivisa da tutti i profili")), 5_000))
+            device.pressBack()
+            assertTrue("Back from the AI screen must return to the Profile", device.wait(Until.hasObject(By.res("com.myfitai.app:id/profileName")), 5_000))
+        }
+    }
+
     private fun assertTitleBelowStatusBar(title: androidx.test.uiautomator.BySelector) {
         val statusBarHeight = context.resources.getIdentifier("status_bar_height", "dimen", "android")
             .let { if (it > 0) context.resources.getDimensionPixelSize(it) else 0 }

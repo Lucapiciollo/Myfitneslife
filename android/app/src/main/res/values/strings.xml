@@ -31,7 +31,15 @@
     <string name="profile_row_personal_data">Dati personali</string>
     <string name="profile_row_goals">Obiettivi</string>
     <string name="profile_row_food_preferences">Profilo e preferenze</string>
-    <string name="profile_desc_food_preferences">Dati personali, obiettivo, attività, orari e preferenze alimentari</string>
+    <string name="profile_desc_food_preferences">Dati personali, obiettivo, livello di attività e orari di sveglia e sonno</string>
+    <string name="profile_row_dietary_preferences">Alimenti e preferenze</string>
+    <string name="profile_desc_dietary_preferences">Regime, alimenti preferiti, esclusioni, intolleranze e allergie</string>
+    <string name="profile_ai_settings_cd">Configurazione IA dell\'app, condivisa da tutti i profili</string>
+    <string name="ai_group_app_config_title">Configurazione app, condivisa da tutti i profili</string>
+    <string name="ai_group_profile_automations_title">Automazioni del profilo attivo</string>
+    <string name="ai_group_profile_automations_title_named">Automazioni del profilo attivo: %1$s</string>
+    <string name="ai_gemini_key_input_cd">Chiave API Gemini, campo protetto. Incolla o digita la chiave, poi usa Verifica e salva.</string>
+    <string name="ai_openai_key_input_cd">Chiave API OpenAI, campo protetto. Incolla o digita la chiave, poi usa Verifica e salva.</string>
     <string name="profile_row_day_schedule">Orari della giornata</string>
     <string name="profile_row_workouts">Allenamenti</string>
     <string name="profile_row_openai_key">Chiave OpenAI</string>
