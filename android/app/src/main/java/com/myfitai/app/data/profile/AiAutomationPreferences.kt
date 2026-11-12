@@ -5,14 +5,26 @@ import java.util.concurrent.TimeUnit
 
 /** Per-profile automation switches; manual actions never depend on these values. */
 class AiAutomationPreferences(context: Context) {
-    enum class Feature { BIA_PROGRESS_COACH, PROGRESS_ANALYSIS, BODY_PROPORTIONS, WEEKLY_REVIEW }
+    /**
+     * @param automaticSupported false se non esiste ancora un job in background: l'interruttore non deve far credere il contrario.
+     * @param scheduled true se l'automazione segue una frequenza (settimanale/mensile); false se scatta da un evento.
+     */
+    enum class Feature(val automaticSupported: Boolean = true, val scheduled: Boolean = true) {
+        BIA_PROGRESS_COACH,
+        PROGRESS_ANALYSIS,
+        BODY_PROPORTIONS(automaticSupported = false),
+        WEEKLY_REVIEW(automaticSupported = false),
+
+        /** "Consiglio obiettivo dopo nuove misure": spenta di default, scatta dopo il salvataggio di BIA o misure. */
+        NUTRITION_GOAL_AFTER_MEASURES(scheduled = false),
+    }
     enum class Frequency { WEEKLY, MONTHLY }
     data class Config(val enabled: Boolean, val frequency: Frequency, val notificationsEnabled: Boolean)
 
     private val prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
     fun get(profileId: Long, feature: Feature): Config = Config(
-        enabled = prefs.getBoolean(key(profileId, feature, ENABLED), false),
+        enabled = feature.automaticSupported && prefs.getBoolean(key(profileId, feature, ENABLED), false),
         frequency = runCatching { Frequency.valueOf(prefs.getString(key(profileId, feature, FREQUENCY), Frequency.WEEKLY.name)!!) }
             .getOrDefault(Frequency.WEEKLY),
         notificationsEnabled = prefs.getBoolean(key(profileId, feature, NOTIFICATIONS), true),

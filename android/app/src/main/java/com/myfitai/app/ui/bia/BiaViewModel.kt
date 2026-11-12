@@ -7,6 +7,7 @@ import com.myfitai.app.data.local.entity.BiaMeasurementEntity
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.repository.BiaRepository
 import com.myfitai.app.domain.food.NutritionPathTrigger
+import com.myfitai.app.domain.body.BodyValueRanges
 import com.myfitai.app.domain.body.BiaProgressCoachScheduler
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -31,7 +32,21 @@ class BiaViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private val _saved = MutableSharedFlow<String?>(extraBufferCapacity = 1)
+
+    /**
+     * Emits after a successful save. The value is always null now: saving never queues a paid job nor asks
+     * the screen to open the goal-advice page. Kept as `String?` so existing collectors still compile.
+     */
     val saved = _saved.asSharedFlow()
+
+    private val _goalAdvice = MutableSharedFlow<NutritionPathTrigger.Advice>(extraBufferCapacity = 1)
+
+    /**
+     * Invite for a goal advice after new data ([NutritionPathTrigger.Advice.Suggest]: show a non-invasive prompt and,
+     * if accepted, go through the standard AI confirmation) or notice that the explicit automation queued it
+     * ([NutritionPathTrigger.Advice.Queued]). The UI (BiaActivity, T3) collects this; nothing navigates automatically.
+     */
+    val goalAdvice = _goalAdvice.asSharedFlow()
 
     private val _updated = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val updated = _updated.asSharedFlow()
@@ -64,34 +79,24 @@ class BiaViewModel(
         proteinKg: Float? = null,
         bodyAgeYears: Int? = null,
         bmi: Float? = null,
+        /** Provenance, e.g. "Import foto. Sorgente: Fitdays. Derivati: ..."; BiaActivity passes the preview notes (T3/K4 wires it). */
+        notes: String? = null,
     ) {
         val profileId = activeProfileStore.currentIdOrNull() ?: run {
             _error.tryEmit("Nessun profilo attivo")
             return
         }
-        val values = listOf(weightKg, bodyFatPercent, visceralFatLevel, muscleMassKg, skeletalMuscleKg, bodyWaterPercent, bmrKcal, fatMassKg, leanMassKg, bodyWaterKg, subcutaneousFatPercent, boneMassKg, proteinPercent, proteinKg, bodyAgeYears?.toFloat(), bmi)
-        if (values.all { it == null }) {
+        val values = BodyValueRanges.BiaValues(
+            weightKg, bodyFatPercent, visceralFatLevel, muscleMassKg, skeletalMuscleKg, bodyWaterPercent, bmrKcal,
+            fatMassKg, leanMassKg, bodyWaterKg, subcutaneousFatPercent, boneMassKg, proteinPercent, proteinKg,
+            bodyAgeYears?.toFloat(), bmi,
+        )
+        if (values.isEmpty()) {
             _error.tryEmit("Inserisci almeno un valore BIA")
             return
         }
-        if (values.filterNotNull().any { !it.isFinite() || it <= 0f }) {
-            _error.tryEmit("I valori BIA devono essere maggiori di zero")
-            return
-        }
-        if (bodyFatPercent != null && bodyFatPercent > 100f) {
-            _error.tryEmit("La percentuale di grasso deve essere compresa tra 0 e 100")
-            return
-        }
-        if (listOf(subcutaneousFatPercent, proteinPercent).filterNotNull().any { it > 100f }) {
-            _error.tryEmit("Le percentuali devono essere comprese tra 0 e 100")
-            return
-        }
-        if (bodyWaterPercent != null && bodyWaterPercent > 100f) {
-            _error.tryEmit("La percentuale di acqua deve essere compresa tra 0 e 100")
-            return
-        }
-        if (bmrKcal != null && bmrKcal > 10_000f) {
-            _error.tryEmit("Controlla il valore BMR")
+        BodyValueRanges.validateBia(values)?.let {
+            _error.tryEmit(it)
             return
         }
 
@@ -112,6 +117,7 @@ class BiaViewModel(
                         justWokeUp = justWokeUp,
                         afterBathroom = afterBathroom,
                         noRecentWorkout = noRecentWorkout,
+                        notes = notes?.trim()?.takeIf { it.isNotEmpty() }?.take(MAX_NOTES_CHARS),
                         fatMassKg = fatMassKg,
                         leanMassKg = leanMassKg,
                         bodyWaterKg = bodyWaterKg,
@@ -124,13 +130,13 @@ class BiaViewModel(
                     )
                 )
             }.onSuccess {
-                // The BIA is already persisted. Report the advisor job key to the screen,
-                // rather than silently enqueueing an analysis the user never sees.
-                val recommendationJobKey = runCatching {
-                    nutritionPathTrigger?.maybeEnqueue(profileId)
-                }.getOrNull()
+                // The BIA is already persisted. No paid AI job is queued here: the screen receives
+                // [goalAdvice] (invite, or "queued" only if the user enabled the explicit automation)
+                // and never navigates by itself.
+                runCatching { nutritionPathTrigger?.onMeasurementsChanged(profileId) }.getOrNull()
+                    ?.let { _goalAdvice.tryEmit(it) }
                 runCatching { biaProgressCoachScheduler?.ensureScheduled(profileId) }
-                _saved.tryEmit(recommendationJobKey)
+                _saved.tryEmit(null)
             }
                 .onFailure { _error.tryEmit("Impossibile salvare la misurazione BIA") }
         }
@@ -166,18 +172,17 @@ class BiaViewModel(
             _error.tryEmit("La rilevazione non appartiene al profilo attivo")
             return
         }
-        val values = listOf(weightKg, bodyFatPercent, visceralFatLevel, muscleMassKg, skeletalMuscleKg, bodyWaterPercent, bmrKcal, fatMassKg, leanMassKg, bodyWaterKg, subcutaneousFatPercent, boneMassKg, proteinPercent, proteinKg, bmi)
-        if (values.all { it == null }) {
+        val values = BodyValueRanges.BiaValues(
+            weightKg, bodyFatPercent, visceralFatLevel, muscleMassKg, skeletalMuscleKg, bodyWaterPercent, bmrKcal,
+            fatMassKg, leanMassKg, bodyWaterKg, subcutaneousFatPercent, boneMassKg, proteinPercent, proteinKg,
+            bodyAgeYears?.toFloat(), bmi,
+        )
+        if (values.isEmpty()) {
             _error.tryEmit("Inserisci almeno un valore BIA")
             return
         }
-        if (values.filterNotNull().any { !it.isFinite() || it <= 0f } ||
-            bodyFatPercent != null && bodyFatPercent > 100f ||
-            bodyWaterPercent != null && bodyWaterPercent > 100f ||
-            listOf(subcutaneousFatPercent, proteinPercent).filterNotNull().any { it > 100f } ||
-            bmrKcal != null && bmrKcal > 10_000f
-        ) {
-            _error.tryEmit("Controlla i valori BIA")
+        BodyValueRanges.validateBia(values)?.let {
+            _error.tryEmit(it)
             return
         }
         viewModelScope.launch {
@@ -210,8 +215,10 @@ class BiaViewModel(
                     )
                 )
             }.onSuccess {
-                // Refresh the recommendation context but do not navigate away for an edit.
-                runCatching { nutritionPathTrigger?.maybeEnqueue(profileId) }
+                // An edit changes the data an existing analysis used: [BiaAnalysisPolicy.isObsolete] flags it.
+                // No paid job and no navigation: only the optional invite for the screen.
+                runCatching { nutritionPathTrigger?.onMeasurementsChanged(profileId) }.getOrNull()
+                    ?.let { _goalAdvice.tryEmit(it) }
                 runCatching { biaProgressCoachScheduler?.ensureScheduled(profileId) }
                 _updated.tryEmit(Unit)
             }.onFailure { _error.tryEmit("Impossibile aggiornare la misurazione BIA") }
@@ -237,5 +244,9 @@ class BiaViewModel(
             require(modelClass.isAssignableFrom(BiaViewModel::class.java))
             return BiaViewModel(repository, activeProfileStore, nutritionPathTrigger, biaProgressCoachScheduler) as T
         }
+    }
+
+    private companion object {
+        const val MAX_NOTES_CHARS = 2_000
     }
 }
