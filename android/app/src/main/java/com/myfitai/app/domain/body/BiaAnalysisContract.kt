@@ -2,6 +2,7 @@ package com.myfitai.app.domain.body
 
 import com.myfitai.app.ai.AiCompactEnvelope
 import com.myfitai.app.domain.ai.UnsupportedClaimGuard
+import kotlin.math.abs
 
 /** Canonical BA2 response contract for the Progress Coach. */
 object BiaAnalysisContract {
@@ -180,7 +181,43 @@ object BiaAnalysisContract {
      * App-side facts the validator needs. [safetyFlagActive] comes from the local `AiUserContext.safetyFlag`;
      * [biologicalSex] only narrows the plausible body-fat range (unknown sex = widest range).
      */
-    data class ValidationContext(val safetyFlagActive: Boolean = false, val biologicalSex: String? = null)
+    data class ValidationContext(
+        val safetyFlagActive: Boolean = false,
+        val biologicalSex: String? = null,
+        /**
+         * The exact input sent to the model. When set, every number with a unit (kg, %, kcal, g) written by the model
+         * must appear in it ([BiaNumberGuard]); null keeps the check off (old saved results, unit tests).
+         */
+        val contextText: String? = null,
+    )
+
+    /**
+     * Replaces the scenarios written by the model with the ones calculated by the app ([BiaScenarioCalculator]).
+     * The model only contributes the comment (`assumption`) and the reliability of the scenario it references by id
+     * (`S1`..`S3`); its own numbers are discarded. Without app scenarios no scenario is kept. The result keeps
+     * the same shape as before, so saved payloads and the UI do not change.
+     */
+    fun withAppScenarios(value: Interpretation, appScenarios: List<BiaScenarioCalculator.Scenario>): Interpretation {
+        val commentary = value.scenarios.associateBy { scenarioId(it.label) }
+        return value.copy(
+            scenarios = appScenarios.take(MAX_APP_SCENARIOS).map { app ->
+                val model = commentary[app.id]
+                Scenario(
+                    label = "Scenario ${app.id}",
+                    targetBodyFat = "${BiaScenarioCalculator.displayPercent(app.targetBodyFatPercent)} %",
+                    targetWeight = "${BiaScenarioCalculator.displayNumber(app.targetWeightKg)} kg",
+                    fatToLose = "${BiaScenarioCalculator.displayNumber(app.fatToLoseKg)} kg",
+                    assumption = model?.assumption?.takeIf { it.isNotBlank() && it != "?" } ?: DEFAULT_SCENARIO_ASSUMPTION,
+                    reliability = model?.reliability ?: "?",
+                )
+            },
+        )
+    }
+
+    const val DEFAULT_SCENARIO_ASSUMPTION = "Calcolo dell'app: la massa non grassa resta invariata."
+    private const val MAX_APP_SCENARIOS = 3
+    private val scenarioIdRegex = Regex("(?<![\\p{L}\\p{N}])S([1-9])(?![\\p{L}\\p{N}])", RegexOption.IGNORE_CASE)
+    private fun scenarioId(label: String): String? = scenarioIdRegex.find(label)?.let { "S${it.groupValues[1]}" }
 
     fun validateBusiness(value: Interpretation): Result<Unit> = validateBusinessWith(value, ValidationContext())
 
@@ -217,9 +254,16 @@ object BiaAnalysisContract {
                 value.positives + value.monitor + value.actions
             require(!UnsupportedClaimGuard.containsAffirmed(advice, restrictionAdviceTerms)) { "SAFETY_FLAG_RESTRICTION_ADVICE" }
         }
-        // Minimal local plausibility check: the target body fat of every scenario (G) is still written by the
-        // model, only its range is verified here. Numeric validation of F/G is left to a later tranche.
-        value.scenarios.forEach { scenario ->
+        // Numbers: the model comments on the figures supplied by the app (SCENARI_APP, GRASSO_PERSO_STIMA_APP, deltas,
+        // targets) and must not introduce new ones. Only numbers followed by kg, %, kcal or g are checked.
+        context.contextText?.let { input ->
+            val offending = BiaNumberGuard.firstUnsupported(numericText(value), input)
+            require(offending == null) { "NUMBER_NOT_IN_CONTEXT:$offending" }
+        }
+        // Plausibility check of the target body fat written by the model in G, kept for callers without app scenarios.
+        // With a number context the app replaces every G number with its own calculation (see [withAppScenarios]),
+        // so the model's figures there are ignored and not validated.
+        if (context.contextText == null) value.scenarios.forEach { scenario ->
             numberRegex.findAll(scenario.targetBodyFat).forEach { match ->
                 val number = match.value.replace(',', '.').toDouble()
                 require(number in plausibleBodyFatRange(context.biologicalSex)) { "SCENARIO_TARGET_BODY_FAT_IMPLAUSIBLE" }
@@ -236,12 +280,16 @@ object BiaAnalysisContract {
     )
     private val numberRegex = Regex("\\d+(?:[.,]\\d+)?")
 
-    /** Plausible target body-fat percent: women 18-45, men 6-35, unknown sex the union. Reversible assumption. */
-    private fun plausibleBodyFatRange(sex: String?): ClosedFloatingPointRange<Double> = when (sex?.trim()?.lowercase()) {
-        "femmina", "female", "f" -> 18.0..45.0
-        "maschio", "male", "m" -> 6.0..35.0
-        else -> 6.0..45.0
-    }
+    /** Plausible target body-fat percent: single source in [BiaScenarioCalculator.plausibleBodyFatRange]. */
+    private fun plausibleBodyFatRange(sex: String?): ClosedFloatingPointRange<Double> = BiaScenarioCalculator.plausibleBodyFatRange(sex)
+
+    /** Free text written by the model that may carry numbers (G numeric fields are replaced by the app, not checked). */
+    private fun numericText(value: Interpretation): List<String> = listOf(
+        value.verdict, value.whatIsHappening, value.fatLoss, value.objective,
+        value.caloriesAndMacros, value.nextCheck, value.reliabilityReason, value.safetyNote, value.question.orEmpty(),
+    ) + value.comparisons.flatMap { listOf(it.previous, it.current, it.difference, it.interpretation) } +
+        value.historical.map { it.summary } + value.scenarios.map { it.assumption } +
+        value.positives + value.monitor + value.actions
 
     private val unsupportedClaimTerms = listOf("diagnosi", "diagnostica", "patologia", "prescrizione farmacologica", "causa certa", "dimagrimento locale")
 
@@ -333,6 +381,85 @@ object BiaAnalysisContract {
     }
 
     private val PROTOCOL = """
-BA2 records: B|classification; S|verdict; C|what is happening; F|fat loss estimate; O|objective coherence; K|calories and macros; P|next check; L|reliability|reason; R|indicator|previous|current|difference|interpretation|reliability; H|period|historical trend; G|scenario|target body-fat|target weight|fat to lose|assumption|reliability; Y|positive; M|monitor; X|priority action; D|safety note; N|one final question or ?; V|1_or_0|agent notes. Use ? for unavailable values. Emit exactly three X records, unless classification is INSUFFICIENT_DATA: then emit 0 to 2 X records (data collection or repeat measurement only) and L|?|reason is allowed. D is mandatory only when the input says SAFETY_FLAG:ACTIVE (then no restriction or weight-loss advice); otherwise omit D or give one short sentence. Never put | or newlines inside text.
+BA2 records: B|classification; S|verdict; C|what is happening; F|comment on the app fat-change estimate (an estimate, never a fact); O|objective coherence; K|calories and macros; P|next check; L|reliability|reason; R|indicator|previous|current|difference|interpretation|reliability; H|period|historical trend; G|scenario id S1..S3 from SCENARI_APP|?|?|?|short comment on that scenario|reliability (the app writes the scenario numbers, put ? in the three numeric fields); Y|positive; M|monitor; X|priority action; D|safety note; N|one final question or ?; V|1_or_0|agent notes. Use ? for unavailable values. Every number followed by kg, %, kcal or g must be copied from the input: never calculate or invent new figures. Emit exactly three X records, unless classification is INSUFFICIENT_DATA: then emit 0 to 2 X records (data collection or repeat measurement only) and L|?|reason is allowed. D is mandatory only when the input says SAFETY_FLAG:ACTIVE (then no restriction or weight-loss advice); otherwise omit D or give one short sentence. Never put | or newlines inside text.
 """.trimIndent()
+}
+
+/**
+ * Presentation rules of a saved analysis, kept pure so they can be unit-tested without the Activity.
+ */
+object BiaAnalysisPresentation {
+    enum class ActionsTitle { THREE_PRIORITY, DO_NOW, DATA_TO_COLLECT }
+
+    /** "Tre azioni prioritarie" only when there really are three; INSUFFICIENT_DATA asks for data instead. */
+    fun actionsTitle(classification: String, actionCount: Int): ActionsTitle = when {
+        classification.trim().uppercase() == "INSUFFICIENT_DATA" -> ActionsTitle.DATA_TO_COLLECT
+        actionCount == 3 -> ActionsTitle.THREE_PRIORITY
+        else -> ActionsTitle.DO_NOW
+    }
+
+    enum class ReliabilityLabel { HIGH, MEDIUM, LOW, UNKNOWN }
+
+    /** Maps stored values (`HIGH`/`MEDIUM`/`LOW`, Italian synonyms from old results, `?`) to the label shown to the user. */
+    fun reliabilityLabel(raw: String): ReliabilityLabel = when (raw.trim().uppercase()) {
+        "HIGH", "ALTA" -> ReliabilityLabel.HIGH
+        "MEDIUM", "MEDIA" -> ReliabilityLabel.MEDIUM
+        "LOW", "BASSA" -> ReliabilityLabel.LOW
+        else -> ReliabilityLabel.UNKNOWN
+    }
+}
+
+/**
+ * Checks that the numbers the model writes were supplied by the app. Deliberately simple: a number followed by
+ * kg, %, kcal or g (or a range `a-b` before the unit) must match, within the rounding of its own decimals, a number
+ * found in the input. Numbers without those units (`3 azioni`, `1 settimana`) and 0 / 100 % are never checked.
+ */
+object BiaNumberGuard {
+    data class Quantity(val value: Double, val decimals: Int, val unit: String) {
+        override fun toString(): String = "${raw()} $unit"
+        private fun raw(): String = String.format(java.util.Locale.US, "%.${decimals}f", value)
+    }
+
+    private const val NUM = "\\d{1,3}(?:\\.\\d{3})+(?:,\\d+)?|\\d+(?:[.,]\\d+)?"
+    private val quantityRegex = Regex(
+        "(?<![\\p{L}\\p{N}.,])($NUM)(?:\\s*[-\\u2013\\u2014]\\s*($NUM))?\\s*(kcal|kg|%|g(?![\\p{L}]))",
+        RegexOption.IGNORE_CASE,
+    )
+    private val contextNumberRegex = Regex("\\d+(?:[.,]\\d+)?")
+    private val isoDate = Regex("\\d{4}-\\d{2}-\\d{2}")
+    private val countFields = Regex("(?<![\\p{L}\\p{N}_])(?:giorni_tra_misure|giorni|score|n)=\\d+(?:/100)?")
+    private val thousands = Regex("^\\d{1,3}(?:\\.\\d{3})+(?:,\\d+)?$")
+
+    fun quantities(text: String): List<Quantity> = quantityRegex.findAll(text).flatMap { match ->
+        val unit = match.groupValues[3].lowercase()
+        listOf(match.groupValues[1], match.groupValues[2]).filter { it.isNotEmpty() }.map { parse(it, unit) }
+    }.toList()
+
+    private fun parse(token: String, unit: String): Quantity {
+        if (thousands.matches(token)) {
+            val normalized = token.replace(".", "").replace(',', '.')
+            return Quantity(normalized.toDouble(), token.substringAfter(',', "").length, unit)
+        }
+        val normalized = token.replace(',', '.')
+        return Quantity(normalized.toDouble(), normalized.substringAfter('.', "").length, unit)
+    }
+
+    /** Numbers present in the input, with dates and bookkeeping counters (days, n, score) removed. */
+    fun contextNumbers(context: String): List<Double> = contextNumberRegex
+        .findAll(context.replace(isoDate, " ").replace(countFields, " "))
+        .mapNotNull { it.value.replace(',', '.').toDoubleOrNull() }
+        .toList()
+
+    /** First quantity of [texts] not found in [context], or null when every number is supported. */
+    fun firstUnsupported(texts: List<String>, context: String): Quantity? {
+        val known = contextNumbers(context)
+        return texts.asSequence().flatMap { quantities(it).asSequence() }.firstOrNull { !isSupported(it, known) }
+    }
+
+    private fun isSupported(quantity: Quantity, known: List<Double>): Boolean {
+        if (quantity.value == 0.0) return true
+        if (quantity.unit == "%" && quantity.value == 100.0) return true
+        val tolerance = 0.5 * Math.pow(10.0, -quantity.decimals.toDouble()) + 1e-6
+        return known.any { abs(it - quantity.value) <= tolerance }
+    }
 }

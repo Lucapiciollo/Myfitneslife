@@ -235,6 +235,8 @@ class AppDataContainer private constructor(context: Context) {
                 calculations = profileCalculationService,
                 scheduler = biaProgressCoachScheduler,
                 results = biaAnalysisResultRepository,
+                dayEnergy = dayEnergyProvider,
+                checkIns = dailyActivityCheckInRepository,
             ),
             AiJobType.BIA_IMPORT to BiaImportAiJobHandler(biaImportService, aiImageJobStore),
         ))

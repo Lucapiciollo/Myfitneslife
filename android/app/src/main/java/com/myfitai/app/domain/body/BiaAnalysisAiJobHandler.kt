@@ -7,6 +7,7 @@ import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.data.repository.BiaAnalysisResultRepository
 import com.myfitai.app.data.repository.BiaRepository
 import com.myfitai.app.data.repository.BodyMeasurementRepository
+import com.myfitai.app.data.repository.DailyActivityCheckInRepository
 import com.myfitai.app.data.repository.MealPlanRepository
 import com.myfitai.app.data.repository.UserProfileRepository
 import com.myfitai.app.data.repository.WorkoutRepository
@@ -14,6 +15,8 @@ import com.myfitai.app.domain.ai.AiJobFailures
 import com.myfitai.app.domain.ai.AiJobHandler
 import com.myfitai.app.domain.ai.AiJobOutcome
 import com.myfitai.app.domain.ai.AiJobWorker
+import com.myfitai.app.domain.calculation.DayEnergyProvider
+import com.myfitai.app.domain.calculation.OperationalNutritionMetrics
 import com.myfitai.app.domain.calculation.ProfileCalculationService
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
@@ -38,6 +41,9 @@ class BiaAnalysisAiJobHandler(
     private val results: BiaAnalysisResultRepository,
     private val clock: () -> Long = System::currentTimeMillis,
     private val today: () -> LocalDate = LocalDate::now,
+    /** Same sources as the Home: per-day energy and today's check-in. Null = no operational target is sent. */
+    private val dayEnergy: DayEnergyProvider? = null,
+    private val checkIns: DailyActivityCheckInRepository? = null,
 ) : AiJobHandler {
     override suspend fun execute(profileId: Long, jobKey: String, params: Data): AiJobOutcome {
         return try {
@@ -63,6 +69,7 @@ class BiaAnalysisAiJobHandler(
                     measurementCount = report.measurementCount,
                     safetyFlagActive = context.safetyFlag.active,
                     biologicalSex = profile.biologicalSex,
+                    appScenarios = context.scenarios,
                 ),
             )
             val resultId = results.insert(
@@ -72,7 +79,7 @@ class BiaAnalysisAiJobHandler(
                     createdAtEpochMillis = clock(),
                     provider = result.provider,
                     model = result.model,
-                    payloadJson = payloadJson(result, report.latest, report.measurementCount),
+                    payloadJson = payloadJson(result, report.latest, report.measurementCount, context.safetyFlag.active),
                 ),
             )
             if (automatic) scheduler.onSuccess(profileId)
@@ -107,14 +114,26 @@ class BiaAnalysisAiJobHandler(
                 BiaAnalysisReport.PlanDay(day.dateEpochDay, day.totalKcal, day.proteinG, day.carbsG, day.fatG)
             }
         }
+        val calculation = calculations.profileSnapshot(profileId)?.calculation
+        // Same calculation as the Home card: check-in of today + per-day program energy -> operational target.
+        val now = today()
+        val programDay = dayEnergy?.day(profileId, now)
+        val operational = if (calculation == null && programDay == null) null else BiaAnalysisReport.OperationalTarget.from(
+            OperationalNutritionMetrics.calculate(
+                calculation,
+                checkIns?.observeForDay(profileId, now.toEpochDay())?.first(),
+                programDay,
+            ),
+        )
         return BiaAnalysisReport.coachContext(
             profile = profile,
-            today = today(),
+            today = now,
             report = report,
             bodyHistory = body.all(profileId).first(),
             workoutHistory = workouts.all(profileId).first(),
             planDays = planDays,
-            calculation = calculations.profileSnapshot(profileId)?.calculation,
+            calculation = calculation,
+            operational = operational,
         )
     }
 
@@ -125,7 +144,7 @@ class BiaAnalysisAiJobHandler(
         const val KEY_SKIP_REASON = "skip_reason"
         private const val NO_MEASUREMENT = -1L
 
-        /** Fixed sentence stored by the app when the model gives no safety note (flag not active). */
+        /** Fixed sentence stored by the app before T3 when the model gave no safety note; the UI no longer shows it. */
         const val DEFAULT_SAFETY_NOTE = "Analisi informativa, non sostituisce il parere di un medico o di un nutrizionista."
 
         /** The only parameter a manual analysis needs; everything else is read from Room. */
@@ -135,7 +154,12 @@ class BiaAnalysisAiJobHandler(
          * @param measurement reading that was analysed: its id, date and a fingerprint of its values are stored so the
          *   result can later be matched to (or flagged obsolete against) the data it used.
          */
-        fun payloadJson(result: BiaAnalysisService.Result, measurement: BiaMeasurementEntity? = null, measurementCount: Int? = null): String {
+        fun payloadJson(
+            result: BiaAnalysisService.Result,
+            measurement: BiaMeasurementEntity? = null,
+            measurementCount: Int? = null,
+            safetyFlagActive: Boolean = false,
+        ): String {
             val interpretation = result.interpretation
             return JSONObject()
                 .put("contractVersion", BiaAnalysisPolicy.CONTRACT_VERSION)
@@ -180,9 +204,11 @@ class BiaAnalysisAiJobHandler(
                 .put("positives", JSONArray(interpretation.positives))
                 .put("monitor", JSONArray(interpretation.monitor))
                 .put("actions", JSONArray(interpretation.actions))
-                // The note is optional unless the safety flag was active: the app renders a fixed short sentence otherwise,
-                // so the UI section and previously saved results keep the same shape.
-                .put("safetyNote", interpretation.safetyNote.ifBlank { DEFAULT_SAFETY_NOTE })
+                // The note is optional unless the safety flag was active. It is stored as written (blank when absent) and
+                // the UI shows the section only when a note exists; results saved before T3 carry the fixed sentence
+                // [DEFAULT_SAFETY_NOTE], which the UI treats as "no note".
+                .put("safetyNote", interpretation.safetyNote)
+                .put("safetyFlagActive", safetyFlagActive)
                 .put("question", interpretation.question ?: "")
                 .put("agentValidation", interpretation.agentValidation)
                 .put("provider", result.provider)
