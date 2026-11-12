@@ -1,5 +1,6 @@
 package com.myfitai.app.ui
 
+import com.myfitai.app.navigation.AiSettingsEntry
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Typeface
@@ -46,9 +47,7 @@ class NutritionAdviceActivity : BaseShellActivity() {
         normalizeAdviceSurfaces()
         bindBack()
         bindBack()
-        findViewById<View>(R.id.aiConfigurationNoticeButton).setOnClickListener {
-            startActivity(Intent(this, SettingsActivity::class.java).putExtra(BottomNavBinder.EXTRA_SELECTED_TAB, BottomNavBinder.Tab.AI.name))
-        }
+        findViewById<View>(R.id.aiConfigurationNoticeButton).setOnClickListener { AiSettingsEntry.open(this) }
 
         gateAiClick(findViewById(R.id.askButton)) {
             val question = findViewById<TextInputEditText>(R.id.questionInput).text?.toString().orEmpty()

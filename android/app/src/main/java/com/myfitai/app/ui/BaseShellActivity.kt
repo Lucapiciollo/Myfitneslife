@@ -31,13 +31,16 @@ import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.ui.motion.UiMotion
+import com.myfitai.app.ui.widgets.AiSettingsGearButton
 import kotlinx.coroutines.launch
 
 abstract class BaseShellActivity : AppCompatActivity() {
     private val shellData by lazy { AppDataContainer.get(this) }
     private var shellProfiles: List<UserProfileEntity> = emptyList()
     private var profileSwitcher: AutoCompleteTextView? = null
+    private var profileLabel: View? = null
     private var profileHeader: View? = null
+    private var aiSettingsGear: AiSettingsGearButton? = null
     private var isTabRoot = false
     private val aiActionViews = linkedMapOf<View, Boolean>()
 
@@ -176,6 +179,7 @@ abstract class BaseShellActivity : AppCompatActivity() {
         shellData.activeProfileStore.refreshFromPersistence()
         isTabRoot = isRootTabIntent(intent)
         refreshAiActionAvailability()
+        refreshAiSettingsGear()
     }
 
     override fun setContentView(layoutResID: Int) {
@@ -185,7 +189,7 @@ abstract class BaseShellActivity : AppCompatActivity() {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(getColor(if (this@BaseShellActivity is NutritionAdviceActivity) R.color.transparent else R.color.bg_primary))
         }
-        if (this is HomeActivity) {
+        if (isRootShellScreen()) {
             profileHeader = buildProfileHeader().also { header ->
                 shell.addView(header, LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
@@ -256,19 +260,26 @@ abstract class BaseShellActivity : AppCompatActivity() {
         return null
     }
 
+    /** Home, Cibo, Progresso e Altro mostrano la barra profilo globale con la rotellina "Impostazioni IA". */
+    private fun isRootShellScreen(): Boolean =
+        this is HomeActivity || this is FoodPlanActivity || this is PhysicalEvolutionActivity || this is SettingsActivity
+
     private fun buildProfileHeader(): View = LinearLayout(this).apply {
+        id = R.id.globalProfileHeader
         orientation = LinearLayout.HORIZONTAL
         gravity = Gravity.CENTER_VERTICAL
         setPadding(dimen(R.dimen.page_gutter_compact), dimen(R.dimen.space_6), dimen(R.dimen.space_12), dimen(R.dimen.space_6))
         setBackgroundColor(getColor(R.color.admin_header_bg))
 
-        addView(TextView(this@BaseShellActivity).apply {
+        profileLabel = TextView(this@BaseShellActivity).apply {
             text = "Profilo"
             setTextAppearance(R.style.Text_MyFitAI_Micro)
             setTextColor(getColor(R.color.text_primary))
-        }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-            marginEnd = dimen(R.dimen.space_10)
-        })
+        }.also { label ->
+            addView(label, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                marginEnd = dimen(R.dimen.space_10)
+            })
+        }
 
         profileSwitcher = AutoCompleteTextView(this@BaseShellActivity).apply {
             hint = "Seleziona profilo"
@@ -301,6 +312,16 @@ abstract class BaseShellActivity : AppCompatActivity() {
                 }
             }
         }.also { setAiActionEnabled(it) }, LinearLayout.LayoutParams(dimen(R.dimen.icon_button_size), dimen(R.dimen.icon_button_size)).apply { marginStart = dimen(R.dimen.space_4) })
+
+        aiSettingsGear = AiSettingsGearButton(this@BaseShellActivity).also { gear ->
+            gear.bindNavigation()
+            addView(gear, LinearLayout.LayoutParams(dimen(R.dimen.icon_button_size), dimen(R.dimen.icon_button_size)).apply { marginStart = dimen(R.dimen.space_4) })
+            gear.render(AiProviderAccess.status(this@BaseShellActivity))
+        }
+    }
+
+    private fun refreshAiSettingsGear() {
+        aiSettingsGear?.render(AiProviderAccess.status(this))
     }
 
     private fun observeGlobalProfiles() {
@@ -309,7 +330,10 @@ abstract class BaseShellActivity : AppCompatActivity() {
                 launch {
                     shellData.userProfileRepository.profiles.collect { profiles ->
                         shellProfiles = profiles
-                        profileHeader?.visibility = if (profiles.isEmpty()) View.GONE else View.VISIBLE
+                        // La barra resta sempre: senza profili si nascondono solo etichetta e selettore (restano ✦ e rotellina).
+                        val profileVisibility = if (profiles.isEmpty()) View.INVISIBLE else View.VISIBLE
+                        profileLabel?.visibility = profileVisibility
+                        profileSwitcher?.visibility = profileVisibility
                         val labels = profiles.map { it.name } + "+ Nuovo profilo"
                         profileSwitcher?.setMyFitAiDropdownItems(labels)
                         renderActiveProfile()

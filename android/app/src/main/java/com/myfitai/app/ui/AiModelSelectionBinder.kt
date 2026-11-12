@@ -12,7 +12,7 @@ import com.myfitai.app.ai.OpenAiPricingStore
 
 /** Exposed model combos. Each selection is applied only after explicit confirmation. */
 object AiModelSelectionBinder {
-    fun bind(activity: SettingsActivity, card: android.widget.LinearLayout, settings: AiSettingsStore) {
+    fun bind(activity: BaseShellActivity, card: android.widget.LinearLayout, settings: AiSettingsStore) {
         val geminiPricing = GeminiPricingStore(activity)
         val openAiPricing = OpenAiPricingStore(activity)
         val geminiInput = activity.findViewById<MaterialAutoCompleteTextView>(R.id.geminiModelInput)

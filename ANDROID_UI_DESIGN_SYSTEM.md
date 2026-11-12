@@ -36,7 +36,7 @@ La tavola allegata dall'utente è riferimento di stile, non un mock dei dati del
 | Area | Activity/schermata | Stato/azioni da preservare |
 |---|---|---|
 | Avvio | `SplashActivity`, `OnboardingActivity`, `OnboardingWizardActivity` | avanzamento onboarding, form profilo, validazione e salvataggio |
-| Shell | `TabHostActivity`, `BaseShellActivity` | cinque tab, Activity root embedded, profilo attivo, back/exit, CTA IA |
+| Shell | `TabHostActivity`, `BaseShellActivity` | quattro tab (Home, Cibo, Progresso, Altro), Activity root embedded, profilo attivo, rotellina Impostazioni IA, back/exit, CTA IA |
 | Home | `HomeActivity` | metriche, trend, calorie/consumi, check-in, recupero, aspettativa, pasti/workout, azioni e stati vuoti |
 | Alimentazione | `FoodPlanActivity`, `NutritionPathActivity`, `NutritionPlanSettingsActivity`, `DietaryPreferencesActivity` | settimana/giorno, target, generazione, error/loading/empty, preferenze e schedulazione |
 | Pasti | `MealDetailActivity`, `MealAlternativeActivity`, `CheatEntryActivity`, `AdjustedPlanActivity` | tab dettaglio, ingredienti/pesi, alternative, inserimento extra, loading/error e preview piano adattato |

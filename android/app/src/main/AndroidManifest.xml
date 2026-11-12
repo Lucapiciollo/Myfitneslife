@@ -50,6 +50,8 @@
         <activity android:name=".ui.NotificationsActivity" />
         <activity android:name=".ui.PhysicalEvolutionActivity" android:launchMode="singleTop" />
         <activity android:name=".ui.SettingsActivity" android:launchMode="singleTop" />
+        <activity android:name=".ui.AiSettingsActivity" android:exported="false" android:launchMode="singleTop" />
+        <activity android:name=".ui.AiAutomationsActivity" android:exported="false" />
         <activity android:name=".ui.ExportActivity" />
         <activity android:name=".ui.AiAnalysisActivity" />
         <activity android:name=".ui.NutritionAdviceActivity" android:theme="@style/Theme.MyFitAI.NutritionAdviceModal" android:windowSoftInputMode="adjustResize" />

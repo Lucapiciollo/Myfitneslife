@@ -1,5 +1,6 @@
 package com.myfitai.app.ui
 
+import com.myfitai.app.navigation.AiSettingsEntry
 import android.app.AlertDialog
 import android.graphics.Typeface
 import android.content.Intent
@@ -129,9 +130,7 @@ class BiaActivity : BaseShellActivity() {
         bindViews()
         normalizeBiaCards()
         bindSegments()
-        findViewById<View>(R.id.aiConfigurationNoticeButton).setOnClickListener {
-            startActivity(Intent(this, SettingsActivity::class.java).putExtra(com.myfitai.app.navigation.BottomNavBinder.EXTRA_SELECTED_TAB, com.myfitai.app.navigation.BottomNavBinder.Tab.AI.name))
-        }
+        findViewById<View>(R.id.aiConfigurationNoticeButton).setOnClickListener { AiSettingsEntry.open(this) }
         findViewById<View>(R.id.addBiaFromHistoryButton).setOnClickListener {
             resetForm()
             findViewById<SelectableSegmentView>(R.id.biaSegment).getChildAt(0)?.performClick()

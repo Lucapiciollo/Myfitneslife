@@ -26,11 +26,8 @@ import com.google.android.material.timepicker.TimeFormat
 import com.myfitai.app.ui.dialog.HelpDialogSpec
 import com.myfitai.app.ui.dialog.HelpSection
 import com.myfitai.app.R
-import com.myfitai.app.ai.AiRuntimeConfig
 import com.myfitai.app.ai.AiProviderAccess
-import com.myfitai.app.ai.AiModelConfig
-import com.myfitai.app.ai.AiSettingsStore
-import com.myfitai.app.ai.GeminiByokProvider
+import com.myfitai.app.ai.AiProviderType
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.data.profile.MealCountPreferences
@@ -38,9 +35,8 @@ import com.myfitai.app.data.profile.BiaFrequencyPreferences
 import com.myfitai.app.data.profile.AiAutomationPreferences
 import com.myfitai.app.data.profile.NutritionPlanSchedulePreferences
 import com.myfitai.app.domain.progress.ProgressAnalysisPreferences
+import com.myfitai.app.navigation.AiSettingsEntry
 import com.myfitai.app.navigation.BottomNavBinder
-import com.myfitai.app.security.AiCredentialProvider
-import com.myfitai.app.security.SecureAiCredentialStore
 import com.myfitai.app.ui.widgets.SettingRowView
 import com.myfitai.app.domain.food.NutritionPathTrigger
 import kotlinx.coroutines.launch
@@ -63,137 +59,12 @@ class SettingsActivity : BaseShellActivity() {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         setContentView(R.layout.activity_settings)
-        val isAiRoot = intent.getBooleanExtra(BottomNavBinder.EXTRA_AI_ROOT, false) ||
-            intent.getStringExtra(BottomNavBinder.EXTRA_SELECTED_TAB) == BottomNavBinder.Tab.AI.name
-        bindBottom(if (isAiRoot) BottomNavBinder.Tab.AI else BottomNavBinder.Tab.MORE)
+        bindBottom(BottomNavBinder.Tab.MORE)
         bindBack()
-        findViewById<View>(R.id.generalSectionCard).visibility = if (isAiRoot) View.GONE else View.VISIBLE
-        findViewById<View>(R.id.dataSectionCard).visibility = if (isAiRoot) View.GONE else View.VISIBLE
-        findViewById<View>(R.id.aiRootSectionCard).visibility = if (isAiRoot) View.VISIBLE else View.GONE
-        if (isAiRoot) findViewById<TextView>(R.id.title).text = "IA"
-        normalizeSettingsSurfaces()
+        SettingsSurfaces.normalize(this)
         bindSectionHelp()
-        findViewById<View>(R.id.aiSectionHelpButton).visibility = if (isAiRoot) View.VISIBLE else View.GONE
         bindWorkoutConfiguration()
-
-        val settings = AiSettingsStore(this)
-        val credentialStore = SecureAiCredentialStore(this)
-
-        val useGeminiSwitch = findViewById<MaterialSwitch>(R.id.useGeminiSwitch)
-        useGeminiSwitch.applyMyFitAiSwitchTints()
-        val geminiContainer = findViewById<View>(R.id.geminiKeyContainer)
-        val openAiContainer = findViewById<View>(R.id.openAiKeyContainer)
-        val openAiInput = findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.openAiApiKeyInput)
-        val geminiInput = findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.geminiApiKeyInput)
-        val activeProviderText = findViewById<TextView>(R.id.activeProviderText)
-        val geminiStatus = findViewById<TextView>(R.id.geminiKeyStatusText)
-        val openAiStatus = findViewById<TextView>(R.id.openAiKeyStatusText)
-        geminiInput.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
-        openAiInput.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
-        geminiInput.isLongClickable = false
-        openAiInput.isLongClickable = false
-        useGeminiSwitch.isChecked = settings.useGemini
-        findViewById<View>(R.id.analyzeNutritionPathButton).setOnClickListener {
-            if (aiProviderConfigured) enqueueNutritionPath() else AiProviderAccess.requireConfigured(this)
-        }
-
-        fun render() {
-            val useGemini = useGeminiSwitch.isChecked
-            geminiContainer.visibility = View.VISIBLE
-            openAiContainer.visibility = View.VISIBLE
-            val geminiConfigured = credentialStore.exists(AiCredentialProvider.GEMINI)
-            val openAiConfigured = credentialStore.exists(AiCredentialProvider.OPENAI)
-            val geminiModel = settings.selectedGeminiModel
-            findViewById<View>(R.id.geminiInputLayout).visibility = if (geminiConfigured) View.GONE else View.VISIBLE
-            findViewById<View>(R.id.pasteGeminiKeyButton).visibility = if (geminiConfigured) View.GONE else View.VISIBLE
-            findViewById<View>(R.id.saveGeminiKeyButton).visibility = if (geminiConfigured) View.GONE else View.VISIBLE
-            findViewById<View>(R.id.replaceGeminiKeyButton).visibility = if (geminiConfigured) View.VISIBLE else View.GONE
-            findViewById<View>(R.id.deleteGeminiKeyButton).visibility = if (geminiConfigured) View.VISIBLE else View.GONE
-            findViewById<View>(R.id.openAiInputLayout).visibility = if (openAiConfigured) View.GONE else View.VISIBLE
-            findViewById<View>(R.id.pasteOpenAiKeyButton).visibility = if (openAiConfigured) View.GONE else View.VISIBLE
-            findViewById<View>(R.id.saveOpenAiKeyButton).visibility = if (openAiConfigured) View.GONE else View.VISIBLE
-            findViewById<View>(R.id.replaceOpenAiKeyButton).visibility = if (openAiConfigured) View.VISIBLE else View.GONE
-            findViewById<View>(R.id.deleteOpenAiKeyButton).visibility = if (openAiConfigured) View.VISIBLE else View.GONE
-            val config = AiRuntimeConfig(
-                useGemini = useGemini,
-                geminiConfigured = geminiConfigured,
-                openAiConfigured = openAiConfigured,
-            )
-            activeProviderText.text = when (val selected = config.selectedProvider()) {
-                com.myfitai.app.ai.AiProviderType.GEMINI -> "Provider attivo: Gemini BYOK"
-                com.myfitai.app.ai.AiProviderType.OPENAI -> "Provider attivo: OpenAI BYOK"
-                com.myfitai.app.ai.AiProviderType.NOT_CONFIGURED -> if (useGemini) "Gemini selezionato ma non configurato" else "Provider OpenAI selezionato ma non configurato"
-            }
-            geminiStatus.text = if (geminiConfigured) {
-                "Gemini configurato ✓\nModello selezionato: ${AiModelConfig.displayName(geminiModel)}"
-            } else {
-                "Chiave Gemini non configurata"
-            }
-            openAiStatus.text = if (openAiConfigured) "OpenAI configurato ✓ · chiave nascosta\nModello selezionato: ${AiModelConfig.displayName(settings.selectedOpenAiModel)}" else "Chiave OpenAI non configurata"
-            findViewById<View>(R.id.analyzeNutritionPathButton).isEnabled = config.selectedProvider() != com.myfitai.app.ai.AiProviderType.NOT_CONFIGURED
-        }
-
-        fun saveCredential(
-            provider: AiCredentialProvider,
-            input: com.google.android.material.textfield.TextInputEditText,
-            verify: suspend (String) -> com.myfitai.app.ai.AiRawResponse,
-        ) {
-            val candidate = input.text?.toString()?.trim().orEmpty()
-            if (candidate.isBlank()) { Toast.makeText(this, "Inserisci una API key valida", Toast.LENGTH_SHORT).show(); return }
-            lifecycleScope.launch {
-                runCatching {
-                    val response = verify(candidate)
-                    credentialStore.save(provider, candidate)
-                    if (provider == AiCredentialProvider.GEMINI) settings.geminiVerifiedModel = response.model
-                }
-                    .onSuccess {
-                        input.text?.clear()
-                        clearClipboard()
-                        Toast.makeText(this@SettingsActivity, "Chiave verificata e salvata in modo sicuro", Toast.LENGTH_SHORT).show()
-                        render()
-                    }
-                    .onFailure {
-                        input.text?.clear()
-                        clearClipboard()
-                        logVerificationOutcome(provider, it)
-                        Toast.makeText(this@SettingsActivity, providerError(provider, it), Toast.LENGTH_LONG).show()
-                    }
-            }
-        }
-
-        findViewById<View>(R.id.saveOpenAiKeyButton).setOnClickListener {
-            saveCredential(AiCredentialProvider.OPENAI, openAiInput) { candidate -> com.myfitai.app.ai.OpenAiProvider(credentialStore).verifyApiKey(candidate) }
-        }
-        findViewById<View>(R.id.pasteOpenAiKeyButton).setOnClickListener { pasteInto(openAiInput) }
-        findViewById<View>(R.id.saveGeminiKeyButton).setOnClickListener {
-            saveCredential(AiCredentialProvider.GEMINI, geminiInput) { candidate -> GeminiByokProvider(credentialStore).verifyApiKey(candidate) }
-        }
-        findViewById<View>(R.id.pasteGeminiKeyButton).setOnClickListener { pasteInto(geminiInput) }
-        findViewById<View>(R.id.replaceGeminiKeyButton).setOnClickListener {
-            geminiInput.text?.clear()
-            findViewById<View>(R.id.geminiInputLayout).visibility = View.VISIBLE
-            findViewById<View>(R.id.saveGeminiKeyButton).visibility = View.VISIBLE
-            findViewById<View>(R.id.replaceGeminiKeyButton).visibility = View.GONE
-        }
-        findViewById<View>(R.id.deleteGeminiKeyButton).setOnClickListener {
-            credentialStore.delete(AiCredentialProvider.GEMINI)
-            settings.geminiVerifiedModel = null
-            geminiInput.text?.clear()
-            render()
-        }
-        findViewById<View>(R.id.replaceOpenAiKeyButton).setOnClickListener {
-            openAiInput.text?.clear()
-            findViewById<View>(R.id.openAiInputLayout).visibility = View.VISIBLE
-            findViewById<View>(R.id.saveOpenAiKeyButton).visibility = View.VISIBLE
-            findViewById<View>(R.id.replaceOpenAiKeyButton).visibility = View.GONE
-        }
-        findViewById<View>(R.id.deleteOpenAiKeyButton).setOnClickListener {
-            credentialStore.delete(AiCredentialProvider.OPENAI); openAiInput.text?.clear(); render()
-        }
-        useGeminiSwitch.setOnCheckedChangeListener { _, checked ->
-            settings.useGemini = checked
-            render()
-        }
+        bindAiEntryRows()
 
         findViewById<View>(R.id.rowAppGuide).setOnClickListener { showAppGuide() }
         findViewById<View>(R.id.rowMeasurements).setOnClickListener { go(MeasurementsActivity::class.java) }
@@ -217,9 +88,6 @@ class SettingsActivity : BaseShellActivity() {
         findViewById<View>(R.id.rowDeleteProfile).setOnClickListener { selectProfileToDelete() }
 
         bindDataDeletion()
-        bindAiAutomationControls()
-        GeminiCostSettingsBinder.bind(this, findViewById(R.id.aiSectionCard), settings)
-        render()
     }
 
     private fun confirmBackupImport(uri: Uri) {
@@ -382,125 +250,6 @@ class SettingsActivity : BaseShellActivity() {
             .show()
     }
 
-    private fun bindAiAutomationControls() {
-        val profileId = data.activeProfileStore.currentIdOrNull() ?: return
-        // Gruppo separato dalla configurazione condivisa dell'app: qui vivono solo gli interruttori del profilo attivo.
-        val card = findViewById<LinearLayout>(R.id.aiAutomationsSection)
-        findViewById<View>(R.id.aiAutomationsGroup).visibility = View.VISIBLE
-        val automationsHeader = findViewById<TextView>(R.id.aiAutomationsHeader)
-        androidx.core.view.ViewCompat.setAccessibilityHeading(automationsHeader, true)
-        androidx.core.view.ViewCompat.setAccessibilityHeading(findViewById<TextView>(R.id.aiConfigGroupHeader), true)
-        lifecycleScope.launch {
-            val name = data.userProfileRepository.get(profileId)?.name?.trim().orEmpty()
-            automationsHeader.text = if (name.isBlank()) {
-                getString(R.string.ai_group_profile_automations_title)
-            } else {
-                getString(R.string.ai_group_profile_automations_title_named, name)
-            }
-        }
-        val preferences = data.aiAutomationPreferences
-        val rows = listOf(
-            AiAutomationPreferences.Feature.BIA_PROGRESS_COACH to "Progress Coach BIA",
-            AiAutomationPreferences.Feature.PROGRESS_ANALYSIS to "Analisi progressi",
-            AiAutomationPreferences.Feature.BODY_PROPORTIONS to "Proporzioni corporee",
-            AiAutomationPreferences.Feature.WEEKLY_REVIEW to "Review settimanale",
-        )
-        rows.forEachIndexed { index, (feature, label) ->
-            val row = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(0, resources.getDimensionPixelSize(R.dimen.space_8), 0, resources.getDimensionPixelSize(R.dimen.space_8))
-            }
-            val title = TextView(this).apply { text = label; setTextAppearance(R.style.Text_MyFitAI_SettingsLabel) }
-            val automatic = MaterialSwitch(this).apply {
-                applyMyFitAiSwitchTints()
-                text = "Automatica"
-                setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
-                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-            }
-            val notifications = MaterialSwitch(this).apply {
-                applyMyFitAiSwitchTints()
-                text = "Notifiche"
-                setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
-                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-            }
-            val frequency = TextView(this).apply {
-                setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
-                isClickable = true
-                isFocusable = true
-                setPadding(0, resources.getDimensionPixelSize(R.dimen.space_2), 0, resources.getDimensionPixelSize(R.dimen.space_4))
-            }
-            var rendering = false
-            fun render() {
-                rendering = true
-                val config = preferences.get(profileId, feature)
-                automatic.isChecked = config.enabled
-                notifications.isChecked = config.notificationsEnabled
-                frequency.text = "Frequenza: ${if (config.frequency == AiAutomationPreferences.Frequency.WEEKLY) "settimanale" else "mensile"}. L'azione manuale resta sempre disponibile."
-                automatic.isEnabled = aiProviderConfigured
-                notifications.isEnabled = aiProviderConfigured
-                frequency.isEnabled = aiProviderConfigured
-                rendering = false
-            }
-            automatic.setOnCheckedChangeListener { _, checked ->
-                if (rendering) return@setOnCheckedChangeListener
-                preferences.setEnabled(profileId, feature, checked)
-                if (feature == AiAutomationPreferences.Feature.BIA_PROGRESS_COACH) {
-                    if (checked) data.biaProgressCoachScheduler.ensureScheduled(profileId) else data.biaProgressCoachScheduler.cancel(profileId)
-                } else if (feature == AiAutomationPreferences.Feature.PROGRESS_ANALYSIS) {
-                    if (checked) data.progressAnalysisScheduler.ensureScheduled(profileId) else data.progressAnalysisScheduler.cancel(profileId)
-                }
-                render()
-            }
-            notifications.setOnCheckedChangeListener { _, checked ->
-                if (rendering) return@setOnCheckedChangeListener
-                preferences.setNotificationsEnabled(profileId, feature, checked)
-                render()
-            }
-            frequency.setOnClickListener {
-                val labels = arrayOf("Ogni settimana", "Ogni mese")
-                val current = preferences.get(profileId, feature).frequency.ordinal
-                MaterialAlertDialogBuilder(this).setTitle("Frequenza $label")
-                    .setSingleChoiceItems(labels, current) { dialog, which ->
-                        preferences.setFrequency(profileId, feature, if (which == 0) AiAutomationPreferences.Frequency.WEEKLY else AiAutomationPreferences.Frequency.MONTHLY)
-                        if (feature == AiAutomationPreferences.Feature.BIA_PROGRESS_COACH && preferences.get(profileId, feature).enabled) data.biaProgressCoachScheduler.ensureScheduled(profileId)
-                        if (feature == AiAutomationPreferences.Feature.PROGRESS_ANALYSIS && preferences.get(profileId, feature).enabled) data.progressAnalysisScheduler.reschedule(profileId)
-                        render(); dialog.dismiss()
-                    }.setNegativeButton(R.string.action_cancel, null).show()
-            }
-            render()
-            row.addView(title)
-            row.addView(frequency)
-            row.addView(automatic)
-            row.addView(notifications)
-            card.addView(row)
-            if (index < rows.lastIndex) card.addView(View(this).apply { setBackgroundColor(getColor(R.color.divider)) }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, resources.getDimensionPixelSize(R.dimen.divider_thickness)))
-        }
-    }
-
-    private fun normalizeSettingsSurfaces() {
-        fun visit(view: View) {
-            when (view) {
-                is MaterialCardView -> {
-                    view.setCardBackgroundColor(getColor(R.color.white))
-                    view.strokeColor = getColor(R.color.divider)
-                    view.strokeWidth = resources.getDimensionPixelSize(R.dimen.border_width_default)
-                    view.cardElevation = resources.getDimension(R.dimen.elevation_none)
-                }
-                is TextInputLayout -> {
-                    view.boxBackgroundColor = getColor(R.color.white)
-                    view.boxStrokeColor = getColor(R.color.myfitai_input_stroke)
-                    view.boxStrokeWidth = resources.getDimensionPixelSize(R.dimen.border_width_default)
-                    view.boxStrokeWidthFocused = resources.getDimensionPixelSize(R.dimen.space_2)
-                    view.hintTextColor = android.content.res.ColorStateList.valueOf(getColor(R.color.myfitai_input_hint))
-                }
-            }
-            if (view is android.view.ViewGroup) {
-                for (index in 0 until view.childCount) visit(view.getChildAt(index))
-            }
-        }
-        visit(findViewById(android.R.id.content))
-    }
-
     private fun bindWorkoutConfiguration() {
         val profileId = data.activeProfileStore.currentIdOrNull() ?: return
         val enabledSwitch = findViewById<MaterialSwitch>(R.id.workoutsEnabledSwitch)
@@ -526,230 +275,41 @@ class SettingsActivity : BaseShellActivity() {
         findViewById<View>(R.id.aiSectionHelpButton).setOnClickListener {
             showHelpCard(
                 "Intelligenza artificiale",
-                "Qui configuri il provider IA, verifichi e gestisci le chiavi API e attivi le funzioni automatiche dell'app. Le chiavi vengono protette localmente e non sono mostrate in chiaro dopo il salvataggio.",
+                "Impostazioni IA contiene provider, chiavi API, modelli e costi, uguali per tutti i profili. Automazioni IA contiene le funzioni automatiche del profilo attivo. Le chiavi vengono protette localmente e non sono mostrate in chiaro dopo il salvataggio.",
             )
         }
     }
 
-    private fun enqueueNutritionPath() {
-        val profileId = data.activeProfileStore.currentIdOrNull() ?: return
+    /** Righe d'ingresso verso Impostazioni IA (globali) e Automazioni IA (del profilo attivo). */
+    private fun bindAiEntryRows() {
+        findViewById<SettingRowView>(R.id.rowAiSettings).setOnClickListener { AiSettingsEntry.open(this) }
+        val automationsRow = findViewById<SettingRowView>(R.id.rowAiAutomations)
+        val profileId = data.activeProfileStore.currentIdOrNull()
+        if (profileId == null) {
+            automationsRow.visibility = View.GONE
+            return
+        }
+        automationsRow.visibility = View.VISIBLE
+        automationsRow.setOnClickListener { startActivity(Intent(this, AiAutomationsActivity::class.java)) }
         lifecycleScope.launch {
-            val key = data.nutritionPathTrigger.maybeEnqueue(profileId)
-            Toast.makeText(
-                this@SettingsActivity,
-                if (key != null) "Suggerimento avviato con i dati disponibili" else "Profilo non disponibile",
-                Toast.LENGTH_SHORT,
-            ).show()
+            val name = data.userProfileRepository.get(profileId)?.name?.trim().orEmpty()
+            if (name.isNotBlank()) automationsRow.setDescription(getString(R.string.settings_row_automations_desc_named, name))
         }
     }
 
     override fun onResume() {
         super.onResume()
-        refreshAiActionAvailability()
-        renderActiveProviderState()
+        renderAiProviderBadge()
     }
 
-    private fun renderActiveProviderState() {
-        val settings = AiSettingsStore(this)
-        val store = SecureAiCredentialStore(this)
-        val config = AiRuntimeConfig(
-            useGemini = settings.useGemini,
-            geminiConfigured = store.exists(AiCredentialProvider.GEMINI),
-            openAiConfigured = store.exists(AiCredentialProvider.OPENAI),
-        )
-        findViewById<TextView?>(R.id.activeProviderText)?.text = when (config.selectedProvider()) {
-            com.myfitai.app.ai.AiProviderType.GEMINI -> "Provider attivo: Gemini BYOK"
-            com.myfitai.app.ai.AiProviderType.OPENAI -> "Provider attivo: OpenAI BYOK"
-            com.myfitai.app.ai.AiProviderType.NOT_CONFIGURED -> if (config.useGemini) "Gemini selezionato ma non configurato" else "Provider OpenAI selezionato ma non configurato"
+    private fun renderAiProviderBadge() {
+        val row = findViewById<SettingRowView?>(R.id.rowAiSettings) ?: return
+        val status = AiProviderAccess.status(this)
+        if (status.needsAttention) {
+            row.setTrailingBadge(getString(R.string.settings_row_ai_status_unconfigured), R.color.semantic_warning)
+        } else {
+            row.setTrailingBadge(if (status.selected == AiProviderType.GEMINI) "Gemini" else "OpenAI", R.color.accent_green_dark)
         }
-        findViewById<View?>(R.id.analyzeNutritionPathButton)?.isEnabled = config.selectedProvider() != com.myfitai.app.ai.AiProviderType.NOT_CONFIGURED
-    }
-
-    private fun bindNutritionPlanSchedule() {
-        val profileId = data.activeProfileStore.currentIdOrNull() ?: return
-        val card = findViewById<LinearLayout>(R.id.aiSectionCard)
-        val row = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            minimumHeight = resources.getDimensionPixelSize(R.dimen.control_min_height)
-            val verticalPadding = resources.getDimensionPixelSize(R.dimen.space_8)
-            setPadding(0, verticalPadding, 0, verticalPadding)
-        }
-        val title = TextView(this).apply {
-            text = "Generazione automatica piano"
-            setTextAppearance(R.style.Text_MyFitAI_SettingsLabel)
-        }
-        val enabledSwitch = MaterialSwitch(this).apply {
-            applyMyFitAiSwitchTints()
-            setTextColor(getColor(R.color.text_primary))
-            text = "Automatica"
-            setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-        }
-        val value = TextView(this).apply { setTextAppearance(R.style.Text_MyFitAI_SettingsDescription) }
-        value.isClickable = true
-        value.isFocusable = true
-        value.setPadding(0, resources.getDimensionPixelSize(R.dimen.space_2), 0, resources.getDimensionPixelSize(R.dimen.space_4))
-        row.addView(title)
-        row.addView(value)
-        row.addView(enabledSwitch)
-
-        fun dayLabel(day: java.time.DayOfWeek): String = when (day) {
-            java.time.DayOfWeek.MONDAY -> "Lunedì"
-            java.time.DayOfWeek.TUESDAY -> "Martedì"
-            java.time.DayOfWeek.WEDNESDAY -> "Mercoledì"
-            java.time.DayOfWeek.THURSDAY -> "Giovedì"
-            java.time.DayOfWeek.FRIDAY -> "Venerdì"
-            java.time.DayOfWeek.SATURDAY -> "Sabato"
-            java.time.DayOfWeek.SUNDAY -> "Domenica"
-        }
-
-        fun renderSchedule() {
-            val config = data.nutritionPlanSchedulePreferences.get(profileId)
-            enabledSwitch.isChecked = config.enabled
-            enabledSwitch.isEnabled = aiProviderConfigured
-            row.isEnabled = aiProviderConfigured
-            value.isEnabled = aiProviderConfigured
-            val frequencyLabel = when (config.frequency) {
-                NutritionPlanSchedulePreferences.Frequency.DAILY -> "ogni giorno"
-                NutritionPlanSchedulePreferences.Frequency.WEEKLY -> "ogni settimana il ${dayLabel(config.dayOfWeek)}"
-                NutritionPlanSchedulePreferences.Frequency.BIWEEKLY -> "ogni 2 settimane"
-                NutritionPlanSchedulePreferences.Frequency.MONTHLY -> "ogni mese"
-            }
-            value.text = if (config.enabled) {
-                val hh = config.timeMinutes / 60
-                val mm = config.timeMinutes % 60
-                "$frequencyLabel alle %02d:%02d · prepara la settimana successiva".format(hh, mm)
-            } else {
-                "Disattivata · attiva per scegliere frequenza e ora"
-            }
-        }
-
-        fun chooseTime(day: java.time.DayOfWeek) {
-            val config = data.nutritionPlanSchedulePreferences.get(profileId)
-            val picker = MaterialTimePicker.Builder()
-                .setTheme(R.style.ThemeOverlay_MyFitAI_MaterialTimePicker)
-                .setTimeFormat(TimeFormat.CLOCK_24H)
-                .setHour(config.timeMinutes / 60)
-                .setMinute(config.timeMinutes % 60)
-                .setTitleText("Ora di generazione")
-                .build()
-            picker.addOnPositiveButtonClickListener {
-                data.nutritionPlanSchedulePreferences.setDayOfWeek(profileId, day)
-                data.nutritionPlanSchedulePreferences.setTimeMinutes(profileId, picker.hour * 60 + picker.minute)
-                data.nutritionPlanSchedulePreferences.setEnabled(profileId, true)
-                data.nutritionPlanScheduler.reschedule(profileId)
-                renderSchedule()
-                Toast.makeText(this, "Generazione automatica aggiornata", Toast.LENGTH_SHORT).show()
-            }
-            picker.show(supportFragmentManager, "nutrition_plan_schedule_time")
-        }
-
-        fun chooseDay() {
-            val days = java.time.DayOfWeek.entries
-            val labels = days.map(::dayLabel).toTypedArray()
-            val current = data.nutritionPlanSchedulePreferences.get(profileId).dayOfWeek
-            var selectedIndex = days.indexOf(current)
-            MaterialAlertDialogBuilder(this)
-                .setTitle("Giorno di generazione")
-                .setSingleChoiceItems(labels, selectedIndex) { _, which ->
-                    selectedIndex = which
-                }
-                .setNegativeButton("Annulla", null)
-                .setPositiveButton("OK") { _, _ -> chooseTime(days[selectedIndex]) }
-                .show()
-        }
-
-        fun chooseFrequency() {
-            val frequencies = NutritionPlanSchedulePreferences.Frequency.entries
-            val labels = arrayOf("Ogni giorno", "Ogni settimana", "Ogni 2 settimane", "Ogni mese")
-            val current = data.nutritionPlanSchedulePreferences.get(profileId).frequency
-            var selectedIndex = frequencies.indexOf(current)
-            MaterialAlertDialogBuilder(this)
-                .setTitle("Frequenza generazione pasti")
-                .setSingleChoiceItems(labels, selectedIndex) { _, which ->
-                    selectedIndex = which
-                }
-                .setNegativeButton("Annulla", null)
-                .setPositiveButton("OK") { _, _ ->
-                    val selectedFrequency = frequencies[selectedIndex]
-                    data.nutritionPlanSchedulePreferences.setFrequency(profileId, selectedFrequency)
-                    if (selectedFrequency == NutritionPlanSchedulePreferences.Frequency.DAILY || selectedFrequency == NutritionPlanSchedulePreferences.Frequency.MONTHLY) {
-                        chooseTime(data.nutritionPlanSchedulePreferences.get(profileId).dayOfWeek)
-                    } else {
-                        chooseDay()
-                    }
-                }
-                .show()
-        }
-
-            row.setOnClickListener { chooseFrequency() }
-
-        enabledSwitch.setOnCheckedChangeListener { _, checked ->
-            val current = data.nutritionPlanSchedulePreferences.get(profileId)
-            if (current.enabled == checked) return@setOnCheckedChangeListener
-            data.nutritionPlanSchedulePreferences.setEnabled(profileId, checked)
-            if (checked) data.nutritionPlanScheduler.reschedule(profileId) else data.nutritionPlanScheduler.cancel(profileId)
-            renderSchedule()
-        }
-
-        renderSchedule()
-        card.addView(row, 0)
-        card.addView(
-            View(this).apply { setBackgroundColor(getColor(R.color.divider)) },
-            1,
-            LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, resources.getDimensionPixelSize(R.dimen.divider_thickness)).apply { bottomMargin = resources.getDimensionPixelSize(R.dimen.space_12) },
-        )
-    }
-
-    private fun bindProgressAnalysisFrequency() {
-        val card = findViewById<LinearLayout>(R.id.aiSectionCard)
-        val row = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            isClickable = true
-            isFocusable = true
-            minimumHeight = resources.getDimensionPixelSize(R.dimen.control_min_height)
-            val verticalPadding = resources.getDimensionPixelSize(R.dimen.space_8)
-            setPadding(0, verticalPadding, 0, verticalPadding)
-        }
-        val title = TextView(this).apply {
-            text = "Analisi progressi automatica"
-            setTextAppearance(R.style.Text_MyFitAI_SettingsLabel)
-        }
-        val value = TextView(this).apply {
-            setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
-        }
-        fun renderValue() {
-            val weeks = data.progressAnalysisPreferences.intervalWeeks
-            value.text = "Ogni $weeks ${if (weeks == 1) "settimana" else "settimane"} · usa quota del provider IA"
-            row.isEnabled = aiProviderConfigured
-            value.isEnabled = aiProviderConfigured
-        }
-        renderValue()
-        row.addView(title)
-        row.addView(value, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = resources.getDimensionPixelSize(R.dimen.space_2) })
-        row.setOnClickListener {
-            val values = ProgressAnalysisPreferences.SUGGESTED_INTERVALS
-            val labels = values.map { weeks ->
-                "Ogni $weeks ${if (weeks == 1) "settimana" else "settimane"}${if (weeks == data.progressAnalysisPreferences.intervalWeeks) " ✓" else ""}"
-            }.toTypedArray()
-            MaterialAlertDialogBuilder(this)
-                .setTitle("Frequenza analisi progressi")
-                .setItems(labels) { _, which ->
-                    val selected = values[which]
-                    data.progressAnalysisPreferences.intervalWeeks = selected
-                    data.activeProfileStore.currentIdOrNull()?.let { profileId ->
-                        if (data.progressAnalysisPreferences.lastSuccessEpochMillis(profileId) != null) {
-                            data.progressAnalysisScheduler.reschedule(profileId)
-                        }
-                    }
-                    renderValue()
-                    Toast.makeText(this, "Frequenza aggiornata. Le analisi automatiche consumano quota IA.", Toast.LENGTH_LONG).show()
-                }
-                .setNegativeButton("Annulla", null)
-                .show()
-        }
-        card.addView(row, 0)
-        card.addView(View(this).apply { setBackgroundColor(getColor(R.color.divider)) }, 1, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, resources.getDimensionPixelSize(R.dimen.divider_thickness)).apply { bottomMargin = resources.getDimensionPixelSize(R.dimen.space_12) })
     }
 
     private fun showMealCountDialog() {
@@ -892,74 +452,4 @@ class SettingsActivity : BaseShellActivity() {
     }
 
     private data class DeletionAction(val label: String, val description: String, val delete: suspend () -> Unit)
-
-    private fun providerError(provider: AiCredentialProvider, error: Throwable): String {
-        val label = if (provider == AiCredentialProvider.GEMINI) "Gemini" else "OpenAI"
-        val tail = "La chiave precedente non è stata modificata."
-        return when (error) {
-            is com.myfitai.app.ai.AiTransportException.Http -> when (error.failureKind) {
-                com.myfitai.app.ai.AiTransportFailureKind.INVALID_API_KEY -> "API key $label invalida o senza permessi. $tail"
-                com.myfitai.app.ai.AiTransportFailureKind.UNSUPPORTED_AUTH_METHOD ->
-                    "La chiave $label è stata riconosciuta come Auth Key, ma la richiesta è stata rifiutata (HTTP ${error.statusCode}, ACCESS_TOKEN_TYPE_UNSUPPORTED). " +
-                        "Di solito accade quando la Auth Key è legata a un progetto/organizzazione che non consente l'accesso via API key REST. $tail"
-                com.myfitai.app.ai.AiTransportFailureKind.MODEL_UNAVAILABLE ->
-                    if (provider == AiCredentialProvider.GEMINI) "Modello Gemini non disponibile (nemmeno il fallback). $tail"
-                    else "Modello OpenAI non disponibile per questa chiave. $tail"
-                com.myfitai.app.ai.AiTransportFailureKind.QUOTA_EXHAUSTED -> "Quota $label esaurita. $tail"
-                com.myfitai.app.ai.AiTransportFailureKind.RATE_LIMITED -> "Limite temporaneo $label raggiunto. Riprova più tardi."
-                com.myfitai.app.ai.AiTransportFailureKind.PROVIDER_UNAVAILABLE -> "$label non è temporaneamente disponibile (HTTP ${error.statusCode}). Riprova più tardi; $tail"
-                else -> "$label ha rifiutato la richiesta (HTTP ${error.statusCode}). $tail"
-            }
-            is com.myfitai.app.ai.AiTransportException.Network -> "Problema di rete o timeout. $tail"
-            is com.myfitai.app.ai.AiTransportException.InvalidResponse -> "Risposta $label non interpretabile. $tail"
-            else -> "$label non raggiungibile. $tail"
-        }
-    }
-
-    private fun pasteInto(input: com.google.android.material.textfield.TextInputEditText) {
-        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        val text = clipboard.primaryClip?.getItemAt(0)?.coerceToText(this)?.toString()?.trim().orEmpty()
-        if (text.isBlank()) {
-            Toast.makeText(this, "Clipboard vuota", Toast.LENGTH_SHORT).show()
-            return
-        }
-        input.setText(text)
-        input.setSelection(text.length)
-        input.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
-        input.isLongClickable = false
-        input.requestFocus()
-        clearClipboard(clipboard)
-        Toast.makeText(this, "Chiave incollata. Verifica e salva per registrarla.", Toast.LENGTH_SHORT).show()
-    }
-
-    private fun clearClipboard() {
-        clearClipboard(getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager)
-    }
-
-    private fun clearClipboard(clipboard: ClipboardManager) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            clipboard.clearPrimaryClip()
-        } else {
-            clipboard.setPrimaryClip(ClipData.newPlainText("", ""))
-        }
-    }
-
-
-    /**
-     * Sanitized verification telemetry: records ONLY provider + HTTP status + failure category.
-     * Never logs the API key, request/response body, headers or any secret. Debug builds only.
-     */
-    private fun logVerificationOutcome(provider: AiCredentialProvider, error: Throwable) {
-        val debuggable = (applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
-        if (!debuggable) return
-        val providerName = if (provider == AiCredentialProvider.GEMINI) "GEMINI" else "OPENAI"
-        val detail = when (error) {
-            is com.myfitai.app.ai.AiTransportException.Http -> "status=${error.statusCode} kind=${error.failureKind}"
-            is com.myfitai.app.ai.AiTransportException.Network -> "status=- kind=NETWORK"
-            is com.myfitai.app.ai.AiTransportException.InvalidResponse -> "status=- kind=INVALID_RESPONSE"
-            is com.myfitai.app.ai.AiTransportException.NotConfigured -> "status=- kind=NOT_CONFIGURED"
-            else -> "status=- kind=UNKNOWN"
-        }
-        android.util.Log.w("MyFitAiVerify", "provider=$providerName $detail (key/body never logged)")
-    }
 }

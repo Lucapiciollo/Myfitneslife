@@ -20,7 +20,7 @@ import java.math.RoundingMode
 import com.myfitai.app.ui.widgets.KeyValueRowView
 
 object GeminiCostSettingsBinder {
-    fun bind(activity: SettingsActivity, card: LinearLayout, settings: AiSettingsStore) {
+    fun bind(activity: BaseShellActivity, card: LinearLayout, settings: AiSettingsStore) {
         OpenAiCostSettingsBinder.bind(activity, card)
         AiModelSelectionBinder.bind(activity, card, settings)
         val tracker = GeminiUsageTracker(activity)
@@ -28,6 +28,7 @@ object GeminiCostSettingsBinder {
         val row = KeyValueRowView(activity).apply {
             isClickable = true
             isFocusable = true
+            minimumHeight = activity.resources.getDimensionPixelSize(R.dimen.control_min_height)
         }
         row.setKey("Costi Gemini")
         row.setValue("Calcolo…")
@@ -46,7 +47,7 @@ object GeminiCostSettingsBinder {
         refresh()
     }
 
-    private fun showCostDialog(activity: SettingsActivity, tracker: GeminiUsageTracker, pricingStore: GeminiPricingStore, model: String, refresh: () -> Unit) {
+    private fun showCostDialog(activity: BaseShellActivity, tracker: GeminiUsageTracker, pricingStore: GeminiPricingStore, model: String, refresh: () -> Unit) {
         activity.lifecycleScope.launch {
             val pricing = pricingStore.pricingFor(model)
             val summary = runCatching { tracker.summary() }.getOrNull()
@@ -73,7 +74,7 @@ object GeminiCostSettingsBinder {
         }
     }
 
-    private fun showPricingEditor(activity: SettingsActivity, pricingStore: GeminiPricingStore, pricing: GeminiPricing, refresh: () -> Unit) {
+    private fun showPricingEditor(activity: BaseShellActivity, pricingStore: GeminiPricingStore, pricing: GeminiPricing, refresh: () -> Unit) {
         val content = activity.layoutInflater.inflate(R.layout.dialog_pricing_editor, null, false)
         val input = content.findViewById<TextInputEditText>(R.id.pricingInput)
         val output = content.findViewById<TextInputEditText>(R.id.pricingOutput)

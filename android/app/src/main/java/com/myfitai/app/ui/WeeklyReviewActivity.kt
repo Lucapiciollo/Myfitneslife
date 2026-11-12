@@ -1,5 +1,6 @@
 package com.myfitai.app.ui
 
+import com.myfitai.app.navigation.AiSettingsEntry
 import android.os.Bundle
 import android.view.View
 import android.widget.LinearLayout
@@ -42,9 +43,7 @@ class WeeklyReviewActivity : BaseShellActivity() {
                 viewModel.generate()
             }
         }
-        findViewById<View>(R.id.aiConfigurationNoticeButton).setOnClickListener {
-            startActivity(android.content.Intent(this, SettingsActivity::class.java).putExtra(BottomNavBinder.EXTRA_SELECTED_TAB, BottomNavBinder.Tab.AI.name))
-        }
+        findViewById<View>(R.id.aiConfigurationNoticeButton).setOnClickListener { AiSettingsEntry.open(this) }
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {

@@ -12,4 +12,7 @@
     <item name="excludedFoodsInput" type="id" />
     <item name="intolerancesInput" type="id" />
     <item name="allergiesInput" type="id" />
+    <item name="aiSettingsButton" type="id" />
+    <item name="aiSettingsBadge" type="id" />
+    <item name="globalProfileHeader" type="id" />
 </resources>

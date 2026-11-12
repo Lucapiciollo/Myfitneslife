@@ -1,5 +1,6 @@
 package com.myfitai.app.ui
 
+import com.myfitai.app.navigation.AiSettingsEntry
 import android.app.Activity
 import android.content.Intent
 import android.content.res.ColorStateList
@@ -80,7 +81,7 @@ class FoodPlanActivity : BaseShellActivity() {
         }
         gateAiClick(findViewById(R.id.generatePlanButton)) { confirmPlanGeneration() }
         findViewById<View>(R.id.planSettingsButton).setOnClickListener { startActivity(Intent(this, NutritionPlanSettingsActivity::class.java)) }
-        findViewById<View>(R.id.aiConfigurationNoticeButton).setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java).putExtra(BottomNavBinder.EXTRA_SELECTED_TAB, BottomNavBinder.Tab.AI.name)) }
+        findViewById<View>(R.id.aiConfigurationNoticeButton).setOnClickListener { AiSettingsEntry.open(this) }
         bindFoodHelp()
         findViewById<View>(R.id.dailyTotalHelpButton).setOnClickListener { showTotalsHelp() }
         renderMealCountPreference()

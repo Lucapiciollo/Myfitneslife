@@ -128,4 +128,5 @@
     <dimen name="dashboard_metric_tile_icon_size">28dp</dimen>
     <dimen name="dashboard_metric_value_gap">6dp</dimen>
     <dimen name="line_spacing_zero_extra">0dp</dimen>
+    <dimen name="ai_gear_badge_size">10dp</dimen>
 </resources>

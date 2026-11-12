@@ -1,5 +1,6 @@
 package com.myfitai.app.ui
 
+import com.myfitai.app.navigation.AiSettingsEntry
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -110,9 +111,8 @@ class HomeActivity : BaseShellActivity() {
             setAiActionEnabled(this)
             setOnClickListener { openFoodPlan() }
         }
-        findViewById<android.view.View>(R.id.aiConfigurationNoticeCard).setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java).putExtra(BottomNavBinder.EXTRA_SELECTED_TAB, BottomNavBinder.Tab.AI.name)) }
-        findViewById<android.view.View>(R.id.aiConfigurationNoticeButton).setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java).putExtra(BottomNavBinder.EXTRA_SELECTED_TAB, BottomNavBinder.Tab.AI.name)) }
-        findViewById<View>(R.id.aiConfigurationNoticeButton).contentDescription = "Apri impostazioni IA"
+        findViewById<android.view.View>(R.id.aiConfigurationNoticeCard).setOnClickListener { AiSettingsEntry.open(this) }
+        findViewById<android.view.View>(R.id.aiConfigurationNoticeButton).setOnClickListener { AiSettingsEntry.open(this) }
         findViewById<android.view.View>(R.id.biaDueNoticeCard).setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java)) }
         findViewById<android.view.View>(R.id.biaDueNoticeButton).setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java)) }
         findViewById<android.view.View>(R.id.analysisHubButton).setOnClickListener { startActivity(Intent(this, MeasurementsActivity::class.java)) }

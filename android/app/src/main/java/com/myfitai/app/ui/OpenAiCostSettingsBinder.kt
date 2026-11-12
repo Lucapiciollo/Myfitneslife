@@ -20,13 +20,14 @@ import java.math.RoundingMode
 import com.myfitai.app.ui.widgets.KeyValueRowView
 
 object OpenAiCostSettingsBinder {
-    fun bind(activity: SettingsActivity, card: LinearLayout) {
+    fun bind(activity: BaseShellActivity, card: LinearLayout) {
         val tracker = OpenAiUsageTracker(activity)
         val pricingStore = OpenAiPricingStore(activity)
         val settings = AiSettingsStore(activity)
         val row = KeyValueRowView(activity).apply {
             isClickable = true
             isFocusable = true
+            minimumHeight = activity.resources.getDimensionPixelSize(R.dimen.control_min_height)
         }
         row.setKey("Costi OpenAI")
         row.setValue("Calcolo…")
@@ -45,7 +46,7 @@ object OpenAiCostSettingsBinder {
         refresh()
     }
 
-    private fun showCostDialog(activity: SettingsActivity, tracker: OpenAiUsageTracker, pricingStore: OpenAiPricingStore, model: String, refresh: () -> Unit) {
+    private fun showCostDialog(activity: BaseShellActivity, tracker: OpenAiUsageTracker, pricingStore: OpenAiPricingStore, model: String, refresh: () -> Unit) {
         activity.lifecycleScope.launch {
             val pricing = pricingStore.pricingFor(model)
             val summary = runCatching { tracker.summary() }.getOrNull()
@@ -72,7 +73,7 @@ object OpenAiCostSettingsBinder {
         }
     }
 
-    private fun showPricingEditor(activity: SettingsActivity, pricingStore: OpenAiPricingStore, pricing: OpenAiPricing, refresh: () -> Unit) {
+    private fun showPricingEditor(activity: BaseShellActivity, pricingStore: OpenAiPricingStore, pricing: OpenAiPricing, refresh: () -> Unit) {
         val content = activity.layoutInflater.inflate(R.layout.dialog_pricing_editor, null, false)
         val input = content.findViewById<TextInputEditText>(R.id.pricingInput)
         val output = content.findViewById<TextInputEditText>(R.id.pricingOutput)
