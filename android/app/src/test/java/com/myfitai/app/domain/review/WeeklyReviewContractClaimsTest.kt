@@ -50,6 +50,67 @@ class WeeklyReviewContractClaimsTest {
         assertEquals("CAUSAL_CLAIM_NOT_ALLOWED", result.exceptionOrNull()?.message)
     }
 
+    @Test
+    fun newCausalPhrasesAreRejectedUnlessNegated() {
+        listOf(
+            "Il calo è dovuto a poche calorie.",
+            "Peso più alto a causa di uno sgarro.",
+            "La settimana ha portato a un aumento.",
+            "Il valore e il risultato di meno allenamenti.",
+        ).forEach { text ->
+            val result = WeeklyReviewContract.validateBusiness(WeeklyReviewContract.parse(json(summary = text)), WEEK)
+            assertEquals(text, "CAUSAL_CLAIM_NOT_ALLOWED", result.exceptionOrNull()?.message)
+        }
+        listOf("Il calo non è dovuto a poche calorie.", "Il calo non è a causa di uno sgarro.").forEach { text ->
+            val result = WeeklyReviewContract.validateBusiness(WeeklyReviewContract.parse(json(observation = text)), WEEK)
+            assertTrue("$text: ${result.exceptionOrNull()?.message}", result.isSuccess)
+        }
+    }
+
+    @Test
+    fun bodyOverclaimsAreRejectedUnlessNegated() {
+        listOf(
+            "Perdita di massa muscolare confermata.",
+            "Segnali di disidratazione evidenti.",
+            "La ritenzione idrica è grasso accumulato.",
+        ).forEach { text ->
+            val result = WeeklyReviewContract.validateBusiness(WeeklyReviewContract.parse(json(guidance = text)), WEEK)
+            assertEquals(text, "BODY_OVERCLAIM_NOT_ALLOWED", result.exceptionOrNull()?.message)
+        }
+        val negated = WeeklyReviewContract.validateBusiness(
+            WeeklyReviewContract.parse(json(observation = "Il dato non indica disidratazione.")),
+            WEEK,
+        )
+        assertTrue(negated.exceptionOrNull()?.message, negated.isSuccess)
+    }
+
+    @Test
+    fun promptLimitsAreEnforced() {
+        fun fail(raw: String, code: String) =
+            assertEquals(code, WeeklyReviewContract.validateBusiness(WeeklyReviewContract.parse(raw), WEEK).exceptionOrNull()?.message)
+        val tooLong = List(WeeklyReviewContract.MAX_SUMMARY_WORDS + 1) { "parola" }.joinToString(" ")
+        fail(json(summary = tooLong), "SUMMARY_TOO_LONG")
+        fail(json(observation = List(WeeklyReviewContract.MAX_ITEM_WORDS + 1) { "parola" }.joinToString(" ")), "ITEM_TOO_LONG")
+        fail(json(guidance = List(WeeklyReviewContract.MAX_ITEM_WORDS + 1) { "parola" }.joinToString(" ")), "ITEM_TOO_LONG")
+        fail(jsonWithCounts(observations = WeeklyReviewContract.MAX_OBSERVATIONS + 1, guidance = 1), "OBSERVATIONS_COUNT_INVALID")
+        fail(jsonWithCounts(observations = 1, guidance = WeeklyReviewContract.MAX_GUIDANCE + 1), "GUIDANCE_COUNT_INVALID")
+
+        val atLimit = List(WeeklyReviewContract.MAX_SUMMARY_WORDS) { "parola" }.joinToString(" ")
+        val ok = WeeklyReviewContract.validateBusiness(
+            WeeklyReviewContract.parse(jsonWithCounts(WeeklyReviewContract.MAX_OBSERVATIONS, WeeklyReviewContract.MAX_GUIDANCE, atLimit)),
+            WEEK,
+        )
+        assertTrue(ok.exceptionOrNull()?.message, ok.isSuccess)
+    }
+
+    private fun jsonWithCounts(observations: Int, guidance: Int, summary: String = "Settimana descritta con dati registrati."): String = JSONObject()
+        .put("weekStartEpochDay", WEEK)
+        .put("summary", summary)
+        .put("observations", JSONArray(List(observations) { "Osservazione $it." }))
+        .put("nextWeekGuidance", JSONArray(List(guidance) { "Indicazione $it." }))
+        .put("agentValidation", JSONObject().put("valid", true).put("notes", "ok"))
+        .toString()
+
     private fun json(
         summary: String = "Settimana descritta usando solo dati registrati.",
         observation: String = "Sono stati registrati tre allenamenti.",

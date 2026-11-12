@@ -14,6 +14,8 @@ import com.myfitai.app.data.repository.WeeklyReviewRepository
 import com.myfitai.app.data.repository.WorkoutRepository
 import com.myfitai.app.data.repository.UserProfileRepository
 import com.myfitai.app.domain.ai.AiUserContext
+import com.myfitai.app.domain.ai.UnsupportedClaimGuard
+import com.myfitai.app.domain.calculation.WeightResolver
 import com.myfitai.app.domain.food.FoodPlanMetrics
 import com.myfitai.app.domain.personalization.PersonalResponseService
 import com.myfitai.app.domain.time.SystemTimeProvider
@@ -53,6 +55,11 @@ class WeeklyReviewService(
         val adherencePercent: Int?,
         val consumedKcal: Int?,
         val hasPlan: Boolean,
+        /** Real days between the two readings behind each D delta (null = no delta). */
+        val weightDeltaSpanDays: Int? = null,
+        val bodyFatDeltaSpanDays: Int? = null,
+        val muscleMassDeltaSpanDays: Int? = null,
+        val waistDeltaSpanDays: Int? = null,
     )
 
     data class Result(val entity: WeeklyReviewEntity, val response: WeeklyReviewContract.Response, val metrics: LocalMetrics, val provider: String, val model: String)
@@ -89,6 +96,17 @@ class WeeklyReviewService(
         val weekBody = allBody.filter { it.measuredAtEpochMillis in from..to }
         val previousBia = allBia.filter { it.measuredAtEpochMillis < from }
         val previousBody = allBody.filter { it.measuredAtEpochMillis < from }
+        // Weight: BIA and body measurements together (same source rule as the rest of the app).
+        val weightObservations = WeightResolver.observations(allBia, allBody, profileId)
+        val weightDelta = WeeklyBodyDelta.describe(
+            week = weightObservations.filter { it.measuredAtEpochMillis in from..to }
+                .map { WeeklyBodyDelta.Reading(it.measuredAtEpochMillis, it.valueKg) },
+            previous = weightObservations.filter { it.measuredAtEpochMillis < from }
+                .map { WeeklyBodyDelta.Reading(it.measuredAtEpochMillis, it.valueKg) },
+        )
+        val bodyFatDelta = weekDelta(weekBia, previousBia, { it.measuredAtEpochMillis }) { it.bodyFatPercent }
+        val muscleDelta = weekDelta(weekBia, previousBia, { it.measuredAtEpochMillis }) { it.muscleMassKg }
+        val waistDelta = weekDelta(weekBody, previousBody, { it.measuredAtEpochMillis }) { it.waistCm }
         val days = plan?.version?.days.orEmpty()
         val plannedAverage = FoodPlanMetrics.weeklyAverage(days)
         val plannedItems = days.sumOf { it.meals.size + it.supplements.size }
@@ -106,10 +124,10 @@ class WeeklyReviewService(
             plannedAverage.carbsG?.toFloat(), plan?.version?.targetCarbsG,
             plannedAverage.fatG?.toFloat(), plan?.version?.targetFatG,
             weekCheats.size, weekWorkouts.count { !it.isRestDay }, weekWorkouts.count { it.isRestDay },
-            weekDelta(weekBia, previousBia, { it.measuredAtEpochMillis }) { it.weightKg },
-            weekDelta(weekBia, previousBia, { it.measuredAtEpochMillis }) { it.bodyFatPercent },
-            weekDelta(weekBia, previousBia, { it.measuredAtEpochMillis }) { it.muscleMassKg },
-            weekDelta(weekBody, previousBody, { it.measuredAtEpochMillis }) { it.waistCm },
+            weightDelta?.value,
+            bodyFatDelta?.value,
+            muscleDelta?.value,
+            waistDelta?.value,
             consumption.plannedMealCount,
             consumption.consumedMealCount,
             consumption.skippedMealCount,
@@ -117,6 +135,10 @@ class WeeklyReviewService(
             consumption.adherencePercent,
             consumption.consumedKcal,
             plan != null,
+            weightDeltaSpanDays = weightDelta?.spanDays,
+            bodyFatDeltaSpanDays = bodyFatDelta?.spanDays,
+            muscleMassDeltaSpanDays = muscleDelta?.spanDays,
+            waistDeltaSpanDays = waistDelta?.spanDays,
         )
     }
 
@@ -129,7 +151,7 @@ class WeeklyReviewService(
     suspend fun generate(profileId: Long, weekStart: LocalDate): Result {
         val monday = monday(weekStart)
         val metrics = buildLocalMetrics(profileId, monday)
-        val historyContext = personalResponse.promptContext(lookbackDays = 56)
+        val historyContext = personalResponse.promptContext(lookbackDays = 56, profileId = profileId)
         val userContext = profiles?.get(profileId)?.let { AiUserContext.profileLine(it, time.today()) }.orEmpty()
         val request = AiStructuredRequest(
             systemPrompt = SYSTEM_PROMPT,
@@ -164,6 +186,8 @@ class WeeklyReviewService(
                 .put("cheatCount", metrics.cheatCount).put("workoutCount", metrics.workoutCount).put("restDayCount", metrics.restDayCount)
                 .put("weightDeltaKg", metrics.weightDeltaKg).put("bodyFatDeltaPoints", metrics.bodyFatDeltaPoints)
                 .put("muscleMassDeltaKg", metrics.muscleMassDeltaKg).put("waistDeltaCm", metrics.waistDeltaCm)
+                .put("weightDeltaSpanDays", metrics.weightDeltaSpanDays).put("bodyFatDeltaSpanDays", metrics.bodyFatDeltaSpanDays)
+                .put("muscleMassDeltaSpanDays", metrics.muscleMassDeltaSpanDays).put("waistDeltaSpanDays", metrics.waistDeltaSpanDays)
                 .put("plannedMealCount", metrics.plannedMealCount).put("consumedMealCount", metrics.consumedMealCount)
                 .put("skippedMealCount", metrics.skippedMealCount).put("trackingCoveragePercent", metrics.trackingCoveragePercent)
                 .put("adherencePercent", metrics.adherencePercent).put("consumedKcal", metrics.consumedKcal))
@@ -183,16 +207,17 @@ class WeeklyReviewService(
         appendLine("E:${m.cheatCount};${m.workoutCount};${m.restDayCount}")
         appendLine("C:${m.plannedMealCount};${m.consumedMealCount};${m.skippedMealCount};${m.trackingCoveragePercent ?: "?"};${m.adherencePercent ?: "?"};${m.consumedKcal ?: "?"}")
         appendLine("D:${m.weightDeltaKg ?: "?"};${m.bodyFatDeltaPoints ?: "?"};${m.muscleMassDeltaKg ?: "?"};${m.waistDeltaCm ?: "?"}")
+        appendLine("DS:${m.weightDeltaSpanDays ?: "?"};${m.bodyFatDeltaSpanDays ?: "?"};${m.muscleMassDeltaSpanDays ?: "?"};${m.waistDeltaSpanDays ?: "?"}")
         if (historyContext.isNotBlank()) appendLine("H:${AiCompactEnvelope.clean(historyContext)}")
     }
 
     companion object {
-        private val SYSTEM_PROMPT = """Weekly nutrition review from recorded facts only. ${AiUserContext.INPUT_DESCRIPTION} P=planned averages, T=authoritative targets, E=deviations/workouts/rest, C=locally calculated meal tracking and consumption, D=observed body deltas. Never infer unrecorded consumption or adherence. Body changes are associative observations, never causes. No diagnosis/treatment. Next-week guidance practical, nutrition-only, never overrides T. Summary <=25 words; each O/G <=18 words; O 1..6; G 1..5."""
+        internal val SYSTEM_PROMPT = """Weekly nutrition review from recorded facts only. ${AiUserContext.INPUT_DESCRIPTION} P=planned averages, T=authoritative targets, E=deviations/workouts/rest, C=locally calculated meal tracking and consumption, D=observed body deltas (weight, body fat, muscle, waist), DS=days actually spanned by each D delta (a delta covers only that interval, never claim a full week when DS differs; `?`=no delta). Never infer unrecorded consumption or adherence. Body changes are associative observations, never causes. No diagnosis/treatment. ${UnsupportedClaimGuard.PROMPT_SAFETY_RULES} Next-week guidance practical, nutrition-only, never overrides T. Summary <=${WeeklyReviewContract.MAX_SUMMARY_WORDS} words; each O/G <=${WeeklyReviewContract.MAX_ITEM_WORDS} words; O ${WeeklyReviewContract.MIN_OBSERVATIONS}..${WeeklyReviewContract.MAX_OBSERVATIONS}; G ${WeeklyReviewContract.MIN_GUIDANCE}..${WeeklyReviewContract.MAX_GUIDANCE}."""
     }
 
     private fun monday(date: LocalDate): LocalDate = date.minusDays((date.dayOfWeek.value - 1).toLong())
-    private fun <T> weekDelta(week: List<T>, previous: List<T>, at: (T) -> Long, metric: (T) -> Float?): Float? {
+    private fun <T> weekDelta(week: List<T>, previous: List<T>, at: (T) -> Long, metric: (T) -> Float?): WeeklyBodyDelta.Delta? {
         fun readings(items: List<T>) = items.mapNotNull { item -> metric(item)?.let { WeeklyBodyDelta.Reading(at(item), it) } }
-        return WeeklyBodyDelta.compute(readings(week), readings(previous))
+        return WeeklyBodyDelta.describe(readings(week), readings(previous))
     }
 }

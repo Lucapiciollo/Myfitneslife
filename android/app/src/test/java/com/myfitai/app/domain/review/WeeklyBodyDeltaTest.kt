@@ -62,6 +62,36 @@ class WeeklyBodyDeltaTest {
         assertNull(WeeklyBodyDelta.compute(listOf(Reading(monday + 2_000, 88.5f)), emptyList()))
     }
 
+    private val day = 86_400_000L
+
+    @Test
+    fun singleReadingWithReferenceWithinTheCapKeepsTheDeltaAndDeclaresTheRealSpan() {
+        val week = listOf(Reading(monday + 2 * day, 88.5f))
+        val previous = listOf(Reading(monday + 2 * day - WeeklyBodyDelta.MAX_REFERENCE_GAP_DAYS * day, 90f))
+
+        val delta = WeeklyBodyDelta.describe(week, previous)!!
+        assertEquals(-1.5f, delta.value, 0f)
+        assertEquals(WeeklyBodyDelta.MAX_REFERENCE_GAP_DAYS, delta.spanDays)
+    }
+
+    @Test
+    fun singleReadingWithReferenceBeyondTheCapHasNoWeeklyDelta() {
+        val week = listOf(Reading(monday + 2 * day, 88.5f))
+        val stale = listOf(Reading(monday + 2 * day - (WeeklyBodyDelta.MAX_REFERENCE_GAP_DAYS + 1) * day, 95f))
+
+        assertNull(WeeklyBodyDelta.describe(week, stale))
+        assertNull(WeeklyBodyDelta.compute(week, stale))
+    }
+
+    @Test
+    fun twoReadingsInTheWeekDeclareTheirOwnSpan() {
+        val week = listOf(Reading(monday + 1 * day, 90f), Reading(monday + 4 * day, 89f))
+
+        val delta = WeeklyBodyDelta.describe(week, emptyList())!!
+        assertEquals(-1.0f, delta.value, 0f)
+        assertEquals(3, delta.spanDays)
+    }
+
     @Test
     fun noReadingsInTheWeekHasNoDelta() {
         assertNull(WeeklyBodyDelta.compute(emptyList(), emptyList()))
