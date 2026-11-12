@@ -7,6 +7,8 @@ import com.myfitai.app.ai.AiExecutionService
 import com.myfitai.app.ai.AiProviderType
 import com.myfitai.app.ai.AiRuntimeGateway
 import com.myfitai.app.ai.AiStructuredRequest
+import com.myfitai.app.ai.AiTransportException
+import com.myfitai.app.ai.AiTransportFailureKind
 import com.myfitai.app.data.local.MyFitAiDatabase
 import com.myfitai.app.data.local.entity.BiaMeasurementEntity
 import com.myfitai.app.data.local.entity.UserProfileEntity
@@ -121,7 +123,7 @@ class BiaAnalysisAiJobHandlerTest {
     }
 
     @Test
-    fun providerFailure_isBoundedAndStoresNothing() = runBlocking {
+    fun permanentProviderFailure_isBoundedAndStoresNothing() = runBlocking {
         val id = biaRepository.insert(fullReading(1))
         gateway.failure = IllegalStateException("x".repeat(5_000))
 
@@ -132,6 +134,51 @@ class BiaAnalysisAiJobHandlerTest {
         // WorkManager Data is limited to 10 KB; a provider error must never blow it up.
         assertTrue(failure.message.length < 400)
         assertNull(results.latestForMeasurement(profileId, id))
+    }
+
+    @Test
+    fun quotaExhausted_isPermanentFailureAndStoresNothing() = runBlocking {
+        val id = biaRepository.insert(fullReading(1))
+        gateway.failure = AiTransportException.Http(AiProviderType.GEMINI, 429, AiTransportFailureKind.QUOTA_EXHAUSTED)
+
+        val outcome = handler.execute(profileId, "job", BiaAnalysisAiJobHandler.params(id))
+
+        assertTrue(outcome is AiJobOutcome.Failure)
+        assertNull(results.latestForMeasurement(profileId, id))
+    }
+
+    @Test
+    fun transientProviderFailure_isRethrownForWorkManagerRetryAndStoresNothing() = runBlocking {
+        val id = biaRepository.insert(fullReading(1))
+        listOf(
+            AiTransportException.Network(),
+            AiTransportException.Http(AiProviderType.GEMINI, 429, AiTransportFailureKind.RATE_LIMITED),
+            AiTransportException.Http(AiProviderType.GEMINI, 503, AiTransportFailureKind.PROVIDER_UNAVAILABLE),
+        ).forEach { transient ->
+            gateway.failure = transient
+            val thrown = try {
+                handler.execute(profileId, "job", BiaAnalysisAiJobHandler.params(id))
+                null
+            } catch (error: Exception) {
+                error
+            }
+            assertTrue("transient error must be rethrown, got $thrown", thrown === transient)
+            assertNull(results.latestForMeasurement(profileId, id))
+        }
+    }
+
+    @Test
+    fun cancellation_isAlwaysRethrown() = runBlocking {
+        val id = biaRepository.insert(fullReading(1))
+        val cancelled = kotlinx.coroutines.CancellationException("cancelled")
+        gateway.failure = cancelled
+        val thrown = try {
+            handler.execute(profileId, "job", BiaAnalysisAiJobHandler.params(id))
+            null
+        } catch (error: Exception) {
+            error
+        }
+        assertTrue(thrown === cancelled)
     }
 
     @Test

@@ -2,6 +2,7 @@ package com.myfitai.app.domain.body
 
 import androidx.work.Data
 import com.myfitai.app.domain.ai.AiImageJobStore
+import com.myfitai.app.domain.ai.AiJobFailures
 import com.myfitai.app.domain.ai.AiJobHandler
 import com.myfitai.app.domain.ai.AiJobOutcome
 import com.myfitai.app.domain.ai.AiJobWorker
@@ -35,6 +36,10 @@ class BiaImportAiJobHandler(private val service: BiaImportService, private val i
             .put("model", result.model)
             .toString()
         AiJobOutcome.Success(Data.Builder().putString(KEY_PAYLOAD, payload).putString(AiJobWorker.KEY_PROVIDER, "${result.provider} · ${result.model}").build())
-    } catch (error: Exception) { AiJobOutcome.Failure(error.message ?: "Import BIA non riuscito") }
+    } catch (error: Exception) {
+        // Transient/cancelled: rethrow so WorkManager retries; the worker keeps the temp image until the last attempt.
+        AiJobFailures.rethrowIfRetryableOrCancelled(error)
+        AiJobOutcome.Failure(error.message ?: "Import BIA non riuscito")
+    }
     companion object { const val KEY_PAYLOAD = "payload" }
 }

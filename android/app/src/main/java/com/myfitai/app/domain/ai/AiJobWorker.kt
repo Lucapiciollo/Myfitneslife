@@ -4,9 +4,8 @@ import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
-import com.myfitai.app.ai.AiTransportException
-import com.myfitai.app.ai.AiTransportFailureKind
 import com.myfitai.app.data.AppDataContainer
+import kotlinx.coroutines.CancellationException
 
 class AiJobWorker(appContext: Context, params: WorkerParameters) : CoroutineWorker(appContext, params) {
     override suspend fun doWork(): Result {
@@ -16,8 +15,16 @@ class AiJobWorker(appContext: Context, params: WorkerParameters) : CoroutineWork
         val handler = AppDataContainer.get(applicationContext).aiJobRegistry.handlerFor(type)
             ?: return Result.failure(workDataOf(KEY_ERROR to "Handler IA non disponibile"))
         val imagePath = inputData.getString(KEY_IMAGE_PATH)
-        val outcome = runCatching { handler.execute(profileId, jobKey, inputData) }.getOrElse { mapFailure(it) }
-        if (outcome !is AiJobOutcome.Retry) AppDataContainer.get(applicationContext).aiImageJobStore.delete(imagePath)
+        val outcome = try {
+            handler.execute(profileId, jobKey, inputData)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Exception) {
+            mapFailure(error)
+        }
+        // Keep the temporary image only while another attempt will actually run.
+        val willRetry = outcome is AiJobOutcome.Retry && runAttemptCount < MAX_RETRY_ATTEMPTS
+        if (!willRetry) AppDataContainer.get(applicationContext).aiImageJobStore.delete(imagePath)
         return when (outcome) {
             is AiJobOutcome.Success -> {
                 AiJobNotifier.notifySuccess(applicationContext, type, profileId, jobKey, outcome.output.getString(KEY_PROVIDER))
@@ -28,16 +35,7 @@ class AiJobWorker(appContext: Context, params: WorkerParameters) : CoroutineWork
         }
     }
 
-    private fun mapFailure(error: Throwable): AiJobOutcome = when (error) {
-        is AiTransportException.Network -> AiJobOutcome.Retry("Provider non raggiungibile")
-        is AiTransportException.Http -> if (error.failureKind == AiTransportFailureKind.RATE_LIMITED || error.failureKind == AiTransportFailureKind.PROVIDER_UNAVAILABLE) {
-            AiJobOutcome.Retry("Provider temporaneamente non disponibile")
-        } else {
-            AiJobOutcome.Failure(error.message ?: "Errore provider")
-        }
-        is AiTransportException.NotConfigured -> AiJobOutcome.Failure("Provider IA non configurato")
-        else -> AiJobOutcome.Failure(error.message ?: "Operazione IA non riuscita")
-    }
+    private fun mapFailure(error: Throwable): AiJobOutcome = AiJobFailures.toOutcome(error)
 
     private fun failure(type: AiJobType, profileId: Long, jobKey: String, message: String): Result {
         // WorkManager Data is capped at 10 KB: an oversized message would throw from the worker itself.

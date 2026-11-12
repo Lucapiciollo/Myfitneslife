@@ -1,6 +1,7 @@
 package com.myfitai.app.domain.body
 
 import androidx.work.Data
+import com.myfitai.app.domain.ai.AiJobFailures
 import com.myfitai.app.domain.ai.AiJobHandler
 import com.myfitai.app.domain.ai.AiJobOutcome
 import com.myfitai.app.domain.ai.AiJobWorker
@@ -21,7 +22,10 @@ class BodyProportionsAiJobHandler(private val service: BodyProportionAnalysisSer
             .put("agentValidation", result.agentValidation)
             .toString()
         AiJobOutcome.Success(Data.Builder().putString(KEY_PAYLOAD, payload).putString(AiJobWorker.KEY_PROVIDER, result.agentValidation).build())
-    } catch (error: Exception) { AiJobOutcome.Failure(error.message ?: "Interpretazione misure non disponibile") }
+    } catch (error: Exception) {
+        AiJobFailures.rethrowIfRetryableOrCancelled(error)
+        AiJobOutcome.Failure(error.message ?: "Interpretazione misure non disponibile")
+    }
 
     private fun decode(json: String): BodyProportionEngine.Report {
         val root = JSONObject(json)

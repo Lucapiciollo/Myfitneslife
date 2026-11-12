@@ -1,6 +1,7 @@
 package com.myfitai.app.domain.food
 
 import androidx.work.Data
+import com.myfitai.app.domain.ai.AiJobFailures
 import com.myfitai.app.domain.ai.AiJobHandler
 import com.myfitai.app.domain.ai.AiJobOutcome
 import com.myfitai.app.domain.ai.AiJobWorker
@@ -17,6 +18,7 @@ class NutritionAdviceAiJobHandler(private val service: NutritionAdviceService) :
         }).toString()
         AiJobOutcome.Success(Data.Builder().putString(KEY_PAYLOAD, payload).putString(AiJobWorker.KEY_PROVIDER, result.providerLabel.orEmpty()).build())
     } catch (error: Exception) {
+        AiJobFailures.rethrowIfRetryableOrCancelled(error)
         AiJobOutcome.Failure(error.message ?: "Consiglio non disponibile")
     }
 

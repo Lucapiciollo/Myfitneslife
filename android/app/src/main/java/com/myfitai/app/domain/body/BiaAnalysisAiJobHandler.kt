@@ -9,6 +9,7 @@ import com.myfitai.app.data.repository.BodyMeasurementRepository
 import com.myfitai.app.data.repository.MealPlanRepository
 import com.myfitai.app.data.repository.UserProfileRepository
 import com.myfitai.app.data.repository.WorkoutRepository
+import com.myfitai.app.domain.ai.AiJobFailures
 import com.myfitai.app.domain.ai.AiJobHandler
 import com.myfitai.app.domain.ai.AiJobOutcome
 import com.myfitai.app.domain.ai.AiJobWorker
@@ -68,6 +69,7 @@ class BiaAnalysisAiJobHandler(
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (error: Exception) {
+            AiJobFailures.rethrowIfRetryableOrCancelled(error)
             AiJobOutcome.Failure("BIA_PROGRESS_COACH_FAILED:${(error.message ?: "Analisi BIA non disponibile").take(MAX_ERROR_CHARS)}")
         }
     }

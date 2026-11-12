@@ -1,6 +1,7 @@
 package com.myfitai.app.domain.food
 
 import androidx.work.Data
+import com.myfitai.app.domain.ai.AiJobFailures
 import com.myfitai.app.domain.ai.AiJobHandler
 import com.myfitai.app.domain.ai.AiJobOutcome
 import com.myfitai.app.domain.ai.AiJobWorker
@@ -25,6 +26,7 @@ class CheatUnderstandingAiJobHandler(private val service: CheatAdjustmentService
     } catch (error: CheatAdjustmentService.AdjustmentException.NeedsInput) {
         AiJobOutcome.Failure("Completa prima: ${error.fields.joinToString()}")
     } catch (error: Exception) {
+        AiJobFailures.rethrowIfRetryableOrCancelled(error)
         AiJobOutcome.Failure(error.message ?: "Valutazione sgarro non disponibile")
     }
 

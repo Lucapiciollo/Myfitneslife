@@ -1,6 +1,7 @@
 package com.myfitai.app.domain.food
 
 import androidx.work.Data
+import com.myfitai.app.domain.ai.AiJobFailures
 import com.myfitai.app.domain.ai.AiJobHandler
 import com.myfitai.app.domain.ai.AiJobOutcome
 import com.myfitai.app.domain.ai.AiJobWorker
@@ -34,6 +35,7 @@ class CheatAdjustmentAiJobHandler(private val service: CheatAdjustmentService) :
         val payload = JSONObject().put("cheatId", result.cheatId).put("adapted", result.adapted).put("newVersionId", result.newVersionId ?: JSONObject.NULL).put("estimatedKcal", result.estimatedKcal ?: JSONObject.NULL).put("estimateSummary", result.estimateSummary).put("adaptationSummary", result.adaptationSummary).put("modifiedMeals", org.json.JSONArray(result.modifiedMeals)).toString()
         AiJobOutcome.Success(Data.Builder().putString(KEY_PAYLOAD, payload).putString(AiJobWorker.KEY_PROVIDER, understanding.provider).build())
     } catch (error: Exception) {
+        AiJobFailures.rethrowIfRetryableOrCancelled(error)
         AiJobOutcome.Failure(error.message ?: "Adattamento sgarro non riuscito")
     }
 

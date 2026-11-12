@@ -92,6 +92,67 @@ class AiExecutionServiceTest {
         }
     }
 
+    private val protocolBySchema = mapOf(
+        "myfitai_bia_raw_pipe_v2" to "B2",
+        "myfitai_bia_pipe_v1" to "BIA1",
+        "myfitai_bia_progress_coach_pipe_v2" to "BA2",
+        "myfitai_progress_analysis_pipe_v1" to "PA1",
+        "myfitai_body_proportion_pipe_v1" to "BP1",
+        "myfitai_weekly_review_pipe_v1" to "WR1",
+        "myfitai_meal_alternatives_pipe_v1" to "MA1",
+        "myfitai_nutrition_advice_pipe_v1" to "NA1",
+        "myfitai_cheat_understanding_pipe_v1" to "CU1",
+        "myfitai_cheat_adjustment_pipe_v1" to "CA1",
+        "myfitai_plan_review_pipe_v1" to "PR1",
+        "myfitai_nutrition_path_pipe_v1" to "NP1",
+        "myfitai_weekly_nutrition_pipe_v1" to "MFP1",
+    )
+
+    private fun retryPrompt(schemaName: String, firstResponse: String, validator: (String) -> Result<Unit>): String = runBlocking {
+        val provider = object : AiProvider {
+            override val type = AiProviderType.OPENAI
+            var calls = 0
+            var retryPrompt = ""
+            override suspend fun generateStructured(request: AiStructuredRequest): AiRawResponse {
+                calls++
+                if (calls == 2) retryPrompt = request.userPrompt
+                return AiRawResponse(type, "fake", if (calls == 1) firstResponse else "{\"data\":\"ok\"}")
+            }
+        }
+        AiExecutionService().execute(
+            provider,
+            AiStructuredRequest("system", "user", schemaName, AiCompactEnvelope.schemaJson("test")),
+            maxSchemaRetries = 1,
+            businessValidator = validator,
+        )
+        provider.retryPrompt
+    }
+
+    @Test
+    fun businessRetryNamesTheExactProtocolForEveryCompactSchema() {
+        protocolBySchema.forEach { (schema, header) ->
+            val prompt = retryPrompt(schema, "{\"data\":\"bad\"}") { v ->
+                if (v.contains("bad")) Result.failure(IllegalArgumentException("INVALID")) else Result.success(Unit)
+            }
+            assertTrue("$schema must request $header, got: $prompt", prompt.contains("must begin with $header "))
+        }
+    }
+
+    @Test
+    fun schemaRetryNamesTheExactProtocolForEveryCompactSchema() {
+        protocolBySchema.forEach { (schema, header) ->
+            val prompt = retryPrompt(schema, "{\"data\":\"x\",\"extra\":1}") { Result.success(Unit) }
+            assertTrue("$schema must request $header, got: $prompt", prompt.contains("must begin with $header "))
+        }
+    }
+
+    @Test
+    fun unknownCompactSchemaFallsBackToGenericRetryRule() {
+        val prompt = retryPrompt("myfitai_unknown_pipe_v1", "{\"data\":\"x\",\"extra\":1}") { Result.success(Unit) }
+        assertTrue(prompt.contains("must follow its requested compact protocol"))
+        assertTrue(!prompt.contains("must begin with"))
+    }
+
     @Test(expected = AiExecutionService.Failure.BusinessRejected::class)
     fun execute_doesNotBypassBusinessValidation() {
         runBlocking {
