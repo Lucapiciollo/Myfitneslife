@@ -128,6 +128,35 @@ class DietaryProfileEditingTest {
     }
 
     @Test
+    fun categoryOrder_putsHardConstraintsFirst() {
+        assertEquals(
+            listOf(
+                DietaryCategory.ALLERGY,
+                DietaryCategory.INTOLERANCE,
+                DietaryCategory.EXCLUDED,
+                DietaryCategory.DISLIKED,
+                DietaryCategory.PREFERRED,
+            ),
+            DietaryCategory.values().toList(),
+        )
+        val flags = DietaryCategory.values().map { it.isHardConstraint }
+        assertEquals(listOf(true, true, true, false, false), flags)
+    }
+
+    @Test
+    fun serialization_isIndependentFromCategoryDisplayOrder() {
+        val json = DietaryProfile(
+            preferredFoods = listOf("riso"),
+            allergies = listOf("arachidi"),
+        ).toJson()
+        val keys = org.json.JSONObject(json).keys().asSequence().toSet()
+        assertTrue(keys.containsAll(listOf("allergies", "intolerances", "excludedFoods", "dislikedFoods", "preferredFoods", "notes")))
+        val parsed = DietaryProfile.parse(json)
+        assertEquals(listOf("arachidi"), parsed.items(DietaryCategory.ALLERGY))
+        assertEquals(listOf("riso"), parsed.items(DietaryCategory.PREFERRED))
+    }
+
+    @Test
     fun hardConstraintFlag_distinguishesRigidCategoriesFromPreferences() {
         assertTrue(DietaryCategory.ALLERGY.isHardConstraint)
         assertTrue(DietaryCategory.INTOLERANCE.isHardConstraint)

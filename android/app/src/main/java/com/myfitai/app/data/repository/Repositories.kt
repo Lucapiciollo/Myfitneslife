@@ -18,6 +18,9 @@ class UserProfileRepository(private val db: MyFitAiDatabase) {
     suspend fun getFirst() = db.userProfileDao().getFirst()
     suspend fun create(value: UserProfileEntity): Long = db.userProfileDao().insert(value)
     suspend fun update(value: UserProfileEntity) = db.userProfileDao().update(value)
+    /** @return true se il profilo esiste ancora ed e' stato aggiornato; tocca solo `dietaryPreferencesJson` e `updatedAtEpochMillis`. */
+    suspend fun updateDietaryPreferences(profileId: Long, json: String?, updatedAt: Long): Boolean =
+        db.userProfileDao().updateDietaryPreferences(profileId, json, updatedAt) == 1
     suspend fun delete(value: UserProfileEntity) = db.userProfileDao().delete(value)
 }
 

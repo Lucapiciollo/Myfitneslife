@@ -7,6 +7,8 @@ import android.view.KeyEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
+import android.view.accessibility.AccessibilityEvent
+import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.AutoCompleteTextView
 import android.widget.TextView
 import android.widget.Toast
@@ -133,6 +135,10 @@ class DietaryPreferencesActivity : BaseShellActivity() {
                 if (category == DietaryCategory.ALLERGY || category == DietaryCategory.INTOLERANCE) R.string.dietary_empty_hard else R.string.dietary_empty_soft,
             )
             block.addButton.contentDescription = getString(R.string.dietary_add_action_description, label(category))
+            // Nome accessibile = hint visibile, con la categoria: i cinque campi non sono piu' indistinguibili.
+            val inputHint = getString(R.string.dietary_add_hint_for, label(category))
+            root.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.categoryInputLayout).hint = inputHint
+            block.input.contentDescription = inputHint
             block.addButton.setOnClickListener { addFromInput(category) }
             block.input.setOnEditorActionListener { _, actionId, event ->
                 val enter = event?.keyCode == KeyEvent.KEYCODE_ENTER && event.action == KeyEvent.ACTION_DOWN
@@ -159,12 +165,20 @@ class DietaryPreferencesActivity : BaseShellActivity() {
     private fun loadProfile() {
         setLoaded(false)
         lifecycleScope.launch {
-            val id = data.activeProfileStore.currentIdOrNull() ?: return@launch
+            val id = data.activeProfileStore.currentIdOrNull()
+            if (id == null) {
+                showLoadBlocked(R.string.dietary_no_profile)
+                return@launch
+            }
             val profile = runCatching { data.userProfileRepository.get(id) }.getOrElse {
                 // Mai lasciare un form vuoto salvabile sopra dati che non si sono riusciti a leggere.
-                showLoadBlocked()
+                showLoadBlocked(R.string.dietary_save_blocked_load)
                 return@launch
-            } ?: return@launch
+            }
+            if (profile == null) {
+                showLoadBlocked(R.string.dietary_no_profile)
+                return@launch
+            }
             val dietary = DietaryProfile.parse(profile.dietaryPreferencesJson).canonical()
             loadedProfileId = id
             baseline = dietary
@@ -190,9 +204,9 @@ class DietaryPreferencesActivity : BaseShellActivity() {
         saveError.visibility = View.GONE
     }
 
-    private fun showLoadBlocked() {
+    private fun showLoadBlocked(messageRes: Int) {
         saveButton.isEnabled = false
-        loadError.setText(R.string.dietary_save_blocked_load)
+        loadError.setText(messageRes)
         loadError.visibility = View.VISIBLE
     }
 
@@ -254,9 +268,13 @@ class DietaryPreferencesActivity : BaseShellActivity() {
         saveError.visibility = View.GONE
         renderCategory(category)
         showMessage(category, getString(R.string.dietary_message_removed, value, label(category)), error = false)
-        // Il chip rimosso non esiste piu': porta il focus sul successivo o sul titolo della categoria.
+        // Il chip rimosso non esiste piu': porta il focus (tastiera e TalkBack) sul successivo o sul titolo della categoria.
         val target = block.chips.getChildAt(index.coerceAtMost(block.chips.childCount - 1)) ?: block.title
         target.requestFocus()
+        target.post {
+            target.performAccessibilityAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS, null)
+            target.sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_FOCUSED)
+        }
     }
 
     private fun showMessage(category: DietaryCategory, text: String, error: Boolean) {
@@ -291,7 +309,8 @@ class DietaryPreferencesActivity : BaseShellActivity() {
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.dietary_discard_title)
             .setMessage(R.string.dietary_discard_message)
-            .setPositiveButton(R.string.dietary_discard_keep, null)
+            .setNeutralButton(R.string.dietary_discard_keep, null)
+            .setPositiveButton(R.string.dietary_discard_save) { _, _ -> save() }
             .setNegativeButton(R.string.dietary_discard_exit) { _, _ ->
                 exitGuard.isEnabled = false
                 onBackPressedDispatcher.onBackPressed()
@@ -303,7 +322,8 @@ class DietaryPreferencesActivity : BaseShellActivity() {
         if (saving) return
         val loaded = loadedProfileId
         if (loaded == null || baseline == null) {
-            Toast.makeText(this, R.string.dietary_no_profile, Toast.LENGTH_SHORT).show()
+            loadError.setText(R.string.dietary_no_profile)
+            loadError.visibility = View.VISIBLE
             return
         }
         // Il testo digitato ma non ancora aggiunto non deve sparire in silenzio: lo si aggiunge, o si resta qui con l'errore.
@@ -322,14 +342,14 @@ class DietaryPreferencesActivity : BaseShellActivity() {
                 }
                 val dietary = currentProfile()
                 val saved = runCatching {
-                    val profile = data.userProfileRepository.get(loaded) ?: error("profile missing")
-                    data.userProfileRepository.update(
-                        profile.copy(dietaryPreferencesJson = dietary.toJson(), updatedAtEpochMillis = System.currentTimeMillis()),
-                    )
-                    profile
+                    // Update mirato: scrive solo le preferenze, senza rimettere nel DB un profilo letto in precedenza.
+                    check(data.userProfileRepository.updateDietaryPreferences(loaded, dietary.toJson(), System.currentTimeMillis())) {
+                        "profile missing"
+                    }
+                    loaded
                 }
-                val profile = saved.getOrNull()
-                if (profile == null) {
+                val profileId = saved.getOrNull()
+                if (profileId == null) {
                     // La bozza resta intatta: nessun reset di chip o campi.
                     saveError.setText(R.string.dietary_save_error)
                     saveError.visibility = View.VISIBLE
@@ -341,7 +361,7 @@ class DietaryPreferencesActivity : BaseShellActivity() {
                 draft = dietary
                 Toast.makeText(this@DietaryPreferencesActivity, R.string.dietary_saved, Toast.LENGTH_SHORT).show()
                 if (isBootstrap) {
-                    val jobKey = if (aiProviderConfigured) data.nutritionPathTrigger.maybeEnqueue(profile.id) else null
+                    val jobKey = if (aiProviderConfigured) data.nutritionPathTrigger.maybeEnqueue(profileId) else null
                     startActivity(Intent(this@DietaryPreferencesActivity, NutritionPathActivity::class.java).apply {
                         putExtra(NutritionPathActivity.EXTRA_JOB_KEY, jobKey)
                         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)

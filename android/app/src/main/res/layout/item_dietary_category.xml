@@ -39,6 +39,7 @@
         android:gravity="center_vertical"
         android:orientation="horizontal">
         <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/categoryInputLayout"
             style="@style/Widget.MyFitAI.InputCompact"
             android:layout_width="0dp"
             android:layout_height="wrap_content"

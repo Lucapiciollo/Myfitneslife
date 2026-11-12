@@ -191,6 +191,7 @@
     <string name="dietary_empty_soft">Nessuna voce.</string>
     <string name="dietary_empty_hard">Nessuna voce dichiarata. Un elenco vuoto non significa «nessuna allergia o intolleranza».</string>
     <string name="dietary_add_hint">Nuova voce</string>
+    <string name="dietary_add_hint_for">Nuova voce per %1$s</string>
     <string name="dietary_add_action">Aggiungi</string>
     <string name="dietary_add_action_description">Aggiungi a %1$s</string>
     <string name="dietary_remove_chip">Rimuovi %1$s da %2$s</string>
@@ -208,5 +209,6 @@
     <string name="dietary_discard_title">Modifiche non salvate</string>
     <string name="dietary_discard_message">Hai modifiche alle preferenze alimentari non ancora salvate.</string>
     <string name="dietary_discard_keep">Continua a modificare</string>
+    <string name="dietary_discard_save">Salva</string>
     <string name="dietary_discard_exit">Esci senza salvare</string>
 </resources>

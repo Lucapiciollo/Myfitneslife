@@ -1,12 +1,15 @@
 package com.myfitai.app.domain.food
 
-/** Le cinque liste modificabili del profilo alimentare. Le prime tre di [isHardConstraint] sono vincoli rigidi. */
+/**
+ * Le cinque liste modificabili del profilo alimentare, nell'ordine di visualizzazione:
+ * prima i vincoli rigidi (allergie, intolleranze, esclusioni), poi avversioni e preferenze.
+ */
 enum class DietaryCategory(val isHardConstraint: Boolean) {
-    PREFERRED(false),
-    DISLIKED(false),
-    EXCLUDED(true),
-    INTOLERANCE(true),
     ALLERGY(true),
+    INTOLERANCE(true),
+    EXCLUDED(true),
+    DISLIKED(false),
+    PREFERRED(false),
 }
 
 /** Esito di un inserimento: nulla viene deciso in silenzio, ogni voce scartata e' riportata. */
