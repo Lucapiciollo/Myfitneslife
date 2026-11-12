@@ -129,4 +129,24 @@ sealed class AiTransportException(message: String) : Exception(message) {
     ) : AiTransportException("Errore HTTP provider: $statusCode")
     class Network : AiTransportException("Provider non raggiungibile")
     class InvalidResponse : AiTransportException("Risposta provider non interpretabile")
+
+    /**
+     * True when repeating the same request later may succeed: no network, non-quota 429, provider 5xx.
+     * Quota, auth, model and schema errors are permanent.
+     */
+    fun isTransient(): Boolean = when (this) {
+        is Network -> true
+        is Http -> when (failureKind) {
+            AiTransportFailureKind.RATE_LIMITED, AiTransportFailureKind.PROVIDER_UNAVAILABLE -> true
+            AiTransportFailureKind.QUOTA_EXHAUSTED,
+            AiTransportFailureKind.INVALID_API_KEY,
+            AiTransportFailureKind.UNSUPPORTED_AUTH_METHOD,
+            AiTransportFailureKind.MODEL_UNAVAILABLE,
+            AiTransportFailureKind.MODEL_REQUIRES_INTERACTIONS,
+            AiTransportFailureKind.SCHEMA,
+            -> false
+            else -> statusCode in 500..599
+        }
+        else -> false
+    }
 }

@@ -9,6 +9,7 @@ import com.myfitai.app.data.repository.BodyMeasurementRepository
 import com.myfitai.app.data.repository.MealPlanRepository
 import com.myfitai.app.data.repository.UserProfileRepository
 import com.myfitai.app.data.repository.WorkoutRepository
+import com.myfitai.app.domain.ai.AiJobFailures
 import com.myfitai.app.domain.ai.AiJobHandler
 import com.myfitai.app.domain.ai.AiJobOutcome
 import com.myfitai.app.domain.ai.AiJobWorker
@@ -68,7 +69,8 @@ class BiaAnalysisAiJobHandler(
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (error: Exception) {
-            AiJobOutcome.Failure("BIA_PROGRESS_COACH_FAILED:${(error.message ?: "Analisi BIA non disponibile").take(MAX_ERROR_CHARS)}")
+            AiJobFailures.rethrowIfRetryableOrCancelled(error)
+            AiJobOutcome.Failure("BIA_PROGRESS_COACH_FAILED:" + AiJobFailures.safeMessage(error, "Analisi BIA non disponibile"))
         }
     }
 
@@ -108,7 +110,6 @@ class BiaAnalysisAiJobHandler(
         const val KEY_RESULT_ID = "result_id"
         const val KEY_AUTOMATIC = "automatic"
         private const val NO_MEASUREMENT = -1L
-        private const val MAX_ERROR_CHARS = 300
 
         /** The only parameter a manual analysis needs; everything else is read from Room. */
         fun params(measurementId: Long): Data = Data.Builder().putLong(KEY_MEASUREMENT_ID, measurementId).build()

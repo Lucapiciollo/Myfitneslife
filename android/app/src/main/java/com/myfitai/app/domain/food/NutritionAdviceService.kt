@@ -98,6 +98,8 @@ class NutritionAdviceService(
                 } },
             )
         }.getOrElse {
+            // Transient transport errors and cancellation must reach the job worker (WorkManager retry).
+            com.myfitai.app.domain.ai.AiJobFailures.rethrowIfRetryableOrCancelled(it)
             return Result(false, "Consiglio nutrizionale non disponibile in questo momento.", emptyList(), "", null)
         }
 

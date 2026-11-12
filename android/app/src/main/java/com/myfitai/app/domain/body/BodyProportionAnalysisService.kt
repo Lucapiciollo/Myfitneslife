@@ -25,7 +25,7 @@ class BodyProportionAnalysisService(
             request = AiStructuredRequest(
                 systemPrompt = SYSTEM_PROMPT,
                 userPrompt = buildPrompt(report),
-                schemaName = "myfitai_body_proportion_pipe_v1",
+                schemaName = SCHEMA_NAME,
                 schemaJson = AiCompactEnvelope.schemaJson,
                 maxOutputTokens = 500,
                 thinkingBudget = 0,
@@ -91,6 +91,7 @@ class BodyProportionAnalysisService(
     private fun clean(value: String): String = AiCompactEnvelope.clean(value)
 
     companion object {
+        const val SCHEMA_NAME = "myfitai_body_proportion_pipe_v1"
         private const val SYSTEM_PROMPT = """
 MyFitAI body-measurement interpreter. App numbers are authoritative; explain only, never recalculate, diagnose, infer causes/posture/sex/age, or present aesthetic ideals. Interpret only the latest body measurement and the app-computed comparisons with the immediately previous measurement supplied in APP_COMPARISON. Do not infer a trend from a single comparison, and do not calculate a difference yourself. If APP_COMPARISON is ?, explicitly state that there is no prior measurement to compare. A measured delta is not proof of fat or muscle change; note ordinary measurement variation when appropriate.
 Output ONLY JSON envelope with `data` using:

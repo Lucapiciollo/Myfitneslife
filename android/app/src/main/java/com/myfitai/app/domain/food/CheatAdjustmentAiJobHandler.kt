@@ -1,12 +1,17 @@
 package com.myfitai.app.domain.food
 
 import androidx.work.Data
+import com.myfitai.app.domain.ai.AiJobFailures
 import com.myfitai.app.domain.ai.AiJobHandler
 import com.myfitai.app.domain.ai.AiJobOutcome
 import com.myfitai.app.domain.ai.AiJobWorker
 import org.json.JSONObject
 
-class CheatAdjustmentAiJobHandler(private val service: CheatAdjustmentService) : AiJobHandler {
+class CheatAdjustmentAiJobHandler(
+    private val registerAndAdapt: suspend (CheatAdjustmentService.Input, CheatAdjustmentService.Understanding) -> CheatAdjustmentService.Result,
+) : AiJobHandler {
+    constructor(service: CheatAdjustmentService) : this(service::registerAndAdapt)
+
     override suspend fun execute(profileId: Long, jobKey: String, params: Data): AiJobOutcome = try {
         val input = CheatAdjustmentService.Input(
             description = params.getString(KEY_DESCRIPTION).orEmpty(),
@@ -30,11 +35,12 @@ class CheatAdjustmentAiJobHandler(private val service: CheatAdjustmentService) :
             model = params.getString(KEY_AGENT_MODEL).orEmpty(),
             inputFingerprint = params.getString(KEY_FINGERPRINT).orEmpty(),
         )
-        val result = service.registerAndAdapt(input, understanding)
+        val result = registerAndAdapt(input, understanding)
         val payload = JSONObject().put("cheatId", result.cheatId).put("adapted", result.adapted).put("newVersionId", result.newVersionId ?: JSONObject.NULL).put("estimatedKcal", result.estimatedKcal ?: JSONObject.NULL).put("estimateSummary", result.estimateSummary).put("adaptationSummary", result.adaptationSummary).put("modifiedMeals", org.json.JSONArray(result.modifiedMeals)).toString()
         AiJobOutcome.Success(Data.Builder().putString(KEY_PAYLOAD, payload).putString(AiJobWorker.KEY_PROVIDER, understanding.provider).build())
     } catch (error: Exception) {
-        AiJobOutcome.Failure(error.message ?: "Adattamento sgarro non riuscito")
+        AiJobFailures.rethrowIfRetryableOrCancelled(error)
+        AiJobFailures.failure(error, "Adattamento sgarro non riuscito")
     }
 
     companion object {

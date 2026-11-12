@@ -166,7 +166,7 @@ object BiaAnalysisContract {
 
     fun validateBusiness(value: Interpretation): Result<Unit> = runCatching {
         require(value.classification in classifications) { "BIA_CLASSIFICATION_INVALID" }
-        require(value.reliability in reliabilityLevels) { "BIA_RELIABILITY_INVALID_${value.reliability.take(32)}" }
+        require(value.reliability in reliabilityLevels) { "BIA_RELIABILITY_INVALID" }
         val text = listOf(
             value.verdict, value.whatIsHappening, value.fatLoss, value.objective,
             value.caloriesAndMacros, value.nextCheck, value.reliabilityReason,
