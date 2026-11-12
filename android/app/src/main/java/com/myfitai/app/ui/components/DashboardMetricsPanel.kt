@@ -22,6 +22,8 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import com.myfitai.app.R
@@ -35,6 +37,10 @@ data class DashboardMetricPresentation(
     val delta: String,
     val tone: MetricDeltaTone,
     @param:DrawableRes val trendIcon: Int,
+    /** Spoken form of the delta ("aumentato di 0,5 kg ..."); blank keeps the default reading of the visible text. */
+    val deltaDescription: String = "",
+    /** False when there is no direction to show (flat or no data): the arrow would suggest a change. */
+    val showDeltaIcon: Boolean = true,
 )
 
 /** Three highlighted body metric tiles; source values, deltas and meanings are supplied by Home. */
@@ -116,16 +122,22 @@ fun DashboardMetricsPanel(
                             .testTag("dashboardMetricDelta$index")
                             .clip(RoundedCornerShape(dimensionResource(R.dimen.radius_small)))
                             .background(deltaContainer(metric.tone))
-                            .padding(horizontal = dimensionResource(R.dimen.space_4), vertical = dimensionResource(R.dimen.space_4)),
+                            .padding(horizontal = dimensionResource(R.dimen.space_4), vertical = dimensionResource(R.dimen.space_4))
+                            .then(
+                                if (metric.deltaDescription.isBlank()) Modifier
+                                else Modifier.clearAndSetSemantics { contentDescription = metric.deltaDescription },
+                            ),
                         horizontalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.space_2)),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Image(
-                            painter = painterResource(metric.trendIcon),
-                            contentDescription = null,
-                            modifier = Modifier.size(dimensionResource(R.dimen.trend_indicator_icon_size)),
-                            colorFilter = ColorFilter.tint(deltaColor(metric.tone)),
-                        )
+                        if (metric.showDeltaIcon) {
+                            Image(
+                                painter = painterResource(metric.trendIcon),
+                                contentDescription = null,
+                                modifier = Modifier.size(dimensionResource(R.dimen.trend_indicator_icon_size)),
+                                colorFilter = ColorFilter.tint(deltaColor(metric.tone)),
+                            )
+                        }
                         Text(
                             text = metric.delta,
                             modifier = Modifier.weight(1f),

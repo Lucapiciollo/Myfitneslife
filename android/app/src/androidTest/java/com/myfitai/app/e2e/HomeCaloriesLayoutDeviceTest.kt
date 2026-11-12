@@ -13,6 +13,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.UiDevice
 import com.myfitai.app.R
+import com.myfitai.app.domain.display.DisplayNumberFormatter
 import com.myfitai.app.ui.HomeActivity
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -33,8 +34,8 @@ class HomeCaloriesLayoutDeviceTest {
             scenario.onActivity { activity ->
                 val targetText = activity.findViewById<TextView>(R.id.caloriesTargetValue).text.toString()
                 val consumedText = activity.findViewById<TextView>(R.id.caloriesConsumedText).text.toString()
-                val target = Regex("^\\s*(\\d+)").find(targetText)?.groupValues?.get(1)?.toIntOrNull()
-                val consumed = consumedText.trim().toIntOrNull()
+                val target = Regex("^\\s*(\\d+(?:\\.\\d{3})*)").find(targetText)?.groupValues?.get(1)?.replace(".", "")?.toIntOrNull()
+                val consumed = consumedText.trim().replace(".", "").toIntOrNull()
                 val ring = activity.findViewById<View>(R.id.caloriesConsumedProgressRing)
                 assertTrue("existing consumed label remains visible", activity.findViewById<View>(R.id.caloriesConsumedLabel).isShown)
                 assertEqualsText(activity, R.id.caloriesConsumedLabel, "Consumate oggi (kcal)")
@@ -47,8 +48,8 @@ class HomeCaloriesLayoutDeviceTest {
                 )
                 assertTrue("all three metric cards share the same horizontal row", metricRings.map { (it.parent as View).parent }.distinct().size == 1)
                 if (target != null && target > 0) {
-                    assertEqualsText(activity, R.id.caloriesConsumedMaximumText, target.toString())
-                    assertEqualsText(activity, R.id.caloriesRemainingMaximumText, target.toString())
+                    assertEqualsText(activity, R.id.caloriesConsumedMaximumText, DisplayNumberFormatter.integer(target))
+                    assertEqualsText(activity, R.id.caloriesRemainingMaximumText, DisplayNumberFormatter.integer(target))
                 }
                 val proteinRing = activity.findViewById<TargetProgressRingView>(R.id.caloriesConsumedProteinProgressRing)
                 val proteinTarget = (proteinRing.getTag(R.id.protein_target_tag) as? Double)?.toInt()

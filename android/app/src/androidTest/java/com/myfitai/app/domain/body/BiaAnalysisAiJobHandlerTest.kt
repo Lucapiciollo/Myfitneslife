@@ -24,6 +24,7 @@ import com.myfitai.app.domain.ai.AiJobOutcome
 import com.myfitai.app.domain.ai.AiJobScheduler
 import com.myfitai.app.domain.ai.AiJobWorker
 import com.myfitai.app.domain.calculation.ProfileCalculationService
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import org.junit.After
@@ -189,6 +190,26 @@ class BiaAnalysisAiJobHandlerTest {
 
         assertTrue(outcome is AiJobOutcome.Failure)
         assertTrue(gateway.prompts.isEmpty())
+    }
+
+    @Test
+    fun savedResult_keepsContractVersionReadingAndFingerprint_andDeletingTheReadingRemovesIt() = runBlocking {
+        val id = biaRepository.insert(fullReading(1))
+
+        handler.execute(profileId, "job", BiaAnalysisAiJobHandler.params(id))
+
+        val saved = results.latestForMeasurement(profileId, id)!!
+        val payload = JSONObject(saved.payloadJson)
+        assertEquals(BiaAnalysisPolicy.CONTRACT_VERSION, payload.getString("contractVersion"))
+        assertEquals(id, payload.getLong("biaMeasurementId"))
+        val reading = biaRepository.all(profileId).first().single()
+        assertTrue(!BiaAnalysisPolicy.isObsolete(saved.payloadJson, reading))
+        // Editing the values in place makes the stored analysis obsolete without any schema change.
+        assertTrue(BiaAnalysisPolicy.isObsolete(saved.payloadJson, reading.copy(weightKg = 70f)))
+
+        biaRepository.delete(reading)
+
+        assertNull(results.latestForMeasurement(profileId, id))
     }
 
     private fun fullReading(index: Int) = BiaMeasurementEntity(

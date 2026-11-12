@@ -80,6 +80,9 @@ interface BiaAnalysisResultDao {
 
     @Query("DELETE FROM bia_analysis_results WHERE profileId = :profileId")
     suspend fun deleteByProfile(profileId: Long)
+
+    @Query("DELETE FROM bia_analysis_results WHERE profileId = :profileId AND biaMeasurementId = :measurementId")
+    suspend fun deleteForMeasurement(profileId: Long, measurementId: Long)
 }
 
 @Dao

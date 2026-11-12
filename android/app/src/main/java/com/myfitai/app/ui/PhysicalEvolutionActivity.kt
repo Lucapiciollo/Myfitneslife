@@ -425,7 +425,7 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
                 classification?.let {
                     val start = result.length
                     result.append(it)
-                    result.setSpan(ForegroundColorSpan(classificationColor(classificationValue)), start, result.length, 0)
+                    result.setSpan(ForegroundColorSpan(classificationColor(classificationValue, prefs.lastConfidence(profileId))), start, result.length, 0)
                 }
                 confidence?.let {
                     if (result.isNotEmpty()) result.append(" · ")
@@ -652,14 +652,19 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         classificationLabel(ProgressAnalysisCompactContract.Classification.valueOf(value))
     }.getOrDefault(value)
 
-    private fun classificationColor(value: String?): Int = when (runCatching {
+    /**
+     * Unfavourable classifications (MR / NT) are red only when the confidence is not low: a weak signal is shown
+     * with the warning colour. The label and the confidence are always written in words next to the colour.
+     */
+    private fun classificationColor(value: String?, confidence: String?): Int = when (runCatching {
         value?.let { ProgressAnalysisCompactContract.Classification.valueOf(it) }
     }.getOrNull()) {
         ProgressAnalysisCompactContract.Classification.POSITIVE_RECOMPOSITION,
         ProgressAnalysisCompactContract.Classification.STABLE,
         ProgressAnalysisCompactContract.Classification.WEIGHT_LOSS -> getColor(R.color.semantic_positive)
         ProgressAnalysisCompactContract.Classification.WEIGHT_LOSS_WITH_MUSCLE_RISK,
-        ProgressAnalysisCompactContract.Classification.NEGATIVE_TREND -> getColor(R.color.semantic_error)
+        ProgressAnalysisCompactContract.Classification.NEGATIVE_TREND ->
+            if (confidence == ProgressAnalysisCompactContract.Confidence.LOW.name) getColor(R.color.semantic_warning) else getColor(R.color.semantic_error)
         else -> getColor(R.color.text_secondary)
     }
 

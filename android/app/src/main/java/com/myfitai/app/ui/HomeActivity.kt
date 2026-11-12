@@ -26,6 +26,10 @@ import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.domain.calculation.LocalCalculationEngine
 import com.myfitai.app.domain.calculation.WeightSource
 import com.myfitai.app.domain.calculation.DailyActivityCheckInEngine
+import com.myfitai.app.domain.display.DayTargetResolver
+import com.myfitai.app.domain.display.DisplayNumberFormatter
+import com.myfitai.app.domain.display.MetricDeltaPresenter
+import com.myfitai.app.domain.display.RemainingKcal
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.notifications.ExactAlarmAccess
 import com.myfitai.app.notifications.NotificationPreferences
@@ -258,25 +262,38 @@ class HomeActivity : BaseShellActivity() {
                 MetricDeltaTone.Neutral, trendIcon,
             )
         }
-        val tone = when (semantic) {
-            DeltaSemantic.NEUTRAL -> MetricDeltaTone.Neutral
-            DeltaSemantic.DOWN_IS_POSITIVE -> when {
-                delta < 0f -> MetricDeltaTone.Positive
-                delta > 0f -> MetricDeltaTone.Negative
-                else -> MetricDeltaTone.Neutral
-            }
-            DeltaSemantic.UP_IS_POSITIVE -> when {
-                delta > 0f -> MetricDeltaTone.Positive
-                delta < 0f -> MetricDeltaTone.Negative
-                else -> MetricDeltaTone.Neutral
-            }
+        val presentation = MetricDeltaPresenter.present(
+            delta, unit,
+            when (semantic) {
+                DeltaSemantic.NEUTRAL -> MetricDeltaPresenter.Preference.NEUTRAL
+                DeltaSemantic.DOWN_IS_POSITIVE -> MetricDeltaPresenter.Preference.DOWN_IS_POSITIVE
+                DeltaSemantic.UP_IS_POSITIVE -> MetricDeltaPresenter.Preference.UP_IS_POSITIVE
+            },
+        )
+        // Sign and arrow follow the DIRECTION of the change; colour only reinforces the judgement.
+        val tone = when (presentation.judgement) {
+            MetricDeltaPresenter.Judgement.POSITIVE -> MetricDeltaTone.Positive
+            MetricDeltaPresenter.Judgement.NEGATIVE -> MetricDeltaTone.Negative
+            MetricDeltaPresenter.Judgement.NEUTRAL -> MetricDeltaTone.Neutral
+        }
+        val icon = when (presentation.direction) {
+            MetricDeltaPresenter.Direction.UP -> R.drawable.ic_trend_up
+            MetricDeltaPresenter.Direction.DOWN -> R.drawable.ic_trend_down
+            MetricDeltaPresenter.Direction.FLAT -> trendIcon
+        }
+        val description = when (presentation.direction) {
+            MetricDeltaPresenter.Direction.UP -> getString(R.string.dashboard_delta_up_description, presentation.magnitudeText)
+            MetricDeltaPresenter.Direction.DOWN -> getString(R.string.dashboard_delta_down_description, presentation.magnitudeText)
+            MetricDeltaPresenter.Direction.FLAT -> getString(R.string.dashboard_delta_flat_description)
         }
         return DashboardMetricPresentation(
-            displayLabel,
-            displayValue,
-            "${formatNumber(kotlin.math.abs(delta))} $unit",
-            tone,
-            if (tone == MetricDeltaTone.Positive) R.drawable.ic_trend_up else R.drawable.ic_trend_down,
+            label = displayLabel,
+            value = displayValue,
+            delta = presentation.signedText,
+            tone = tone,
+            trendIcon = icon,
+            deltaDescription = description,
+            showDeltaIcon = presentation.direction != MetricDeltaPresenter.Direction.FLAT,
         )
     }
 
@@ -433,6 +450,8 @@ class HomeActivity : BaseShellActivity() {
         renderPlanUpdateNotice()
         renderAiConfigurationNotice()
         renderBiaDueNotice(state)
+        // The state re-emits at midnight, so the date label follows the day instead of the day the screen opened.
+        findViewById<TextView>(R.id.todayLabel).text = todayLabel()
         val firstName = state.profileName?.trim()?.substringBefore(' ')?.takeIf { it.isNotBlank() }
         findViewById<TextView>(R.id.greetingText).text = firstName?.let { "Ciao $it 👋" } ?: "Ciao 👋"
 
@@ -499,7 +518,7 @@ class HomeActivity : BaseShellActivity() {
                 val minLoss = requireNotNull(result.expectedFatLossKgMin)
                 val maxLoss = requireNotNull(result.expectedFatLossKgMax)
                 status.text = "≈ ${formatExpectedLossRange(minLoss, maxLoss)} di grasso"
-                detail.text = "Periodo $period · ${result.plannedDays}/${result.periodWeeks * 7} giorni pianificati · deficit ≈ ${result.theoreticalDeficitKcal} kcal"
+                detail.text = "Periodo $period · ${result.plannedDays}/${result.periodWeeks * 7} giorni pianificati · deficit ≈ ${result.theoreticalDeficitKcal?.let { DisplayNumberFormatter.integer(it) } ?: "-"} kcal"
             }
             result.plannedDays > 0 -> {
                 status.text = "Nessuna perdita stimabile"
@@ -548,7 +567,7 @@ class HomeActivity : BaseShellActivity() {
         val value = findViewById<TextView>(R.id.recoveryValueText)
         val hint = findViewById<TextView>(R.id.recoveryHintText)
         if (recovery.pendingKcal > 0) {
-            value.text = "${recovery.pendingKcal} kcal"
+            value.text = DisplayNumberFormatter.kcal(recovery.pendingKcal)
             val credits = if (recovery.creditCount == 1) "1 sgarro recente" else "${recovery.creditCount} sgarri recenti"
             val expiry = recovery.nextExpiry?.format(DateTimeFormatter.ofPattern("dd/MM", Locale.ITALIAN))
             hint.text = "Da distribuire gradualmente nei prossimi giorni · $credits${expiry?.let { " · prima scadenza $it" }.orEmpty()}. Evita compensazioni drastiche."
@@ -609,33 +628,51 @@ class HomeActivity : BaseShellActivity() {
 
     private fun renderCalories(calories: HomeViewModel.CalorieState) {
         currentCalories = calories
-        fun kcal(value: Int?) = value?.let { "$it kcal" } ?: "—"
+        fun kcal(value: Int?) = value?.let { DisplayNumberFormatter.kcal(it) } ?: "-"
         findViewById<TextView>(R.id.caloriesBmrValue).text = kcal(calories.bmr)
         findViewById<TextView>(R.id.caloriesBiaBmrValue).text = kcal(calories.biaBmr)
         findViewById<TextView>(R.id.caloriesTdeeValue).text = kcal(calories.tdee)
         findViewById<TextView>(R.id.caloriesTargetValue).text = kcal(calories.target)
         val caloriesConsumedText = findViewById<TextView>(R.id.caloriesConsumedText)
-        caloriesConsumedText.text = calories.consumedKcal?.toString() ?: "—"
+        caloriesConsumedText.text = calories.consumedKcal?.let { DisplayNumberFormatter.integer(it) } ?: "-"
         findViewById<TextView>(R.id.caloriesConsumptionNote).text = when {
             calories.consumedCount == 0 && calories.recordedCount > 0 -> "Gli elementi registrati risultano saltati."
             calories.consumedCount == 0 -> "Nessun alimento registrato come consumato oggi."
             calories.consumedCount < calories.recordedCount -> "Calorie e proteine sommano i soli elementi consumati (${calories.consumedCount})."
             else -> "Totale di ${calories.consumedCount} elementi segnati come consumati."
         }
-        val remainingValue = if (calories.consumedKcal != null && calories.target != null && calories.target > 0) {
-            calories.target - calories.consumedKcal
-        } else null
+        val remaining = RemainingKcal.of(calories.target, calories.consumedKcal)
+        val remainingLabel = findViewById<TextView>(R.id.caloriesRemainingLabel)
+        // The overshoot is stated in words and with a sign, never only through colour.
+        remainingLabel.text = getString(
+            if (remaining.kind == RemainingKcal.Kind.OVER) R.string.home_over_target_label else R.string.home_remaining_label,
+        )
         val remainingText = findViewById<TextView>(R.id.caloriesRemainingText).apply {
-            text = remainingValue?.let { if (it >= 0) it.toString() else (-it).toString() } ?: "—"
+            text = when (remaining.kind) {
+                RemainingKcal.Kind.REMAINING -> DisplayNumberFormatter.integer(remaining.amountKcal)
+                RemainingKcal.Kind.OVER -> DisplayNumberFormatter.signedInteger(remaining.amountKcal)
+                RemainingKcal.Kind.UNAVAILABLE -> "-"
+            }
+        }
+        (remainingLabel.parent as? View)?.contentDescription = when (remaining.kind) {
+            RemainingKcal.Kind.REMAINING -> getString(
+                R.string.home_remaining_description,
+                DisplayNumberFormatter.kcal(remaining.amountKcal), kcal(calories.target),
+            )
+            RemainingKcal.Kind.OVER -> getString(
+                R.string.home_over_target_description,
+                DisplayNumberFormatter.kcal(remaining.amountKcal), kcal(calories.consumedKcal), kcal(calories.target),
+            )
+            RemainingKcal.Kind.UNAVAILABLE -> null
         }
         val target = calories.target ?: 0
         val proteinTarget = calories.proteinTargetG?.let { kotlin.math.round(it).toInt() } ?: 0
         findViewById<TextView>(R.id.caloriesConsumedMaximumText).text =
-            calories.target?.takeIf { it > 0 }?.toString().orEmpty()
+            calories.target?.takeIf { it > 0 }?.let { DisplayNumberFormatter.integer(it) }.orEmpty()
         findViewById<TextView>(R.id.caloriesConsumedProteinMaximumText).text =
             proteinTarget.takeIf { it > 0 }?.toString().orEmpty()
         findViewById<TextView>(R.id.caloriesRemainingMaximumText).text =
-            calories.target?.takeIf { it > 0 }?.toString().orEmpty()
+            calories.target?.takeIf { it > 0 }?.let { DisplayNumberFormatter.integer(it) }.orEmpty()
         val consumedProgress = if (target > 0 && calories.consumedKcal != null) {
             (calories.consumedKcal * 100 / target).coerceIn(0, 100)
         } else {
@@ -682,17 +719,26 @@ class HomeActivity : BaseShellActivity() {
             append("Consumate ${calories.consumedKcal?.let { kcal(it) } ?: "nessuna registrazione"}. ")
             append("Proteine consumate ${calories.consumedProteinG?.let { NutritionEstimateFormatter.formatEstimatedMacro(it, "g") } ?: "non disponibili"}.")
         }
-        val targetDifference = if (calories.targetBeforeAdaptation != null && calories.target != null) calories.targetBeforeAdaptation - calories.target else null
-        findViewById<TextView>(R.id.caloriesTargetSourceText).text = when {
+        val tdeeLine = when {
             calories.trainingNote != null -> calories.trainingNote
-            calories.activityAdjustmentKcal > 0 -> "TDEE abituale ${kcal(calories.habitualTdee)} · TDEE operativo ${kcal(calories.tdee)} · attività +${calories.activityAdjustmentKcal} kcal"
+            calories.activityAdjustmentKcal > 0 -> "TDEE abituale ${kcal(calories.habitualTdee)} · TDEE operativo ${kcal(calories.tdee)} · attività +${DisplayNumberFormatter.integer(calories.activityAdjustmentKcal)} kcal"
             currentCalories?.activityAdjustmentKcal == 0 && viewModel.state.value.activityCheckIn.status != "PLANNED_WORKOUT" -> "TDEE abituale ${kcal(calories.habitualTdee)} · TDEE operativo da riposo ${kcal(calories.tdee)}"
-            targetDifference != null && targetDifference != 0 -> "Profilo ${kcal(calories.targetBeforeAdaptation)} · target attuale ${kcal(calories.target)}"
-            calories.targetFromCurrentPlan -> "Target del giorno selezionato nel piano alimentare"
-            calories.targetFromWeeklyPlan -> "Target settimanale del piano · target specifico del giorno non disponibile"
-            calories.target != null -> "Target calcolato dal profilo · nessun piano corrente"
-            else -> "Target non disponibile: completa i dati richiesti nel profilo"
+            else -> null
         }
+        // One target for the day: the plan's (adaptation and recovery included) when it exists, otherwise the
+        // theoretical one, and the line always says which of the two is on screen.
+        val targetLine = when (calories.targetSource) {
+            DayTargetResolver.Source.PLAN_DAY ->
+                if (calories.theoreticalTarget != null && calories.theoreticalTarget != calories.target) {
+                    getString(R.string.target_source_plan_day_theoretical, kcal(calories.theoreticalTarget))
+                } else {
+                    getString(R.string.target_source_plan_day)
+                }
+            DayTargetResolver.Source.THEORETICAL -> getString(R.string.target_source_theoretical)
+            DayTargetResolver.Source.PLAN_WEEK -> getString(R.string.target_source_plan_week)
+            DayTargetResolver.Source.NONE -> getString(R.string.target_source_none)
+        }
+        findViewById<TextView>(R.id.caloriesTargetSourceText).text = listOfNotNull(tdeeLine, targetLine).joinToString("\n")
         findViewById<TextView>(R.id.caloriesModeText).apply {
             val percent = calories.energyPercent?.let { p ->
                 when {
@@ -716,7 +762,7 @@ class HomeActivity : BaseShellActivity() {
 
     private fun showTdeeExplanation() {
         val c = currentCalories
-        fun kcal(value: Int?) = value?.let { "$it kcal" } ?: "—"
+        fun kcal(value: Int?) = value?.let { DisplayNumberFormatter.kcal(it) } ?: "-"
         val percentLine = c?.energyPercent?.let { p ->
             when {
                 p > 0 -> "Surplus del +$p% rispetto al consumo, per favorire l'aumento di massa."
@@ -809,8 +855,7 @@ class HomeActivity : BaseShellActivity() {
         LocalCalculationEngine.RecompositionState.NOT_ENOUGH_DATA -> "Aggiungi almeno due rilevazioni comparabili per vedere il trend corporeo."
     }
 
-    private fun formatNumber(value: Float): String = if (value % 1f == 0f) value.toInt().toString() else String.format(Locale.ITALIAN, "%.1f", value)
-    private fun formatSigned(value: Float): String = String.format(Locale.ITALIAN, "%+.1f", value)
+    private fun formatNumber(value: Float): String = DisplayNumberFormatter.decimal(value)
 
     private companion object {
         const val LANDSCAPE_GRID_TAG = "home_landscape_grid"
@@ -837,7 +882,7 @@ class HomeActivity : BaseShellActivity() {
                     else -> "media"
                 }
                 summary.text = "Allenamento previsto: ${checkIn.durationMinutes} min · intensità $intensity. " +
-                    "Target operativo ${calories.target?.let { "$it kcal" } ?: "non disponibile"} (+${checkIn.adjustmentKcal} kcal)."
+                    "Target teorico con l'attività ${(calories.theoreticalTarget ?: calories.target)?.let { DisplayNumberFormatter.kcal(it) } ?: "non disponibile"} (+${checkIn.adjustmentKcal} kcal)."
                 findViewById<View>(R.id.activityCheckInRestButton).visibility = View.GONE
                 findViewById<View>(R.id.activityCheckInWorkoutButton).visibility = View.GONE
                 findViewById<View>(R.id.activityCheckInEditButton).visibility = View.VISIBLE

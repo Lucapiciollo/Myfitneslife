@@ -15,6 +15,7 @@ import androidx.activity.viewModels
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.FileProvider
+import androidx.core.view.ViewCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -39,6 +40,7 @@ import com.myfitai.app.domain.body.AiImageTempStore
 import com.myfitai.app.domain.body.BiaImportContract
 import com.myfitai.app.domain.ai.AiJobType
 import com.myfitai.app.domain.body.BiaAnalysisAiJobHandler
+import com.myfitai.app.domain.body.BiaAnalysisPresentation
 import com.myfitai.app.domain.body.BiaAnalysisReport
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.ui.bia.BiaViewModel
@@ -142,6 +144,7 @@ class BiaActivity : BaseShellActivity() {
         bindPhotoImport()
         gateAiClick(findViewById(R.id.analyzeBiaButton)) { analyzeBiaWithAi(findViewById(R.id.analyzeBiaButton)) }
         setAiActionEnabled(findViewById(R.id.analyzeBiaButton))
+        normalizeAnalysisButtons()
         findViewById<View>(R.id.aiConfigurationNoticeCard).visibility =
             if (aiProviderConfigured) View.GONE else View.VISIBLE
         pendingEditId = intent.getLongExtra(EXTRA_EDIT_ID, 0L)
@@ -181,6 +184,25 @@ class BiaActivity : BaseShellActivity() {
         biaAnalysisProgressText = findViewById(R.id.biaAnalysisProgressText)
         reviewSavedBiaAnalysisButton = findViewById(R.id.reviewSavedBiaAnalysisButton)
         reviewSavedBiaAnalysisButton.setOnClickListener { reviewLatestSavedAnalysis() }
+    }
+
+    /**
+     * The analysis buttons get their text from resources and may grow with the system font size: a fixed 48dp
+     * height would clip a larger font, so the height wraps and 48dp stays the minimum touch target.
+     * The progress block is announced politely when it appears.
+     */
+    private fun normalizeAnalysisButtons() {
+        val minHeight = resources.getDimensionPixelSize(R.dimen.button_secondary_min_height)
+        listOf(
+            findViewById<MaterialButton>(R.id.analyzeBiaButton) to R.string.bia_analysis_action,
+            reviewSavedBiaAnalysisButton to R.string.bia_analysis_review_saved_action,
+        ).forEach { (button, textRes) ->
+            button.setText(textRes)
+            button.minHeight = minHeight
+            button.layoutParams = button.layoutParams.apply { height = LinearLayout.LayoutParams.WRAP_CONTENT }
+        }
+        biaAnalysisProgressContainer.accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
+        ViewCompat.setAccessibilityHeading(biaAnalysisProgressTitle, true)
     }
 
     private fun normalizeBiaCards() {
@@ -870,9 +892,11 @@ class BiaActivity : BaseShellActivity() {
                 setBackgroundColor(getColor(R.color.white))
                 setPadding(0, resources.getDimensionPixelSize(R.dimen.space_8), 0, resources.getDimensionPixelSize(R.dimen.space_8))
             }
+            // The title is a heading for TalkBack navigation; children follow the visual (and reading) order.
             box.addView(TextView(this).apply {
                 text = title
                 setTextAppearance(if (emphasis) R.style.Text_MyFitAI_CardTitle else R.style.Text_MyFitAI_SettingsLabel)
+                ViewCompat.setAccessibilityHeading(this, true)
             })
             box.addView(TextView(this).apply {
                 text = body
@@ -881,33 +905,71 @@ class BiaActivity : BaseShellActivity() {
             })
             content.addView(box, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
         }
-        section("Verdetto", payload.optString("verdict"), true)
-        section("Cosa sta succedendo", payload.optString("whatIsHappening"))
-        section("Perdita di grasso", payload.optString("fatLoss"))
-        section("Obiettivo e calorie", listOf(payload.optString("objective"), payload.optString("caloriesAndMacros")).filter { it.isNotBlank() }.joinToString("\n"))
+        val safetyNote = payload.optString("safetyNote").trim()
+        // Shown only when the model wrote a note (mandatory only with SAFETY_FLAG); the fixed sentence saved before T3 is not a note.
+        val hasSafetyNote = safetyNote.isNotBlank() && safetyNote != "?" && safetyNote != BiaAnalysisAiJobHandler.DEFAULT_SAFETY_NOTE
+        val safetyFlagActive = payload.optBoolean("safetyFlagActive", false)
+        section(getString(R.string.bia_analysis_section_verdict), payload.optString("verdict"), true)
+        // With the safety flag the note comes right after the verdict; otherwise it closes the analysis.
+        if (hasSafetyNote && safetyFlagActive) section(getString(R.string.bia_analysis_section_safety), safetyNote, true)
+        // Reliability is written in words (Alta / Media / Bassa), never conveyed by colour.
+        section(
+            getString(R.string.bia_analysis_section_reliability),
+            listOf(
+                getString(reliabilityLabelRes(payload.optString("reliability"))),
+                payload.optString("reliabilityReason").takeIf { it.isNotBlank() && it != "?" },
+            ).filterNotNull().joinToString(". "),
+        )
+        section(getString(R.string.bia_analysis_section_happening), payload.optString("whatIsHappening"))
+        // The fat-loss text is an estimate (noise-limited), never a measured fact.
+        section(getString(R.string.bia_analysis_section_fat_loss), payload.optString("fatLoss"))
+        section(getString(R.string.bia_analysis_section_objective), listOf(payload.optString("objective"), payload.optString("caloriesAndMacros")).filter { it.isNotBlank() }.joinToString("\n"))
         val comparisons = jsonObjects(payload, "comparisons").joinToString("\n\n") { row ->
             "${row.optString("indicator")}: ${row.optString("previous")} -> ${row.optString("current")} (${row.optString("difference")})\n${row.optString("interpretation")}"
         }
-        section("Confronto rilevazioni", comparisons)
+        section(getString(R.string.bia_analysis_section_comparisons), comparisons)
         val scenarios = jsonObjects(payload, "scenarios").joinToString("\n\n") { row ->
-            "${row.optString("label")}\nGrasso obiettivo: ${row.optString("targetBodyFat")}; peso: ${row.optString("targetWeight")}; da perdere: ${row.optString("fatToLose")}\n${row.optString("assumption")}"
+            getString(
+                R.string.bia_analysis_scenario_line,
+                row.optString("label"), row.optString("targetBodyFat"), row.optString("targetWeight"), row.optString("fatToLose"), row.optString("assumption"),
+            )
         }
-        section("Scenari indicativi", scenarios)
-        section("Punti positivi", jsonLines(payload, "positives").joinToString("\n") { "• $it" })
-        section("Da monitorare", jsonLines(payload, "monitor").joinToString("\n") { "• $it" })
-        section("Tre azioni prioritarie", jsonLines(payload, "actions").mapIndexed { index, value -> "${index + 1}. $value" }.joinToString("\n"), true)
-        section("Prossimo controllo", payload.optString("nextCheck"))
-        section("Affidabilità", "${payload.optString("reliability")}\n${payload.optString("reliabilityReason")}")
-        section("Nota di sicurezza", payload.optString("safetyNote"))
-        section("Domanda finale", payload.optString("question"))
+        section(getString(R.string.bia_analysis_section_scenarios), scenarios)
+        section(getString(R.string.bia_analysis_section_positives), jsonLines(payload, "positives").joinToString("\n") { "• $it" })
+        section(getString(R.string.bia_analysis_section_monitor), jsonLines(payload, "monitor").joinToString("\n") { "• $it" })
+        val actions = jsonLines(payload, "actions").filter { it.isNotBlank() }
+        section(
+            getString(actionsTitleRes(payload.optString("classification"), actions.size)),
+            actions.mapIndexed { index, value -> "${index + 1}. $value" }.joinToString("\n"),
+            true,
+        )
+        section(getString(R.string.bia_analysis_section_next_check), payload.optString("nextCheck"))
+        if (hasSafetyNote && !safetyFlagActive) section(getString(R.string.bia_analysis_section_safety), safetyNote)
+        section(getString(R.string.bia_analysis_section_question), payload.optString("question"))
         val source = listOf(payload.optString("provider"), payload.optString("model")).filter { it.isNotBlank() && it != "-" }.joinToString(" · ")
-        section(if (saved) "Analisi salvata" else "Analisi salvata localmente", if (source.isBlank()) "Disponibile offline per questa rilevazione." else "$source\nDisponibile offline per questa rilevazione.")
+        section(
+            getString(if (saved) R.string.bia_analysis_section_saved else R.string.bia_analysis_section_saved_locally),
+            if (source.isBlank()) getString(R.string.bia_analysis_offline) else "$source\n${getString(R.string.bia_analysis_offline)}",
+        )
         val scroll = androidx.core.widget.NestedScrollView(this).apply { addView(content) }
         MaterialAlertDialogBuilder(this)
-            .setTitle("Analisi nutrizionale e sportiva BIA")
+            .setTitle(R.string.bia_analysis_dialog_title)
             .setView(normalizeRuntimeDialogContent(scroll))
-            .setPositiveButton("Chiudi", null)
+            .setPositiveButton(R.string.bia_analysis_close, null)
             .show()
+    }
+
+    private fun reliabilityLabelRes(raw: String): Int = when (BiaAnalysisPresentation.reliabilityLabel(raw)) {
+        BiaAnalysisPresentation.ReliabilityLabel.HIGH -> R.string.bia_reliability_high
+        BiaAnalysisPresentation.ReliabilityLabel.MEDIUM -> R.string.bia_reliability_medium
+        BiaAnalysisPresentation.ReliabilityLabel.LOW -> R.string.bia_reliability_low
+        BiaAnalysisPresentation.ReliabilityLabel.UNKNOWN -> R.string.bia_reliability_unknown
+    }
+
+    private fun actionsTitleRes(classification: String, actionCount: Int): Int = when (BiaAnalysisPresentation.actionsTitle(classification, actionCount)) {
+        BiaAnalysisPresentation.ActionsTitle.THREE_PRIORITY -> R.string.bia_analysis_section_actions_three
+        BiaAnalysisPresentation.ActionsTitle.DO_NOW -> R.string.bia_analysis_section_actions_now
+        BiaAnalysisPresentation.ActionsTitle.DATA_TO_COLLECT -> R.string.bia_analysis_section_actions_data
     }
 
     private fun showBiaAnalysisProgress(title: String, message: String) {
