@@ -273,4 +273,23 @@
     <string name="dietary_notice_limited">%1$s: non verificabile in modo affidabile (nichel, solfiti)</string>
     <string name="dietary_notice_unknown_style">%1$s: regime non riconosciuto, non applicato al controllo</string>
     <string name="dietary_message_added_with_notice">%1$s. %2$s</string>
+    <string name="home_remaining_label">Rimangono (kcal)</string>
+    <string name="home_over_target_label">Oltre il target (kcal)</string>
+    <string name="home_remaining_description">Rimangono %1$s su un target di %2$s</string>
+    <string name="home_over_target_description">Oltre il target di %1$s: consumate %2$s su un target di %3$s</string>
+    <string name="dashboard_delta_up_description">aumentato di %1$s rispetto alla rilevazione precedente</string>
+    <string name="dashboard_delta_down_description">diminuito di %1$s rispetto alla rilevazione precedente</string>
+    <string name="dashboard_delta_flat_description">invariato rispetto alla rilevazione precedente</string>
+    <string name="target_source_plan_day">Target del giorno dal piano alimentare, con adattamento e recupero</string>
+    <string name="target_source_plan_day_theoretical">Target del giorno dal piano alimentare, con adattamento e recupero. Target teorico senza adattamento: %1$s</string>
+    <string name="target_source_theoretical">Target teorico da profilo e attività, senza adattamento né recupero: nessun piano per oggi</string>
+    <string name="target_source_plan_week">Target settimanale del piano. Target specifico del giorno non disponibile</string>
+    <string name="target_source_none">Target non disponibile: completa i dati richiesti nel profilo</string>
+    <string name="food_target_label_plan_day">Target del giorno (piano)</string>
+    <string name="food_target_label_theoretical">Target teorico del giorno</string>
+    <string name="food_target_legend">Target del giorno: %1$s (%2$s). Target teorico senza adattamento né recupero: %3$s.</string>
+    <string name="food_target_source_plan_day">dal piano, con adattamento e recupero</string>
+    <string name="food_target_source_theoretical">nessun piano per questo giorno</string>
+    <string name="food_target_source_plan_week">target settimanale del piano</string>
+    <string name="food_target_description">%1$s: %2$s, proteine %3$s, target teorico %4$s</string>
 </resources>

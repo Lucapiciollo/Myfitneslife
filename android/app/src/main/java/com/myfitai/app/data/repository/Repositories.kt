@@ -181,6 +181,20 @@ data class PlanVersionDraft(
 
 data class LegacyMealAlarmId(val versionId: Long, val mealId: Long)
 
+/** Pure plan-for-a-week rule shared by Food and Home, kept free of Room so it is unit-testable. */
+object MealPlanWeekSelector {
+    suspend fun <T : Any> pick(
+        planWeekStarts: List<Long>,
+        weekStartEpochDay: Long,
+        load: suspend (Long) -> T?,
+        coveredDays: (T) -> List<Long>,
+    ): T? =
+        planWeekStarts.firstOrNull { it == weekStartEpochDay }?.let { load(it) }
+            ?: planWeekStarts.sortedDescending().firstNotNullOfOrNull { start ->
+                load(start)?.takeIf { snapshot -> coveredDays(snapshot).any { it in weekStartEpochDay..(weekStartEpochDay + 6) } }
+            }
+}
+
 class MealPlanRepository(private val db: MyFitAiDatabase) {
     data class MealDetailContext(
         val planId: Long,
@@ -209,15 +223,22 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
         kotlinx.coroutines.flow.combine(
             db.mealPlanDao().observePlans(profileId),
             db.mealPlanDao().observeNewestVersionId(profileId),
-        ) { plans, _ -> plans }.map { plans ->
-            plans.firstOrNull { it.weekStartEpochDay == weekStartEpochDay }
-                ?.let { loadLatestSnapshot(profileId, it.weekStartEpochDay) }
-                ?: plans.sortedByDescending { it.weekStartEpochDay }
-                .firstNotNullOfOrNull { plan ->
-                    loadLatestSnapshot(profileId, plan.weekStartEpochDay)
-                        ?.takeIf { snapshot -> snapshot.version.days.any { day -> day.dateEpochDay in weekStartEpochDay..(weekStartEpochDay + 6) } }
-                }
-        }
+        ) { plans, _ -> plans }.map { plans -> snapshotForDisplayedWeek(profileId, plans, weekStartEpochDay) }
+
+    /**
+     * Same rule for every screen (Food, Home): the plan of that week, otherwise the newest plan whose days
+     * cover it (a multi-week period is stored once, on the first week).
+     */
+    suspend fun snapshotForDisplayedWeek(
+        profileId: Long,
+        plans: List<MealPlanEntity>,
+        weekStartEpochDay: Long,
+    ): com.myfitai.app.domain.food.FoodPlanSnapshot? = MealPlanWeekSelector.pick(
+        planWeekStarts = plans.map { it.weekStartEpochDay },
+        weekStartEpochDay = weekStartEpochDay,
+        load = { loadLatestSnapshot(profileId, it) },
+        coveredDays = { snapshot -> snapshot.version.days.map { it.dateEpochDay } },
+    )
 
     suspend fun createPlan(profileId: Long, weekStartEpochDay: Long, createdAtEpochMillis: Long): Long =
         db.mealPlanDao().insertPlan(
