@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+    <TextView
+        android:id="@+id/categoryTitle"
+        style="@style/Text.MyFitAI.BodyEmphasis"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:accessibilityHeading="true"
+        tools:targetApi="p"
+        android:focusable="true" />
+    <TextView
+        android:id="@+id/categoryHelper"
+        style="@style/Text.MyFitAI.Supporting"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_2" />
+    <com.google.android.material.chip.ChipGroup
+        android:id="@+id/categoryChips"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_8"
+        app:chipSpacingHorizontal="@dimen/space_8"
+        app:chipSpacingVertical="@dimen/space_4" />
+    <TextView
+        android:id="@+id/categoryEmpty"
+        style="@style/Text.MyFitAI.Supporting"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_8" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_8"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.MyFitAI.InputCompact"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="@string/dietary_add_hint">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/categoryInput"
+                style="@style/Widget.MyFitAI.InputEditTextCompact"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:imeOptions="actionDone"
+                android:inputType="textCapSentences"
+                android:maxLines="1" />
+        </com.google.android.material.textfield.TextInputLayout>
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/categoryAddButton"
+            style="@style/Widget.MyFitAI.Button.Outlined"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/space_8"
+            android:minHeight="@dimen/control_min_height"
+            android:text="@string/dietary_add_action" />
+    </LinearLayout>
+    <TextView
+        android:id="@+id/categoryMessage"
+        style="@style/Text.MyFitAI.Supporting"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_4"
+        android:accessibilityLiveRegion="polite"
+        android:visibility="gone" />
+</LinearLayout>
