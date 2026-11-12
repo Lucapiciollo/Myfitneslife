@@ -47,6 +47,10 @@ class DayEnergyProvider(
                 program = trainingProgram,
                 registered = TrainingDayInputs.registeredWorkouts(workouts.between(profileId, from, to).first(), zoneId),
                 checkIns = TrainingDayInputs.checkIns(checkIns.all(profileId), dates),
+                // Same protein/fat as the plan generation: decided once on the profile's habitual target.
+                macroAnchor = snapshot.calculation.proteinG?.let { protein ->
+                    snapshot.calculation.fatG?.let { fat -> MacroPolicy.Anchor(protein, fat) }
+                },
             ),
         )
     }

@@ -19,6 +19,7 @@ import com.myfitai.app.data.repository.UserProfileRepository
 import com.myfitai.app.data.repository.WorkoutRepository
 import com.myfitai.app.domain.calculation.AdaptiveNutritionTargetEngine
 import com.myfitai.app.domain.calculation.LocalCalculationEngine
+import com.myfitai.app.domain.calculation.MacroPolicy
 import com.myfitai.app.domain.calculation.NutritionBusinessValidator
 import com.myfitai.app.domain.calculation.ProfileCalculationMapper
 
@@ -141,11 +142,10 @@ class NutritionPlanGenerationService(
             )
         )
         val finalTargetKcal = adaptive.targetKcal ?: resolvedTargetKcal!!
-        val finalMacros = LocalCalculationEngine.calculateMacrosForTarget(
-            targetKcal = finalTargetKcal,
-            weightKg = weightKg,
-            goal = resolvedGoal,
-        )
+        // K6: protein and fat are decided ONCE on the habitual target (MacroPolicy) and passed explicitly to every
+        // daily engine; only carbohydrates follow the (possibly adapted) calories.
+        val macroAnchor = MacroPolicy.Anchor(resolvedProteinG!!, resolvedFatG!!)
+        val finalMacros = MacroPolicy.targetsFor(finalTargetKcal, macroAnchor)
         val habitualTargets = NutritionBusinessValidator.Targets(
             kcal = finalTargetKcal,
             proteinG = finalMacros.proteinG,
@@ -179,6 +179,7 @@ class NutritionPlanGenerationService(
                         registered = TrainingDayInputs.registeredWorkouts(weekWorkouts, zone),
                         checkIns = trainingCheckIns(profileId, periodDates),
                         adaptiveRatio = finalTargetKcal / resolvedTargetKcal!!,
+                        macroAnchor = macroAnchor,
                     ),
                 )
             }

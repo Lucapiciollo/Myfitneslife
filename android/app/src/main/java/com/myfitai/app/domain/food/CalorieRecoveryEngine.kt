@@ -1,6 +1,7 @@
 package com.myfitai.app.domain.food
 
 import com.myfitai.app.domain.calculation.LocalCalculationEngine
+import com.myfitai.app.domain.calculation.MacroPolicy
 import com.myfitai.app.domain.calculation.NutritionBusinessValidator
 import com.myfitai.app.domain.calculation.SafetyCalorieFloor
 import java.time.LocalDate
@@ -9,7 +10,9 @@ import kotlin.math.roundToInt
 
 /**
  * Deterministic recovery planner for confirmed extra kcal.
- * It never lets the LLM decide the deficit and never reduces protein targets.
+ * It never lets the LLM decide the deficit and never reduces protein targets: protein and fat of every day are
+ * those of its base target (decided once by [MacroPolicy]); only carbohydrates follow the recovered calories.
+ * [plan] keeps the `weightKg`/`goal` parameters for compatibility; the macros no longer depend on them.
  */
 object CalorieRecoveryEngine {
     const val WINDOW_DAYS = 7L
@@ -111,7 +114,7 @@ object CalorieRecoveryEngine {
             val effectiveKcal = (base.kcal - recovery)
                 .coerceAtLeast(base.kcal * (1.0 - MAX_DAILY_REDUCTION_RATIO))
                 .let { value -> maxOf(value, minOf(minimumKcal, base.kcal)) }
-            val macros = LocalCalculationEngine.calculateMacrosForTarget(effectiveKcal, weightKg, goal)
+            val macros = MacroPolicy.targetsFor(effectiveKcal, MacroPolicy.Anchor(base.proteinG, base.fatG))
             DayPlan(
                 date = date,
                 recoveredKcal = recovery,

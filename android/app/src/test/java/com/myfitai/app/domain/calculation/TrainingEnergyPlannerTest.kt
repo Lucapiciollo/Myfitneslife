@@ -119,7 +119,28 @@ class TrainingEnergyPlannerTest {
         assertEquals(rest.proteinG, training.proteinG, 1e-9)
         assertEquals(rest.fatG, training.fatG, 1e-9)
         assertTrue(training.carbsG > rest.carbsG)
-        assertEquals(2.0 * 89.5, training.proteinG, 1e-9)
+        // Default anchor = policy on the rest-day target (legacy level lowered to 1,375: 2241,7 kcal):
+        // protein = min(2,0 * 89,5 = 179; 0,30 * 2241,7 / 4 = 168,13), fat = max(0,6 * 89,5 = 53,7; 49,8) = 53,7.
+        assertEquals(0.075 * rest.kcal, training.proteinG, 1e-9)
+        assertEquals(0.6 * 89.5, training.fatG, 1e-9)
+        days.forEach { assertEquals(it.baseTargets.kcal, it.baseTargets.proteinG * 4 + it.baseTargets.fatG * 9 + it.baseTargets.carbsG * 4, 1e-6) }
+    }
+
+    @Test
+    fun anExplicitHabitualAnchorIsAppliedToEveryDayAndTheAdaptiveRatioKeepsProtein() {
+        val anchor = MacroPolicy.Anchor(proteinG = 131.8, fatG = 46.8)
+        val base = plan(inputs().copy(macroAnchor = anchor))
+        val scaled = plan(inputs(ratio = 1.04).copy(macroAnchor = anchor))
+
+        (base + scaled).forEach {
+            assertEquals(131.8, it.baseTargets.proteinG, 0.0)
+            assertEquals(46.8, it.baseTargets.fatG, 0.0)
+            assertEquals(131.8, it.energy.proteinG, 0.0)
+        }
+        // Only the carbohydrates follow the adapted calories: +4% of kcal -> carbs +kcal*0,04/4.
+        base.zip(scaled).forEach { (a, b) ->
+            assertEquals(a.baseTargets.kcal * 0.04 / 4.0, b.baseTargets.carbsG - a.baseTargets.carbsG, 1e-6)
+        }
     }
 
     @Test

@@ -32,6 +32,11 @@ object TrainingEnergyPlanner {
         val checkIns: Map<LocalDate, TrainingDayResolver.CheckIn> = emptyMap(),
         /** Correction already applied by the adaptive engine to the profile target (1.0 = none). */
         val adaptiveRatio: Double = 1.0,
+        /**
+         * Protein/fat decided ONCE on the profile's habitual target ([MacroPolicy.anchorOf] of the profile macros).
+         * Null: derived from the rest-day target, so every day of the week still shares protein and fat.
+         */
+        val macroAnchor: MacroPolicy.Anchor? = null,
     )
 
     data class Day(
@@ -54,7 +59,7 @@ object TrainingEnergyPlanner {
         if (inputs.program.isEmpty || dates.isEmpty()) return null
         val multiplier = everydayLevel(inputs.activityLevel, inputs.activityBasis).multiplier
         val weekly = inputs.program.toWeeklyProgram()
-        val days = DayEnergyEngine.forDates(dates, inputs.bmrKcal, inputs.weightKg, multiplier, inputs.goal) { date ->
+        val days = DayEnergyEngine.forDates(dates, inputs.bmrKcal, inputs.weightKg, multiplier, inputs.goal, inputs.macroAnchor) { date ->
             TrainingDayResolver.resolve(
                 date = date,
                 checkIn = inputs.checkIns[date],
@@ -66,7 +71,7 @@ object TrainingEnergyPlanner {
         val deficitGoal = inputs.goal == Goal.WEIGHT_LOSS || inputs.goal == Goal.RECOMPOSITION
         return days.map { plan ->
             val kcal = max(plan.energy.targetKcal * ratio, inputs.bmrKcal)
-            val macros = LocalCalculationEngine.calculateMacrosForTarget(kcal, inputs.weightKg, inputs.goal)
+            val macros = MacroPolicy.targetsFor(kcal, MacroPolicy.Anchor(plan.energy.proteinG, plan.energy.fatG))
             Day(
                 date = plan.date,
                 resolution = plan.resolution,

@@ -74,6 +74,33 @@ class OperationalNutritionMetricsTest {
         assertEquals(2973.0, training.habitualTdeeKcal!!, 0.001)
     }
 
+    @Test
+    fun legacyPathKeepsThePolicyProteinAndFatOfTheHabitualTargetOnRestAndWorkoutDays() {
+        // K6 real case: woman 78 kg, sedentary, weight loss. The habitual macros come from MacroPolicy ONCE (calculation)
+        // and the operational days only move carbohydrates: protein 30% of the habitual kcal, not 2,0 g/kg.
+        val calculation = LocalCalculationEngine.calculate(
+            LocalCalculationEngine.Input(
+                weightKg = 78.0, heightCm = 164.0, ageYears = 62,
+                biologicalSex = LocalCalculationEngine.BiologicalSex.FEMALE,
+                activityLevel = LocalCalculationEngine.ActivityLevel.SEDENTARY,
+                goal = LocalCalculationEngine.Goal.WEIGHT_LOSS,
+            ),
+        )
+        assertEquals(1360.68, calculation.targetKcal!!, 0.01)
+        assertEquals(0.075 * 1360.68, calculation.proteinG!!, 0.01)
+
+        val rest = OperationalNutritionMetrics.calculate(calculation, checkIn("REST", 0))
+        val workout = OperationalNutritionMetrics.calculate(calculation, checkIn("PLANNED_WORKOUT", 140))
+
+        assertEquals(calculation.proteinG!!, rest.operationalProteinG!!, 0.0)
+        assertEquals(rest.operationalProteinG, workout.operationalProteinG)
+        assertEquals(rest.operationalFatG, workout.operationalFatG)
+        assertEquals(
+            (workout.operationalTargetKcal!! - rest.operationalTargetKcal!!) / 4.0,
+            workout.operationalCarbsG!! - rest.operationalCarbsG!!,
+            1e-6,
+        )
+    }
     private fun checkIn(status: String, adjustment: Int) = DailyActivityCheckInEntity(
         profileId = 1L,
         dateEpochDay = 1L,

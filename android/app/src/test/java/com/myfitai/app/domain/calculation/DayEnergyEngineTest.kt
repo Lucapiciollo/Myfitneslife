@@ -91,16 +91,41 @@ class DayEnergyEngineTest {
     }
 
     @Test
-    fun proteinAndFatStayPerKilogramWhileCarbohydratesAbsorbTheDifference() {
+    fun proteinAndFatComeFromOneAnchorWhileCarbohydratesAbsorbTheDifference() {
         val rest = day(1.375, null)
         val training = day(1.375, oneHourModerate)
 
-        assertEquals(2.0 * weight, rest.proteinG, 1e-9)
+        // Default anchor = MacroPolicy on the rest-day target: 1918 * 1.375 * 0.85 = 2241,7 kcal.
+        // Protein = min(2,0 * 89,5 = 179; 0,30 * 2241,7 / 4 = 168,13); fat = max(0,6 * 89,5 = 53,7; 49,8) = 53,7.
+        assertEquals(0.075 * rest.targetKcal, rest.proteinG, 1e-9)
+        assertEquals(168.13, rest.proteinG, 0.01)
         assertEquals(rest.proteinG, training.proteinG, 1e-9)
-        assertEquals(0.8 * weight, rest.fatG, 1e-9)
+        assertEquals(0.6 * weight, rest.fatG, 1e-9)
         assertEquals(rest.fatG, training.fatG, 1e-9)
         assertTrue(training.carbsG > rest.carbsG)
         assertEquals((training.targetKcal - rest.targetKcal) / 4.0, training.carbsG - rest.carbsG, 1e-6)
+    }
+
+    @Test
+    fun anExplicitAnchorIsUsedAsIsOnEveryDayType() {
+        val anchor = MacroPolicy.Anchor(proteinG = 120.0, fatG = 55.0)
+        val rest = assertNotNull(DayEnergyEngine.calculate(DayEnergyEngine.Input(bmr, weight, 1.375, Goal.WEIGHT_LOSS, null, anchor)))
+        val training = assertNotNull(DayEnergyEngine.calculate(DayEnergyEngine.Input(bmr, weight, 1.375, Goal.WEIGHT_LOSS, oneHourModerate, anchor)))
+
+        listOf(rest, training).forEach { energy ->
+            assertEquals(120.0, energy.proteinG, 0.0)
+            assertEquals(55.0, energy.fatG, 0.0)
+            assertEquals(energy.targetKcal, energy.proteinG * 4 + energy.fatG * 9 + energy.carbsG * 4, 1e-6)
+        }
+        val plans = assertNotNull(
+            DayEnergyEngine.forDates(listOf(monday, monday.plusDays(1)), bmr, weight, 1.375, Goal.WEIGHT_LOSS, anchor) { date ->
+                TrainingDayResolver.Resolution(
+                    if (date == monday) oneHourModerate else null,
+                    TrainingDayResolver.Source.WEEKLY_PROGRAM,
+                )
+            },
+        )
+        assertTrue(plans.all { it.energy.proteinG == 120.0 && it.energy.fatG == 55.0 })
     }
 
     @Test
