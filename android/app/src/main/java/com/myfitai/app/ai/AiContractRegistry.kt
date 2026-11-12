@@ -51,7 +51,7 @@ object AiContractRegistry {
         Spec("myfitai_bia_pipe_v1", Format.COMPACT_PIPE, "BIA1", 350, persisted = false),
         Spec("myfitai_bia_progress_coach_pipe_v2", Format.COMPACT_PIPE, "BA2", 2_200, persisted = true),
         Spec("myfitai_progress_analysis_pipe_v1", Format.COMPACT_PIPE, "PA1", 1_500, persisted = true),
-        Spec("myfitai_body_proportion_pipe_v1", Format.COMPACT_PIPE, "BP1", 500, persisted = true),
+        Spec("myfitai_body_proportion_pipe_v1", Format.COMPACT_PIPE, "BP1", 1_500, persisted = true),
         Spec("myfitai_weekly_review_pipe_v1", Format.COMPACT_PIPE, "WR1", 700, persisted = true),
         Spec("myfitai_meal_alternatives_pipe_v1", Format.COMPACT_PIPE, "MA1", 2_200, persisted = false, geminiNativeSchema = false),
         Spec("myfitai_nutrition_advice_pipe_v1", Format.COMPACT_PIPE, "NA1", 900, persisted = false),

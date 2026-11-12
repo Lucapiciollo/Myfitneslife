@@ -20,6 +20,7 @@ import com.myfitai.app.data.local.entity.BodyMeasurementEntity
 import com.myfitai.app.data.local.entity.BiaMeasurementEntity
 import com.myfitai.app.domain.body.BodyWeightHistory
 import com.myfitai.app.domain.body.BodyProportionEngine
+import com.myfitai.app.domain.body.BodyProportionAnalysisService
 import com.myfitai.app.domain.ai.AiJobType
 import com.myfitai.app.domain.body.BodyProportionsAiJobHandler
 import com.myfitai.app.navigation.BottomNavBinder
@@ -413,30 +414,22 @@ class BodyMeasuresActivity : BaseShellActivity() {
 
     /** Local business validation is authoritative; agentValidation is only the model's self-assessment. */
     private fun validateBodyProportionsPayload(payload: org.json.JSONObject, source: BodyProportionEngine.Report) {
-        val summary = payload.getString("summary").trim()
-        require(summary.isNotBlank() && summary.length <= 500) { "BODY_SUMMARY_INVALID" }
-        require(payload.optString("agentValidation").isNotBlank()) { "BODY_VALIDATION_MISSING" }
-        val observations = payload.optJSONArray("observations") ?: org.json.JSONArray()
-        val monitor = payload.optJSONArray("monitorNext") ?: org.json.JSONArray()
-        require(observations.length() <= 5 && monitor.length() <= 5) { "BODY_OUTPUT_TOO_MANY_ITEMS" }
-        val text = buildList {
-            add(summary)
-            for (i in 0 until observations.length()) add(observations.getString(i).also { require(it.isNotBlank() && it.length <= 240) })
-            for (i in 0 until monitor.length()) add(monitor.getString(i).also { require(it.isNotBlank() && it.length <= 240) })
-        }.joinToString(" ").lowercase(Locale.ROOT)
-        require(listOf("diagnosi", "diagnostica", "patologia", "postura scorretta", "causa certa", "ideale perfetto").none { it in text }) { "BODY_UNSUPPORTED_CLAIM" }
-        val comparison = payload.optString("comparison")
-        require(comparison.isNotBlank() && comparison.length <= 400) { "BODY_COMPARISON_INVALID" }
-        val comparisonText = comparison.lowercase(Locale.ROOT)
-        if (source.comparison.isEmpty()) {
-            require("insufficient" in comparisonText || "non è possibile" in comparisonText || "non e possibile" in comparisonText) {
-                "BODY_MISSING_COMPARISON_UNCERTAINTY"
-            }
-        } else {
-            require("insufficient" !in comparisonText && "dati insufficienti" !in comparisonText) { "BODY_FALSE_INSUFFICIENT_COMPARISON" }
-            val namedComparisons = source.comparison.count { item -> item.label.lowercase(Locale.ROOT) in comparisonText }
-            require(namedComparisons >= minOf(1, source.comparison.size)) { "BODY_COMPARISON_NOT_GROUNDED" }
+        val interpretation = bodyProportionInterpretation(payload)
+        BodyProportionAnalysisService.validate(interpretation, source).getOrThrow()
+    }
+
+    private fun bodyProportionInterpretation(payload: org.json.JSONObject): BodyProportionAnalysisService.Interpretation {
+        fun strings(name: String): List<String> {
+            val array = payload.optJSONArray(name) ?: return emptyList()
+            return List(array.length()) { array.getString(it) }
         }
+        return BodyProportionAnalysisService.Interpretation(
+            summary = payload.getString("summary").trim(),
+            observations = strings("observations"),
+            monitorNext = strings("monitorNext"),
+            agentValidation = payload.optString("agentValidation"),
+            comparison = payload.optString("comparison"),
+        )
     }
 
     private fun showBodyProportionsResult(payload: org.json.JSONObject) {
