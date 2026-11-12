@@ -6,6 +6,7 @@ import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.data.local.entity.WorkoutEntity
 import com.myfitai.app.domain.ai.AiUserContext
 import com.myfitai.app.domain.calculation.LocalCalculationEngine
+import com.myfitai.app.domain.calculation.OperationalNutritionMetrics
 import com.myfitai.app.domain.calculation.ProfileCalculationMapper
 import java.time.Instant
 import java.time.LocalDate
@@ -133,17 +134,49 @@ object BiaAnalysisReport {
     /** Planned day of the meal plan: it is a plan, never consumption. */
     data class PlanDay(val dateEpochDay: Long, val kcal: Number?, val proteinG: Number?, val carbsG: Number?, val fatG: Number?)
 
-    data class CoachContext(val prompt: String, val safetyFlag: AiUserContext.SafetyFlag)
+    data class CoachContext(
+        val prompt: String,
+        val safetyFlag: AiUserContext.SafetyFlag,
+        /** Scenarios calculated by the app and sent as `SCENARI_APP`; the model only comments them. */
+        val scenarios: List<BiaScenarioCalculator.Scenario> = emptyList(),
+    )
+
+    /**
+     * Target of the day shown by the Home, from the same [OperationalNutritionMetrics] calculation. [dayType] is
+     * `RIPOSO` or `ALLENAMENTO`; every value may be missing.
+     */
+    data class OperationalTarget(
+        val dayType: String,
+        val tdeeKcal: Double?,
+        val targetKcal: Double?,
+        val proteinG: Double?,
+        val carbsG: Double?,
+        val fatG: Double?,
+    ) {
+        companion object {
+            fun from(metrics: OperationalNutritionMetrics.Result) = OperationalTarget(
+                dayType = if (metrics.activityStatus == "PLANNED_WORKOUT") "ALLENAMENTO" else "RIPOSO",
+                tdeeKcal = metrics.operationalTdeeKcal,
+                targetKcal = metrics.operationalTargetKcal,
+                proteinG = metrics.operationalProteinG,
+                carbsG = metrics.operationalCarbsG,
+                fatG = metrics.operationalFatG,
+            )
+        }
+    }
 
     private const val DAY_MILLIS = 86_400_000L
+
+    private const val INPUT_LEGEND = "U=sex|ageYears|heightCm|weightKg|goal|activity|wakeMinutes|sleepMinutes. ? means unavailable."
 
     /**
      * Builds the whole coach input in the same format as [AiUserContext]: age in years, ISO `yyyy-MM-dd`
      * dates everywhere, no epoch values. Every window (BIA, body measurements, workouts, plan days,
      * weights) is capped to [MAX_HISTORY_ROWS] rows and never contains data later than the analysed reading.
      *
-     * KDoc note for the next tranche: the fat-loss estimate (`F`) and the scenarios (`G`) are still computed
-     * by the model; only [BiaAnalysisContract] checks that the target body fat is plausible.
+     * The two calorie targets are sent with explicit labels (`TARGET_ABITUALE_KCAL` from [calculation],
+     * `TARGET_OPERATIVO_OGGI_KCAL` from [operational]); the fat scenarios and the fat-loss estimate are calculated
+     * here by [BiaScenarioCalculator] and the model only comments them.
      */
     fun coachContext(
         profile: UserProfileEntity,
@@ -154,6 +187,7 @@ object BiaAnalysisReport {
         planDays: List<PlanDay>,
         calculation: LocalCalculationEngine.Result?,
         zone: ZoneId = ZoneId.systemDefault(),
+        operational: OperationalTarget? = null,
     ): CoachContext {
         val cutoff = report.latest.measuredAtEpochMillis + DAY_MILLIS
         val cutoffEpochDay = Instant.ofEpochMilli(report.latest.measuredAtEpochMillis).atZone(zone).toLocalDate().toEpochDay()
@@ -173,12 +207,16 @@ object BiaAnalysisReport {
             targetKcal = calculation?.targetKcal,
             biologicalSex = profile.biologicalSex,
         )
+        val scenarios = BiaScenarioCalculator.scenarios(composition(report.latest), profile.biologicalSex)
         val prompt = buildString {
             appendLine("DATA_ANALISI:${today}")
-            appendLine("LEGENDA:${AiUserContext.INPUT_DESCRIPTION} Date ISO yyyy-MM-dd. Condizioni misura per riga: Y=dichiarata, N=non dichiarata o assente (il dato non distingue).")
+            appendLine("LEGENDA:$INPUT_LEGEND Date ISO yyyy-MM-dd. Condizioni misura per riga: Y=dichiarata, N=non dichiarata o assente (il dato non distingue).")
             appendLine("PROFILO_UTENTE:")
             appendLine("U=${AiUserContext.profileLine(profile, today)}")
-            appendLine("LC=${AiUserContext.calculationLine(calculation)}")
+            appendLine("BMI_BMR:bmi=${calculation?.bmi?.let { fmt(it) } ?: "?"},bmrKcal=${calculation?.bmrKcal?.let { whole(it) } ?: "?"}")
+            appendLine(habitualTargetLine(calculation))
+            appendLine(operationalTargetLine(operational))
+            appendLine("REGOLA_TARGET:sono DUE target diversi. Citane uno solo con la sua etichetta (target abituale / target operativo di oggi, giorno di riposo o di allenamento) e mai la parola target da sola.")
             profile.dietaryPreferencesJson?.takeIf { it.isNotBlank() }?.let { appendLine("PREFERENZE_ALIMENTARI:${it.replace('\n', ' ')}") }
             appendLine("OBIETTIVO:${profile.goal ?: "?"}")
             appendLine(safety.line())
@@ -196,9 +234,71 @@ object BiaAnalysisReport {
             appendLine("ALLENAMENTI:${workouts.joinToString(";") { "date=${BiaHistoryImportContract.dayKey(it.startedAtEpochMillis)},type=${it.type},title=${it.title.replace('|', '/')},duration=${it.durationMinutes ?: "?"},rest=${it.isRestDay}" }.ifBlank { "?" }}")
             appendLine("NOTA_PIANO:il piano alimentare e pianificato, NON e consumo registrato.")
             appendLine("PIANO_PIANIFICATO:${plan.joinToString(";") { "date=${LocalDate.ofEpochDay(it.dateEpochDay)},kcal=${it.kcal ?: "?"},p=${it.proteinG ?: "?"},c=${it.carbsG ?: "?"},f=${it.fatG ?: "?"}" }.ifBlank { "?" }}")
-            appendLine("CALORIE_E_MACRO:${calculation?.let { "bmr=${it.bmrKcal ?: "?"},tdee=${it.tdeeKcal ?: "?"},target=${it.targetKcal ?: "?"},p=${it.proteinG ?: "?"},c=${it.carbsG ?: "?"},f=${it.fatG ?: "?"}" } ?: "?"}")
+            appendLine(fatLossEstimateLine(report))
+            appendLine(scenariosLine(scenarios))
         }
-        return CoachContext(prompt, safety)
+        return CoachContext(prompt, safety, scenarios)
+    }
+
+    private fun whole(value: Double): String = Math.round(value).toString()
+
+    private fun habitualTargetLine(calculation: LocalCalculationEngine.Result?): String {
+        if (calculation == null) return "TARGET_ABITUALE_KCAL:?"
+        return "TARGET_ABITUALE_KCAL:tdee=${calculation.tdeeKcal?.let { whole(it) } ?: "?"},target=${calculation.targetKcal?.let { whole(it) } ?: "?"}," +
+            "p=${calculation.proteinG?.let { whole(it) } ?: "?"},c=${calculation.carbsG?.let { whole(it) } ?: "?"},f=${calculation.fatG?.let { whole(it) } ?: "?"}" +
+            " (target del profilo sul TDEE abituale, NON il target di oggi)"
+    }
+
+    private fun operationalTargetLine(target: OperationalTarget?): String {
+        if (target == null) return "TARGET_OPERATIVO_OGGI_KCAL:? (non disponibile: non citare un target di oggi)"
+        return "TARGET_OPERATIVO_OGGI_KCAL:tipo_giorno=${target.dayType},tdee=${target.tdeeKcal?.let { whole(it) } ?: "?"},target=${target.targetKcal?.let { whole(it) } ?: "?"}," +
+            "p=${target.proteinG?.let { whole(it) } ?: "?"},c=${target.carbsG?.let { whole(it) } ?: "?"},f=${target.fatG?.let { whole(it) } ?: "?"}" +
+            " (stesso calcolo mostrato nella Home oggi)"
+    }
+
+    private fun composition(item: BiaMeasurementEntity) = BiaScenarioCalculator.Composition(
+        weightKg = item.weightKg?.toDouble(),
+        bodyFatPercent = item.bodyFatPercent?.toDouble(),
+        fatMassKg = item.fatMassKg?.toDouble(),
+        leanMassKg = item.leanMassKg?.toDouble(),
+    )
+
+    private fun scenariosLine(scenarios: List<BiaScenarioCalculator.Scenario>): String {
+        if (scenarios.isEmpty()) return "SCENARI_APP:? (dati insufficienti o nessun obiettivo plausibile: non scrivere scenari, nessun record G)"
+        return "SCENARI_APP:" + scenarios.joinToString(";") {
+            "${it.id} grasso_target=${BiaScenarioCalculator.contextPercent(it.targetBodyFatPercent)}%," +
+                "peso_obiettivo=${BiaScenarioCalculator.contextNumber(it.targetWeightKg)}kg," +
+                "grasso_da_perdere=${BiaScenarioCalculator.contextNumber(it.fatToLoseKg)}kg"
+        } + " (calcolati dall'app mantenendo la massa non grassa: sono ipotesi, non previsioni; commentali con G|id|?|?|?|commento|affidabilita senza scrivere cifre nuove)"
+    }
+
+    private fun fatLossEstimateLine(report: Report): String {
+        val latest = composition(report.latest)
+        val previous = report.previous?.let { prev ->
+            fatChangeText("vs_precedente", BiaScenarioCalculator.fatChange(composition(prev), latest, report.degradedComparability))
+        }
+        val first = report.history.firstOrNull()?.takeIf { it.id != report.latest.id && it.id != report.previous?.id }?.let { start ->
+            fatChangeText("vs_inizio_finestra", BiaScenarioCalculator.fatChange(composition(start), latest))
+        }
+        val parts = listOfNotNull(previous, first)
+        return "GRASSO_PERSO_STIMA_APP:" + (parts.joinToString(";").ifBlank { "? (serve una misura precedente con massa grassa o peso e % di grasso)" }) +
+            " (stime dell'app soggette al rumore BIA, non fatti misurati: nel record F presentale come stima)"
+    }
+
+    private fun fatChangeText(label: String, change: BiaScenarioCalculator.FatChange): String {
+        val status = when (change.status) {
+            BiaScenarioCalculator.FatStatus.FAT_DOWN -> "STIMA_GRASSO_IN_CALO"
+            BiaScenarioCalculator.FatStatus.FAT_UP -> "STIMA_GRASSO_IN_AUMENTO"
+            BiaScenarioCalculator.FatStatus.WITHIN_NOISE -> "ENTRO_RUMORE_NESSUNA_STIMA"
+            BiaScenarioCalculator.FatStatus.NOT_AVAILABLE -> "NON_DISPONIBILE"
+        }
+        val fields = listOfNotNull(
+            change.fatMassDeltaKg?.let { "massa_grassa_delta=${BiaScenarioCalculator.contextNumber(it)}kg" },
+            change.weightDeltaKg?.let { "peso_delta=${BiaScenarioCalculator.contextNumber(it)}kg" },
+            change.bodyFatDeltaPoints?.let { "grasso_punti_delta=${BiaScenarioCalculator.contextNumber(it)}" },
+            change.estimatedFatLostKg?.let { "grasso_perso_stimato=${BiaScenarioCalculator.contextNumber(it)}kg" },
+        )
+        return "$label $status ${fields.joinToString(",")}".trim()
     }
 
     private fun fmt(value: Double): String = String.format(Locale.US, "%.1f", value)
