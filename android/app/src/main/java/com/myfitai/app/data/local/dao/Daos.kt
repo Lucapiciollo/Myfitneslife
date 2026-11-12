@@ -38,6 +38,10 @@ interface UserProfileDao {
     @Update
     suspend fun update(profile: UserProfileEntity)
 
+    /** Scrive solo le preferenze alimentari: nessun altro campo del profilo viene sovrascritto con dati letti in precedenza. */
+    @Query("UPDATE user_profile SET dietaryPreferencesJson = :json, updatedAtEpochMillis = :updatedAt WHERE id = :profileId")
+    suspend fun updateDietaryPreferences(profileId: Long, json: String?, updatedAt: Long): Int
+
     @Delete
     suspend fun delete(profile: UserProfileEntity)
 }

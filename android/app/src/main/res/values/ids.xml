@@ -7,4 +7,9 @@
     <item name="aiActionOriginalContentDescription" type="id" />
     <item name="aiActionOriginalTooltip" type="id" />
     <item name="aiActionOriginalAlpha" type="id" />
+    <item name="preferredFoodsInput" type="id" />
+    <item name="dislikedFoodsInput" type="id" />
+    <item name="excludedFoodsInput" type="id" />
+    <item name="intolerancesInput" type="id" />
+    <item name="allergiesInput" type="id" />
 </resources>
