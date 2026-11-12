@@ -184,7 +184,7 @@ class NutritionPlanGenerationService(
             ?: habitualTargets
         val sportsMode = SportsNutritionClassifier.classify(profile.activityLevel, weekWorkouts)
         val mealsPerDay = mealCountPreferences?.get(profileId) ?: MealCountPreferences.DEFAULT
-        val personalContext = personalResponse.promptContext(nowEpochMillis = time.nowEpochMillis())
+        val personalContext = personalResponse.promptContext(nowEpochMillis = time.nowEpochMillis(), profileId = profileId)
         val dietaryProfile = DietaryProfile.parse(profile.dietaryPreferencesJson)
         val recentMeals = MealVariety.memory(recentMealHistory(profileId, monday))
 

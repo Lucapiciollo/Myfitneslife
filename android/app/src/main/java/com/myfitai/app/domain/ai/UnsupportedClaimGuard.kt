@@ -11,6 +11,28 @@ import java.util.Locale
  * an assertion in another.
  */
 object UnsupportedClaimGuard {
+    /** Causal assertions the AI must not make about body changes (association is allowed, causation is not). */
+    val CAUSAL_ASSERTIONS: List<String> = listOf(
+        "causato", "caused by", "dovuto a", "dovuta a", "dovuti a", "dovute a", "a causa di",
+        "ha portato a", "è il risultato di", "e il risultato di",
+    )
+
+    /** Overclaims about hydration, muscle and water retention that BIA/measurements cannot support. */
+    val BODY_OVERCLAIMS: List<String> = listOf(
+        "perdita di massa muscolare confermata", "perdita muscolare confermata", "disidratazione",
+        "ritenzione è grasso", "ritenzione idrica è grasso", "ritenzione equivale a grasso",
+        "ritenzione idrica equivale a grasso", "ritenzione è aumento di grasso", "ritenzione idrica è aumento di grasso",
+        "ritenzione grasso", "water retention is fat",
+    )
+
+    /**
+     * Prompt rules shared by the body-related agents (English: the prompts are English). They mirror what the
+     * guards above reject, so the model is told the same thing the validator enforces.
+     */
+    const val PROMPT_SAFETY_RULES: String =
+        "Transient water retention is not fat gain: never present it as fat gain. " +
+            "Do not alarm and do not judge the body: use a neutral, calm tone and write user-facing text in Italian."
+
     private val negations = setOf("non", "nessun", "nessuna", "nessuno", "senza", "né", "ne", "no", "not", "without")
     private const val NEGATION_WINDOW = 4
     private val clauseBoundary = Regex("[.;:!?,()\\n\\r|]+")

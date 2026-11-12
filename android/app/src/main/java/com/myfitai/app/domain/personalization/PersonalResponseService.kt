@@ -25,8 +25,17 @@ class PersonalResponseService(
         nowEpochMillis: Long = System.currentTimeMillis(),
         lookbackDays: Int = 56,
     ): PersonalResponseEngine.Summary? {
-        require(lookbackDays in 7..365)
         val profileId = activeProfileStore.currentIdOrNull() ?: return null
+        return summarize(profileId, nowEpochMillis, lookbackDays)
+    }
+
+    /** Summary of exactly [profileId]; the active profile is never consulted. */
+    suspend fun summarize(
+        profileId: Long,
+        nowEpochMillis: Long = System.currentTimeMillis(),
+        lookbackDays: Int = 56,
+    ): PersonalResponseEngine.Summary {
+        require(lookbackDays in 7..365)
         val today = Instant.ofEpochMilli(nowEpochMillis).atZone(ZoneId.systemDefault()).toLocalDate()
         val minWeekEpochDay = today.minusDays(lookbackDays.toLong() + 7L).toEpochDay()
         val maxWeekEpochDay = today.toEpochDay()
@@ -54,17 +63,31 @@ class PersonalResponseService(
         )
     }
 
+    /**
+     * Bounded history context. Background jobs and services that already know the target profile MUST pass
+     * [profileId]: only when it is null the currently active profile is used (UI flows on the active profile).
+     */
     suspend fun promptContext(
         nowEpochMillis: Long = System.currentTimeMillis(),
         lookbackDays: Int = 56,
+        profileId: Long? = null,
     ): String {
-        val history = summarizeActiveProfile(nowEpochMillis, lookbackDays)?.toPromptContext().orEmpty()
-        val profileId = activeProfileStore.currentIdOrNull() ?: return history
+        val resolvedProfileId = resolveProfileId(profileId, activeProfileStore.currentIdOrNull()) ?: return ""
+        return promptContextFor(resolvedProfileId, nowEpochMillis, lookbackDays)
+    }
+
+    private suspend fun promptContextFor(profileId: Long, nowEpochMillis: Long, lookbackDays: Int): String {
+        val history = summarize(profileId, nowEpochMillis, lookbackDays).toPromptContext()
         val goals = expectationGoals.all(profileId).first()
             .take(8)
             .joinToString("|") {
                 "${it.periodStartEpochDay}:${it.periodEndEpochDay}:${it.status}:days=${it.plannedDays}:deficit=${it.theoreticalDeficitKcal ?: "?"}:range=${it.expectedFatLossMinKg ?: "?"}-${it.expectedFatLossMaxKg ?: "?"}"
             }
         return if (goals.isBlank()) history else "$history\nGOAL_OUTCOMES:$goals\nSAFE:goal outcomes are user-confirmed context for evaluating the previous plan; never override local numerical targets automatically"
+    }
+
+    companion object {
+        /** The explicit profile of the caller always wins over the active one. */
+        internal fun resolveProfileId(explicit: Long?, active: Long?): Long? = explicit ?: active
     }
 }

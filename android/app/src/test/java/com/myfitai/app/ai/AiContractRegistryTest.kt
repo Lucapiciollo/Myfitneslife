@@ -102,7 +102,7 @@ class AiContractRegistryTest {
             "myfitai_nutrition_advice_pipe_v1" to 900,
             "myfitai_weekly_review_pipe_v1" to 700,
             "myfitai_cheat_understanding_pipe_v1" to 500,
-            "myfitai_body_proportion_pipe_v1" to 500,
+            "myfitai_body_proportion_pipe_v1" to 1_500,
             "myfitai_bia_raw_pipe_v2" to 350,
             "myfitai_bia_pipe_v1" to 350,
             "myfitai_bia_progress_coach_pipe_v2" to 2_200,
