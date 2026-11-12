@@ -73,6 +73,8 @@ class ProfileCalculationService(
         val latestBiaTimestamp: Long?,
         val latestBodyMeasurementTimestamp: Long?,
         val latestWeightKg: Float?,
+        /** Peso effettivo con data e fonte (BIA, MISURA, PROFILO, NESSUNO); stessa regola del motore. */
+        val weight: WeightReading,
         val latestBodyFatPercent: Float?,
         val latestMuscleMassKg: Float?,
         val latestSkeletalMuscleKg: Float?,
@@ -97,12 +99,11 @@ class ProfileCalculationService(
         val latestBody = bodyHistory.lastOrNull()
         // A standalone weigh-in or hips-only visit must not erase the last waist reading.
         val latestAvailableWaist = bodyHistory.lastOrNull { it.waistCm != null }?.waistCm
-        val weightObservations = (
-            biaHistory.mapNotNull { row -> row.weightKg?.let { row.measuredAtEpochMillis to it } } +
-                bodyHistory.mapNotNull { row -> row.weightKg?.let { row.measuredAtEpochMillis to it } }
-            ).sortedBy { it.first }
-        val latestRecordedWeight = weightObservations.lastOrNull()?.second
-        val weightKg = latestRecordedWeight?.toDouble() ?: profile.currentWeightKg?.toDouble()
+        // Unica regola di selezione del peso: motore, UI e contesto IA leggono lo stesso risultato.
+        val resolvedObservations = WeightResolver.observations(biaHistory, bodyHistory, profileId)
+        val weightObservations = resolvedObservations.map { it.measuredAtEpochMillis to it.valueKg }
+        val weightReading = WeightResolver.resolve(resolvedObservations, profile.currentWeightKg)
+        val weightKg = weightReading.valueKg?.toDouble()
         val ageYears = profile.birthDateEpochDay?.let { epochDay ->
             val birth = LocalDate.ofEpochDay(epochDay)
             if (birth.isAfter(today)) null else Period.between(birth, today).years
@@ -174,7 +175,8 @@ class ProfileCalculationService(
             recompositionState = recomposition,
             latestBiaTimestamp = latestBia?.measuredAtEpochMillis,
             latestBodyMeasurementTimestamp = latestBody?.measuredAtEpochMillis,
-            latestWeightKg = latestRecordedWeight ?: profile.currentWeightKg,
+            latestWeightKg = weightReading.valueKg,
+            weight = weightReading,
             latestBodyFatPercent = latestBia?.bodyFatPercent,
             latestMuscleMassKg = latestBia?.muscleMassKg,
             latestSkeletalMuscleKg = latestBia?.skeletalMuscleKg,

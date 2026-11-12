@@ -26,6 +26,8 @@ import com.myfitai.app.domain.calculation.DailyActivityCheckInEngine
 import com.myfitai.app.domain.calculation.DayEnergyProvider
 import com.myfitai.app.domain.calculation.ProfileCalculationMapper
 import com.myfitai.app.domain.calculation.ProfileCalculationService
+import com.myfitai.app.domain.calculation.WeightResolver
+import com.myfitai.app.domain.calculation.WeightSource
 import com.myfitai.app.domain.calculation.OperationalNutritionMetrics
 import com.myfitai.app.domain.calculation.WeeklyBodyExpectation
 import com.myfitai.app.domain.food.CalorieRecoveryEngine
@@ -383,20 +385,20 @@ class HomeViewModel(
 
         val calories = calorieState(source)
 
-        val weightSource = when {
-            (source.bia.maxOfOrNull { it.measuredAtEpochMillis } ?: Long.MIN_VALUE) >=
-                (source.body.maxOfOrNull { it.measuredAtEpochMillis } ?: Long.MIN_VALUE) &&
-                source.bia.any { it.weightKg != null } -> "da BIA"
-            source.body.any { it.weightKg != null } -> "da misura corporea"
-            source.profile?.currentWeightKg != null -> "dal profilo"
-            else -> null
+        // Stessa regola del motore locale (WeightResolver): valore e fonte coincidono sempre.
+        val weightReading = WeightResolver.resolve(source.bia, source.body, source.profile?.currentWeightKg)
+        val weightSource = when (weightReading.source) {
+            WeightSource.BIA -> "da BIA"
+            WeightSource.MISURA -> "da misura corporea"
+            WeightSource.PROFILO -> "dal profilo"
+            WeightSource.NESSUNO -> null
         }
         return DashboardState(
             loading = false,
             profileName = source.profile?.name,
             goal = source.profile?.goal,
             weight = metricState(weightInRange).copy(
-                value = recordedWeightValues.firstOrNull()?.second ?: source.profile?.currentWeightKg,
+                value = weightReading.valueKg,
                 sourceLabel = weightSource,
             ),
             bodyFat = metricState(fatInRange).copy(
