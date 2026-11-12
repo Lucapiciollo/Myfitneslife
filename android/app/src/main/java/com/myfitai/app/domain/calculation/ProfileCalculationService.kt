@@ -4,12 +4,12 @@ import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.repository.BiaRepository
 import com.myfitai.app.data.repository.BodyMeasurementRepository
 import com.myfitai.app.data.repository.UserProfileRepository
+import com.myfitai.app.domain.time.CalendarDays
 import kotlinx.coroutines.flow.first
 import java.time.LocalDate
 import java.time.Period
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
-import java.util.concurrent.TimeUnit
 
 /**
  * Compone profilo + storici BIA + misure corporee in uno snapshot locale pronto per UI/AI.
@@ -129,23 +129,23 @@ class ProfileCalculationService(
             )
         )
 
-        val weightTrend = trendOf(weightObservations.map { it.first to it.second.toDouble() })
-        val bodyFatTrend = trendOf(biaHistory.mapNotNull { row -> row.bodyFatPercent?.let { row.measuredAtEpochMillis to it.toDouble() } })
-        val muscleTrend = trendOf(biaHistory.mapNotNull { row -> row.muscleMassKg?.let { row.measuredAtEpochMillis to it.toDouble() } })
+        val weightTrend = trendOf(weightObservations.map { it.first to it.second.toDouble() }, "weightKg")
+        val bodyFatTrend = trendOf(biaHistory.mapNotNull { row -> row.bodyFatPercent?.let { row.measuredAtEpochMillis to it.toDouble() } }, "bodyFatPercent")
+        val muscleTrend = trendOf(biaHistory.mapNotNull { row -> row.muscleMassKg?.let { row.measuredAtEpochMillis to it.toDouble() } }, "muscleMassKg")
         val waistTrend = trendOf(bodyHistory.mapNotNull { row -> row.waistCm?.let { row.measuredAtEpochMillis to it.toDouble() } })
         val recomposition = LocalCalculationEngine.classifyRecomposition(bodyFatTrend.delta, muscleTrend.delta)
 
         val biaMetrics = BiaSnapshot(
-            weight = metricSnapshot(weightObservations.map { it.first to it.second }),
-            bodyFat = metricSnapshot(biaHistory.map { it.measuredAtEpochMillis to it.bodyFatPercent }),
-            muscleMass = metricSnapshot(biaHistory.map { it.measuredAtEpochMillis to it.muscleMassKg }),
-            skeletalMuscle = metricSnapshot(biaHistory.map { it.measuredAtEpochMillis to it.skeletalMuscleKg }),
+            weight = metricSnapshot(weightObservations.map { it.first to it.second }, noiseKey = "weightKg"),
+            bodyFat = metricSnapshot(biaHistory.map { it.measuredAtEpochMillis to it.bodyFatPercent }, noiseKey = "bodyFatPercent"),
+            muscleMass = metricSnapshot(biaHistory.map { it.measuredAtEpochMillis to it.muscleMassKg }, noiseKey = "muscleMassKg"),
+            skeletalMuscle = metricSnapshot(biaHistory.map { it.measuredAtEpochMillis to it.skeletalMuscleKg }, noiseKey = "skeletalMuscleKg"),
             bodyWater = metricSnapshot(biaHistory.map { it.measuredAtEpochMillis to it.bodyWaterPercent }),
             visceralFat = metricSnapshot(biaHistory.map { it.measuredAtEpochMillis to it.visceralFatLevel }),
             bmr = metricSnapshot(biaHistory.map { it.measuredAtEpochMillis to it.bmrKcal }),
             fatMass = metricSnapshot(biaHistory.map { it.measuredAtEpochMillis to it.fatMassKg }),
-            leanMass = metricSnapshot(biaHistory.map { it.measuredAtEpochMillis to it.leanMassKg }),
-            bodyWaterKg = metricSnapshot(biaHistory.map { it.measuredAtEpochMillis to it.bodyWaterKg }),
+            leanMass = metricSnapshot(biaHistory.map { it.measuredAtEpochMillis to it.leanMassKg }, noiseKey = "leanMassKg"),
+            bodyWaterKg = metricSnapshot(biaHistory.map { it.measuredAtEpochMillis to it.bodyWaterKg }, noiseKey = "bodyWaterKg"),
             subcutaneousFat = metricSnapshot(biaHistory.map { it.measuredAtEpochMillis to it.subcutaneousFatPercent }),
             boneMass = metricSnapshot(biaHistory.map { it.measuredAtEpochMillis to it.boneMassKg }),
             proteinPercent = metricSnapshot(biaHistory.map { it.measuredAtEpochMillis to it.proteinPercent }),
@@ -190,27 +190,39 @@ class ProfileCalculationService(
         )
     }
 
-    private fun metricSnapshot(values: List<Pair<Long, Float?>>): MetricSnapshot {
-        val ordered = values.mapNotNull { (timestamp, value) -> value?.let { timestamp to it } }.sortedBy { it.first }
-        val baseline = ordered.firstOrNull()?.second
-        val current = ordered.lastOrNull()?.second
-        val previousDelta = if (ordered.size >= 2) ordered.last().second - ordered[ordered.lastIndex - 1].second else null
-        val anchor = ordered.lastOrNull()?.first
-        val recent = if (anchor == null) emptyList() else ordered.filter { (timestamp, _) ->
-            timestamp >= anchor - TimeUnit.DAYS.toMillis(RECENT_WINDOW_DAYS.toLong())
-        }
-        val recentSpanDays = if (recent.size >= 2) {
-            TimeUnit.MILLISECONDS.toDays(recent.last().first - recent.first().first).toInt()
-        } else 0
-        val recentTrend = trendOf(recent.map { (timestamp, value) -> timestamp to value.toDouble() })
-        return MetricSnapshot(baseline, current, previousDelta, recentTrend, recentSpanDays)
-    }
-
-    private fun trendOf(values: List<Pair<Long, Double>>): LocalCalculationEngine.TrendStats =
-        LocalCalculationEngine.trend(values.map { (timestamp, value) -> LocalCalculationEngine.TimedValue(timestamp, value) })
-
     companion object {
         const val RECENT_WINDOW_DAYS = 56
+
+        /**
+         * Finestra recente e durata in GIORNI DI CALENDARIO nel fuso [zone]: dividere i millisecondi sbaglia di
+         * un'ora (e di un giorno con troncamento) a cavallo del cambio ora legale (25 ottobre / 29 marzo).
+         * [noiseKey]: chiave di BiaNoiseThresholds per il verdetto stabile/variato del trend.
+         */
+        internal fun metricSnapshot(
+            values: List<Pair<Long, Float?>>,
+            zone: ZoneId = ZoneId.systemDefault(),
+            noiseKey: String? = null,
+        ): MetricSnapshot {
+            val ordered = values.mapNotNull { (timestamp, value) -> value?.let { timestamp to it } }.sortedBy { it.first }
+            val baseline = ordered.firstOrNull()?.second
+            val current = ordered.lastOrNull()?.second
+            val previousDelta = if (ordered.size >= 2) ordered.last().second - ordered[ordered.lastIndex - 1].second else null
+            val anchor = ordered.lastOrNull()?.first
+            val recent = if (anchor == null) emptyList() else ordered.filter { (timestamp, _) ->
+                CalendarDays.between(timestamp, anchor, zone) <= RECENT_WINDOW_DAYS
+            }
+            val recentSpanDays = if (recent.size >= 2) {
+                CalendarDays.between(recent.first().first, recent.last().first, zone).toInt()
+            } else 0
+            val recentTrend = trendOf(recent.map { (timestamp, value) -> timestamp to value.toDouble() }, noiseKey)
+            return MetricSnapshot(baseline, current, previousDelta, recentTrend, recentSpanDays)
+        }
+
+        internal fun trendOf(values: List<Pair<Long, Double>>, noiseKey: String? = null): LocalCalculationEngine.TrendStats =
+            LocalCalculationEngine.trend(
+                values.map { (timestamp, value) -> LocalCalculationEngine.TimedValue(timestamp, value) },
+                metricKey = noiseKey,
+            )
     }
 }
 

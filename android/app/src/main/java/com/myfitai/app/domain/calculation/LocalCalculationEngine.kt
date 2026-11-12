@@ -183,6 +183,16 @@ object LocalCalculationEngine {
     /**
      * Ricalcola i macro a partire da un target calorico già deciso localmente.
      * Serve anche quando l'AdaptiveNutritionTargetEngine applica una piccola correzione al target.
+     *
+     * DECISIONE DI PRODOTTO APERTA (audit calcoli, voce 7), NON implementata: le proteine sono 2,0 g/kg di peso
+     * reale senza tenere conto di IMC >= 29 o dell'eta, e con target bassi i carboidrati si riducono molto
+     * (donna sedentaria 78 kg: 43,8 g). Proposta da confermare: tetto proteico = min(2,0 g/kg; 35% delle kcal)
+     * e minimo carboidrati dichiarato (es. 100 g, esente con kcal basse). Un tetto che dipende dalle kcal del
+     * giorno romperebbe l'invariante "le proteine non scalano con le calorie" (giorni riposo/allenamento uguali,
+     * recupero sgarro che non riduce le proteine), quindi andrebbe calcolato UNA volta sul target abituale e
+     * passato come proteine esplicite a: DayEnergyEngine, TrainingEnergyPlanner, CalorieRecoveryEngine e
+     * NutritionPlanGenerationService (piu OperationalNutritionMetrics per il percorso senza programma), con
+     * relativi test e golden D/U da rivedere (D: carbo 143,0 -> circa 145,2).
      */
     fun calculateMacrosForTarget(targetKcal: Double, weightKg: Double, goal: Goal): MacroTargets {
         require(targetKcal.isFinite() && targetKcal > 0.0) { "TARGET_KCAL_INVALID" }
