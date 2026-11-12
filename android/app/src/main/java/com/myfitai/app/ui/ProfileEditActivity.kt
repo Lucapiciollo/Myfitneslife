@@ -18,6 +18,7 @@ import com.google.android.material.textfield.TextInputLayout
 import com.google.android.material.timepicker.MaterialTimePicker
 import com.google.android.material.timepicker.TimeFormat
 import com.myfitai.app.R
+import com.myfitai.app.domain.profile.ProfileAgeRule
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.domain.calculation.TrainingEnergyPlanner
 import com.myfitai.app.data.local.entity.UserProfileEntity
@@ -37,7 +38,11 @@ class ProfileEditActivity : BaseShellActivity() {
     private val isCreate by lazy { isBootstrap || intent.getBooleanExtra(EXTRA_CREATE, false) }
     private val data by lazy { AppDataContainer.get(this) }
     private val viewModel: ProfileEditViewModel by viewModels {
-        ProfileEditViewModel.Factory(data.userProfileRepository, data.activeProfileStore, allowCreate = isCreate)
+        // Il ViewModel sopravvive alla rotazione: la lambda cattura solo l'application context, non l'Activity.
+        val appContext = applicationContext
+        ProfileEditViewModel.Factory(data.userProfileRepository, data.activeProfileStore, allowCreate = isCreate, ageMessage = { status ->
+            ProfileAgeRule.message(status) { res, min, max -> appContext.getString(res, min, max) }.orEmpty()
+        })
     }
 
     private lateinit var nameInput: TextInputEditText
@@ -117,6 +122,7 @@ class ProfileEditActivity : BaseShellActivity() {
                 val date = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
                 birthDateEpochDay = date.toEpochDay()
                 birthDateInput.setText(date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.ITALIAN)))
+                showBirthDateIssue()
             }
             picker.show(supportFragmentManager, "profile_birth_date")
         }
@@ -153,7 +159,9 @@ class ProfileEditActivity : BaseShellActivity() {
             }
 
             if (name.isBlank()) fail(R.id.nameLayout, "Inserisci un nome")
-            if (birthDateEpochDay != null && LocalDate.ofEpochDay(birthDateEpochDay!!).isAfter(LocalDate.now())) fail(R.id.birthDateLayout, "Data non valida")
+            if (birthDateEpochDay != null) {
+                ProfileAgeRule.message(ProfileAgeRule.check(birthDateEpochDay, LocalDate.now()), ::ageText)?.let { fail(R.id.birthDateLayout, it) }
+            }
             if (height != null && (height < 80f || height > 250f)) fail(R.id.heightLayout, "Altezza non valida")
             if (weight != null && (weight < 20f || weight > 400f)) fail(R.id.weightLayout, "Peso non valido")
 
@@ -256,7 +264,21 @@ class ProfileEditActivity : BaseShellActivity() {
         sleepTimeMinutes = profile.sleepTimeMinutes
         wakeTimeInput.setText(profile.wakeTimeMinutes?.let(::formatMinutes).orEmpty())
         sleepTimeInput.setText(profile.sleepTimeMinutes?.let(::formatMinutes).orEmpty())
+        // Un profilo già salvato con età fuori range viene segnalato subito, prima di qualsiasi salvataggio.
+        showBirthDateIssue()
+    }
 
+    private fun ageText(messageRes: Int, minAge: Int, maxAge: Int): String = getString(messageRes, minAge, maxAge)
+
+    /** Mostra l'errore sulla data di nascita solo se presente ma con età fuori 14-120 (o nel futuro). */
+    private fun showBirthDateIssue() {
+        val layout = findViewById<TextInputLayout>(R.id.birthDateLayout)
+        val epochDay = birthDateEpochDay
+        layout.error = if (epochDay != null) {
+            ProfileAgeRule.message(ProfileAgeRule.check(epochDay, LocalDate.now()), ::ageText)
+        } else {
+            null
+        }
     }
 
     private fun clearErrors() {

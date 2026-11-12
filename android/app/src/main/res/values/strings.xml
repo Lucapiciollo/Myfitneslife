@@ -175,6 +175,12 @@
     <string name="onboarding_ai_not_configured">Nessun provider IA configurato. Puoi continuare e configurarlo più avanti.</string>
     <string name="validation_required_name">Inserisci un nome</string>
     <string name="validation_required_birth_date">Inserisci la data di nascita</string>
+    <string name="profile_birth_date_invalid">Controlla la data di nascita: l\'età deve essere compresa tra %1$d e %2$d anni</string>
+    <string name="profile_birth_date_future">Controlla la data di nascita: la data non può essere nel futuro</string>
+    <string name="food_plan_profile_age_warning">Controlla la data di nascita nel profilo: servono un\'età tra %1$d e %2$d anni per calcolare i target. Tocca per aprire il profilo.</string>
+    <string name="food_plan_profile_fix_hint">Tocca per aprire il profilo e correggere i dati.</string>
+    <string name="food_plan_profile_age_dialog_title">Completa il profilo</string>
+    <string name="food_plan_open_profile">Apri profilo</string>
     <string name="validation_required_sex">Seleziona il sesso biologico</string>
     <string name="validation_invalid_height">Inserisci altezza tra 80 e 250 cm</string>
     <string name="validation_invalid_weight">Inserisci un peso tra 20 e 400 kg</string>

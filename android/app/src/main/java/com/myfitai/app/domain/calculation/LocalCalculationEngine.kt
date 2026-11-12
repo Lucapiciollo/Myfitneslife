@@ -9,6 +9,10 @@ import kotlin.math.max
  */
 object LocalCalculationEngine {
 
+    /** Intervallo di età (anni compiuti) per cui le formule metaboliche sono considerate affidabili. */
+    const val MIN_AGE_YEARS = 14
+    const val MAX_AGE_YEARS = 120
+
     enum class BiologicalSex { MALE, FEMALE }
 
     enum class ActivityLevel(val multiplier: Double) {
@@ -126,7 +130,7 @@ object LocalCalculationEngine {
             return (370.0 + 21.6 * leanMassKg) to "KATCH_MCARDLE"
         }
 
-        val age = input.ageYears?.takeIf { it in 14..120 }
+        val age = input.ageYears?.takeIf { it in MIN_AGE_YEARS..MAX_AGE_YEARS }
         val sex = input.biologicalSex
         if (weight == null || height == null || age == null || sex == null) return null
 

@@ -6,6 +6,9 @@ import androidx.lifecycle.viewModelScope
 import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.repository.UserProfileRepository
+import com.myfitai.app.domain.profile.ProfileAgeRule
+import com.myfitai.app.domain.time.SystemTimeProvider
+import com.myfitai.app.domain.time.TimeProvider
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -18,6 +21,9 @@ class ProfileEditViewModel(
     private val repository: UserProfileRepository,
     private val activeProfileStore: ActiveProfileStore,
     private val allowCreate: Boolean = false,
+    /** Testo mostrato quando l'età non è valida; fornito dalla UI per restare localizzato. */
+    private val ageMessage: (ProfileAgeRule.Status) -> String,
+    private val time: TimeProvider = SystemTimeProvider,
 ) : ViewModel() {
 
     private val _profile = MutableStateFlow<UserProfileEntity?>(null)
@@ -60,6 +66,12 @@ class ProfileEditViewModel(
         sleepTimeMinutes: Int?,
         dietaryPreferencesJson: String?,
     ) {
+        // Difesa di dominio: nessun salvataggio con data di nascita presente ma età fuori 14-120 (o futura).
+        val ageStatus = ProfileAgeRule.check(birthDateEpochDay, time.today())
+        if (ProfileAgeRule.isPresentButInvalid(birthDateEpochDay, time.today())) {
+            _error.tryEmit(ageMessage(ageStatus))
+            return
+        }
         viewModelScope.launch {
             _saving.value = true
             runCatching {
@@ -128,11 +140,13 @@ class ProfileEditViewModel(
         private val repository: UserProfileRepository,
         private val activeProfileStore: ActiveProfileStore,
         private val allowCreate: Boolean = false,
+        private val ageMessage: (ProfileAgeRule.Status) -> String,
+        private val time: TimeProvider = SystemTimeProvider,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(ProfileEditViewModel::class.java))
-            return ProfileEditViewModel(repository, activeProfileStore, allowCreate) as T
+            return ProfileEditViewModel(repository, activeProfileStore, allowCreate, ageMessage, time) as T
         }
     }
 }

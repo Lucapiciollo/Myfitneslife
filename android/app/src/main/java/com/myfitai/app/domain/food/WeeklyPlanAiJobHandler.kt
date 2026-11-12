@@ -39,7 +39,7 @@ class WeeklyPlanAiJobHandler(
                     .build()
             )
         } catch (error: NutritionPlanGenerationService.GenerationException.NeedsInput) {
-            AiJobOutcome.Failure("Completa prima: ${error.fields.joinToString()}")
+            AiJobOutcome.Failure(PlanPrerequisites.message(error.prerequisites))
         } catch (error: NutritionPlanGenerationService.GenerationException.PastWeek) {
             AiJobOutcome.Failure("Le settimane concluse sono storico in sola lettura.")
         } catch (error: NutritionPlanGenerationService.GenerationException.ConstraintsUnreadable) {
