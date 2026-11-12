@@ -46,3 +46,24 @@ Gli orari devono essere coerenti con quelli forniti dall'app e con allenamento/s
 
 ## JSON parity vincolante — V8
 Gemini e OpenAI devono usare gli stessi schema canonici in `06-ai/schemas/`. Nessun provider può introdurre un DTO alternativo o alias di campo. Una risposta semanticamente valida ma con chiavi diverse è comunque `INVALID_SCHEMA` e non raggiunge Business Validator, persistenza o UI. Vedi `JSON_FORMAT_PARITY.md`.
+
+
+## Validatore di schema locale v2 (`CanonicalJsonSchemaValidator`)
+Il validatore locale applica lo schema canonico a ogni risposta prima del Business Validator. Keyword supportate:
+
+| Keyword | Comportamento |
+|---|---|
+| `type` | stringa o array (anche `"null"`): `object`, `array`, `string`, `number`, `integer`, `boolean` |
+| `nullable` | `true` accetta `null` (equivale a `type` con `"null"`) |
+| `enum`, `const` | valore ammesso solo se uguale a uno dei valori dichiarati |
+| `minimum`, `maximum`, `exclusiveMinimum`, `exclusiveMaximum` | range numerico |
+| `minLength`, `maxLength` | lunghezza in code point |
+| `pattern` | regex Java non ancorata (usare `^...$` per ancorare) |
+| `minItems`, `maxItems`, `uniqueItems`, `items` | vincoli sugli array e sugli elementi |
+| `properties`, `required`, `additionalProperties: false` | oggetti annidati; campo mancante, `null` su campo richiesto non nullable, chiave sconosciuta |
+
+Ignorate come annotazioni: `description`, `title`, `format`, `$schema`. NON supportate e rifiutate in modo esplicito (errore `UNSUPPORTED_KEYWORD`): `$ref`, `oneOf`, `anyOf`, `allOf`, `not`. Profondita massima 32 livelli. Un `null` esplicito su una proprieta opzionale non nullable resta tollerato (compatibilita con i contratti esistenti).
+
+Privacy degli errori: ogni errore contiene solo il percorso del campo (es. `$.days[0].meals[2].kcal`) e una categoria chiusa (`ENUM_MISMATCH`, `OUT_OF_RANGE`, `TYPE_MISMATCH`, `TOO_FEW_ITEMS`, `TOO_MANY_ITEMS`, `TOO_SHORT`, `TOO_LONG`, `PATTERN_MISMATCH`, `DUPLICATE_ITEMS`, `MISSING_REQUIRED`, `NOT_ALLOWED`, ...). Mai il valore o il testo prodotto dal modello; i nomi di chiavi sconosciute compaiono solo se sono identificatori brevi (`[A-Za-z0-9_]{1,40}`).
+
+`ValidatedOutput<T>` (stesso package) puo essere creato solo tramite `ValidatedOutput.validate(...)`, cioe dopo schema valido e validazione business; le API di persistenza/UI dei nuovi flussi devono accettare `ValidatedOutput` e non stringhe/JSON grezzi.
