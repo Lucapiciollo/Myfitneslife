@@ -17,6 +17,8 @@ import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.data.local.entity.BiaMeasurementEntity
 import com.myfitai.app.data.local.entity.BodyMeasurementEntity
+import com.myfitai.app.domain.calculation.WeightReading
+import com.myfitai.app.domain.calculation.WeightSource
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.ui.widgets.MeasurementActionCardView
 import com.myfitai.app.ui.widgets.StatusRowView
@@ -144,7 +146,10 @@ class MeasurementsActivity : BaseShellActivity() {
         }
         val bia = data.biaRepository.latest(profileId).first()
         val body = data.bodyMeasurementRepository.latest(profileId).first()
+        val snapshot = data.profileCalculationService.profileSnapshot(profileId)
+        val weight = snapshot?.weight
 
+        // Visibilita invariata: la card compare solo con almeno una rilevazione BIA o misura.
         if (bia == null && body == null) {
             findViewById<View>(R.id.dietImpactCard).visibility = View.GONE
             return
@@ -153,18 +158,19 @@ class MeasurementsActivity : BaseShellActivity() {
         val rows = findViewById<LinearLayout>(R.id.dietImpactRows)
         rows.removeAllViews()
         findViewById<View>(R.id.dietImpactCard).visibility = View.VISIBLE
+        val weightDetail = weight?.let(::weightUsageDetail)
         listOf(
-            "Peso" to (bia?.weightKg != null),
-            "Grasso corporeo" to (bia?.bodyFatPercent != null),
-            "Massa muscolare" to (bia?.muscleMassKg != null),
-            "Vita" to (body?.waistCm != null),
-            "Addome" to (body?.abdomenCm != null),
-        ).forEachIndexed { index, (label, available) ->
+            Triple("Peso", weight != null && weight.source != WeightSource.NESSUNO, weightDetail),
+            Triple("Grasso corporeo", bia?.bodyFatPercent != null, null),
+            Triple("Massa muscolare", bia?.muscleMassKg != null, null),
+            Triple("Vita", body?.waistCm != null, null),
+            Triple("Addome", body?.abdomenCm != null, null),
+        ).forEachIndexed { index, (label, available, detail) ->
             if (index > 0) rows.addView(View(this).apply {
                 setBackgroundColor(getColor(R.color.divider))
                 layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, resources.getDimensionPixelSize(R.dimen.divider_thickness))
             })
-            rows.addView(impactRow(label, available))
+            rows.addView(impactRow(label, available, detail))
         }
 
         val today = LocalDate.now()
@@ -199,11 +205,19 @@ class MeasurementsActivity : BaseShellActivity() {
         }
     }
 
-    private fun impactRow(label: String, available: Boolean): StatusRowView = StatusRowView(this).apply {
+    private fun weightUsageDetail(weight: WeightReading): String? = when (weight.source) {
+        WeightSource.BIA -> getString(R.string.weight_detail_bia, formatDate(weight.measuredAtEpochMillis ?: return null))
+        WeightSource.MISURA -> getString(R.string.weight_detail_misura, formatDate(weight.measuredAtEpochMillis ?: return null))
+        WeightSource.PROFILO -> getString(R.string.weight_detail_profilo)
+        WeightSource.NESSUNO -> null
+    }
+
+    private fun impactRow(label: String, available: Boolean, detail: String? = null): StatusRowView = StatusRowView(this).apply {
         setLabel(label)
-        setState(if (available) "Utilizzato" else "Non disponibile")
+        val stateText = if (available) "Utilizzato" + detail?.let { " · $it" }.orEmpty() else "Non disponibile"
+        setState(stateText)
         setStatus(if (available) StatusRowView.Status.POSITIVE else StatusRowView.Status.NEUTRAL)
-        contentDescription = if (available) "$label utilizzato" else "$label non disponibile"
+        contentDescription = if (available) "$label utilizzato" + detail?.let { ", $it" }.orEmpty() else "$label non disponibile"
     }
 
     private data class AdaptiveReason(val decisionLabel: String, val reasonLabel: String, val windowDays: Int?)

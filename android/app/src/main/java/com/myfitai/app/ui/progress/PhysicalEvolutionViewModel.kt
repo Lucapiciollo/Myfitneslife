@@ -51,6 +51,8 @@ class PhysicalEvolutionViewModel(
                 series = points,
             )
         }
+        // Serie storica per i grafici di evoluzione, non il peso corrente: la scelta del peso corrente
+        // (con fonte e data) e in WeightResolver e non va unificata con questa serie.
         val weightPoints = (biaRows.mapNotNull { row -> row.weightKg?.let { ProgressPoint(row.measuredAtEpochMillis, it) } } +
             bodyRows.mapNotNull { row -> row.weightKg?.let { ProgressPoint(row.measuredAtEpochMillis, it) } })
             .distinctBy { it.timestamp to it.value }

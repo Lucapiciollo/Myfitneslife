@@ -23,6 +23,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.domain.calculation.LocalCalculationEngine
+import com.myfitai.app.domain.calculation.WeightSource
 import com.myfitai.app.domain.calculation.DailyActivityCheckInEngine
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.notifications.ExactAlarmAccess
@@ -213,19 +214,26 @@ class HomeActivity : BaseShellActivity() {
             metricPresentation(
                 getString(R.string.dashboard_metric_weight), state.weight.value,
                 state.weight.deltaFromPrevious, "kg", DeltaSemantic.NEUTRAL,
-                state.loading, state.weight.sourceLabel, R.drawable.ic_trend_down,
+                state.loading, weightSourceLabel(state.weight.source), R.drawable.ic_trend_down,
             ),
             metricPresentation(
                 getString(R.string.dashboard_metric_fat), state.bodyFat.value,
                 state.bodyFat.deltaFromPrevious, "%", DeltaSemantic.DOWN_IS_POSITIVE,
-                state.loading, state.bodyFat.sourceLabel, R.drawable.ic_trend_down,
+                state.loading, weightSourceLabel(state.bodyFat.source), R.drawable.ic_trend_down,
             ),
             metricPresentation(
                 getString(R.string.dashboard_metric_muscle), state.muscleMass.value,
                 state.muscleMass.deltaFromPrevious, "kg", DeltaSemantic.UP_IS_POSITIVE,
-                state.loading, state.muscleMass.sourceLabel, R.drawable.ic_trend_up,
+                state.loading, weightSourceLabel(state.muscleMass.source), R.drawable.ic_trend_up,
             ),
         )
+    }
+
+    private fun weightSourceLabel(source: WeightSource?): String? = when (source) {
+        WeightSource.BIA -> getString(R.string.weight_source_bia)
+        WeightSource.MISURA -> getString(R.string.weight_source_misura)
+        WeightSource.PROFILO -> getString(R.string.weight_source_profilo)
+        WeightSource.NESSUNO, null -> null
     }
 
     private fun metricPresentation(
