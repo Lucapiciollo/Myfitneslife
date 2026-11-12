@@ -273,4 +273,39 @@
     <string name="dietary_notice_limited">%1$s: non verificabile in modo affidabile (nichel, solfiti)</string>
     <string name="dietary_notice_unknown_style">%1$s: regime non riconosciuto, non applicato al controllo</string>
     <string name="dietary_message_added_with_notice">%1$s. %2$s</string>
+
+    <!-- Misure corporee: storico accessibile -->
+    <string name="measure_history_card_description">Misurazione del %1$s. %2$s.</string>
+    <string name="measure_history_edit">Modifica</string>
+    <string name="measure_history_delete">Elimina</string>
+    <string name="measure_history_edit_cd">Modifica la misurazione del %1$s</string>
+    <string name="measure_history_delete_cd">Elimina la misurazione del %1$s</string>
+    <string name="measure_history_delete_title">Elimina misurazione?</string>
+    <string name="measure_history_delete_message">La rilevazione del %1$s verrà rimossa dallo storico. Questa operazione non è reversibile.</string>
+
+    <!-- Misure corporee: uscita dal form con modifiche -->
+    <string name="measure_discard_title">Salvare le modifiche?</string>
+    <string name="measure_discard_message">Hai inserito o cambiato dei valori che non sono ancora stati salvati.</string>
+    <string name="measure_discard_save">Salva</string>
+    <string name="measure_discard_exit">Esci senza salvare</string>
+    <string name="measure_discard_keep">Continua</string>
+
+    <!-- Misure corporee: validazione inline -->
+    <string name="measure_error_out_of_range">Valore non plausibile per %1$s: controlla (%2$s–%3$s %4$s)</string>
+    <string name="measure_error_not_a_number">Inserisci un numero, per esempio 86,5</string>
+    <string name="measure_error_future_date">La data non può essere nel futuro: scegli oggi o un giorno passato</string>
+    <string name="measure_error_none">Inserisci almeno una misura</string>
+    <string name="measure_field_weight">peso corporeo</string>
+    <string name="measure_field_chest">torace</string>
+    <string name="measure_field_waist">vita</string>
+    <string name="measure_field_abdomen">addome</string>
+    <string name="measure_field_shoulders">spalle</string>
+    <string name="measure_field_hips">fianchi</string>
+    <string name="measure_field_glutes">glutei</string>
+    <string name="measure_field_arm_left">braccio sinistro</string>
+    <string name="measure_field_arm_right">braccio destro</string>
+    <string name="measure_field_thigh_left">coscia sinistra</string>
+    <string name="measure_field_thigh_right">coscia destra</string>
+    <string name="measure_field_calf_left">polpaccio sinistro</string>
+    <string name="measure_field_calf_right">polpaccio destro</string>
 </resources>

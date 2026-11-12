@@ -3,6 +3,9 @@ package com.myfitai.app.ui
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import android.view.Gravity
+import androidx.core.view.ViewCompat
+import com.myfitai.app.domain.body.BodyMeasurementHistoryText
 import android.widget.AutoCompleteTextView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -545,6 +548,12 @@ class BodyMeasuresActivity : BaseShellActivity() {
         }
 
         measurements.forEachIndexed { index, measurement ->
+            val dateText = entityDate(measurement).format(dateFormatter)
+            val valuesText = historyValues(measurement)
+            val waistDelta = measurement.waistCm?.let { current ->
+                previousAvailableValue(index) { it.waistCm }?.let { current - it }
+            }
+            val waistNote = waistDelta?.let { "Vita ${formatSigned(it)} cm rispetto al valore precedente disponibile" }
             val card = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 val horizontalPadding = resources.getDimensionPixelSize(R.dimen.space_16)
@@ -556,7 +565,19 @@ class BodyMeasuresActivity : BaseShellActivity() {
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                 ).apply { bottomMargin = resources.getDimensionPixelSize(R.dimen.space_8) }
                 setOnClickListener { openEdit(measurement) }
-                contentDescription = "Modifica misura corporea"
+                // Descrizione con data e valori (non piu' generica) e azioni esposte ai servizi di accessibilita':
+                // l'eliminazione non dipende piu' dalla sola pressione prolungata.
+                contentDescription = BodyMeasurementHistoryText.cardDescription(
+                    getString(R.string.measure_history_card_description), dateText, valuesText, waistNote,
+                )
+                ViewCompat.addAccessibilityAction(this, getString(R.string.measure_history_edit)) { _, _ ->
+                    openEdit(measurement)
+                    true
+                }
+                ViewCompat.addAccessibilityAction(this, getString(R.string.measure_history_delete)) { _, _ ->
+                    confirmDelete(measurement)
+                    true
+                }
                 setOnLongClickListener {
                     confirmDelete(measurement)
                     true
@@ -564,36 +585,51 @@ class BodyMeasuresActivity : BaseShellActivity() {
             }
 
             card.addView(TextView(this).apply {
-                text = entityDate(measurement).format(dateFormatter)
+                text = dateText
                 setTextAppearance(R.style.Text_MyFitAI_SettingsLabel)
             })
 
             card.addView(TextView(this).apply {
-                text = historyValues(measurement)
+                text = valuesText
                 setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
                 setPadding(0, resources.getDimensionPixelSize(R.dimen.space_5), 0, 0)
             })
 
-            val waistDelta = measurement.waistCm?.let { current ->
-                previousAvailableValue(index) { it.waistCm }?.let { current - it }
-            }
-            if (waistDelta != null) {
+            if (waistDelta != null && waistNote != null) {
                 card.addView(TextView(this).apply {
-                    text = "Vita ${formatSigned(waistDelta)} cm rispetto al valore precedente disponibile"
+                    text = waistNote
                     setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
                     setTextColor(getColor(if (waistDelta <= 0f) R.color.semantic_positive else R.color.text_secondary))
                     setPadding(0, resources.getDimensionPixelSize(R.dimen.space_6), 0, 0)
                 })
             }
 
-            card.addView(TextView(this).apply {
-                text = "Tocca per modificare · Tieni premuto per eliminare"
-                setTextAppearance(R.style.Text_MyFitAI_Micro)
+            // Azioni visibili (sostituiscono il suggerimento "Tieni premuto"), con area di tocco di almeno 48 dp.
+            card.addView(LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.END
                 setPadding(0, resources.getDimensionPixelSize(R.dimen.space_6), 0, 0)
+                addView(historyActionButton(R.string.measure_history_edit, getString(R.string.measure_history_edit_cd, dateText)) {
+                    openEdit(measurement)
+                })
+                addView(historyActionButton(R.string.measure_history_delete, getString(R.string.measure_history_delete_cd, dateText)) {
+                    confirmDelete(measurement)
+                })
             })
             container.addView(card)
         }
     }
+
+    private fun historyActionButton(label: Int, description: String, onClick: () -> Unit): MaterialButton =
+        MaterialButton(this, null, androidx.appcompat.R.attr.borderlessButtonStyle).apply {
+            text = getString(label)
+            contentDescription = description
+            isAllCaps = false
+            minimumHeight = resources.getDimensionPixelSize(R.dimen.control_min_height)
+            minHeight = resources.getDimensionPixelSize(R.dimen.control_min_height)
+            minimumWidth = resources.getDimensionPixelSize(R.dimen.control_min_height)
+            setOnClickListener { onClick() }
+        }
 
     private fun previousAvailableValue(
         currentIndex: Int,
@@ -601,25 +637,8 @@ class BodyMeasuresActivity : BaseShellActivity() {
     ): Float? = measurements.drop(currentIndex + 1).firstNotNullOfOrNull(selector)
 
     private fun historyValues(value: BodyMeasurementEntity): String {
-        val items = listOfNotNull(
-            BodyWeightHistory.weightFor(value, biaHistory)?.let {
-                if (it.fromBia) "Peso BIA (stessa data) ${formatKg(it.kg)}"
-                else "Peso corporeo ${formatKg(it.kg)}"
-            },
-            value.hipsCm?.let { "Fianchi ${formatCm(it)}" },
-            value.chestCm?.let { "Torace ${formatCm(it)}" },
-            value.waistCm?.let { "Vita ${formatCm(it)}" },
-            value.abdomenCm?.let { "Addome ${formatCm(it)}" },
-            value.shouldersCm?.let { "Spalle ${formatCm(it)}" },
-            value.glutesCm?.let { "Glutei ${formatCm(it)}" },
-            value.armLeftCm?.let { "Braccio sx ${formatCm(it)}" },
-            value.armRightCm?.let { "Braccio dx ${formatCm(it)}" },
-            value.thighLeftCm?.let { "Coscia sx ${formatCm(it)}" },
-            value.thighRightCm?.let { "Coscia dx ${formatCm(it)}" },
-            value.calfLeftCm?.let { "Polpaccio sx ${formatCm(it)}" },
-            value.calfRightCm?.let { "Polpaccio dx ${formatCm(it)}" },
-        )
-        return items.ifEmpty { listOf("Rilevazione senza valori") }.joinToString(" · ")
+        val weight = BodyWeightHistory.weightFor(value, biaHistory)
+        return BodyMeasurementHistoryText.values(value, weight?.kg, weight?.fromBia == true)
     }
 
     private fun openEdit(measurement: BodyMeasurementEntity) {
@@ -630,8 +649,8 @@ class BodyMeasuresActivity : BaseShellActivity() {
 
     private fun confirmDelete(measurement: BodyMeasurementEntity) {
         MaterialAlertDialogBuilder(this)
-            .setTitle("Elimina misurazione?")
-            .setMessage("La rilevazione del ${entityDate(measurement).format(dateFormatter)} verrà rimossa dallo storico. Questa operazione non è reversibile.")
+            .setTitle(R.string.measure_history_delete_title)
+            .setMessage(getString(R.string.measure_history_delete_message, entityDate(measurement).format(dateFormatter)))
             .setNegativeButton("Annulla", null)
             .setPositiveButton("Elimina") { _, _ -> viewModel.delete(measurement) }
             .show()
