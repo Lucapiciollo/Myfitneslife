@@ -53,7 +53,10 @@ object BodyProportionEngine {
         val current: Float,
         val difference: Float,
         val unit: String = "cm",
-    )
+    ) {
+        /** Change larger than the assumed measurement noise ([BiaNoiseThresholds]): it cannot be called normal fluctuation. */
+        val aboveNoise: Boolean get() = BiaNoiseThresholds.isAboveBodyMeasurementNoise(unit, difference.toDouble())
+    }
 
     fun analyze(
         measurement: BodyMeasurementEntity?,
@@ -167,4 +170,43 @@ object BodyProportionEngine {
     private fun Long.asUtcDate(): String = java.time.Instant.ofEpochMilli(this).atZone(java.time.ZoneOffset.UTC).toLocalDate().toString()
 
     private fun format(value: Float): String = "%.3f".format(java.util.Locale.US, value)
+}
+
+/**
+ * Text of the comparison between the last two body measurements, written by the app (never by the model): Italian
+ * dates, "da X a Y" instead of an arrow (read as nothing by screen readers) and the outcome against the noise threshold.
+ */
+object BodyComparisonText {
+    private val isoDate = Regex("(\\d{4})-(\\d{2})-(\\d{2})")
+
+    /** `2026-07-25` -> `25/07/2026`; anything else (`?`, free text) is returned unchanged. */
+    fun formatDate(iso: String): String = isoDate.matchEntire(iso.trim())?.destructured?.let { (y, m, d) -> "$d/$m/$y" } ?: iso
+
+    /** Same conversion for every ISO date inside a longer text (results saved before the dates were localised). */
+    fun localizeIsoDates(text: String): String = isoDate.replace(text) { "${it.groupValues[3]}/${it.groupValues[2]}/${it.groupValues[1]}" }
+
+    private fun number(value: Float, signed: Boolean = false): String =
+        String.format(java.util.Locale.ITALIAN, if (signed) "%+.1f" else "%.1f", value)
+
+    /** `Vita: da 90,0 cm a 88,0 cm (variazione -2,0 cm)`. */
+    fun line(item: BodyProportionEngine.MeasurementComparison): String =
+        "${item.label}: da ${number(item.previous)} ${item.unit} a ${number(item.current)} ${item.unit} (variazione ${number(item.difference, signed = true)} ${item.unit})"
+
+    /** [line] plus the outcome against the declared noise threshold of the unit. */
+    fun lineWithNoise(item: BodyProportionEngine.MeasurementComparison): String {
+        val threshold = BiaNoiseThresholds.forBodyMeasurement(item.unit) ?: return line(item)
+        val outcome = if (item.aboveNoise) "oltre" else "entro"
+        return line(item).removeSuffix(")") + ", $outcome la soglia di rumore di ${number(threshold.toFloat())} ${item.unit})"
+    }
+
+    /** Text stored with the AI result as the comparison shown to the user. */
+    fun appComparison(report: BodyProportionEngine.Report): String {
+        if (report.previousDate == null || report.comparison.isEmpty()) {
+            return "Una sola rilevazione: non \u00E8 possibile confrontare l'andamento."
+        }
+        return buildString {
+            append("Precedente: ").append(formatDate(report.previousDate)).append(", ultima: ").append(formatDate(report.currentDate ?: "?")).append('\n')
+            report.comparison.forEach { appendLine(lineWithNoise(it)) }
+        }.trim()
+    }
 }

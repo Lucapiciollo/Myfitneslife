@@ -70,6 +70,7 @@ class BiaAnalysisAiJobHandler(
                     safetyFlagActive = context.safetyFlag.active,
                     biologicalSex = profile.biologicalSex,
                     appScenarios = context.scenarios,
+                    appCalories = context.caloriesText,
                 ),
             )
             val resultId = results.insert(
@@ -177,6 +178,8 @@ class BiaAnalysisAiJobHandler(
                 .put("fatLoss", interpretation.fatLoss)
                 .put("objective", interpretation.objective)
                 .put("caloriesAndMacros", interpretation.caloriesAndMacros)
+                // Calories and macros written by the app; absent in results saved before T4 (the UI then shows the model text as before).
+                .apply { if (result.appCalories.isNotBlank()) put("appCalories", result.appCalories) }
                 .put("nextCheck", interpretation.nextCheck)
                 .put("reliability", interpretation.reliability)
                 .put("reliabilityReason", interpretation.reliabilityReason)

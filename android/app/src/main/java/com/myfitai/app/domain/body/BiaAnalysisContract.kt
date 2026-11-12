@@ -10,6 +10,9 @@ object BiaAnalysisContract {
     private val classifications = setOf("POSITIVE", "PROBABLY_POSITIVE", "STABLE", "MONITOR", "NEGATIVE", "INSUFFICIENT_DATA")
     private val reliabilityLevels = setOf("HIGH", "MEDIUM", "LOW")
 
+    /** Every enum value of the contract: never a valid free-text sentence (see [BiaFreeText]). */
+    internal val enumTokens: Set<String> get() = classifications + reliabilityLevels
+
     data class Comparison(
         val indicator: String,
         val previous: String,
@@ -246,10 +249,13 @@ object BiaAnalysisContract {
             require(value.actions.size == REQUIRED_ACTIONS) { "THREE_ACTIONS_REQUIRED" }
         }
         require(value.actions.all(String::isNotBlank)) { "EMPTY_ACTION" }
+        // Free text must be sentences, never the enum tokens a model sometimes copies from the protocol (observed on device:
+        // `Y|PROBABLY_POSITIVE`, `M|MONITOR`, `S|STABLE`).
+        BiaFreeText.validate(value)
         // Safety note: mandatory only when the app raised the safety flag; otherwise empty is accepted
         // (the handler stores a fixed sentence). With the flag active no restriction/weight-loss advice is allowed.
         if (context.safetyFlagActive) {
-            require(value.safetyNote.isNotBlank()) { "SAFETY_NOTE_REQUIRED" }
+            require(value.safetyNote.isNotBlank() && BiaAnalysisPresentation.safetyNoteToShow(value.safetyNote) != null) { "SAFETY_NOTE_REQUIRED" }
             val advice = listOf(value.whatIsHappening, value.objective, value.caloriesAndMacros, value.nextCheck) +
                 value.positives + value.monitor + value.actions
             require(!UnsupportedClaimGuard.containsAffirmed(advice, restrictionAdviceTerms)) { "SAFETY_FLAG_RESTRICTION_ADVICE" }
@@ -259,6 +265,8 @@ object BiaAnalysisContract {
         context.contextText?.let { input ->
             val offending = BiaNumberGuard.firstUnsupported(numericText(value), input)
             require(offending == null) { "NUMBER_NOT_IN_CONTEXT:$offending" }
+            // Calories and macros are written by the app (see BiaAnalysisReport.caloriesSection): the model only comments.
+            BiaFreeText.requireNoCaloriesFigures(value)
         }
         // Plausibility check of the target body fat written by the model in G, kept for callers without app scenarios.
         // With a number context the app replaces every G number with its own calculation (see [withAppScenarios]),
@@ -297,7 +305,7 @@ object BiaAnalysisContract {
     private fun String.cleanText(): String =
         replace('\n', ' ').replace('\r', ' ').trim().trimEnd(';').trim().also { require(it.isNotBlank()) }
 
-    private fun normalizeClassification(value: String): String = when (val key = value.trim().trimEnd(';', '.', ',').uppercase().replace(' ', '_').replace('-', '_')) {
+    internal fun normalizeClassification(value: String): String = when (val key = value.trim().trimEnd(';', '.', ',').uppercase().replace(' ', '_').replace('-', '_')) {
         "POSITIVO" -> "POSITIVE"
         "PROBABILMENTE_POSITIVO" -> "PROBABLY_POSITIVE"
         "STABILE" -> "STABLE"
@@ -381,7 +389,7 @@ object BiaAnalysisContract {
     }
 
     private val PROTOCOL = """
-BA2 records: B|classification; S|verdict; C|what is happening; F|comment on the app fat-change estimate (an estimate, never a fact); O|objective coherence; K|calories and macros; P|next check; L|reliability|reason; R|indicator|previous|current|difference|interpretation|reliability; H|period|historical trend; G|scenario id S1..S3 from SCENARI_APP|?|?|?|short comment on that scenario|reliability (the app writes the scenario numbers, put ? in the three numeric fields); Y|positive; M|monitor; X|priority action; D|safety note; N|one final question or ?; V|1_or_0|agent notes. Use ? for unavailable values. Every number followed by kg, %, kcal or g must be copied from the input: never calculate or invent new figures. Emit exactly three X records, unless classification is INSUFFICIENT_DATA: then emit 0 to 2 X records (data collection or repeat measurement only) and L|?|reason is allowed. D is mandatory only when the input says SAFETY_FLAG:ACTIVE (then no restriction or weight-loss advice); otherwise omit D or give one short sentence. Never put | or newlines inside text.
+BA2 records: B|classification; S|verdict; C|what is happening; F|comment on the app fat-change estimate (an estimate, never a fact); O|objective coherence; K|calories and macros; P|next check; L|reliability|reason; R|indicator|previous|current|difference|interpretation|reliability; H|period|historical trend; G|scenario id S1..S3 from SCENARI_APP|?|?|?|short comment on that scenario|reliability (the app writes the scenario numbers, put ? in the three numeric fields); Y|positive; M|monitor; X|priority action; D|safety note; N|one final question or ?; V|1_or_0|agent notes. Use ? for unavailable values. Every number followed by kg, %, kcal or g must be copied from the input: never calculate or invent new figures. Emit exactly three X records, unless classification is INSUFFICIENT_DATA: then emit 0 to 2 X records (data collection or repeat measurement only) and L|?|reason is allowed. D is mandatory only when the input says SAFETY_FLAG:ACTIVE (then no restriction or weight-loss advice); otherwise omit D or give one short sentence. S, Y and M are short Italian sentences, never enum codes (wrong: S|STABLE, Y|PROBABLY_POSITIVE, M|MONITOR; Y and M need at least 3 words). K is a qualitative comment: no kcal or gram figures (the app writes them). Never put | or newlines inside text.
 """.trimIndent()
 }
 
@@ -406,6 +414,162 @@ object BiaAnalysisPresentation {
         "MEDIUM", "MEDIA" -> ReliabilityLabel.MEDIUM
         "LOW", "BASSA" -> ReliabilityLabel.LOW
         else -> ReliabilityLabel.UNKNOWN
+    }
+
+    // ---- Text shown to the user (T4): closed Italian labels, never raw codes or field names ---------------------
+
+    private val classificationLabels = mapOf(
+        "POSITIVE" to "Positivo",
+        "PROBABLY_POSITIVE" to "Probabilmente positivo",
+        "STABLE" to "Stabile",
+        "MONITOR" to "Da monitorare",
+        "NEGATIVE" to "Negativo",
+        "INSUFFICIENT_DATA" to "Dati insufficienti",
+    )
+
+    /** Italian label of a BA2 classification (also its Italian synonyms); null for anything outside the closed contract set. */
+    fun classificationLabel(raw: String): String? = classificationLabels[BiaAnalysisContract.normalizeClassification(raw)]
+
+    /**
+     * Text of the summary section: the classification label ("Esito: Stabile") followed by the model verdict, which is
+     * dropped when empty, `?`, a code or just the classification again.
+     */
+    fun summaryText(classification: String, verdict: String): String {
+        val label = classificationLabel(classification)
+        val core = verdict.trim().trim { it in ".;,:! " }
+        val show = core.isNotEmpty() && core != "?" && !BiaFreeText.isPlaceholder(verdict) &&
+            BiaAnalysisContract.normalizeClassification(core) != BiaAnalysisContract.normalizeClassification(classification) &&
+            !core.equals(label, ignoreCase = true)
+        return listOfNotNull(label?.let { "Esito: $it" }, verdict.trim().takeIf { show }?.let(::displayText)).joinToString("\n")
+    }
+
+    /** List entries to show: results saved before T4 may carry enum tokens (`PROBABLY_POSITIVE`) instead of sentences. */
+    fun displayItems(items: List<String>): List<String> =
+        items.map(String::trim).filter { it.isNotEmpty() && it != "?" && !BiaFreeText.isPlaceholder(it) }.map(::displayText)
+
+    /** Provider-facing field name -> Italian label of the indicator. */
+    private val indicatorLabels = linkedMapOf(
+        "weightKg" to "Peso",
+        "bodyFatPercent" to "Grasso corporeo",
+        "visceralFatLevel" to "Grasso viscerale",
+        "muscleMassKg" to "Massa muscolare",
+        "skeletalMuscleKg" to "Muscolo scheletrico",
+        "bodyWaterPercent" to "Acqua corporea (%)",
+        "bmrKcal" to "Metabolismo basale",
+        "fatMassKg" to "Massa grassa",
+        "leanMassKg" to "Massa magra",
+        "bodyWaterKg" to "Acqua corporea (kg)",
+        "subcutaneousFatPercent" to "Grasso sottocutaneo",
+        "boneMassKg" to "Massa ossea",
+        "proteinPercent" to "Proteine (%)",
+        "proteinKg" to "Proteine (kg)",
+        "bodyAgeYears" to "Et\u00E0 corporea",
+        "bmi" to "BMI",
+    )
+    private val indicatorByKey = indicatorLabels.mapKeys { it.key.lowercase(java.util.Locale.ROOT) }
+
+    /** Label of a comparison indicator: raw field names (`weightKg`, `weightKg:`) become Italian, anything else is kept. */
+    fun indicatorLabel(raw: String): String {
+        val core = raw.trim().trimEnd(':').trim()
+        return indicatorByKey[core.lowercase(java.util.Locale.ROOT)] ?: core
+    }
+
+    private fun isPercentIndicator(raw: String): Boolean {
+        val label = indicatorLabel(raw)
+        return label.contains('%') || label.contains("percent", ignoreCase = true) ||
+            label.equals("Grasso corporeo", ignoreCase = true) || label.equals("Grasso sottocutaneo", ignoreCase = true)
+    }
+
+    private val percentSign = Regex("\\s*%")
+
+    /** Difference of a comparison: decimal comma, and percentage points (`pp`) when the indicator is itself a percentage. */
+    fun comparisonDifference(indicator: String, difference: String): String {
+        val text = normalizeDecimals(difference.trim())
+        return if (isPercentIndicator(indicator)) text.replace(percentSign, " pp") else text
+    }
+
+    private val proseFieldNames = indicatorLabels.filterKeys { it != "bmi" }.map { (key, label) ->
+        Regex("(?<![\\p{L}\\p{N}_])${Regex.escape(key)}(?![\\p{L}\\p{N}_])") to label.substringBefore(" (")
+    }
+
+    private val decimalWithUnit = Regex("(?<![\\p{N}.,])(\\d+)\\.(\\d{1,2})(?=\\s?(?:kg\\b|kcal\\b|cm\\b|%))")
+
+    /**
+     * Dot decimals followed by kg, kcal, cm or % become comma decimals ("1.8 kg" -> "1,8 kg"). Deliberately narrow:
+     * thousands separators ("2.528 kcal"), dates, versions and numbers without those units are never touched.
+     */
+    fun normalizeDecimals(text: String): String =
+        decimalWithUnit.replace(text) { "${it.groupValues[1]},${it.groupValues[2]}" }
+
+    /** Text written by the model as shown to the user: raw field names in Italian, decimal commas. */
+    fun displayText(text: String): String = normalizeDecimals(proseFieldNames.fold(text) { acc, (regex, label) -> regex.replace(acc, label) })
+
+    private val neutralSafetyStarts = listOf("nessuna nota", "nessun avviso", "nessuna segnalazione", "nessun alert", "nessuna avvertenza")
+    private val nonLetters = Regex("[^\\p{L}\\p{N}]+")
+
+    private fun plainWords(text: String): String = text.lowercase(java.util.Locale.ROOT).replace(nonLetters, " ").trim()
+
+    /**
+     * Safety note to show, or null when it is empty or only says there is no note ("Nessuna nota di sicurezza attiva."):
+     * a sentence without information is not a note. The fixed sentence stored before T3 is not a note either.
+     */
+    fun safetyNoteToShow(note: String): String? {
+        val words = plainWords(note)
+        if (words.isEmpty() || words == plainWords(BiaAnalysisAiJobHandler.DEFAULT_SAFETY_NOTE)) return null
+        val neutral = neutralSafetyStarts.any { words.startsWith(it) } && words.split(' ').size <= 8 && " ma " !in " $words "
+        return if (neutral) null else displayText(note.trim())
+    }
+}
+
+/** Rules on the free text of a BA2 answer that do not depend on the app numbers. */
+internal object BiaFreeText {
+    private const val MIN_LIST_WORDS = 3
+    private val token = Regex("^[A-Z][A-Z0-9_]+(?:[ ,/]+[A-Z][A-Z0-9_]+)*$")
+    private val whitespace = Regex("\\s+")
+
+    private fun core(text: String): String = text.trim().trim { it in ".;,:! " }
+
+    private val separators = Regex("[\\s-]+")
+    private fun codeKey(text: String): String = core(text).uppercase(java.util.Locale.ROOT).replace(separators, "_")
+
+    /** An uppercase token (`PROBABLY_POSITIVE`, `FAT_LOSS_WITH_STABLE_MUSCLE`) or a contract enum value in any case. `?` and blank are not text. */
+    fun isPlaceholder(text: String): Boolean {
+        val trimmed = core(text)
+        if (trimmed.isEmpty() || trimmed == "?") return false
+        if (token.matches(trimmed)) return true
+        return codeKey(trimmed) in BiaAnalysisContract.enumTokens
+    }
+
+    fun validate(value: BiaAnalysisContract.Interpretation) {
+        // Only the contract code itself: an Italian word such as "Stabile" is a (poor) sentence, not a leaked enum.
+        require(codeKey(value.verdict) != codeKey(value.classification)) { "BIA_VERDICT_EQUALS_CLASSIFICATION" }
+        val fields = listOf(
+            "verdict" to listOf(value.verdict),
+            "whatIsHappening" to listOf(value.whatIsHappening),
+            "fatLoss" to listOf(value.fatLoss),
+            "objective" to listOf(value.objective),
+            "caloriesAndMacros" to listOf(value.caloriesAndMacros),
+            "nextCheck" to listOf(value.nextCheck),
+            "reliabilityReason" to listOf(value.reliabilityReason),
+            "positives" to value.positives,
+            "monitor" to value.monitor,
+            "actions" to value.actions,
+            "safetyNote" to listOf(value.safetyNote),
+            "question" to listOfNotNull(value.question),
+            "comparisons" to value.comparisons.map { it.interpretation },
+            "historical" to value.historical.map { it.summary },
+            "scenarios" to value.scenarios.map { it.assumption },
+        )
+        fields.forEach { (name, texts) -> require(texts.none(::isPlaceholder)) { "BIA_PLACEHOLDER_TEXT:$name" } }
+        listOf("positives" to value.positives, "monitor" to value.monitor).forEach { (name, texts) ->
+            require(texts.all { core(it).split(whitespace).size >= MIN_LIST_WORDS }) { "BIA_TEXT_TOO_SHORT:$name" }
+        }
+    }
+
+    fun requireNoCaloriesFigures(value: BiaAnalysisContract.Interpretation) {
+        listOf("objective" to value.objective, "caloriesAndMacros" to value.caloriesAndMacros).forEach { (name, text) ->
+            require(BiaNumberGuard.quantities(text).none { it.unit == "kcal" || it.unit == "g" }) { "BIA_CALORIES_TEXT_HAS_FIGURES:$name" }
+        }
     }
 }
 

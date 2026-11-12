@@ -16,6 +16,30 @@ object BiaNoiseThresholds {
     const val LEAN_MASS_KG = 1.0
     const val BODY_WATER_KG = 1.0
 
+    /**
+     * Soglia delle circonferenze corporee misurate col metro (misure corporee, non BIA): IPOTESI REVERSIBILE di
+     * +-1,0 cm, l'ordine di grandezza della ripetibilita di una misura a mano. Una variazione piu piccola o uguale
+     * e "nessuna variazione affidabile"; una piu grande NON si puo chiamare "normale oscillazione".
+     * Da confermare dal responsabile prodotto o tarare sulla persona.
+     */
+    const val CIRCUMFERENCE_CM = 1.0
+
+    /** Soglia di una misura corporea per unita (`cm` circonferenze, `kg` peso a bilancia); null = unita sconosciuta. */
+    fun forBodyMeasurement(unit: String): Double? = when (unit.trim().lowercase()) {
+        "cm" -> CIRCUMFERENCE_CM
+        "kg" -> WEIGHT_KG
+        else -> null
+    }
+
+    /**
+     * True solo se il delta, arrotondato a un decimale (il rumore di sottrazione dei Float non e una variazione),
+     * supera la soglia; con unita sconosciuta non si afferma nulla.
+     */
+    fun isAboveBodyMeasurementNoise(unit: String, delta: Double): Boolean {
+        val threshold = forBodyMeasurement(unit) ?: return false
+        return Math.round(abs(delta) * 10.0) / 10.0 > threshold
+    }
+
     /** Soglie raddoppiate quando le condizioni di misura sono diverse o la comparabilita e bassa. */
     const val DEGRADED_MULTIPLIER = 2.0
 

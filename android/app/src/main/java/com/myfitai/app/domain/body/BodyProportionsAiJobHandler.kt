@@ -5,7 +5,6 @@ import com.myfitai.app.domain.ai.AiJobFailures
 import com.myfitai.app.domain.ai.AiJobHandler
 import com.myfitai.app.domain.ai.AiJobOutcome
 import com.myfitai.app.domain.ai.AiJobWorker
-import java.util.Locale
 import org.json.JSONObject
 
 class BodyProportionsAiJobHandler(private val service: BodyProportionAnalysisService) : AiJobHandler {
@@ -54,19 +53,7 @@ class BodyProportionsAiJobHandler(private val service: BodyProportionAnalysisSer
         )
     }
 
-    private fun canonicalComparison(report: BodyProportionEngine.Report): String {
-        if (report.previousDate == null || report.comparison.isEmpty()) {
-            return "Una sola rilevazione: non è possibile confrontare l'andamento."
-        }
-        return buildString {
-            append("Precedente ").append(report.previousDate).append(" → ultima ").append(report.currentDate ?: "?").append('\n')
-            report.comparison.forEach { item ->
-                append(item.label).append(": ")
-                    .append(String.format(Locale.ITALIAN, "%.1f", item.previous)).append(' ').append(item.unit)
-                    .append(" → ").append(String.format(Locale.ITALIAN, "%.1f", item.current)).append(' ').append(item.unit)
-                    .append(" (variazione ").append(String.format(Locale.ITALIAN, "%+.1f", item.difference)).append(' ').append(item.unit).append(")\n")
-            }
-        }.trim()
-    }
+    /** Comparison shown to the user, calculated and written by the app: see [BodyComparisonText]. */
+    private fun canonicalComparison(report: BodyProportionEngine.Report): String = BodyComparisonText.appComparison(report)
     companion object { const val KEY_REPORT = "report"; const val KEY_PAYLOAD = "payload" }
 }

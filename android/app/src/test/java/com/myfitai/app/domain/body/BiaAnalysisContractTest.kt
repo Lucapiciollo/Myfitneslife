@@ -536,7 +536,7 @@ class BiaAnalysisContractTest {
         val response = BiaAnalysisContract.parse(envelope(
             "BA2|B|PROBABLY_POSITIVE|S|Andamento favorevole|C|Grasso in calo|F|?|O|?|K|?|P|Ripeti la misura|" +
                 "L|MEDIUM|Storico coerente|R|Peso|90 kg|89 kg|-1 kg|Calo|MEDIUM|H|30 giorni|" +
-                "G|Obiettivo|20%|86 kg|3 kg|Ipotesi esplicita|MEDIA|Y|Positivo|M|Da seguire|" +
+                "G|Obiettivo|20%|86 kg|3 kg|Ipotesi esplicita|MEDIA|Y|Il peso scende con costanza|M|Da seguire nelle prossime settimane|" +
                 "X|Una|X|Due|X|Tre|D|Analisi informativa, non diagnosi medica|N|?|V|1|ok|"
         ))
 

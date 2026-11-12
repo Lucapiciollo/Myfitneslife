@@ -44,7 +44,8 @@ class BodyProportionAnalysisService(
         appendLine("T|${clean(report.note)}")
         appendLine("CURRENT_DATE|${report.currentDate}")
         appendLine("PREVIOUS_DATE|${report.previousDate ?: "?"}")
-        appendLine("APP_COMPARISON|${report.comparison.joinToString(";") { "${clean(it.label)}:${it.previous}:${it.current}:${it.difference}:${it.unit}" }.ifBlank { "?" }}")
+        appendLine("APP_COMPARISON|${report.comparison.joinToString(";") { "${clean(it.label)}:${it.previous}:${it.current}:${it.difference}:${it.unit}:${if (it.aboveNoise) ABOVE_THRESHOLD else BELOW_THRESHOLD}" }.ifBlank { "?" }}")
+        appendLine("NOISE_THRESHOLDS|cm=${BiaNoiseThresholds.CIRCUMFERENCE_CM}|kg=${BiaNoiseThresholds.WEIGHT_KG}")
         report.ratios.forEach { appendLine("R|${clean(it.label)}|${it.value}") }
         report.asymmetries.forEach { appendLine("A|${clean(it.label)}|${it.percent}|${clean(it.largerSide ?: "none")}") }
     }
@@ -123,6 +124,48 @@ class BodyProportionAnalysisService(
             require(value.agentValidation.isNotBlank()) { "BODY_VALIDATION_MISSING" }
             require(value.agentValidation.length <= VALIDATION_PREFIX_CHARS + MAX_NOTES_CHARS) { "BODY_VALIDATION_TOO_LONG" }
             if (source != null) validateComparison(value.comparison, source)
+            if (source != null) validateNoiseClaims(fields, source)
+        }
+
+        private const val ABOVE_THRESHOLD = "ABOVE_THRESHOLD"
+        private const val BELOW_THRESHOLD = "BELOW_THRESHOLD"
+
+        /** Phrases that say "this change is just measurement noise"; a change the app marked above the threshold is not. */
+        private val noisePhrases = listOf(
+            "normali oscillazioni", "normale oscillazione", "nel rumore", "entro il rumore", "stabile", "stabili",
+            "invariato", "invariata", "invariati", "invariate",
+        )
+        private val sentenceBoundary = Regex("[.;!?\\n\\r|]+")
+        private val parenthesised = Regex("\\([^)]*\\)")
+        private val word = Regex("[\\p{L}\\p{N}]+")
+
+        /**
+         * An indicator that the app marked [BodyProportionEngine.MeasurementComparison.aboveNoise] must not be described
+         * as normal fluctuation, noise or stable. Whole words, negation accepted ("non rientra nelle normali
+         * oscillazioni"). The phrase refers to the indicators named in its own clause, or, when its clause names none,
+         * to the ones named in the previous clause of the same sentence ("Fianchi +4 cm, rientrano nelle normali ...").
+         */
+        private fun validateNoiseClaims(fields: List<String>, source: BodyProportionEngine.Report) {
+            val above = source.comparison.filter { it.aboveNoise }
+            if (above.isEmpty()) return
+            val all = source.comparison.map { it.label }
+            fields.forEach { field ->
+                field.lowercase(Locale.ROOT).replace(parenthesised, " ").split(sentenceBoundary).forEach { sentence ->
+                    val clauses = sentence.split(',')
+                    clauses.forEachIndexed { index, clause ->
+                        if (!UnsupportedClaimGuard.containsAffirmed(clause, noisePhrases)) return@forEachIndexed
+                        val named = if (all.none { mentions(clause, it) } && index > 0) clauses[index - 1] else clause
+                        above.firstOrNull { mentions(named, it.label) }?.let { throw IllegalArgumentException("BODY_ABOVE_THRESHOLD_CALLED_NOISE:${it.label}") }
+                    }
+                }
+            }
+        }
+
+        private fun mentions(text: String, label: String): Boolean {
+            val words = word.findAll(text).map { it.value }.toList()
+            val target = word.findAll(label.lowercase(Locale.ROOT)).map { it.value }.toList()
+            if (target.isEmpty() || words.size < target.size) return false
+            return (0..words.size - target.size).any { start -> target.indices.all { words[start + it] == target[it] } }
         }
 
         private fun validateComparison(comparison: String, source: BodyProportionEngine.Report) {
@@ -140,8 +183,8 @@ class BodyProportionAnalysisService(
         }
 
         internal val SYSTEM_PROMPT = """
-MyFitAI body-measurement interpreter. App numbers are authoritative; explain only, never recalculate, diagnose, infer causes/posture/sex/age, or present aesthetic ideals. ${UnsupportedClaimGuard.PROMPT_SAFETY_RULES} Interpret only the latest body measurement and the app-computed comparisons with the immediately previous measurement supplied in APP_COMPARISON. Do not infer a trend from a single comparison, and do not calculate a difference yourself. If APP_COMPARISON is ?, explicitly state that there is no prior measurement to compare. A measured delta is not proof of fat or muscle change; note ordinary measurement variation when appropriate.
-Input records: B|status|availableMeasurements|maxAsymmetryPercent. T|app note. CURRENT_DATE|latest measurement date. PREVIOUS_DATE|previous measurement date or ?. APP_COMPARISON|label:previous:current:difference:unit entries separated by ; (or ?). R|label|ratio value. A|label|asymmetryPercent|largerSide (left/right/none).
+MyFitAI body-measurement interpreter. App numbers are authoritative; explain only, never recalculate, diagnose, infer causes/posture/sex/age, or present aesthetic ideals. ${UnsupportedClaimGuard.PROMPT_SAFETY_RULES} Interpret only the latest body measurement and the app-computed comparisons with the immediately previous measurement supplied in APP_COMPARISON. Do not infer a trend from a single comparison, and do not calculate a difference yourself. If APP_COMPARISON is ?, explicitly state that there is no prior measurement to compare. A measured delta is not proof of fat or muscle change. APP_COMPARISON entries end with ABOVE_THRESHOLD or BELOW_THRESHOLD: the app compared the change with the assumed measurement noise (NOISE_THRESHOLDS: cm for circumferences, kg for weight; a conservative, reversible assumption). Ordinary measurement variation may be mentioned only for BELOW_THRESHOLD indicators. For an ABOVE_THRESHOLD indicator never call the change normal fluctuation, normal variation, noise or stable: describe it as a measured change larger than the assumed measurement noise, without causes and without alarm. Write decimals in Italian with the comma (1,5 cm).
+Input records: B|status|availableMeasurements|maxAsymmetryPercent. T|app note. CURRENT_DATE|latest measurement date. PREVIOUS_DATE|previous measurement date or ?. APP_COMPARISON|label:previous:current:difference:unit:outcome entries separated by ; (or ?), outcome = ABOVE_THRESHOLD or BELOW_THRESHOLD. NOISE_THRESHOLDS|cm=..|kg=.. thresholds used by the app. R|label|ratio value. A|label|asymmetryPercent|largerSide (left/right/none).
 Asymmetry thresholds are descriptive app thresholds, not evidence of pathological imbalance: the dominant limb can differ naturally; never call a difference a disorder or a defect.
 Output ONLY JSON envelope with `data` using:
 BP1

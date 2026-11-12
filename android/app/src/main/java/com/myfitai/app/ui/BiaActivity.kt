@@ -1427,11 +1427,13 @@ class BiaActivity : BaseShellActivity() {
             })
             content.addView(box, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
         }
-        val safetyNote = payload.optString("safetyNote").trim()
-        // Shown only when the model wrote a note (mandatory only with SAFETY_FLAG); the fixed sentence saved before T3 is not a note.
-        val hasSafetyNote = safetyNote.isNotBlank() && safetyNote != "?" && safetyNote != BiaAnalysisAiJobHandler.DEFAULT_SAFETY_NOTE
+        val safetyNote = BiaAnalysisPresentation.safetyNoteToShow(payload.optString("safetyNote")).orEmpty()
+        // Shown only when the model wrote a real note (mandatory only with SAFETY_FLAG): empty, `?`, "nessuna nota di sicurezza" and the
+        // fixed sentence saved before T3 are not notes.
+        val hasSafetyNote = safetyNote.isNotBlank()
         val safetyFlagActive = payload.optBoolean("safetyFlagActive", false)
-        section(getString(R.string.bia_analysis_section_verdict), payload.optString("verdict"), true)
+        // Classification as an Italian label; the verdict is hidden when empty, a code or the classification again.
+        section(getString(R.string.bia_analysis_section_verdict), BiaAnalysisPresentation.summaryText(payload.optString("classification"), payload.optString("verdict")), true)
         // With the safety flag the note comes right after the summary; otherwise it closes the analysis.
         if (hasSafetyNote && safetyFlagActive) section(getString(R.string.bia_analysis_section_safety), safetyNote, true)
         // Reliability is written in words (Alta / Media / Bassa), never conveyed by colour.
@@ -1439,15 +1441,24 @@ class BiaActivity : BaseShellActivity() {
             getString(R.string.bia_analysis_section_reliability),
             listOf(
                 getString(reliabilityLabelRes(payload.optString("reliability"))),
-                payload.optString("reliabilityReason").takeIf { it.isNotBlank() && it != "?" },
+                BiaAnalysisPresentation.displayText(payload.optString("reliabilityReason")).takeIf { it.isNotBlank() && it != "?" },
             ).filterNotNull().joinToString(". "),
         )
-        section(getString(R.string.bia_analysis_section_happening), payload.optString("whatIsHappening"))
+        section(getString(R.string.bia_analysis_section_happening), BiaAnalysisPresentation.displayText(payload.optString("whatIsHappening")))
         // The fat-loss text is an estimate (noise-limited), never a measured fact.
-        section(getString(R.string.bia_analysis_section_fat_loss), payload.optString("fatLoss"))
-        section(getString(R.string.bia_analysis_section_objective), listOf(payload.optString("objective"), payload.optString("caloriesAndMacros")).filter { it.isNotBlank() }.joinToString("\n"))
+        section(getString(R.string.bia_analysis_section_fat_loss), BiaAnalysisPresentation.displayText(payload.optString("fatLoss")))
+        // Calories and macros are written by the app (`appCalories`); the model only adds the qualitative comment. Results saved
+        // before T4 have no `appCalories`: they keep showing the model text as before.
+        section(
+            getString(R.string.bia_analysis_section_objective),
+            listOf(payload.optString("objective"), payload.optString("appCalories"), payload.optString("caloriesAndMacros"))
+                .map { BiaAnalysisPresentation.displayText(it.trim()) }.filter { it.isNotBlank() && it != "?" }.joinToString("\n"),
+        )
         val comparisons = jsonObjects(payload, "comparisons").joinToString("\n\n") { row ->
-            "${row.optString("indicator")}: ${row.optString("previous")} -> ${row.optString("current")} (${row.optString("difference")})\n${row.optString("interpretation")}"
+            val indicator = row.optString("indicator")
+            val text = BiaAnalysisPresentation::displayText
+            "${BiaAnalysisPresentation.indicatorLabel(indicator)}: da ${text(row.optString("previous"))} a ${text(row.optString("current"))} " +
+                "(${BiaAnalysisPresentation.comparisonDifference(indicator, row.optString("difference"))})\n${text(row.optString("interpretation"))}"
         }
         section(getString(R.string.bia_analysis_section_comparisons), comparisons)
         val scenarios = jsonObjects(payload, "scenarios").joinToString("\n\n") { row ->
@@ -1457,17 +1468,17 @@ class BiaActivity : BaseShellActivity() {
             )
         }
         section(getString(R.string.bia_analysis_section_scenarios), scenarios)
-        section(getString(R.string.bia_analysis_section_positives), jsonLines(payload, "positives").joinToString("\n") { "• $it" })
-        section(getString(R.string.bia_analysis_section_monitor), jsonLines(payload, "monitor").joinToString("\n") { "• $it" })
-        val actions = jsonLines(payload, "actions").filter { it.isNotBlank() }
+        section(getString(R.string.bia_analysis_section_positives), BiaAnalysisPresentation.displayItems(jsonLines(payload, "positives")).joinToString("\n") { "• $it" })
+        section(getString(R.string.bia_analysis_section_monitor), BiaAnalysisPresentation.displayItems(jsonLines(payload, "monitor")).joinToString("\n") { "• $it" })
+        val actions = jsonLines(payload, "actions").filter { it.isNotBlank() }.map(BiaAnalysisPresentation::displayText)
         section(
             getString(actionsTitleRes(payload.optString("classification"), actions.size)),
             actions.mapIndexed { index, value -> "${index + 1}. $value" }.joinToString("\n"),
             true,
         )
-        section(getString(R.string.bia_analysis_section_next_check), payload.optString("nextCheck"))
+        section(getString(R.string.bia_analysis_section_next_check), BiaAnalysisPresentation.displayText(payload.optString("nextCheck")))
         if (hasSafetyNote && !safetyFlagActive) section(getString(R.string.bia_analysis_section_safety), safetyNote)
-        section(getString(R.string.bia_analysis_section_question), payload.optString("question"))
+        section(getString(R.string.bia_analysis_section_question), BiaAnalysisPresentation.displayText(payload.optString("question")))
         val source = listOf(payload.optString("provider"), payload.optString("model")).filter { it.isNotBlank() && it != "-" }.joinToString(" · ")
         section(
             getString(if (saved) R.string.bia_analysis_section_saved else R.string.bia_analysis_section_saved_locally),
