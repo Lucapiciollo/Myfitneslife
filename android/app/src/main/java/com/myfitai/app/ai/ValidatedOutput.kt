@@ -7,12 +7,11 @@ package com.myfitai.app.ai
  * persistence/UI API that accepts a `ValidatedOutput<T>` (instead of a raw JSON string) is guaranteed, at compile
  * time, to receive data that was validated. Never accept `String`/`JSONObject` model output in new flows.
  *
- * Integration point (completed by the error-core tranche C1, NOT changed here): `AiExecutionService.execute`
- * currently runs `CanonicalJsonSchemaValidator.validate(...)` and then `businessValidator(raw.jsonText)` and returns
- * `ValidatedResponse(jsonText)`. C1 should replace that pair with a single call to
- * `ValidatedOutput.validate(raw.jsonText, request.schemaJson, request.schemaName) { json -> parseAndCheck(json) }`
- * and map [Rejection.Schema] / [Rejection.Business] to its `AiFailure` taxonomy; handlers then pass the resulting
- * `ValidatedOutput` to the repository/UI layer. Existing `ValidatedResponse` callers keep working until migrated.
+ * Integration (tranche C3): `AiExecutionService.executeValidated` / `AiRuntimeGateway.executeValidated` run
+ * [validate] on every provider response and map [Rejection.Schema] to `Failure.InvalidSchema`/`MalformedJson`
+ * (category `AiFailure.SchemaInvalid`/`MalformedJson`) and [Rejection.Business] to `Failure.BusinessRejected`
+ * (category `AiFailure.BusinessRuleViolated`). The legacy `execute` (ValidatedResponse + `Result<Unit>` validator)
+ * shares the same validation step, so handlers migrate to `executeValidated` one at a time.
  *
  * @property value the parsed, business-validated domain object.
  * @property schemaName name of the contract the output was validated against (diagnostics only).
@@ -48,6 +47,8 @@ class ValidatedOutput<out T> private constructor(
             if (!schema.valid) return Result.failure(Rejection.Schema(schema.issues))
             val parsed = try {
                 business(jsonText)
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
             } catch (error: Exception) {
                 return Result.failure(Rejection.Business(error.message ?: "BUSINESS_VALIDATION_FAILED"))
             }

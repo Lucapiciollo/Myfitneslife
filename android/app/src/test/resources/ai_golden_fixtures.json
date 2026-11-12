@@ -1,0 +1,126 @@
+{
+  "_comment": "Golden AI responses shared by every provider. 'expect' is VALID or the stable AiFailure.code. 'data' is wrapped as {\"data\": ...}; 'raw' is the provider text as received. No real user data.",
+  "common": [
+    { "id": "schema.wrong_type", "raw": "{\"data\":123}", "expect": "INVALID_SCHEMA" },
+    { "id": "schema.missing_field", "raw": "{}", "expect": "INVALID_SCHEMA" },
+    { "id": "schema.null_required", "raw": "{\"data\":null}", "expect": "INVALID_SCHEMA" },
+    { "id": "schema.extra_field", "raw": "{\"data\":\"x\",\"status\":\"ok\"}", "expect": "INVALID_SCHEMA" },
+    { "id": "json.array_root", "raw": "[]", "expect": "MALFORMED_JSON" },
+    { "id": "json.truncated_text", "raw": "{\"data\":\"NA1\\nS|1\\nA|Scegli", "expect": "MALFORMED_JSON" },
+    { "id": "json.prose_prefix", "raw": "Ecco il risultato: {\"data\":\"x\"}", "expect": "MALFORMED_JSON" },
+    { "id": "finish.max_tokens", "raw": "{\"data\":\"NA1\\nS|1\\nA|Scegli", "finishReason": "MAX_TOKENS", "expect": "OUTPUT_TRUNCATED" },
+    { "id": "finish.length", "raw": "{\"data\":\"x\"}", "finishReason": "length", "expect": "OUTPUT_TRUNCATED" },
+    { "id": "empty.blank", "raw": "", "expect": "EMPTY_OUTPUT" },
+    { "id": "empty.whitespace", "raw": "  \n ", "expect": "EMPTY_OUTPUT" },
+    { "id": "refusal.safety", "raw": "", "finishReason": "SAFETY", "expect": "REFUSED" },
+    { "id": "refusal.model", "raw": "", "finishReason": "refusal", "expect": "REFUSED" },
+    { "id": "refusal.content_filter", "raw": "", "finishReason": "content_filter", "expect": "REFUSED" },
+    { "id": "finish.unknown", "raw": "{\"data\":\"x\"}", "finishReason": "SOMETHING_NEW", "expect": "PROVIDER_PROTOCOL" }
+  ],
+  "contracts": [
+    {
+      "schemaName": "myfitai_nutrition_advice_pipe_v1",
+      "cases": [
+        { "id": "na1.valid", "expect": "VALID",
+          "data": "NA1\nS|1\nA|Scegli proteine magre e verdure ai pasti.\nO|Pollo e riso|Proteine e carboidrati bilanciati|450|35|45|10|pollo,riso\nO|Merluzzo e patate|Pasto leggero ricco di proteine|400|32|40|8|merluzzo,patate\nO|Uova e pane|Colazione proteica|380|22|30|18|uova,pane\nO|Yogurt e frutta|Spuntino fresco|250|18|30|4|yogurt,mela\nO|Tonno e insalata|Cena rapida|350|30|15|18|tonno,insalata\nQ|Porzioni standard senza vincoli dichiarati.\nV|1|Controlli interni superati." },
+        { "id": "na1.enum_out_of_list", "expect": "BUSINESS_VALIDATION_FAILED", "rule": "NA_SCOPE",
+          "data": "NA1\nS|2\nA|Risposta.\nQ|Nessuna.\nV|1|ok" },
+        { "id": "na1.type_wrong_number", "expect": "BUSINESS_VALIDATION_FAILED", "rule": "NA_KCAL",
+          "data": "NA1\nS|1\nA|Risposta.\nO|Pollo|Motivo|abc|35|45|10|pollo\nQ|Nessuna.\nV|1|ok" },
+        { "id": "na1.missing_record", "expect": "BUSINESS_VALIDATION_FAILED", "rule": "NA_ASSUMPTIONS_MISSING",
+          "data": "NA1\nS|0\nA|Fuori ambito.\nV|1|ok" },
+        { "id": "na1.wrong_suggestion_count", "expect": "BUSINESS_VALIDATION_FAILED", "rule": "EXPECTED_FIVE_SUGGESTIONS",
+          "data": "NA1\nS|1\nA|Risposta.\nO|Pollo|Motivo|450|35|45|10|pollo\nQ|Nessuna.\nV|1|ok" }
+      ]
+    },
+    {
+      "schemaName": "myfitai_bia_progress_coach_pipe_v2",
+      "cases": [
+        { "id": "ba2.valid", "expect": "VALID",
+          "data": "BA2\nB|STABLE\nS|Andamento stabile rispetto alla misura precedente.\nC|Peso e massa grassa sono rimasti simili nelle ultime due misure.\nF|Nessuna variazione apprezzabile del grasso corporeo.\nO|Il target calorico resta coerente con l'obiettivo.\nK|Calorie circa 2100 con macro invariati.\nP|Ripeti la misura tra due settimane alle stesse condizioni.\nL|MEDIUM|Due rilevazioni comparabili.\nX|Mantieni il target attuale.\nX|Distribuisci le proteine nei pasti.\nX|Ripeti la misura nelle stesse condizioni.\nD|Analisi informativa non clinica.\nV|1|Dati interpretati senza valori inventati." },
+        { "id": "ba2.valid_insufficient_data_unknown_reliability", "expect": "VALID",
+          "data": "BA2\nB|INSUFFICIENT_DATA\nS|Servono piu misure per un confronto.\nC|Esiste una sola misura recente.\nF|Non stimabile.\nO|Non valutabile.\nK|Nessuna variazione consigliata.\nP|Ripeti la misura tra due settimane.\nL|?|Una sola rilevazione.\nX|Ripeti la misura nelle stesse condizioni.\nD|Analisi informativa non clinica.\nV|1|ok" },
+        { "id": "ba2.enum_classification_out_of_list", "expect": "BUSINESS_VALIDATION_FAILED", "rule": "BIA_CLASSIFICATION_INVALID",
+          "data": "BA2\nB|EXCELLENT\nS|s\nC|c\nF|f\nO|o\nK|k\nP|p\nL|MEDIUM|r\nX|a\nX|b\nX|c\nD|d\nV|1|ok" },
+        { "id": "ba2.enum_reliability_out_of_list", "expect": "BUSINESS_VALIDATION_FAILED", "rule": "BIA_RELIABILITY_INVALID",
+          "data": "BA2\nB|STABLE\nS|s\nC|c\nF|f\nO|o\nK|k\nP|p\nL|VERY_HIGH|r\nX|a\nX|b\nX|c\nD|d\nV|1|ok" },
+        { "id": "ba2.type_wrong_arity", "expect": "BUSINESS_VALIDATION_FAILED", "rule": "BA2_R_ARITY_3",
+          "data": "BA2\nB|STABLE\nS|s\nC|c\nF|f\nO|o\nK|k\nP|p\nL|MEDIUM|r\nR|Peso|90\nX|a\nX|b\nX|c\nD|d\nV|1|ok" },
+        { "id": "ba2.missing_record", "expect": "BUSINESS_VALIDATION_FAILED", "rule": "BIA_NEXT_CHECK_MISSING",
+          "data": "BA2\nB|STABLE\nS|s\nC|c\nF|f\nO|o\nK|k\nL|MEDIUM|r\nX|a\nX|b\nX|c\nD|d\nV|1|ok" },
+        { "id": "ba2.two_actions_only", "expect": "BUSINESS_VALIDATION_FAILED", "rule": "THREE_ACTIONS_REQUIRED",
+          "data": "BA2\nB|STABLE\nS|s\nC|c\nF|f\nO|o\nK|k\nP|p\nL|MEDIUM|r\nX|a\nX|b\nD|d\nV|1|ok" }
+      ]
+    },
+    {
+      "schemaName": "myfitai_bia_pipe_v1",
+      "cases": [
+        { "id": "bia1.valid", "expect": "VALID",
+          "data": "BIA1\nB|1|1700000000000|82.5|24.1|8|38.2|35.1|52.3|1750|HIGH||Misura completa" },
+        { "id": "bia1.valid_rejection", "expect": "VALID",
+          "data": "BIA1\nB|0|?|?|?|?|?|?|?|?|LOW|Immagine non pertinente|Nessun dato" },
+        { "id": "bia1.enum_flag_out_of_list", "expect": "BUSINESS_VALIDATION_FAILED", "rule": "BIA_PIPE_FLAG_INVALID",
+          "data": "BIA1\nB|2|1700000000000|82.5|24.1|8|38.2|35.1|52.3|1750|HIGH||x" },
+        { "id": "bia1.type_wrong_number", "expect": "BUSINESS_VALIDATION_FAILED", "rule": "BIA_PIPE_NUMBER_INVALID",
+          "data": "BIA1\nB|1|1700000000000|abc|24.1|8|38.2|35.1|52.3|1750|HIGH||x" },
+        { "id": "bia1.type_wrong_timestamp", "expect": "BUSINESS_VALIDATION_FAILED", "rule": "BIA_PIPE_TIMESTAMP_INVALID",
+          "data": "BIA1\nB|1|ieri|82.5|24.1|8|38.2|35.1|52.3|1750|HIGH||x" },
+        { "id": "bia1.missing_fields", "expect": "BUSINESS_VALIDATION_FAILED", "rule": "BIA_PIPE_FIELDS_INVALID",
+          "data": "BIA1\nB|1|1700000000000|82.5" },
+        { "id": "bia1.missing_record", "expect": "BUSINESS_VALIDATION_FAILED", "rule": "BIA_PIPE_INVALID",
+          "data": "BIA1" }
+      ]
+    },
+    {
+      "schemaName": "myfitai_weekly_review_pipe_v1",
+      "cases": [
+        { "id": "wr1.valid", "expect": "VALID",
+          "data": "WR1\nW|20000\nS|Settimana con buona aderenza al piano.\nO|Aderenza alta nei pasti principali.\nG|Mantieni gli orari dei pasti.\nV|1|ok" },
+        { "id": "wr1.enum_validation_flag_out_of_list", "expect": "BUSINESS_VALIDATION_FAILED",
+          "data": "WR1\nW|20000\nS|Sintesi.\nO|Osservazione.\nG|Indicazione.\nV|2|ok" },
+        { "id": "wr1.type_wrong_week", "expect": "BUSINESS_VALIDATION_FAILED",
+          "data": "WR1\nW|lunedi\nS|Sintesi.\nO|Osservazione.\nG|Indicazione.\nV|1|ok" },
+        { "id": "wr1.missing_summary", "expect": "BUSINESS_VALIDATION_FAILED",
+          "data": "WR1\nW|20000\nO|Osservazione.\nG|Indicazione.\nV|1|ok" },
+        { "id": "wr1.week_mismatch", "expect": "BUSINESS_VALIDATION_FAILED",
+          "data": "WR1\nW|19999\nS|Sintesi.\nO|Osservazione.\nG|Indicazione.\nV|1|ok" }
+      ]
+    },
+    {
+      "schemaName": "myfitai_weekly_nutrition_pipe_v1",
+      "cases": [
+        { "id": "mfp1.valid_minimal_week", "expect": "VALID",
+          "data": "MFP1\nW|20000\nD|20000|500|35|62|12\nM|BREAKFAST|Yogurt e avena|480|500|35|62|12|Mescola e servi\nI|Yogurt greco|200|g|1 vasetto da 200 g|NET|HIGH|DAIRY\nV|1|ok" },
+        { "id": "mfp1.wrong_version_header", "expect": "BUSINESS_VALIDATION_FAILED",
+          "data": "MFP2\nW|20000\nV|1|ok" },
+        { "id": "mfp1.enum_validation_flag_out_of_list", "expect": "BUSINESS_VALIDATION_FAILED",
+          "data": "MFP1\nW|20000\nD|20000|500|35|62|12\nM|BREAKFAST|Yogurt|480|500|35|62|12|Servi\nI|Yogurt|200|g|1 vasetto|NET|HIGH|DAIRY\nV|2|ok" },
+        { "id": "mfp1.type_wrong_kcal", "expect": "BUSINESS_VALIDATION_FAILED",
+          "data": "MFP1\nW|20000\nD|20000|500|35|62|12\nM|BREAKFAST|Yogurt|480|tanto|35|62|12|Servi\nI|Yogurt|200|g|1 vasetto|NET|HIGH|DAIRY\nV|1|ok" },
+        { "id": "mfp1.missing_ingredients", "expect": "BUSINESS_VALIDATION_FAILED",
+          "data": "MFP1\nW|20000\nD|20000|500|35|62|12\nM|BREAKFAST|Yogurt|480|500|35|62|12|Servi\nV|1|ok" },
+        { "id": "mfp1.missing_validation", "expect": "BUSINESS_VALIDATION_FAILED",
+          "data": "MFP1\nW|20000\nD|20000|500|35|62|12\nM|BREAKFAST|Yogurt|480|500|35|62|12|Servi\nI|Yogurt|200|g|1 vasetto|NET|HIGH|DAIRY" },
+        { "id": "mfp1.unknown_record", "expect": "BUSINESS_VALIDATION_FAILED",
+          "data": "MFP1\nW|20000\nZ|qualcosa\nV|1|ok" }
+      ]
+    },
+    {
+      "schemaName": "myfitai_meal_alternatives_pipe_v1",
+      "cases": [
+        { "id": "ma1.valid", "expect": "VALID",
+          "data": "MA1\nA|Pollo e riso|500|35|55|12|Cuoci e servi|Alternativa proteica\nI|Pollo|120|g|120 g|RAW|HIGH|PROTEIN\nA|Pasta e tonno|500|30|60|10|Cuoci|Alternativa veloce\nI|Pasta|80|g|80 g|DRY|HIGH|CEREALS\nA|Riso e uova|500|25|58|14|Cuoci|Alternativa semplice\nI|Riso|80|g|80 g|DRY|HIGH|CEREALS\nA|Cous cous e ceci|500|20|65|9|Idrata|Alternativa vegetale\nI|Cous cous|80|g|80 g|DRY|HIGH|CEREALS\nA|Orzo e merluzzo|500|28|52|8|Cuoci|Alternativa leggera\nI|Orzo|80|g|80 g|DRY|HIGH|CEREALS\nV|1|ok" },
+        { "id": "ma1.enum_validation_flag_out_of_list", "expect": "BUSINESS_VALIDATION_FAILED",
+          "data": "MA1\nA|Pollo e riso|500|35|55|12|Cuoci|Motivo\nI|Pollo|120|g|120 g|RAW|HIGH|PROTEIN\nV|2|ok" },
+        { "id": "ma1.type_wrong_kcal", "expect": "BUSINESS_VALIDATION_FAILED", "rule": "MA_KCAL",
+          "data": "MA1\nA|Pollo e riso|molte|35|55|12|Cuoci|Motivo\nI|Pollo|120|g|120 g|RAW|HIGH|PROTEIN\nV|1|ok" },
+        { "id": "ma1.missing_validation", "expect": "BUSINESS_VALIDATION_FAILED", "rule": "MA_VALIDATION_MISSING",
+          "data": "MA1\nA|Pollo e riso|500|35|55|12|Cuoci|Motivo\nI|Pollo|120|g|120 g|RAW|HIGH|PROTEIN" },
+        { "id": "ma1.four_alternatives_only", "expect": "BUSINESS_VALIDATION_FAILED",
+          "data": "MA1\nA|Pollo e riso|500|35|55|12|Cuoci|Motivo\nI|Pollo|120|g|120 g|RAW|HIGH|PROTEIN\nA|Pasta e tonno|500|30|60|10|Cuoci|Motivo\nI|Pasta|80|g|80 g|DRY|HIGH|CEREALS\nA|Riso e uova|500|25|58|14|Cuoci|Motivo\nI|Riso|80|g|80 g|DRY|HIGH|CEREALS\nA|Orzo e merluzzo|500|28|52|8|Cuoci|Motivo\nI|Orzo|80|g|80 g|DRY|HIGH|CEREALS\nV|1|ok" },
+        { "id": "ma1.calorie_constraint_violated", "expect": "BUSINESS_VALIDATION_FAILED",
+          "data": "MA1\nA|Pollo e riso|420|35|55|12|Cuoci|Motivo\nI|Pollo|120|g|120 g|RAW|HIGH|PROTEIN\nA|Pasta e tonno|500|30|60|10|Cuoci|Motivo\nI|Pasta|80|g|80 g|DRY|HIGH|CEREALS\nA|Riso e uova|500|25|58|14|Cuoci|Motivo\nI|Riso|80|g|80 g|DRY|HIGH|CEREALS\nA|Cous cous e ceci|500|20|65|9|Idrata|Motivo\nI|Cous cous|80|g|80 g|DRY|HIGH|CEREALS\nA|Orzo e merluzzo|500|28|52|8|Cuoci|Motivo\nI|Orzo|80|g|80 g|DRY|HIGH|CEREALS\nV|1|ok" }
+      ]
+    }
+  ]
+}

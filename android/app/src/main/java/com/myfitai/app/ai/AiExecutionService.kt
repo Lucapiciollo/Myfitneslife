@@ -1,8 +1,6 @@
 package com.myfitai.app.ai
 
 import kotlinx.coroutines.CancellationException
-import org.json.JSONException
-import org.json.JSONObject
 
 /**
  * Provider -> structured envelope -> local validators -> authoritative app business validator.
@@ -33,7 +31,8 @@ class AiExecutionService(
 
     /** Typed exceptions whose message is always a stable code (never model text). Classified by [AiFailure.classify]. */
     sealed class Failure(message: String) : Exception(message) {
-        class InvalidSchema(val errors: List<String>) : Failure("INVALID_SCHEMA")
+        /** [errors] and [issues] hold only field paths/categories (never model values). */
+        class InvalidSchema(val errors: List<String>, val issues: List<CanonicalJsonSchemaValidator.Issue> = emptyList()) : Failure("INVALID_SCHEMA")
         class OutputTruncated : Failure("OUTPUT_TRUNCATED")
         class BusinessRejected(val reason: String) : Failure(reason)
         /** Refusal, safety block, blocked prompt or content filter. The provider text is not kept. */
@@ -46,14 +45,54 @@ class AiExecutionService(
         class PaidRetryBudgetConsumed(cause: Throwable) : Failure("TRANSIENT_AFTER_PAID_RETRY") {
             init { initCause(cause) }
         }
-    }
 
+        companion object {
+            /** Maps a [ValidatedOutput.Rejection] to the failure type that [AiFailure.classify] understands. */
+            fun from(rejection: ValidatedOutput.Rejection): Failure = when (rejection) {
+                is ValidatedOutput.Rejection.Business -> BusinessRejected(rejection.reason)
+                is ValidatedOutput.Rejection.Schema ->
+                    // Not even a JSON object: that is MalformedJson, any other schema error is InvalidSchema.
+                    if (rejection.issues.any { it.category == CanonicalJsonSchemaValidator.Category.NOT_JSON_OBJECT }) {
+                        MalformedJson()
+                    } else {
+                        InvalidSchema(rejection.issues.map { it.message }, rejection.issues)
+                    }
+            }
+        }    }
+
+    /**
+     * A response that passed schema v2 AND the business validation, as a [ValidatedOutput] (the only way to build
+     * one), plus the transport metadata of the response it came from.
+     */
+    class ValidatedExecution<out T>(val output: ValidatedOutput<T>, val response: ValidatedResponse)
+
+    /** Legacy entry point (unchanged signature): validates but returns the raw validated JSON. */
     suspend fun execute(
         provider: AiProvider,
         request: AiStructuredRequest,
         maxSchemaRetries: Int = 1,
         businessValidator: (String) -> Result<Unit> = { Result.success(Unit) },
-    ): ValidatedResponse {
+    ): ValidatedResponse = runPipeline(provider, request, maxSchemaRetries, businessValidator).response
+
+    /**
+     * Same pipeline and the same paid-call ceiling as [execute], but [business] parses the JSON into the domain
+     * value [T] and checks the app rules; the result is a [ValidatedOutput]<T> so persistence/UI can require
+     * validated data at compile time. A schema error becomes [Failure.InvalidSchema] (paths and categories only)
+     * or [Failure.MalformedJson]; a business error becomes [Failure.BusinessRejected] (stable rule code).
+     */
+    suspend fun <T> executeValidated(
+        provider: AiProvider,
+        request: AiStructuredRequest,
+        maxSchemaRetries: Int = 1,
+        business: (String) -> Result<T>,
+    ): ValidatedExecution<T> = runPipeline(provider, request, maxSchemaRetries, business)
+
+    private suspend fun <T> runPipeline(
+        provider: AiProvider,
+        request: AiStructuredRequest,
+        maxSchemaRetries: Int,
+        business: (String) -> Result<T>,
+    ): ValidatedExecution<T> {
         require(maxSchemaRetries in 0..2)
         val startedAt = nowMillis()
         var attempt = 0
@@ -74,40 +113,34 @@ class AiExecutionService(
                 AiFailure.fromFinishReason(raw.finishReason)?.let { throw it.toException() }
                 if (raw.jsonText.isBlank()) throw Failure.EmptyOutput()
 
-                val parseable = try {
-                    JSONObject(raw.jsonText)
-                    true
-                } catch (_: JSONException) {
-                    false
+                // Schema v2 then business, in one step: a ValidatedOutput exists only if both passed.
+                val validated = ValidatedOutput.validate(raw.jsonText, request.schemaJson, request.schemaName, business)
+                validated.getOrNull()?.let { output ->
+                    report("OK")
+                    return ValidatedExecution(output, ValidatedResponse(raw.provider, raw.model, raw.jsonText, raw.usage))
                 }
-                val schemaResult = CanonicalJsonSchemaValidator.validate(raw.jsonText, request.schemaJson)
-                if (!schemaResult.valid) {
-                    if (attempt >= maxSchemaRetries) {
-                        throw if (parseable) Failure.InvalidSchema(schemaResult.errors) else Failure.MalformedJson()
-                    }
-                    attempt++
-                    currentRequest = request.copy(
-                        userPrompt = request.userPrompt + if (compact) {
-                            "\nFIX: return exactly one JSON object with exactly one property named data, whose value is a string containing the pipe protocol. ${spec.retryRule()} Do not include schema, status, metadata or any other property. Return no prose or markdown."
-                        } else {
-                            "\nPrevious output was INVALID_SCHEMA. Return exactly one valid JSON object. Do not use markdown. Do not wrap the JSON in code fences. Do not add text before or after the JSON. All strings must be valid JSON strings with escaped special characters."
-                        }
-                    )
-                    continue
-                }
-
-                val business = businessValidator(raw.jsonText)
-                if (business.isFailure) {
-                    val reason = business.exceptionOrNull()?.message ?: "BUSINESS_VALIDATION_FAILED"
-                    if (compact && attempt < maxSchemaRetries) {
+                when (val rejection = validated.exceptionOrNull()) {
+                    is ValidatedOutput.Rejection.Schema -> {
+                        if (attempt >= maxSchemaRetries) throw Failure.from(rejection)
                         attempt++
-                        currentRequest = request.copy(userPrompt = request.userPrompt + "\nFIX:${reason.take(80)}. Return exactly one JSON envelope with one data property. ${spec.retryRule()} No markdown or code fences.")
-                        continue
+                        currentRequest = request.copy(
+                            userPrompt = request.userPrompt + if (compact) {
+                                "\nFIX: return exactly one JSON object with exactly one property named data, whose value is a string containing the pipe protocol. ${spec.retryRule()} Do not include schema, status, metadata or any other property. Return no prose or markdown."
+                            } else {
+                                "\nPrevious output was INVALID_SCHEMA. Return exactly one valid JSON object. Do not use markdown. Do not wrap the JSON in code fences. Do not add text before or after the JSON. All strings must be valid JSON strings with escaped special characters."
+                            }
+                        )
                     }
-                    throw Failure.BusinessRejected(reason)
+                    is ValidatedOutput.Rejection.Business -> {
+                        if (compact && attempt < maxSchemaRetries) {
+                            attempt++
+                            currentRequest = request.copy(userPrompt = request.userPrompt + "\nFIX:${rejection.reason.take(80)}. Return exactly one JSON envelope with one data property. ${spec.retryRule()} No markdown or code fences.")
+                        } else {
+                            throw Failure.from(rejection)
+                        }
+                    }
+                    else -> throw rejection ?: IllegalStateException("UNEXPECTED")
                 }
-                report("OK")
-                return ValidatedResponse(raw.provider, raw.model, raw.jsonText, raw.usage)
             }
         } catch (cancelled: CancellationException) {
             report(AiFailure.Cancelled.code)
@@ -118,7 +151,6 @@ class AiExecutionService(
         }
     }
 }
-
 /** What is logged about an AI call: no prompt, no response, no key, no provider text. */
 data class AiDiagnosticEvent(
     val schemaName: String,
