@@ -36,10 +36,13 @@ class BiaImportAiJobHandler(private val service: BiaImportService, private val i
             .put("model", result.model)
             .toString()
         AiJobOutcome.Success(Data.Builder().putString(KEY_PAYLOAD, payload).putString(AiJobWorker.KEY_PROVIDER, "${result.provider} · ${result.model}").build())
+    } catch (error: BiaImportService.NotBiaImage) {
+        // Its message is the model's rejection reason: never forward it.
+        AiJobOutcome.Failure("La foto non sembra una rilevazione BIA.")
     } catch (error: Exception) {
         // Transient/cancelled: rethrow so WorkManager retries; the worker keeps the temp image until the last attempt.
         AiJobFailures.rethrowIfRetryableOrCancelled(error)
-        AiJobOutcome.Failure(error.message ?: "Import BIA non riuscito")
+        AiJobFailures.failure(error, "Import BIA non riuscito")
     }
     companion object { const val KEY_PAYLOAD = "payload" }
 }

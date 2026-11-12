@@ -24,7 +24,7 @@ class BodyProportionsAiJobHandler(private val service: BodyProportionAnalysisSer
         AiJobOutcome.Success(Data.Builder().putString(KEY_PAYLOAD, payload).putString(AiJobWorker.KEY_PROVIDER, result.agentValidation).build())
     } catch (error: Exception) {
         AiJobFailures.rethrowIfRetryableOrCancelled(error)
-        AiJobOutcome.Failure(error.message ?: "Interpretazione misure non disponibile")
+        AiJobFailures.failure(error, "Interpretazione misure non disponibile")
     }
 
     private fun decode(json: String): BodyProportionEngine.Report {

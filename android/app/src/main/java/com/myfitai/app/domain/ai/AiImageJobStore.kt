@@ -5,8 +5,11 @@ import com.myfitai.app.ai.AiImageInput
 import java.io.File
 import java.util.UUID
 
-class AiImageJobStore(context: Context) {
-    private val directory = File(context.applicationContext.cacheDir, "ai-job-images").apply { mkdirs() }
+class AiImageJobStore(private val directory: File) {
+    constructor(context: Context) : this(File(context.applicationContext.cacheDir, "ai-job-images"))
+
+    init { directory.mkdirs() }
+
     fun write(image: AiImageInput): String {
         val file = File(directory, "${UUID.randomUUID()}.payload")
         file.writeText("${image.mimeType}\n${image.base64Data}", Charsets.UTF_8)

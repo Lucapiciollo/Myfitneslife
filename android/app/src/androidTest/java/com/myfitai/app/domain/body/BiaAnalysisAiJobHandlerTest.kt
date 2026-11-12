@@ -133,6 +133,8 @@ class BiaAnalysisAiJobHandlerTest {
         assertTrue(failure.message.startsWith("BIA_PROGRESS_COACH_FAILED:"))
         // WorkManager Data is limited to 10 KB; a provider error must never blow it up.
         assertTrue(failure.message.length < 400)
+        // The raw exception text (which may embed model output) is replaced by a fixed message.
+        assertTrue(!failure.message.contains("xxxx"))
         assertNull(results.latestForMeasurement(profileId, id))
     }
 

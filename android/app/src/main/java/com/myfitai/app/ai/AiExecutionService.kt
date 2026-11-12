@@ -1,6 +1,15 @@
 package com.myfitai.app.ai
 
-/** Provider -> structured envelope -> local validators -> authoritative app business validator. */
+/**
+ * Provider -> structured envelope -> local validators -> authoritative app business validator.
+ *
+ * Paid-call ceiling per operation: at most `1 + maxSchemaRetries` (<= 3) provider responses. A transient
+ * transport error before any response was received is rethrown so WorkManager may retry the whole job
+ * (at most [com.myfitai.app.domain.ai.AiJobWorker.MAX_RETRY_ATTEMPTS] extra attempts, none of which received a
+ * billed response). Once a response was already consumed (schema/business retry), a later transient error is
+ * NOT retried by the job: it becomes [Failure.PaidRetryBudgetConsumed], so a restart can never re-spend the
+ * schema/business retry budget.
+ */
 class AiExecutionService {
     data class ValidatedResponse(
         val provider: AiProviderType,
@@ -13,6 +22,10 @@ class AiExecutionService {
         class InvalidSchema(val errors: List<String>) : Failure("INVALID_SCHEMA")
         class OutputTruncated : Failure("OUTPUT_TRUNCATED")
         class BusinessRejected(val reason: String) : Failure(reason)
+        /** A transient transport error happened after a paid response was already consumed: do not restart the job. */
+        class PaidRetryBudgetConsumed(cause: Throwable) : Failure("TRANSIENT_AFTER_PAID_RETRY") {
+            init { initCause(cause) }
+        }
     }
 
     suspend fun execute(
@@ -26,7 +39,12 @@ class AiExecutionService {
         var attempt = 0
         var currentRequest = request
         while (true) {
-            val raw = provider.generateStructured(currentRequest)
+            val raw = try {
+                provider.generateStructured(currentRequest)
+            } catch (error: AiTransportException) {
+                if (attempt > 0 && error.isTransient()) throw Failure.PaidRetryBudgetConsumed(error)
+                throw error
+            }
             // A token-limited answer is incomplete, not a schema/business failure.
             // Never persist an incomplete nutrition plan or retry the same inadequate budget.
             if (raw.finishReason == "MAX_TOKENS" || raw.finishReason == "max_output_tokens") {
@@ -98,8 +116,9 @@ class AiExecutionService {
     /** Exact schemaName -> protocol header. Substring matching mislabelled bia_raw (B2) and progress_analysis (PA1). */
     private fun compactProtocolVersion(schemaName: String): String? = COMPACT_PROTOCOLS[schemaName]
 
-    private companion object {
-        val COMPACT_PROTOCOLS = mapOf(
+    companion object {
+        /** Exact schemaName -> protocol header; the single source of truth (also checked by tests against the contracts). */
+        internal val COMPACT_PROTOCOLS: Map<String, String> = mapOf(
             "myfitai_bia_raw_pipe_v2" to "B2",
             "myfitai_bia_pipe_v1" to "BIA1",
             "myfitai_bia_progress_coach_pipe_v2" to "BA2",

@@ -70,7 +70,7 @@ class BiaAnalysisAiJobHandler(
             throw cancelled
         } catch (error: Exception) {
             AiJobFailures.rethrowIfRetryableOrCancelled(error)
-            AiJobOutcome.Failure("BIA_PROGRESS_COACH_FAILED:${(error.message ?: "Analisi BIA non disponibile").take(MAX_ERROR_CHARS)}")
+            AiJobOutcome.Failure("BIA_PROGRESS_COACH_FAILED:" + AiJobFailures.safeMessage(error, "Analisi BIA non disponibile"))
         }
     }
 
@@ -110,7 +110,6 @@ class BiaAnalysisAiJobHandler(
         const val KEY_RESULT_ID = "result_id"
         const val KEY_AUTOMATIC = "automatic"
         private const val NO_MEASUREMENT = -1L
-        private const val MAX_ERROR_CHARS = 300
 
         /** The only parameter a manual analysis needs; everything else is read from Room. */
         fun params(measurementId: Long): Data = Data.Builder().putLong(KEY_MEASUREMENT_ID, measurementId).build()

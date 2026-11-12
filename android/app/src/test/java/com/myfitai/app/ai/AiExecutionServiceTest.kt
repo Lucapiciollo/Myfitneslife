@@ -1,5 +1,23 @@
 package com.myfitai.app.ai
 
+import com.myfitai.app.domain.body.BiaAnalysisContract
+import com.myfitai.app.domain.body.BiaImportCompactContract
+import com.myfitai.app.domain.body.BiaRawImportContract
+import com.myfitai.app.domain.body.BodyProportionAnalysisService
+import com.myfitai.app.domain.food.CheatAdjustmentCompactContract
+import com.myfitai.app.domain.food.CheatAdjustmentContract
+import com.myfitai.app.domain.food.CheatUnderstandingCompactContract
+import com.myfitai.app.domain.food.CheatUnderstandingContract
+import com.myfitai.app.domain.food.MealAlternativeCompactContract
+import com.myfitai.app.domain.food.MealAlternativeContract
+import com.myfitai.app.domain.food.NutritionAdviceCompactContract
+import com.myfitai.app.domain.food.NutritionAdviceContract
+import com.myfitai.app.domain.food.NutritionPathContract
+import com.myfitai.app.domain.food.NutritionPlanCompactContract
+import com.myfitai.app.domain.food.PlanReviewCompactContract
+import com.myfitai.app.domain.progress.ProgressAnalysisCompactContract
+import com.myfitai.app.domain.review.WeeklyReviewCompactContract
+import com.myfitai.app.domain.review.WeeklyReviewContract
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -92,22 +110,39 @@ class AiExecutionServiceTest {
         }
     }
 
-    private val protocolBySchema = mapOf(
-        "myfitai_bia_raw_pipe_v2" to "B2",
-        "myfitai_bia_pipe_v1" to "BIA1",
-        "myfitai_bia_progress_coach_pipe_v2" to "BA2",
-        "myfitai_progress_analysis_pipe_v1" to "PA1",
-        "myfitai_body_proportion_pipe_v1" to "BP1",
-        "myfitai_weekly_review_pipe_v1" to "WR1",
-        "myfitai_meal_alternatives_pipe_v1" to "MA1",
-        "myfitai_nutrition_advice_pipe_v1" to "NA1",
-        "myfitai_cheat_understanding_pipe_v1" to "CU1",
-        "myfitai_cheat_adjustment_pipe_v1" to "CA1",
-        "myfitai_plan_review_pipe_v1" to "PR1",
-        "myfitai_nutrition_path_pipe_v1" to "NP1",
-        "myfitai_weekly_nutrition_pipe_v1" to "MFP1",
-    )
+    /** Every compact schema declared by a contract, with the protocol text its header comes from (no copy of the table). */
+    private val contractProtocols: List<Pair<String, String>> = listOf(
+        BiaRawImportContract.SCHEMA_NAME to BiaRawImportContract.PROTOCOL,
+        BiaImportCompactContract.SCHEMA_NAME to BiaImportCompactContract.PROTOCOL,
+        BiaAnalysisContract.SCHEMA_NAME to "BA2",
+        BodyProportionAnalysisService.SCHEMA_NAME to "BP1",
+        ProgressAnalysisCompactContract.SCHEMA_NAME to ProgressAnalysisCompactContract.PROTOCOL,
+        WeeklyReviewCompactContract.SCHEMA_NAME to WeeklyReviewCompactContract.PROTOCOL,
+        MealAlternativeCompactContract.SCHEMA_NAME to MealAlternativeCompactContract.PROTOCOL,
+        NutritionAdviceCompactContract.SCHEMA_NAME to NutritionAdviceCompactContract.PROTOCOL,
+        CheatUnderstandingCompactContract.SCHEMA_NAME to CheatUnderstandingCompactContract.PROTOCOL,
+        CheatAdjustmentCompactContract.SCHEMA_NAME to CheatAdjustmentCompactContract.PROTOCOL,
+        PlanReviewCompactContract.SCHEMA_NAME to PlanReviewCompactContract.PROTOCOL,
+        NutritionPathContract.SCHEMA_NAME to NutritionPathContract.PROTOCOL,
+        NutritionPlanCompactContract.SCHEMA_NAME to NutritionPlanCompactContract.PROTOCOL,
+    ).map { (schema, protocol) -> schema to protocol.lineSequence().first().trim() }
 
+    @Test
+    fun protocolTable_matchesTheHeaderDeclaredByEveryContract() {
+        contractProtocols.forEach { (schema, header) ->
+            assertEquals(schema, header, AiExecutionService.COMPACT_PROTOCOLS[schema])
+        }
+        // No missing and no stale entries.
+        assertEquals(contractProtocols.map { it.first }.toSet(), AiExecutionService.COMPACT_PROTOCOLS.keys)
+    }
+
+    @Test
+    fun everyDeclaredPipeSchemaHasAProtocolEntry() {
+        listOf(
+            CheatAdjustmentContract.SCHEMA_NAME, CheatUnderstandingContract.SCHEMA_NAME, MealAlternativeContract.SCHEMA_NAME,
+            NutritionAdviceContract.SCHEMA_NAME, WeeklyReviewContract.SCHEMA_NAME,
+        ).forEach { schema -> assertTrue("$schema missing from protocol table", schema in AiExecutionService.COMPACT_PROTOCOLS) }
+    }
     private fun retryPrompt(schemaName: String, firstResponse: String, validator: (String) -> Result<Unit>): String = runBlocking {
         val provider = object : AiProvider {
             override val type = AiProviderType.OPENAI
@@ -130,7 +165,7 @@ class AiExecutionServiceTest {
 
     @Test
     fun businessRetryNamesTheExactProtocolForEveryCompactSchema() {
-        protocolBySchema.forEach { (schema, header) ->
+        contractProtocols.forEach { (schema, header) ->
             val prompt = retryPrompt(schema, "{\"data\":\"bad\"}") { v ->
                 if (v.contains("bad")) Result.failure(IllegalArgumentException("INVALID")) else Result.success(Unit)
             }
@@ -140,7 +175,7 @@ class AiExecutionServiceTest {
 
     @Test
     fun schemaRetryNamesTheExactProtocolForEveryCompactSchema() {
-        protocolBySchema.forEach { (schema, header) ->
+        contractProtocols.forEach { (schema, header) ->
             val prompt = retryPrompt(schema, "{\"data\":\"x\",\"extra\":1}") { Result.success(Unit) }
             assertTrue("$schema must request $header, got: $prompt", prompt.contains("must begin with $header "))
         }
@@ -180,6 +215,50 @@ class AiExecutionServiceTest {
         }
     }
 
+    private class ScriptedProvider(private val script: List<() -> String>) : AiProvider {
+        override val type = AiProviderType.OPENAI
+        var calls = 0
+        override suspend fun generateStructured(request: AiStructuredRequest): AiRawResponse {
+            val step = script[calls++]
+            return AiRawResponse(type, "fake", step())
+        }
+    }
+
+    private fun runScripted(vararg script: () -> String): Pair<ScriptedProvider, Throwable?> {
+        val provider = ScriptedProvider(script.toList())
+        val error = runCatching {
+            runBlocking {
+                AiExecutionService().execute(provider, AiStructuredRequest("s", "u", "test_schema", schema), maxSchemaRetries = 2)
+            }
+        }.exceptionOrNull()
+        return provider to error
+    }
+
+    @Test
+    fun transientErrorBeforeAnyResponse_isRethrownSoTheJobMayRetry() {
+        val network = AiTransportException.Network()
+        val (provider, error) = runScripted({ throw network })
+        assertTrue(error === network)
+        assertEquals(1, provider.calls)
+    }
+
+    @Test
+    fun transientErrorAfterAPaidSchemaRetry_isNotRetriedByTheJob() {
+        val (provider, error) = runScripted(
+            { "{\"status\":\"bad\"}" },
+            { throw AiTransportException.Http(AiProviderType.OPENAI, 503, AiTransportFailureKind.PROVIDER_UNAVAILABLE) },
+        )
+        assertTrue("got $error", error is AiExecutionService.Failure.PaidRetryBudgetConsumed)
+        assertEquals("TRANSIENT_AFTER_PAID_RETRY", error?.message)
+        assertEquals(2, provider.calls)
+    }
+
+    @Test
+    fun permanentTransportErrorAfterARetry_keepsItsOwnType() {
+        val quota = AiTransportException.Http(AiProviderType.OPENAI, 429, AiTransportFailureKind.QUOTA_EXHAUSTED)
+        val (_, error) = runScripted({ "{\"status\":\"bad\"}" }, { throw quota })
+        assertTrue(error === quota)
+    }
     private class FakeProvider(private val responses: List<String>) : AiProvider {
         override val type = AiProviderType.OPENAI
         var calls = 0
