@@ -63,26 +63,126 @@ class BiaAnalysisContractTest {
 
     @Test
     fun ba2_allowsInsufficientDataWithoutThreeActions() {
-        val response = BiaAnalysisContract.parse(envelope("""
-            BA2
-            B|INSUFFICIENT_DATA
-            S|Dati insufficienti per descrivere un andamento.
-            C|È disponibile una sola rilevazione.
-            F|Non calcolabile.
-            O|Non valutabile.
-            K|Non ricevute.
-            P|Ripeti la BIA nelle stesse condizioni.
-            L|LOW|Manca uno storico confrontabile.
-            X|Ripeti la BIA nelle stesse condizioni.
-            X|Registra il peso per almeno due settimane.
-            X|Mantieni il percorso senza modifiche automatiche.
-            D|Per dubbi clinici consulta un professionista.
-            N|?
-            V|1|Storico insufficiente.
-        """.trimIndent()))
+        listOf(0, 1, 2).forEach { count ->
+            val response = BiaAnalysisContract.parse(envelope(ba2(
+                classification = "INSUFFICIENT_DATA",
+                actions = insufficientActions.take(count),
+            )))
 
+            assertEquals(count, response.actions.size)
+            val validation = BiaAnalysisContract.validateBusiness(response)
+            assertTrue("$count actions: ${validation.exceptionOrNull()?.message}", validation.isSuccess)
+        }
+    }
+
+    @Test
+    fun ba2_insufficientDataAcceptsUnknownReliability() {
+        val response = BiaAnalysisContract.parse(envelope(ba2(
+            classification = "INSUFFICIENT_DATA",
+            reliability = "L|?|Nessuno storico confrontabile.",
+            actions = insufficientActions.take(1),
+        )))
+
+        assertEquals("?", response.reliability)
         val validation = BiaAnalysisContract.validateBusiness(response)
         assertTrue(validation.exceptionOrNull()?.message ?: "validation failed", validation.isSuccess)
+    }
+
+    @Test
+    fun ba2_insufficientDataRejectsMoreThanTwoActions() {
+        val response = BiaAnalysisContract.parse(envelope(ba2(
+            classification = "INSUFFICIENT_DATA",
+            actions = insufficientActions + "Mantieni il percorso senza modifiche automatiche.",
+        )))
+
+        assertTrue(BiaAnalysisContract.validateBusiness(response).isFailure)
+    }
+
+    @Test
+    fun ba2_otherClassificationsRequireExactlyThreeActions() {
+        listOf(0, 1, 2, 4).forEach { count ->
+            val response = BiaAnalysisContract.parse(envelope(ba2(
+                classification = "STABLE",
+                actions = List(count) { "Azione ${it + 1}" },
+            )))
+
+            assertEquals("THREE_ACTIONS_REQUIRED", BiaAnalysisContract.validateBusiness(response).exceptionOrNull()?.message)
+        }
+    }
+
+    @Test
+    fun ba2_unknownReliabilityIsRejectedUnlessDataIsInsufficient() {
+        val response = BiaAnalysisContract.parse(envelope(ba2(
+            classification = "STABLE",
+            reliability = "L|?|Motivo non indicato.",
+            actions = listOf("Una", "Due", "Tre"),
+        )))
+
+        assertTrue(BiaAnalysisContract.validateBusiness(response).isFailure)
+    }
+
+    @Test
+    fun ba2_acceptsStandardSafetyDisclaimers() {
+        listOf(
+            "Non è una diagnosi medica.",
+            "Questa analisi non e una diagnosi: consulta un professionista.",
+            "L'analisi non costituisce diagnosi medica.",
+            "Valutazione informativa senza diagnosi.",
+            "Nessuna diagnosi è formulata da questa analisi.",
+            "Analisi informativa, non diagnosi medica",
+        ).forEach { note ->
+            val response = BiaAnalysisContract.parse(envelope(ba2(safety = note)))
+            val validation = BiaAnalysisContract.validateBusiness(response)
+            assertTrue("$note: ${validation.exceptionOrNull()?.message}", validation.isSuccess)
+        }
+    }
+
+    @Test
+    fun ba2_stillRejectsAssertedDiagnosisEvenWithADisclaimerElsewhere() {
+        listOf(
+            ba2(verdict = "Diagnosi di disidratazione.", safety = "Non è una diagnosi medica."),
+            ba2(whatIsHappening = "Il quadro indica una patologia.", safety = "Non è una diagnosi medica."),
+            ba2(safety = "Non è una diagnosi medica, ma è una diagnosi di disidratazione."),
+            ba2(safety = "Diagnosi medica confermata."),
+            ba2(verdict = "Obiettivo di dimagrimento locale sulla pancia."),
+        ).forEach { data ->
+            val response = BiaAnalysisContract.parse(envelope(data))
+            assertEquals("UNSUPPORTED_MEDICAL_OR_CAUSAL_CLAIM", BiaAnalysisContract.validateBusiness(response).exceptionOrNull()?.message)
+        }
+    }
+
+    @Test
+    fun ba2_diagnosisSubstringsInsideOtherWordsAreNotClaims() {
+        val response = BiaAnalysisContract.parse(envelope(ba2(whatIsHappening = "Il check non è diagnostico del trend, serve una seconda misura.")))
+        assertTrue(BiaAnalysisContract.validateBusiness(response).isSuccess)
+    }
+
+    private val insufficientActions = listOf(
+        "Ripeti la BIA nelle stesse condizioni.",
+        "Registra il peso per almeno due settimane.",
+    )
+
+    private fun ba2(
+        classification: String = "STABLE",
+        reliability: String = "L|LOW|Storico breve.",
+        verdict: String = "Stabile.",
+        whatIsHappening: String = "Trend da monitorare.",
+        actions: List<String> = listOf("Una", "Due", "Tre"),
+        safety: String = "Analisi informativa, non diagnosi medica",
+    ): String = buildString {
+        appendLine("BA2")
+        appendLine("B|$classification")
+        appendLine("S|$verdict")
+        appendLine("C|$whatIsHappening")
+        appendLine("F|?")
+        appendLine("O|?")
+        appendLine("K|?")
+        appendLine("P|Ripeti la misura.")
+        appendLine(reliability)
+        actions.forEach { appendLine("X|$it") }
+        appendLine("D|$safety")
+        appendLine("N|?")
+        appendLine("V|1|ok")
     }
 
     @Test
