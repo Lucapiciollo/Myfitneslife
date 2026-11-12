@@ -1,6 +1,7 @@
 package com.myfitai.app.domain.body
 
 import com.myfitai.app.ai.AiCompactEnvelope
+import com.myfitai.app.domain.ai.UnsupportedClaimGuard
 
 /** Canonical BA2 response contract for the Progress Coach. */
 object BiaAnalysisContract {
@@ -164,9 +165,20 @@ object BiaAnalysisContract {
         )
     }
 
+    /**
+     * Single action-count rule shared by prompt, parser output and validator: exactly three actions,
+     * except for INSUFFICIENT_DATA where 0..2 data-collection actions are accepted and reliability may be `?`.
+     */
+    private const val INSUFFICIENT_DATA = "INSUFFICIENT_DATA"
+    private const val REQUIRED_ACTIONS = 3
+    private const val MAX_INSUFFICIENT_DATA_ACTIONS = 2
+
     fun validateBusiness(value: Interpretation): Result<Unit> = runCatching {
         require(value.classification in classifications) { "BIA_CLASSIFICATION_INVALID" }
-        require(value.reliability in reliabilityLevels) { "BIA_RELIABILITY_INVALID_${value.reliability.take(32)}" }
+        val insufficientData = value.classification == INSUFFICIENT_DATA
+        require(value.reliability in reliabilityLevels || (insufficientData && value.reliability == "?")) {
+            "BIA_RELIABILITY_INVALID_${value.reliability.take(32)}"
+        }
         val text = listOf(
             value.verdict, value.whatIsHappening, value.fatLoss, value.objective,
             value.caloriesAndMacros, value.nextCheck, value.reliabilityReason,
@@ -174,13 +186,17 @@ object BiaAnalysisContract {
         ) + value.comparisons.flatMap { listOf(it.indicator, it.interpretation) } +
             value.historical.map { it.summary } + value.scenarios.map { it.assumption } +
             value.positives + value.monitor + value.actions
-        require(!containsUnsupportedClaim(text.joinToString(" ").lowercase())) { "UNSUPPORTED_MEDICAL_OR_CAUSAL_CLAIM" }
+        require(!UnsupportedClaimGuard.containsAffirmed(text, unsupportedClaimTerms)) { "UNSUPPORTED_MEDICAL_OR_CAUSAL_CLAIM" }
         require(value.comparisons.size <= 12) { "TOO_MANY_COMPARISONS" }
         require(value.historical.size <= 4) { "TOO_MANY_HISTORICAL_PERIODS" }
         require(value.scenarios.size <= 3) { "TOO_MANY_SCENARIOS" }
         require(value.positives.size <= 3) { "TOO_MANY_POSITIVES" }
         require(value.monitor.size <= 3) { "TOO_MANY_MONITOR_ITEMS" }
-        require(value.actions.size == 3) { "THREE_ACTIONS_REQUIRED" }
+        if (insufficientData) {
+            require(value.actions.size <= MAX_INSUFFICIENT_DATA_ACTIONS) { "INSUFFICIENT_DATA_MAX_TWO_ACTIONS" }
+        } else {
+            require(value.actions.size == REQUIRED_ACTIONS) { "THREE_ACTIONS_REQUIRED" }
+        }
         require(value.actions.all(String::isNotBlank)) { "EMPTY_ACTION" }
         require(value.safetyNote.isNotBlank()) { "SAFETY_NOTE_REQUIRED" }
         require(value.verdict.isNotBlank() && value.whatIsHappening.isNotBlank()) { "EMPTY_BIA_ANALYSIS" }
@@ -188,13 +204,7 @@ object BiaAnalysisContract {
         value.scenarios.forEach { require(it.reliability == "?" || it.reliability in reliabilityLevels) { "SCENARIO_RELIABILITY_INVALID" } }
     }
 
-    private fun containsUnsupportedClaim(text: String): Boolean {
-        val medicalTerms = listOf("diagnosi", "diagnostica", "patologia", "prescrizione farmacologica", "causa certa", "dimagrimento locale")
-        return medicalTerms.any { term ->
-            term in text && listOf("non è $term", "non e $term", "non $term", "nessuna $term", "non costituisce $term")
-                .none { disclaimer -> disclaimer in text }
-        }
-    }
+    private val unsupportedClaimTerms = listOf("diagnosi", "diagnostica", "patologia", "prescrizione farmacologica", "causa certa", "dimagrimento locale")
 
     /** Records may end with a stray `;` used as a separator by some providers; it is not part of the text. */
     private fun String.cleanText(): String =
@@ -284,6 +294,6 @@ object BiaAnalysisContract {
     }
 
     private val PROTOCOL = """
-BA2 records: B|classification; S|verdict; C|what is happening; F|fat loss estimate; O|objective coherence; K|calories and macros; P|next check; L|reliability|reason; R|indicator|previous|current|difference|interpretation|reliability; H|period|historical trend; G|scenario|target body-fat|target weight|fat to lose|assumption|reliability; Y|positive; M|monitor; X|priority action; D|safety note; N|one final question or ?; V|1_or_0|agent notes. Use ? for unavailable values. Emit exactly three X records unless classification is INSUFFICIENT_DATA. Never put | or newlines inside text.
+BA2 records: B|classification; S|verdict; C|what is happening; F|fat loss estimate; O|objective coherence; K|calories and macros; P|next check; L|reliability|reason; R|indicator|previous|current|difference|interpretation|reliability; H|period|historical trend; G|scenario|target body-fat|target weight|fat to lose|assumption|reliability; Y|positive; M|monitor; X|priority action; D|safety note; N|one final question or ?; V|1_or_0|agent notes. Use ? for unavailable values. Emit exactly three X records, unless classification is INSUFFICIENT_DATA: then emit 0 to 2 X records (data collection or repeat measurement only) and L|?|reason is allowed. Never put | or newlines inside text.
 """.trimIndent()
 }

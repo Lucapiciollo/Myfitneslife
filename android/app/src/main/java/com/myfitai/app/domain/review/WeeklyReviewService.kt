@@ -106,10 +106,10 @@ class WeeklyReviewService(
             plannedAverage.carbsG?.toFloat(), plan?.version?.targetCarbsG,
             plannedAverage.fatG?.toFloat(), plan?.version?.targetFatG,
             weekCheats.size, weekWorkouts.count { !it.isRestDay }, weekWorkouts.count { it.isRestDay },
-            delta(weekBia.mapNotNull { it.weightKg }, previousBia.mapNotNull { it.weightKg }),
-            delta(weekBia.mapNotNull { it.bodyFatPercent }, previousBia.mapNotNull { it.bodyFatPercent }),
-            delta(weekBia.mapNotNull { it.muscleMassKg }, previousBia.mapNotNull { it.muscleMassKg }),
-            delta(weekBody.mapNotNull { it.waistCm }, previousBody.mapNotNull { it.waistCm }),
+            weekDelta(weekBia, previousBia, { it.measuredAtEpochMillis }) { it.weightKg },
+            weekDelta(weekBia, previousBia, { it.measuredAtEpochMillis }) { it.bodyFatPercent },
+            weekDelta(weekBia, previousBia, { it.measuredAtEpochMillis }) { it.muscleMassKg },
+            weekDelta(weekBody, previousBody, { it.measuredAtEpochMillis }) { it.waistCm },
             consumption.plannedMealCount,
             consumption.consumedMealCount,
             consumption.skippedMealCount,
@@ -191,9 +191,8 @@ class WeeklyReviewService(
     }
 
     private fun monday(date: LocalDate): LocalDate = date.minusDays((date.dayOfWeek.value - 1).toLong())
-    private fun delta(values: List<Float>, previousValues: List<Float>): Float? = when {
-        values.size >= 2 -> values.last() - values.first()
-        values.size == 1 && previousValues.isNotEmpty() -> values.first() - previousValues.first()
-        else -> null
+    private fun <T> weekDelta(week: List<T>, previous: List<T>, at: (T) -> Long, metric: (T) -> Float?): Float? {
+        fun readings(items: List<T>) = items.mapNotNull { item -> metric(item)?.let { WeeklyBodyDelta.Reading(at(item), it) } }
+        return WeeklyBodyDelta.compute(readings(week), readings(previous))
     }
 }

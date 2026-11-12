@@ -1,5 +1,6 @@
 package com.myfitai.app.domain.review
 
+import com.myfitai.app.domain.ai.UnsupportedClaimGuard
 import org.json.JSONObject
 
 /** Provider-neutral structured contract for a weekly review. */
@@ -38,8 +39,9 @@ object WeeklyReviewContract {
         require(response.summary.isNotBlank()) { "SUMMARY_MISSING" }
         require(response.observations.isNotEmpty() && response.observations.all { it.isNotBlank() }) { "OBSERVATIONS_INVALID" }
         require(response.nextWeekGuidance.isNotEmpty() && response.nextWeekGuidance.all { it.isNotBlank() }) { "GUIDANCE_INVALID" }
-        val allText = (listOf(response.summary) + response.observations + response.nextWeekGuidance).joinToString(" ").lowercase()
-        require("diagnosi" !in allText && "diagnosis" !in allText) { "MEDICAL_CLAIM_NOT_ALLOWED" }
+        val fields = listOf(response.summary) + response.observations + response.nextWeekGuidance
+        require(!UnsupportedClaimGuard.containsAffirmed(fields, listOf("diagnosi", "diagnosis"))) { "MEDICAL_CLAIM_NOT_ALLOWED" }
+        val allText = fields.joinToString(" ").lowercase()
         require("causato" !in allText && "caused by" !in allText) { "CAUSAL_CLAIM_NOT_ALLOWED" }
     }
 }

@@ -3,7 +3,7 @@ package com.myfitai.app.domain.body
 import com.myfitai.app.ai.AiCompactEnvelope
 import com.myfitai.app.ai.AiRuntimeGateway
 import com.myfitai.app.ai.AiStructuredRequest
-import java.util.Locale
+import com.myfitai.app.domain.ai.UnsupportedClaimGuard
 
 /** Specialized AI interpreter for deterministic body-proportion results. */
 class BodyProportionAnalysisService(
@@ -78,8 +78,8 @@ class BodyProportionAnalysisService(
 
     internal fun validateBusiness(value: Interpretation): Result<Unit> = runCatching {
         val forbidden = listOf("diagnosi", "diagnostica", "patologia", "postura scorretta", "causa certa", "ideale perfetto")
-        val text = (listOf(value.summary, value.comparison) + value.observations + value.monitorNext).joinToString(" ").lowercase(Locale.ROOT)
-        require(forbidden.none(text::contains)) { "UNSUPPORTED_DIAGNOSTIC_OR_CAUSAL_CLAIM" }
+        val fields = listOf(value.summary, value.comparison) + value.observations + value.monitorNext
+        require(!UnsupportedClaimGuard.containsAffirmed(fields, forbidden)) { "UNSUPPORTED_DIAGNOSTIC_OR_CAUSAL_CLAIM" }
         require(value.summary.isNotBlank()) { "EMPTY_SUMMARY" }
         require(value.summary.length <= 500) { "SUMMARY_TOO_LONG" }
         require(value.comparison.isNotBlank() && value.comparison.length <= 400) { "BODY_COMPARISON_INVALID" }
