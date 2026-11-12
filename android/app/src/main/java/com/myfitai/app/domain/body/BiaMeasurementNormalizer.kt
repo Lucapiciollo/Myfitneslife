@@ -3,6 +3,8 @@ package com.myfitai.app.domain.body
 import java.text.Normalizer
 import java.text.SimpleDateFormat
 import java.util.Locale
+import kotlin.math.abs
+import kotlin.math.max
 
 /**
  * Trasforma le righe grezze lette dalla foto in una [BiaImportContract.Preview].
@@ -37,26 +39,43 @@ object BiaMeasurementNormalizer {
 
         val rows = document.measurements
         val kg = setOf("kg")
-        val rawWeightKg = find(rows, kg, "peso", "peso corporeo", "body weight", "weight")
+        val rawWeightKg = find(rows, kg, *weightAliases)
         // Le derivazioni usano solo un peso plausibile; quello impossibile viene segnalato da sanitize().
         val weightKg = BodyValueRanges.orNullIfOutOfRange(rawWeightKg, BodyValueRanges.WEIGHT_KG)
-        val directBodyFatPercent = find(rows, percentUnits, "tasso di grasso corporeo", "grasso corporeo", "percent body fat", "body fat percentage", "body fat", "pbf", "massa grassa")
-        val fatMassKg = find(rows, kg, "massa grassa", "body fat mass", "fat mass")
-        val visceralFat = findAnyUnit(rows, "grado di grasso viscerale", "grasso viscerale", "visceral fat level", "visceral fat")
-        val muscleMassKg = find(rows, kg, "massa muscolare", "muscle mass")
-        val skeletalMuscleKg = find(rows, kg, "muscolo scheletrico", "massa muscolare scheletrica", "skeletal muscle mass", "skeletal muscle", "smm")
-        val waterAliases = arrayOf("contenuto d acqua", "acqua corporea", "body water", "total body water", "tbw")
+        val directBodyFatPercent = find(rows, percentUnits, *bodyFatPercentAliases)
+        val fatMassKg = find(rows, kg, *fatMassAliases)
+        val visceralFat = findAnyUnit(rows, *visceralAliases)
+        val muscleMassKg = find(rows, kg, *muscleAliases)
+        val skeletalMuscleKg = find(rows, kg, *skeletalAliases)
         val directWaterPercent = find(rows, percentUnits, *waterAliases)
         val waterKg = find(rows, setOf("kg", "l", "liter", "litre", "litri"), *waterAliases)
-        val bmrKcal = find(rows, setOf("kcal", "kcal/day", "kcal/d", "?"), "tasso metabolico basale", "metabolismo basale", "basal metabolic rate", "bmr")
-        val directLeanMassKg = find(rows, kg, "peso corporeo senza grasso", "massa magra", "fat free mass", "lean body mass", "lean mass", "ffm")
-        val boneMassKg = find(rows, kg, "massa ossea", "peso osseo", "bone mass", "bone mineral mass")
-        val subcutaneousFatPercent = find(rows, percentUnits, "grasso sottocutaneo", "subcutaneous fat", "subcutaneous fat rate")
-        val directProteinPercent = find(rows, percentUnits, "quantita di proteine", "proteine", "protein percentage", "protein rate", "protein")
-        val directProteinKg = find(rows, kg, "quantita di proteine", "proteine", "protein mass", "protein")
-        val bodyAgeYears = findAnyUnit(rows, "eta corporea", "eta metabolica", "body age", "metabolic age")
-        val bmi = findAnyUnit(rows, "bmi", "indice di massa corporea", "body mass index")
+        val bmrKcal = find(rows, setOf("kcal", "kcal/day", "kcal/d", "kcal/giorno", "kcal/gg", "cal", "?", ""), *bmrAliases)
+        val directLeanMassKg = find(rows, kg, *leanAliases)
+        val boneMassKg = find(rows, kg, *boneAliases)
+        val subcutaneousFatPercent = find(rows, percentUnits, *subcutaneousAliases)
+        val directProteinPercent = find(rows, percentUnits, *proteinAliases)
+        val directProteinKg = find(rows, kg, *proteinKgAliases)
+        val bodyAgeYears = findAnyUnit(rows, *bodyAgeAliases)
+        val bmi = findAnyUnit(rows, *bmiAliases)
 
+        // Un valore derivato e' usato (e dichiarato) solo se quello esplicito manca; se entrambi ci sono
+        // vince l'esplicito e un forte scostamento dalla formula diventa un avviso.
+        val warnings = mutableListOf<String>()
+        fun checkConsistency(label: String, explicitKg: Float?, percent: Float?, fromPercentKg: Float?) {
+            val expected = fromPercentKg ?: return
+            val kgValue = explicitKg ?: return
+            if (abs(kgValue - expected) / max(kgValue, expected) > CONSISTENCY_TOLERANCE) {
+                val read = String.format(Locale.ROOT, "%.1f", kgValue)
+                val calc = String.format(Locale.ROOT, "%.1f", expected)
+                val pct = percent?.let { " (" + String.format(Locale.ROOT, "%.1f", it) + "% del peso)" }.orEmpty()
+                warnings += "$label: $read kg letti non coincidono con il valore atteso di $calc kg$pct. Usato il valore letto."
+            }
+        }
+        checkConsistency("Massa grassa", fatMassKg, directBodyFatPercent, deriveMass(directBodyFatPercent, weightKg))
+        checkConsistency("Acqua", waterKg, directWaterPercent, deriveMass(directWaterPercent, weightKg))
+        checkConsistency("Proteine", directProteinKg, directProteinPercent, deriveMass(directProteinPercent, weightKg))
+        val expectedFatMass = fatMassKg ?: deriveMass(directBodyFatPercent, weightKg)
+        checkConsistency("Massa magra", directLeanMassKg, null, if (weightKg != null && expectedFatMass != null) weightKg - expectedFatMass else null)
         val derived = linkedSetOf<String>()
         val bodyFatPercent = directBodyFatPercent ?: derivePercent(fatMassKg, weightKg)?.also { derived += "bodyFatPercent" }
         val bodyWaterPercent = directWaterPercent ?: derivePercent(waterKg, weightKg)?.also { derived += "bodyWaterPercent" }
@@ -91,6 +110,7 @@ object BiaMeasurementNormalizer {
                 proteinKg = proteinKg,
                 bodyAgeYears = bodyAgeYears,
                 bmi = bmi,
+                warnings = warnings,
             ),
         )
         // Un derivato eliminato dal controllo di plausibilita' non va dichiarato come derivato.
@@ -118,6 +138,64 @@ object BiaMeasurementNormalizer {
     }
 
     private val percentUnits = setOf("%", "percent", "percentage")
+
+    /** Scostamento relativo oltre cui due valori espliciti della stessa grandezza generano un avviso. */
+    private const val CONSISTENCY_TOLERANCE = 0.05f
+
+    // Sinonimi per campo (Fitdays, Renpho, Xiaomi, Garmin, Omron...), gia' normalizzati come le etichette
+    // lette e in ordine di specificita': il primo che combacia esattamente vince. L'unita' finale
+    // (kg, kcal, anni...) e' tolta dall'etichetta, quindi non va scritta negli alias.
+    private val weightAliases = arrayOf("peso corporeo", "peso", "peso totale", "body weight", "total weight", "weight")
+    private val bodyFatPercentAliases = arrayOf(
+        "tasso di grasso corporeo", "percentuale di grasso corporeo", "percentuale grasso corporeo", "grasso corporeo percentuale",
+        "grasso corporeo", "percentuale di grasso", "grasso", "percent body fat", "body fat percentage", "body fat rate",
+        "body fat", "fat percentage", "fat rate", "pbf", "bfp", "bf", "fat", "massa grassa",
+    )
+    private val fatMassAliases = arrayOf(
+        "massa grassa", "massa grassa corporea", "peso grasso", "grasso corporeo", "grasso", "body fat mass", "fat mass",
+        "fat weight", "body fat", "fat",
+    )
+    private val visceralAliases = arrayOf(
+        "grado di grasso viscerale", "livello di grasso viscerale", "indice di grasso viscerale", "grasso viscerale", "viscerale",
+        "visceral fat level", "visceral fat rating", "visceral fat index", "visceral fat", "visceral",
+    )
+    private val muscleAliases = arrayOf(
+        "massa muscolare totale", "massa muscolare", "massa muscolare corporea", "muscoli", "muscolo", "total muscle mass",
+        "muscle mass", "muscle weight", "muscle",
+    )
+    private val skeletalAliases = arrayOf(
+        "massa muscolo scheletrico", "massa muscolare scheletrica", "massa muscoli scheletrici", "muscolo scheletrico",
+        "muscoli scheletrici", "muscolatura scheletrica", "skeletal muscle mass", "skeletal muscle weight", "skeletal muscle", "smm",
+    )
+    private val waterAliases = arrayOf(
+        "contenuto d acqua", "acqua corporea totale", "acqua corporea", "percentuale di acqua", "percentuale acqua", "acqua totale",
+        "acqua", "total body water", "body water percentage", "body water", "water percentage", "water rate", "water", "tbw",
+    )
+    private val bmrAliases = arrayOf(
+        "tasso metabolico basale", "metabolismo basale", "basal metabolic rate", "resting metabolic rate", "bmr", "rmr",
+    )
+    private val leanAliases = arrayOf(
+        "peso corporeo senza grasso", "massa magra corporea", "massa magra", "massa libera da grasso", "massa priva di grasso",
+        "peso magro", "fat free body weight", "fat free mass", "lean body mass", "lean body weight", "lean mass", "ffm", "lbm", "lean",
+    )
+    private val boneAliases = arrayOf(
+        "massa ossea", "peso osseo", "massa ossea minerale", "ossa", "bone mass", "bone mineral mass", "bone mineral content",
+        "bone weight", "bone",
+    )
+    private val subcutaneousAliases = arrayOf(
+        "grasso sottocutaneo", "sottocutaneo", "subcutaneous fat", "subcutaneous fat rate", "subcutaneous fat percentage",
+    )
+    private val proteinAliases = arrayOf(
+        "quantita di proteine", "percentuale di proteine", "percentuale proteine", "proteine", "protein percentage",
+        "protein rate", "proteins", "protein",
+    )
+    private val proteinKgAliases = arrayOf(
+        "quantita di proteine", "massa proteica", "proteine", "protein mass", "protein weight", "proteins", "protein",
+    )
+    private val bodyAgeAliases = arrayOf(
+        "eta corporea", "eta metabolica", "eta biologica", "eta del corpo", "body age", "metabolic age", "physical age",
+    )
+    private val bmiAliases = arrayOf("bmi", "indice di massa corporea", "imc", "body mass index")
 
     /** Prima etichetta esatta nell'ordine di [aliases] (dal piu' specifico), tra le righe con unita' ammessa. */
     private fun find(rows: List<BiaRawImportContract.Measurement>, units: Set<String>, vararg aliases: String): Float? =
