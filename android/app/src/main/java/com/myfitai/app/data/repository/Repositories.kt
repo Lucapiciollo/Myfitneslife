@@ -48,7 +48,11 @@ class BiaRepository(private val db: MyFitAiDatabase) {
 
     suspend fun insert(value: BiaMeasurementEntity) = db.biaMeasurementDao().insert(value)
     suspend fun update(value: BiaMeasurementEntity) = db.biaMeasurementDao().update(value)
-    suspend fun delete(value: BiaMeasurementEntity) = db.biaMeasurementDao().delete(value)
+    /** Deletes the reading together with the AI analyses that refer to it, in one transaction: no orphan results. */
+    suspend fun delete(value: BiaMeasurementEntity) = db.withTransaction {
+        db.biaAnalysisResultDao().deleteForMeasurement(value.profileId, value.id)
+        db.biaMeasurementDao().delete(value)
+    }
 }
 
 class BiaAnalysisResultRepository(private val db: MyFitAiDatabase) {

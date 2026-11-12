@@ -68,6 +68,7 @@ class AiAutomationsActivity : BaseShellActivity() {
             AiAutomationPreferences.Feature.PROGRESS_ANALYSIS to "Analisi progressi",
             AiAutomationPreferences.Feature.BODY_PROPORTIONS to "Proporzioni corporee",
             AiAutomationPreferences.Feature.WEEKLY_REVIEW to "Review settimanale",
+            AiAutomationPreferences.Feature.NUTRITION_GOAL_AFTER_MEASURES to "Consiglio obiettivo dopo nuove misure",
         )
         val rowMinHeight = resources.getDimensionPixelSize(R.dimen.control_min_height)
         rows.forEachIndexed { index, (feature, label) ->
@@ -108,10 +109,18 @@ class AiAutomationsActivity : BaseShellActivity() {
                 val config = preferences.get(profileId, feature)
                 automatic.isChecked = config.enabled
                 notifications.isChecked = config.notificationsEnabled
-                frequency.text = "Frequenza: ${if (config.frequency == AiAutomationPreferences.Frequency.WEEKLY) "settimanale" else "mensile"}. L'azione manuale resta sempre disponibile."
-                automatic.isEnabled = aiProviderConfigured
-                notifications.isEnabled = aiProviderConfigured
-                frequency.isEnabled = aiProviderConfigured
+                frequency.text = when {
+                    // No background job exists yet: the switch is disabled instead of saving a preference that does nothing.
+                    !feature.automaticSupported -> "Non ancora automatica: al momento si usa solo l'azione manuale."
+                    !feature.scheduled -> "Spenta di default. Se attiva, dopo aver salvato una BIA o delle misure il consiglio sull'obiettivo parte da solo (usa l'IA). Se spenta, ti viene solo proposto."
+                    else -> "Frequenza: ${if (config.frequency == AiAutomationPreferences.Frequency.WEEKLY) "settimanale" else "mensile"}. L'azione manuale resta sempre disponibile."
+                }
+                automatic.isEnabled = aiProviderConfigured && feature.automaticSupported
+                notifications.isEnabled = aiProviderConfigured && feature.automaticSupported
+                notifications.visibility = if (feature.scheduled) View.VISIBLE else View.GONE
+                frequency.isEnabled = aiProviderConfigured && feature.automaticSupported && feature.scheduled
+                frequency.isClickable = frequency.isEnabled
+                frequency.isFocusable = frequency.isEnabled
                 rendering = false
             }
             automatic.setOnCheckedChangeListener { _, checked ->
@@ -130,12 +139,15 @@ class AiAutomationsActivity : BaseShellActivity() {
                 render()
             }
             frequency.setOnClickListener {
+                if (!feature.automaticSupported || !feature.scheduled) return@setOnClickListener
                 val labels = arrayOf("Ogni settimana", "Ogni mese")
                 val current = preferences.get(profileId, feature).frequency.ordinal
                 MaterialAlertDialogBuilder(this).setTitle("Frequenza $label")
                     .setSingleChoiceItems(labels, current) { dialog, which ->
+                        val previousDue = preferences.nextDue(profileId, feature)
                         preferences.setFrequency(profileId, feature, if (which == 0) AiAutomationPreferences.Frequency.WEEKLY else AiAutomationPreferences.Frequency.MONTHLY)
-                        if (feature == AiAutomationPreferences.Feature.BIA_PROGRESS_COACH && preferences.get(profileId, feature).enabled) data.biaProgressCoachScheduler.ensureScheduled(profileId)
+                        // The due date (and so the deterministic job key) changes with the frequency: drop the old auto job.
+                        if (feature == AiAutomationPreferences.Feature.BIA_PROGRESS_COACH && preferences.get(profileId, feature).enabled) data.biaProgressCoachScheduler.onFrequencyChanged(profileId, previousDue)
                         if (feature == AiAutomationPreferences.Feature.PROGRESS_ANALYSIS && preferences.get(profileId, feature).enabled) data.progressAnalysisScheduler.reschedule(profileId)
                         render()
                         dialog.dismiss()
