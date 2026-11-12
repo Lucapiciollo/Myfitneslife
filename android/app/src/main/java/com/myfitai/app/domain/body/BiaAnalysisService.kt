@@ -16,11 +16,14 @@ class BiaAnalysisService(private val aiRuntime: AiRuntimeGateway) {
         val biologicalSex: String? = null,
         /** Scenarios already calculated by the app: they replace any number written by the model in G. */
         val appScenarios: List<BiaScenarioCalculator.Scenario> = emptyList(),
+        /** Calories/macros section written by the app ([BiaAnalysisReport.caloriesSection]); travels untouched to the result. */
+        val appCalories: String = "",
     )
     data class Result(
         val interpretation: BiaAnalysisContract.Interpretation,
         val provider: String,
         val model: String,
+        val appCalories: String = "",
     )
 
     suspend fun analyze(report: Report): Result {
@@ -42,7 +45,7 @@ class BiaAnalysisService(private val aiRuntime: AiRuntimeGateway) {
             } },
         )
         val interpretation = parsed ?: BiaAnalysisContract.parse(response.jsonText).also { BiaAnalysisContract.validateBusinessWith(it, validation).getOrThrow() }
-        return Result(BiaAnalysisContract.withAppScenarios(interpretation, report.appScenarios), response.provider.name, response.model)
+        return Result(BiaAnalysisContract.withAppScenarios(interpretation, report.appScenarios), response.provider.name, response.model, report.appCalories)
     }
 
     companion object {
@@ -59,11 +62,15 @@ Prima controlla coerenza peso/BMI, massa grassa, massa magra, acqua, duplicati, 
 
 Confronta corrente con precedente, trend dello storico e inizio storico quando presenti. Classifica in base all'obiettivo: POSITIVE, PROBABLY_POSITIVE, STABLE, MONITOR, NEGATIVE o INSUFFICIENT_DATA. Gli scenari di grasso e la stima del grasso perso sono calcolati dall'app: li trovi in SCENARI_APP e GRASSO_PERSO_STIMA_APP. Tu NON li calcoli e NON scrivi cifre nuove: nel record F commenti la stima dell'app presentandola come stima soggetta al rumore BIA (mai come fatto misurato; se l'esito e ENTRO_RUMORE_NESSUNA_STIMA o NON_DISPONIBILE scrivi che non e stimabile), nei record G commenti ogni scenario S1..S3 citandolo per id e lasciando ? nei tre campi numerici. Se SCENARI_APP e ? non scrivere record G. Verifica le calorie con proteine*4 + carboidrati*4 + grassi*9, considerando gli arrotondamenti. Non modificare automaticamente tutti i parametri: dai esattamente tre azioni prioritarie; solo se la classificazione e INSUFFICIENT_DATA dai da zero a due azioni di raccolta o ripetizione dati e puoi usare L|?|motivo.
 
-Target calorici. L'input contiene DUE target diversi: TARGET_ABITUALE_KCAL (profilo, TDEE abituale) e TARGET_OPERATIVO_OGGI_KCAL (quello mostrato oggi nella Home, per un giorno di riposo o di allenamento). Cita un target solo con la sua etichetta, ad esempio target abituale 2528 kcal oppure target operativo di oggi (giorno di riposo) 2242 kcal, e non scrivere mai la parola target senza etichetta. Se TARGET_OPERATIVO_OGGI_KCAL e ? non citare un target di oggi.
+Target calorici. L'input contiene DUE target diversi: TARGET_ABITUALE_KCAL (profilo, TDEE abituale) e TARGET_OPERATIVO_OGGI_KCAL (quello mostrato oggi nella Home, per un giorno di riposo o di allenamento). Il tdee e il consumo stimato, mai un target: non chiamare target un tdee. Le cifre di calorie e macro (target di oggi, target abituale, tdee, proteine, carboidrati, grassi) le scrive l'app nella sezione Obiettivo e calorie: nel campo caloriesAndMacros (record K) e nel record O NON scrivere cifre di kcal o grammi, scrivi solo un commento qualitativo (ad esempio se il target di oggi e coerente con l'obiettivo o come distribuire le proteine nei pasti). Negli altri record, se citi un target, usa la sua etichetta (target abituale oppure target operativo di oggi) e mai la parola target da sola. Se TARGET_OPERATIVO_OGGI_KCAL e ? non citare un target di oggi.
 
 Numeri. Ogni numero con kg, %, kcal o g deve essere copiato dall'input con la stessa precisione: non calcolare differenze, medie, ritmi settimanali, percentuali o proiezioni nuove. L'app rifiuta i testi con cifre che non sono nell'input.
 
-Tono neutro e rispettoso: non allarmare, nessun giudizio sul corpo o sull'aspetto, nessun linguaggio colpevolizzante. Rispondi in italiano con BA2 e solo i record del protocollo. Ogni testo deve essere breve, concreto e comprensibile. Scrivi sempre i valori numerici con cifre e unità, ad esempio 89,5 kg, 19,9 % o 2527 kcal: non scrivere mai i numeri in lettere. Non terminare i testi con punto e virgola. Usa ? per dati non ricevuti. Distingui misurato, calcolato, stima, ipotesi e mancante. Non mostrare ragionamenti interni.
+Frasi, non codici. I record S, Y e M contengono frasi italiane complete: mai la classificazione ne altri codici del protocollo. ESEMPIO ERRATO: S|STABLE, Y|PROBABLY_POSITIVE, M|MONITOR (sono codici: l'app li rifiuta e ti chiede di rifare la risposta). ESEMPIO CORRETTO: S|Andamento stabile con grasso corporeo in lieve calo, Y|La massa magra resta stabile tra le due misure, M|Il grasso corporeo va riconfermato con una nuova misura nelle stesse condizioni. Ogni record Y e M ha almeno 3 parole; la classificazione va solo nel record B.
+
+Decimali e indicatori. Scrivi i decimali in italiano con la virgola, mai con il punto: 1,8 kg e 89,5 kg, non 1.8 kg ne 89.5 kg. Nel record R scrivi in indicator il nome italiano (Peso, Grasso corporeo, Massa muscolare, Massa magra, Acqua corporea), mai il nome del campo come weightKg o bodyFatPercent; per le variazioni di percentuali (grasso corporeo, acqua) usa i punti percentuali (ad esempio -0,5 punti percentuali), non il segno %.
+
+Tono neutro e rispettoso: non allarmare, nessun giudizio sul corpo o sull'aspetto, nessun linguaggio colpevolizzante. Rispondi in italiano con BA2 e solo i record del protocollo. Ogni testo deve essere breve, concreto e comprensibile. Scrivi sempre i valori numerici con cifre e unità, ad esempio 89,5 kg o 19,9 %: non scrivere mai i numeri in lettere. Non terminare i testi con punto e virgola. Usa ? per dati non ricevuti. Distingui misurato, calcolato, stima, ipotesi e mancante. Non mostrare ragionamenti interni.
 """.trimIndent()
     }
 }

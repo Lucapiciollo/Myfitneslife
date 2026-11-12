@@ -6,6 +6,7 @@ import android.view.View
 import android.view.Gravity
 import androidx.core.view.ViewCompat
 import com.myfitai.app.domain.body.BodyMeasurementHistoryText
+import com.myfitai.app.domain.body.BodyComparisonText
 import android.widget.AutoCompleteTextView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
@@ -331,7 +332,7 @@ class BodyMeasuresActivity : BaseShellActivity() {
             if (previous != null && report.comparison.isEmpty()) add("Rilevazione precedente presente, ma non ci sono misure omogenee da confrontare.")
             if (previous == null) add("Registra un'altra misurazione per ottenere un confronto nel tempo.")
             report.comparison.forEach { c ->
-                add("${c.label}: ${formatMeasureValue(c.previous, c.unit)} → ${formatMeasureValue(c.current, c.unit)} (${formatSigned(c.difference)} ${c.unit}) vs precedente")
+                add("${BodyComparisonText.lineWithNoise(c)} vs precedente")
             }
             report.asymmetries.forEach { a ->
                 add("${a.label}: ${formatPercent(a.percent)}${a.largerSide?.let { " · lato $it maggiore" } ?: ""}")
@@ -501,9 +502,6 @@ class BodyMeasuresActivity : BaseShellActivity() {
         }
     }
 
-    private fun formatMeasureValue(value: Float, unit: String): String =
-        String.format(Locale.ITALIAN, "%.1f %s", value, unit)
-
     private fun bodyProportionReportJson(
         report: BodyProportionEngine.Report,
         latest: BodyMeasurementEntity?,
@@ -567,7 +565,7 @@ class BodyMeasuresActivity : BaseShellActivity() {
                 setPadding(0, resources.getDimensionPixelSize(R.dimen.space_4), 0, resources.getDimensionPixelSize(R.dimen.space_8))
             })
         }
-        section("Confronto ultima e precedente", payload.optString("appComparison"))
+        section("Confronto ultima e precedente", BodyComparisonText.localizeIsoDates(payload.optString("appComparison")))
         section("Interpretazione del confronto", payload.optString("comparison"))
         section("Interpretazione IA", payload.optString("summary"))
         section("Osservazioni", payload.optJSONArray("observations")?.let { a -> (0 until a.length()).joinToString("\n") { "• ${a.optString(it)}" } }.orEmpty())

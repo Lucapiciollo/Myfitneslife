@@ -139,6 +139,8 @@ object BiaAnalysisReport {
         val safetyFlag: AiUserContext.SafetyFlag,
         /** Scenarios calculated by the app and sent as `SCENARI_APP`; the model only comments them. */
         val scenarios: List<BiaScenarioCalculator.Scenario> = emptyList(),
+        /** Calories and macros written by the app ([caloriesSection]); the model only adds a qualitative comment. */
+        val caloriesText: String = "",
     )
 
     /**
@@ -216,7 +218,8 @@ object BiaAnalysisReport {
             appendLine("BMI_BMR:bmi=${calculation?.bmi?.let { fmt(it) } ?: "?"},bmrKcal=${calculation?.bmrKcal?.let { whole(it) } ?: "?"}")
             appendLine(habitualTargetLine(calculation))
             appendLine(operationalTargetLine(operational))
-            appendLine("REGOLA_TARGET:sono DUE target diversi. Citane uno solo con la sua etichetta (target abituale / target operativo di oggi, giorno di riposo o di allenamento) e mai la parola target da sola.")
+            appendLine("REGOLA_TARGET:sono DUE target diversi. Citane uno solo con la sua etichetta (target abituale / target operativo di oggi, giorno di riposo o di allenamento) e mai la parola target da sola. Il tdee e il consumo stimato, NON un target.")
+            appendLine("REGOLA_CIFRE_CALORIE:le cifre di kcal e grammi di calorie e macro le scrive l'app. Nei record O e K NON scrivere cifre di kcal o grammi: commento qualitativo.")
             profile.dietaryPreferencesJson?.takeIf { it.isNotBlank() }?.let { appendLine("PREFERENZE_ALIMENTARI:${it.replace('\n', ' ')}") }
             appendLine("OBIETTIVO:${profile.goal ?: "?"}")
             appendLine(safety.line())
@@ -237,10 +240,36 @@ object BiaAnalysisReport {
             appendLine(fatLossEstimateLine(report))
             appendLine(scenariosLine(scenarios))
         }
-        return CoachContext(prompt, safety, scenarios)
+        return CoachContext(prompt, safety, scenarios, caloriesSection(calculation, operational))
     }
 
     private fun whole(value: Double): String = Math.round(value).toString()
+
+    /**
+     * Calories and macros of the "Obiettivo e calorie" section, written by the app from the same figures sent to the
+     * model: today's target with the day type, the habitual target and the two TDEE named as estimated consumption
+     * (never as targets). Missing values are left out; empty when nothing is available.
+     */
+    fun caloriesSection(calculation: LocalCalculationEngine.Result?, operational: OperationalTarget?): String {
+        fun macros(protein: Double?, carbs: Double?, fat: Double?) = listOfNotNull(
+            protein?.let { "proteine ${whole(it)} g" },
+            carbs?.let { "carboidrati ${whole(it)} g" },
+            fat?.let { "grassi ${whole(it)} g" },
+        )
+        val lines = mutableListOf<String>()
+        operational?.let { today ->
+            val dayType = if (today.dayType == "ALLENAMENTO") "giorno di allenamento" else "giorno di riposo"
+            val parts = listOfNotNull(today.targetKcal?.let { "target ${whole(it)} kcal" }) + macros(today.proteinG, today.carbsG, today.fatG)
+            if (parts.isNotEmpty()) lines += "Oggi ($dayType): " + parts.joinToString(", ")
+            today.tdeeKcal?.let { lines += "Consumo operativo stimato oggi (TDEE): ${whole(it)} kcal" }
+        }
+        calculation?.let { habitual ->
+            val parts = listOfNotNull(habitual.targetKcal?.let { "${whole(it)} kcal" }) + macros(habitual.proteinG, habitual.carbsG, habitual.fatG)
+            if (parts.isNotEmpty()) lines += "Target abituale: " + parts.joinToString(", ")
+            habitual.tdeeKcal?.let { lines += "Consumo abituale stimato (TDEE): ${whole(it)} kcal" }
+        }
+        return lines.joinToString("\n")
+    }
 
     private fun habitualTargetLine(calculation: LocalCalculationEngine.Result?): String {
         if (calculation == null) return "TARGET_ABITUALE_KCAL:?"

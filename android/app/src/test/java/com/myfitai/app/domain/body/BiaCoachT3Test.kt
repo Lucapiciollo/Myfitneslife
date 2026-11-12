@@ -198,8 +198,8 @@ class BiaCoachT3Test {
 
         val ok = interpretation(
             whatIsHappening = "Il peso e 89,5 kg, la variazione di 1,2 kg e entro 3 settimane da confermare.",
-            fatLoss = "Stima prudente, soggetta al rumore.",
-            calories = "Target abituale 2528 kcal con 179 g di proteine.",
+            fatLoss = "Stima prudente, soggetta al rumore. Il target abituale e 2528 kcal con 179 g di proteine.",
+            calories = "Il target e coerente con l'obiettivo.",
         )
         assertTrue(BiaAnalysisContract.validateBusinessWith(ok, validation).exceptionOrNull()?.message ?: "", BiaAnalysisContract.validateBusinessWith(ok, validation).isSuccess)
     }
@@ -322,7 +322,7 @@ class BiaCoachT3Test {
         val prompt = "BIA_CORRENTE:weightKg=68.0,bodyFatPercent=34.0\nTARGET_OPERATIVO_OGGI_KCAL:tipo_giorno=RIPOSO,tdee=2638,target=2242\n" +
             "SCENARI_APP:S1 grasso_target=32%,peso_obiettivo=66.0kg,grasso_da_perdere=2.0kg"
 
-        val good = FakeGateway(serviceData("Target operativo di oggi 2242 kcal.", "G|S1|99%|9 kg|9 kg|Commento sul primo scenario.|MEDIUM"))
+        val good = FakeGateway(serviceData("Il target e coerente con l'obiettivo.", "G|S1|99%|9 kg|9 kg|Commento sul primo scenario.|MEDIUM"))
         val result = BiaAnalysisService(good).analyze(BiaAnalysisService.Report(prompt, 3, appScenarios = womanScenarios))
         assertEquals("66,0 kg", result.interpretation.scenarios.first().targetWeight)
         assertEquals("Commento sul primo scenario.", result.interpretation.scenarios.first().assumption)
@@ -431,7 +431,7 @@ class BiaCoachT3Test {
         val prompt = buildCoachContext(operational, listOf(reading(1, 0, 69f, 35.5f, 24.5f), reading(2, 10, 68f, 34f, 23.1f))).prompt
         val validation = BiaAnalysisContract.ValidationContext(contextText = prompt)
 
-        val labelled = interpretation(calories = "Target operativo di oggi (giorno di riposo) 2242 kcal, target abituale 2528 kcal.")
+        val labelled = interpretation(whatIsHappening = "Target operativo di oggi (giorno di riposo) 2242 kcal, target abituale 2528 kcal.")
         assertTrue(BiaAnalysisContract.validateBusinessWith(labelled, validation).exceptionOrNull()?.message ?: "", BiaAnalysisContract.validateBusinessWith(labelled, validation).isSuccess)
         val invented = interpretation(calories = "Calorie target 2527 kcal.")
         assertEquals("NUMBER_NOT_IN_CONTEXT:2527 kcal", BiaAnalysisContract.validateBusinessWith(invented, validation).exceptionOrNull()?.message)
