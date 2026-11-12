@@ -53,6 +53,11 @@ class NutritionPlanGenerationService(
     sealed class GenerationException(message: String) : Exception(message) {
         class NeedsInput(val fields: List<String>) : GenerationException("NEEDS_INPUT: ${fields.joinToString()}")
         class PastWeek : GenerationException("PAST_WEEK_READ_ONLY")
+        /** Saved allergies/intolerances/exclusions cannot be read: never generate with constraints silently lost. */
+        class ConstraintsUnreadable : GenerationException(DietaryProfile.UNREADABLE_MESSAGE) {
+            /** Stable machine code, never part of the user text. */
+            val code: String = DietaryProfile.UNREADABLE_CODE
+        }
         class InvalidAiOutput(message: String) : GenerationException(message)
     }
 
@@ -86,6 +91,7 @@ class NutritionPlanGenerationService(
 
         val profile = profiles.get(profileId)
             ?: throw GenerationException.NeedsInput(listOf("profilo"))
+        if (DietaryProfile.parse(profile.dietaryPreferencesJson).isUnreadable) throw GenerationException.ConstraintsUnreadable()
         val snapshot = calculations.profileSnapshot(profileId, time.today())
             ?: throw GenerationException.NeedsInput(listOf("dati profilo"))
 

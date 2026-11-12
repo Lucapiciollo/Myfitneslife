@@ -42,12 +42,21 @@ class WeeklyPlanAiJobHandler(
             AiJobOutcome.Failure("Completa prima: ${error.fields.joinToString()}")
         } catch (error: NutritionPlanGenerationService.GenerationException.PastWeek) {
             AiJobOutcome.Failure("Le settimane concluse sono storico in sola lettura.")
+        } catch (error: NutritionPlanGenerationService.GenerationException.ConstraintsUnreadable) {
+            unreadableConstraintsOutcome(error)
         } finally {
             if (automatic) automaticScheduler.scheduleNextAfterAutomaticRun(profileId)
         }
     }
 
     companion object {
+        /**
+         * Unreadable saved constraints are a final, user-fixable error: a plain [AiJobOutcome.Failure] (never
+         * Retry, so WorkManager does not re-run it) with the clear user text and no machine code. The failure
+         * notification id is derived from profile and week, so repeated runs replace it instead of piling up.
+         */
+        fun unreadableConstraintsOutcome(error: NutritionPlanGenerationService.GenerationException.ConstraintsUnreadable): AiJobOutcome.Failure =
+            AiJobOutcome.Failure(error.message ?: DietaryProfile.UNREADABLE_MESSAGE)
         const val KEY_WEEK_START_EPOCH_DAY = "week_start_epoch_day"
         const val KEY_AUTOMATIC = "automatic_generation"
         const val KEY_PERIOD_WEEKS = "period_weeks"
