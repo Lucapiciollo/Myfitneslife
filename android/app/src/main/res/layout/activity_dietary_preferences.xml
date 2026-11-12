@@ -1,5 +1,6 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -38,6 +39,64 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:paddingHorizontal="@dimen/space_16">
+            <LinearLayout
+                android:id="@+id/dietaryUnreadableBanner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_12"
+                android:background="@drawable/bg_error_soft"
+                android:orientation="vertical"
+                android:padding="@dimen/card_content_padding_compact"
+                android:visibility="gone">
+                <TextView
+                    android:id="@+id/dietaryUnreadableTitle"
+                    style="@style/Text.MyFitAI.BodyEmphasis"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:accessibilityHeading="true"
+                    android:accessibilityLiveRegion="assertive"
+                    android:focusable="true"
+                    android:text="@string/dietary_unreadable_title"
+                    android:textColor="@color/text_primary"
+                    tools:targetApi="p" />
+                <TextView
+                    android:id="@+id/dietaryUnreadableRawLabel"
+                    style="@style/Text.MyFitAI.Supporting"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_8"
+                    android:text="@string/dietary_unreadable_raw_label"
+                    android:textColor="@color/text_primary" />
+                <TextView
+                    android:id="@+id/dietaryUnreadableRaw"
+                    style="@style/Text.MyFitAI.Body"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_4"
+                    android:background="@drawable/bg_panel_tonal"
+                    android:focusable="true"
+                    android:minHeight="@dimen/control_min_height"
+                    android:padding="@dimen/card_content_padding_compact"
+                    android:textColor="@color/text_primary"
+                    android:textIsSelectable="true" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/dietaryUnreadableCopyButton"
+                    style="@style/Widget.MyFitAI.Button.Outlined"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_8"
+                    android:contentDescription="@string/dietary_unreadable_copy_description"
+                    android:minHeight="@dimen/control_min_height"
+                    android:text="@string/dietary_unreadable_copy" />
+                <TextView
+                    android:id="@+id/dietaryUnreadableFix"
+                    style="@style/Text.MyFitAI.Supporting"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_8"
+                    android:text="@string/dietary_unreadable_fix"
+                    android:textColor="@color/text_primary" />
+            </LinearLayout>
              <com.google.android.material.card.MaterialCardView
                  style="@style/Widget.MyFitAI.FormCard"
                  app:cardBackgroundColor="@color/surface_primary"
@@ -56,6 +115,7 @@
                     <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.InputDropdownCompact" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:hint="Stile alimentare">
                         <com.google.android.material.textfield.MaterialAutoCompleteTextView android:id="@+id/dietStyleInput" style="@style/Widget.MyFitAI.InputDropdownTextCompact" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="none" />
                     </com.google.android.material.textfield.TextInputLayout>
+                    <TextView android:id="@+id/dietStyleNotice" style="@style/Text.MyFitAI.Supporting" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:background="@drawable/bg_panel_tonal" android:padding="@dimen/card_content_padding_compact" android:textColor="@color/text_primary" android:visibility="gone" />
                     <com.google.android.material.textfield.TextInputLayout style="@style/Widget.MyFitAI.InputCompact" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:hint="Note alimentari" app:helperTextEnabled="true" app:helperText="@string/dietary_notes_helper">
                         <com.google.android.material.textfield.TextInputEditText android:id="@+id/preferencesInput" style="@style/Widget.MyFitAI.InputEditTextCompact" android:layout_width="match_parent" android:layout_height="@dimen/multiline_notes_field_height" android:gravity="top|start" android:inputType="textMultiLine|textCapSentences" android:minLines="3" android:maxLines="6" />
                     </com.google.android.material.textfield.TextInputLayout>

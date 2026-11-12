@@ -1,6 +1,8 @@
 package com.myfitai.app.ui
 
 import android.content.Context
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Intent
 import android.os.Bundle
 import android.view.KeyEvent
@@ -38,6 +40,9 @@ class DietaryPreferencesActivity : BaseShellActivity() {
     private lateinit var saveButton: MaterialButton
     private lateinit var loadError: TextView
     private lateinit var saveError: TextView
+    private lateinit var unreadableBanner: View
+    private lateinit var unreadableRaw: TextView
+    private lateinit var styleNotice: TextView
     private val blocks = LinkedHashMap<DietaryCategory, CategoryBlock>()
 
     /** Profilo di cui la bozza e' stata caricata: il salvataggio scrive solo su questo e solo se e' ancora quello attivo. */
@@ -58,6 +63,7 @@ class DietaryPreferencesActivity : BaseShellActivity() {
         val input: TextInputEditText,
         val addButton: MaterialButton,
         val message: TextView,
+        val notices: TextView,
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -88,6 +94,8 @@ class DietaryPreferencesActivity : BaseShellActivity() {
         outState.putLong(STATE_PROFILE_ID, id)
         outState.putString(STATE_BASELINE, base.toJson())
         outState.putString(STATE_DRAFT, currentProfile().toJson())
+        // Il JSON non conserva lo stato "illeggibile": senza questo, una rotazione farebbe sembrare il profilo vuoto e valido.
+        outState.putString(STATE_LEGACY, base.takeIf { it.isUnreadable }?.rawLegacyText)
         outState.putStringArray(STATE_PENDING, DietaryCategory.values().map { pendingText(it) }.toTypedArray())
     }
 
@@ -96,8 +104,9 @@ class DietaryPreferencesActivity : BaseShellActivity() {
         val base = state.getString(STATE_BASELINE) ?: return false
         val saved = state.getString(STATE_DRAFT) ?: return false
         loadedProfileId = state.getLong(STATE_PROFILE_ID)
-        baseline = DietaryProfile.parse(base).canonical()
-        draft = DietaryProfile.parse(saved).canonical()
+        val legacy = state.getString(STATE_LEGACY)
+        baseline = DietaryPreferencesPresentation.withLegacyState(DietaryProfile.parse(base).canonical(), legacy)
+        draft = DietaryPreferencesPresentation.withLegacyState(DietaryProfile.parse(saved).canonical(), legacy)
         dietStyle.setText(draft.dietStyle ?: "Nessuno", false)
         notes.setText(draft.notes.orEmpty())
         render()
@@ -113,6 +122,10 @@ class DietaryPreferencesActivity : BaseShellActivity() {
         saveButton = findViewById(R.id.saveDietaryPreferencesButton)
         loadError = findViewById(R.id.dietaryLoadError)
         saveError = findViewById(R.id.dietarySaveError)
+        unreadableBanner = findViewById(R.id.dietaryUnreadableBanner)
+        unreadableRaw = findViewById(R.id.dietaryUnreadableRaw)
+        styleNotice = findViewById(R.id.dietStyleNotice)
+        findViewById<View>(R.id.dietaryUnreadableCopyButton).setOnClickListener { copyLegacyText() }
         val container = findViewById<android.widget.LinearLayout>(R.id.dietaryCategoriesContainer)
         DietaryCategory.values().forEachIndexed { index, category ->
             val root = layoutInflater.inflate(R.layout.item_dietary_category, container, false)
@@ -128,6 +141,7 @@ class DietaryPreferencesActivity : BaseShellActivity() {
                 input = root.findViewById<TextInputEditText>(R.id.categoryInput).apply { id = inputId(category) },
                 addButton = root.findViewById(R.id.categoryAddButton),
                 message = root.findViewById(R.id.categoryMessage),
+                notices = root.findViewById(R.id.categoryNotices),
             )
             block.title.text = label(category)
             root.findViewById<TextView>(R.id.categoryHelper).setText(helperRes(category))
@@ -152,6 +166,8 @@ class DietaryPreferencesActivity : BaseShellActivity() {
             }
             container.addView(root)
             blocks[category] = block
+            // La dicitura sui limiti sta subito dopo l'ultimo vincolo rigido (allergie, intolleranze, esclusioni).
+            if (category == DietaryCategory.EXCLUDED) layoutInflater.inflate(R.layout.item_dietary_limits_notice, container, true)
         }
         notes.setOnFocusChangeListener { view, focused ->
             if (focused) (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).showSoftInput(view, InputMethodManager.SHOW_IMPLICIT)
@@ -160,6 +176,7 @@ class DietaryPreferencesActivity : BaseShellActivity() {
 
     private fun bindDropdown() {
         dietStyle.setMyFitAiDropdownItems(listOf("Nessuno", "Onnivoro", "Vegetariano", "Vegano", "Pescetariano"))
+        dietStyle.setOnItemClickListener { _, _, _, _ -> renderStyleNotice() }
     }
 
     private fun loadProfile() {
@@ -212,11 +229,44 @@ class DietaryPreferencesActivity : BaseShellActivity() {
 
     private fun render() {
         DietaryCategory.values().forEach(::renderCategory)
+        renderStyleNotice()
+        renderUnreadableBanner()
+    }
+
+    private fun noticeText(notice: DietaryPreferencesPresentation.ItemNotice): String = getString(
+        when (notice.reason) {
+            DietaryProfile.NoticeReason.NAME_ONLY -> R.string.dietary_notice_name_only
+            DietaryProfile.NoticeReason.LIMITED -> R.string.dietary_notice_limited
+            DietaryProfile.NoticeReason.UNKNOWN_STYLE -> R.string.dietary_notice_unknown_style
+        },
+        notice.constraint,
+    )
+
+    private fun renderStyleNotice() {
+        val notice = DietaryPreferencesPresentation.styleNotice(draft.copy(dietStyle = dietStyle.text?.toString()).canonical())
+        styleNotice.text = notice?.let(::noticeText).orEmpty()
+        styleNotice.visibility = if (notice == null) View.GONE else View.VISIBLE
+    }
+
+    private fun renderUnreadableBanner() {
+        val raw = DietaryPreferencesPresentation.legacyTextToShow(baseline)
+        unreadableBanner.visibility = if (baseline?.isUnreadable == true) View.VISIBLE else View.GONE
+        unreadableRaw.text = raw ?: getString(R.string.dietary_unreadable_raw_unavailable)
+    }
+
+    private fun copyLegacyText() {
+        val raw = DietaryPreferencesPresentation.legacyTextToShow(baseline) ?: return
+        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        clipboard.setPrimaryClip(ClipData.newPlainText(getString(R.string.dietary_unreadable_raw_label), raw))
+        Toast.makeText(this, R.string.dietary_unreadable_copied, Toast.LENGTH_SHORT).show()
     }
 
     private fun renderCategory(category: DietaryCategory) {
         val block = blocks.getValue(category)
         val values = draft.items(category)
+        val notices = DietaryPreferencesPresentation.noticesFor(draft, category)
+        block.notices.text = notices.joinToString("\n", transform = ::noticeText)
+        block.notices.visibility = if (notices.isEmpty()) View.GONE else View.VISIBLE
         block.chips.removeAllViews()
         values.forEach { value ->
             val chip = layoutInflater.inflate(R.layout.item_dietary_chip, block.chips, false) as Chip
@@ -257,7 +307,13 @@ class DietaryPreferencesActivity : BaseShellActivity() {
         saveError.visibility = View.GONE
         renderCategory(category)
         val message = getString(R.string.dietary_message_added, result.added.joinToString(", "), label(category))
-        showMessage(category, message, error = false)
+        val addedNotices = DietaryPreferencesPresentation.noticesForValues(draft, category, result.added)
+        showMessage(
+            category,
+            if (addedNotices.isEmpty()) message
+            else getString(R.string.dietary_message_added_with_notice, message, addedNotices.joinToString(". ", transform = ::noticeText)),
+            error = false,
+        )
         return true
     }
 
@@ -330,6 +386,26 @@ class DietaryPreferencesActivity : BaseShellActivity() {
         for (category in DietaryCategory.values()) {
             if (pendingText(category).isNotBlank() && !addFromInput(category, fromSave = true)) return
         }
+        // Un profilo illeggibile non si sovrascrive in silenzio con liste vuote ne' perdendo il testo originale.
+        val check = DietaryPreferencesPresentation.saveCheck(baseline, currentProfile())
+        if (!check.needsConfirmation) {
+            persist(loaded)
+            return
+        }
+        val message = listOfNotNull(
+            getString(R.string.dietary_confirm_empty_message).takeIf { check.confirmEmptyConstraints },
+            getString(R.string.dietary_confirm_legacy_dropped).takeIf { check.confirmLegacyTextDropped },
+        ).joinToString("\n\n")
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.dietary_confirm_empty_title)
+            .setMessage(message)
+            .setNegativeButton(R.string.dietary_confirm_back, null)
+            .setPositiveButton(R.string.dietary_confirm_yes) { _, _ -> persist(loaded) }
+            .show()
+    }
+
+    private fun persist(loaded: Long) {
+        if (saving) return
         saving = true
         saveButton.isEnabled = false
         saveError.visibility = View.GONE
@@ -357,8 +433,9 @@ class DietaryPreferencesActivity : BaseShellActivity() {
                     saving = false
                     return@launch
                 }
-                baseline = dietary
-                draft = dietary
+                baseline = DietaryPreferencesPresentation.afterSave(dietary)
+                draft = DietaryPreferencesPresentation.afterSave(dietary)
+                renderUnreadableBanner()
                 Toast.makeText(this@DietaryPreferencesActivity, R.string.dietary_saved, Toast.LENGTH_SHORT).show()
                 if (isBootstrap) {
                     val jobKey = if (aiProviderConfigured) data.nutritionPathTrigger.maybeEnqueue(profileId) else null
@@ -406,5 +483,6 @@ class DietaryPreferencesActivity : BaseShellActivity() {
         private const val STATE_BASELINE = "dietary_state_baseline"
         private const val STATE_DRAFT = "dietary_state_draft"
         private const val STATE_PENDING = "dietary_state_pending"
+        private const val STATE_LEGACY = "dietary_state_legacy_text"
     }
 }

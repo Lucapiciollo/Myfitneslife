@@ -231,4 +231,21 @@
     <string name="dietary_discard_keep">Continua a modificare</string>
     <string name="dietary_discard_save">Salva</string>
     <string name="dietary_discard_exit">Esci senza salvare</string>
+    <string name="dietary_unreadable_title">Le preferenze salvate in precedenza non sono leggibili: la generazione di piani e alternative è bloccata finché non le riesamini</string>
+    <string name="dietary_unreadable_raw_label">Testo salvato in precedenza (puoi selezionarlo e copiarlo)</string>
+    <string name="dietary_unreadable_copy">Copia testo</string>
+    <string name="dietary_unreadable_raw_unavailable">Testo non disponibile</string>
+    <string name="dietary_unreadable_copy_description">Copia negli appunti il testo salvato in precedenza</string>
+    <string name="dietary_unreadable_copied">Testo copiato negli appunti</string>
+    <string name="dietary_unreadable_fix">Per sistemarle, inserisci qui sotto allergie, intolleranze ed esclusioni nei campi dedicati e salva. Il testo precedente resta nelle note finché non lo togli tu.</string>
+    <string name="dietary_confirm_empty_title">Conferma preferenze</string>
+    <string name="dietary_confirm_empty_message">Confermi di non avere allergie, intolleranze o esclusioni?</string>
+    <string name="dietary_confirm_legacy_dropped">Il testo salvato in precedenza non è più nelle note e andrà perso.</string>
+    <string name="dietary_confirm_yes">Conferma e salva</string>
+    <string name="dietary_confirm_back">Torna a modificare</string>
+    <string name="dietary_limits_notice">Controllo su elenco, non garanzia medica.</string>
+    <string name="dietary_notice_name_only">%1$s: controllato solo per nome</string>
+    <string name="dietary_notice_limited">%1$s: non verificabile in modo affidabile (nichel, solfiti)</string>
+    <string name="dietary_notice_unknown_style">%1$s: regime non riconosciuto, non applicato al controllo</string>
+    <string name="dietary_message_added_with_notice">%1$s. %2$s</string>
 </resources>
