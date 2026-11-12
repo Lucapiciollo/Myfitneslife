@@ -79,6 +79,44 @@ class SettingsSecurityUiTest {
     }
 
     @Test
+    fun apiKeyInputs_areAccessibleButStayProtected() {
+        scenario.onActivity { activity ->
+            assertTrue(
+                "FLAG_SECURE must stay enabled on the credentials screen",
+                activity.window.attributes.flags and android.view.WindowManager.LayoutParams.FLAG_SECURE != 0,
+            )
+            listOf(com.myfitai.app.R.id.geminiApiKeyInput, com.myfitai.app.R.id.openAiApiKeyInput).forEach { id ->
+                val input = activity.findViewById<android.widget.EditText>(id)
+                assertTrue(
+                    "API key field must be focusable by accessibility services",
+                    input.importantForAccessibility != View.IMPORTANT_FOR_ACCESSIBILITY_NO &&
+                        input.importantForAccessibility != View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS,
+                )
+                assertTrue("API key field needs an accessible label", !input.contentDescription.isNullOrBlank())
+                assertTrue(
+                    "API key field must keep the protected password input",
+                    input.inputType and android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD != 0,
+                )
+                assertTrue("No stored value may be loaded into the field", input.text.isNullOrEmpty())
+            }
+        }
+    }
+
+    @Test
+    fun aiScreen_separatesSharedConfigurationFromProfileAutomations() {
+        scenario.onActivity { activity ->
+            assertEquals(
+                "Configurazione app, condivisa da tutti i profili",
+                activity.findViewById<TextView>(com.myfitai.app.R.id.aiConfigGroupHeader).text.toString(),
+            )
+            assertTrue(
+                activity.findViewById<TextView>(com.myfitai.app.R.id.aiAutomationsHeader).text.toString()
+                    .startsWith("Automazioni del profilo attivo"),
+            )
+        }
+    }
+
+    @Test
     fun privacyDialog_explainsLocalStorageBackupAndKeystore() {
         scenario.onActivity { activity ->
             activity.findViewById<View>(com.myfitai.app.R.id.rowPrivacy).performClick()

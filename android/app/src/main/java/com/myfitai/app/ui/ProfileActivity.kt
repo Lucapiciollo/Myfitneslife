@@ -24,6 +24,7 @@ import com.myfitai.app.notifications.NotificationPreferences
 import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.data.local.entity.UserProfileEntity
+import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.ui.widgets.SettingRowView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -60,6 +61,15 @@ class ProfileActivity : BaseShellActivity() {
 
     private fun bindSettingsNavigation() {
         findViewById<SettingRowView>(R.id.rowFoodPreferences).setOnClickListener { openProfileEditor() }
+        findViewById<SettingRowView>(R.id.rowDietaryPreferences).setOnClickListener { go(DietaryPreferencesActivity::class.java) }
+        // La configurazione IA è dell'app, non del profilo: si apre come schermata figlia (nessun flag radice/embedded)
+        // così il Back del sistema torna a questo Profilo.
+        findViewById<android.view.View>(R.id.profileAiSettingsButton).setOnClickListener {
+            startActivity(
+                Intent(this, SettingsActivity::class.java)
+                    .putExtra(BottomNavBinder.EXTRA_SELECTED_TAB, BottomNavBinder.Tab.AI.name),
+            )
+        }
         findViewById<SettingRowView>(R.id.rowWorkouts).setOnClickListener { go(WorkoutsActivity::class.java) }
         updateWorkoutsRowVisibility()
         findViewById<SettingRowView>(R.id.rowNotifications).setOnClickListener { showNotificationSettings() }

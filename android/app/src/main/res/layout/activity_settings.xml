@@ -216,6 +216,15 @@
                           android:src="@drawable/ic_help_outline"
                           app:tint="@color/text_secondary" />
                   </LinearLayout>
+                  <TextView
+                      android:id="@+id/aiConfigGroupHeader"
+                      style="@style/Text.MyFitAI.CardTitle"
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:paddingStart="@dimen/space_16"
+                      android:paddingTop="@dimen/space_4"
+                      android:paddingEnd="@dimen/space_16"
+                      android:text="@string/ai_group_app_config_title" />
                   <LinearLayout
                       android:id="@+id/aiSectionCard"
                       style="@style/Widget.MyFitAI.WhiteCardContent"
@@ -288,7 +297,7 @@
                               android:layout_height="wrap_content"
                               android:inputType="textPassword"
                               android:singleLine="true"
-                              android:importantForAccessibility="no" />
+                              android:contentDescription="@string/ai_gemini_key_input_cd" />
                      </com.google.android.material.textfield.TextInputLayout>
                    <TextView
                       android:id="@+id/geminiKeyStatusText"
@@ -392,7 +401,7 @@
                             android:layout_height="wrap_content"
                              android:inputType="textPassword"
                              android:singleLine="true"
-                             android:importantForAccessibility="no" />
+                             android:contentDescription="@string/ai_openai_key_input_cd" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                       <TextView
@@ -486,6 +495,33 @@
                      android:layout_height="wrap_content"
                      android:layout_marginTop="@dimen/space_8"
                          android:text="Le chiavi non vengono mai salvate in chiaro, esportate, inserite nei log o incluse nei backup. Firebase AI Logic non viene usato per Gemini." />
+                          </LinearLayout>
+                          <LinearLayout
+                              android:id="@+id/aiAutomationsGroup"
+                              android:layout_width="match_parent"
+                              android:layout_height="wrap_content"
+                              android:orientation="vertical"
+                              android:visibility="gone">
+                              <View
+                                  android:layout_width="match_parent"
+                                  android:layout_height="@dimen/divider_thickness"
+                                  android:layout_marginTop="@dimen/space_8"
+                                  android:background="@color/divider" />
+                              <TextView
+                                  android:id="@+id/aiAutomationsHeader"
+                                  style="@style/Text.MyFitAI.CardTitle"
+                                  android:layout_width="match_parent"
+                                  android:layout_height="wrap_content"
+                                  android:paddingStart="@dimen/space_16"
+                                  android:paddingTop="@dimen/space_12"
+                                  android:paddingEnd="@dimen/space_16"
+                                  android:text="@string/ai_group_profile_automations_title" />
+                              <LinearLayout
+                                  android:id="@+id/aiAutomationsSection"
+                                  style="@style/Widget.MyFitAI.WhiteCardContent"
+                                  android:layout_width="match_parent"
+                                  android:layout_height="wrap_content"
+                                  android:orientation="vertical" />
                           </LinearLayout>
                           </LinearLayout>
                   </com.google.android.material.card.MaterialCardView>
