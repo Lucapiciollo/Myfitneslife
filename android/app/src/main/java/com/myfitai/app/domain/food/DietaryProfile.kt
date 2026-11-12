@@ -14,7 +14,13 @@ data class DietaryProfile(
     val allergies: List<String> = emptyList(),
     val dietStyle: String? = null,
     val notes: String? = null,
+    /** [Status.UNREADABLE] means the stored JSON could not be read: constraints are UNKNOWN, not empty. */
+    val status: Status = Status.OK,
 ) {
+    enum class Status { OK, UNREADABLE }
+
+    val isUnreadable: Boolean get() = status == Status.UNREADABLE
+
     val hardConstraints: List<String>
         get() = (allergies + intolerances + excludedFoods).map(::normalize).filter { it.isNotBlank() }.distinct()
 
@@ -39,20 +45,32 @@ data class DietaryProfile(
     }.replace('|', '/').replace('\n', ' ').replace('\r', ' ')
 
     companion object {
+        /** Stable machine code surfaced when the saved constraints cannot be read. */
+        const val UNREADABLE_CODE = "PROFILE_CONSTRAINTS_UNREADABLE"
+        const val UNREADABLE_MESSAGE =
+            "$UNREADABLE_CODE: le preferenze alimentari salvate (allergie, intolleranze, esclusioni) non sono leggibili. " +
+                "Apri Preferenze alimentari, controllale e salvale di nuovo prima di generare piani o alternative."
+
+        /**
+         * Blank input means "no constraints". Corrupted or structurally wrong JSON yields [Status.UNREADABLE]
+         * (the raw text is kept in [notes] so the user can see and fix it): callers must NOT treat that profile as
+         * constraint free.
+         */
         fun parse(json: String?): DietaryProfile {
             if (json.isNullOrBlank()) return DietaryProfile()
-            return runCatching {
-                val root = JSONObject(json)
-                DietaryProfile(
-                    preferredFoods = root.stringList("preferredFoods"),
-                    dislikedFoods = root.stringList("dislikedFoods"),
-                    excludedFoods = root.stringList("excludedFoods"),
-                    intolerances = root.stringList("intolerances"),
-                    allergies = root.stringList("allergies"),
-                    dietStyle = root.optString("dietStyle").takeIf { it.isNotBlank() && it != "null" },
-                    notes = root.optString("notes").takeIf { it.isNotBlank() && it != "null" },
-                )
-            }.getOrElse { DietaryProfile(notes = json.trim()) }
+            val unreadable = DietaryProfile(notes = json.trim(), status = Status.UNREADABLE)
+            val root = runCatching { JSONObject(json) }.getOrNull() ?: return unreadable
+            val lists = listOf("preferredFoods", "dislikedFoods", "excludedFoods", "intolerances", "allergies")
+                .map { key -> root.stringList(key) ?: return unreadable }
+            return DietaryProfile(
+                preferredFoods = lists[0],
+                dislikedFoods = lists[1],
+                excludedFoods = lists[2],
+                intolerances = lists[3],
+                allergies = lists[4],
+                dietStyle = root.optString("dietStyle").takeIf { it.isNotBlank() && it != "null" },
+                notes = root.optString("notes").takeIf { it.isNotBlank() && it != "null" },
+            )
         }
 
         fun csv(value: String?): List<String> = value.orEmpty()
@@ -66,33 +84,48 @@ data class DietaryProfile(
             .replace("[^a-z0-9]+".toRegex(), " ")
             .trim()
 
-        private fun JSONObject.stringList(key: String): List<String> {
-            val array = optJSONArray(key) ?: return emptyList()
-            return buildList {
-                for (i in 0 until array.length()) {
-                    array.optString(i).trim().takeIf { it.isNotBlank() }?.let(::add)
+        /** Missing/null key = empty list; array of strings = list; plain string = csv; any other shape = null (unreadable). */
+        private fun JSONObject.stringList(key: String): List<String>? {
+            if (!has(key) || isNull(key)) return emptyList()
+            return when (val value = opt(key)) {
+                is JSONArray -> buildList {
+                    for (i in 0 until value.length()) {
+                        val item = value.opt(i)
+                        if (item is JSONObject || item is JSONArray) return null
+                        value.optString(i).trim().takeIf { it.isNotBlank() && it != "null" }?.let(::add)
+                    }
                 }
+                is String -> csv(value)
+                else -> null
             }
         }
     }
 }
 
-/** Deterministic final gate: an LLM cannot override declared allergies/intolerances/exclusions/diet style. */
+/**
+ * Deterministic final gate: an LLM cannot override declared allergies/intolerances/exclusions/diet style.
+ *
+ * List based check, NOT a medical guarantee: see [FoodSynonyms] and 06-ai/providers/shared/FOOD_CONSTRAINTS_LIMITS.md.
+ * Fail closed: an unreadable profile never passes.
+ */
 object FoodConstraintValidator {
     data class Violation(val ingredient: String, val constraint: String, val kind: String)
 
+    const val KIND_UNREADABLE = DietaryProfile.UNREADABLE_CODE
+
     fun hasHardConstraints(profile: DietaryProfile): Boolean =
-        profile.allergies.isNotEmpty() || profile.intolerances.isNotEmpty() ||
+        profile.isUnreadable || profile.allergies.isNotEmpty() || profile.intolerances.isNotEmpty() ||
             profile.excludedFoods.isNotEmpty() || !profile.dietStyle.isNullOrBlank()
 
     fun validate(plan: NutritionPlanContract.Response, profile: DietaryProfile): Result<Unit> = runCatching {
+        require(!profile.isUnreadable) { DietaryProfile.UNREADABLE_CODE }
         val violations = plan.days.flatMap { day ->
             val mealViolations = day.meals.flatMap { meal ->
-                validateIngredientNames(meal.ingredients.map { it.name }, profile)
+                validateIngredientNames(meal.ingredients.map { it.name } + meal.title, profile)
             }
             val supplementViolations = day.supplements.flatMap { supplement ->
                 buildList {
-                    addAll(validateIngredientNames(listOf(supplement.name), profile))
+                    addAll(validateIngredientNames(listOfNotNull(supplement.name, supplement.notes.takeIf { it.isNotBlank() }), profile))
                     if (supplement.kind == "PROTEIN_POWDER" && hasHardConstraints(profile) && proteinSourceIsAmbiguous(supplement.name)) {
                         add(Violation(supplement.name, "source-not-explicit", "SUPPLEMENT_SOURCE_UNCLEAR"))
                     }
@@ -106,26 +139,27 @@ object FoodConstraintValidator {
     }
 
     fun validateAlternative(alternative: MealAlternativeContract.Alternative, profile: DietaryProfile): Result<Unit> = runCatching {
-        val violations = validateIngredientNames(alternative.ingredients.map { it.name }, profile)
+        require(!profile.isUnreadable) { DietaryProfile.UNREADABLE_CODE }
+        val violations = validateIngredientNames(alternative.ingredients.map { it.name } + alternative.title, profile)
         require(violations.isEmpty()) { "FOOD_CONSTRAINT_VIOLATION" }
     }
 
     fun validateIngredientNames(names: List<String>, profile: DietaryProfile): List<Violation> {
+        if (profile.isUnreadable) return listOf(Violation("-", DietaryProfile.UNREADABLE_CODE, KIND_UNREADABLE))
         if (!hasHardConstraints(profile)) return emptyList()
+
+        val allergies = profile.allergies.map { it to FoodSynonyms.constraintMatcher(it, strict = true) }
+        val intolerances = profile.intolerances.map { it to FoodSynonyms.constraintMatcher(it, strict = true) }
+        val excluded = profile.excludedFoods.map { it to FoodSynonyms.constraintMatcher(it, strict = false) }
+        val diet = FoodSynonyms.dietMatcher(profile.dietStyle)
 
         return buildList {
             names.forEach { ingredient ->
-                val normalizedIngredient = DietaryProfile.normalize(ingredient)
-                profile.allergies.forEach { constraint ->
-                    if (matches(normalizedIngredient, constraint)) add(Violation(ingredient, constraint, "ALLERGY"))
-                }
-                profile.intolerances.forEach { constraint ->
-                    if (matches(normalizedIngredient, constraint)) add(Violation(ingredient, constraint, "INTOLERANCE"))
-                }
-                profile.excludedFoods.forEach { constraint ->
-                    if (matches(normalizedIngredient, constraint)) add(Violation(ingredient, constraint, "EXCLUDED"))
-                }
-                dietStyleViolation(normalizedIngredient, profile.dietStyle)?.let { add(Violation(ingredient, it, "DIET_STYLE")) }
+                val tokens = FoodSynonyms.tokenize(ingredient)
+                allergies.forEach { (constraint, matcher) -> if (matcher.matches(tokens)) add(Violation(ingredient, constraint, "ALLERGY")) }
+                intolerances.forEach { (constraint, matcher) -> if (matcher.matches(tokens)) add(Violation(ingredient, constraint, "INTOLERANCE")) }
+                excluded.forEach { (constraint, matcher) -> if (matcher.matches(tokens)) add(Violation(ingredient, constraint, "EXCLUDED")) }
+                if (diet != null && diet.matches(tokens)) add(Violation(ingredient, profile.dietStyle.orEmpty(), "DIET_STYLE"))
             }
         }
     }
@@ -137,36 +171,5 @@ object FoodConstraintValidator {
         )
         return normalized in setOf("proteine in polvere", "protein powder", "proteine", "protein") ||
             explicitSources.none(normalized::contains)
-    }
-
-    private fun matches(ingredient: String, rawConstraint: String): Boolean {
-        val constraint = DietaryProfile.normalize(rawConstraint)
-        if (constraint.isBlank()) return false
-        if (ingredient == constraint || ingredient.contains(constraint)) return true
-        return aliases(constraint).any { alias -> ingredient == alias || ingredient.contains(alias) }
-    }
-
-    private fun aliases(constraint: String): Set<String> = when (constraint) {
-        "lattosio" -> setOf("latte", "latticini", "yogurt", "formaggio", "panna", "burro", "siero del latte", "whey", "caseina")
-        "glutine" -> setOf("frumento", "grano", "orzo", "segale", "farro", "spelta")
-        "arachidi" -> setOf("arachide", "burro di arachidi")
-        "frutta a guscio", "frutta secca" -> setOf("mandorle", "noci", "nocciole", "pistacchi", "anacardi", "pecan", "macadamia")
-        "uova", "uovo" -> setOf("uovo", "uova", "albume", "tuorlo")
-        "soia" -> setOf("soia", "tofu", "tempeh", "edamame")
-        else -> emptySet()
-    }
-
-    private fun dietStyleViolation(ingredient: String, rawStyle: String?): String? {
-        val style = DietaryProfile.normalize(rawStyle.orEmpty())
-        if (style.isBlank() || style == "nessuno" || style == "onnivoro") return null
-        val meat = setOf("pollo", "tacchino", "manzo", "vitello", "maiale", "prosciutto", "bresaola", "salsiccia", "carne")
-        val fish = setOf("pesce", "salmone", "tonno", "merluzzo", "orata", "branzino", "gamber", "polpo", "calamaro")
-        val animal = meat + fish + setOf("latte", "yogurt", "formaggio", "uovo", "uova", "albume", "tuorlo", "miele", "whey", "caseina", "siero del latte")
-        return when (style) {
-            "vegetariano", "vegetarian" -> if ((meat + fish).any(ingredient::contains)) rawStyle else null
-            "vegano", "vegan" -> if (animal.any(ingredient::contains)) rawStyle else null
-            "pescetariano", "pescatariano", "pescetarian" -> if (meat.any(ingredient::contains)) rawStyle else null
-            else -> null
-        }
     }
 }

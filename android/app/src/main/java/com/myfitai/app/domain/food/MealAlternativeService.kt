@@ -62,6 +62,8 @@ class MealAlternativeService(
         class PastMeal : AlternativeException("I pasti già trascorsi restano storico e non possono essere sostituiti.")
         class StalePlan : AlternativeException("Il piano è cambiato: genera di nuovo le alternative.")
         class InvalidAlternative : AlternativeException("L'alternativa non rispetta i vincoli del pasto o del profilo.")
+        /** Saved allergies/intolerances/exclusions cannot be read: alternatives are blocked instead of unchecked. */
+        class ConstraintsUnreadable : AlternativeException(DietaryProfile.UNREADABLE_MESSAGE)
     }
 
     suspend fun generate(weekStartEpochDay: Long, dayEpochDay: Long, mealId: Long): Alternatives {
@@ -71,7 +73,7 @@ class MealAlternativeService(
 
     suspend fun generate(profileId: Long, weekStartEpochDay: Long, dayEpochDay: Long, mealId: Long): Alternatives {
         val profile = profiles.get(profileId) ?: throw AlternativeException.NeedsInput(listOf("profilo"))
-        val dietaryProfile = DietaryProfile.parse(profile.dietaryPreferencesJson)
+        val dietaryProfile = readableDietaryProfile(profile)
         val snapshot = plans.loadLatestSnapshot(profileId, weekStartEpochDay) ?: throw AlternativeException.NeedsInput(listOf("piano alimentare"))
         val day = snapshot.version.days.firstOrNull { it.dateEpochDay == dayEpochDay } ?: throw AlternativeException.NeedsInput(listOf("giorno del piano"))
         val meal = day.meals.firstOrNull { it.id == mealId } ?: throw AlternativeException.NeedsInput(listOf("pasto"))
@@ -121,7 +123,7 @@ class MealAlternativeService(
         val sourceMeal = day.meals.firstOrNull { it.id == mealId } ?: throw AlternativeException.NeedsInput(listOf("pasto"))
         val targetKcal = sourceMeal.kcal?.takeIf { it > 0 } ?: return emptyList()
         ensureNotPast(dayEpochDay, sourceMeal.timeMinutes)
-        val dietaryProfile = DietaryProfile.parse(profile.dietaryPreferencesJson)
+        val dietaryProfile = readableDietaryProfile(profile)
         val sourceKey = recipeKey(sourceMeal)
         val seen = mutableSetOf(sourceKey)
 
@@ -136,7 +138,7 @@ class MealAlternativeService(
                     slot(candidate.meal) == slot(sourceMeal) &&
                     timeCompatible(sourceMeal, candidate.meal) &&
                     candidate.meal.ingredients.isNotEmpty() &&
-                    FoodConstraintValidator.validateIngredientNames(candidate.meal.ingredients.map { it.name }, dietaryProfile).isEmpty()
+                    FoodConstraintValidator.validateIngredientNames(candidate.meal.ingredients.map { it.name } + candidate.meal.title, dietaryProfile).isEmpty()
             }
             .filter { it.meal.id != sourceMeal.id && seen.add(recipeKey(it.meal)) }
             .map { candidate ->
@@ -180,12 +182,12 @@ class MealAlternativeService(
         }
         val historyMeal = alternative.meal
         val candidateKcal = historyMeal.kcal ?: throw AlternativeException.InvalidAlternative()
-        val dietaryProfile = DietaryProfile.parse(profile.dietaryPreferencesJson)
+        val dietaryProfile = readableDietaryProfile(profile)
         if (alternative.sourcePlanId <= 0L || alternative.sourceVersionId <= 0L || alternative.sourceWeekStartEpochDay == Long.MIN_VALUE ||
             abs(candidateKcal - targetKcal) > targetKcal * LOCAL_CALORIE_TOLERANCE ||
             slot(historyMeal) != slot(sourceMeal) ||
             !timeCompatible(sourceMeal, historyMeal) ||
-            FoodConstraintValidator.validateIngredientNames(historyMeal.ingredients.map { it.name }, dietaryProfile).isNotEmpty()
+            FoodConstraintValidator.validateIngredientNames(historyMeal.ingredients.map { it.name } + historyMeal.title, dietaryProfile).isNotEmpty()
         ) throw AlternativeException.InvalidAlternative()
         val persistedAlternative = plans.historicalMeals(profileId, sourceMeal.id).firstOrNull {
             it.planId == alternative.sourcePlanId &&
@@ -249,7 +251,7 @@ class MealAlternativeService(
         if (alternative !in generated.items || alternative.kcal != generated.targetKcal) throw AlternativeException.InvalidAlternative()
         val profileId = activeProfileStore.currentIdOrNull() ?: throw AlternativeException.NeedsInput(listOf("profilo attivo"))
         val profile = profiles.get(profileId) ?: throw AlternativeException.NeedsInput(listOf("profilo"))
-        if (FoodConstraintValidator.validateAlternative(alternative, DietaryProfile.parse(profile.dietaryPreferencesJson)).isFailure) {
+        if (FoodConstraintValidator.validateAlternative(alternative, readableDietaryProfile(profile)).isFailure) {
             throw AlternativeException.InvalidAlternative()
         }
         val latest = plans.loadLatestSnapshot(profileId, generated.weekStartEpochDay) ?: throw AlternativeException.StalePlan()
@@ -316,6 +318,11 @@ class MealAlternativeService(
         appendLine("FORMAT_EXAMPLE_ONLY: copy the record structure shown in SYSTEM_PROMPT; do not copy example foods or numbers.")
         appendLine("A/I/E/S in DP are hard constraints. D/P are soft preferences. Every alternative kcal MUST equal TARGET_KCAL_EXACT exactly. Keep macros close and include caloric condiments; list every ingredient separately with numeric dose and practical displayDose.")
     }
+
+    private fun readableDietaryProfile(profile: com.myfitai.app.data.local.entity.UserProfileEntity): DietaryProfile =
+        DietaryProfile.parse(profile.dietaryPreferencesJson).also {
+            if (it.isUnreadable) throw AlternativeException.ConstraintsUnreadable()
+        }
 
     private fun ensureNotPast(dayEpochDay: Long, mealTimeMinutes: Int?) {
         val date = LocalDate.ofEpochDay(dayEpochDay)

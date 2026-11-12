@@ -41,6 +41,7 @@ class NutritionAdviceService(
         val profile = profiles.get(profileId)
             ?: return Result(false, "Profilo non disponibile.", emptyList(), "", null)
         val dietaryProfile = DietaryProfile.parse(profile.dietaryPreferencesJson)
+        if (dietaryProfile.isUnreadable) return Result(false, DietaryProfile.UNREADABLE_MESSAGE, emptyList(), "", null)
 
         val today = time.today()
         val monday = today.minusDays((today.dayOfWeek.value - 1).toLong())
