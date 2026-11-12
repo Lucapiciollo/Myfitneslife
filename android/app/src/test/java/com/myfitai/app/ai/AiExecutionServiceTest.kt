@@ -121,6 +121,39 @@ class AiExecutionServiceTest {
         }
     }
 
+    @Test
+    fun compactBusinessRetryFixListsEveryDayOutOfToleranceWithinTheDeclaredCap() {
+        runBlocking {
+            val reason = (1..8).joinToString("|", prefix = "TARGET_TOLERANCE_EXCEEDED:") { "${20000 + it}:target=2400;actual=2000" }
+            val provider = object : AiProvider {
+                override val type = AiProviderType.OPENAI
+                var calls = 0
+                var retryPrompt = ""
+                override suspend fun generateStructured(request: AiStructuredRequest): AiRawResponse {
+                    calls++
+                    if (calls == 2) retryPrompt = request.userPrompt
+                    return AiRawResponse(type, "fake", if (calls == 1) "{\"data\":\"bad\"}" else "{\"data\":\"ok\"}")
+                }
+            }
+            service().execute(
+                provider,
+                AiStructuredRequest("system", "user", "myfitai_meal_alternatives_pipe_v1", AiCompactEnvelope.schemaJson("MA1 test")),
+                maxSchemaRetries = 1,
+                businessValidator = { value -> if (value.contains("bad")) Result.failure(IllegalArgumentException(reason)) else Result.success(Unit) },
+            )
+            val fix = provider.retryPrompt.substringAfter("\nFIX:").substringBefore(". Return exactly")
+            // Every listed day survives (the old 80-character cut kept only the first one).
+            assertTrue(fix, (1..8).all { fix.contains("${20000 + it}:target=2400;actual=2000") })
+            assertTrue(fix.length <= AiExecutionService.FIX_TOLERANCE_REASON_MAX_CHARS + 200)
+        }
+    }
+
+    @Test
+    fun compactBusinessRetryFixKeepsTheShortCapForOtherReasons() {
+        assertEquals(80, AiExecutionService.fixReason("X".repeat(500)).length)
+        assertEquals(AiExecutionService.FIX_TOLERANCE_REASON_MAX_CHARS, AiExecutionService.fixReason("TARGET_TOLERANCE_EXCEEDED:" + "9".repeat(900)).length)
+    }
+
     /** Every compact schema declared by a contract, with the protocol text its header comes from (no copy of the table). */
     private val contractProtocols: List<Pair<String, String>> = listOf(
         BiaRawImportContract.SCHEMA_NAME to BiaRawImportContract.PROTOCOL,

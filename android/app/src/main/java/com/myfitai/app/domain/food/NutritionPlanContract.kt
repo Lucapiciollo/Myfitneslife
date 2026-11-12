@@ -124,7 +124,34 @@ object NutritionPlanContract {
         return Response(root.getLong("weekStartEpochDay"), days, AgentValidation(agent.getBoolean("valid"), agent.getString("notes")))
     }
 
+    /**
+     * Business gate of the plan. The kcal check is the single evaluation of [NutritionPlanAssessment]; the structural
+     * rules are unchanged. Meal and macro numbers are declared by the model and are not verified against a local
+     * food table (see [NutritionPlanAssessment]).
+     */
     fun validateBusiness(
+        response: Response,
+        expectedWeekStart: LocalDate,
+        targets: NutritionBusinessValidator.Targets,
+        sportsMode: SportsNutritionClassifier.Mode = SportsNutritionClassifier.Mode.NORMAL,
+        enforceWeeklyVariety: Boolean = false,
+        mealsPerDay: Int = REQUIRED_MEALS_PER_DAY,
+        dailyTargets: Map<Long, NutritionBusinessValidator.Targets> = emptyMap(),
+        dietaryProfile: DietaryProfile = DietaryProfile(),
+        tolerance: Double = NutritionBusinessValidator.DEFAULT_TOLERANCE,
+        targetBelowOnly: Boolean = false,
+        expectedFirstDate: LocalDate = expectedWeekStart,
+        expectedPeriodWeeks: Int = 1,
+        maintenanceCeilingKcal: Double? = null,
+        dailyCeilingKcal: Map<Long, Double> = emptyMap(),
+    ): Result<Unit> = validateBusinessAssessed(
+        response, expectedWeekStart, targets, sportsMode, enforceWeeklyVariety, mealsPerDay, dailyTargets,
+        dietaryProfile, tolerance, targetBelowOnly, expectedFirstDate, expectedPeriodWeeks,
+        maintenanceCeilingKcal, dailyCeilingKcal,
+    ).map { }
+
+    /** Same gate as [validateBusiness], returning the accepted [NutritionPlanAssessment.Assessment] (attempt = business attempt index). */
+    fun validateBusinessAssessed(
         response: Response,
         expectedWeekStart: LocalDate,
         targets: NutritionBusinessValidator.Targets,
@@ -142,7 +169,8 @@ object NutritionPlanContract {
         maintenanceCeilingKcal: Double? = null,
         // Per-date ceiling (that day's expenditure, e.g. training vs rest days); overrides the single ceiling.
         dailyCeilingKcal: Map<Long, Double> = emptyMap(),
-    ): Result<Unit> = runCatching {
+        attempt: Int = 0,
+    ): Result<NutritionPlanAssessment.Assessment> = runCatching {
         require(maintenanceCeilingKcal == null || (maintenanceCeilingKcal.isFinite() && maintenanceCeilingKcal > 0.0)) {
             "MAINTENANCE_CEILING_INVALID"
         }
@@ -159,17 +187,12 @@ object NutritionPlanContract {
         response.days.forEach { day ->
             require(mealsPerDay in SUPPORTED_MEALS_PER_DAY) { "MEAL_COUNT_NOT_SUPPORTED" }
             require(day.meals.size == mealsPerDay) { "DAY_MUST_HAVE_${mealsPerDay}_MEALS" }
-            val expectedTargets = dailyTargets[day.dateEpochDay] ?: targets
-            val calorieValidation = NutritionBusinessValidator.validate(
-                expectedTargets,
-                NutritionBusinessValidator.Actuals(day.totalKcal.toDouble(), day.proteinG.toDouble(), day.carbsG.toDouble(), day.fatG.toDouble()),
-                tolerance = tolerance,
-                belowOnly = targetBelowOnly,
-            )
-            require(calorieValidation.kcal.valid) {
-                "TARGET_TOLERANCE_EXCEEDED:${day.dateEpochDay}:" +
-                    "target=${expectedTargets.kcal.toInt()};actual=${day.totalKcal}"
-            }
+        }
+        // One evaluation of the final plan: every day outside tolerance is reported together (not only the first).
+        val assessment = NutritionPlanAssessment.assess(response, targets, dailyTargets, tolerance, targetBelowOnly, attempt)
+        assessment.toleranceExceededReason()?.let { reason -> throw IllegalArgumentException(reason) }
+
+        response.days.forEach { day ->
             val dayCeilingKcal = dailyCeilingKcal[day.dateEpochDay] ?: maintenanceCeilingKcal
             if (dayCeilingKcal != null) {
                 require(day.totalKcal < dayCeilingKcal) {
@@ -205,6 +228,7 @@ object NutritionPlanContract {
         }
         FoodConstraintValidator.validate(response, dietaryProfile).getOrThrow()
         if (enforceWeeklyVariety) validateWeeklyVariety(response)
+        assessment
     }
 
     const val REQUIRED_MEALS_PER_DAY = 5

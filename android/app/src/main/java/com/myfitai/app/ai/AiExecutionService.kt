@@ -87,6 +87,21 @@ class AiExecutionService(
         business: (String) -> Result<T>,
     ): ValidatedExecution<T> = runPipeline(provider, request, maxSchemaRetries, business)
 
+    companion object {
+        /** Retry-hint cap for ordinary business reasons. */
+        const val FIX_REASON_MAX_CHARS = 80
+
+        /**
+         * Cap for the multi-day calorie reason (`TARGET_TOLERANCE_EXCEEDED:day:target=..;actual=..|...`): up to six
+         * days (about 40 characters each) plus the `|+N` tail, so every day outside tolerance reaches the model.
+         */
+        const val FIX_TOLERANCE_REASON_MAX_CHARS = 320
+
+        /** Reason text for the retry prompt: stable codes/numbers only, truncated to a declared cap. */
+        fun fixReason(reason: String): String =
+            reason.take(if (reason.startsWith("TARGET_TOLERANCE_EXCEEDED:")) FIX_TOLERANCE_REASON_MAX_CHARS else FIX_REASON_MAX_CHARS)
+    }
+
     private suspend fun <T> runPipeline(
         provider: AiProvider,
         request: AiStructuredRequest,
@@ -134,7 +149,7 @@ class AiExecutionService(
                     is ValidatedOutput.Rejection.Business -> {
                         if (compact && attempt < maxSchemaRetries) {
                             attempt++
-                            currentRequest = request.copy(userPrompt = request.userPrompt + "\nFIX:${rejection.reason.take(80)}. Return exactly one JSON envelope with one data property. ${spec.retryRule()} No markdown or code fences.")
+                            currentRequest = request.copy(userPrompt = request.userPrompt + "\nFIX:${fixReason(rejection.reason)}. Return exactly one JSON envelope with one data property. ${spec.retryRule()} No markdown or code fences.")
                         } else {
                             throw Failure.from(rejection)
                         }

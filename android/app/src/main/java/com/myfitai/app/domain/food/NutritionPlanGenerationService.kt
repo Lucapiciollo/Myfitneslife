@@ -220,8 +220,8 @@ class NutritionPlanGenerationService(
         val dailyTargets = recoveryPlan.days
             .filter { !it.date.isBefore(generationStart) }
             .associate { it.date.toEpochDay() to it.targets }
-        // The same app-authoritative ±3% tolerance applies to every goal.
-        val targetTolerance = NutritionBusinessValidator.DEFAULT_TOLERANCE
+        // The reference tolerance sent to the model and recorded in appValidation is always ±3%; retries accept ±4%.
+        val targetTolerance = NutritionPlanAssessment.REFERENCE_TOLERANCE
         // With a training program each day has its own expenditure, so the single ceiling would reject
         // the larger target of a training day.
         val maintenanceCeilingKcal = calc.tdeeKcal?.takeIf {
@@ -268,9 +268,11 @@ class NutritionPlanGenerationService(
             allowSchemaFallback = true,
         )
 
-        var parsed: NutritionPlanContract.Response? = null
+        // Each business attempt evaluates the plan ONCE (NutritionPlanAssessment): ±3% on the first attempt,
+        // ±4% on every retry; the accepted evaluation is the one persisted and shown. The model's D totals are
+        // ignored (the compact parser derives every day from the M/S records) and meal numbers are model-declared.
+        var accepted: Pair<NutritionPlanContract.Response, NutritionPlanAssessment.Assessment>? = null
         var attemptIndex = 0
-        var acceptedTolerance = targetTolerance
         val validated = aiRuntime.execute(
             request = request,
             maxSchemaRetries = 2,
@@ -278,7 +280,7 @@ class NutritionPlanGenerationService(
                 runCatching {
                     val currentAttempt = attemptIndex++
                     val response = NutritionPlanCompactContract.parseEnvelope(json, mealsPerDay)
-                    NutritionPlanContract.validateBusiness(
+                    val assessment = NutritionPlanContract.validateBusinessAssessed(
                         response = response,
                         expectedWeekStart = monday,
                         targets = baseTargets,
@@ -290,53 +292,28 @@ class NutritionPlanGenerationService(
                         // Validate each day against its actual app-computed recovery/target context.
                         dailyTargets = dailyTargets,
                         dietaryProfile = dietaryProfile,
-                        tolerance = targetTolerance,
+                        tolerance = NutritionPlanAssessment.toleranceForAttempt(currentAttempt),
                         targetBelowOnly = false,
                         expectedFirstDate = generationStart,
                         expectedPeriodWeeks = periodWeeks,
                         maintenanceCeilingKcal = maintenanceCeilingKcal,
                         dailyCeilingKcal = dailyCeilingKcal,
+                        attempt = currentAttempt,
                     ).getOrThrow()
-                    // The model must center the real M+S calorie sum on each daily target.
-                    // Use the official ±3% guardrail only on the final business retry.
-                    if (currentAttempt < 2) {
-                        validatePreferredCalorieCentering(response, baseTargets, dailyTargets).getOrThrow()
-                    }
-                    // L'integrità nutrizionale è informativa (persistita in appValidation), non blocca:
-                    // il gate autorevole resta validateBusiness (struttura, target ±3%, totali giorno).
-                    acceptedTolerance = targetTolerance
-                    parsed = response
+                    // Integrity and macros are informative (persisted in appValidation): they never block.
+                    accepted = response to assessment
                 }
             },
         )
-        val response = parsed ?: runCatching {
-            NutritionPlanCompactContract.parseEnvelope(validated.jsonText, mealsPerDay).also {
-                NutritionPlanContract.validateBusiness(
-                    response = it,
-                    expectedWeekStart = monday,
-                    targets = baseTargets,
-                    sportsMode = sportsMode,
-                    enforceWeeklyVariety = false,
-                    mealsPerDay = mealsPerDay,
-                    dailyTargets = dailyTargets,
-                    dietaryProfile = dietaryProfile,
-                    tolerance = targetTolerance,
-                    targetBelowOnly = false,
-                    expectedFirstDate = generationStart,
-                    expectedPeriodWeeks = periodWeeks,
-                    maintenanceCeilingKcal = maintenanceCeilingKcal,
-                    dailyCeilingKcal = dailyCeilingKcal,
-                ).getOrThrow()
-            }
-        }.getOrElse { throw GenerationException.InvalidAiOutput(it.message ?: "INVALID_COMPACT_PROTOCOL") }
+        val (response, assessment) = accepted
+            ?: throw GenerationException.InvalidAiOutput("INVALID_COMPACT_PROTOCOL")
 
         val integrity = NutritionIntegrityValidator.validate(
             response = response,
             targets = baseTargets,
             mealsPerDay = mealsPerDay,
             dailyTargets = dailyTargets,
-            tolerance = acceptedTolerance,
-            belowOnly = false,
+            assessment = assessment,
         )
 
         // Variety is informative: repeated meals are allowed, so the result is a notice and warnings, never a rejection.
@@ -405,9 +382,11 @@ class NutritionPlanGenerationService(
         val trainingDayCount = generatedTrainingDays?.count { it.resolution.isTraining }
         // Markers go after the recovery tokens: readers parse the first reason fields and search RC# tokens as text.
         val trainingReason = if (trainingDays != null) ":TRAINING=${trainingDayCount ?: 0}" else ""
+        // Validation marker last: older readers only parse the leading fields and the RC# tokens.
+        val validationReason = ":VALIDATION=${NutritionIntegrityValidator.VERSION.substringAfterLast("-")}:ATT=${assessment.attempt + 1}:TOL=${(assessment.appliedTolerance * 100).toInt()}"
         val draft = PlanVersionDraft(
             source = validated.provider.name,
-            reason = "AI_GENERATION:${adaptive.decision.name}:${adaptive.reasonCode}:${adaptive.evidenceWindowDays}D$recoveryReason$trainingReason",
+            reason = "AI_GENERATION:${adaptive.decision.name}:${adaptive.reasonCode}:${adaptive.evidenceWindowDays}D$recoveryReason$trainingReason$validationReason",
             targetKcal = persistedTargets.kcal.toInt(),
             targetProteinG = persistedTargets.proteinG.toFloat(),
             targetCarbsG = persistedTargets.carbsG.toFloat(),
@@ -605,23 +584,6 @@ class NutritionPlanGenerationService(
     private fun fmtOrUnknown(value: Float?): String = value?.let { String.format(Locale.US, "%.1f", it) } ?: "?"
 
     companion object {
-        private const val PREFERRED_KCAL_TOLERANCE = 0.01
-
-        internal fun validatePreferredCalorieCentering(
-            response: NutritionPlanContract.Response,
-            baseTargets: NutritionBusinessValidator.Targets,
-            dailyTargets: Map<Long, NutritionBusinessValidator.Targets>,
-        ): kotlin.Result<Unit> = runCatching {
-            response.days.forEach { day ->
-                val target = (dailyTargets[day.dateEpochDay] ?: baseTargets).kcal
-                require(target > 0.0) { "CALORIE_TARGET_INVALID" }
-                val deviation = kotlin.math.abs(day.totalKcal - target) / target
-                require(deviation <= PREFERRED_KCAL_TOLERANCE + 1e-9) {
-                    "CALORIE_TARGET_NOT_CENTERED:${day.dateEpochDay}:target=${target.toInt()}:actual=${day.totalKcal}:preferred=1%"
-                }
-            }
-        }
-
         private val SYSTEM_PROMPT = """
 MyFitAI NutritionPlanAgent. Your ONLY operational responsibility is generating a complete nutrition plan for the requested period from the authoritative targets and context supplied by the app. Never choose/change the user's goal, interpret progress, or adapt a recorded deviation/cheat; dedicated agents own those tasks. Output exactly one JSON object with exactly one property named `data`; `data` must be a string beginning with the exact line `MFP1`, followed by the pipe records below. Do not output `schema`, `status`, metadata or any other property. Do not omit `MFP1`, do not replace it with another header, do not use markdown, and do not add text outside records.
 ${AiUserContext.INPUT_DESCRIPTION}
