@@ -16,6 +16,7 @@ import com.myfitai.app.domain.ai.AiJobWorker
 import com.myfitai.app.domain.calculation.ProfileCalculationService
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
+import java.time.LocalDate
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -35,6 +36,7 @@ class BiaAnalysisAiJobHandler(
     private val scheduler: BiaProgressCoachScheduler,
     private val results: BiaAnalysisResultRepository,
     private val clock: () -> Long = System::currentTimeMillis,
+    private val today: () -> LocalDate = LocalDate::now,
 ) : AiJobHandler {
     override suspend fun execute(profileId: Long, jobKey: String, params: Data): AiJobOutcome {
         return try {
@@ -42,10 +44,13 @@ class BiaAnalysisAiJobHandler(
             val requestedId = params.getLong(KEY_MEASUREMENT_ID, NO_MEASUREMENT).takeIf { it > 0L }
             val report = BiaAnalysisReport.build(bia.all(profileId).first(), requestedId)
                 ?: error("Nessuna rilevazione BIA con valori da analizzare")
+            val context = buildContext(report, profileId, profile)
             val result = service.analyze(
                 BiaAnalysisService.Report(
-                    inputPayload = buildPrompt(report, profileId, profile),
+                    inputPayload = context.prompt,
                     measurementCount = report.measurementCount,
+                    safetyFlagActive = context.safetyFlag.active,
+                    biologicalSex = profile.biologicalSex,
                 ),
             )
             val resultId = results.insert(
@@ -74,35 +79,21 @@ class BiaAnalysisAiJobHandler(
         }
     }
 
-    private suspend fun buildPrompt(report: BiaAnalysisReport.Report, profileId: Long, profile: UserProfileEntity): String = buildString {
-        val bodyHistory = body.all(profileId).first().sortedBy { it.measuredAtEpochMillis }
-        val biaHistory = bia.all(profileId).first().sortedBy { it.measuredAtEpochMillis }
-        val workoutHistory = workouts.all(profileId).first().sortedBy { it.startedAtEpochMillis }
-        val snapshot = calculations.profileSnapshot(profileId)
-        val planLines = plans.plans(profileId).first().mapNotNull { plan ->
-            plans.loadLatestSnapshot(profileId, plan.weekStartEpochDay)?.let { loaded ->
-                loaded.version.days.sortedBy { it.dateEpochDay }.joinToString(";") { day ->
-                    "date=${day.dateEpochDay},kcal=${day.totalKcal ?: "?"},p=${day.proteinG ?: "?"},c=${day.carbsG ?: "?"},f=${day.fatG ?: "?"}"
-                }
+    private suspend fun buildContext(report: BiaAnalysisReport.Report, profileId: Long, profile: UserProfileEntity): BiaAnalysisReport.CoachContext {
+        val planDays = plans.plans(profileId).first().flatMap { plan ->
+            plans.loadLatestSnapshot(profileId, plan.weekStartEpochDay)?.version?.days.orEmpty().map { day ->
+                BiaAnalysisReport.PlanDay(day.dateEpochDay, day.totalKcal, day.proteinG, day.carbsG, day.fatG)
             }
         }
-        appendLine("PROFILO_UTENTE:")
-        appendLine("sex=${profile.biologicalSex ?: "?"}|birthDate=${profile.birthDateEpochDay ?: "?"}|heightCm=${profile.heightCm ?: "?"}|weightKg=${profile.currentWeightKg ?: "?"}|goal=${profile.goal ?: "?"}|activity=${profile.activityLevel ?: "?"}|wake=${profile.wakeTimeMinutes ?: "?"}|sleep=${profile.sleepTimeMinutes ?: "?"}|dietary=${profile.dietaryPreferencesJson ?: "?"}")
-        appendLine("OBIETTIVO:${profile.goal ?: "?"}")
-        appendLine("BIA_CORRENTE:date=${BiaHistoryImportContract.dayKey(report.latest.measuredAtEpochMillis)},${BiaAnalysisReport.valuesForPrompt(report.current)}")
-        appendLine("STORICO_BIA:${BiaAnalysisReport.historyForPrompt(report.history)}")
-        appendLine("DELTA_PRECEDENTE:${BiaAnalysisReport.valuesForPrompt(report.previousDelta)}")
-        appendLine("CONDIZIONI_MISURAZIONE:${report.conditions}")
-        appendLine("NOTE_UTENTE:${report.latest.notes?.takeIf { it.isNotBlank() }?.replace('\n', ' ') ?: "?"}")
-        appendLine("MISURE_CORPOREE:${bodyHistory.joinToString(";") { "date=${it.measuredAtEpochMillis},weight=${it.weightKg ?: "?"},waist=${it.waistCm ?: "?"},abdomen=${it.abdomenCm ?: "?"},hips=${it.hipsCm ?: "?"},chest=${it.chestCm ?: "?"},arms=${it.armLeftCm ?: "?"}/${it.armRightCm ?: "?"},thighs=${it.thighLeftCm ?: "?"}/${it.thighRightCm ?: "?"}" }.ifBlank { "?" }}")
-        appendLine("STORICO_PESO:${(biaHistory.mapNotNull { row -> row.weightKg?.let { row.measuredAtEpochMillis to it } } + bodyHistory.mapNotNull { row -> row.weightKg?.let { row.measuredAtEpochMillis to it } }).sortedBy { it.first }.joinToString(";") { "${it.first}=${it.second}" }.ifBlank { "?" }}")
-        appendLine("ALLENAMENTI:${workoutHistory.joinToString(";") { "date=${it.startedAtEpochMillis},type=${it.type},title=${it.title},duration=${it.durationMinutes ?: "?"},rest=${it.isRestDay}" }.ifBlank { "?" }}")
-        appendLine("PRESTAZIONI_E_FORZA:?")
-        appendLine("ALIMENTAZIONE:${planLines.joinToString("|").ifBlank { "?" }}")
-        appendLine("CALORIE_E_MACRO:${snapshot?.calculation?.let { "bmr=${it.bmrKcal ?: "?"},tdee=${it.tdeeKcal ?: "?"},target=${it.targetKcal ?: "?"},p=${it.proteinG ?: "?"},c=${it.carbsG ?: "?"},f=${it.fatG ?: "?"}" } ?: "?"}")
-        appendLine("ATTIVITA_E_PASSI:?")
-        appendLine("INTEGRAZIONE:?")
-        appendLine("SONNO_E_RECUPERO:wake=${profile.wakeTimeMinutes ?: "?"},sleep=${profile.sleepTimeMinutes ?: "?"}")
+        return BiaAnalysisReport.coachContext(
+            profile = profile,
+            today = today(),
+            report = report,
+            bodyHistory = body.all(profileId).first(),
+            workoutHistory = workouts.all(profileId).first(),
+            planDays = planDays,
+            calculation = calculations.profileSnapshot(profileId)?.calculation,
+        )
     }
 
     companion object {
@@ -110,6 +101,9 @@ class BiaAnalysisAiJobHandler(
         const val KEY_RESULT_ID = "result_id"
         const val KEY_AUTOMATIC = "automatic"
         private const val NO_MEASUREMENT = -1L
+
+        /** Fixed sentence stored by the app when the model gives no safety note (flag not active). */
+        const val DEFAULT_SAFETY_NOTE = "Analisi informativa, non sostituisce il parere di un medico o di un nutrizionista."
 
         /** The only parameter a manual analysis needs; everything else is read from Room. */
         fun params(measurementId: Long): Data = Data.Builder().putLong(KEY_MEASUREMENT_ID, measurementId).build()
@@ -150,7 +144,9 @@ class BiaAnalysisAiJobHandler(
                 .put("positives", JSONArray(interpretation.positives))
                 .put("monitor", JSONArray(interpretation.monitor))
                 .put("actions", JSONArray(interpretation.actions))
-                .put("safetyNote", interpretation.safetyNote)
+                // The note is optional unless the safety flag was active: the app renders a fixed short sentence otherwise,
+                // so the UI section and previously saved results keep the same shape.
+                .put("safetyNote", interpretation.safetyNote.ifBlank { DEFAULT_SAFETY_NOTE })
                 .put("question", interpretation.question ?: "")
                 .put("agentValidation", interpretation.agentValidation)
                 .put("provider", result.provider)

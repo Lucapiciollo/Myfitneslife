@@ -128,8 +128,11 @@ object BiaAnalysisContract {
                 "M" -> { require(parts.size >= 2) { "BA2_M_ARITY_${parts.size}" }; monitor += parts.drop(1).joinToString("|").cleanText() }
                 "X" -> { require(parts.size >= 2) { "BA2_X_ARITY_${parts.size}" }; actions += parts.drop(1).joinToString("|").cleanText() }
                 "D" -> {
-                    require(parts.size >= 2 && safety.isBlank()) { "BA2_D_INVALID" }
-                    safety = parts.drop(1).joinToString("|").cleanText()
+                    require(safety.isBlank()) { "BA2_D_INVALID" }
+                    // The note is optional unless the app-side safety flag is active (see validateBusiness):
+                    // an empty `D` or `D|?` is the same as no note.
+                    val note = parts.drop(1).joinToString("|").trim().trimEnd(';').trim()
+                    if (note.isNotBlank() && note != "?") safety = note.cleanText()
                 }
                 "N" -> { require(parts.size >= 2 && question == null) { "BA2_N_INVALID" }; question = parts.drop(1).joinToString("|").cleanText().takeIf { it != "?" } }
                 // V is agent self-validation metadata; appValidation remains authoritative.
@@ -173,7 +176,15 @@ object BiaAnalysisContract {
     private const val REQUIRED_ACTIONS = 3
     private const val MAX_INSUFFICIENT_DATA_ACTIONS = 2
 
-    fun validateBusiness(value: Interpretation): Result<Unit> = runCatching {
+    /**
+     * App-side facts the validator needs. [safetyFlagActive] comes from the local `AiUserContext.safetyFlag`;
+     * [biologicalSex] only narrows the plausible body-fat range (unknown sex = widest range).
+     */
+    data class ValidationContext(val safetyFlagActive: Boolean = false, val biologicalSex: String? = null)
+
+    fun validateBusiness(value: Interpretation): Result<Unit> = validateBusinessWith(value, ValidationContext())
+
+    fun validateBusinessWith(value: Interpretation, context: ValidationContext): Result<Unit> = runCatching {
         require(value.classification in classifications) { "BIA_CLASSIFICATION_INVALID" }
         val insufficientData = value.classification == INSUFFICIENT_DATA
         require(value.reliability in reliabilityLevels || (insufficientData && value.reliability == "?")) {
@@ -198,10 +209,38 @@ object BiaAnalysisContract {
             require(value.actions.size == REQUIRED_ACTIONS) { "THREE_ACTIONS_REQUIRED" }
         }
         require(value.actions.all(String::isNotBlank)) { "EMPTY_ACTION" }
-        require(value.safetyNote.isNotBlank()) { "SAFETY_NOTE_REQUIRED" }
+        // Safety note: mandatory only when the app raised the safety flag; otherwise empty is accepted
+        // (the handler stores a fixed sentence). With the flag active no restriction/weight-loss advice is allowed.
+        if (context.safetyFlagActive) {
+            require(value.safetyNote.isNotBlank()) { "SAFETY_NOTE_REQUIRED" }
+            val advice = listOf(value.whatIsHappening, value.objective, value.caloriesAndMacros, value.nextCheck) +
+                value.positives + value.monitor + value.actions
+            require(!UnsupportedClaimGuard.containsAffirmed(advice, restrictionAdviceTerms)) { "SAFETY_FLAG_RESTRICTION_ADVICE" }
+        }
+        // Minimal local plausibility check: the target body fat of every scenario (G) is still written by the
+        // model, only its range is verified here. Numeric validation of F/G is left to a later tranche.
+        value.scenarios.forEach { scenario ->
+            numberRegex.findAll(scenario.targetBodyFat).forEach { match ->
+                val number = match.value.replace(',', '.').toDouble()
+                require(number in plausibleBodyFatRange(context.biologicalSex)) { "SCENARIO_TARGET_BODY_FAT_IMPLAUSIBLE" }
+            }
+        }
         require(value.verdict.isNotBlank() && value.whatIsHappening.isNotBlank()) { "EMPTY_BIA_ANALYSIS" }
         value.comparisons.forEach { require(it.reliability == "?" || it.reliability in reliabilityLevels) { "COMPARISON_RELIABILITY_INVALID" } }
         value.scenarios.forEach { require(it.reliability == "?" || it.reliability in reliabilityLevels) { "SCENARIO_RELIABILITY_INVALID" } }
+    }
+
+    private val restrictionAdviceTerms = listOf(
+        "deficit calorico", "riduci le calorie", "ridurre le calorie", "riduzione calorica", "taglia le calorie",
+        "tagliare le calorie", "salta i pasti", "saltare i pasti", "dimagrire", "perdere peso",
+    )
+    private val numberRegex = Regex("\\d+(?:[.,]\\d+)?")
+
+    /** Plausible target body-fat percent: women 18-45, men 6-35, unknown sex the union. Reversible assumption. */
+    private fun plausibleBodyFatRange(sex: String?): ClosedFloatingPointRange<Double> = when (sex?.trim()?.lowercase()) {
+        "femmina", "female", "f" -> 18.0..45.0
+        "maschio", "male", "m" -> 6.0..35.0
+        else -> 6.0..45.0
     }
 
     private val unsupportedClaimTerms = listOf("diagnosi", "diagnostica", "patologia", "prescrizione farmacologica", "causa certa", "dimagrimento locale")
@@ -294,6 +333,6 @@ object BiaAnalysisContract {
     }
 
     private val PROTOCOL = """
-BA2 records: B|classification; S|verdict; C|what is happening; F|fat loss estimate; O|objective coherence; K|calories and macros; P|next check; L|reliability|reason; R|indicator|previous|current|difference|interpretation|reliability; H|period|historical trend; G|scenario|target body-fat|target weight|fat to lose|assumption|reliability; Y|positive; M|monitor; X|priority action; D|safety note; N|one final question or ?; V|1_or_0|agent notes. Use ? for unavailable values. Emit exactly three X records, unless classification is INSUFFICIENT_DATA: then emit 0 to 2 X records (data collection or repeat measurement only) and L|?|reason is allowed. Never put | or newlines inside text.
+BA2 records: B|classification; S|verdict; C|what is happening; F|fat loss estimate; O|objective coherence; K|calories and macros; P|next check; L|reliability|reason; R|indicator|previous|current|difference|interpretation|reliability; H|period|historical trend; G|scenario|target body-fat|target weight|fat to lose|assumption|reliability; Y|positive; M|monitor; X|priority action; D|safety note; N|one final question or ?; V|1_or_0|agent notes. Use ? for unavailable values. Emit exactly three X records, unless classification is INSUFFICIENT_DATA: then emit 0 to 2 X records (data collection or repeat measurement only) and L|?|reason is allowed. D is mandatory only when the input says SAFETY_FLAG:ACTIVE (then no restriction or weight-loss advice); otherwise omit D or give one short sentence. Never put | or newlines inside text.
 """.trimIndent()
 }

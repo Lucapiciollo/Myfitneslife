@@ -95,22 +95,23 @@ class NutritionPlanContractTest {
     }
 
     @Test
-    fun calorieCentering_prefersWithinOnePercentOfDailyTarget() {
+    fun calorieCentering_isAnInformativeWarningNotARejection() {
         val source = response()
-        val centered = source.copy(days = source.days.mapIndexed { index, day ->
-            if (index == 0) day.copy(totalKcal = 2424) else day
-        })
-        val nearUpperGuardrail = source.copy(days = source.days.mapIndexed { index, day ->
-            if (index == 0) day.copy(totalKcal = 2460) else day
-        })
+        val nearUpperGuardrail = source.copy(days = source.days.map { it.copy(totalKcal = 2460) })
 
-        assertTrue(NutritionPlanGenerationService.validatePreferredCalorieCentering(centered, targets, emptyMap()).isSuccess)
-        assertFalse(NutritionPlanGenerationService.validatePreferredCalorieCentering(nearUpperGuardrail, targets, emptyMap()).isSuccess)
-        // The last attempt retains the official 3% guardrail rather than changing calorie targets.
-        assertTrue(NutritionBusinessValidator.validate(
-            targets,
-            NutritionBusinessValidator.Actuals(2460.0, 160.0, 280.0, 70.0),
-        ).valid)
+        // +2.5% on every day: the plan is accepted (inside 3%), the weak centering is only a warning.
+        val assessed = NutritionPlanContract.validateBusinessAssessed(nearUpperGuardrail, week, targets).getOrThrow()
+        assertTrue(assessed.warnings.any { it.code == "CALORIE_CENTERING_LOOSE" })
+        assertTrue(NutritionPlanContract.validateBusiness(nearUpperGuardrail, week, targets).isSuccess)
+    }
+
+    @Test
+    fun dayBetweenThreeAndFourPercent_isRejectedFirstAndAcceptedOnRetryTolerance() {
+        val source = response()
+        val at35 = source.copy(days = source.days.mapIndexed { index, day -> if (index == 0) day.copy(totalKcal = 2484) else day })
+
+        assertFalse(NutritionPlanContract.validateBusiness(at35, week, targets).isSuccess)
+        assertTrue(NutritionPlanContract.validateBusiness(at35, week, targets, tolerance = 0.04).isSuccess)
     }
 
     @Test
@@ -118,11 +119,12 @@ class NutritionPlanContractTest {
         val source = response()
         val specialDay = week.plusDays(2).toEpochDay()
         val dynamic = mapOf(specialDay to NutritionBusinessValidator.Targets(2600.0, 160.0, 280.0, 70.0))
-        assertFalse(NutritionPlanGenerationService.validatePreferredCalorieCentering(source, targets, dynamic).isSuccess)
+        // The day stays at the base 2400 kcal while its own target is 2600 (-7.7%): rejected.
+        assertFalse(NutritionPlanContract.validateBusiness(source, week, targets, dailyTargets = dynamic).isSuccess)
         val adjusted = source.copy(days = source.days.map { day ->
             if (day.dateEpochDay == specialDay) day.copy(totalKcal = 2600) else day
         })
-        assertTrue(NutritionPlanGenerationService.validatePreferredCalorieCentering(adjusted, targets, dynamic).isSuccess)
+        assertTrue(NutritionPlanContract.validateBusiness(adjusted, week, targets, dailyTargets = dynamic).isSuccess)
     }
 
     @Test

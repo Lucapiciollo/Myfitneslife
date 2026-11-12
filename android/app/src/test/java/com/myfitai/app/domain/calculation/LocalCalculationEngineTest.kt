@@ -100,11 +100,34 @@ class LocalCalculationEngineTest {
     fun recompositionClassification_isDescriptiveAndRequiresBothSignals() {
         assertEquals(
             LocalCalculationEngine.RecompositionState.FAVORABLE,
-            LocalCalculationEngine.classifyRecomposition(-1.2, 0.8),
+            LocalCalculationEngine.classifyRecomposition(-1.5, 1.5),
         )
         assertEquals(
             LocalCalculationEngine.RecompositionState.NOT_ENOUGH_DATA,
-            LocalCalculationEngine.classifyRecomposition(-1.2, null),
+            LocalCalculationEngine.classifyRecomposition(-1.5, null),
+        )
+    }
+
+    @Test
+    fun recompositionClassification_usesBiaNoiseThresholdsNotTheOldPointThree() {
+        // Fat -0.5 points and lean +0.5 kg are below the BIA noise (1.0): no reliable change.
+        assertEquals(
+            LocalCalculationEngine.RecompositionState.STABLE,
+            LocalCalculationEngine.classifyRecomposition(-0.5, 0.5),
+        )
+        // Exactly on the threshold is still noise.
+        assertEquals(
+            LocalCalculationEngine.RecompositionState.STABLE,
+            LocalCalculationEngine.classifyRecomposition(-1.0, 1.0),
+        )
+        // Fat beyond noise, lean mass within noise.
+        assertEquals(
+            LocalCalculationEngine.RecompositionState.FAT_LOSS_WITH_STABLE_MUSCLE,
+            LocalCalculationEngine.classifyRecomposition(-1.2, 0.8),
+        )
+        assertEquals(
+            LocalCalculationEngine.RecompositionState.MUSCLE_GAIN_WITH_STABLE_FAT,
+            LocalCalculationEngine.classifyRecomposition(0.4, 1.4),
         )
     }
 

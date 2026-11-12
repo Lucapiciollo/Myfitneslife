@@ -26,7 +26,17 @@ data class AppNutritionValidation(
     val issues: List<NutritionValidationIssue>,
     val warnings: List<NutritionValidationIssue>,
     val derivedTotals: Boolean = true,
+    /** Per-day kcal/macro deviations (v2). Empty when read from a v1 document. */
+    val deviations: List<NutritionPlanAssessment.DayAssessment> = emptyList(),
+    /** Business attempts used to obtain the plan (v2); null when unknown (v1 document or no assessment). */
+    val attempts: Int? = null,
+    /** Tolerance values in force (v2); null when unknown. */
+    val tolerancePolicy: NutritionPlanAssessment.TolerancePolicy? = null,
 ) {
+    /**
+     * Serialises the document persisted in `meal_plan_versions.appValidationJson`. Only numbers, codes and fixed
+     * messages: no model text and no personal data. Export/backup carry it as a plain string.
+     */
     fun toJson(): JSONObject = JSONObject().apply {
         put("available", available)
         put("valid", valid)
@@ -34,11 +44,14 @@ data class AppNutritionValidation(
         put("derivedTotals", derivedTotals)
         put("issues", JSONArray().apply { issues.forEach { put(it.toJson()) } })
         put("warnings", JSONArray().apply { warnings.forEach { put(it.toJson()) } })
+        attempts?.let { put("attempts", it) }
+        tolerancePolicy?.let { put("tolerancePolicy", it.toJson()) }
+        if (deviations.isNotEmpty()) put("deviations", JSONArray().apply { deviations.forEach { put(it.toJson()) } })
     }
 }
 
 object NutritionIntegrityValidator {
-    const val VERSION = "nutrition-integrity-v1"
+    const val VERSION = "nutrition-integrity-v2"
     private const val KCAL_TOLERANCE_RATIO = 0.15
     private const val KCAL_MIN_TOLERANCE = 50.0
     private const val MACRO_TOLERANCE = 0.2
@@ -51,18 +64,15 @@ object NutritionIntegrityValidator {
         tolerance: Double = NutritionBusinessValidator.DEFAULT_TOLERANCE,
         belowOnly: Boolean = false,
         macroKcalToleranceRatio: Double = KCAL_TOLERANCE_RATIO,
+        /** The single evaluation of the final plan; computed here with [tolerance] when the caller has none. */
+        assessment: NutritionPlanAssessment.Assessment? = null,
     ): AppNutritionValidation {
         val errors = mutableListOf<NutritionValidationIssue>()
         val warnings = mutableListOf<NutritionValidationIssue>()
+        val evaluated = assessment ?: NutritionPlanAssessment.assess(response, targets, dailyTargets, tolerance, belowOnly)
+        errors += evaluated.blockers
+        warnings += evaluated.warnings
         response.days.forEach { day ->
-            val target = dailyTargets[day.dateEpochDay] ?: targets
-            val targetResult = NutritionBusinessValidator.validate(
-                target,
-                NutritionBusinessValidator.Actuals(day.totalKcal.toDouble(), day.proteinG.toDouble(), day.carbsG.toDouble(), day.fatG.toDouble()),
-                tolerance = tolerance,
-                belowOnly = belowOnly,
-            )
-            if (!targetResult.kcal.valid) errors += issue("TARGET_DAY_KCAL_OUT_OF_RANGE", "Le calorie del giorno non rispettano il target dinamico", dayEpochDay = day.dateEpochDay)
             if (day.meals.size != mealsPerDay) errors += issue("MEAL_COUNT_INVALID", "Il numero di pasti non coincide con il profilo", dayEpochDay = day.dateEpochDay, expected = mealsPerDay.toDouble(), actual = day.meals.size.toDouble())
 
             day.meals.forEach { meal -> validateItem(meal.kcal, meal.proteinG, meal.carbsG, meal.fatG, day.dateEpochDay, meal.title, errors, macroKcalToleranceRatio) }
@@ -80,7 +90,40 @@ object NutritionIntegrityValidator {
                 warnings += issue("INGREDIENT_NUTRITION_NOT_VERIFIABLE", "Fonte nutrizionale ingrediente non verificabile", day.dateEpochDay)
             }
         }
-        return AppNutritionValidation(true, errors.isEmpty(), VERSION, errors, warnings)
+        return AppNutritionValidation(
+            available = true,
+            valid = errors.isEmpty(),
+            validatorVersion = VERSION,
+            issues = errors,
+            warnings = warnings,
+            deviations = evaluated.days,
+            attempts = evaluated.attempt + 1,
+            tolerancePolicy = evaluated.tolerancePolicy,
+        )
+    }
+
+    /**
+     * Tolerant reader of a persisted appValidation document: accepts v1 (no deviations/attempts/policy) and v2,
+     * ignores unknown fields and returns null for blank or malformed text instead of throwing.
+     */
+    fun parse(text: String?): AppNutritionValidation? {
+        if (text.isNullOrBlank()) return null
+        return runCatching {
+            val root = JSONObject(text)
+            AppNutritionValidation(
+                available = root.optBoolean("available", true),
+                valid = root.optBoolean("valid", true),
+                validatorVersion = root.optString("validatorVersion", "unknown"),
+                issues = root.optJSONArray("issues").issues(),
+                warnings = root.optJSONArray("warnings").issues(),
+                derivedTotals = root.optBoolean("derivedTotals", true),
+                deviations = root.optJSONArray("deviations").let { array ->
+                    if (array == null) emptyList() else (0 until array.length()).mapNotNull { array.optJSONObject(it)?.toDayAssessment() }
+                },
+                attempts = if (root.has("attempts") && !root.isNull("attempts")) root.optInt("attempts") else null,
+                tolerancePolicy = root.optJSONObject("tolerancePolicy")?.toTolerancePolicy(),
+            )
+        }.getOrNull()
     }
 
     private fun validateItem(kcal: Int, protein: Float, carbs: Float, fat: Float, day: Long, title: String, errors: MutableList<NutritionValidationIssue>, kcalToleranceRatio: Double = KCAL_TOLERANCE_RATIO) {
@@ -96,4 +139,72 @@ private fun NutritionValidationIssue.toJson() = JSONObject().apply {
     put("code", code); put("severity", severity.name); put("message", message)
     put("dayEpochDay", dayEpochDay ?: JSONObject.NULL); put("mealTitle", mealTitle ?: JSONObject.NULL)
     put("expected", expected ?: JSONObject.NULL); put("actual", actual ?: JSONObject.NULL); put("deviationPercent", deviationPercent ?: JSONObject.NULL)
+}
+
+private fun round1(value: Double): Double = Math.round(value * 10.0) / 10.0
+
+private fun NutritionPlanAssessment.TolerancePolicy.toJson() = JSONObject().apply {
+    put("referencePercent", referencePercent); put("retryPercent", retryPercent); put("appliedPercent", appliedPercent)
+    put("centeringWarningPercent", centeringWarningPercent); put("proteinMinPercent", proteinMinPercent); put("macroBandPercent", macroBandPercent)
+}
+
+private fun JSONObject.toTolerancePolicy() = NutritionPlanAssessment.TolerancePolicy(
+    referencePercent = optDouble("referencePercent", NutritionPlanAssessment.REFERENCE_TOLERANCE * 100.0),
+    retryPercent = optDouble("retryPercent", NutritionPlanAssessment.RETRY_TOLERANCE * 100.0),
+    appliedPercent = optDouble("appliedPercent", NutritionPlanAssessment.REFERENCE_TOLERANCE * 100.0),
+    centeringWarningPercent = optDouble("centeringWarningPercent", NutritionPlanAssessment.CENTERING_WARNING_MEAN * 100.0),
+    proteinMinPercent = optDouble("proteinMinPercent", NutritionPlanAssessment.PROTEIN_MIN_RATIO * 100.0),
+    macroBandPercent = optDouble("macroBandPercent", NutritionPlanAssessment.MACRO_BAND * 100.0),
+)
+
+private fun metric(target: Double, actual: Double, deviation: Double) = JSONObject().apply {
+    put("target", round1(target)); put("actual", round1(actual)); put("devPercent", round1(deviation * 100.0))
+}
+
+private fun NutritionPlanAssessment.DayAssessment.toJson() = JSONObject().apply {
+    put("day", dateEpochDay)
+    put("class", classification.name)
+    put("blocking", blocking)
+    put("kcal", metric(targetKcal, actualKcal, kcalDeviation))
+    put("protein", metric(targetProteinG, actualProteinG, proteinDeviation))
+    put("carbs", metric(targetCarbsG, actualCarbsG, carbsDeviation))
+    put("fat", metric(targetFatG, actualFatG, fatDeviation))
+}
+
+private fun JSONObject.toDayAssessment(): NutritionPlanAssessment.DayAssessment {
+    fun field(name: String): Triple<Double, Double, Double> {
+        val metric = optJSONObject(name)
+        return Triple(
+            metric?.optDouble("target", 0.0) ?: 0.0,
+            metric?.optDouble("actual", 0.0) ?: 0.0,
+            (metric?.optDouble("devPercent", 0.0) ?: 0.0) / 100.0,
+        )
+    }
+    val kcal = field("kcal"); val protein = field("protein"); val carbs = field("carbs"); val fat = field("fat")
+    return NutritionPlanAssessment.DayAssessment(
+        dateEpochDay = optLong("day"),
+        targetKcal = kcal.first, actualKcal = kcal.second, kcalDeviation = kcal.third,
+        targetProteinG = protein.first, actualProteinG = protein.second, proteinDeviation = protein.third,
+        targetCarbsG = carbs.first, actualCarbsG = carbs.second, carbsDeviation = carbs.third,
+        targetFatG = fat.first, actualFatG = fat.second, fatDeviation = fat.third,
+        classification = runCatching { NutritionPlanAssessment.DayClass.valueOf(optString("class")) }.getOrDefault(NutritionPlanAssessment.DayClass.OK),
+        blocking = optBoolean("blocking", false),
+    )
+}
+
+private fun JSONArray?.issues(): List<NutritionValidationIssue> =
+    if (this == null) emptyList() else (0 until length()).mapNotNull { optJSONObject(it)?.toIssue() }
+
+private fun JSONObject.toIssue(): NutritionValidationIssue {
+    fun double(key: String): Double? = if (!has(key) || isNull(key)) null else optDouble(key)
+    return NutritionValidationIssue(
+        code = optString("code"),
+        severity = runCatching { Severity.valueOf(optString("severity")) }.getOrDefault(Severity.WARNING),
+        message = optString("message"),
+        dayEpochDay = if (!has("dayEpochDay") || isNull("dayEpochDay")) null else optLong("dayEpochDay"),
+        mealTitle = if (!has("mealTitle") || isNull("mealTitle")) null else optString("mealTitle"),
+        expected = double("expected"),
+        actual = double("actual"),
+        deviationPercent = double("deviationPercent"),
+    )
 }

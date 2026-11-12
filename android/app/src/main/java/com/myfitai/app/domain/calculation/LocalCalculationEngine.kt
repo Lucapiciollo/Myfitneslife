@@ -1,5 +1,6 @@
 package com.myfitai.app.domain.calculation
 
+import com.myfitai.app.domain.body.BiaNoiseThresholds
 import kotlin.math.abs
 import kotlin.math.max
 
@@ -200,12 +201,14 @@ object LocalCalculationEngine {
 
     /**
      * Classificazione descrittiva, non causale. Usa solo delta tra due periodi comparabili.
+     * Le soglie di stabilita sono il rumore BIA dichiarato in [BiaNoiseThresholds]: una variazione
+     * sotto soglia e "nessuna variazione affidabile" e quindi stabile, non un segnale.
      */
     fun classifyRecomposition(
         bodyFatDeltaPercentPoints: Double?,
         muscleMassDeltaKg: Double?,
-        fatStableThreshold: Double = 0.3,
-        muscleStableThreshold: Double = 0.3,
+        fatStableThreshold: Double = BiaNoiseThresholds.BODY_FAT_POINTS,
+        muscleStableThreshold: Double = BiaNoiseThresholds.LEAN_MASS_KG,
     ): RecompositionState {
         if (bodyFatDeltaPercentPoints == null || muscleMassDeltaKg == null) return RecompositionState.NOT_ENOUGH_DATA
 
