@@ -27,6 +27,16 @@
         app:chipSpacingHorizontal="@dimen/space_8"
         app:chipSpacingVertical="@dimen/space_4" />
     <TextView
+        android:id="@+id/categoryNotices"
+        style="@style/Text.MyFitAI.Supporting"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_8"
+        android:background="@drawable/bg_panel_tonal"
+        android:padding="@dimen/card_content_padding_compact"
+        android:textColor="@color/text_primary"
+        android:visibility="gone" />
+    <TextView
         android:id="@+id/categoryEmpty"
         style="@style/Text.MyFitAI.Supporting"
         android:layout_width="match_parent"

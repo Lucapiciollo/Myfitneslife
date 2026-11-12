@@ -41,6 +41,11 @@ class DietaryPreferencesChipsDeviceTest {
             instrumentation.waitForIdleSync()
             scenario.onActivity { activity ->
                 val input = activity.findViewById<TextInputEditText>(R.id.allergiesInput)
+                assertEquals(
+                    "limits notice must always sit next to the hard constraints",
+                    "Controllo su elenco, non garanzia medica.",
+                    activity.findViewById<android.widget.TextView>(R.id.dietaryLimitsNotice).text.toString(),
+                )
                 input.setText("Zzz test chip, Zzz TEST chip")
                 val addButton = descendants(input.rootView).filterIsInstance<MaterialButton>()
                     .first { it.contentDescription?.toString() == "Aggiungi a Allergie" }

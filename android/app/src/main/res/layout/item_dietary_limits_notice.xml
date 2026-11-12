@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/dietaryLimitsNotice"
+    style="@style/Text.MyFitAI.Supporting"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="@dimen/space_16"
+    android:background="@drawable/bg_panel_tonal"
+    android:padding="@dimen/card_content_padding_compact"
+    android:text="@string/dietary_limits_notice"
+    android:textColor="@color/text_primary" />
