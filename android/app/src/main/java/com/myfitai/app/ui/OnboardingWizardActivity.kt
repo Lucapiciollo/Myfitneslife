@@ -35,6 +35,7 @@ import com.myfitai.app.domain.calculation.TrainingEnergyPlanner
 import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.data.profile.NutritionPlanSchedulePreferences
 import com.myfitai.app.domain.food.DietaryProfile
+import com.myfitai.app.domain.profile.ProfileAgeRule
 import com.myfitai.app.notifications.NotificationPreferences
 import com.myfitai.app.security.AiCredentialProvider
 import com.myfitai.app.security.SecureAiCredentialStore
@@ -396,7 +397,7 @@ class OnboardingWizardActivity : AppCompatActivity() {
         val weight = parseFloat(weightInput?.text?.toString())
         val errors = buildList {
             if (name.isBlank()) add(getString(R.string.validation_required_name))
-            if (birthDateEpochDay == null) add(getString(R.string.validation_required_birth_date))
+            ProfileAgeRule.check(birthDateEpochDay, LocalDate.now()).messageRes?.let { add(getString(it)) }
             if (sex !in setOf("Maschio", "Femmina")) add(getString(R.string.validation_required_sex))
             if (height == null || height !in 80f..250f) add(getString(R.string.validation_invalid_height))
             if (weight == null || weight !in 20f..400f) add(getString(R.string.validation_invalid_weight))
@@ -453,6 +454,8 @@ class OnboardingWizardActivity : AppCompatActivity() {
         val now = System.currentTimeMillis()
         val name = nameInput?.text?.toString()?.trim().orEmpty()
         val birth = birthDateEpochDay
+        // Ultima difesa prima di scrivere: nessun salvataggio con età fuori 14-120.
+        ProfileAgeRule.check(birth, LocalDate.now()).messageRes?.let { throw IllegalArgumentException(getString(it)) }
         val sex = sexInput?.text?.toString()?.trim().orEmpty()
         val height = parseFloat(heightInput?.text?.toString())
         val weight = parseFloat(weightInput?.text?.toString())

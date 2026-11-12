@@ -15,6 +15,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.domain.food.FoodMeal
@@ -23,6 +24,7 @@ import com.myfitai.app.domain.food.FoodPlanDay
 import com.myfitai.app.domain.food.FoodPlanMetrics
 import com.myfitai.app.domain.food.FoodPlanVersion
 import com.myfitai.app.domain.food.NutritionPlanPeriod
+import com.myfitai.app.domain.profile.ProfileAgeRule
 import com.myfitai.app.data.profile.NutritionPlanSchedulePreferences
 import com.myfitai.app.domain.food.FoodConsumptionMetrics
 import com.myfitai.app.domain.food.FoodConsumptionStatus
@@ -120,7 +122,18 @@ class FoodPlanActivity : BaseShellActivity() {
         findViewById<TextView>(R.id.mealCountHint).text = "${data.mealCountPreferences.get(profileId)} pasti al giorno"
     }
 
+    private fun openProfileEditor() = startActivity(Intent(this, ProfileEditActivity::class.java))
+
     private fun confirmPlanGeneration() {
+        if (viewModel.state.value.profileAgeStatus != ProfileAgeRule.Status.VALID) {
+            MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.food_plan_profile_age_dialog_title)
+                .setMessage(R.string.food_plan_profile_age_warning)
+                .setPositiveButton(R.string.food_plan_open_profile) { _, _ -> openProfileEditor() }
+                .setNegativeButton(R.string.action_cancel, null)
+                .show()
+            return
+        }
         lifecycleScope.launch {
             // Informational only: a missing summary never blocks the confirmation.
             val details = runCatching { trainingPreviewText() }.getOrNull()
@@ -186,7 +199,7 @@ class FoodPlanActivity : BaseShellActivity() {
         val day = state.selectedDay
         val dayMealsCard = findViewById<View>(R.id.dayMealsCard)
         val hasDayContent = day != null && (day.meals.isNotEmpty() || day.supplements.isNotEmpty() || !day.hydrationNote.isNullOrBlank())
-        val hasPlanStateMessage = state.goalChangedSinceGeneration || planUpdatePending || state.generation.running || state.generation.error != null || state.generation.successMessage != null
+        val hasPlanStateMessage = state.goalChangedSinceGeneration || planUpdatePending || state.generation.running || state.generation.error != null || state.generation.successMessage != null || state.profileAgeStatus != ProfileAgeRule.Status.VALID
         // Keep the merged plan/meals card visible while the first plan is being
         // generated, so the running state and progress indicator are not hidden
         // just because no persisted plan exists yet.
@@ -249,9 +262,11 @@ class FoodPlanActivity : BaseShellActivity() {
             button.setTextColor(getColor(R.color.white))
             button.strokeWidth = resources.getDimensionPixelSize(R.dimen.border_width_none)
         }
+        val ageWarning = state.profileAgeStatus != ProfileAgeRule.Status.VALID && generation.error == null && !generation.running
         val message = when {
             generation.running -> "Il piano viene generato e validato localmente prima del salvataggio."
-            generation.error != null -> generation.error
+            generation.error != null -> if (generation.fixProfile) "${generation.error}\n${getString(R.string.food_plan_profile_fix_hint)}" else generation.error
+            ageWarning -> getString(R.string.food_plan_profile_age_warning)
             generation.successMessage != null -> listOfNotNull(generation.successMessage, generation.usageMessage).joinToString("\n")
             state.goalChangedSinceGeneration || planUpdatePending -> "Hai modificato impostazioni che influenzano le calorie: rigenera il piano per applicare i nuovi target."
             else -> null
@@ -259,6 +274,7 @@ class FoodPlanActivity : BaseShellActivity() {
         stateDot.background = getDrawable(
             when {
                 generation.error != null -> R.drawable.bg_status_dot_error
+                ageWarning -> R.drawable.bg_status_dot_warning
                 generation.running -> R.drawable.bg_status_dot_warning
                 generation.successMessage != null -> R.drawable.bg_status_dot_success
                 state.goalChangedSinceGeneration || planUpdatePending -> R.drawable.bg_status_dot_warning
@@ -268,6 +284,10 @@ class FoodPlanActivity : BaseShellActivity() {
         revealState(statusContainer, periodCanBeGenerated && message != null)
         revealState(progress, generation.running)
         status.text = message.orEmpty()
+        // L'avviso porta all'editor profilo, dove si corregge il dato che blocca la generazione.
+        val opensProfile = ageWarning || (generation.error != null && generation.fixProfile)
+        status.isClickable = opensProfile
+        status.setOnClickListener(if (opensProfile) View.OnClickListener { openProfileEditor() } else null)
     }
 
     private fun revealState(view: View, visible: Boolean) {

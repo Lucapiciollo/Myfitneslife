@@ -16,6 +16,8 @@ import com.myfitai.app.domain.food.FoodPlanDay
 import com.myfitai.app.domain.food.FoodPlanSnapshot
 import com.myfitai.app.domain.food.NutritionPlanGenerationService
 import com.myfitai.app.domain.calculation.ProfileCalculationService
+import com.myfitai.app.domain.food.PlanPrerequisites
+import com.myfitai.app.domain.profile.ProfileAgeRule
 import com.myfitai.app.domain.calculation.DailyActivityCheckInEngine
 import com.myfitai.app.domain.calculation.DayEnergyProvider
 import com.myfitai.app.domain.calculation.OperationalNutritionMetrics
@@ -78,10 +80,13 @@ class FoodPlanViewModel(
         val records: List<FoodConsumptionEntity>,
         val profileUpdatedAt: Long?,
         val latestMeasurementAt: Long?,
+        val profileAgeStatus: ProfileAgeRule.Status = ProfileAgeRule.Status.VALID,
     )
     data class GenerationState(
         val running: Boolean = false,
         val error: String? = null,
+        /** True quando l'errore si risolve correggendo il profilo (apre l'editor profilo). */
+        val fixProfile: Boolean = false,
         val successMessage: String? = null,
         val usageMessage: String? = null,
     )
@@ -95,6 +100,8 @@ class FoodPlanViewModel(
         val consumptionRecords: List<FoodConsumptionEntity> = emptyList(),
         val calorieReference: CalorieReference = CalorieReference(null, null, null, null),
         val goalChangedSinceGeneration: Boolean = false,
+        /** Stato dell'età del profilo salvato; diverso da VALID impedisce la generazione dei target. */
+        val profileAgeStatus: ProfileAgeRule.Status = ProfileAgeRule.Status.VALID,
     )
 
     private val selectedWeekStart = MutableStateFlow(planWeekMonday(LocalDate.now()))
@@ -134,7 +141,10 @@ class FoodPlanViewModel(
                         WorkInfo.State.SUCCEEDED -> generationState.value = GenerationState(
                             successMessage = listOfNotNull("Piano generato e validato.", info.outputData.getString("notice")).joinToString(" "),
                         )
-                        WorkInfo.State.FAILED -> generationState.value = GenerationState(error = friendlyGenerationError(info.outputData.getString("error")))
+                        WorkInfo.State.FAILED -> {
+                            val rawError = info.outputData.getString("error")
+                            generationState.value = GenerationState(error = friendlyGenerationError(rawError), fixProfile = PlanPrerequisites.needsProfileEditor(rawError))
+                        }
                         else -> Unit
                     }
                 }
@@ -159,13 +169,16 @@ class FoodPlanViewModel(
                     (bia.maxOfOrNull { it.measuredAtEpochMillis } ?: Long.MIN_VALUE)
                         .coerceAtLeast(bodyMeasurements.maxOfOrNull { it.measuredAtEpochMillis } ?: Long.MIN_VALUE)
                         .takeUnless { it == Long.MIN_VALUE },
+                    // Data assente: la segnala il servizio solo se serve davvero; qui avvisiamo solo date fuori range.
+                    profile?.let { ProfileAgeRule.check(it.birthDateEpochDay, LocalDate.now()) }
+                        ?.takeIf { it != ProfileAgeRule.Status.MISSING } ?: ProfileAgeRule.Status.VALID,
                 )
             }
         }
     }
 
     val state: StateFlow<State> = combine(source, selectedDayIndex, generationState, calorieReference) { sourceData, dayIndex, generation, calorieReference ->
-        val (weekStart, snapshot, records, profileUpdatedAt, latestMeasurementAt) = sourceData
+        val (weekStart, snapshot, records, profileUpdatedAt, latestMeasurementAt, profileAgeStatus) = sourceData
         val safeIndex = dayIndex.coerceIn(0, 6)
         State(
             weekStart = weekStart,
@@ -178,6 +191,7 @@ class FoodPlanViewModel(
             calorieReference = calorieReference,
             goalChangedSinceGeneration = snapshot != null && listOfNotNull(profileUpdatedAt, latestMeasurementAt)
                 .any { it >= snapshot.version.createdAtEpochMillis },
+            profileAgeStatus = profileAgeStatus,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), State())
 
@@ -244,7 +258,8 @@ class FoodPlanViewModel(
              "Il provider IA ha interrotto la risposta prima di completare il periodo del piano. Aggiorna l'app e riprova; nessun piano incompleto è stato salvato."
         raw.startsWith("INVALID_SCHEMA") || raw.startsWith("PIPE_") || raw.contains("INVALID_COMPACT_PROTOCOL") ->
             "La risposta dell'IA non era nel formato atteso anche dopo i tentativi di correzione. Riprova a generare il piano."
-        raw.startsWith("Completa prima") || raw.startsWith("NEEDS_INPUT") -> raw
+        raw.startsWith(PlanPrerequisites.PREFIX.trim()) -> raw
+        raw.startsWith("NEEDS_INPUT") -> "Completa prima i dati richiesti nel profilo."
         raw == "PAST_WEEK_READ_ONLY" ->
             "Le settimane concluse sono di sola lettura e non possono essere rigenerate."
         raw.contains("non configurato", ignoreCase = true) ->

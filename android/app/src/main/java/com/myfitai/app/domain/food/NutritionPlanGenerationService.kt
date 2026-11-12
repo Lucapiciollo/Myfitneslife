@@ -21,6 +21,7 @@ import com.myfitai.app.domain.calculation.AdaptiveNutritionTargetEngine
 import com.myfitai.app.domain.calculation.LocalCalculationEngine
 import com.myfitai.app.domain.calculation.NutritionBusinessValidator
 import com.myfitai.app.domain.calculation.ProfileCalculationMapper
+import com.myfitai.app.domain.profile.ProfileAgeRule
 import com.myfitai.app.domain.calculation.ProfileCalculationService
 import com.myfitai.app.domain.calculation.TrainingDayInputs
 import com.myfitai.app.domain.calculation.TrainingEnergyPlanner
@@ -51,7 +52,10 @@ class NutritionPlanGenerationService(
     private val time: TimeProvider = SystemTimeProvider,
 ) {
     sealed class GenerationException(message: String) : Exception(message) {
-        class NeedsInput(val fields: List<String>) : GenerationException("NEEDS_INPUT: ${fields.joinToString()}")
+        /** Prerequisiti mancanti; [message] è già leggibile ("Completa prima: ...") e [prerequisites] indica dove correggerli. */
+        class NeedsInput(val prerequisites: List<PlanPrerequisite>) : GenerationException(PlanPrerequisites.message(prerequisites)) {
+            val fields: List<String> get() = prerequisites.map { it.cause }
+        }
         class PastWeek : GenerationException("PAST_WEEK_READ_ONLY")
         class InvalidAiOutput(message: String) : GenerationException(message)
     }
@@ -69,7 +73,7 @@ class NutritionPlanGenerationService(
 
     suspend fun generateWeek(weekStart: LocalDate): Result {
         val profileId = activeProfileStore.currentIdOrNull()
-            ?: throw GenerationException.NeedsInput(listOf("profilo attivo"))
+            ?: throw GenerationException.NeedsInput(listOf(PlanPrerequisite.ACTIVE_PROFILE))
         return generateWeek(profileId, weekStart)
     }
 
@@ -85,9 +89,14 @@ class NutritionPlanGenerationService(
         val generationStart = NutritionPlanPeriod.generationStart(monday, today)
 
         val profile = profiles.get(profileId)
-            ?: throw GenerationException.NeedsInput(listOf("profilo"))
+            ?: throw GenerationException.NeedsInput(listOf(PlanPrerequisite.PROFILE))
         val snapshot = calculations.profileSnapshot(profileId, time.today())
-            ?: throw GenerationException.NeedsInput(listOf("dati profilo"))
+            ?: throw GenerationException.NeedsInput(listOf(PlanPrerequisite.PROFILE_DATA))
+        val profileProblems = PlanPrerequisites.profileProblems(profile, snapshot.latestWeightKg, time.today())
+        // Età fuori 14-120: i target locali non sono affidabili, anche se esiste un piano precedente.
+        if (ProfileAgeRule.isPresentButInvalid(profile.birthDateEpochDay, time.today())) {
+            throw GenerationException.NeedsInput(profileProblems)
+        }
 
         val calc = snapshot.calculation
         val existingPlan = plans.loadLatestSnapshot(profileId, monday.toEpochDay())
@@ -98,13 +107,13 @@ class NutritionPlanGenerationService(
         val resolvedCarbsG = calc.carbsG ?: existingTargets?.targetCarbsG?.toDouble()
         val resolvedFatG = calc.fatG ?: existingTargets?.targetFatG?.toDouble()
         val missing = buildList {
-            if (goal == null) add("obiettivo")
-            if (resolvedTargetKcal == null) add("target calorie")
-            if (resolvedProteinG == null) add("proteine")
-            if (resolvedCarbsG == null) add("carboidrati")
-            if (resolvedFatG == null) add("grassi")
-            if (snapshot.latestWeightKg == null) add("peso")
-        }
+            if (resolvedTargetKcal == null || resolvedProteinG == null || resolvedCarbsG == null || resolvedFatG == null) {
+                // Cause leggibili dei dati profilo; TARGETS solo se il profilo sembra completo.
+                if (profileProblems.isEmpty()) add(PlanPrerequisite.TARGETS) else addAll(profileProblems)
+            }
+            if (goal == null) add(PlanPrerequisite.GOAL)
+            if (snapshot.latestWeightKg == null) add(PlanPrerequisite.WEIGHT)
+        }.distinct()
         if (missing.isNotEmpty()) throw GenerationException.NeedsInput(missing)
 
         val resolvedGoal = goal!!
