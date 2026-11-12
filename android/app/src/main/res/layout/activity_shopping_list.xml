@@ -64,10 +64,10 @@
                     android:layout_height="@dimen/shopping_filter_segment_height" />
                 <ImageView
                     android:id="@+id/resetButton"
-                    android:layout_width="@dimen/dashboard_pill_height"
-                    android:layout_height="@dimen/dashboard_pill_height"
+                    android:layout_width="@dimen/control_min_height"
+                    android:layout_height="@dimen/control_min_height"
                     android:layout_marginStart="@dimen/space_8"
-                    android:padding="@dimen/space_4"
+                    android:padding="@dimen/space_12"
                     android:src="@drawable/ic_refresh"
                     android:contentDescription="Azzera stato lista" />
             </LinearLayout>

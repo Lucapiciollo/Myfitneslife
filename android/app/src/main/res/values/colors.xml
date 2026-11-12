@@ -2,8 +2,10 @@
     <color name="bg_primary">#F5F7F5</color><color name="bg_secondary">#EEF2EF</color>
     <color name="surface_primary">#FFFFFF</color><color name="surface_secondary">#F1F5F2</color><color name="surface_soft">#E7EEE9</color>
     <color name="accent_green">#176B4D</color><color name="accent_green_dark">#104B38</color><color name="accent_blue">#4A8FD8</color><color name="accent_purple">#8B6ACB</color><color name="accent_orange">#E78A43</color>
-    <color name="text_primary">#17231D</color><color name="text_secondary">#56645D</color><color name="text_muted">#839088</color>
-    <color name="semantic_positive">#176B4D</color><color name="semantic_warning">#D99A22</color><color name="semantic_error">#D94C46</color><color name="divider">#D9E3DC</color>
+    <!-- K3d contrasto WCAG AA: text_muted (era #839088, 3,3:1) e' il terzo livello del testo informativo e ora ha >=4,5:1 su bianco, bg_primary e surface_soft.
+         semantic_warning/semantic_error sono usati anche come testo di stato/delta: scuriti a >=4,5:1 sulle superfici neutre (guardia: AccessibilityTokensTest). -->
+    <color name="text_primary">#17231D</color><color name="text_secondary">#56645D</color><color name="text_muted">#5F6C65</color>
+    <color name="semantic_positive">#176B4D</color><color name="semantic_warning">#946100</color><color name="semantic_error">#C23B35</color><color name="divider">#D9E3DC</color>
     <color name="metric_label">#24323A</color><color name="metric_value">#0A1115</color><color name="metric_positive">#176B4D</color>
     <color name="input_outline">#AAB8AF</color>
     <color name="dashboard_header_bg">#F5F7F5</color><color name="admin_header_bg">#EEF2EF</color><color name="screen_header_bg">#FFFFFF</color><color name="pill_selected_bg">#E4EFE8</color><color name="chart_fill_start">#30176B4D</color><color name="chart_fill_end">#00176B4D</color>

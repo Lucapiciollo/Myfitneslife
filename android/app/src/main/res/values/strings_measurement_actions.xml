@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- K3d: etichette visibili dei tre pulsanti dell'hub Rilevazioni (prima solo icona). -->
+    <string name="measurement_action_new">Nuova</string>
+    <string name="measurement_action_history">Storico</string>
+    <string name="measurement_action_analyze">Analizza con IA</string>
+</resources>
