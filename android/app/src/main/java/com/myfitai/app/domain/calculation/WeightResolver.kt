@@ -21,7 +21,8 @@ data class WeightReading(
  * lo stesso risultato: nessuna duplicazione della logica nelle Activity/ViewModel.
  *
  * Regole: valori non finiti o <= 0 ignorati; vince la rilevazione piu recente; a pari timestamp
- * vince l'id piu alto e, a ulteriore parita, la misura corporea sulla BIA; senza rilevazioni
+ * vince la misura corporea sulla BIA (gli id di tabelle diverse non sono confrontabili) e, tra righe
+ * della stessa tabella, l'id piu alto; senza rilevazioni
  * valide si ripiega sul peso del profilo (mai sovrascritto) e infine su NESSUNO.
  */
 object WeightResolver {
@@ -45,8 +46,8 @@ object WeightResolver {
                 .mapNotNull { row -> valid(row.weightKg)?.let { Observation(row.measuredAtEpochMillis, row.id, it, WeightSource.MISURA) } }
         ).sortedWith(
             compareBy<Observation> { it.measuredAtEpochMillis }
-                .thenBy { it.id }
-                .thenBy { if (it.source == WeightSource.MISURA) 1 else 0 },
+                .thenBy { if (it.source == WeightSource.MISURA) 1 else 0 }
+                .thenBy { it.id },
         )
 
     fun resolve(
@@ -58,6 +59,35 @@ object WeightResolver {
         }
         valid(profileWeightKg)?.let { return WeightReading(it, null, WeightSource.PROFILO) }
         return WeightReading(null, null, WeightSource.NESSUNO)
+    }
+
+    /** Serie per grafici/delta: stessi punti e stesso ordine da cui deriva il valore corrente. */
+    data class Series(
+        val reading: WeightReading,
+        val points: List<Pair<Long, Float>>,
+        val deltaFromPrevious: Float?,
+    )
+
+    /**
+     * [filter] restringe i punti (es. intervallo del grafico). Il delta e valorizzato solo se l'ultimo punto
+     * filtrato e proprio la rilevazione corrente, cosi valore, fonte e delta non possono divergere.
+     */
+    fun series(
+        observations: List<Observation>,
+        profileWeightKg: Float?,
+        filter: (List<Pair<Long, Float>>) -> List<Pair<Long, Float>> = { it },
+    ): Series {
+        val reading = resolve(observations, profileWeightKg)
+        // A pari timestamp resta solo la lettura risolta (l'ultima nell'ordine): il delta e contro il punto precedente nel tempo.
+        val points = filter(
+            observations.groupBy { it.measuredAtEpochMillis }
+                .map { (timestamp, sameTime) -> timestamp to sameTime.last().valueKg },
+        )
+        val last = points.lastOrNull()
+        val delta = if (last != null && points.size >= 2 && last.first == reading.measuredAtEpochMillis && last.second == reading.valueKg) {
+            last.second - points[points.lastIndex - 1].second
+        } else null
+        return Series(reading, points, delta)
     }
 
     fun resolve(

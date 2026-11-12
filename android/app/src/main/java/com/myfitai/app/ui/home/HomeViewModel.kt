@@ -73,7 +73,8 @@ class HomeViewModel(
     private val dayEnergy: DayEnergyProvider,
 ) : ViewModel() {
 
-    data class MetricState(val value: Float?, val deltaFromPrevious: Float?, val sourceLabel: String? = null)
+    /** [source] e la provenienza del dato (per grasso e muscolo e sempre BIA); l'etichetta testuale e in strings.xml. */
+    data class MetricState(val value: Float?, val deltaFromPrevious: Float?, val source: WeightSource? = null)
     data class TrendPoint(val timestamp: Long, val value: Float)
     data class TrendSeries(val label: String, val points: List<TrendPoint>)
     data class CalorieState(
@@ -357,22 +358,19 @@ class HomeViewModel(
         recovery: RecoveryState,
         consumption: List<FoodConsumptionEntity>,
     ): DashboardState {
-        val recordedWeightValues = (
-            metricValues(source.bia) { it.weightKg } +
-                source.body.mapNotNull { row -> row.weightKg?.let { row.measuredAtEpochMillis to it } }
-            ).sortedByDescending { it.first }
-        val weightValues = recordedWeightValues.ifEmpty {
-            source.profile?.currentWeightKg?.let { listOf(System.currentTimeMillis() to it) }.orEmpty()
-        }
         val fatValues = metricValues(source.bia) { it.bodyFatPercent }
         val muscleValues = metricValues(source.bia) { it.muscleMassKg }
         val rangePeriod = rangePeriod(rangeIndex)
-        val weightInRange = filterRange(recordedWeightValues, rangePeriod)
+        // Valore, fonte, delta e serie del grafico derivano dalla stessa serie WeightResolver.
+        val weightSeriesData = WeightResolver.series(
+            WeightResolver.observations(source.bia, source.body, source.profile?.id),
+            source.profile?.currentWeightKg,
+        ) { points -> filterRange(points, rangePeriod) }
         val fatInRange = filterRange(fatValues, rangePeriod)
         val muscleInRange = filterRange(muscleValues, rangePeriod)
         val fatTrend = LocalCalculationEngine.trend(fatInRange.map { LocalCalculationEngine.TimedValue(it.first, it.second.toDouble()) })
         val muscleTrend = LocalCalculationEngine.trend(muscleInRange.map { LocalCalculationEngine.TimedValue(it.first, it.second.toDouble()) })
-        val weightSeries = weightInRange.map { it.second }
+        val weightSeries = weightSeriesData.points.map { it.second }
         val fatSeries = fatInRange.map { it.second }
         val muscleSeries = muscleInRange.map { it.second }
         val bodyMeasurementTrendSeries = bodyMeasurementTrendSeries(source, rangePeriod)
@@ -385,29 +383,18 @@ class HomeViewModel(
 
         val calories = calorieState(source)
 
-        // Stessa regola del motore locale (WeightResolver): valore e fonte coincidono sempre.
-        val weightReading = WeightResolver.resolve(source.bia, source.body, source.profile?.currentWeightKg)
-        val weightSource = when (weightReading.source) {
-            WeightSource.BIA -> "da BIA"
-            WeightSource.MISURA -> "da misura corporea"
-            WeightSource.PROFILO -> "dal profilo"
-            WeightSource.NESSUNO -> null
-        }
         return DashboardState(
             loading = false,
             profileName = source.profile?.name,
             goal = source.profile?.goal,
-            weight = metricState(weightInRange).copy(
-                value = weightReading.valueKg,
-                sourceLabel = weightSource,
-            ),
+            weight = MetricState(weightSeriesData.reading.valueKg, weightSeriesData.deltaFromPrevious, weightSeriesData.reading.source),
             bodyFat = metricState(fatInRange).copy(
                 value = fatValues.maxByOrNull { it.first }?.second,
-                sourceLabel = "da BIA".takeIf { fatValues.isNotEmpty() },
+                source = WeightSource.BIA.takeIf { fatValues.isNotEmpty() },
             ),
             muscleMass = metricState(muscleInRange).copy(
                 value = muscleValues.maxByOrNull { it.first }?.second,
-                sourceLabel = "da BIA".takeIf { muscleValues.isNotEmpty() },
+                source = WeightSource.BIA.takeIf { muscleValues.isNotEmpty() },
             ),
             trendSeries = listOf(
                 TrendSeries("Peso", weightSeries.map { TrendPoint(0L, it) }),

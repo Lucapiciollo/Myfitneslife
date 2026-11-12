@@ -9,6 +9,7 @@ import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.domain.body.BodyProportionEngine
 import com.myfitai.app.domain.calculation.LocalCalculationEngine
 import com.myfitai.app.domain.calculation.ProfileCalculationMapper
+import com.myfitai.app.domain.calculation.WeightResolver
 import com.myfitai.app.domain.food.FoodIngredient
 import com.myfitai.app.domain.food.FoodMeal
 import com.myfitai.app.domain.food.FoodPlanDay
@@ -107,11 +108,10 @@ class ProfileExportService(
                 val latestPlan = plans.maxByOrNull { it.weekStartEpochDay }?.let { loadLatestSnapshot(it) }
                 val latestBia = bia.lastOrNull()
                 val latestBody = body.lastOrNull()
-                val recordedWeights = (
-                    bia.mapNotNull { row -> row.weightKg?.let { row.measuredAtEpochMillis to it } } +
-                        body.mapNotNull { row -> row.weightKg?.let { row.measuredAtEpochMillis to it } }
-                    ).sortedBy { it.first }
-                val latestWeight = recordedWeights.lastOrNull()?.second ?: profile.currentWeightKg
+                // Stessa regola di Home, Misure e motore: WeightResolver e l'unica fonte del peso corrente.
+                val weightObservations = WeightResolver.observations(bia, body, profileId)
+                val weight = WeightResolver.resolve(weightObservations, profile.currentWeightKg)
+                val recordedWeights = weightObservations.map { it.measuredAtEpochMillis to it.valueKg }
                 val latestWaist = body.lastOrNull { it.waistCm != null }?.waistCm
                 val ageYears = profile.birthDateEpochDay?.let { epochDay ->
                     val birth = LocalDate.ofEpochDay(epochDay)
@@ -119,7 +119,7 @@ class ProfileExportService(
                 }
                 val calculation = LocalCalculationEngine.calculate(
                     LocalCalculationEngine.Input(
-                        weightKg = latestWeight?.toDouble(),
+                        weightKg = weight.valueKg?.toDouble(),
                         heightCm = profile.heightCm?.toDouble(),
                         ageYears = ageYears,
                         biologicalSex = biologicalSex(profile.biologicalSex),
@@ -134,6 +134,7 @@ class ProfileExportService(
                     file,
                     PdfExportRenderer.ProfileReportInput(
                         profile = profile,
+                        weight = weight,
                         latestBia = latestBia,
                         latestBody = latestBody,
                         calculation = calculation,

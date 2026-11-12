@@ -13,6 +13,7 @@ import com.myfitai.app.data.local.entity.BodyMeasurementEntity
 import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.domain.body.BodyProportionEngine
 import com.myfitai.app.domain.calculation.LocalCalculationEngine
+import com.myfitai.app.domain.calculation.WeightReading
 import com.myfitai.app.domain.food.FoodMeal
 import com.myfitai.app.domain.food.FoodPlanDay
 import com.myfitai.app.domain.food.FoodPlanSnapshot
@@ -273,6 +274,8 @@ internal class PdfExportRenderer(context: Context) {
 
     data class ProfileReportInput(
         val profile: UserProfileEntity,
+        /** Peso corrente deciso da WeightResolver (stesso valore di Home e Misure). */
+        val weight: WeightReading,
         val latestBia: BiaMeasurementEntity?,
         val latestBody: BodyMeasurementEntity?,
         val calculation: LocalCalculationEngine.Result,
@@ -308,7 +311,7 @@ internal class PdfExportRenderer(context: Context) {
             text(canvas, "Aggiornato al ${formatDate(LocalDate.now())}", contentLeft, 208f, typography.captionCompact, palette.muted)
             text(canvas, input.profile.goal?.uppercase(Locale.ITALIAN) ?: "OBIETTIVO NON IMPOSTATO", 537f, 183f, typography.captionCompact, palette.accent, true, alignRight = true)
 
-            drawMetricCard(canvas, pageMargin, 248f, 247f, 90f, "PESO", formatKg(input.latestBia?.weightKg ?: input.profile.currentWeightKg), weightDelta?.let { "${formatSigned(it)} kg nel periodo" }, palette.accent)
+            drawMetricCard(canvas, pageMargin, 248f, 247f, 90f, "PESO", formatKg(input.weight.valueKg), weightDelta?.let { "${formatSigned(it)} kg nel periodo" }, palette.accent)
             drawMetricCard(canvas, 308f, 248f, 247f, 90f, "MASSA GRASSA", formatPercent(input.latestBia?.bodyFatPercent), null, palette.accent)
             drawMetricCard(canvas, pageMargin, 358f, 247f, 90f, "MASSA MUSCOLARE", formatKg(input.latestBia?.muscleMassKg), null, palette.accentSecondary)
             drawMetricCard(canvas, 308f, 358f, 247f, 90f, "VITA", formatCm(input.latestBody?.waistCm), waistDelta?.let { "${formatSigned(it)} cm nel periodo" }, palette.accent)

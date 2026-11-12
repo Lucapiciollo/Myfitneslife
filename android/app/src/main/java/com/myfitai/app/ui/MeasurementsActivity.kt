@@ -206,9 +206,9 @@ class MeasurementsActivity : BaseShellActivity() {
     }
 
     private fun weightUsageDetail(weight: WeightReading): String? = when (weight.source) {
-        WeightSource.BIA -> "da BIA del ${formatDate(weight.measuredAtEpochMillis ?: return null)}"
-        WeightSource.MISURA -> "da misura corporea del ${formatDate(weight.measuredAtEpochMillis ?: return null)}"
-        WeightSource.PROFILO -> "dal profilo, senza rilevazioni di peso"
+        WeightSource.BIA -> getString(R.string.weight_detail_bia, formatDate(weight.measuredAtEpochMillis ?: return null))
+        WeightSource.MISURA -> getString(R.string.weight_detail_misura, formatDate(weight.measuredAtEpochMillis ?: return null))
+        WeightSource.PROFILO -> getString(R.string.weight_detail_profilo)
         WeightSource.NESSUNO -> null
     }
 
