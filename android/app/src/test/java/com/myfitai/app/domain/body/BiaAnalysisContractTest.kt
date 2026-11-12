@@ -604,5 +604,65 @@ class BiaAnalysisContractTest {
         assertEquals("BIA_CLASSIFICATION_MISSING", result.exceptionOrNull()?.message)
     }
 
+    @Test
+    fun ba2_safetyNoteIsOptionalWhenTheSafetyFlagIsNotActive() {
+        // `D|` with no text and a missing D record both parse as "no note" and validate without the flag.
+        listOf(ba2(safety = ""), ba2(safety = "?")).forEach { data ->
+            val response = BiaAnalysisContract.parse(envelope(data))
+            assertEquals("", response.safetyNote)
+            assertTrue(BiaAnalysisContract.validateBusiness(response).isSuccess)
+        }
+        val withoutD = ba2().lines().filterNot { it.startsWith("D|") }.joinToString("\n")
+        assertEquals("", BiaAnalysisContract.parse(envelope(withoutD)).safetyNote)
+        // Old saved results (note always present) keep parsing and validating.
+        assertTrue(BiaAnalysisContract.validateBusiness(BiaAnalysisContract.parse(envelope(ba2()))).isSuccess)
+    }
+
+    @Test
+    fun ba2_safetyNoteIsMandatoryWhenTheSafetyFlagIsActive() {
+        val flagged = BiaAnalysisContract.ValidationContext(safetyFlagActive = true)
+        val missing = BiaAnalysisContract.parse(envelope(ba2(safety = "")))
+        assertEquals("SAFETY_NOTE_REQUIRED", BiaAnalysisContract.validateBusinessWith(missing, flagged).exceptionOrNull()?.message)
+
+        val noted = BiaAnalysisContract.parse(envelope(ba2(safety = "Ne parlerei con il medico o con un nutrizionista.")))
+        assertTrue(BiaAnalysisContract.validateBusinessWith(noted, flagged).isSuccess)
+    }
+
+    @Test
+    fun ba2_rejectsRestrictionAdviceWhenTheSafetyFlagIsActive() {
+        val flagged = BiaAnalysisContract.ValidationContext(safetyFlagActive = true)
+        listOf(
+            ba2(actions = listOf("Crea un deficit calorico moderato.", "Due", "Tre"), safety = "Parlane con il medico."),
+            ba2(actions = listOf("Una", "Riduci le calorie di 200 kcal.", "Tre"), safety = "Parlane con il medico."),
+            ba2(whatIsHappening = "Conviene dimagrire ancora.", safety = "Parlane con il medico."),
+        ).forEach { data ->
+            val response = BiaAnalysisContract.parse(envelope(data))
+            assertEquals("SAFETY_FLAG_RESTRICTION_ADVICE", BiaAnalysisContract.validateBusinessWith(response, flagged).exceptionOrNull()?.message)
+            // Without the flag the same text is not rejected by this rule.
+            assertTrue(BiaAnalysisContract.validateBusiness(response).isSuccess)
+        }
+        // A negated mention is not advice.
+        val negated = BiaAnalysisContract.parse(envelope(ba2(actions = listOf("Non ridurre le calorie.", "Due", "Tre"), safety = "Parlane con il medico.")))
+        assertTrue(BiaAnalysisContract.validateBusinessWith(negated, flagged).isSuccess)
+    }
+
+    @Test
+    fun ba2_scenarioTargetBodyFatMustBePlausibleForTheSex() {
+        val base = BiaAnalysisContract.parse(envelope(ba2()))
+        fun withTarget(target: String) = base.copy(
+            scenarios = listOf(BiaAnalysisContract.Scenario("Obiettivo", target, "60 kg", "2 kg", "Ipotesi", "LOW")),
+        )
+        fun message(target: String, sex: String?) =
+            BiaAnalysisContract.validateBusinessWith(withTarget(target), BiaAnalysisContract.ValidationContext(biologicalSex = sex)).exceptionOrNull()?.message
+
+        assertEquals("SCENARIO_TARGET_BODY_FAT_IMPLAUSIBLE", message("12 %", "Femmina"))
+        assertEquals(null, message("22 %", "Femmina"))
+        assertEquals(null, message("12 %", "Maschio"))
+        assertEquals("SCENARIO_TARGET_BODY_FAT_IMPLAUSIBLE", message("40 %", "Maschio"))
+        assertEquals("SCENARIO_TARGET_BODY_FAT_IMPLAUSIBLE", message("circa 3-5 %", null))
+        assertEquals(null, message("circa 14,5-16 %", null))
+        assertEquals(null, message("?", "Femmina"))
+    }
+
     private fun envelope(data: String): String = org.json.JSONObject().put("data", data).toString()
 }
