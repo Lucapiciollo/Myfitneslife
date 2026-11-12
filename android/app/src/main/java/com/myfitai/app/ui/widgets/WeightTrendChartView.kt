@@ -5,6 +5,8 @@ import android.util.AttributeSet
 import android.widget.FrameLayout
 import com.myfitai.app.R
 import info.appdev.charting.charts.LineChart
+import info.appdev.charting.components.AxisBase
+import info.appdev.charting.formatter.IAxisValueFormatter
 import info.appdev.charting.data.EntryFloat
 import info.appdev.charting.data.LineData
 import info.appdev.charting.data.LineDataSet
@@ -17,9 +19,12 @@ class WeightTrendChartView @JvmOverloads constructor(
 ) : FrameLayout(context, attrs) {
 
     private val chart = LineChart(context)
+    private val accessibilityBinder = ChartAccessibilityBinder(this)
 
     init {
         addView(chart, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
+        // Il grafico disegnato non e' leggibile dai servizi di accessibilita': vale la descrizione del contenitore.
+        chart.importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
         chart.description.isEnabled = false
         chart.legend.isEnabled = true
         chart.legend.textColor = context.getColor(R.color.text_secondary)
@@ -44,6 +49,36 @@ class WeightTrendChartView @JvmOverloads constructor(
 
     fun setData(values: List<Float>) = setSeries(listOf("Peso" to values))
 
+    /** Descrizione sintetica e azione "Mostra tabella dei valori" per i servizi di accessibilita'. */
+    fun bindAccessibility(summary: String, showTableLabel: String, onShowTable: (() -> Unit)?) =
+        accessibilityBinder.bind(summary, showTableLabel, onShowTable)
+
+    /**
+     * Una sola metrica con valori reali: legenda = metrica scelta con unita', asse Y con unita'. Non normalizza.
+     */
+    fun setMetricSeries(label: String, unit: String, values: List<Float>) {
+        chart.axisLeft.valueFormatter = object : IAxisValueFormatter {
+            override fun getFormattedValue(value: Float, axis: AxisBase?): String = ChartAccessibility.axisValue(value, unit)
+        }
+        if (values.isEmpty()) {
+            chart.clear()
+            chart.invalidate()
+            return
+        }
+        val entries = values.mapIndexed { index, value -> EntryFloat(index.toFloat(), value) }.toMutableList()
+        val dataSet = LineDataSet<EntryFloat>(entries, ChartAccessibility.legend(label, unit)).apply {
+            color = context.getColor(R.color.accent_green_dark)
+            lineWidth = chartDp(R.dimen.chart_line_width_emphasis)
+            isDrawValues = false
+            isHighlight = false
+            lineMode = LineDataSet.Mode.CUBIC_BEZIER
+            isDrawFilled = false
+            applySeriesStyle(0, context)
+        }
+        chart.data = LineData(dataSet)
+        chart.invalidate()
+    }
+
     fun setSeries(series: List<Pair<String, List<Float>>>) {
         val colors = context.resources.obtainTypedArray(R.array.chart_series_palette)
         val dataSets = series.mapIndexedNotNull { index, (label, values) ->
@@ -58,11 +93,11 @@ class WeightTrendChartView @JvmOverloads constructor(
             LineDataSet<EntryFloat>(entries, label).apply {
                 color = colors.getColor(index % colors.length(), context.getColor(R.color.text_primary))
                 lineWidth = chartDp(R.dimen.chart_line_width)
-                isDrawCircles = false
                 isDrawValues = false
                 isHighlight = false
                 lineMode = LineDataSet.Mode.CUBIC_BEZIER
                 isDrawFilled = false
+                applySeriesStyle(index, context)
             }
         }
         colors.recycle()

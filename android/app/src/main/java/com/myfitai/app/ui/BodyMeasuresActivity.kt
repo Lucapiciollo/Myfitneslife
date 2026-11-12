@@ -34,6 +34,8 @@ import com.myfitai.app.domain.body.BodyProportionsAiJobHandler
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.ui.body.BodyMeasurementsViewModel
 import com.myfitai.app.ui.widgets.BodyMeasurementTrendView
+import com.myfitai.app.ui.widgets.ChartAccessibility
+import com.myfitai.app.ui.widgets.ChartValuesDialog
 import com.myfitai.app.ui.widgets.BodyMeasurementTrendSummaryView
 import com.myfitai.app.ui.widgets.MeasurementRowView
 import com.myfitai.app.ui.widgets.SelectableSegmentView
@@ -164,7 +166,11 @@ class BodyMeasuresActivity : BaseShellActivity() {
 
     private fun bindRangeSelector() {
         val rangeSegment = findViewById<SelectableSegmentView>(R.id.trendRangeSegment)
-        rangeSegment.setSegments(listOf("1M", "3M", "6M", "1Y"), selectedIndex = selectedRangeIndex)
+        rangeSegment.setSegments(resources.getStringArray(R.array.chart_range_labels).toList(), selectedIndex = selectedRangeIndex)
+        // "1A" e' una sigla: il nome accessibile dice l'intervallo per esteso.
+        resources.getStringArray(R.array.chart_range_descriptions).forEachIndexed { index, description ->
+            rangeSegment.getChildAt(index)?.contentDescription = description
+        }
         rangeSegment.setOnSegmentSelectedListener { index ->
             selectedRangeIndex = index
             renderTrend()
@@ -609,30 +615,38 @@ class BodyMeasuresActivity : BaseShellActivity() {
             "${formatSigned(it)} ${selectedMetric.unit} nel periodo"
         } ?: "Dati insufficienti nel periodo"
 
+        // Il grafico mostra SOLO la metrica scelta nel menu "Misura", con valori reali e unita'; le altre restano fuori.
+        val axisPattern = if (selectedRangeIndex == 3) "dd/MM/yy" else "dd/MM"
         val chartPoints = periodPoints.map { (measurement, value) ->
-            BodyMeasurementTrendView.Point(entityDate(measurement).format(DateTimeFormatter.ofPattern("dd/MM", Locale.ITALIAN)), value)
+            BodyMeasurementTrendView.Point(entityDate(measurement).format(DateTimeFormatter.ofPattern(axisPattern, Locale.ITALIAN)), value)
         }
-        val allSeries = Metric.entries.mapNotNull { metric ->
-            val points = measurements
-                .asReversed()
-                .mapNotNull { measurement ->
-                    val value = if (metric == Metric.WEIGHT) {
-                        BodyWeightHistory.weightFor(measurement, biaHistory)?.kg
-                    } else {
-                        metric.value(measurement)
-                    }
-                    value?.let { measurement to it }
-                }
-                .filter { (measurement, _) -> !entityDate(measurement).isBefore(fromDate) }
-                .map { (measurement, value) ->
-                    BodyMeasurementTrendView.Point(entityDate(measurement).format(DateTimeFormatter.ofPattern("dd/MM", Locale.ITALIAN)), value)
-                }
-            points.takeIf { it.isNotEmpty() }?.let { BodyMeasurementTrendView.Series(metric.label, it) }
+        val tablePoints = periodPoints.map { (measurement, value) ->
+            ChartAccessibility.Point(entityDate(measurement).format(dateFormatter), value)
         }
-        findViewById<BodyMeasurementTrendView>(R.id.bodyMeasurementTrendChart).apply {
-            setPoints(chartPoints)
-            setNormalizedSeries(allSeries)
+        val chart = findViewById<BodyMeasurementTrendView>(R.id.bodyMeasurementTrendChart)
+        chart.setMetricSeries(selectedMetric.label, selectedMetric.unit, chartPoints)
+        findViewById<TextView>(R.id.trendChartExplanation).text = ChartAccessibility.explanation(
+            normalized = false,
+            real = getString(R.string.chart_explanation_real),
+            normalizedText = getString(R.string.chart_explanation_normalized),
+            label = selectedMetric.label.lowercase(Locale.ITALIAN),
+            unit = selectedMetric.unit,
+        )
+        val showTable = {
+            ChartValuesDialog.show(
+                this,
+                getString(R.string.chart_table_title, selectedMetric.label),
+                ChartAccessibility.tableRows(selectedMetric.unit, tablePoints),
+                getString(R.string.chart_table_empty),
+                getString(R.string.chart_table_close),
+            )
         }
+        chart.bindAccessibility(
+            ChartAccessibility.summary(chartSummaryTemplates(), selectedMetric.label, selectedMetric.unit, tablePoints),
+            getString(R.string.chart_table_show),
+            showTable,
+        )
+        findViewById<View>(R.id.trendTableButton).setOnClickListener { showTable() }
         findViewById<BodyMeasurementTrendSummaryView>(R.id.bodyTrendNote).apply {
             text = if (periodPoints.size >= 2) {
                 "Andamento calcolato sulle rilevazioni disponibili nel periodo selezionato."
@@ -641,6 +655,12 @@ class BodyMeasuresActivity : BaseShellActivity() {
             }
         }
     }
+
+    private fun chartSummaryTemplates() = ChartAccessibility.SummaryTemplates(
+        empty = getString(R.string.chart_summary_empty),
+        single = getString(R.string.chart_summary_single),
+        multiple = getString(R.string.chart_summary_multiple),
+    )
 
     private fun renderHistory() {
         val container = findViewById<LinearLayout>(R.id.historyList)

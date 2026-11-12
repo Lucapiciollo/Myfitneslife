@@ -113,10 +113,17 @@
                          <TextView android:id="@+id/trendDeltaPeriod" style="@style/Text.MyFitAI.Caption" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:text="Dati insufficienti" />
                     </LinearLayout>
                 </LinearLayout>
-                 <TextView style="@style/Text.MyFitAI.Caption" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:text="Variazione percentuale rispetto alla prima rilevazione di ogni misura" />
+                 <TextView android:id="@+id/trendChartExplanation" style="@style/Text.MyFitAI.Caption" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_8" android:text="@string/chart_series_default_label" />
                   <com.google.android.material.card.MaterialCardView android:id="@+id/bodyTrendChartCard" style="@style/Widget.MyFitAI.Card" android:layout_width="match_parent" android:layout_height="@dimen/body_measurement_chart_card_height" android:layout_marginTop="@dimen/space_12">
                     <com.myfitai.app.ui.widgets.BodyMeasurementTrendView android:id="@+id/bodyMeasurementTrendChart" android:layout_width="match_parent" android:layout_height="match_parent" android:layout_margin="@dimen/space_8" />
                 </com.google.android.material.card.MaterialCardView>
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/trendTableButton"
+                    style="@style/Widget.MyFitAI.Button.Text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:minHeight="@dimen/control_min_height"
+                    android:text="@string/chart_table_show" />
                   <com.myfitai.app.ui.widgets.BodyMeasurementTrendSummaryView
                      style="@style/Text.MyFitAI.BodyCompact"
                      android:id="@+id/bodyTrendNote"
