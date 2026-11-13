@@ -328,3 +328,5 @@ Decisione 13/11 (utente: 'fai il meglio'): NON ripristinare backup su profili re
 
 - F5a FERMATO (ses_e2af2a6a7ffeGpsXmyGBI8H4F6): commit 85e77ef, develop = 57f69d7. Gate del subagente BUILD SUCCESSFUL, 923 test 0 falliti (riletti io dagli XML nel suo worktree). 6 file cancellati (TrainingProgram*, WorkoutPreferences, DailyActivityCheckInEngine, TrainingEnergyPlanner).
 | senior-developer | F5b Room 19->20 | (vedi esito) | feat/sem-f5b-room-20 (da develop 57f69d7) |
+
+- F5b FERMATO (ses_e2ae68a58ffeJ98C02QYIb5F5x): commit b4ec996, develop = 8ab33a8 (merge no-ff). Gate del subagente BUILD SUCCESSFUL, 923 test 0 falliti (riletti io). Room versione 20, MIGRATION_19_20 (DROP TABLE), schema 20.json senza le tabelle. Migrazione NON eseguita su device (androidTest mai lanciato). Installazione sul Samsung in attesa: adb non vede il device (lista vuota dopo kill-server). Prima dell'install: copiare db+wal+shm in backup-myfitai\db-prima-migrazione-20.
