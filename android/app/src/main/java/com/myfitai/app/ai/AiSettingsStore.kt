@@ -36,11 +36,27 @@ class AiSettingsStore(context: Context) {
             prefs.edit().putString(KEY_SELECTED_OPENAI_MODEL, value).apply()
         }
 
+    /** Experimental xAI Grok switch: OFF by default and not read by the provider selector yet (batch 2). */
+    var grokEnabled: Boolean
+        get() = prefs.getBoolean(KEY_GROK_ENABLED, false)
+        set(value) { prefs.edit().putBoolean(KEY_GROK_ENABLED, value).apply() }
+
+    var selectedGrokModel: String
+        get() = prefs.getString(KEY_SELECTED_GROK_MODEL, AiModelConfig.GROK)
+            ?.takeIf { it in AiModelConfig.GROK_SELECTABLE }
+            ?: AiModelConfig.GROK
+        set(value) {
+            require(value in AiModelConfig.GROK_SELECTABLE)
+            prefs.edit().putString(KEY_SELECTED_GROK_MODEL, value).apply()
+        }
+
     private companion object {
         const val PREFS_NAME = "ai_settings"
         const val KEY_USE_GEMINI = "use_gemini"
         const val KEY_GEMINI_VERIFIED_MODEL = "gemini_verified_model"
         const val KEY_SELECTED_GEMINI_MODEL = "selected_gemini_model"
         const val KEY_SELECTED_OPENAI_MODEL = "selected_openai_model"
+        const val KEY_GROK_ENABLED = "grok_enabled"
+        const val KEY_SELECTED_GROK_MODEL = "selected_grok_model"
     }
 }

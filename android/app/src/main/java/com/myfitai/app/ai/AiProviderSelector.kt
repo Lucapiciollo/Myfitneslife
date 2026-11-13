@@ -24,6 +24,11 @@ object AiProviderSelector {
                 credentialStore = credentials,
                 model = settings.selectedOpenAiModel,
             )
+            // Experimental: AiRuntimeConfig.selectedProvider() never returns GROK until the selector is wired (batch 2).
+            AiProviderType.GROK -> GrokProvider(
+                credentialStore = credentials,
+                model = settings.selectedGrokModel,
+            )
             AiProviderType.NOT_CONFIGURED -> null
         }
     }
