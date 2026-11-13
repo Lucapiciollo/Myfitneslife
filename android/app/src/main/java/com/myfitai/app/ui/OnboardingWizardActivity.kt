@@ -248,7 +248,7 @@ class OnboardingWizardActivity : AppCompatActivity() {
     private fun confirmBackupImport(uri: Uri) {
         MaterialAlertDialogBuilder(this)
             .setTitle("Ripristina profilo dal backup?")
-            .setMessage("Il profilo attivo e tutti i dati eventualmente presenti verranno sostituiti con il backup: BIA, misure, alimentazione, storico, allenamenti, consumi e versioni dei piani. Le chiavi IA non sono incluse.")
+            .setMessage("Il profilo attivo e tutti i dati eventualmente presenti verranno sostituiti con il backup: BIA, misure, alimentazione, storico, consumi e versioni dei piani. Le chiavi IA non sono incluse.")
             .setNegativeButton("Annulla", null)
             .setPositiveButton("Importa e riavvia") { _, _ ->
                 lifecycleScope.launch {

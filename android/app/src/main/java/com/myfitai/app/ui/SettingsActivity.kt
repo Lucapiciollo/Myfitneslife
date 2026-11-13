@@ -91,7 +91,7 @@ class SettingsActivity : BaseShellActivity() {
     private fun confirmBackupImport(uri: Uri) {
         MaterialAlertDialogBuilder(this)
             .setTitle("Carica profilo dal backup?")
-            .setMessage("Stai caricando un profilo completo. Il profilo attivo verrà sostituito insieme a BIA, misure, alimentazione, storico, allenamenti, consumi e versioni dei piani. Le chiavi IA non sono incluse. L'app verrà riavviata.")
+            .setMessage("Stai caricando un profilo completo. Il profilo attivo verrà sostituito insieme a BIA, misure, alimentazione, storico, consumi e versioni dei piani. Le chiavi IA non sono incluse. L'app verrà riavviata.")
             .setNegativeButton("Annulla", null)
             .setPositiveButton("Importa e riavvia") { _, _ ->
                 lifecycleScope.launch {
