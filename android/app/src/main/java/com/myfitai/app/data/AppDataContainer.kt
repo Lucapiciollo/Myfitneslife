@@ -82,6 +82,9 @@ class AppDataContainer private constructor(context: Context) {
     val calorieRecoveryRepository = CalorieRecoveryRepository(db)
     val foodConsumptionRepository = FoodConsumptionRepository(db)
     val foodConsumptionService = FoodConsumptionService(foodConsumptionRepository, activeProfileStore)
+    val mealStatusRecorder = com.myfitai.app.domain.food.MealStatusRecorder(
+        com.myfitai.app.domain.food.RoomMealStatusStore(mealPlanRepository, foodConsumptionRepository, foodConsumptionService, activeProfileStore),
+    )
     val weeklyReviewRepository = WeeklyReviewRepository(db)
     val bodyExpectationGoalRepository = BodyExpectationGoalRepository(db)
 

@@ -15,6 +15,8 @@ import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.domain.food.FoodConsumptionStatus
 import com.myfitai.app.domain.food.FoodIngredient
 import com.myfitai.app.domain.food.FoodMeal
+import com.myfitai.app.domain.food.MealStatusChange
+import com.google.android.material.snackbar.Snackbar
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.ui.food.MealDetailViewModel
 import com.myfitai.app.ui.widgets.IngredientRowView
@@ -28,7 +30,7 @@ class MealDetailActivity : BaseShellActivity() {
 
     private val data by lazy { AppDataContainer.get(this) }
     private val viewModel: MealDetailViewModel by viewModels {
-        MealDetailViewModel.Factory(data.mealPlanRepository, data.foodConsumptionRepository, data.foodConsumptionService)
+        MealDetailViewModel.Factory(data.mealPlanRepository, data.foodConsumptionRepository, data.mealStatusRecorder)
     }
     private var selectedDetailTab = 0
     private lateinit var ingredientsContainer: View
@@ -41,24 +43,31 @@ class MealDetailActivity : BaseShellActivity() {
         bindBottom(BottomNavBinder.Tab.FOOD)
         normalizeMealCards()
         bindTabs()
-        findViewById<View>(R.id.consumedButton).setOnClickListener {
-            if (viewModel.state.value.consumption == null) viewModel.setStatus(FoodConsumptionStatus.CONSUMED)
-            else if (viewModel.state.value.consumption?.status == FoodConsumptionStatus.CONSUMED.name) viewModel.clearStatus()
-            else viewModel.setStatus(FoodConsumptionStatus.CONSUMED)
-        }
-        findViewById<View>(R.id.skippedButton).setOnClickListener {
-            if (viewModel.state.value.consumption?.status == FoodConsumptionStatus.SKIPPED.name) viewModel.clearStatus()
-            else viewModel.setStatus(FoodConsumptionStatus.SKIPPED)
-        }
+        findViewById<View>(R.id.consumedButton).setOnClickListener { viewModel.tapStatus(FoodConsumptionStatus.CONSUMED) }
+        findViewById<View>(R.id.skippedButton).setOnClickListener { viewModel.tapStatus(FoodConsumptionStatus.SKIPPED) }
         bindConsumptionFeedback()
 
         val mealId = intent.getLongExtra(EXTRA_MEAL_ID, -1L)
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.state.collect(::render)
+                launch { viewModel.state.collect(::render) }
+                launch { viewModel.changes.collect(::showChangeFeedback) }
             }
         }
         viewModel.load(data.activeProfileStore.currentIdOrNull() ?: -1L, mealId)
+    }
+
+    /** Confirms the registration and offers to undo it; the snackbar sits above the fixed action bar. */
+    private fun showChangeFeedback(change: MealStatusChange) {
+        val message = when (change.kind) {
+            MealStatusChange.Kind.CONSUMED -> R.string.meal_ux4_snackbar_consumed
+            MealStatusChange.Kind.SKIPPED -> R.string.meal_ux4_snackbar_skipped
+            MealStatusChange.Kind.CLEARED -> R.string.meal_ux4_snackbar_cleared
+        }
+        Snackbar.make(findViewById(android.R.id.content), message, Snackbar.LENGTH_LONG)
+            .setAnchorView(findViewById<View>(R.id.mealActionBar))
+            .setAction(R.string.meal_ux4_snackbar_undo) { viewModel.undo(change) }
+            .show()
     }
 
     private fun normalizeMealCards() {
@@ -121,6 +130,7 @@ class MealDetailActivity : BaseShellActivity() {
     private fun render(state: MealDetailViewModel.State) {
         val errorView = findViewById<TextView>(R.id.mealError)
         if (state.loading) {
+            findViewById<View>(R.id.mealActionBar).visibility = View.GONE
             errorView.visibility = View.VISIBLE
             errorView.text = "Caricamento pasto…"
             findViewById<View>(R.id.ingredientsCard).visibility = View.GONE
@@ -131,6 +141,7 @@ class MealDetailActivity : BaseShellActivity() {
         if (meal == null) {
             errorView.visibility = View.VISIBLE
             errorView.text = state.error ?: "Pasto non disponibile"
+            findViewById<View>(R.id.mealActionBar).visibility = View.GONE
             findViewById<View>(R.id.ingredientsCard).visibility = View.GONE
             findViewById<View>(R.id.preparationCard).visibility = View.GONE
             return
@@ -188,23 +199,33 @@ class MealDetailActivity : BaseShellActivity() {
     private fun renderConsumption(state: MealDetailViewModel.State) {
         val consumedButton = findViewById<com.google.android.material.button.MaterialButton>(R.id.consumedButton)
         val skippedButton = findViewById<com.google.android.material.button.MaterialButton>(R.id.skippedButton)
+        val statusText = findViewById<TextView>(R.id.mealStatusText)
         val status = state.consumption?.status
+        findViewById<View>(R.id.mealActionBar).visibility = View.VISIBLE
         UiMotion.reveal(consumedButton, true, animateChange = false)
         UiMotion.reveal(skippedButton, true, animateChange = false)
         when (status) {
             FoodConsumptionStatus.CONSUMED.name -> {
-                consumedButton.text = "Annulla consumo"
-                skippedButton.text = "Segna come saltato"
+                consumedButton.setText(R.string.meal_detail_ux4_undo_consumed)
+                skippedButton.setText(R.string.meal_detail_ux4_mark_skipped)
+                statusText.setText(R.string.meal_detail_ux4_status_consumed)
+                statusText.setTextColor(getColor(R.color.accent_green_dark))
             }
             FoodConsumptionStatus.SKIPPED.name -> {
-                consumedButton.text = "Segna come consumato"
-                skippedButton.text = "Annulla pasto saltato"
+                consumedButton.setText(R.string.meal_detail_ux4_mark_consumed)
+                skippedButton.setText(R.string.meal_detail_ux4_undo_skipped)
+                statusText.setText(R.string.meal_detail_ux4_status_skipped)
+                statusText.setTextColor(getColor(R.color.semantic_warning))
             }
             else -> {
-                consumedButton.text = "Segna come consumato"
-                skippedButton.text = "Segna come saltato"
+                consumedButton.setText(R.string.meal_detail_ux4_mark_consumed)
+                skippedButton.setText(R.string.meal_detail_ux4_mark_skipped)
+                statusText.setText(R.string.meal_detail_ux4_status_none)
+                statusText.setTextColor(getColor(R.color.text_secondary))
             }
         }
+        consumedButton.contentDescription = consumedButton.text
+        skippedButton.contentDescription = skippedButton.text
     }
 
     private fun displayQuantity(ingredient: FoodIngredient): String {

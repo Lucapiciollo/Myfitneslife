@@ -116,29 +116,6 @@
                     android:padding="@dimen/card_content_padding_compact"
                     android:visibility="gone" />
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/consumedButton"
-                    style="@style/Widget.MyFitAI.Button.Primary"
-                    android:layout_width="match_parent"
-                    android:layout_height="@dimen/button_primary_min_height"
-                    android:layout_marginTop="@dimen/space_20"
-                    android:text="Segna come consumato"
-                    android:textAllCaps="false"
-                    android:textStyle="bold"
-                    android:visibility="gone"
-                    app:icon="@drawable/ic_check"
-                    app:iconGravity="textStart" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/skippedButton"
-                    style="@style/Widget.MyFitAI.Button.Outlined"
-                    android:layout_width="match_parent"
-                    android:layout_height="@dimen/button_secondary_min_height"
-                    android:layout_marginTop="@dimen/space_8"
-                    android:text="Segna come saltato"
-                    android:textAllCaps="false"
-                    android:visibility="gone" />
-
                 <LinearLayout
                     android:id="@+id/rescheduleButton"
                     android:layout_width="wrap_content"
@@ -155,5 +132,56 @@
             </LinearLayout>
         </LinearLayout>
     </ScrollView>
+
+    <!-- UX4: azioni di registrazione sempre raggiungibili, fuori dallo ScrollView. La safe area e' gestita dalla shell. -->
+    <LinearLayout
+        android:id="@+id/mealActionBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/bg_primary"
+        android:orientation="vertical"
+        android:visibility="gone">
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/divider_thickness"
+            android:background="@color/divider"
+            android:importantForAccessibility="no" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="@dimen/space_16"
+            android:paddingTop="@dimen/space_8"
+            android:paddingBottom="@dimen/space_12">
+            <TextView
+                android:id="@+id/mealStatusText"
+                style="@style/Text.MyFitAI.StatusValue"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:accessibilityLiveRegion="polite"
+                android:gravity="center_horizontal"
+                android:paddingBottom="@dimen/space_8" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/consumedButton"
+                style="@style/Widget.MyFitAI.Button.Primary"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/button_primary_min_height"
+                android:text="@string/meal_detail_ux4_mark_consumed"
+                android:textAllCaps="false"
+                android:textStyle="bold"
+                android:visibility="gone"
+                app:icon="@drawable/ic_check"
+                app:iconGravity="textStart" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/skippedButton"
+                style="@style/Widget.MyFitAI.Button.Outlined"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/button_secondary_min_height"
+                android:layout_marginTop="@dimen/space_8"
+                android:text="@string/meal_detail_ux4_mark_skipped"
+                android:textAllCaps="false"
+                android:visibility="gone" />
+        </LinearLayout>
+    </LinearLayout>
     <include layout="@layout/view_bottom_navigation" />
 </LinearLayout>

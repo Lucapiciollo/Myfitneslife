@@ -21,7 +21,7 @@ class MealPlanRowView @JvmOverloads constructor(
     private val descriptionView: TextView
     private val statusView: TextView
     private val changeButton: ImageView
-
+    private val quickButton: ImageView
     init {
         orientation = HORIZONTAL
         gravity = android.view.Gravity.CENTER_VERTICAL
@@ -87,6 +87,22 @@ class MealPlanRowView @JvmOverloads constructor(
         textColumn.addView(statusView)
         addView(textColumn)
 
+        // UX4: azione rapida "Segna come consumato" (area 48dp) accanto a "Cerca alternative".
+        quickButton = ImageView(context).apply {
+            val size = resources.getDimensionPixelSize(R.dimen.icon_button_size)
+            layoutParams = LayoutParams(size, size).apply { marginStart = resources.getDimensionPixelSize(R.dimen.space_4) }
+            setImageResource(R.drawable.ic_check)
+            val iconPadding = resources.getDimensionPixelSize(R.dimen.space_8)
+            setPadding(iconPadding, iconPadding, iconPadding, iconPadding)
+            val ripple = android.util.TypedValue()
+            if (context.theme.resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, ripple, true)) {
+                setBackgroundResource(ripple.resourceId)
+            }
+            isClickable = true
+            isFocusable = true
+            visibility = GONE
+        }
+        addView(quickButton)
         changeButton = ImageView(context).apply {
             val size = resources.getDimensionPixelSize(R.dimen.icon_button_size)
             layoutParams = LayoutParams(size, size).apply { marginStart = resources.getDimensionPixelSize(R.dimen.space_4) }
@@ -138,6 +154,21 @@ class MealPlanRowView @JvmOverloads constructor(
 
     fun setOnChangeClickListener(listener: (() -> Unit)?) {
         changeButton.setOnClickListener { listener?.invoke() }
+    }
+
+    /**
+     * One-tap registration of the meal as consumed. [consumed] only changes how the control reads (state + description):
+     * the tap is always forwarded to [listener], which decides what to do (never a silent destructive action).
+     */
+    fun setQuickConsume(mealTitle: String, consumed: Boolean, listener: (() -> Unit)?) {
+        quickButton.visibility = if (listener == null) GONE else VISIBLE
+        quickButton.setColorFilter(context.getColor(if (consumed) R.color.accent_green_dark else R.color.text_muted))
+        quickButton.alpha = 1f
+        quickButton.contentDescription = context.getString(
+            if (consumed) R.string.meal_ux4_quick_consumed_cd else R.string.meal_ux4_quick_consume_cd,
+            mealTitle,
+        )
+        quickButton.setOnClickListener { listener?.invoke() }
     }
 
     fun setChangeEnabled(enabled: Boolean) {
