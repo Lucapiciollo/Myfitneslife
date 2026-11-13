@@ -217,7 +217,8 @@ class FoodPlanActivity : BaseShellActivity() {
     }
 
     private fun renderGeneration(state: FoodPlanViewModel.State, currentWeek: Boolean, periodCanBeGenerated: Boolean, planUpdatePending: Boolean) {
-        if (state.generation.successMessage != null) {
+        // The pending flag describes the current week's plan: a plan generated for another week does not clear it.
+        if (state.generation.successMessage != null && currentWeek) {
             data.activeProfileStore.currentIdOrNull()?.let { profileId ->
                 data.nutritionPlanUpdatePreferences.setPending(profileId, false)
             }

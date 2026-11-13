@@ -185,6 +185,36 @@ object DayTargetResolver {
     }
 }
 
+/**
+ * The chip under "Calorie base giornaliere". The percentage compares the shown target with the CURRENT consumption;
+ * when the profile changed after the plan was generated (update pending) the target is still the old plan's, so the
+ * comparison would be misleading and the chip says the plan must be updated instead.
+ */
+object TargetModeLine {
+    /** True when the shown target is a plan target and the plan has not been regenerated after a profile change. */
+    fun isStale(planUpdatePending: Boolean, source: DayTargetResolver.Source): Boolean =
+        planUpdatePending && (source == DayTargetResolver.Source.PLAN_DAY || source == DayTargetResolver.Source.PLAN_WEEK)
+
+    fun text(goalLabel: String?, energyPercent: Int?, planStale: Boolean, staleLabel: String, unsetLabel: String): String {
+        if (planStale) {
+            return goalLabel?.let { "$it \u00b7 $staleLabel" } ?: staleLabel.replaceFirstChar { it.uppercase(Locale.ITALIAN) }
+        }
+        val percent = energyPercent?.let { p ->
+            when {
+                p > 0 -> "+$p% sul consumo"
+                p < 0 -> "$p% sul consumo"
+                else -> "in pari col consumo"
+            }
+        }
+        return when {
+            goalLabel != null && percent != null -> "$goalLabel \u00b7 $percent"
+            goalLabel != null -> goalLabel
+            percent != null -> percent
+            else -> unsetLabel
+        }
+    }
+}
+
 /** Emits today's date and again whenever the day changes, so screens do not keep the day they were created on. */
 object DayChange {
     const val MAX_POLL_MILLIS = 60_000L
