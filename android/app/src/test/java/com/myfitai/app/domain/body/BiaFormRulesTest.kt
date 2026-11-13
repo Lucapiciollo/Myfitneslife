@@ -19,6 +19,22 @@ class BiaFormRulesTest {
     }
 
     @Test
+    fun check_acceptsOnlyDigitsWithAtMostOneDecimalSeparator() {
+        // The reported case: "86..5" was read as 86,5. Every malformed number is refused with NotANumber.
+        listOf("86..5", "86,,5", "86.,5", "86,.5", "8.6.5", "8,6,5", "1e2", "1E2", "-5", "+5", "8 6", "86 .5", "86,5kg", "٨٦", "--", ",", ".").forEach { raw ->
+            assertEquals("'$raw' must be refused", BiaFormRules.Check.NotANumber, BiaFormRules.check(BiaField.WEIGHT, raw))
+        }
+        assertEquals(BiaFormRules.Check.Empty, BiaFormRules.check(BiaField.WEIGHT, ""))
+        assertEquals(BiaFormRules.Check.Empty, BiaFormRules.check(BiaField.WEIGHT, null))
+        assertEquals(BiaFormRules.Check.Valid(86.5f), BiaFormRules.check(BiaField.WEIGHT, "86,5"))
+        assertEquals(BiaFormRules.Check.Valid(86.5f), BiaFormRules.check(BiaField.WEIGHT, "86.5"))
+        assertEquals(BiaFormRules.Check.Valid(86f), BiaFormRules.check(BiaField.WEIGHT, "86"))
+        // Whole-number fields follow the same rule.
+        assertEquals(BiaFormRules.Check.NotANumber, BiaFormRules.check(BiaField.BODY_AGE, "3..2"))
+        assertEquals(BiaFormRules.Check.NotANumber, BiaFormRules.check(BiaField.BMR, "1800,,5"))
+    }
+
+    @Test
     fun check_emptyIsEmpty_butTextIsNeverSilentlyEmpty() {
         assertEquals(BiaFormRules.Check.Empty, BiaFormRules.check(BiaField.WEIGHT, "  "))
         assertEquals(BiaFormRules.Check.NotANumber, BiaFormRules.check(BiaField.WEIGHT, "abc"))

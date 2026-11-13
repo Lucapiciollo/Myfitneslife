@@ -70,6 +70,28 @@ object AiContractRegistry {
         "THREE_ACTIONS_REQUIRED" to "Write exactly three X records (priority actions), each a short Italian sentence.",
     )
 
+    /**
+     * Nutrition advice (NA1): the retry names the record to write. Observed on device with a real provider: one answer in three
+     * ended as a generic error with the reason lost; these hints make the single automatic retry a precise correction.
+     * The cap is 1 500 tokens (was 900): five options with foods plus the envelope are short, but reasoning tokens of some
+     * Gemini models may still count toward the cap even with thinkingBudget=0 (see the class note), so 900 left no margin and a cut
+     * answer ends as [AiFailure.Truncated]. The cost of the extra headroom is only paid when the model really writes more.
+     */
+    private val NUTRITION_ADVICE_FIX_HINTS: Map<String, String> = mapOf(
+        "NA_ASSUMPTIONS_MISSING" to "Add the record Q|<assumptions> as its own line before V, and leave it empty after the bar (Q|) when there is nothing to assume. Also an out-of-scope answer (S|0) ends with Q| and V|.",
+        "NA_VALIDATION_MISSING" to "End with the record V|1|<short note> as the last line.",
+        "NA_RECORD_INVALID" to "Write exactly one S, one A, one Q and one V record; each O record has exactly 8 fields O|title|reason|kcal|proteinG|carbsG|fatG|foodsCsv, never a | or a newline inside a text field, and all O records come before V.",
+        "NA_SCOPE" to "S must be S|1 or S|0.",
+        "NA_KCAL" to "kcal must be a whole number without unit, for example 450.",
+        "NA_P" to "proteinG must be a plain number with a dot decimal and no unit.",
+        "NA_C" to "carbsG must be a plain number with a dot decimal and no unit.",
+        "NA_F" to "fatG must be a plain number with a dot decimal and no unit.",
+        "EXPECTED_FIVE_SUGGESTIONS" to "Write exactly five O records for an in-scope answer (S|1), none for S|0.",
+        "FOODS_REQUIRED_FOR_CONSTRAINT_VALIDATION" to "Fill foodsCsv of every O record with the comma-separated foods of that option.",
+        "INVALID_COMPACT_ANSWER" to "A must be one short Italian sentence of at most 120 characters.",
+        "FOOD_CONSTRAINT_VIOLATION" to "An option contains a food that violates a hard constraint (A, I, E or S in DP): replace it with a compliant one and list only compliant foods in foodsCsv.",
+    )
+
     val all: List<Spec> = listOf(
         Spec("myfitai_bia_raw_pipe_v2", Format.COMPACT_PIPE, "B2", 350, persisted = false),
         Spec("myfitai_bia_pipe_v1", Format.COMPACT_PIPE, "BIA1", 350, persisted = false),
@@ -78,7 +100,7 @@ object AiContractRegistry {
         Spec("myfitai_body_proportion_pipe_v1", Format.COMPACT_PIPE, "BP1", 1_500, persisted = true),
         Spec("myfitai_weekly_review_pipe_v1", Format.COMPACT_PIPE, "WR1", 700, persisted = true),
         Spec("myfitai_meal_alternatives_pipe_v1", Format.COMPACT_PIPE, "MA1", 2_200, persisted = false, geminiNativeSchema = false),
-        Spec("myfitai_nutrition_advice_pipe_v1", Format.COMPACT_PIPE, "NA1", 900, persisted = false),
+        Spec("myfitai_nutrition_advice_pipe_v1", Format.COMPACT_PIPE, "NA1", 1_500, persisted = false, fixHints = NUTRITION_ADVICE_FIX_HINTS),
         Spec("myfitai_cheat_understanding_pipe_v1", Format.COMPACT_PIPE, "CU1", 500, persisted = false),
         Spec("myfitai_cheat_adjustment_pipe_v1", Format.COMPACT_PIPE, "CA1", 2_500, persisted = true),
         Spec("myfitai_plan_review_pipe_v1", Format.COMPACT_PIPE, "PR1", 1_500, persisted = true),

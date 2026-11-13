@@ -21,6 +21,7 @@ import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.domain.food.NutritionAdviceContract
 import com.myfitai.app.navigation.BottomNavBinder
+import com.myfitai.app.ui.bia.BiaFailurePanel
 import com.myfitai.app.ui.food.NutritionAdviceViewModel
 import kotlinx.coroutines.launch
 import java.util.Locale
@@ -41,6 +42,8 @@ class NutritionAdviceActivity : BaseShellActivity() {
 
     companion object { const val EXTRA_JOB_KEY = "nutrition_advice_job_key" }
 
+    private lateinit var failurePanel: BiaFailurePanel
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_nutrition_advice)
@@ -56,6 +59,13 @@ class NutritionAdviceActivity : BaseShellActivity() {
             }
         }
         findViewById<View>(R.id.dismissAdviceButton).setOnClickListener { finish() }
+
+        // Failure panel (same component as the BIA analysis): sentence by category, "Riprova" only when allowed, details with the code.
+        failurePanel = BiaFailurePanel.inflate(
+            findViewById<TextView>(R.id.statusText).parent as LinearLayout,
+            onRetry = { findViewById<View>(R.id.askButton).performClick() },
+            onOpenSettings = { AiSettingsEntry.open(this) },
+        )
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -93,6 +103,9 @@ class NutritionAdviceActivity : BaseShellActivity() {
         }
 
         renderSuggestions(state.suggestions, enabled = !busy)
+
+        val failure = state.failure
+        if (failure != null && !busy) failurePanel.show(failure) else failurePanel.hide()
 
         findViewById<TextView>(R.id.statusText).apply {
             val message = when {

@@ -1,6 +1,9 @@
 package com.myfitai.app.domain.food
 
 import com.myfitai.app.ai.AiCompactEnvelope
+import com.myfitai.app.ai.AiDiagnosticEvent
+import com.myfitai.app.ai.AiDiagnostics
+import com.myfitai.app.ai.AiFailure
 import com.myfitai.app.ai.AiRuntimeGateway
 import com.myfitai.app.ai.AiStructuredRequest
 import com.myfitai.app.data.profile.ActiveProfileStore
@@ -31,6 +34,8 @@ class NutritionAdviceService(
     /** Se presenti, il peso nel prompt e quello risolto da WeightResolver (come motore e UI), non il peso statico del profilo. */
     private val bia: BiaRepository? = null,
     private val bodyMeasurements: BodyMeasurementRepository? = null,
+    /** Category/rule code of a failed request (no prompt, no model text, no key). Injectable for tests. */
+    private val diagnostics: (AiDiagnosticEvent) -> Unit = AiDiagnostics::log,
 ) {
     data class Result(
         val accepted: Boolean,
@@ -98,12 +103,14 @@ class NutritionAdviceService(
             userPrompt = userPrompt,
             schemaName = NutritionAdviceContract.SCHEMA_NAME,
             schemaJson = NutritionAdviceContract.schemaJson,
-            maxOutputTokens = 1_100,
+            maxOutputTokens = MAX_OUTPUT_TOKENS,
             thinkingBudget = 0,
         )
 
         var parsed: NutritionAdviceContract.Response? = null
-        val validated = runCatching {
+        // A failure is never turned into a generic Result: the original exception goes to the job handler, which keeps its
+        // category (AiFailure) for the UI, and its category/rule code is logged here (no model text, no secret).
+        val validated = reporting {
             aiRuntime.execute(
                 request = request,
                 maxSchemaRetries = 1,
@@ -113,18 +120,12 @@ class NutritionAdviceService(
                     parsed = response
                 } },
             )
-        }.getOrElse {
-            // Transient transport errors and cancellation must reach the job worker (WorkManager retry).
-            com.myfitai.app.domain.ai.AiJobFailures.rethrowIfRetryableOrCancelled(it)
-            return Result(false, "Consiglio nutrizionale non disponibile in questo momento.", emptyList(), "", null)
         }
 
-        val response = parsed ?: runCatching {
+        val response = parsed ?: reporting {
             NutritionAdviceContract.parse(validated.jsonText).also {
                 NutritionAdviceContract.validateBusiness(it, dietaryProfile).getOrThrow()
             }
-        }.getOrElse {
-            return Result(false, "Consiglio nutrizionale non disponibile in questo momento.", emptyList(), "", null)
         }
         if (!response.inScope) return refused()
         return Result(true, response.answer, response.suggestions, response.assumptions, "${validated.provider.name} · ${validated.model}")
@@ -132,11 +133,7 @@ class NutritionAdviceService(
 
     /** Typed JSON path (D1 PoC): same failure mapping as the pipe path, validated output instead of a raw string. */
     private suspend fun askTypedJson(userPrompt: String, dietaryProfile: DietaryProfile): Result {
-        val execution = runCatching { NutritionAdviceJsonContract.execute(aiRuntime, userPrompt, dietaryProfile) }.getOrElse {
-            // Transient transport errors and cancellation must reach the job worker (WorkManager retry).
-            com.myfitai.app.domain.ai.AiJobFailures.rethrowIfRetryableOrCancelled(it)
-            return Result(false, "Consiglio nutrizionale non disponibile in questo momento.", emptyList(), "", null)
-        }
+        val execution = reporting { NutritionAdviceJsonContract.execute(aiRuntime, userPrompt, dietaryProfile) }
         val response = execution.output.value
         if (!response.inScope) return refused()
         return Result(true, response.answer, response.suggestions, response.assumptions, "${execution.response.provider.name} · ${execution.response.model}")
@@ -215,8 +212,43 @@ class NutritionAdviceService(
 
     private fun refused() = Result(false, OUT_OF_SCOPE_MESSAGE, emptyList(), "", null)
 
+    /**
+     * Runs one provider interaction. Transient transport errors and cancellation reach the job worker untouched
+     * (WorkManager retries them); any other failure is logged by category/rule code only, then rethrown unchanged so the
+     * job handler can keep its [AiFailure] category instead of a generic message.
+     */
+    private inline fun <T> reporting(block: () -> T): T {
+        val startedAt = System.currentTimeMillis()
+        try {
+            return block()
+        } catch (error: Throwable) {
+            com.myfitai.app.domain.ai.AiJobFailures.rethrowIfRetryableOrCancelled(error)
+            diagnostics(AiDiagnosticEvent(NutritionAdviceContract.SCHEMA_NAME, diagnosticOutcome(error), 0, System.currentTimeMillis() - startedAt))
+            throw error
+        }
+    }
+
     companion object {
         const val OUT_OF_SCOPE_MESSAGE = "Posso rispondere solo a richieste di consiglio alimentare e nutrizionale."
+
+        /**
+         * Output budget requested for the advice. Equal to the cap of the contract in [com.myfitai.app.ai.AiContractRegistry]
+         * (the effective limit is the smaller of the two: a request above the registry would silently be cut to it).
+         */
+        internal const val MAX_OUTPUT_TOKENS = 1_500
+
+        /**
+         * What a failure is logged as: the stable [AiFailure.code], plus the closed business rule code (`...:EXPECTED_FIVE_SUGGESTIONS`)
+         * or, for an unclassified error, only its class name. Never the exception message, which may contain model text.
+         */
+        internal fun diagnosticOutcome(error: Throwable): String {
+            val failure = AiFailure.classify(error)
+            return when {
+                failure is AiFailure.BusinessRuleViolated && failure.ruleCode != null -> "${failure.code}:${failure.ruleCode}"
+                failure === AiFailure.Unexpected -> "${failure.code}:${error.javaClass.simpleName.ifBlank { "Throwable" }}"
+                else -> failure.code
+            }
+        }
 
         private val NUTRITION_TERMS = setOf(
             "mang", "aliment", "cibo", "pasto", "colazione", "pranzo", "cena", "spuntino",

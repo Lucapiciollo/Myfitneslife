@@ -3,6 +3,8 @@ package com.myfitai.app.ui.food
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.myfitai.app.R
+import com.myfitai.app.ai.AiFailureMessages
 import com.myfitai.app.domain.food.CheatAdjustmentService
 import com.myfitai.app.domain.food.NutritionAdviceContract
 import com.myfitai.app.domain.food.NutritionAdviceService
@@ -36,6 +38,8 @@ class NutritionAdviceViewModel(
         val assumptions: String = "",
         val providerLabel: String? = null,
         val error: String? = null,
+        /** Why the request failed, in the closed categories of [AiFailureMessages]; null when it did not fail. */
+        val failure: AiFailureMessages.Presentation? = null,
         val acceptedResult: CheatAdjustmentService.Result? = null,
     )
 
@@ -76,7 +80,11 @@ class NutritionAdviceViewModel(
                 when (info?.state) {
                     WorkInfo.State.ENQUEUED, WorkInfo.State.RUNNING -> _state.value = _state.value.copy(running = true)
                     WorkInfo.State.SUCCEEDED -> renderPayload(info.outputData.getString(NutritionAdviceAiJobHandler.KEY_PAYLOAD))
-                    WorkInfo.State.FAILED -> _state.value = _state.value.copy(running = false, error = info.outputData.getString("error") ?: "Consiglio non disponibile")
+                    WorkInfo.State.FAILED -> _state.value = _state.value.copy(
+                        running = false,
+                        error = null,
+                        failure = presentationFor(info.outputData.getString("error")),
+                    )
                     else -> Unit
                 }
             }
@@ -147,5 +155,15 @@ class NutritionAdviceViewModel(
 
     companion object {
         fun jobKeyFor(question: String) = (question.trim().hashCode() and 0x7fffffff).toString()
+
+        /**
+         * Sentence, action and technical code for a failed advice job (`raw` is what the job wrote: a closed [com.myfitai.app.ai.AiFailure]
+         * text or code). Like the BIA analysis, an answer rejected by the app's checks is a non deterministic model output, not a
+         * permanent error of the request: the user's own tap on "Riprova" may work. No automatic retry (it would spend quota).
+         */
+        fun presentationFor(raw: String?): AiFailureMessages.Presentation {
+            val resolved = AiFailureMessages.resolve(raw)
+            return if (resolved.messageRes == R.string.ai_failure_rejected) resolved.copy(canRetry = true) else resolved
+        }
     }
 }

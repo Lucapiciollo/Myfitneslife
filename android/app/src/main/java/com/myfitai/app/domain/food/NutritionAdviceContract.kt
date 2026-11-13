@@ -63,7 +63,9 @@ object NutritionAdviceContract {
             require(suggestion.reason.isNotBlank() && suggestion.reason.length <= 120) { "INVALID_SUGGESTION_REASON" }
             require(suggestion.estimatedKcal > 0) { "INVALID_KCAL" }
             require(listOf(suggestion.proteinG, suggestion.carbsG, suggestion.fatG).all { it >= 0f && it.isFinite() }) { "INVALID_MACROS" }
-            if (dietaryProfile.hardConstraints.isNotEmpty() || !dietaryProfile.dietStyle.isNullOrBlank()) {
+            // Same rule as the constraint check itself: an unrestricted style ("onnivoro", "nessuno") or notes alone verify nothing,
+            // so they must not force a foods list the model has no reason to write.
+            if (FoodConstraintValidator.hasHardConstraints(dietaryProfile)) {
                 require(suggestion.foods.isNotEmpty()) { "FOODS_REQUIRED_FOR_CONSTRAINT_VALIDATION" }
             }
             require(FoodConstraintValidator.validateIngredientNames(suggestion.foods, dietaryProfile).isEmpty()) {

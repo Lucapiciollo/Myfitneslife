@@ -4,6 +4,10 @@ import com.myfitai.app.ai.AiCompactEnvelope
 
 private fun String.f(code: String): Float = toFloatOrNull()?.takeIf { it.isFinite() } ?: error(code)
 private fun String.i(code: String): Int = toIntOrNull() ?: error(code)
+/** Whole kcal; a model may write the same whole number as "450.0" (a harmless format variant). Anything else is rejected. */
+private fun String.kcal(code: String): Int = toIntOrNull()
+    ?: trim().toFloatOrNull()?.takeIf { it.isFinite() && it % 1f == 0f && it in Int.MIN_VALUE.toFloat()..Int.MAX_VALUE.toFloat() }?.toInt()
+    ?: error(code)
 private fun String.req(code: String): String = trim().also { require(it.isNotEmpty()) { code } }
 private fun compactLines(json: String, version: String): List<String> = AiCompactEnvelope.data(json)
     .lineSequence().map { it.trim() }.filter { it.isNotEmpty() }.toList()
@@ -183,21 +187,23 @@ V|1_or_0|notes"""
         var assumptions: String? = null
         var validation: NutritionPlanContract.AgentValidation? = null
         val suggestions = mutableListOf<NutritionAdviceContract.Suggestion>()
+        // A malformed record is always the stable code NA_RECORD_INVALID (never the anonymous "Failed requirement.").
+        fun recordOk(valid: Boolean) { if (!valid) error("NA_RECORD_INVALID") }
         lines.drop(1).forEach { line ->
             val p = line.split('|')
             when (p.firstOrNull()) {
-                "S" -> { require(p.size == 2 && inScope == null); inScope = when (p[1]) { "1" -> true; "0" -> false; else -> error("NA_SCOPE") } }
-                "A" -> { require(p.size == 2 && answer == null); answer = p[1].trim() }
+                "S" -> { recordOk(p.size == 2 && inScope == null); inScope = when (p[1]) { "1" -> true; "0" -> false; else -> error("NA_SCOPE") } }
+                "A" -> { recordOk(p.size == 2 && answer == null); answer = p[1].trim() }
                 "O" -> {
-                    require(p.size == 8 && validation == null)
+                    recordOk(p.size == 8 && validation == null)
                     val foods = p[7].split(',').map { it.trim() }.filter { it.isNotBlank() }
                     suggestions += NutritionAdviceContract.Suggestion(
-                        p[1].req("NA_TITLE"), p[2].req("NA_REASON"), p[3].i("NA_KCAL"),
+                        p[1].req("NA_TITLE"), p[2].req("NA_REASON"), p[3].kcal("NA_KCAL"),
                         p[4].f("NA_P"), p[5].f("NA_C"), p[6].f("NA_F"), foods,
                     )
                 }
-                "Q" -> { require(p.size == 2 && assumptions == null); assumptions = p[1].trim() }
-                "V" -> { require(p.size == 3 && validation == null && p[1] in setOf("0", "1")); validation = NutritionPlanContract.AgentValidation(p[1] == "1", p[2].trim()) }
+                "Q" -> { recordOk(p.size == 2 && assumptions == null); assumptions = p[1].trim() }
+                "V" -> { recordOk(p.size == 3 && validation == null && p[1] in setOf("0", "1")); validation = NutritionPlanContract.AgentValidation(p[1] == "1", p[2].trim()) }
                 else -> error("NA_RECORD_INVALID")
             }
         }

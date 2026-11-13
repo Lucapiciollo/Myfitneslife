@@ -5,6 +5,8 @@ import android.content.Intent
 import android.graphics.Rect
 import android.net.Uri
 import android.os.Bundle
+import android.text.InputType
+import android.text.method.TextKeyListener
 import android.view.Gravity
 import android.view.View
 import android.view.ViewParent
@@ -446,6 +448,17 @@ class BiaActivity : BaseShellActivity() {
         else -> null
     }
 
+    /**
+     * `numberDecimal` in the layout installs a digits key listener that SILENTLY drops what it does not like: "86..5" typed
+     * (or pasted, or sent by a keyboard) became "86.5" and was accepted as 86,5. The field must keep exactly what the user
+     * typed so that [BiaFormRules.check] can refuse it with the error under the field. The keyboard stays numeric
+     * (raw input type: it only tells the IME which keyboard to show, it filters nothing).
+     */
+    private fun keepRawNumericInput(input: TextInputEditText) {
+        input.keyListener = TextKeyListener.getInstance()
+        input.setRawInputType(InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL)
+    }
+
     private fun showValueDialog(spec: RowSpec, row: MeasurementRowView) {
         val content = layoutInflater.inflate(R.layout.dialog_bia_value_input, null, false)
         val inputLayout = content.findViewById<TextInputLayout>(R.id.valueInputLayout)
@@ -454,6 +467,7 @@ class BiaActivity : BaseShellActivity() {
         inputLayout.hint = if (spec.unit.isBlank()) spec.label else "${spec.label} (${spec.unit})"
         values[spec.field]?.let { input.setText(BiaFormRules.inputText(it)) }
         input.setSelectAllOnFocus(true)
+        keepRawNumericInput(input)
         input.doAfterTextChanged { inputLayout.error = null }
 
         val dialog = MaterialAlertDialogBuilder(this)
@@ -865,6 +879,7 @@ class BiaActivity : BaseShellActivity() {
         val inputs = rowSpecs.associate { spec ->
             val input = content.findViewById<TextInputEditText>(spec.importInputId)
             input.setText(BiaFormRules.inputText(previewValues[spec.field]))
+            keepRawNumericInput(input)
             val layout = layoutOf(input)
             if (spec.field in toDoubleCheck) layout?.helperText = getString(R.string.bia_k4_preview_check_hint)
             input.doAfterTextChanged { layout?.error = null }

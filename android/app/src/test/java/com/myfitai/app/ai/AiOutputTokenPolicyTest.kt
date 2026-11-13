@@ -16,7 +16,8 @@ class AiOutputTokenPolicyTest {
 
     @Test
     fun shortCompactTasksKeepTheirGuardrails() {
-        assertEquals(900, AiOutputTokenPolicy.effectiveLimit("myfitai_nutrition_advice_pipe_v1", 1_100))
+        // The registry cap (1 500) bounds any larger request; the service asks for exactly that value.
+        assertEquals(1_500, AiOutputTokenPolicy.effectiveLimit("myfitai_nutrition_advice_pipe_v1", 2_000))
         assertEquals(400, AiOutputTokenPolicy.effectiveLimit("myfitai_nutrition_advice_pipe_v1", 400))
     }
 

@@ -99,7 +99,7 @@ class AiContractRegistryTest {
         val expected = mapOf(
             "myfitai_cheat_adjustment_pipe_v1" to 2_500,
             "myfitai_meal_alternatives_pipe_v1" to 2_200,
-            "myfitai_nutrition_advice_pipe_v1" to 900,
+            "myfitai_nutrition_advice_pipe_v1" to 1_500,
             "myfitai_weekly_review_pipe_v1" to 700,
             "myfitai_cheat_understanding_pipe_v1" to 500,
             "myfitai_body_proportion_pipe_v1" to 1_500,
@@ -134,7 +134,7 @@ class AiContractRegistryTest {
         assertEquals(350, AiOutputTokenPolicy.effectiveLimit("myfitai_bia_raw_pipe_v2", 500))
         assertEquals(100, AiOutputTokenPolicy.effectiveLimit("myfitai_bia_raw_pipe_v2", 100))
         // A caller that did not ask for a budget still gets the contract's prudent cap.
-        assertEquals(900, AiOutputTokenPolicy.effectiveLimit("myfitai_nutrition_advice_pipe_v1", null))
+        assertEquals(1_500, AiOutputTokenPolicy.effectiveLimit("myfitai_nutrition_advice_pipe_v1", null))
         assertNull(AiOutputTokenPolicy.effectiveLimit("myfitai_weekly_nutrition_pipe_v1", null))
     }
 }
