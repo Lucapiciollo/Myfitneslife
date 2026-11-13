@@ -130,8 +130,8 @@ class CalculationGoldenProfilesTest {
         assertEquals(r.fatG!!, shown.fatG!!, 0.0)
         // BIA Coach: the same figures, written once as the habitual target.
         val bia = BiaAnalysisReport.caloriesSection(r)
-        assertTrue(bia, bia.startsWith("Target abituale: 2528 kcal, proteine 179 g"))
-        assertTrue(bia, bia.contains("Consumo abituale stimato (TDEE): 2974 kcal"))
+        assertTrue(bia, bia.startsWith("Obiettivo da profilo: 2528 kcal, proteine 179 g"))
+        assertTrue(bia, bia.contains("Consumo giornaliero (TDEE): 2974 kcal"))
     }
 
     // ---- MacroPolicy: ordine di priorita --------------------------------------------------------

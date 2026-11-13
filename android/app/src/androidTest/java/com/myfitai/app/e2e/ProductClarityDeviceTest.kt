@@ -40,8 +40,8 @@ class ProductClarityDeviceTest {
                 assertTrue(activity.findViewById<android.view.View>(R.id.dailyTotalRowTarget).visibility == View.VISIBLE || activity.findViewById<android.view.View>(R.id.dailyTotalRowTarget).visibility == View.GONE)
                 assertTrue(activity.findViewById<android.view.View>(R.id.dailyTotalRowPlanned).visibility == View.VISIBLE || activity.findViewById<android.view.View>(R.id.dailyTotalRowPlanned).visibility == View.GONE)
                 assertEquals(View.VISIBLE, activity.findViewById<android.view.View>(R.id.dailyTotalRowConsumed).visibility)
-                assertEquals("BMR · a riposo", activity.findViewById<android.widget.TextView>(R.id.dailyBmrLabel).text.toString())
-                assertEquals("TDEE · attività abituale", activity.findViewById<android.widget.TextView>(R.id.dailyTdeeLabel).text.toString())
+                assertEquals("Metabolismo a riposo (BMR)", activity.findViewById<android.widget.TextView>(R.id.dailyBmrLabel).text.toString())
+                assertEquals("Consumo giornaliero (TDEE)", activity.findViewById<android.widget.TextView>(R.id.dailyTdeeLabel).text.toString())
                 assertTrue(activity.findViewById<android.view.View>(R.id.dailyTotalLegend).contentDescription == null)
                 assertTrue(activity.findViewById<android.view.View>(R.id.totalConsumptionNote).visibility == View.VISIBLE)
                 listOf("totalCarbsTarget", "totalFatTarget", "totalCarbsConsumed", "totalFatConsumed").forEach { name ->

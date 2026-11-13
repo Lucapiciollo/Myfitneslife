@@ -51,7 +51,7 @@ class MeasurementsActivity : BaseShellActivity() {
             setHelp("Spiega dati BIA e dati insufficienti") {
             showHelpCard(
                 "Dati BIA e dati insufficienti",
-                "La BIA può contribuire al calcolo di metabolismo, target e trend corporei quando sono disponibili valori coerenti, come peso, grasso corporeo o massa muscolare.\n\nLa dicitura \"Dati insufficienti\" compare quando mancano i valori necessari oppure quando esiste una sola rilevazione: una singola misura descrive solo lo stato attuale e non permette di calcolare una variazione affidabile nel tempo. Registra altre rilevazioni in date diverse per ottenere un confronto.",
+                "La BIA può contribuire al calcolo di metabolismo, obiettivo calorico e trend corporei quando sono disponibili valori coerenti, come peso, grasso corporeo o massa muscolare.\n\nLa dicitura \"Dati insufficienti\" compare quando mancano i valori necessari oppure quando esiste una sola rilevazione: una singola misura descrive solo lo stato attuale e non permette di calcolare una variazione affidabile nel tempo. Registra altre rilevazioni in date diverse per ottenere un confronto.",
                 confirmLabel = "Chiudi",
                 highlightHeadings = false,
             )
@@ -186,14 +186,14 @@ class MeasurementsActivity : BaseShellActivity() {
         val current = versions.firstOrNull()
         val previous = versions.drop(1).firstOrNull()
         if (current == null) {
-            findViewById<TextView>(R.id.dietTargetReasonText).text = "Target adattivo non ancora disponibile."
+            findViewById<TextView>(R.id.dietTargetReasonText).text = "Obiettivo adattivo non ancora disponibile."
             return
         }
 
         val delta = if (current.targetKcal != null && previous?.targetKcal != null) current.targetKcal - previous.targetKcal else null
         val adaptive = parseAdaptiveReason(current.reason)
         findViewById<TextView>(R.id.dietTargetReasonText).text = buildString {
-            append("Target attuale: ${current.targetKcal?.let { "$it kcal" } ?: "—"}")
+            append("Obiettivo attuale: ${current.targetKcal?.let { "$it kcal" } ?: "—"}")
             delta?.let { append(" · variazione ${if (it >= 0) "+" else ""}$it kcal") }
             appendLine()
             append("Decisione: ${adaptive.decisionLabel}")
@@ -230,10 +230,10 @@ class MeasurementsActivity : BaseShellActivity() {
         val decisionLabel = when (decision) {
             "INCREASE_DEFICIT" -> "deficit leggermente aumentato"
             "REDUCE_DEFICIT" -> "deficit ridotto"
-            "KEEP" -> "target mantenuto"
+            "KEEP" -> "obiettivo mantenuto"
             "INSUFFICIENT_DATA" -> "dati insufficienti"
             "NOT_APPLICABLE" -> "adattamento non applicabile"
-            else -> "target corrente"
+            else -> "obiettivo corrente"
         }
         val reasonLabel = when (code) {
             "SUSTAINED_STALL" -> "stallo sostenuto su peso e circonferenze"
@@ -243,7 +243,7 @@ class MeasurementsActivity : BaseShellActivity() {
             "NO_SAFE_CHANGE" -> "nessuna variazione sufficientemente supportata"
             "INSUFFICIENT_TREND" -> "trend troppo breve o con pochi segnali"
             "GOAL_NOT_ADAPTIVE" -> "obiettivo non soggetto ad adattamento automatico"
-            "MISSING_BASE_TARGET" -> "target di base incompleto"
+            "MISSING_BASE_TARGET" -> "obiettivo di base incompleto"
             else -> code?.lowercase()?.replace('_', ' ') ?: "nessuna motivazione adattiva disponibile"
         }
         return AdaptiveReason(decisionLabel, reasonLabel, days)

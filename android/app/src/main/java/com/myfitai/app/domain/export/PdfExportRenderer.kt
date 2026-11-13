@@ -321,9 +321,9 @@ internal class PdfExportRenderer(context: Context) {
             val snapshot = listOf(
                 "Altezza" to formatCm(input.profile.heightCm),
                 "BMI" to format1(input.calculation.bmi),
-                "BMR" to formatKcal(input.calculation.bmrKcal),
-                "TDEE" to formatKcal(input.calculation.tdeeKcal),
-                "Target" to formatKcal(input.calculation.targetKcal),
+                "Metabolismo a riposo (BMR)" to formatKcal(input.calculation.bmrKcal),
+                "Consumo giornaliero (TDEE)" to formatKcal(input.calculation.tdeeKcal),
+                "Obiettivo da profilo" to formatKcal(input.calculation.targetKcal),
                 "Metodo BMR" to (input.calculation.bmrMethod ?: "Dati insufficienti"),
             )
             snapshot.forEachIndexed { index, (label, value) ->
@@ -358,7 +358,7 @@ internal class PdfExportRenderer(context: Context) {
                 "Muscolo" to formatKg(input.latestBia?.muscleMassKg),
                 "Acqua" to formatPercent(input.latestBia?.bodyWaterPercent),
                 "Grasso viscerale" to format1(input.latestBia?.visceralFatLevel?.toDouble()),
-                "BMR BIA" to input.latestBia?.bmrKcal?.let { DisplayNumberFormatter.kcal(it.toDouble()) }.orDash(),
+                "Metabolismo a riposo da BIA (BMR)" to input.latestBia?.bmrKcal?.let { DisplayNumberFormatter.kcal(it.toDouble()) }.orDash(),
             ), rowHeight = geometry.reportDataRowHeight)
 
             drawCard(canvas, pageMargin, 150f, contentWidth, 225f)
@@ -430,7 +430,7 @@ internal class PdfExportRenderer(context: Context) {
             drawCard(canvas, pageMargin, 150f, contentWidth, 210f)
             text(canvas, "Piano alimentare attivo", contentLeft, 182f, typography.section, palette.text, true)
             drawRows(canvas, contentLeft, 220f, 477f, listOf(
-                "Target energia" to input.latestPlanTargetKcal?.let { "$it kcal" }.orDash(),
+                "Obiettivo del piano" to input.latestPlanTargetKcal?.let { "$it kcal" }.orDash(),
                 "Proteine" to input.latestPlanTargetProteinG?.let(::formatGram).orDash(),
                 "Carboidrati" to input.latestPlanTargetCarbsG?.let(::formatGram).orDash(),
                 "Grassi" to input.latestPlanTargetFatG?.let(::formatGram).orDash(),
@@ -466,11 +466,11 @@ internal class PdfExportRenderer(context: Context) {
             drawCard(canvas, pageMargin, 150f, contentWidth, 500f)
             val sections = listOf(
                 "1. Profilo" to "dati del profilo, obiettivo, attivita, peso iniziale e corrente",
-                "2. Snapshot" to "BMI, BMR, TDEE, target nutrizionali e metodo di calcolo",
+                "2. Snapshot" to "BMI, metabolismo a riposo (BMR), consumo giornaliero (TDEE), obiettivi e metodo",
                 "3. BIA" to "ultima rilevazione e storico disponibile",
                 "4. Misure" to "circonferenze, delta, asimmetrie e proporzioni",
                 "5. Trend" to "grafici peso e vita basati sulle rilevazioni persistite",
-                "6. Alimentazione" to "target del piano corrente e numero di settimane disponibili",
+                "6. Alimentazione" to "obiettivo del piano corrente e numero di settimane disponibili",
                 "7. Sgarri" to "conteggio degli eventi registrati",
                 "8. Weekly Review" to "review settimanali persistite (${input.reviewCount})",
                 "9. Metodologia" to "dati mancanti restano mancanti; nessuna stima viene inventata dal PDF",
@@ -513,7 +513,7 @@ internal class PdfExportRenderer(context: Context) {
             val canvas = page.canvas
             drawHeader(canvas, periodLabel, "$dateRange | $profileName")
             drawCard(canvas, pageMargin, 150f, contentWidth, 120f)
-            text(canvas, "Target giornaliero", contentLeft, 180f, typography.bodyCompact, palette.muted, true)
+            text(canvas, "Obiettivo del piano", contentLeft, 180f, typography.bodyCompact, palette.muted, true)
             text(canvas, snapshot.version.targetKcal?.let { "$it kcal" }.orDash(), contentLeft, 222f, typography.heroValue, palette.text, true)
             val macros = listOf(
                 Triple("Proteine", snapshot.version.targetProteinG?.let(::formatGram).orDash(), palette.accent),

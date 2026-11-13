@@ -209,7 +209,7 @@
                             android:layout_height="@dimen/screen_header_icon_size"
                             android:layout_marginEnd="@dimen/space_4"
                             android:background="@android:color/transparent"
-                            android:contentDescription="Spiega calorie, target, piano e consumo"
+                            android:contentDescription="Spiega calorie, obiettivo di oggi, piano e consumo"
                             android:padding="@dimen/space_8"
                             android:src="@drawable/ic_help_outline"
                             app:tint="@color/text_secondary" />
@@ -247,7 +247,7 @@
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
                                 android:textColor="@color/metric_label"
-                                android:text="BMR · a riposo" />
+                                android:text="Metabolismo a riposo (BMR)" />
                             <TextView
                             android:id="@+id/totalKcalBmr"
                                 style="@style/Text.MyFitAI.BodyEmphasis"
@@ -268,7 +268,7 @@
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
-                                android:text="TDEE · attività abituale" />
+                                android:text="Consumo giornaliero (TDEE)" />
                             <TextView
                                 android:id="@+id/totalKcalTdee"
                                 style="@style/Text.MyFitAI.BodyEmphasis"
@@ -321,7 +321,7 @@
                             android:layout_weight="1.2"
                             android:id="@+id/dailyTargetLabel"
                             style="@style/Text.MyFitAI.BodyEmphasis"
-                            android:text="Target del giorno" />
+                            android:text="Obiettivo di oggi" />
                         <TextView
                             android:id="@+id/totalKcalTarget"
                             style="@style/Text.MyFitAI.BodyEmphasis"
@@ -542,7 +542,7 @@
                             android:layout_marginStart="@dimen/space_4"
                             android:gravity="center"
                             android:minLines="2"
-                            android:text="Extra"
+                            android:text="Sgarro"
                             android:textAllCaps="false"
                             app:icon="@drawable/ic_add_circle"
                             app:iconGravity="textStart" />

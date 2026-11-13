@@ -158,7 +158,7 @@ class CheatAdjustmentService(
                 "Sgarro confermato e registrato. Nessun giorno del piano corrisponde alla data selezionata.", emptyList())
         val targets = planTargets(day, snapshot.version)
             ?: return Result(cheatId, false, null, confirmed.estimate.kcal, confirmed.estimateSummary,
-                "Sgarro confermato e registrato. I target del giorno non sono completi, quindi l'app non ha adattato i pasti.", emptyList())
+                "Sgarro confermato e registrato. Gli obiettivi del giorno non sono completi, quindi l'app non ha adattato i pasti.", emptyList())
 
         val minuteOfDay = occurred.hour * 60 + occurred.minute
         val eligibleDays = snapshot.version.days.filter { sourceDay ->
@@ -167,7 +167,7 @@ class CheatAdjustmentService(
         }
         if (eligibleDays.isEmpty()) {
             return Result(cheatId, false, null, confirmed.estimate.kcal, confirmed.estimateSummary,
-                "Sgarro registrato. Non ci sono target futuri nella settimana su cui distribuire il surplus.", emptyList())
+                "Sgarro registrato. Non ci sono obiettivi futuri nella settimana su cui distribuire il surplus.", emptyList())
         }
 
         var remainingSurplus = confirmed.estimate.kcal.toDouble()
@@ -226,8 +226,8 @@ class CheatAdjustmentService(
 
         return Result(
             cheatId, true, versionId, confirmed.estimate.kcal, confirmed.estimateSummary,
-            "Surplus di ${confirmed.estimate.kcal} kcal inserito nel serbatoio e distribuito sui prossimi ${reductions.size} giorni. Target ridotti gradualmente; residuo non ancora distribuito: ${remainingSurplus.coerceAtLeast(0.0).roundToInt()} kcal.",
-            reductions.keys.map { "Target ${java.time.LocalDate.ofEpochDay(it)}: -${reductions.getValue(it)} kcal" },
+            "Surplus di ${confirmed.estimate.kcal} kcal inserito nel serbatoio e distribuito sui prossimi ${reductions.size} giorni. Obiettivi ridotti gradualmente; residuo non ancora distribuito: ${remainingSurplus.coerceAtLeast(0.0).roundToInt()} kcal.",
+            reductions.keys.map { "Obiettivo ${java.time.LocalDate.ofEpochDay(it)}: -${reductions.getValue(it)} kcal" },
         )
     }
 

@@ -122,8 +122,8 @@
     <string name="profile_allergies_hint">Allergie</string>
     <string name="profile_diet_style_hint">Stile alimentare</string>
     <string name="profile_food_notes_hint">Note alimentari</string>
-    <string name="home_calories_bmr_local">BMR locale</string>
-    <string name="home_calories_bmr_bia_reference">BMR BIA (riferimento)</string>
+    <string name="home_calories_bmr_local">Metabolismo a riposo (BMR)</string>
+    <string name="home_calories_bmr_bia_reference">Metabolismo a riposo da BIA (BMR)</string>
     <string name="notifications_open_android_settings">Apri impostazioni notifiche Android</string>
     <string name="home_bia_due_title">Rilevazione BIA in scadenza</string>
     <string name="home_bia_due_action">Apri impostazioni BIA</string>
@@ -181,7 +181,7 @@
     <string name="validation_required_birth_date">Inserisci la data di nascita</string>
     <string name="profile_birth_date_invalid">Controlla la data di nascita: l\'età deve essere compresa tra %1$d e %2$d anni</string>
     <string name="profile_birth_date_future">Controlla la data di nascita: la data non può essere nel futuro</string>
-    <string name="food_plan_profile_age_warning">Controlla la data di nascita nel profilo: servono un\'età tra %1$d e %2$d anni per calcolare i target. Tocca per aprire il profilo.</string>
+    <string name="food_plan_profile_age_warning">Controlla la data di nascita nel profilo: servono un\'età tra %1$d e %2$d anni per calcolare gli obiettivi. Tocca per aprire il profilo.</string>
     <string name="food_plan_profile_fix_hint">Tocca per aprire il profilo e correggere i dati.</string>
     <string name="food_plan_profile_age_dialog_title">Completa il profilo</string>
     <string name="food_plan_open_profile">Apri profilo</string>
@@ -372,31 +372,31 @@
         <item>Intervallo 1 anno</item>
     </string-array>
     <string name="home_remaining_label">Rimangono (kcal)</string>
-    <string name="home_over_target_label">Oltre il target (kcal)</string>
-    <string name="home_remaining_description">Rimangono %1$s su un target di %2$s</string>
-    <string name="home_over_target_description">Oltre il target di %1$s: consumate %2$s su un target di %3$s</string>
+    <string name="home_over_target_label">Oltre l\'obiettivo (kcal)</string>
+    <string name="home_remaining_description">Rimangono %1$s su un obiettivo di %2$s</string>
+    <string name="home_over_target_description">Oltre l\'obiettivo di %1$s: consumate %2$s su un obiettivo di %3$s</string>
     <string name="dashboard_delta_up_description">aumentato di %1$s rispetto alla rilevazione precedente</string>
     <string name="dashboard_delta_down_description">diminuito di %1$s rispetto alla rilevazione precedente</string>
     <string name="dashboard_delta_flat_description">invariato rispetto alla rilevazione precedente</string>
-    <string name="target_source_plan_day">Target del giorno dal piano alimentare, con adattamento e recupero</string>
-    <string name="target_source_plan_day_theoretical">Target del giorno dal piano alimentare, con adattamento e recupero. Target teorico senza adattamento: %1$s</string>
-    <string name="target_source_theoretical">Target teorico da profilo e attività, senza adattamento né recupero: nessun piano per oggi</string>
-    <string name="target_source_plan_week">Target settimanale del piano. Target specifico del giorno non disponibile</string>
-    <string name="target_source_none">Target non disponibile: completa i dati richiesti nel profilo</string>
-    <string name="food_target_label_plan_day">Target del giorno (piano)</string>
-    <string name="food_target_label_theoretical">Target teorico del giorno</string>
-    <string name="food_target_legend">Target del giorno: %1$s (%2$s). Target teorico senza adattamento né recupero: %3$s.</string>
+    <string name="target_source_plan_day">Obiettivo di oggi dal piano alimentare, con adattamento e recupero</string>
+    <string name="target_source_plan_day_theoretical">Obiettivo di oggi dal piano alimentare, con adattamento e recupero. Obiettivo da profilo, senza adattamento: %1$s</string>
+    <string name="target_source_theoretical">Obiettivo da profilo e attività, senza adattamento né recupero: nessun piano per oggi</string>
+    <string name="target_source_plan_week">Obiettivo settimanale del piano. Obiettivo specifico del giorno non disponibile</string>
+    <string name="target_source_none">Obiettivo non disponibile: completa i dati richiesti nel profilo</string>
+    <string name="food_target_label_plan_day">Obiettivo di oggi</string>
+    <string name="food_target_label_theoretical">Obiettivo di oggi (da profilo)</string>
+    <string name="food_target_legend">%4$s: %1$s (%2$s). Obiettivo da profilo senza adattamento né recupero: %3$s.</string>
     <string name="food_target_source_plan_day">dal piano, con adattamento e recupero</string>
     <string name="food_target_source_theoretical">nessun piano per questo giorno</string>
-    <string name="food_target_source_plan_week">target settimanale del piano</string>
-    <string name="food_target_description">%1$s: %2$s, proteine %3$s, target teorico %4$s</string>
+    <string name="food_target_source_plan_week">obiettivo settimanale del piano</string>
+    <string name="food_target_description">%1$s: %2$s, proteine %3$s, obiettivo da profilo %4$s</string>
     <string name="home_plan_update_title">Il piano alimentare non è aggiornato</string>
-    <string name="home_plan_update_message">Hai cambiato profilo o livello di attività: il target è quello del piano precedente. Rigenera il piano per aggiornarlo.</string>
+    <string name="home_plan_update_message">Hai cambiato profilo o livello di attività: l\'obiettivo di oggi è quello del piano precedente. Rigenera il piano per aggiornarlo.</string>
     <string name="home_plan_update_action">Rigenera alimentazione</string>
     <string name="home_mode_plan_stale">piano da aggiornare</string>
-    <string name="target_source_plan_stale">Target del piano precedente: rigenera il piano per aggiornarlo</string>
-    <string name="target_source_plan_stale_theoretical">Target del piano precedente: i nuovi dati danno %1$s</string>
-    <string name="home_tdee_percent_plan_stale">Il target è quello del piano precedente, non ancora aggiornato ai nuovi dati: rigenera il piano per ricalcolarlo.</string>
+    <string name="target_source_plan_stale">Obiettivo del piano precedente: rigenera il piano per aggiornarlo</string>
+    <string name="target_source_plan_stale_theoretical">Obiettivo del piano precedente: i nuovi dati danno %1$s</string>
+    <string name="home_tdee_percent_plan_stale">L\'obiettivo è quello del piano precedente, non ancora aggiornato ai nuovi dati: rigenera il piano per ricalcolarlo.</string>
 
     <!-- K4: BiaActivity e flusso BIA -->
     <string name="bia_k4_history_card_description">Rilevazione BIA del %1$s. %2$s.</string>
@@ -510,7 +510,7 @@
 
     <!-- UX1: Home quick wins -->
     <string name="dashboard_hint_register_meals">Registra i pasti di oggi per vedere quanto ti resta</string>
-    <string name="home_recovery_compact_hint">Nessun extra da distribuire.</string>
+    <string name="home_recovery_compact_hint">Nessun recupero da distribuire.</string>
     <string name="home_weekly_expectation_question">Hai raggiunto il traguardo della settimana?</string>
     <string-array name="home_chart_range_labels">
         <item>1W</item>
@@ -530,10 +530,13 @@
     <string name="food_plan_ux2_meals_help_description">Spiega il piano alimentare e i pasti del giorno</string>
     <string name="food_plan_ux2_meals_help_title">Pasti del giorno</string>
     <string name="food_plan_ux2_meals_help_body">Mostra i pasti previsti per il giorno selezionato. Tocca un pasto per vedere i dettagli e, quando disponibile, scegliere un\'alternativa.\n\nIl piano della settimana si genera o si rigenera con IA dal pulsante in fondo alla schermata e viene controllato localmente prima di essere salvato.</string>
-    <string name="food_plan_ux2_goal_changed_banner">I dati del profilo o le misure sono cambiati dopo la generazione: rigenera il piano per applicare i nuovi target.</string>
+    <string name="food_plan_ux2_goal_changed_banner">I dati del profilo o le misure sono cambiati dopo la generazione: rigenera il piano per applicare i nuovi obiettivi.</string>
     <string name="food_plan_ux2_meal_count_hint">%1$d pasti al giorno</string>
     <string name="food_plan_ux2_macro_carbs">Carboidrati</string>
     <string name="food_plan_ux2_macro_fat">Grassi</string>
     <string name="food_plan_ux2_macro_in_menu">Nel menu</string>
     <string name="food_plan_ux2_macro_menu_description">Nel menu: carboidrati %1$s, grassi %2$s</string>
+    <!-- UX3: vocabolario unico, vedi docs/GLOSSARIO_UI.md -->
+    <string name="food_target_label_plan_day_other">Obiettivo del giorno</string>
+    <string name="food_target_label_theoretical_other">Obiettivo del giorno (da profilo)</string>
 </resources>

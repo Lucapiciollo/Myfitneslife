@@ -398,7 +398,7 @@
                          android:layout_height="@dimen/screen_header_icon_size"
                          android:layout_gravity="top|end"
                          android:background="@android:color/transparent"
-                        android:contentDescription="Spiega calorie base, TDEE e target"
+                        android:contentDescription="Spiega metabolismo a riposo, consumo giornaliero e obiettivo di oggi"
                          android:padding="@dimen/space_8"
                         android:src="@drawable/ic_help_outline"
                         app:tint="@color/text_secondary" />
@@ -489,7 +489,7 @@
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
-                                android:text="Consumo (TDEE)" />
+                                android:text="Consumo giornaliero (TDEE)" />
                             <TextView
                                 android:id="@+id/caloriesTdeeValue"
                                 style="@style/Text.MyFitAI.CardTitle"
@@ -514,7 +514,7 @@
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
-                                android:text="Target" />
+                                android:text="Obiettivo di oggi" />
                             <TextView
                                 android:id="@+id/caloriesTargetValue"
                                 style="@style/Text.MyFitAI.CardTitle"
@@ -698,7 +698,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_4"
-                    android:text="L’anello mostra le calorie consumate rispetto al target indicato sopra." />
+                    android:text="L’anello mostra le calorie consumate rispetto all'obiettivo di oggi indicato sopra." />
                 </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
@@ -755,7 +755,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/space_8"
-                        android:text="Kcal extra ancora da distribuire nei prossimi giorni."
+                        android:text="Kcal di recupero ancora da distribuire nei prossimi giorni."
                         style="@style/Text.MyFitAI.Supporting" />
                   </LinearLayout>
                   <LinearLayout
@@ -974,7 +974,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/space_4"
-                            android:text="Registra misure, apri lo storico o aggiungi un extra." />
+                            android:text="Registra misure, apri lo storico o inserisci uno sgarro." />
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
@@ -1034,7 +1034,7 @@
                                 android:layout_marginTop="@dimen/space_8"
                                 android:gravity="center"
                                 android:minWidth="0dp"
-                                android:text="Inserisci extra"
+                                android:text="Inserisci sgarro"
                                 android:textAllCaps="false" />
                         </LinearLayout>
                     </LinearLayout>

@@ -62,13 +62,13 @@ class HelpDialogDeviceTest {
     fun metricHelpUsesTitleValueAndIndentedExplanationHierarchy() {
         val spec = HelpDialogSpec(
             title = "Come calcoliamo le calorie",
-            message = "BMR locale: 1918 kcal\n  Stima usata dall'app per calcolare TDEE e target.\n\n" +
-                "BMR riportato dalla BIA: 1918 kcal\n  Valore salvato dalla rilevazione, mostrato come riferimento.\n\n" +
-                "Consumo giornaliero (TDEE): 2302 kcal\n  BMR locale moltiplicato per il livello di attività.\n\n" +
-                "Target calorico: 1957 kcal\n  Deficit del -15% rispetto al consumo, per favorire la perdita di grasso.",
+            message = "Metabolismo a riposo (BMR): 1918 kcal\n  Stima usata dall'app per calcolare consumo giornaliero (TDEE) e obiettivo di oggi.\n\n" +
+                "Metabolismo a riposo da BIA (BMR): 1918 kcal\n  Valore salvato dalla rilevazione, mostrato come riferimento.\n\n" +
+                "Consumo giornaliero (TDEE): 2302 kcal\n  Metabolismo a riposo (BMR) moltiplicato per il livello di attività.\n\n" +
+                "Obiettivo di oggi: 1957 kcal\n  Deficit del -15% rispetto al consumo, per favorire la perdita di grasso.",
         )
         withDialog(spec) {
-            listOf("BMR locale", "1918 kcal", "Stima usata dall'app", "Consumo giornaliero (TDEE)", "2302 kcal", "Target calorico", "1957 kcal")
+            listOf("Metabolismo a riposo (BMR)", "1918 kcal", "Stima usata dall'app", "Consumo giornaliero (TDEE)", "2302 kcal", "Obiettivo di oggi", "1957 kcal")
                 .forEach { assertTrue("missing help content: $it", device.hasObject(By.textContains(it))) }
             assertActionBarIntact("Ho capito")
             device.takeScreenshot(File(dir, "help-title-value-explanation.png"))

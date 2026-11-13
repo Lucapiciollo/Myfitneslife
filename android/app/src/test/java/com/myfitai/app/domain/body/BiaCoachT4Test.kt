@@ -147,15 +147,15 @@ class BiaCoachT4Test {
         val text = BiaAnalysisReport.caloriesSection(calculation)
 
         val lines = text.lines()
-        assertEquals("Target abituale: 2528 kcal, proteine 179 g, carboidrati 292 g, grassi 72 g", lines[0])
-        assertEquals("Consumo abituale stimato (TDEE): 2974 kcal", lines[1])
+        assertEquals("Obiettivo da profilo: 2528 kcal, proteine 179 g, carboidrati 292 g, grassi 72 g", lines[0])
+        assertEquals("Consumo giornaliero (TDEE): 2974 kcal", lines[1])
         assertEquals(2, lines.size)
         // One target for every day: no "today" / rest-day / workout-day variant any more.
         assertFalse(text.contains("Oggi"))
         assertFalse(text.contains("operativo"))
         // The TDEE is never written as a target.
         assertFalse(text.contains("target 2974"))
-        assertFalse(text.contains("Target abituale: 2974"))
+        assertFalse(text.contains("Obiettivo da profilo: 2974"))
     }
 
     @Test
@@ -165,7 +165,7 @@ class BiaCoachT4Test {
             bmi = null, bmrKcal = null, tdeeKcal = null, targetKcal = 2528.1, proteinG = null, fatG = null, carbsG = null,
             waistHeightRatio = null, bmrMethod = null,
         )
-        assertEquals("Target abituale: 2528 kcal", BiaAnalysisReport.caloriesSection(onlyTarget))
+        assertEquals("Obiettivo da profilo: 2528 kcal", BiaAnalysisReport.caloriesSection(onlyTarget))
     }
 
     @Test
@@ -186,7 +186,7 @@ class BiaCoachT4Test {
                 return AiExecutionService.ValidatedResponse(AiProviderType.GEMINI, "fake", json)
             }
         }
-        val section = "Target abituale: 2528 kcal"
+        val section = "Obiettivo da profilo: 2528 kcal"
 
         val result = BiaAnalysisService(gateway).analyze(BiaAnalysisService.Report("BIA_CORRENTE:weightKg=89.5", 2, appCalories = section))
 
