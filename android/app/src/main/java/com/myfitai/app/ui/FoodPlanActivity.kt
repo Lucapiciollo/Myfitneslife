@@ -329,6 +329,8 @@ class FoodPlanActivity : BaseShellActivity() {
                     else -> null
                 })
                 setOnClickListener { openMeal(meal.id) }; setChangeEnabled(changeEnabled)
+                val consumed = status == FoodConsumptionStatus.CONSUMED.name
+                setQuickConsume(displayMealType(meal.type), consumed) { onQuickConsume(meal.id, consumed) }
                 setOnChangeClickListener { if (changeEnabled) openMealAlternatives(weekStart, day, meal) }
                 contentDescription = "${displayMealType(meal.type)}: ${meal.title}"
             }
@@ -343,6 +345,37 @@ class FoodPlanActivity : BaseShellActivity() {
         day?.hydrationNote?.takeIf { it.isNotBlank() }?.let {
             container.addView(infoRow("Idratazione", formatHydrationNote(it)))
         }
+    }
+
+    /**
+     * UX4: registra il pasto come consumato con un tocco, con la stessa logica del dettaglio (MealStatusRecorder).
+     * Se e' gia consumato non cambia nulla al tocco: il ripristino resta dietro l'azione "Annulla consumo" dello snackbar.
+     * Le righe si ridisegnano da sole: i consumi sono osservati da FoodPlanViewModel (consumptionRepository.all).
+     */
+    private fun onQuickConsume(mealId: Long, alreadyConsumed: Boolean) {
+        val recorder = data.mealStatusRecorder
+        if (alreadyConsumed) {
+            showMealSnackbar(R.string.meal_ux4_snackbar_already_consumed, R.string.meal_detail_ux4_undo_consumed) {
+                lifecycleScope.launch { runCatching { recorder.tap(mealId, FoodConsumptionStatus.CONSUMED) } }
+            }
+            return
+        }
+        lifecycleScope.launch {
+            val change = runCatching { recorder.markConsumed(mealId) }.getOrNull()
+            when {
+                change == null -> showMealSnackbar(R.string.meal_ux4_snackbar_error)
+                change.changed -> showMealSnackbar(R.string.meal_ux4_snackbar_consumed, R.string.meal_ux4_snackbar_undo) {
+                    lifecycleScope.launch { runCatching { recorder.restore(change) } }
+                }
+            }
+        }
+    }
+
+    private fun showMealSnackbar(@androidx.annotation.StringRes message: Int, @androidx.annotation.StringRes action: Int? = null, onAction: (() -> Unit)? = null) {
+        val snackbar = com.google.android.material.snackbar.Snackbar.make(findViewById(android.R.id.content), message, com.google.android.material.snackbar.Snackbar.LENGTH_LONG)
+        findViewById<View?>(R.id.bottomNav)?.let { snackbar.setAnchorView(it) }
+        if (action != null && onAction != null) snackbar.setAction(action) { onAction() }
+        snackbar.show()
     }
 
     private fun renderPlanScheduleStatus(visible: Boolean) {

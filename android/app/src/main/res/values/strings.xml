@@ -536,4 +536,21 @@
     <string name="food_plan_ux2_macro_fat">Grassi</string>
     <string name="food_plan_ux2_macro_in_menu">Nel menu</string>
     <string name="food_plan_ux2_macro_menu_description">Nel menu: carboidrati %1$s, grassi %2$s</string>
+
+    <!-- UX4: registrare un pasto in meno tocchi (barra azioni del dettaglio, azione rapida in Cibo) -->
+    <string name="meal_detail_ux4_mark_consumed">Segna come consumato</string>
+    <string name="meal_detail_ux4_mark_skipped">Segna come saltato</string>
+    <string name="meal_detail_ux4_undo_consumed">Annulla consumo</string>
+    <string name="meal_detail_ux4_undo_skipped">Annulla pasto saltato</string>
+    <string name="meal_detail_ux4_status_none">Stato: da registrare</string>
+    <string name="meal_detail_ux4_status_consumed">Stato: consumato</string>
+    <string name="meal_detail_ux4_status_skipped">Stato: saltato</string>
+    <string name="meal_ux4_snackbar_consumed">Pasto segnato come consumato</string>
+    <string name="meal_ux4_snackbar_skipped">Pasto segnato come saltato</string>
+    <string name="meal_ux4_snackbar_cleared">Registrazione del pasto rimossa</string>
+    <string name="meal_ux4_snackbar_already_consumed">Pasto già segnato come consumato</string>
+    <string name="meal_ux4_snackbar_undo">Annulla</string>
+    <string name="meal_ux4_snackbar_error">Impossibile registrare il pasto</string>
+    <string name="meal_ux4_quick_consume_cd">Segna come consumato: %1$s</string>
+    <string name="meal_ux4_quick_consumed_cd">Pasto consumato: %1$s. Tocca per annullare il consumo</string>
 </resources>
