@@ -2,7 +2,6 @@ package com.myfitai.app.domain.calculation
 
 import com.myfitai.app.domain.calculation.DailyActivityCheckInEngine.Intensity
 import java.time.DayOfWeek
-import java.time.LocalDate
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -36,14 +35,12 @@ class TrainingProgramTest {
     )
 
     @Test
-    fun emptyProgramMeansRestEveryDay() {
+    fun emptyProgramMeansNoTrainingDays() {
         val empty = TrainingProgram()
 
         assertTrue(empty.isEmpty)
         assertEquals(0, empty.daysMask)
         assertEquals("Nessun giorno di allenamento impostato", empty.summary())
-        assertEquals(0, empty.toWeeklyProgram().trainingDaysPerWeek)
-        assertFalse(TrainingDayResolver.resolve(LocalDate.of(2026, 10, 5), program = empty.toWeeklyProgram()).isTraining)
     }
 
     @Test
@@ -66,12 +63,12 @@ class TrainingProgramTest {
         val corrupted = TrainingProgram.fromStored(mask = -1, durationMinutes = 9_999, intensityName = "???", startMinutes = 99_999)
 
         assertEquals(DayOfWeek.entries.toSet(), corrupted.days)
-        assertEquals(TrainingSession.MAX_DURATION_MINUTES, corrupted.durationMinutes)
+        assertEquals(TrainingProgram.MAX_DURATION_MINUTES, corrupted.durationMinutes)
         assertEquals(TrainingProgram.DEFAULT_INTENSITY, corrupted.intensity)
         assertNull(corrupted.startMinutes)
 
         val defaults = TrainingProgram.fromStored(mask = 0, durationMinutes = 1, intensityName = null, startMinutes = -1)
-        assertEquals(TrainingSession.MIN_DURATION_MINUTES, defaults.durationMinutes)
+        assertEquals(TrainingProgram.MIN_DURATION_MINUTES, defaults.durationMinutes)
         assertNull(defaults.startMinutes)
     }
 
@@ -97,28 +94,16 @@ class TrainingProgramTest {
         restored!!
 
         assertEquals(setOf(DayOfWeek.MONDAY, DayOfWeek.SUNDAY), restored.days)
-        assertEquals(TrainingSession.MAX_DURATION_MINUTES, restored.durationMinutes)
+        assertEquals(TrainingProgram.MAX_DURATION_MINUTES, restored.durationMinutes)
         assertEquals(TrainingProgram.DEFAULT_INTENSITY, restored.intensity)
         assertNull(restored.startMinutes)
     }
 
     @Test
-    fun weeklyProgramFeedsTheResolverForTheSelectedDaysOnly() {
-        val weekly = program.toWeeklyProgram()
-        val monday = LocalDate.of(2026, 10, 5)
-
-        assertEquals(3, weekly.trainingDaysPerWeek)
-        val trainingDay = TrainingDayResolver.resolve(monday, program = weekly)
-        assertEquals(TrainingSession(75, Intensity.HARD, 18 * 60 + 30), trainingDay.session)
-        assertFalse(TrainingDayResolver.resolve(monday.plusDays(1), program = weekly).isTraining)
-        assertTrue(TrainingDayResolver.resolve(monday.plusDays(4), program = weekly).isTraining)
-    }
-
-    @Test
-    fun durationOptionsAreAllValidForASession() {
+    fun durationOptionsAreAllValidForAProgram() {
         TrainingProgram.DURATION_OPTIONS.forEach { minutes ->
             val program = TrainingProgram(days = setOf(DayOfWeek.MONDAY), durationMinutes = minutes)
-            assertEquals(minutes, program.toWeeklyProgram().sessions.getValue(DayOfWeek.MONDAY).durationMinutes)
+            assertEquals(minutes, program.durationMinutes)
         }
     }
 }

@@ -43,7 +43,6 @@ import java.util.Locale
 import com.myfitai.app.domain.display.DisplayNumberFormatter
 import com.myfitai.app.domain.display.DayTargetResolver
 import com.myfitai.app.domain.calculation.ProfileCalculationMapper
-import com.myfitai.app.domain.calculation.TrainingEnergyPreview
 import java.time.Instant
 import java.time.ZoneId
 
@@ -51,7 +50,7 @@ class FoodPlanActivity : BaseShellActivity() {
 
     private val data by lazy { AppDataContainer.get(this) }
     private val viewModel: FoodPlanViewModel by viewModels {
-         FoodPlanViewModel.Factory(data.mealPlanRepository, data.activeProfileStore, data.nutritionPlanGenerationService, data.profileCalculationService, data.notificationScheduler, data.foodConsumptionRepository, data.aiJobScheduler, data.userProfileRepository, data.biaRepository, data.bodyMeasurementRepository, data.dailyActivityCheckInRepository, data.nutritionPlanSchedulePreferences, data.dayEnergyProvider)
+         FoodPlanViewModel.Factory(data.mealPlanRepository, data.activeProfileStore, data.nutritionPlanGenerationService, data.profileCalculationService, data.notificationScheduler, data.foodConsumptionRepository, data.aiJobScheduler, data.userProfileRepository, data.biaRepository, data.bodyMeasurementRepository, data.nutritionPlanSchedulePreferences)
     }
 
     private val mealAlternativeLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -137,31 +136,9 @@ class FoodPlanActivity : BaseShellActivity() {
                 .show()
             return
         }
-        lifecycleScope.launch {
-            // Informational only: a missing summary never blocks the confirmation.
-            val details = runCatching { trainingPreviewText() }.getOrNull()
-            confirmAiRequest("La generazione del piano alimentare", details) {
-                viewModel.generateCurrentWeek()
-            }
+        confirmAiRequest("La generazione del piano alimentare") {
+            viewModel.generateCurrentWeek()
         }
-    }
-
-    private suspend fun trainingPreviewText(): String? {
-        val profileId = data.activeProfileStore.currentIdOrNull() ?: return null
-        val program = data.trainingProgramPreferences.get(profileId)
-        if (program.isEmpty) return null
-        val profile = data.userProfileRepository.get(profileId) ?: return null
-        val snapshot = data.profileCalculationService.profileSnapshot(profileId, LocalDate.now()) ?: return null
-        val preview = TrainingEnergyPreview.build(
-            bmrKcal = snapshot.calculation.bmrKcal,
-            weightKg = snapshot.latestWeightKg?.toDouble(),
-            goal = ProfileCalculationMapper.goal(profile.goal),
-            activityLevel = ProfileCalculationMapper.activity(profile.activityLevel),
-            basis = data.trainingProgramPreferences.activityBasis(profileId),
-            program = program,
-            previousTargetKcal = snapshot.calculation.targetKcal,
-        ) ?: return null
-        return TrainingEnergyPreview.describe(preview)
     }
 
     private fun render(state: FoodPlanViewModel.State) {
@@ -498,7 +475,7 @@ class FoodPlanActivity : BaseShellActivity() {
         val baseTargetKcal = day.baseTargetKcal ?: planTargetKcal
         findViewById<TextView>(R.id.dailyTotalLegend).text =
             "BMR: ${calorieReference.bmrKcal?.let { formatKcal(it) } ?: "non disponibile"} a riposo · " +
-             "TDEE operativo: ${calorieReference.tdeeKcal?.let { formatKcal(it) } ?: "non disponibile"}, calcolato sull'attività del giorno. " +
+             "TDEE: ${calorieReference.tdeeKcal?.let { formatKcal(it) } ?: "non disponibile"}, calcolato sul livello di attività del profilo. " +
                  getString(R.string.food_target_legend, formatKcal(resolvedTarget.kcal), targetSourceLabel, formatKcal(resolvedTarget.theoreticalKcal))
         val rows = listOf(
             R.id.dailyTotalRowBmr,
@@ -512,7 +489,7 @@ class FoodPlanActivity : BaseShellActivity() {
         findViewById<TextView>(R.id.totalKcalBmr).text = formatKcal(calorieReference.bmrKcal)
         findViewById<TextView>(R.id.totalKcalTdee).text = formatKcal(calorieReference.tdeeKcal)
         findViewById<TextView>(R.id.dailyTdeeLabel).text =
-            if (calorieReference.fromTrainingProgram) "TDEE · attività del giorno" else "TDEE · attività abituale"
+            "TDEE · livello di attività"
         findViewById<TextView>(R.id.dailyTargetLabel).text = targetLabel
         findViewById<View>(R.id.dailyTotalRowTarget).visibility = if (dayTargetKcal != null || dayTargetProtein != null) View.VISIBLE else View.GONE
         findViewById<TextView>(R.id.totalKcalTarget).text = formatKcal(dayTargetKcal)
@@ -522,7 +499,7 @@ class FoodPlanActivity : BaseShellActivity() {
         findViewById<TextView>(R.id.totalKcalConsumed).text = formatConsumed(consumedKcal, "kcal")
         findViewById<TextView>(R.id.totalProteinConsumed).text = formatConsumed(consumedProtein, "g")
         findViewById<View>(R.id.dailyTotalRowBmr).contentDescription = calorieReference.bmrKcal?.let { "Metabolismo a riposo, ${formatKcal(it)}" }
-         findViewById<View>(R.id.dailyTotalRowTdee).contentDescription = calorieReference.tdeeKcal?.let { "TDEE operativo del giorno, ${formatKcal(it)}" }
+         findViewById<View>(R.id.dailyTotalRowTdee).contentDescription = calorieReference.tdeeKcal?.let { "TDEE, ${formatKcal(it)}" }
         findViewById<View>(R.id.dailyTotalRowTarget).contentDescription = getString(R.string.food_target_description, targetLabel, formatKcal(dayTargetKcal), formatValue(dayTargetProtein, "g"), formatKcal(resolvedTarget.theoreticalKcal))
         findViewById<View>(R.id.dailyTotalRowPlanned).contentDescription = "Nel menu: ${NutritionEstimateFormatter.formatEstimatedKcal(totals.kcal)}, proteine ${NutritionEstimateFormatter.formatEstimatedMacro(totals.proteinG, "g")}"
         findViewById<View>(R.id.dailyTotalRowConsumed).contentDescription = "Consumate: ${formatConsumed(consumedKcal, "kcal")}, proteine ${formatConsumed(consumedProtein, "g")}"
@@ -554,7 +531,7 @@ class FoodPlanActivity : BaseShellActivity() {
             "Come leggere le calorie",
             
             "BMR a riposo: energia stimata senza applicare il livello di attività.\n\n" +
-                    "TDEE operativo: stima locale calcolata sul profilo e sull'attività del giorno; senza check-in viene usato il riposo. Non è una misurazione dell'allenamento singolo.\n\n" +
+                    "TDEE: stima locale calcolata sul profilo e sul livello di attività scelto, uguale per tutti i giorni. Non è una misurazione dell'allenamento singolo.\n\n" +
                     "Target del giorno: se il piano ha una voce per quel giorno è il target del piano, con adattamento e recupero già applicati, uguale a quello mostrato in Home. Senza piano per il giorno è il target teorico (profilo e attività), indicato come tale; viene mostrato anche il teorico quando differisce.\n\n" +
                     "Piano: somma nutrizionale degli alimenti e degli integratori programmati.\n\n" +
                     "Consumate: somma dei soli elementi segnati come consumati nel giorno selezionato. Le portate non registrate non vengono conteggiate come zero effettivo."

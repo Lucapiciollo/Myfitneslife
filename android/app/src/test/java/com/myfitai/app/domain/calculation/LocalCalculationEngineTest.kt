@@ -9,12 +9,37 @@ import org.junit.Test
 class LocalCalculationEngineTest {
 
     @Test
-    fun dailyActivityCheckIn_isConservativeAndCapped() {
-        assertEquals(50, DailyActivityCheckInEngine.adjustmentKcal(30, DailyActivityCheckInEngine.Intensity.LIGHT))
-        assertEquals(140, DailyActivityCheckInEngine.adjustmentKcal(60, DailyActivityCheckInEngine.Intensity.MODERATE))
-        assertEquals(225, DailyActivityCheckInEngine.adjustmentKcal(120, DailyActivityCheckInEngine.Intensity.HARD))
-        assertEquals(2100.0, DailyActivityCheckInEngine.effectiveTdeeKcal(1750.0, 2712.5, "REST", 0)!!, 0.01)
-        assertEquals(2852.5, DailyActivityCheckInEngine.effectiveTdeeKcal(1750.0, 2712.5, "PLANNED_WORKOUT", 140)!!, 0.01)
+    fun tdeeIsBmrTimesTheFactorOfTheProfileActivityLevel() {
+        val factors = mapOf(
+            LocalCalculationEngine.ActivityLevel.SEDENTARY to 1.20,
+            LocalCalculationEngine.ActivityLevel.LIGHT to 1.375,
+            LocalCalculationEngine.ActivityLevel.MODERATE to 1.55,
+            LocalCalculationEngine.ActivityLevel.VERY_ACTIVE to 1.725,
+            LocalCalculationEngine.ActivityLevel.EXTREME to 1.90,
+        )
+        factors.forEach { (level, factor) ->
+            val result = LocalCalculationEngine.calculate(
+                LocalCalculationEngine.Input(
+                    weightKg = 80.0, heightCm = 180.0, ageYears = 40,
+                    biologicalSex = LocalCalculationEngine.BiologicalSex.MALE,
+                    activityLevel = level, goal = LocalCalculationEngine.Goal.MAINTENANCE,
+                )
+            )
+            assertEquals("$level", result.bmrKcal!! * factor, result.tdeeKcal!!, 1e-9)
+            // Maintenance: the goal factor is 1, so the target is the TDEE itself, one value for every day.
+            assertEquals("$level", result.tdeeKcal!!, result.targetKcal!!, 1e-9)
+        }
+    }
+
+    @Test
+    fun storedActivityLevelsStayReadableWhateverTheirHistoricalSpelling() {
+        assertEquals(LocalCalculationEngine.ActivityLevel.SEDENTARY, ProfileCalculationMapper.activity("Sedentario"))
+        assertEquals(LocalCalculationEngine.ActivityLevel.LIGHT, ProfileCalculationMapper.activity(" leggermente attivo "))
+        assertEquals(LocalCalculationEngine.ActivityLevel.MODERATE, ProfileCalculationMapper.activity("Moderatamente attivo"))
+        assertEquals(LocalCalculationEngine.ActivityLevel.VERY_ACTIVE, ProfileCalculationMapper.activity("MOLTO ATTIVO"))
+        assertEquals(LocalCalculationEngine.ActivityLevel.EXTREME, ProfileCalculationMapper.activity("Estremamente attivo"))
+        assertNull(ProfileCalculationMapper.activity(null))
+        assertNull(ProfileCalculationMapper.activity("allenamento"))
     }
 
     @Test

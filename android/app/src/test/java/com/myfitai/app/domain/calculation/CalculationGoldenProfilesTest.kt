@@ -1,5 +1,6 @@
 package com.myfitai.app.domain.calculation
 
+import com.myfitai.app.domain.body.BiaAnalysisReport
 import com.myfitai.app.domain.calculation.LocalCalculationEngine.Goal
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -88,6 +89,49 @@ class CalculationGoldenProfilesTest {
         assertEquals(53.7, r.fatG!!, 0.1)
         assertEquals(301.28, r.carbsG!!, 0.1)
         assertFalse(r.floorApplied)
+    }
+
+    /**
+     * Luca: uomo 43 anni, 186 cm, 89,5 kg, grasso 19,9% (BIA), "Moderatamente attivo", dimagrimento. Ricalcolo a mano:
+     * massa magra = 89,5 * (1 - 0,199) = 71,6895; BMR Katch-McArdle = 370 + 21,6 * 71,6895 = 1918,5;
+     * TDEE = 1918,5 * 1,55 = 2973,7; target = 2973,7 * 0,85 = 2527,6.
+     * Proteine = min(179; 0,30*2527,6/4 = 189,6) = 179; grassi = max(53,7; 0,20*2527,6/9 = 56,17) = 56,17;
+     * carboidrati = (2527,6 - 716 - 505,5) / 4 = 326,5.
+     * Il livello di attivita e UNO solo e vale per tutti i giorni: stesso target in Home, Cibo, BIA Coach e piano.
+     */
+    @Test
+    fun profileLuca_man43_186cm_89_5kg_katch_moderate_weightLoss_sameTargetEverywhere() {
+        val r = LocalCalculationEngine.calculate(
+            LocalCalculationEngine.Input(
+                weightKg = 89.5,
+                heightCm = 186.0,
+                ageYears = 43,
+                biologicalSex = LocalCalculationEngine.BiologicalSex.MALE,
+                bodyFatPercent = 19.9,
+                activityLevel = LocalCalculationEngine.ActivityLevel.MODERATE,
+                goal = Goal.WEIGHT_LOSS,
+            )
+        )
+        assertEquals("KATCH_MCARDLE", r.bmrMethod)
+        assertEquals(1918.5, r.bmrKcal!!, 0.1)
+        assertEquals(2973.7, r.tdeeKcal!!, 0.2)
+        assertEquals(2527.6, r.targetKcal!!, 0.2)
+        assertEquals(179.0, r.proteinG!!, 0.1)
+        assertEquals(56.17, r.fatG!!, 0.1)
+        assertEquals(326.5, r.carbsG!!, 0.5)
+        assertFalse(r.floorApplied)
+
+        // Home and Food: the profile numbers, no check-in, no "rest day" TDEE (BMR x 1,2 would be 2302).
+        val shown = OperationalNutritionMetrics.calculate(r)
+        assertEquals(r.tdeeKcal!!, shown.tdeeKcal!!, 0.0)
+        assertEquals(r.targetKcal!!, shown.targetKcal!!, 0.0)
+        assertEquals(r.proteinG!!, shown.proteinG!!, 0.0)
+        assertEquals(r.carbsG!!, shown.carbsG!!, 0.0)
+        assertEquals(r.fatG!!, shown.fatG!!, 0.0)
+        // BIA Coach: the same figures, written once as the habitual target.
+        val bia = BiaAnalysisReport.caloriesSection(r)
+        assertTrue(bia, bia.startsWith("Target abituale: 2528 kcal, proteine 179 g"))
+        assertTrue(bia, bia.contains("Consumo abituale stimato (TDEE): 2974 kcal"))
     }
 
     // ---- MacroPolicy: ordine di priorita --------------------------------------------------------

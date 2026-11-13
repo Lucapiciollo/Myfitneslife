@@ -1,114 +1,98 @@
 package com.myfitai.app.domain.calculation
 
-import com.myfitai.app.data.local.entity.DailyActivityCheckInEntity
+import com.myfitai.app.domain.calculation.LocalCalculationEngine.ActivityLevel
+import com.myfitai.app.domain.calculation.LocalCalculationEngine.BiologicalSex
+import com.myfitai.app.domain.calculation.LocalCalculationEngine.Goal
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
+/**
+ * Home, Food and BIA Coach show the numbers of the profile: TDEE = BMR x activity-level factor,
+ * target = TDEE x goal factor. One value for every day: nothing here depends on check-ins or workouts.
+ */
 class OperationalNutritionMetricsTest {
-    @Test
-    fun restAndWorkoutUseTheSameOperationalEngine() {
-        val calculation = LocalCalculationEngine.Result(
-            bmi = null,
-            bmrKcal = 2000.0,
-            tdeeKcal = 3000.0,
-            targetKcal = 2850.0,
-            proteinG = null,
-            fatG = null,
-            carbsG = null,
-            waistHeightRatio = null,
-            bmrMethod = null,
-        )
-
-        val rest = OperationalNutritionMetrics.calculate(calculation, checkIn("REST", 0))
-        val workout = OperationalNutritionMetrics.calculate(calculation, checkIn("PLANNED_WORKOUT", 140))
-
-        assertEquals(2400.0, rest.operationalTdeeKcal!!, 0.001)
-        assertEquals(3140.0, workout.operationalTdeeKcal!!, 0.001)
-        assertEquals(2850.0 * 2400.0 / 3000.0, rest.operationalTargetKcal!!, 0.001)
-        assertEquals(2850.0 * 3140.0 / 3000.0, workout.operationalTargetKcal!!, 0.001)
-    }
+    private fun profile(level: ActivityLevel, goal: Goal = Goal.WEIGHT_LOSS) = LocalCalculationEngine.calculate(
+        LocalCalculationEngine.Input(
+            weightKg = 89.5, heightCm = 186.0, ageYears = 43, biologicalSex = BiologicalSex.MALE,
+            bodyFatPercent = 19.9, activityLevel = level, goal = goal,
+        ),
+    )
 
     @Test
-    fun legacyMacrosKeepProteinAndFatPerKgAndMoveOnlyCarbohydrates() {
+    fun metricsAreExactlyTheProfileNumbers() {
         val calculation = LocalCalculationEngine.Result(
             bmi = null, bmrKcal = 2000.0, tdeeKcal = 3000.0, targetKcal = 2850.0,
             proteinG = 180.0, fatG = 72.0, carbsG = 370.0, waistHeightRatio = null, bmrMethod = null,
         )
 
-        val rest = OperationalNutritionMetrics.calculate(calculation, checkIn("REST", 0))
+        val metrics = OperationalNutritionMetrics.calculate(calculation)
 
-        assertEquals(180.0, rest.operationalProteinG!!, 0.001)
-        assertEquals(72.0, rest.operationalFatG!!, 0.001)
-        val restTarget = rest.operationalTargetKcal!!
-        assertEquals((restTarget - 180.0 * 4 - 72.0 * 9) / 4, rest.operationalCarbsG!!, 0.001)
+        assertEquals(2000.0, metrics.bmrKcal!!, 0.0)
+        assertEquals(3000.0, metrics.tdeeKcal!!, 0.0)
+        assertEquals(2850.0, metrics.targetKcal!!, 0.0)
+        assertEquals(180.0, metrics.proteinG!!, 0.0)
+        assertEquals(72.0, metrics.fatG!!, 0.0)
+        assertEquals(370.0, metrics.carbsG!!, 0.0)
     }
 
     @Test
-    fun programDayReplacesTheLegacyEstimateWithThePlanEngine() {
-        val calculation = LocalCalculationEngine.Result(
-            bmi = null, bmrKcal = 1918.0, tdeeKcal = 2973.0, targetKcal = 2527.0,
-            proteinG = 179.0, fatG = 71.6, carbsG = 291.0, waistHeightRatio = null, bmrMethod = null,
-        )
-        val days = TrainingEnergyPlanner.plan(
-            dates = listOf(java.time.LocalDate.of(2026, 9, 14), java.time.LocalDate.of(2026, 9, 16)),
-            inputs = TrainingEnergyPlanner.Inputs(
-                bmrKcal = 1918.0,
-                weightKg = 89.5,
-                goal = LocalCalculationEngine.Goal.WEIGHT_LOSS,
-                activityLevel = LocalCalculationEngine.ActivityLevel.MODERATE,
-                activityBasis = TrainingEnergyPlanner.ActivityBasis.LEGACY_INCLUDES_TRAINING,
-                program = TrainingProgram(setOf(java.time.DayOfWeek.WEDNESDAY)),
-            ),
-        )!!
+    fun withoutACheckInTheTdeeIsTheHabitualOneNotTheRestOne() {
+        // Before A1 a missing check-in meant "rest day": TDEE = BMR x 1,2 and a lower target.
+        val calculation = profile(ActivityLevel.MODERATE)
 
-        val rest = OperationalNutritionMetrics.calculate(calculation, null, days[0])
-        val training = OperationalNutritionMetrics.calculate(calculation, null, days[1])
+        val metrics = OperationalNutritionMetrics.calculate(calculation)
 
-        assertEquals(days[0].energy.tdeeKcal, rest.operationalTdeeKcal!!, 0.001)
-        assertEquals(days[1].baseTargets.kcal, training.operationalTargetKcal!!, 0.001)
-        assertEquals("REST", rest.activityStatus)
-        assertEquals("PLANNED_WORKOUT", training.activityStatus)
-        assertEquals(days[1].energy.exerciseKcal, training.activityAdjustmentKcal)
-        assertEquals("protein does not scale with calories", rest.operationalProteinG, training.operationalProteinG)
-        assertEquals(2527.0, rest.profileTargetKcal!!, 0.001)
-        assertEquals(2973.0, training.habitualTdeeKcal!!, 0.001)
+        assertEquals(calculation.bmrKcal!! * 1.55, metrics.tdeeKcal!!, 0.001)
+        assertTrue(metrics.tdeeKcal!! > calculation.bmrKcal!! * 1.2 + 100.0)
+        assertEquals(calculation.targetKcal!!, metrics.targetKcal!!, 0.0)
     }
 
     @Test
-    fun legacyPathKeepsThePolicyProteinAndFatOfTheHabitualTargetOnRestAndWorkoutDays() {
-        // K6 real case: woman 78 kg, sedentary, weight loss. The habitual macros come from MacroPolicy ONCE (calculation)
-        // and the operational days only move carbohydrates: protein 30% of the habitual kcal, not 2,0 g/kg.
+    fun theActivityLevelOfTheProfileMovesTdeeAndTarget() {
+        val moderate = OperationalNutritionMetrics.calculate(profile(ActivityLevel.MODERATE))
+        val veryActive = OperationalNutritionMetrics.calculate(profile(ActivityLevel.VERY_ACTIVE))
+        val sedentary = OperationalNutritionMetrics.calculate(profile(ActivityLevel.SEDENTARY))
+
+        assertEquals(moderate.bmrKcal!!, veryActive.bmrKcal!!, 0.0)
+        assertEquals(veryActive.bmrKcal!! * 1.725, veryActive.tdeeKcal!!, 0.001)
+        assertTrue(veryActive.tdeeKcal!! > moderate.tdeeKcal!!)
+        assertTrue(veryActive.targetKcal!! > moderate.targetKcal!!)
+        assertTrue(moderate.tdeeKcal!! > sedentary.tdeeKcal!!)
+        assertTrue(moderate.targetKcal!! > sedentary.targetKcal!!)
+    }
+
+    @Test
+    fun macrosKeepThePolicyOfTheProfileTarget() {
+        // K6 real case: woman 78 kg, sedentary, weight loss. Protein is 30% of the profile kcal, not 2,0 g/kg.
         val calculation = LocalCalculationEngine.calculate(
             LocalCalculationEngine.Input(
                 weightKg = 78.0, heightCm = 164.0, ageYears = 62,
-                biologicalSex = LocalCalculationEngine.BiologicalSex.FEMALE,
-                activityLevel = LocalCalculationEngine.ActivityLevel.SEDENTARY,
-                goal = LocalCalculationEngine.Goal.WEIGHT_LOSS,
+                biologicalSex = BiologicalSex.FEMALE,
+                activityLevel = ActivityLevel.SEDENTARY,
+                goal = Goal.WEIGHT_LOSS,
             ),
         )
         assertEquals(1360.68, calculation.targetKcal!!, 0.01)
-        assertEquals(0.075 * 1360.68, calculation.proteinG!!, 0.01)
 
-        val rest = OperationalNutritionMetrics.calculate(calculation, checkIn("REST", 0))
-        val workout = OperationalNutritionMetrics.calculate(calculation, checkIn("PLANNED_WORKOUT", 140))
+        val metrics = OperationalNutritionMetrics.calculate(calculation)
 
-        assertEquals(calculation.proteinG!!, rest.operationalProteinG!!, 0.0)
-        assertEquals(rest.operationalProteinG, workout.operationalProteinG)
-        assertEquals(rest.operationalFatG, workout.operationalFatG)
-        assertEquals(
-            (workout.operationalTargetKcal!! - rest.operationalTargetKcal!!) / 4.0,
-            workout.operationalCarbsG!! - rest.operationalCarbsG!!,
-            1e-6,
-        )
+        assertEquals(0.075 * 1360.68, metrics.proteinG!!, 0.01)
+        assertEquals(calculation.proteinG!!, metrics.proteinG!!, 0.0)
+        assertEquals(calculation.carbsG!!, metrics.carbsG!!, 0.0)
+        assertEquals(calculation.fatG!!, metrics.fatG!!, 0.0)
     }
-    private fun checkIn(status: String, adjustment: Int) = DailyActivityCheckInEntity(
-        profileId = 1L,
-        dateEpochDay = 1L,
-        status = status,
-        durationMinutes = null,
-        intensity = null,
-        adjustmentKcal = adjustment,
-        createdAtEpochMillis = 1L,
-        updatedAtEpochMillis = 1L,
-    )
+
+    @Test
+    fun missingCalculationGivesNoNumbers() {
+        val metrics = OperationalNutritionMetrics.calculate(null)
+
+        assertNull(metrics.bmrKcal)
+        assertNull(metrics.tdeeKcal)
+        assertNull(metrics.targetKcal)
+        assertNull(metrics.proteinG)
+        assertNull(metrics.carbsG)
+        assertNull(metrics.fatG)
+    }
 }

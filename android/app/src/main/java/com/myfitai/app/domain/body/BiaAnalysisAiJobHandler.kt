@@ -7,7 +7,6 @@ import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.data.repository.BiaAnalysisResultRepository
 import com.myfitai.app.data.repository.BiaRepository
 import com.myfitai.app.data.repository.BodyMeasurementRepository
-import com.myfitai.app.data.repository.DailyActivityCheckInRepository
 import com.myfitai.app.data.repository.MealPlanRepository
 import com.myfitai.app.data.repository.UserProfileRepository
 import com.myfitai.app.data.repository.WorkoutRepository
@@ -15,8 +14,6 @@ import com.myfitai.app.domain.ai.AiJobFailures
 import com.myfitai.app.domain.ai.AiJobHandler
 import com.myfitai.app.domain.ai.AiJobOutcome
 import com.myfitai.app.domain.ai.AiJobWorker
-import com.myfitai.app.domain.calculation.DayEnergyProvider
-import com.myfitai.app.domain.calculation.OperationalNutritionMetrics
 import com.myfitai.app.domain.calculation.ProfileCalculationService
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
@@ -41,9 +38,6 @@ class BiaAnalysisAiJobHandler(
     private val results: BiaAnalysisResultRepository,
     private val clock: () -> Long = System::currentTimeMillis,
     private val today: () -> LocalDate = LocalDate::now,
-    /** Same sources as the Home: per-day energy and today's check-in. Null = no operational target is sent. */
-    private val dayEnergy: DayEnergyProvider? = null,
-    private val checkIns: DailyActivityCheckInRepository? = null,
 ) : AiJobHandler {
     override suspend fun execute(profileId: Long, jobKey: String, params: Data): AiJobOutcome {
         return try {
@@ -116,25 +110,15 @@ class BiaAnalysisAiJobHandler(
             }
         }
         val calculation = calculations.profileSnapshot(profileId)?.calculation
-        // Same calculation as the Home card: check-in of today + per-day program energy -> operational target.
-        val now = today()
-        val programDay = dayEnergy?.day(profileId, now)
-        val operational = if (calculation == null && programDay == null) null else BiaAnalysisReport.OperationalTarget.from(
-            OperationalNutritionMetrics.calculate(
-                calculation,
-                checkIns?.observeForDay(profileId, now.toEpochDay())?.first(),
-                programDay,
-            ),
-        )
+        // One target for every day: the profile's, the same one shown by Home and Food.
         return BiaAnalysisReport.coachContext(
             profile = profile,
-            today = now,
+            today = today(),
             report = report,
             bodyHistory = body.all(profileId).first(),
             workoutHistory = workouts.all(profileId).first(),
             planDays = planDays,
             calculation = calculation,
-            operational = operational,
         )
     }
 

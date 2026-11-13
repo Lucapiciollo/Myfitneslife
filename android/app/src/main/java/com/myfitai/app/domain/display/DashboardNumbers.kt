@@ -134,9 +134,8 @@ object RemainingKcal {
 }
 
 /**
- * Maintenance used for the weekly energy-balance estimate. It is the habitual TDEE (the same figure for every
- * day that has no day-specific expenditure), never today's operational TDEE: a manual check-in changes only
- * today and must not move the expectation of the whole week.
+ * Maintenance used for the weekly energy-balance estimate: the profile's TDEE (BMR x activity-level factor), the
+ * same figure for every day of the week.
  */
 object WeeklyMaintenance {
     fun baseKcal(habitualTdeeKcal: Int?, operationalTdeeKcal: Int?): Int? =

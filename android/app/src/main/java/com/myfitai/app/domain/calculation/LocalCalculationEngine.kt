@@ -184,9 +184,8 @@ object LocalCalculationEngine {
      * Serve anche quando l'AdaptiveNutritionTargetEngine applica una piccola correzione al target.
      *
      * La politica (tetto proteico, minimo grassi/carboidrati) e UNICA in [MacroPolicy] (K6, ipotesi reversibile).
-     * Va chiamata UNA volta sul target abituale: i motori giornalieri (DayEnergyEngine, TrainingEnergyPlanner,
-     * CalorieRecoveryEngine, piano) ricevono proteine e grassi esplicitamente ([MacroPolicy.Anchor]) e cambiano
-     * solo i carboidrati.
+     * Va chiamata UNA volta sul target abituale: CalorieRecoveryEngine e piano ricevono proteine e grassi
+     * esplicitamente ([MacroPolicy.Anchor]) e cambiano solo i carboidrati.
      */
     fun calculateMacrosForTarget(targetKcal: Double, weightKg: Double, goal: Goal): MacroTargets =
         MacroPolicy.allocate(targetKcal, weightKg, goal)

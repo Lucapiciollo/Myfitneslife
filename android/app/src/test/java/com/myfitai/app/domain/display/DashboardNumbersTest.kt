@@ -1,6 +1,5 @@
 package com.myfitai.app.domain.display
 
-import com.myfitai.app.data.local.entity.DailyActivityCheckInEntity
 import com.myfitai.app.data.repository.MealPlanWeekSelector
 import com.myfitai.app.domain.calculation.LocalCalculationEngine
 import com.myfitai.app.domain.calculation.OperationalNutritionMetrics
@@ -111,35 +110,22 @@ class DashboardNumbersTest {
         assertEquals(RemainingKcal.Kind.UNAVAILABLE, RemainingKcal.of(0, 100).kind)
     }
 
-    // ---- (3) weekly expectation does not depend on today's check-in -------------------------------------------
+    // ---- (3) weekly expectation uses the profile's TDEE for every day -----------------------------------------
 
     @Test
-    fun weeklyExpectationIsTheSameWithAndWithoutTodaysCheckIn() {
+    fun weeklyExpectationUsesTheProfileTdeeForEveryDayOfTheWeek() {
         val calculation = calculation(bmr = 1600.0, tdee = 2400.0, target = 2000.0)
         val plannedWeek = (0L until 7L).map { 100L + it to 2000 }
-        fun expectation(checkIn: DailyActivityCheckInEntity?): WeeklyBodyExpectation.Result {
-            val metrics = OperationalNutritionMetrics.calculate(calculation, checkIn)
-            val base = WeeklyMaintenance.baseKcal(
-                habitualTdeeKcal = metrics.habitualTdeeKcal?.let { Math.round(it).toInt() },
-                operationalTdeeKcal = metrics.operationalTdeeKcal?.let { Math.round(it).toInt() },
-            )
-            return WeeklyBodyExpectation.calculate(base, 100L, plannedWeek)
-        }
+        val metrics = OperationalNutritionMetrics.calculate(calculation)
+        val tdee = Math.round(metrics.tdeeKcal!!).toInt()
 
-        val none = expectation(null)
-        val rest = expectation(checkIn("REST", 0))
-        val workout = expectation(checkIn("PLANNED_WORKOUT", 140))
+        val result = WeeklyBodyExpectation.calculate(WeeklyMaintenance.baseKcal(tdee, tdee), 100L, plannedWeek)
 
-        assertEquals(7 * (2400 - 2000), none.theoreticalDeficitKcal)
-        assertEquals(none.theoreticalDeficitKcal, rest.theoreticalDeficitKcal)
-        assertEquals(none.theoreticalDeficitKcal, workout.theoreticalDeficitKcal)
-        assertEquals(none.expectedFatLossKgMin, workout.expectedFatLossKgMin)
-        // Today's operational TDEE does change with the check-in: that is exactly why it must not be the base.
-        val restMetrics = OperationalNutritionMetrics.calculate(calculation, checkIn("REST", 0))
-        val workoutMetrics = OperationalNutritionMetrics.calculate(calculation, checkIn("PLANNED_WORKOUT", 140))
-        assertTrue(workoutMetrics.operationalTdeeKcal!! > restMetrics.operationalTdeeKcal!!)
-        assertEquals(2400, WeeklyMaintenance.baseKcal(2400, 3140))
-        assertEquals(3140, WeeklyMaintenance.baseKcal(null, 3140))
+        // The home TDEE is the profile's one: no day-specific figure can move the week.
+        assertEquals(2400, tdee)
+        assertEquals(7 * (2400 - 2000), result.theoreticalDeficitKcal)
+        assertEquals(2400, WeeklyMaintenance.baseKcal(2400, 2400))
+        assertEquals(2400, WeeklyMaintenance.baseKcal(null, 2400))
         assertNull(WeeklyMaintenance.baseKcal(0, 0))
     }
 
@@ -256,10 +242,5 @@ class DashboardNumbersTest {
     private fun calculation(bmr: Double, tdee: Double, target: Double) = LocalCalculationEngine.Result(
         bmi = null, bmrKcal = bmr, tdeeKcal = tdee, targetKcal = target,
         proteinG = null, fatG = null, carbsG = null, waistHeightRatio = null, bmrMethod = null,
-    )
-
-    private fun checkIn(status: String, adjustment: Int) = DailyActivityCheckInEntity(
-        profileId = 1L, dateEpochDay = 1L, status = status, durationMinutes = null, intensity = null,
-        adjustmentKcal = adjustment, createdAtEpochMillis = 1L, updatedAtEpochMillis = 1L,
     )
 }

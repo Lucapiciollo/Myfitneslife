@@ -319,7 +319,7 @@ class BiaCoachT3Test {
 
     @Test
     fun service_rejectsInventedNumbersAndReplacesScenarioNumbers() = runBlocking {
-        val prompt = "BIA_CORRENTE:weightKg=68.0,bodyFatPercent=34.0\nTARGET_OPERATIVO_OGGI_KCAL:tipo_giorno=RIPOSO,tdee=2638,target=2242\n" +
+        val prompt = "BIA_CORRENTE:weightKg=68.0,bodyFatPercent=34.0\nTARGET_ABITUALE_KCAL:tdee=2974,target=2528\n" +
             "SCENARI_APP:S1 grasso_target=32%,peso_obiettivo=66.0kg,grasso_da_perdere=2.0kg"
 
         val good = FakeGateway(serviceData("Il target e coerente con l'obiettivo.", "G|S1|99%|9 kg|9 kg|Commento sul primo scenario.|MEDIUM"))
@@ -355,20 +355,21 @@ class BiaCoachT3Test {
         waistHeightRatio = null, bmrMethod = "MIFFLIN_ST_JEOR",
     )
 
-    private fun buildCoachContext(operational: BiaAnalysisReport.OperationalTarget?, all: List<BiaMeasurementEntity>) = BiaAnalysisReport.coachContext(
+    private fun buildCoachContext(all: List<BiaMeasurementEntity>) = BiaAnalysisReport.coachContext(
         profile = profile(), today = today, report = BiaAnalysisReport.build(all)!!, bodyHistory = emptyList(), workoutHistory = emptyList(),
-        planDays = emptyList(), calculation = calculation, operational = operational,
+        planDays = emptyList(), calculation = calculation,
     )
 
     private fun line(prompt: String, tag: String) = prompt.lines().first { it.startsWith("$tag:") }
 
     @Test
-    fun context_sendsBothTargetsWithExplicitLabelsAndNoAmbiguousLine() {
-        val operational = BiaAnalysisReport.OperationalTarget("RIPOSO", 2638.3, 2242.4, 179.0, 200.0, 72.0)
-        val prompt = buildCoachContext(operational, listOf(reading(1, 0, 69f, 35.5f, 24.5f), reading(2, 10, 68f, 34f, 23.1f))).prompt
+    fun context_sendsOneTargetWithItsLabelAndNoDayVariant() {
+        val prompt = buildCoachContext(listOf(reading(1, 0, 69f, 35.5f, 24.5f), reading(2, 10, 68f, 34f, 23.1f))).prompt
 
         assertTrue(line(prompt, "TARGET_ABITUALE_KCAL"), line(prompt, "TARGET_ABITUALE_KCAL").startsWith("TARGET_ABITUALE_KCAL:tdee=2974,target=2528,p=179,c=292,f=72"))
-        assertTrue(line(prompt, "TARGET_OPERATIVO_OGGI_KCAL").startsWith("TARGET_OPERATIVO_OGGI_KCAL:tipo_giorno=RIPOSO,tdee=2638,target=2242,p=179,c=200,f=72"))
+        assertEquals(1, prompt.lines().count { it.startsWith("TARGET_") })
+        assertTrue(!prompt.contains("TARGET_OPERATIVO_OGGI_KCAL"))
+        assertTrue(!prompt.contains("tipo_giorno"))
         assertTrue(prompt.contains("REGOLA_TARGET:"))
         // The old unlabelled lines are gone: a bare `target=` would be ambiguous.
         assertTrue(!prompt.contains("CALORIE_E_MACRO"))
@@ -377,33 +378,28 @@ class BiaCoachT3Test {
     }
 
     @Test
-    fun context_withoutOperationalTargetTellsTheModelNotToQuoteTodayTarget() {
-        val prompt = buildCoachContext(null, listOf(reading(1, 0, 68f, 34f, 23.1f))).prompt
+    fun context_withoutACalculationTellsTheModelTheTargetIsUnavailable() {
+        val prompt = BiaAnalysisReport.coachContext(
+            profile = profile(), today = today, report = BiaAnalysisReport.build(listOf(reading(1, 0, 68f, 34f, 23.1f)))!!,
+            bodyHistory = emptyList(), workoutHistory = emptyList(), planDays = emptyList(), calculation = null,
+        ).prompt
 
-        assertTrue(line(prompt, "TARGET_OPERATIVO_OGGI_KCAL").startsWith("TARGET_OPERATIVO_OGGI_KCAL:?"))
-        assertTrue(line(prompt, "TARGET_ABITUALE_KCAL").contains("target=2528"))
+        assertTrue(line(prompt, "TARGET_ABITUALE_KCAL").startsWith("TARGET_ABITUALE_KCAL:?"))
     }
 
     @Test
-    fun operationalTarget_comesFromTheSameMetricsAsTheHome() {
-        val workout = OperationalNutritionMetrics.Result(
-            bmrKcal = 1789.0, habitualTdeeKcal = 2974.0, operationalTdeeKcal = 3100.0, profileTargetKcal = 2528.0,
-            operationalTargetKcal = 2640.0, operationalProteinG = 179.0, operationalCarbsG = 310.0, operationalFatG = 72.0,
-            activityAdjustmentKcal = 300, activityStatus = "PLANNED_WORKOUT",
-        )
-        val target = BiaAnalysisReport.OperationalTarget.from(workout)
-        assertEquals("ALLENAMENTO", target.dayType)
-        assertEquals(3100.0, target.tdeeKcal!!, 0.0)
-        assertEquals(2640.0, target.targetKcal!!, 0.0)
-        assertEquals("RIPOSO", BiaAnalysisReport.OperationalTarget.from(workout.copy(activityStatus = "REST", activityAdjustmentKcal = 0)).dayType)
-        // Legacy path of the Home (no training program): same function, rest day.
-        val legacy = OperationalNutritionMetrics.calculate(calculation, null, null)
-        assertEquals(legacy.operationalTargetKcal, BiaAnalysisReport.OperationalTarget.from(legacy).targetKcal)
+    fun target_isTheSameThatHomeAndFoodShow() {
+        val metrics = OperationalNutritionMetrics.calculate(calculation)
+        val prompt = buildCoachContext(listOf(reading(1, 0, 68f, 34f, 23.1f))).prompt
+
+        assertTrue(line(prompt, "TARGET_ABITUALE_KCAL").contains("tdee=${Math.round(metrics.tdeeKcal!!)}"))
+        assertTrue(line(prompt, "TARGET_ABITUALE_KCAL").contains("target=${Math.round(metrics.targetKcal!!)}"))
+        assertTrue(BiaAnalysisReport.caloriesSection(calculation).contains("Target abituale: ${Math.round(metrics.targetKcal!!)} kcal"))
     }
 
     @Test
     fun context_carriesAppScenariosAndTheFatLossEstimateAsEstimates() {
-        val result = buildCoachContext(null, listOf(reading(1, 0, 69f, 35.5f, 24.5f), reading(2, 10, 68f, 34f, 23.1f)))
+        val result = buildCoachContext(listOf(reading(1, 0, 69f, 35.5f, 24.5f), reading(2, 10, 68f, 34f, 23.1f)))
 
         val scenarios = line(result.prompt, "SCENARI_APP")
         assertTrue(scenarios, scenarios.contains("S1 grasso_target=32%,peso_obiettivo=66.0kg,grasso_da_perdere=2.0kg"))
@@ -416,22 +412,21 @@ class BiaCoachT3Test {
 
     @Test
     fun context_marksChangesInsideNoiseAndMissingData() {
-        val inside = buildCoachContext(null, listOf(reading(1, 0, 68.2f, 34.2f, 23.3f), reading(2, 10, 68f, 34f, 23.1f))).prompt
+        val inside = buildCoachContext(listOf(reading(1, 0, 68.2f, 34.2f, 23.3f), reading(2, 10, 68f, 34f, 23.1f))).prompt
         assertTrue(line(inside, "GRASSO_PERSO_STIMA_APP").contains("ENTRO_RUMORE_NESSUNA_STIMA"))
         assertTrue(!line(inside, "GRASSO_PERSO_STIMA_APP").contains("grasso_perso_stimato"))
 
-        val single = buildCoachContext(null, listOf(reading(1, 0, 68f, null, null))).prompt
+        val single = buildCoachContext(listOf(reading(1, 0, 68f, null, null))).prompt
         assertTrue(line(single, "SCENARI_APP").startsWith("SCENARI_APP:?"))
         assertTrue(line(single, "GRASSO_PERSO_STIMA_APP").startsWith("GRASSO_PERSO_STIMA_APP:?"))
     }
 
     @Test
     fun contextAndValidator_workTogetherOnTheOriginal2527Case() {
-        val operational = BiaAnalysisReport.OperationalTarget("RIPOSO", 2638.0, 2242.0, 179.0, 200.0, 72.0)
-        val prompt = buildCoachContext(operational, listOf(reading(1, 0, 69f, 35.5f, 24.5f), reading(2, 10, 68f, 34f, 23.1f))).prompt
+        val prompt = buildCoachContext(listOf(reading(1, 0, 69f, 35.5f, 24.5f), reading(2, 10, 68f, 34f, 23.1f))).prompt
         val validation = BiaAnalysisContract.ValidationContext(contextText = prompt)
 
-        val labelled = interpretation(whatIsHappening = "Target operativo di oggi (giorno di riposo) 2242 kcal, target abituale 2528 kcal.")
+        val labelled = interpretation(whatIsHappening = "Target abituale 2528 kcal, uguale per tutti i giorni.")
         assertTrue(BiaAnalysisContract.validateBusinessWith(labelled, validation).exceptionOrNull()?.message ?: "", BiaAnalysisContract.validateBusinessWith(labelled, validation).isSuccess)
         val invented = interpretation(calories = "Calorie target 2527 kcal.")
         assertEquals("NUMBER_NOT_IN_CONTEXT:2527 kcal", BiaAnalysisContract.validateBusinessWith(invented, validation).exceptionOrNull()?.message)

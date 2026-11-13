@@ -24,7 +24,6 @@ import com.myfitai.app.data.repository.WorkoutRepository
 import com.myfitai.app.data.repository.BodyExpectationGoalRepository
 import com.myfitai.app.domain.calculation.LocalCalculationEngine
 import com.myfitai.app.domain.calculation.DailyActivityCheckInEngine
-import com.myfitai.app.domain.calculation.DayEnergyProvider
 import com.myfitai.app.domain.calculation.ProfileCalculationMapper
 import com.myfitai.app.domain.calculation.ProfileCalculationService
 import com.myfitai.app.domain.calculation.WeightResolver
@@ -75,7 +74,6 @@ class HomeViewModel(
     private val activeProfileStore: ActiveProfileStore,
     private val dailyActivityCheckIns: com.myfitai.app.data.repository.DailyActivityCheckInRepository,
     private val profileCalculationService: ProfileCalculationService,
-    private val dayEnergy: DayEnergyProvider,
     private val time: TimeProvider = SystemTimeProvider,
 ) : ViewModel() {
 
@@ -98,15 +96,12 @@ class HomeViewModel(
         /** Where [target] comes from: the plan day (adaptation and recovery included) or the theoretical figure. */
         val targetSource: DayTargetResolver.Source = DayTargetResolver.Source.NONE,
         val planTarget: Int? = null,
-        val activityAdjustmentKcal: Int = 0,
         val habitualTdee: Int? = null,
         val consumedKcal: Int? = null,
         val consumedProteinG: Double? = null,
         val proteinTargetG: Double? = null,
         val consumedCount: Int = 0,
         val recordedCount: Int = 0,
-        /** Set when the day comes from the training program; replaces the legacy habitual-TDEE line. */
-        val trainingNote: String? = null,
     )
     data class NextWorkoutState(val startedAtEpochMillis: Long, val title: String, val type: String)
     data class NextMealState(
@@ -244,12 +239,7 @@ class HomeViewModel(
         val todayTargetDay = snapshot?.version?.days
             ?.firstOrNull { it.dateEpochDay == todayDate.toEpochDay() }
         val todayBaseTarget = todayTargetDay?.baseTargetKcal ?: todayTargetDay?.targetKcal ?: snapshot?.version?.targetKcal
-        // With a training program each day has its own expenditure; without one this stays empty (legacy).
         val expectationWeeks = activeProfileStore.currentIdOrNull()?.let(nutritionPlanSchedulePreferences::periodWeeks) ?: 1
-        val maintenanceByDay = activeProfileStore.currentIdOrNull()
-            ?.let { id -> dayEnergy.days(id, (0L until expectationWeeks * 7L).map { monday.plusDays(it) }) }
-            ?.associate { it.date.toEpochDay() to Math.round(it.energy.tdeeKcal).toInt() }
-            .orEmpty()
         // ONE target for the day, shared with Food: the plan day's (adaptation and recovery included) when the
         // plan has it, otherwise the theoretical one (dashboard.calories.target is the theoretical figure here).
         val resolved = DayTargetResolver.resolve(
@@ -286,7 +276,6 @@ class HomeViewModel(
                 targetFromWeeklyPlan = snapshot != null,
                 targetBeforeAdaptation = todayBaseTarget,
                 planTarget = planTarget,
-                activityAdjustmentKcal = if (dashboard.calories.trainingNote != null) dashboard.calories.activityAdjustmentKcal else dashboard.activityCheckIn.adjustmentKcal,
                 energyPercent = displayedTargetPercent,
                 consumedKcal = consumedKcal?.let { Math.round(it).toInt() },
                 consumedProteinG = consumedProtein,
@@ -295,12 +284,11 @@ class HomeViewModel(
                 recordedCount = consumed.recordedCount,
             ),
             weeklyExpectation = WeeklyBodyExpectation.calculate(
-                // Habitual TDEE for every day without a day-specific figure: today's check-in must not move the week.
+                // One TDEE (the profile's) for every day of the week.
                 maintenanceKcal = WeeklyMaintenance.baseKcal(dashboard.calories.habitualTdee, dashboard.calories.tdee),
                 weekStartEpochDay = monday.toEpochDay(),
                 plannedDays = snapshot?.version?.days.orEmpty().map { it.dateEpochDay to it.totalKcal },
                 periodWeeks = expectationWeeks,
-                maintenanceByDay = maintenanceByDay,
             ),
         )
     }.combine(expectationGoalsSource) { dashboard, goals ->
@@ -441,10 +429,9 @@ class HomeViewModel(
         val profile = source.profile ?: return CalorieState()
         val latestBia = source.bia.maxByOrNull { it.measuredAtEpochMillis }
         val calculation = profileCalculationService.profileSnapshot(profile.id)?.calculation
-        val programDay = dayEnergy.day(profile.id, time.today())
-        val metrics = OperationalNutritionMetrics.calculate(calculation, source.activityCheckIn, programDay)
-        val tdeeInt = metrics.operationalTdeeKcal?.let { Math.round(it).toInt() }
-        val targetInt = metrics.operationalTargetKcal?.let { Math.round(it).toInt() }
+        val metrics = OperationalNutritionMetrics.calculate(calculation)
+        val tdeeInt = metrics.tdeeKcal?.let { Math.round(it).toInt() }
+        val targetInt = metrics.targetKcal?.let { Math.round(it).toInt() }
         val energyPercent = if (tdeeInt != null && targetInt != null && tdeeInt > 0) {
             Math.round((targetInt - tdeeInt) * 100.0 / tdeeInt).toInt()
         } else {
@@ -455,12 +442,11 @@ class HomeViewModel(
             biaBmr = latestBia?.bmrKcal?.let { Math.round(it).toInt() },
             tdee = tdeeInt,
             target = targetInt,
-            proteinTargetG = metrics.operationalProteinG,
-            planTarget = metrics.profileTargetKcal?.let { Math.round(it).toInt() },
-            habitualTdee = metrics.habitualTdeeKcal?.let { Math.round(it).toInt() },
+            proteinTargetG = metrics.proteinG,
+            planTarget = targetInt,
+            habitualTdee = tdeeInt,
             goalLabel = goalLabel(ProfileCalculationMapper.goal(profile.goal)),
             energyPercent = energyPercent,
-            trainingNote = programDay?.let(DayEnergyProvider::describe),
         )
     }
 
@@ -613,12 +599,11 @@ class HomeViewModel(
         private val activeProfileStore: ActiveProfileStore,
         private val dailyActivityCheckIns: com.myfitai.app.data.repository.DailyActivityCheckInRepository,
         private val profileCalculationService: ProfileCalculationService,
-        private val dayEnergy: DayEnergyProvider,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(HomeViewModel::class.java))
-            return HomeViewModel(profiles, biaRepository, bodyRepository, workoutRepository, mealPlanRepository, cheatRepository, recoveryRepository, foodConsumptionRepository, bodyExpectationGoalRepository, nutritionPlanSchedulePreferences, activeProfileStore, dailyActivityCheckIns, profileCalculationService, dayEnergy) as T
+            return HomeViewModel(profiles, biaRepository, bodyRepository, workoutRepository, mealPlanRepository, cheatRepository, recoveryRepository, foodConsumptionRepository, bodyExpectationGoalRepository, nutritionPlanSchedulePreferences, activeProfileStore, dailyActivityCheckIns, profileCalculationService) as T
         }
     }
 }

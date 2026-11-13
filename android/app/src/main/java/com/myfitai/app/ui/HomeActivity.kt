@@ -78,7 +78,6 @@ class HomeActivity : BaseShellActivity() {
             activeProfileStore = data.activeProfileStore,
             dailyActivityCheckIns = data.dailyActivityCheckInRepository,
             profileCalculationService = data.profileCalculationService,
-            dayEnergy = data.dayEnergyProvider,
         )
     }
 
@@ -714,16 +713,10 @@ class HomeActivity : BaseShellActivity() {
         findViewById<View>(R.id.caloriesSummaryBody).contentDescription = buildString {
             append("BMR locale: ${kcal(calories.bmr)}. ")
             append("BMR riportato dalla BIA: ${kcal(calories.biaBmr)}. ")
-            append("TDEE operativo ${kcal(calories.tdee)}. TDEE abituale ${kcal(calories.habitualTdee)}. ")
+            append("TDEE ${kcal(calories.tdee)}. ")
             append("Target ${kcal(calories.target)}. ")
             append("Consumate ${calories.consumedKcal?.let { kcal(it) } ?: "nessuna registrazione"}. ")
             append("Proteine consumate ${calories.consumedProteinG?.let { NutritionEstimateFormatter.formatEstimatedMacro(it, "g") } ?: "non disponibili"}.")
-        }
-        val tdeeLine = when {
-            calories.trainingNote != null -> calories.trainingNote
-            calories.activityAdjustmentKcal > 0 -> "TDEE abituale ${kcal(calories.habitualTdee)} · TDEE operativo ${kcal(calories.tdee)} · attività +${DisplayNumberFormatter.integer(calories.activityAdjustmentKcal)} kcal"
-            currentCalories?.activityAdjustmentKcal == 0 && viewModel.state.value.activityCheckIn.status != "PLANNED_WORKOUT" -> "TDEE abituale ${kcal(calories.habitualTdee)} · TDEE operativo da riposo ${kcal(calories.tdee)}"
-            else -> null
         }
         // One target for the day: the plan's (adaptation and recovery included) when it exists, otherwise the
         // theoretical one, and the line always says which of the two is on screen.
@@ -738,7 +731,7 @@ class HomeActivity : BaseShellActivity() {
             DayTargetResolver.Source.PLAN_WEEK -> getString(R.string.target_source_plan_week)
             DayTargetResolver.Source.NONE -> getString(R.string.target_source_none)
         }
-        findViewById<TextView>(R.id.caloriesTargetSourceText).text = listOfNotNull(tdeeLine, targetLine).joinToString("\n")
+        findViewById<TextView>(R.id.caloriesTargetSourceText).text = targetLine
         findViewById<TextView>(R.id.caloriesModeText).apply {
             val percent = calories.energyPercent?.let { p ->
                 when {

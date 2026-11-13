@@ -6,7 +6,6 @@ import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.data.local.entity.WorkoutEntity
 import com.myfitai.app.domain.ai.AiUserContext
 import com.myfitai.app.domain.calculation.LocalCalculationEngine
-import com.myfitai.app.domain.calculation.OperationalNutritionMetrics
 import com.myfitai.app.domain.calculation.ProfileCalculationMapper
 import java.time.Instant
 import java.time.LocalDate
@@ -143,30 +142,6 @@ object BiaAnalysisReport {
         val caloriesText: String = "",
     )
 
-    /**
-     * Target of the day shown by the Home, from the same [OperationalNutritionMetrics] calculation. [dayType] is
-     * `RIPOSO` or `ALLENAMENTO`; every value may be missing.
-     */
-    data class OperationalTarget(
-        val dayType: String,
-        val tdeeKcal: Double?,
-        val targetKcal: Double?,
-        val proteinG: Double?,
-        val carbsG: Double?,
-        val fatG: Double?,
-    ) {
-        companion object {
-            fun from(metrics: OperationalNutritionMetrics.Result) = OperationalTarget(
-                dayType = if (metrics.activityStatus == "PLANNED_WORKOUT") "ALLENAMENTO" else "RIPOSO",
-                tdeeKcal = metrics.operationalTdeeKcal,
-                targetKcal = metrics.operationalTargetKcal,
-                proteinG = metrics.operationalProteinG,
-                carbsG = metrics.operationalCarbsG,
-                fatG = metrics.operationalFatG,
-            )
-        }
-    }
-
     private const val DAY_MILLIS = 86_400_000L
 
     private const val INPUT_LEGEND = "U=sex|ageYears|heightCm|weightKg|goal|activity|wakeMinutes|sleepMinutes. ? means unavailable."
@@ -176,8 +151,8 @@ object BiaAnalysisReport {
      * dates everywhere, no epoch values. Every window (BIA, body measurements, workouts, plan days,
      * weights) is capped to [MAX_HISTORY_ROWS] rows and never contains data later than the analysed reading.
      *
-     * The two calorie targets are sent with explicit labels (`TARGET_ABITUALE_KCAL` from [calculation],
-     * `TARGET_OPERATIVO_OGGI_KCAL` from [operational]); the fat scenarios and the fat-loss estimate are calculated
+     * The calorie target is ONE, the profile's (`TARGET_ABITUALE_KCAL` from [calculation], the same figure as Home,
+     * Food and the plan); the fat scenarios and the fat-loss estimate are calculated
      * here by [BiaScenarioCalculator] and the model only comments them.
      */
     fun coachContext(
@@ -189,7 +164,6 @@ object BiaAnalysisReport {
         planDays: List<PlanDay>,
         calculation: LocalCalculationEngine.Result?,
         zone: ZoneId = ZoneId.systemDefault(),
-        operational: OperationalTarget? = null,
     ): CoachContext {
         val cutoff = report.latest.measuredAtEpochMillis + DAY_MILLIS
         val cutoffEpochDay = Instant.ofEpochMilli(report.latest.measuredAtEpochMillis).atZone(zone).toLocalDate().toEpochDay()
@@ -217,8 +191,7 @@ object BiaAnalysisReport {
             appendLine("U=${AiUserContext.profileLine(profile, today)}")
             appendLine("BMI_BMR:bmi=${calculation?.bmi?.let { fmt(it) } ?: "?"},bmrKcal=${calculation?.bmrKcal?.let { whole(it) } ?: "?"}")
             appendLine(habitualTargetLine(calculation))
-            appendLine(operationalTargetLine(operational))
-            appendLine("REGOLA_TARGET:sono DUE target diversi. Citane uno solo con la sua etichetta (target abituale / target operativo di oggi, giorno di riposo o di allenamento) e mai la parola target da sola. Il tdee e il consumo stimato, NON un target.")
+            appendLine("REGOLA_TARGET:il target e UNO solo, uguale per tutti i giorni (TARGET_ABITUALE_KCAL). Citalo con l'etichetta target abituale e mai la parola target da sola. Il tdee e il consumo stimato, NON un target.")
             appendLine("REGOLA_CIFRE_CALORIE:le cifre di kcal e grammi di calorie e macro le scrive l'app. Nei record O e K NON scrivere cifre di kcal o grammi: commento qualitativo.")
             profile.dietaryPreferencesJson?.takeIf { it.isNotBlank() }?.let { appendLine("PREFERENZE_ALIMENTARI:${it.replace('\n', ' ')}") }
             appendLine("OBIETTIVO:${profile.goal ?: "?"}")
@@ -240,29 +213,23 @@ object BiaAnalysisReport {
             appendLine(fatLossEstimateLine(report))
             appendLine(scenariosLine(scenarios))
         }
-        return CoachContext(prompt, safety, scenarios, caloriesSection(calculation, operational))
+        return CoachContext(prompt, safety, scenarios, caloriesSection(calculation))
     }
 
     private fun whole(value: Double): String = Math.round(value).toString()
 
     /**
      * Calories and macros of the "Obiettivo e calorie" section, written by the app from the same figures sent to the
-     * model: today's target with the day type, the habitual target and the two TDEE named as estimated consumption
-     * (never as targets). Missing values are left out; empty when nothing is available.
+     * model: the profile's target and the TDEE named as estimated consumption (never as a target). Missing values
+     * are left out; empty when nothing is available.
      */
-    fun caloriesSection(calculation: LocalCalculationEngine.Result?, operational: OperationalTarget?): String {
+    fun caloriesSection(calculation: LocalCalculationEngine.Result?): String {
         fun macros(protein: Double?, carbs: Double?, fat: Double?) = listOfNotNull(
             protein?.let { "proteine ${whole(it)} g" },
             carbs?.let { "carboidrati ${whole(it)} g" },
             fat?.let { "grassi ${whole(it)} g" },
         )
         val lines = mutableListOf<String>()
-        operational?.let { today ->
-            val dayType = if (today.dayType == "ALLENAMENTO") "giorno di allenamento" else "giorno di riposo"
-            val parts = listOfNotNull(today.targetKcal?.let { "target ${whole(it)} kcal" }) + macros(today.proteinG, today.carbsG, today.fatG)
-            if (parts.isNotEmpty()) lines += "Oggi ($dayType): " + parts.joinToString(", ")
-            today.tdeeKcal?.let { lines += "Consumo operativo stimato oggi (TDEE): ${whole(it)} kcal" }
-        }
         calculation?.let { habitual ->
             val parts = listOfNotNull(habitual.targetKcal?.let { "${whole(it)} kcal" }) + macros(habitual.proteinG, habitual.carbsG, habitual.fatG)
             if (parts.isNotEmpty()) lines += "Target abituale: " + parts.joinToString(", ")
@@ -275,14 +242,7 @@ object BiaAnalysisReport {
         if (calculation == null) return "TARGET_ABITUALE_KCAL:?"
         return "TARGET_ABITUALE_KCAL:tdee=${calculation.tdeeKcal?.let { whole(it) } ?: "?"},target=${calculation.targetKcal?.let { whole(it) } ?: "?"}," +
             "p=${calculation.proteinG?.let { whole(it) } ?: "?"},c=${calculation.carbsG?.let { whole(it) } ?: "?"},f=${calculation.fatG?.let { whole(it) } ?: "?"}" +
-            " (target del profilo sul TDEE abituale, NON il target di oggi)"
-    }
-
-    private fun operationalTargetLine(target: OperationalTarget?): String {
-        if (target == null) return "TARGET_OPERATIVO_OGGI_KCAL:? (non disponibile: non citare un target di oggi)"
-        return "TARGET_OPERATIVO_OGGI_KCAL:tipo_giorno=${target.dayType},tdee=${target.tdeeKcal?.let { whole(it) } ?: "?"},target=${target.targetKcal?.let { whole(it) } ?: "?"}," +
-            "p=${target.proteinG?.let { whole(it) } ?: "?"},c=${target.carbsG?.let { whole(it) } ?: "?"},f=${target.fatG?.let { whole(it) } ?: "?"}" +
-            " (stesso calcolo mostrato nella Home oggi)"
+            " (target del profilo sul TDEE, uguale per tutti i giorni)"
     }
 
     private fun composition(item: BiaMeasurementEntity) = BiaScenarioCalculator.Composition(

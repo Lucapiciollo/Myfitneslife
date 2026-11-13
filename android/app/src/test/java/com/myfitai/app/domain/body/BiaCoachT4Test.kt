@@ -29,7 +29,7 @@ class BiaCoachT4Test {
         classification: String = "STABLE",
         verdict: String = "Andamento stabile con grasso corporeo in lieve calo.",
         objective: String = "L'obiettivo di ricomposizione e coerente con i dati.",
-        calories: String = "Il target operativo e coerente con l'obiettivo e le proteine restano ben distribuite.",
+        calories: String = "Il target abituale e coerente con l'obiettivo e le proteine restano ben distribuite.",
         positives: List<String> = listOf("La massa magra resta stabile tra le due misure."),
         monitor: List<String> = listOf("Il grasso corporeo va riconfermato con una nuova misura."),
         actions: List<String> = listOf("Ripeti la misura nelle stesse condizioni.", "Mantieni il piano attuale.", "Distribuisci le proteine nei pasti."),
@@ -46,7 +46,7 @@ class BiaCoachT4Test {
     )
 
     private val context = BiaAnalysisContract.ValidationContext(
-        contextText = "TARGET_ABITUALE_KCAL:tdee=2974,target=2528,p=179,c=292,f=72\nTARGET_OPERATIVO_OGGI_KCAL:tipo_giorno=RIPOSO,tdee=2638,target=2242,p=179,c=220,f=72\n" +
+        contextText = "TARGET_ABITUALE_KCAL:tdee=2974,target=2528,p=179,c=292,f=72\n" +
             "BIA_CORRENTE:weightKg=89.5,bodyFatPercent=19.9",
     )
 
@@ -124,7 +124,7 @@ class BiaCoachT4Test {
         val observed = interpretation(calories = "Il target abituale 2974 kcal e coerente con l'obiettivo.")
         assertEquals("BIA_CALORIES_TEXT_HAS_FIGURES:caloriesAndMacros", error(observed))
         assertEquals("BIA_CALORIES_TEXT_HAS_FIGURES:caloriesAndMacros", error(interpretation(calories = "Proteine a 179 g al giorno.")))
-        assertEquals("BIA_CALORIES_TEXT_HAS_FIGURES:objective", error(interpretation(objective = "Con 2242 kcal l'obiettivo e raggiungibile.")))
+        assertEquals("BIA_CALORIES_TEXT_HAS_FIGURES:objective", error(interpretation(objective = "Con 2528 kcal l'obiettivo e raggiungibile.")))
         // The number guard keeps priority: an invented figure is still reported as such.
         assertEquals("NUMBER_NOT_IN_CONTEXT:2527 kcal", error(interpretation(calories = "Calorie target 2527 kcal.")))
         // Qualitative comment, and kg or % elsewhere in the text, stay valid.
@@ -143,28 +143,29 @@ class BiaCoachT4Test {
     )
 
     @Test
-    fun caloriesSection_isWrittenByTheAppWithEveryTargetLabelledAndTheTdeeNamedAsConsumption() {
-        val operational = BiaAnalysisReport.OperationalTarget("RIPOSO", 2638.3, 2242.4, 179.0, 220.0, 72.0)
-
-        val text = BiaAnalysisReport.caloriesSection(calculation, operational)
+    fun caloriesSection_isWrittenByTheAppWithOneTargetAndTheTdeeNamedAsConsumption() {
+        val text = BiaAnalysisReport.caloriesSection(calculation)
 
         val lines = text.lines()
-        assertEquals("Oggi (giorno di riposo): target 2242 kcal, proteine 179 g, carboidrati 220 g, grassi 72 g", lines[0])
-        assertEquals("Consumo operativo stimato oggi (TDEE): 2638 kcal", lines[1])
-        assertEquals("Target abituale: 2528 kcal, proteine 179 g, carboidrati 292 g, grassi 72 g", lines[2])
-        assertEquals("Consumo abituale stimato (TDEE): 2974 kcal", lines[3])
-        assertEquals(4, lines.size)
+        assertEquals("Target abituale: 2528 kcal, proteine 179 g, carboidrati 292 g, grassi 72 g", lines[0])
+        assertEquals("Consumo abituale stimato (TDEE): 2974 kcal", lines[1])
+        assertEquals(2, lines.size)
+        // One target for every day: no "today" / rest-day / workout-day variant any more.
+        assertFalse(text.contains("Oggi"))
+        assertFalse(text.contains("operativo"))
         // The TDEE is never written as a target.
         assertFalse(text.contains("target 2974"))
         assertFalse(text.contains("Target abituale: 2974"))
     }
 
     @Test
-    fun caloriesSection_workoutDayAndMissingValues() {
-        val workout = BiaAnalysisReport.OperationalTarget("ALLENAMENTO", 3100.0, 2640.0, null, null, null)
-        assertEquals("Oggi (giorno di allenamento): target 2640 kcal", BiaAnalysisReport.caloriesSection(null, workout).lines().first())
-        assertEquals("", BiaAnalysisReport.caloriesSection(null, null))
-        assertEquals("Target abituale: 2528 kcal, proteine 179 g, carboidrati 292 g, grassi 72 g\nConsumo abituale stimato (TDEE): 2974 kcal", BiaAnalysisReport.caloriesSection(calculation, null))
+    fun caloriesSection_missingValuesAreLeftOut() {
+        assertEquals("", BiaAnalysisReport.caloriesSection(null))
+        val onlyTarget = LocalCalculationEngine.Result(
+            bmi = null, bmrKcal = null, tdeeKcal = null, targetKcal = 2528.1, proteinG = null, fatG = null, carbsG = null,
+            waistHeightRatio = null, bmrMethod = null,
+        )
+        assertEquals("Target abituale: 2528 kcal", BiaAnalysisReport.caloriesSection(onlyTarget))
     }
 
     @Test

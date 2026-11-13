@@ -9,7 +9,6 @@ import com.myfitai.app.data.profile.NutritionPlanUpdatePreferences
 import com.myfitai.app.data.profile.NutritionPlanSchedulePreferences
 import com.myfitai.app.data.profile.ProfilePhotoStore
 import com.myfitai.app.data.profile.TrainingProgramPreferences
-import com.myfitai.app.domain.calculation.DayEnergyProvider
 import com.myfitai.app.data.profile.WorkoutPreferences
 import com.myfitai.app.data.profile.AiAutomationPreferences
 import com.myfitai.app.data.repository.*
@@ -99,14 +98,6 @@ class AppDataContainer private constructor(context: Context) {
         activeProfileStore = activeProfileStore,
     )
 
-    val dayEnergyProvider = DayEnergyProvider(
-        calculations = profileCalculationService,
-        profiles = userProfileRepository,
-        workouts = workoutRepository,
-        checkIns = dailyActivityCheckInRepository,
-        program = trainingProgramPreferences,
-    )
-
     val personalResponseService = PersonalResponseService(
         activeProfileStore = activeProfileStore,
         plans = mealPlanRepository,
@@ -167,8 +158,6 @@ class AppDataContainer private constructor(context: Context) {
         personalResponse = personalResponseService,
         mealCountPreferences = mealCountPreferences,
         planReview = planReviewService,
-        trainingProgramPreferences = trainingProgramPreferences,
-        dailyActivityCheckIns = dailyActivityCheckInRepository,
     )
 
     val cheatAdjustmentService = CheatAdjustmentService(
@@ -237,8 +226,6 @@ class AppDataContainer private constructor(context: Context) {
                 calculations = profileCalculationService,
                 scheduler = biaProgressCoachScheduler,
                 results = biaAnalysisResultRepository,
-                dayEnergy = dayEnergyProvider,
-                checkIns = dailyActivityCheckInRepository,
             ),
             AiJobType.BIA_IMPORT to BiaImportAiJobHandler(biaImportService, aiImageJobStore),
         ))

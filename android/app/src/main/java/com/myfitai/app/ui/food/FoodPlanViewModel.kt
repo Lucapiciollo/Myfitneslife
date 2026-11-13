@@ -10,7 +10,6 @@ import com.myfitai.app.data.repository.FoodConsumptionRepository
 import com.myfitai.app.data.repository.UserProfileRepository
 import com.myfitai.app.data.repository.BiaRepository
 import com.myfitai.app.data.repository.BodyMeasurementRepository
-import com.myfitai.app.data.repository.DailyActivityCheckInRepository
 import com.myfitai.app.data.local.entity.FoodConsumptionEntity
 import com.myfitai.app.domain.food.FoodPlanDay
 import com.myfitai.app.domain.food.FoodPlanSnapshot
@@ -20,8 +19,6 @@ import com.myfitai.app.domain.food.PlanPrerequisites
 import com.myfitai.app.domain.profile.ProfileAgeRule
 import com.myfitai.app.domain.time.SystemTimeProvider
 import com.myfitai.app.domain.time.TimeProvider
-import com.myfitai.app.domain.calculation.DailyActivityCheckInEngine
-import com.myfitai.app.domain.calculation.DayEnergyProvider
 import com.myfitai.app.domain.calculation.OperationalNutritionMetrics
 import com.myfitai.app.domain.ai.AiJobScheduler
 import com.myfitai.app.domain.ai.AiJobType
@@ -63,9 +60,7 @@ class FoodPlanViewModel(
     private val profileRepository: UserProfileRepository,
     private val biaRepository: BiaRepository,
     private val bodyMeasurementRepository: BodyMeasurementRepository,
-    private val dailyActivityCheckIns: DailyActivityCheckInRepository,
     private val schedulePreferences: NutritionPlanSchedulePreferences,
-    private val dayEnergy: DayEnergyProvider,
     private val time: TimeProvider = SystemTimeProvider,
 ) : ViewModel() {
     data class CalorieReference(
@@ -73,8 +68,6 @@ class FoodPlanViewModel(
         val tdeeKcal: Double?,
         val operationalTargetKcal: Double?,
         val operationalProteinG: Double?,
-        /** True when the values come from the training program, so the TDEE is the day's own expenditure. */
-        val fromTrainingProgram: Boolean = false,
     )
 
     private data class SourceData(
@@ -110,25 +103,17 @@ class FoodPlanViewModel(
     private val selectedWeekStart = MutableStateFlow(planWeekMonday(LocalDate.now()))
     private val selectedDayIndex = MutableStateFlow(todayIndexInWeek(selectedWeekStart.value))
     private val generationState = MutableStateFlow(GenerationState())
-    private val selectedDate = combine(selectedWeekStart, selectedDayIndex) { weekStart, dayIndex ->
-        weekStart.plusDays(dayIndex.coerceIn(0, 6).toLong())
-    }
     private val calorieReference = activeProfileStore.activeProfileId.flatMapLatest { profileId ->
         if (profileId <= 0L) flowOf(CalorieReference(null, null, null, null))
         else combine(
             profileRepository.profile(profileId),
             biaRepository.all(profileId),
             bodyMeasurementRepository.all(profileId),
-            selectedDate.flatMapLatest { date -> dailyActivityCheckIns.observeForDay(profileId, date.toEpochDay()).map { date to it } },
-        ) { _, _, _, (date, activityCheckIn) ->
+        ) { _, _, _ ->
+            // Same numbers for every day: the profile's TDEE and target.
             val result = calculations.profileSnapshot(profileId)?.calculation
-            val programDay = dayEnergy.day(profileId, date)
-            val metrics = OperationalNutritionMetrics.calculate(
-                calculation = result,
-                checkIn = activityCheckIn,
-                programDay = programDay,
-            )
-            CalorieReference(result?.bmrKcal, metrics.operationalTdeeKcal, metrics.operationalTargetKcal, metrics.operationalProteinG, programDay != null)
+            val metrics = OperationalNutritionMetrics.calculate(result)
+            CalorieReference(result?.bmrKcal, metrics.tdeeKcal, metrics.targetKcal, metrics.proteinG)
         }
     }
 
@@ -303,15 +288,13 @@ class FoodPlanViewModel(
         private val profileRepository: UserProfileRepository,
         private val biaRepository: BiaRepository,
         private val bodyMeasurementRepository: BodyMeasurementRepository,
-        private val dailyActivityCheckIns: DailyActivityCheckInRepository,
         private val schedulePreferences: NutritionPlanSchedulePreferences,
-        private val dayEnergy: DayEnergyProvider,
         private val time: TimeProvider = SystemTimeProvider,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(FoodPlanViewModel::class.java))
-            return FoodPlanViewModel(repository, activeProfileStore, generationService, calculations, notificationScheduler, consumptionRepository, aiJobScheduler, profileRepository, biaRepository, bodyMeasurementRepository, dailyActivityCheckIns, schedulePreferences, dayEnergy, time) as T
+            return FoodPlanViewModel(repository, activeProfileStore, generationService, calculations, notificationScheduler, consumptionRepository, aiJobScheduler, profileRepository, biaRepository, bodyMeasurementRepository, schedulePreferences, time) as T
         }
     }
 }

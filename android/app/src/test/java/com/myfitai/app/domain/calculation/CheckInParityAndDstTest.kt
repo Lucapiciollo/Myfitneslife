@@ -1,6 +1,5 @@
 package com.myfitai.app.domain.calculation
 
-import com.myfitai.app.domain.calculation.DailyActivityCheckInEngine.Intensity
 import com.myfitai.app.domain.review.WeeklyBodyDelta
 import com.myfitai.app.domain.review.WeeklyBodyDelta.Reading
 import org.junit.Assert.assertEquals
@@ -12,56 +11,10 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 
 /**
- * K2 lotto 3: (4) parita allenamento check-in vs programma e (5) giorni di calendario a cavallo del DST.
+ * K2 lotto 3: giorni di calendario a cavallo del DST (il confronto check-in/programma e stato rimosso con la semplificazione delle attivita).
  * Europa/Roma: fine ora legale domenica 25 ottobre 2026, inizio domenica 29 marzo 2026.
  */
 class CheckInParityAndDstTest {
-
-    // ---- (4) allenamento: il check-in e una quota prudente del costo del programma ------------
-
-    @Test
-    fun oneHourModerate_profileD78kg_andProfileU89_5kg_programVsCheckIn() {
-        val session = TrainingSession(60, Intensity.MODERATE)
-        // Programma: MET netti x peso x ore. D = 4,0 x 78 = 312 (il "+312" dell'audit), U = 4,0 x 89,5 = 358.
-        assertEquals(312, DayEnergyEngine.exerciseKcal(78.0, session))
-        assertEquals(358, DayEnergyEngine.exerciseKcal(89.5, session))
-        // Check-in: stessa quota per ogni peso (+140), deliberatamente piu bassa: si somma al TDEE abituale
-        // che include gia l'allenamento medio, quindi non e il costo pieno (vedi KDoc).
-        assertEquals(140, DailyActivityCheckInEngine.adjustmentKcal(60, Intensity.MODERATE))
-        val share78 = 140.0 / DayEnergyEngine.exerciseKcal(78.0, session)
-        val share895 = 140.0 / DayEnergyEngine.exerciseKcal(89.5, session)
-        assertTrue("quota D $share78", share78 in 0.40..0.50)
-        assertTrue("quota U $share895", share895 in 0.35..0.45)
-    }
-
-    @Test
-    fun checkIn_neverExceedsTheProgramCost_atTheSameDurationAndIntensity() {
-        for (minutes in listOf(30, 45, 60, 75)) {
-            for (intensity in Intensity.entries) {
-                val checkIn = DailyActivityCheckInEngine.adjustmentKcal(minutes, intensity)
-                assertTrue(checkIn <= DailyActivityCheckInEngine.MAX_ADJUSTMENT_KCAL)
-                for (weight in 40..150) {
-                    val program = DayEnergyEngine.exerciseKcal(weight.toDouble(), TrainingSession(minutes, intensity))
-                    assertTrue("$minutes min $intensity $weight kg: check-in $checkIn > programma $program", checkIn <= program)
-                }
-            }
-        }
-    }
-
-    @Test
-    fun checkInTdee_addsOnlyTheCappedQuota_toTheHabitualTdee() {
-        assertEquals(
-            2067.7 + 140.0,
-            DailyActivityCheckInEngine.effectiveTdeeKcal(1334.0, 2067.7, "PLANNED_WORKOUT", 140)!!,
-            1e-9,
-        )
-        // Anche un valore salvato oltre il tetto non lo supera.
-        assertEquals(
-            2067.7 + DailyActivityCheckInEngine.MAX_ADJUSTMENT_KCAL,
-            DailyActivityCheckInEngine.effectiveTdeeKcal(1334.0, 2067.7, "PLANNED_WORKOUT", 999)!!,
-            1e-9,
-        )
-    }
 
     // ---- (5) DST ------------------------------------------------------------------------------
 
