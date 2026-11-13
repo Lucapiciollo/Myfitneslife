@@ -9,7 +9,7 @@ Funzioni incluse:
 - profilo personale
 - bioimpedenziometria
 - misure corporee
-- allenamenti essenziali
+- allenamenti essenziali (RIMOSSI il 13/11/2026: resta il livello di attività nel Profilo)
 - dashboard
 - piano alimentare IA
 - inserimento sgarri

@@ -20,8 +20,7 @@ age: 43
 heightCm: 186
 weightKg: 89
 goal: REDUCE_BODY_FAT_PRESERVE_OR_INCREASE_MUSCLE
-trainingDaysPerWeek: 6
-trainingTime: 18:30
+activityLevel: Molto attivo (x1,725)
 
 TARGET DINAMICI
 kcal: 2600
@@ -38,10 +37,10 @@ intolerances: []
 knownDigestiveSensitivities: []
 
 TASK
-Genera SOLO un payload di test compatibile con lo schema canonico per la settimana che inizia il 2026-09-14, compilando il solo giorno 2026-09-14 come `trainingDay=true` con 5 pasti (BREAKFAST, LUNCH, PRE_WORKOUT, POST_WORKOUT o DINNER, SNACK). Il totale della giornata deve essere entro ±3% dei target.
+Genera SOLO un payload di test compatibile con lo schema canonico per la settimana che inizia il 2026-09-14, compilando il solo giorno 2026-09-14 con 5 pasti (BREAKFAST, SNACK, LUNCH, SNACK, DINNER). Il totale della giornata deve essere entro ±3% dei target.
 
 VINCOLO DI PARITY
-Usa ESATTAMENTE questi nomi canonici: `status`, `operation`, `weekStart`, `needsInput`, `evidenceIds`, `days`, `date`, `trainingDay`, `meals`, `mealType`, `time`, `title`, `ingredients`, `name`, `quantity`, `unit`, `weightState`, `nutritionConfidence`, `kcal`, `proteinG`, `carbsG`, `fatG`, `digestiveProfile`, `bloatingRisk`, `waterRetentionRisk`, `digestiveFlags`, `digestiveNote`, `totals`, `agentValidation`.
+Usa ESATTAMENTE questi nomi canonici: `status`, `operation`, `weekStart`, `needsInput`, `evidenceIds`, `days`, `date`, `meals`, `mealType`, `time`, `title`, `ingredients`, `name`, `quantity`, `unit`, `weightState`, `nutritionConfidence`, `kcal`, `proteinG`, `carbsG`, `fatG`, `digestiveProfile`, `bloatingRisk`, `waterRetentionRisk`, `digestiveFlags`, `digestiveNote`, `totals`, `agentValidation`.
 Non usare alias come `proteinGrams`, `carbsGrams`, `fatGrams`, `dishName` o `dailyTotals`.
 
 La tua autovalutazione va nel campo TOP-LEVEL `agentValidation`; l'app calcolerà separatamente `appValidation`.

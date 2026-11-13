@@ -44,7 +44,7 @@ Body measurements, at least two dates:
 - Thighs left/right: `60/60`, `60.2/60.1 cm`
 - Calves left/right: `39/39`, `39.2/39.1 cm`
 
-Workouts:
+Workouts (DISMISSED 13/11/2026: dataset di prova storico, non piu usato):
 
 - Monday, weights, `18:30`.
 - Wednesday, weights, `18:30`.
@@ -105,14 +105,16 @@ Each case contains ID, prerequisites, input, steps, expected result, severity an
 | E-003 | Profile changes | Change goal/activity/weight | Local targets change deterministically | High | NOT RUN | |
 | E-004 | Provider response | Return conflicting numeric values | AI cannot override local calculations | Blocker | PASS | Contract/validator tests |
 
-## F. Workouts And Sport Classifier
+## F. Workouts And Sport Classifier - DISMISSED 13/11/2026 (workouts removed; see `docs/PIANO_SEMPLIFICAZIONE_ATTIVITA.md`)
+
+Nota: F-001, F-002, F-003 sono casi dismessi (funzione Allenamenti rimossa) e non vanno eseguiti. F-004 e superato: la modalita sportiva dipende solo dal livello di attivita `Molto attivo`; il caso va riscritto dopo la tranche A2. Il testo originale resta sotto come storico.
 
 | ID | Prerequisites | Input / Steps | Expected Result | Severity | Result | Notes |
 |---|---|---|---|---|---|---|
-| F-001 | Reference profile | Save Monday/Wednesday/Friday/Saturday weights | Rows appear in weekly history | High | NOT RUN | |
-| F-002 | Workout form | Save rest day | Rest row persists without workout duration requirement | High | NOT RUN | |
-| F-003 | Workouts | Open Home/food generation context | Workout times are available as timing context | High | NOT RUN | |
-| F-004 | Unit tests | Run classifier tests | Moderate activity plus two structured workouts is `SPORT`; sedentary is `NORMAL` | Blocker | PASS | Automated |
+| F-001 | Reference profile | Save Monday/Wednesday/Friday/Saturday weights | Rows appear in weekly history | High | DISMISSED | Funzione rimossa 13/11/2026 |
+| F-002 | Workout form | Save rest day | Rest row persists without workout duration requirement | High | DISMISSED | Funzione rimossa 13/11/2026 |
+| F-003 | Workouts | Open Home/food generation context | Workout times are available as timing context | High | DISMISSED | Funzione rimossa 13/11/2026 |
+| F-004 | Unit tests | Run classifier tests | Moderate activity plus two structured workouts is `SPORT`; sedentary is `NORMAL` | Blocker | PASS | Automated; SUPERATO 13/11/2026 (SPORT solo da `Molto attivo`) |
 
 ## G. AI Providers
 
@@ -213,7 +215,7 @@ Each case contains ID, prerequisites, input, steps, expected result, severity an
 | X-001 | Profile/data | Export JSON | Valid JSON; no API key; only active profile data | Blocker | NOT RUN | |
 | X-002 | Profile/data | Export CSV ZIP and PDF | Files are produced and share chooser opens | High | NOT RUN | |
 | X-003 | Two profiles | Export active profile | Data from another profile is excluded | Blocker | NOT RUN | |
-| Y-001 | Persisted data | Kill app and relaunch | Profile, measurements, workouts and plans remain | Blocker | PASS | Profile/device smoke |
+| Y-001 | Persisted data | Kill app and relaunch | Profile, measurements, workouts (dismissed 13/11/2026) and plans remain | Blocker | PASS | Profile/device smoke |
 | Y-002 | Persisted data | Reboot device/emulator | Same data remains after reboot | Blocker | NOT RUN | |
 
 ## Z. Error Handling

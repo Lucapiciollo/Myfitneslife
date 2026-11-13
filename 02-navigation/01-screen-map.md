@@ -5,7 +5,7 @@
 3. Home / Dashboard
 4. Nuova misurazione BIA
 5. Misure corporee
-6. Allenamenti
+6. Allenamenti (RIMOSSA il 13/11/2026)
 7. Piano alimentare
 8. Inserimento sgarro
 9. Piano aggiornato

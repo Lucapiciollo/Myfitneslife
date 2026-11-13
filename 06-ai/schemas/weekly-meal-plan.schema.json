@@ -9,8 +9,8 @@
     "weekStart": {"type": "string", "format": "date"},
     "needsInput": {"type": "array", "items": {"type": "string"}},
     "evidenceIds": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
-    "days": {"type": "array", "minItems": 0, "maxItems": 7, "items": {"type": "object", "required": ["date", "trainingDay", "meals", "totals"], "properties": {
-      "date": {"type": "string", "format": "date"}, "trainingDay": {"type": "boolean"},
+    "days": {"type": "array", "minItems": 0, "maxItems": 7, "items": {"type": "object", "required": ["date", "meals", "totals"], "properties": {
+      "date": {"type": "string", "format": "date"}, "trainingDay": {"type": "boolean", "deprecated": true, "description": "DEPRECATO dal 13/11/2026 (l'app non gestisce piu allenamenti): opzionale e ignorato, ammesso solo per compatibilita con risposte e fixture storiche. Non va emesso."},
       "meals": {"type": "array", "minItems": 4, "maxItems": 6, "items": {"type": "object", "required": ["mealType", "time", "title", "ingredients", "kcal", "proteinG", "carbsG", "fatG"], "properties": {
         "mealType": {"enum": ["BREAKFAST", "SNACK", "LUNCH", "PRE_WORKOUT", "POST_WORKOUT", "DINNER", "OTHER"]},
         "time": {"type": "string", "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"}, "title": {"type": "string", "minLength": 1},

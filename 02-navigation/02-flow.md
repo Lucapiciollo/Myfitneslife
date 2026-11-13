@@ -5,7 +5,7 @@ Splash -> Profilo -> Home
 Home -> Nuova misurazione
 Home -> Misure corporee
 Home -> Piano alimentare
-Home -> Allenamenti
+Home -> Allenamenti (rimosso il 13/11/2026)
 Home -> Storico
 Home -> Analisi IA
 

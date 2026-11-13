@@ -2,6 +2,8 @@
 
 Censimento ricavato dal codice sorgente (`android/app/src/main`) al 2026-10-06, sul working tree della branch `feature/android-compose-modernization-plan`. Riferimenti `File:riga` validi a quella data. Non descrive come dovrebbe essere l'app: elenca cosa esiste, come si apre e cosa è già coperto da test.
 
+Nota (13/11/2026): le voci H05, D03, S06, P06, P07 e U07 riguardano la schermata Allenamenti, il check-in giornaliero e la card «Prossimo allenamento», rimossi dalla decisione di prodotto del 13/11/2026 (`docs/PIANO_SEMPLIFICAZIONE_ATTIVITA.md`). Restano nell'elenco, marcate come rimosse, perché il censimento è storico; i conteggi del riepilogo non sono stati ricalcolati.
+
 ## 1. Riepilogo
 
 | Famiglia | ID | Quantità | Note |
@@ -60,7 +62,7 @@ Tutti passano da `BaseShellActivity.showHelpCard` (`BaseShellActivity.kt:94`); i
 | H02 | Possibile calo teorico | Home, `weeklyExpectationHelpButton` | `HomeActivity.kt:151` |
 | H03 | Riserva di recupero | Home, `recoveryHelpButton` | `HomeActivity.kt:159` |
 | H04 | Prossimo pasto | Home, `nextMealHelpButton` | `HomeActivity.kt:162` |
-| H05 | Prossimo allenamento | Home, `nextWorkoutHelpButton` | `HomeActivity.kt:165` |
+| H05 | Prossimo allenamento (RIMOSSA dal 13/11/2026) | Home, `nextWorkoutHelpButton` | `HomeActivity.kt:165` |
 | H06 | Come calcoliamo le calorie | Home, tap su `caloriesCard` o `caloriesHelpButton` | `HomeActivity.kt:142,143,690` |
 | H07 | Azioni settimana | Alimentazione, `weekActionsHelpButton` | `FoodPlanActivity.kt:83` |
 | H08 | Piano alimentare | Alimentazione, `foodPlanHelpButton` | `FoodPlanActivity.kt:89` |
@@ -112,7 +114,7 @@ Chiamanti del gate C03: `gateAiClick` (BIA 3, Misure 1, Sgarro 4, Alimentazione 
 |---|---|---|---|---|---|
 | D01 | Elimina misurazione | BIA, pressione prolungata su una rilevazione dello storico | Annulla / Elimina | `BiaActivity.kt:723,1055` | - |
 | D02 | Elimina misurazione? | Misure corporee, pressione prolungata su una riga | Annulla / Elimina | `BodyMeasuresActivity.kt:434,506` | - |
-| D03 | Elimina dallo storico? | Allenamenti, pressione prolungata su una sessione | Annulla / Elimina | `WorkoutsActivity.kt:188,195` | - |
+| D03 | Elimina dallo storico? (RIMOSSA dal 13/11/2026: schermata Allenamenti eliminata) | Allenamenti, pressione prolungata su una sessione | Annulla / Elimina | `WorkoutsActivity.kt:188,195` | - |
 | D04 | Azzera stato lista? | Lista spesa, `resetButton` | Annulla / Azzera | `ShoppingListActivity.kt:72,227` | - |
 | D05 | Eliminare … ? / Eliminare tutti i dati di attività? | Da F08, scelta di una categoria o di tutti i dati | Annulla / Elimina | `SettingsActivity.kt:884,940` | - |
 
@@ -138,7 +140,7 @@ I test non confermano mai D01-D11, per regola di QA non distruttivo.
 | S03 | Foto profilo | Profilo, tap sull'avatar; apre X03/X04 | items | `ProfileActivity.kt:225` | `ProfileSummaryVisualDeviceTest` |
 | S04 | Metrica BIA | BIA andamento, `metricButton` | single | `BiaTrendBinder.kt:83,120` | - |
 | S05 | Prossimi pasti | Home, `todayMenuButton` | items | `HomeActivity.kt:168,573` | - |
-| S06 | Allenamento previsto oggi | Home, check-in attività (`activityCheckInWorkoutButton`, `…EditButton`) | items | `HomeActivity.kt:145,146,835` | `HomeActivityCheckInDeviceTest` |
+| S06 | Allenamento previsto oggi (RIMOSSA dal 13/11/2026: check-in giornaliero eliminato) | Home, check-in attività (`activityCheckInWorkoutButton`, `…EditButton`) | items | `HomeActivity.kt:145,146,835` | `HomeActivityCheckInDeviceTest` |
 | S07 | Pasti al giorno | Impostazioni piano, `mealCountButton` | single | `NutritionPlanSettingsActivity.kt:25,45` | - |
 | S08 | Frequenza piano | Impostazioni piano, `scheduleButton`; poi picker ora (P12) | single | `NutritionPlanSettingsActivity.kt:26,50` | - |
 | S09 | Frequenza <funzione> | Impostazioni IA, riga di automazione (Progress Coach BIA, Analisi progressi, Proporzioni corporee, Review settimanale) | single | `SettingsActivity.kt:447-450` | - |
@@ -170,8 +172,8 @@ I test non confermano mai D01-D11, per regola di QA non distruttivo.
 | P03 | data | Sgarro, riga data | `CheatEntryActivity.kt:279-280` |
 | P04 | ora | Sgarro, riga ora | `CheatEntryActivity.kt:293-294` |
 | P05 | data | Nuova misura corporea, data | `NewBodyMeasurementActivity.kt:129,141` |
-| P06 | data | Nuovo allenamento, "Data" | `NewWorkoutActivity.kt:76-77` |
-| P07 | ora | Nuovo allenamento, "Ora" | `NewWorkoutActivity.kt:89-90` |
+| P06 | data (RIMOSSA dal 13/11/2026) | Nuovo allenamento, "Data" | `NewWorkoutActivity.kt:76-77` |
+| P07 | ora (RIMOSSA dal 13/11/2026) | Nuovo allenamento, "Ora" | `NewWorkoutActivity.kt:89-90` |
 | P08 | data | Configurazione iniziale, data di nascita | `OnboardingWizardActivity.kt:227,517` |
 | P09 | ora | Configurazione iniziale, sveglia / sonno / ora piano (3 campi) | `OnboardingWizardActivity.kt:309,313,340,526` |
 | P10 | data | Modifica profilo, data di nascita | `ProfileEditActivity.kt:108` |
@@ -191,7 +193,7 @@ Copertura test: tema calendario/orologio verificato in passato (`DEVELOPMENT_PLA
 | U04 | dropdown | Misure corporee, `trendMetricInput` | `activity_body_measures.xml`, `BodyMeasuresActivity.kt:137` |
 | U05 | dropdown | Sgarro, `quantityInput` (Dettagliato) | `CheatEntryActivity.kt:92` |
 | U06 | dropdown | Preferenze alimentari, `dietStyleInput` | `DietaryPreferencesActivity.kt:55` |
-| U07 | dropdown | Nuovo allenamento, `typeInput` | `NewWorkoutActivity.kt:67` |
+| U07 | dropdown (RIMOSSA dal 13/11/2026) | Nuovo allenamento, `typeInput` | `NewWorkoutActivity.kt:67` |
 | U08 | dropdown | Modifica profilo, `sexInput` | `ProfileEditActivity.kt:101` |
 | U09 | dropdown | Modifica profilo, `goalInput` | `ProfileEditActivity.kt:102` |
 | U10 | dropdown | Modifica profilo, `activityInput` | `ProfileEditActivity.kt:103` |

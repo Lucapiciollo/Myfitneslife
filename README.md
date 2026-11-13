@@ -7,7 +7,7 @@
 Lo stato reale del progetto e l'ordine delle attività sono definiti in `DEVELOPMENT_PLAN.md`.
 
 ## Stato attuale
-MyFitAI è un'app Android local-first per profilo corporeo, BIA, misure, allenamenti, piano alimentare, adattamento post-sgarro, lista spesa, notifiche, review ed export.
+MyFitAI è un'app Android local-first per profilo corporeo, BIA, misure, livello di attività, piano alimentare, adattamento post-sgarro, lista spesa, notifiche, review ed export.
 
 La UI/mock navigabile e gran parte della logica applicativa sono presenti su `develop`. Il framework di collaudo V1 usa `SixMonthHistoryFixture` con seed `20260914`, clock testabile, regression test sui trend/calcoli e integration test Room/export.
 
@@ -37,7 +37,7 @@ Le due chiavi possono essere configurate contemporaneamente. Lo switch seleziona
 una chiave salvata non viene più mostrata e può solo essere sostituita o eliminata. La sezione
 Alimentazione è bloccata finché il provider attivo non è configurato e porta direttamente alle Impostazioni.
 
-Tutti gli agenti sono vincolati al solo dominio nutrizionale. Dati corporei, BIA, misure e allenamenti possono essere usati solo come contesto per decisioni nutrizionali, non per coaching generico, diagnosi mediche o altri domini.
+Tutti gli agenti sono vincolati al solo dominio nutrizionale. Dati corporei, BIA, misure e livello di attività possono essere usati solo come contesto per decisioni nutrizionali, non per coaching generico, diagnosi mediche o altri domini.
 
 `agentValidation` resta informativa; `appValidation` locale è autorevole.
 
@@ -68,7 +68,7 @@ Il piano alimentare riceve anche contesto corporeo descrittivo:
 Questi dati non autorizzano diagnosi. In particolare la BIA non deve essere interpretata come prova diretta di carenza proteica o disidratazione.
 
 ## Nutrizione sportiva e integrazione
-La modalità sportiva non è un flag manuale: viene classificata localmente usando livello di attività e allenamenti della settimana.
+La modalità sportiva non è un flag manuale: viene classificata localmente usando solo il livello di attività del profilo: `SPORT` dal livello `Molto attivo` (o dai valori storici equivalenti), `NORMAL` altrimenti. Gli allenamenti non sono più gestiti dall'app (decisione di prodotto 13/11/2026, vedi `docs/PIANO_SEMPLIFICAZIONE_ATTIVITA.md`).
 
 Modalità:
 - `NORMAL`

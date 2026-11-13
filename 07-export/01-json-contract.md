@@ -4,7 +4,7 @@ Il file deve contenere:
 - profilo
 - misurazioni BIA
 - misure corporee
-- allenamenti
+- allenamenti: DEPRECATI, lo schema export v3 non include `workouts`, check-in giornalieri né `trainingProgram` (i backup v1/v2 che li contengono restano importabili e vengono ignorati in lettura)
 - target nutrizionali
 - piani alimentari
 - sgarri

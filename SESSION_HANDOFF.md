@@ -10,6 +10,8 @@ This file records the verified working state so another OpenCode session or anot
 
 The authoritative implementation plan remains `DEVELOPMENT_PLAN.md`. This handoff adds operational continuity and does not replace it.
 
+Note (13/11/2026): product decision to remove workouts (Workouts/NewWorkout screens, training program, daily check-in, ActivityBasis). Only the profile activity level remains (Sedentario x1,20 / Moderato x1,55 / Molto attivo x1,725; TDEE = BMR x factor; one target for all days). Plan: `docs/PIANO_SEMPLIFICAZIONE_ATTIVITA.md`. Every mention of workouts, check-in or training program below is historical and SUPERSEDED by that plan; nothing is marked done until implemented and verified.
+
 ## Snapshot
 
 - Date: 2026-09-24
