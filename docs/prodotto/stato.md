@@ -1,0 +1,295 @@
+# Stato iniziativa — rifacimento MyFitAI
+
+Aggiornato: 12 novembre 2026 · Repo: `C:\Users\LucaPiciollo\Luca\Myfitneslife` · Branch: `develop`
+
+## Decisioni
+- Piano unificato: `docs/PIANO_UNIFICATO_2026-11-12.md` (recepisce `docs/PIANO_RIFACIMENTO_2026-11-12.md` e `docs/UX_NAVIGAZIONE_IA_E_PROFILO_2026-11-12.md`).
+- Il tab IA viene rimosso: quattro tab (Home, Cibo, Progresso, Altro), rotellina per le impostazioni IA globali.
+- Profilo Mamma corretto il 12/11/2026 a 10/05/1964 (62 anni); verificato in Home: BMR 1354, TDEE 1625, target 1381 kcal. Generazione del piano non ancora avviata (serve consenso).
+- `OpenCode` non è un provider runtime documentato: fuori scope.
+- Il telefono di prova resta acceso con USB collegato (`svc power stayon usb`).
+- Decisioni D1–D13 del piano unificato in attesa dell'utente.
+
+## Audit (tutti conclusi, sola lettura)
+| Agente | Incarico | sessionID | Esito |
+|---|---|---|---|
+| sviluppo/architetto-software | Audit contratto AI/BIA | `ses_e3148230bffe0syWWGrg7oIYLM` | Concluso |
+| prodotto/analista-funzionale | Preferenze e modifica dati | `ses_e314822eeffeARsnzc2nEjqMG8` | Concluso |
+| design/ux-reviewer | Review gestione intolleranze | `ses_e314822dbffe3q3nNKVIOzuVTN` | Concluso |
+| sviluppo/architetto-software | Provider, peso, diagnostica dieta | `ses_e3131c332ffeuPToD09OP2dJhr` | Concluso |
+| prodotto/analista-funzionale | Piano in due step | `ses_e3131c321ffeccxKzkBwVBsnJn` | Concluso |
+| design/ux-reviewer | Rotellina e accessibilità | `ses_e3131c2deffetXMi00TXlsJDEv` | Concluso |
+| sviluppo/architetto-software | Infrastruttura contratto IA | `ses_e30cb2b51ffe60TsWFcoLLnazA` | Concluso |
+| sviluppo/architetto-software | Contratti agenti nutrizione | `ses_e30cb0a99ffemVvqncJY9z67nB` | Concluso |
+| sviluppo/architetto-software | Contratti agenti corpo/progressi | `ses_e30caee3affe8Zi5SJRfARK04m` | Concluso |
+| design/ux-designer | Navigazione senza tab IA | `ses_e30cad13fffeKYrjYoVgKwSlb6` | Concluso |
+
+## Step 1 — tranche in worktree (non committate)
+Worktree in `C:\Users\LucaPiciollo\.local\share\opencode\worktree\bc2023\`.
+| Agente | Tranche | sessionID | Stato |
+|---|---|---|---|
+| sviluppo/senior-developer | Età e messaggi (`s1-eta-messaggi`) | `ses_e310b2b47ffexNkzhwLT3UiVEe` | Codice scritto, gate non confermato |
+| sviluppo/senior-developer | Rotellina IA e profilo (`s1-ia-gear-profilo`) | `ses_e310b096effez1L40YIDzbeaLD` | Da ricalibrare (tab IA rimosso) |
+| sviluppo/senior-developer | Peso trasparente (`s1-peso-trasparente`) | `ses_e310aef8dffevckf4ThuMNPCq5` | Codice scritto, gate non confermato |
+| sviluppo/senior-developer | Preferenze con chip (`s1-preferenze-chip`) | `ses_e310ad2fdffezd2ieJSfGus6bX` | Codice scritto, gate non confermato |
+
+## Implementazione
+Nessuna tranche integrata su `develop`. Il Samsung ha ancora l'APK precedente.
+
+## Aggiornamento 12/11/2026 (branch committati, in revisione)
+| Branch | Commit | sessionID | Stato |
+|---|---|---|---|
+| fix/a1-retry-handlers | db7c8ba | ses_e30b09ac5ffed0dW2bZor6qEMs | Revisione: approvabile con modifiche; seconda passata in corso (test worker, messaggi senza testo modello, tetto retry) |
+| fix/a3-food-constraints | a2d73f5 | ses_e30b0739bffeORt1LORz5Lfine | Revisione: con modifiche; seconda passata in corso (vincoli non riconosciuti, etichetta vegetale, testo legacy) |
+| fix/a2-bia-review | in corso | ses_e3085b092ffeBdcp7epaNAOJSQ | B1/B2/B3 in corso |
+| fix/s1-eta-messaggi | 1e08341 | ses_e310b2b47ffexNkzhwLT3UiVEe | Rilievi minori in correzione |
+| fix/s1-peso-trasparente | fb71f3b | ses_e310aef8dffevckf4ThuMNPCq5 | Scelta unica del peso in correzione |
+| feat/s1-preferenze-chip | f76cf3d | ses_e310ad2fdffezd2ieJSfGus6bX | Ordine categorie, accessibilita, riga piano in correzione |
+| feat/s1-ia-gear-profilo | df350ca | ses_e310b096effez1L40YIDzbeaLD | Da ricalibrare dopo Fase B |
+Revisori (conclusi): ses_e3085f153ffeih545lDQnFYzYL (A1/A3), ses_e3085dc56ffeBJzu1wCi5rAHfn (Step 1).
+Ordine merge: A1, eta, peso, chip, A3, a2-bia-review, gear dopo Fase B. Nessun merge su develop ancora.
+
+## Aggiornamento 12/11/2026 pomeriggio
+- Commit: A1 481c11a (336 test dichiarati), A3 aac2f4e (346 dichiarati), a2-bia-review 9cb1eac (325 dichiarati), peso c0f181d (315 test dichiarati, gate completo rieseguito da me in corso).
+- Branch di integrazione integrazione/step1 (worktree integrazione-step1): merge puliti A1, a2, a3, peso; conflitto risolto in BiaAnalysisContract (codice errore senza testo modello); aggiunti codici in KNOWN_CODES. Da aggiungere: eta, chip. Poi gate completo sull'integrazione.
+- Gate sequenziale da me: log Temp\opencode\gate-seq4.log (peso OK 24m48s; eta, chip in corso).
+
+## Aggiornamento 12/11/2026 sera
+- develop = d2ffffc (merge di A1, a2-bia-review, A3, peso, eta, chip, gear). Gate integrazione: BUILD SUCCESSFUL, 452 test unitari, 0 falliti (verificato da orchestratore).
+- APK debug installato in-place sul Samsung (adb install -r, nessun reset). Verificato a schermo: rotellina nel Profilo, riga "Alimenti e preferenze", schermata preferenze con Allergie/Intolleranze/Esclusi in testa (vuote per Mamma).
+- Piano settimanale di Mamma generato con Gemini (consenso utente): giorno 12/11 ~1381 kcal, ~160 g proteine = target. Altri giorni, pesi e vincoli non verificati.
+- Non eseguiti: androidTest (solo compilati), TalkBack, font 1.3, OpenAI dal vivo.
+- Prossimo: Fase B (4 tab, AiSettingsActivity, rotellina globale), poi Fase C.
+
+## Avvio Fase B e avvisi preferenze (12/11/2026)
+| Agente | Incarico | sessionID | Branch / worktree |
+|---|---|---|---|
+| sviluppo/senior-developer | Fase B: 4 tab, AiSettingsActivity, AiAutomationsActivity, rotellina globale | ses_e2fefdac4ffetTeioIWc0FJR7v | feat/fase-b-navigazione-ia (fase-b-navigazione-ia) |
+| sviluppo/senior-developer | Avvisi vincoli nelle preferenze (testo legacy, NAME_ONLY, LIMITS_NOTICE) | ses_e2fefb355ffebvDf1wYBi2Ofxo | feat/pref-avvisi-vincoli (pref-avvisi-vincoli) |
+Il gate completo lo riesegue l'orchestratore prima del merge.
+
+- feat/pref-avvisi-vincoli 2c5f969 (463 test dichiarati, BUILD SUCCESSFUL 8m22s, su base d2ffffc): portato su develop con fast-forward. Da verificare su device: riquadro testo legacy, dialog conferma, rotazione, avvisi per voce.
+
+## Fase B integrata (12/11/2026 pomeriggio)
+- develop = ce226e1 (merge fase-b + avvisi preferenze). Gate sull'unione: BUILD SUCCESSFUL in 7m 5s, 471 test unitari, 0 falliti (verificato da orchestratore). APK installato in-place sul Samsung.
+- Verificato a schermo: 4 tab, rotellina 'Impostazioni IA' in Home e Altro, AiSettingsActivity (Gemini configurato, OpenAI non configurato, screenshot piccolo = FLAG_SECURE verosimile), Altro con card IA e Automazioni IA, AiAutomationsActivity per profilo. Non verificati: Cibo/Progresso (rotellina), TalkBack, landscape/font 1.3, androidTest.
+
+## Fase C1 avviata (12/11/2026)
+| sviluppo/senior-developer | C1: AiFailure, registro contratti, finishReason/refusal, maxOutputTokens | ses_e2fcffa44ffe47bWeTDClp5a7e | feat/fase-c1-nucleo-errori (fase-c1-nucleo-errori) |
+Seguiranno C2 (validatore schema v2 + ValidatedOutput) e C3 (fixture golden + parita) in sequenza sullo stesso perimetro.
+
+## Fase C2 avviata in parallelo a C1 (12/11/2026)
+| sviluppo/senior-developer | C2: validatore schema v2 + ValidatedOutput (solo CanonicalJsonSchemaValidator e file nuovi; non tocca AiExecutionService) | ses_e2fcad54effeUmkqErVYl9JkhB | feat/fase-c2-validatore-schema (fase-c2-validatore-schema) |
+C3 (fixture golden + parita Gemini/OpenAI) resta in coda: dipende da AiFailure di C1. Integrazione ValidatedOutput in AiExecutionService dopo merge di C1 e C2.
+
+- C2 4eee295 (500 test dichiarati, BUILD SUCCESSFUL 16m16s su base ce226e1) portato su develop con fast-forward. Integrazione ValidatedOutput in AiExecutionService: dopo C1.
+
+- C2 4eee295 (500 test dichiarati, BUILD SUCCESSFUL 16m16s su base ce226e1) portato su develop con fast-forward. Integrazione ValidatedOutput in AiExecutionService: dopo C1.
+
+## C1+C2 integrati (12/11/2026)
+- develop = 979516e. Gate unione: BUILD SUCCESSFUL 5m49s, 549 test unitari, 0 falliti (verificato da orchestratore). APK installato in-place sul Samsung.
+- C1 89ecbb6 (AiFailure, AiContractRegistry, finishReason/refusal, maxOutputTokens Gemini). RISCHIO APERTO: tetti token Gemini (350-900) possono troncare con thinking; da verificare con una chiamata reale (serve consenso utente).
+- Prossimi: C3 (fixture golden + parita), integrazione ValidatedOutput in AiExecutionService, poi Fase D (NutritionAdvice PoC).
+
+## Prova Gemini dopo C1 (12/11/2026, consenso utente)
+- Consiglio alimentare (NutritionAdvice, 'Cosa cena leggera stasera ?') sull'APK con C1: risposta completa in ~8 s, 5 opzioni con kcal/macro, nessun troncamento (gemini-3.5-flash-lite). Il tetto token di NutritionAdvice e quindi sufficiente. Altri contratti con tetto (BIA coach, review, ecc.) non provati.
+- C3 avviato: ses_e2fa64f37ffeFxAc1Qz2KE4lHO (feat/fase-c3-fixture-parita).
+
+## Critica agente BIA e misure (12/11/2026, sola lettura, ses_e2f9c061dffe2uZ1pVhOj1hbPL, non verificata da orchestratore)
+Verdetti: BIA Coach = da rifare (contesto di ingresso e validazione), prompt adeguato con riserve; Proporzioni = adeguato con riserve; Analisi progressi = adeguato con riserve; Review settimanale = adeguato con riserve + bug.
+Alta: (1) BIA Coach riceve eta come epoch-day e date in formati diversi (BiaAnalysisAiJobHandler.kt:90,97-99); (2) rumore BIA non quantificato, qualita/condizioni non nel prompt (BiaMeasurementQualityEngine usato solo dalla UI); (3) soglie trend +-0,3 sotto il rumore, PA senza n/intervallo (LocalCalculationEngine.kt:207); (4) nessuna gestione profili vulnerabili/perdita rapida/eta; (5) ruolo BIA Coach eccede il confine nutrizionale (allenamento, creatina); (6) scenari di grasso calcolati dal modello, nessuna validazione numerica; (7) possibile bug: WeeklyReviewService usa il contesto del profilo ATTIVO per un job di altro profilo (WeeklyReviewService.kt:132).
+Media: piano trattato come consumo; finestre disomogenee; vita/altezza non inviato; validatore UI proporzioni contraddice il service (BodyMeasuresActivity.kt:427,436); nota di sicurezza sempre obbligatoria; tre azioni sempre; tono; guard cause-effetto deboli, regola ritenzione != grasso assente nei prompt; delta WR senza intervallo.
+Domande aperte per il responsabile prodotto: minorenni/gravidanza/disturbi alimentari; allenamento e integratori in perimetro?; soglia di rumore BIA e apparecchio.
+
+- C3 6ec0aa7 (601 test dichiarati, BUILD SUCCESSFUL 7m43s su base 979516e) portato su develop con fast-forward. executeValidated in AiExecutionService/Gateway; fixture golden; parita errori Gemini/OpenAI. Nessun handler usa ancora executeValidated.
+
+## Correzioni da critica BIA + rigidita controllo piano (12/11/2026)
+| Agente | Incarico | sessionID | Branch |
+|---|---|---|---|
+| senior-developer | T1: bug contesto review, delta con tetto, guardie cause-effetto, legenda BP, validatore UI unico | ses_e2f940d1effexkwNgM204sE3VS | fix/bia-t1-review-validatori |
+| senior-developer | T2: BIA Coach contesto, soglie rumore, SAFETY_FLAG, ruolo ristretto, regola ritenzione | ses_e2f939336ffeN1QyWD2ysLKvG7 | feat/bia-t2-coach-contesto |
+| architetto-software | Analisi sola lettura: rigidita validazione piano, correzione locale deterministica, accettazione con avviso | ses_e2f9367ffffeEpHXhctXb1D9xP | - |
+Ipotesi reversibili in T2 (da confermare dall'utente): nessuna esclusione utenti, SAFETY_FLAG locale; BIA Coach solo alimentazione/timing; soglie rumore BIA conservative (peso 0,8 kg, grasso 1,0 pt, magra 1,0 kg, acqua 1,0 kg).
+Osservazione utente: l'IA puo non rispettare il piano calorico e il controllo dell'app puo essere troppo stretto -> progetto a livelli (accetta / correzione locale / retry mirato / accetta con avviso), vincoli di sicurezza restano bloccanti. Richiede aggiornare la regola in AGENTS.md (da proporre).
+
+## Analisi rigidita controllo piano (ses_e2f9367ffffeEpHXhctXb1D9xP, sola lettura, non verificata dall'orchestratore)
+- Oggi: kcal giornaliere +-3% bloccanti; macro MAI bloccanti (B8); +-4% sui retry NON esiste (B9); centratura 1% blocca i primi 2 tentativi (D7); al fallimento nessun piano parziale, caso peggiore 5 chiamate (3 generazione + 2 revisione); cambio pasto richiede kcal UGUALI esatte (rischio massimo).
+- Vincolo tecnico: gli ingredienti non portano kcal/macro: correzione locale per ingrediente richiede il contratto con kcal per ingrediente (opzione C) o una tabella locale (B); subito solo scala pasto intero (A).
+- Proposta a livelli L1 accetta / L2 correzione locale (<=8% per pasto) / L3 retry mirato / L4 accetta con avviso (<=10%); bloccanti: allergie, intolleranze, esclusioni, minimo kcal sicurezza, struttura, quota/auth/rete.
+- Tranche: T0 misura scostamenti, T1 assessment unico +-4% centratura avviso macro, T2 correzione locale, T3 accetta con avviso + minimo kcal + UI, T4 retry mirato, T5 cambio pasto/sgarro, T6 kcal per ingrediente, T7 doc/AGENTS.md.
+- In attesa decisioni utente (D5, D6, D7, D9 piano unificato + limiti 10%/8%/15%, minimo kcal, budget chiamate, revisione IA, cambio pasto, avviso UX).
+
+## Decisioni D14 (utente: 'procedi' = ok ai default, 12/11/2026)
+Approvati D5, D6, D7, D9 e: limite avviso 10% kcal giorno; correzione locale 8% per pasto / 15% giorno; budget 1 generazione + 1 retry mirato + 1 revisione; revisione IA da bloccante ad avviso salvo sicurezza; cambio pasto +-3%/+-4% con correzione locale <=8%. Minimo kcal di sicurezza = IPOTESI mia reversibile: max(BMR locale, 1200 donne / 1500 uomini), costanti in un solo punto. AGENTS.md da aggiornare SOLO a lavoro verificato (T7).
+Tranche piano: P1 (assessment unico, +-4% reale, centratura avviso, macro avvisi, registrazione scostamenti) -> P2 (correzione locale pasto intero) -> P3 (accetta con avviso, minimo kcal, revisione avviso, UI) -> P4 (retry mirato) -> P5 (cambio pasto/sgarro).
+
+| senior-developer | P1: NutritionPlanAssessment, +-4% reale, centratura avviso, macro avvisi, messaggio FIX con tutti i giorni, appValidation v2 | ses_e2f815e2dffeEK2ZVEw2Cy1W2q | feat/piano-p1-assessment |
+
+- T1 c394cca (620 test dichiarati, BUILD SUCCESSFUL 25m5s, base 6ec0aa7) portato su develop con fast-forward. Fix: contesto review/piano per profileId del job; delta con tetto 14 gg; guard causali; legenda BP; BP1 token 1500; validatore UI unico. Non verificato su device. T2 e P1 da unire con gate sull'unione.
+
+- T2 9e09334 (617 test dichiarati, BUILD SUCCESSFUL 15m20s su base 6ec0aa7). Unito con T1 in worktree bia-t2-coach-contesto (faa8a80), nessun conflitto; gate unione in corso (log gate-t1t2.log). Ipotesi T2 da far confermare: SAFETY_FLAG, minimo 1200/1500 kcal, soglie rumore BIA, ruolo solo alimentare, intervalli grasso target.
+
+- P1 06e1869 (616 test dichiarati, BUILD SUCCESSFUL 10m12s, base 6ec0aa7). Unione di prova con develop(T1) in worktree piano-p1-assessment. Dopo gate T1+T2: unire P1 e rieseguire gate.
+
+| senior-developer | D1: PoC NutritionAdvice JSON nativo vs pipe (contratto parallelo, flag spento, misure token, docs/D1_POC_NUTRITIONADVICE.md) | ses_e2f5cd9d6ffeQ3mghPb75m3G0n | feat/d1-poc-nutritionadvice (d1-poc-nutritionadvice) |
+
+- develop = faa8a80 (T1+T2): gate unione BUILD SUCCESSFUL 7m41s, 636 test unitari, 0 falliti (verificato da orchestratore). Unito P1 in worktree piano-p1-assessment (3cd7ffa); gate T1+T2+P1 in corso (gate-t2p1.log).
+
+- develop = 3cd7ffa (T1+T2+P1): gate BUILD SUCCESSFUL 7m22s, 651 test unitari, 0 falliti (verificato). APK installato in-place sul Samsung.
+
+## Prova BIA Coach su device (12/11/2026, consenso utente, profilo Luca)
+- develop 3cd7ffa installato. Analisi Progress Coach su ultima BIA (27/09): risposta in ~13 s, nessun errore di formato. Testo: verdetto prudente, peso 90,7->89,5 (-1,2 kg) 'oltre la soglia di rumore' (soglia 0,8 kg: nuova logica attiva). Dice 'Calorie target 2527 kcal, 179 g proteine, 292 g carbo, 72 g grassi': la Home mostra target 2242 (giorno di riposo); 2527 potrebbe essere il target di giorno di allenamento, NON verificato. Titolo UI ancora 'Analisi nutrizionale e sportiva BIA' (BiaActivity non toccata). Risultato salvato nel profilo Luca (additivo).
+- Rigenerazione piano di Mamma NON eseguita: il selettore profilo in Home non apre un elenco via uiautomator.
+
+## D1 PoC NutritionAdvice concluso (ses_e2f5cd9d6ffeQ3mghPb75m3G0n, non verificato dall'orchestratore)
+- Commit 100e608 (feat/d1-poc-nutritionadvice), BUILD SUCCESSFUL 10m3s dichiarato, 646 test. Contratto JSON nativo in parallelo con flag spento (NutritionAdviceContractMode.DEFAULT=PIPE), non ancora in develop; unione con develop in worktree d1-poc-nutritionadvice, gate da rieseguire.
+- Misura: JSON completo 2,3-2,5x la pipe in output; totale per chiamata +27-49%. Raccomandazione: NutritionAdvice resta PIPE; BIA/review -> JSON tipizzato, ma prima: riga di registro, retry di business per NATIVE_JSON, propertyOrdering Gemini, prova schema nativo su Gemini reale.
+## Verifica da codice (orchestratore): 2527 kcal nel BIA Coach
+BiaAnalysisAiJobHandler.kt:95 usa profileSnapshot(profileId).calculation.targetKcal = TDEE ABITUALE (2974) x 0,85 = ~2528; la Home mostra il target OPERATIVO del giorno (2638 x 0,85 = 2242, giorno di riposo). Il numero e dell'app, non inventato dal modello, ma due 'target' diversi senza etichetta. Da correggere in T3: passare entrambi con etichetta.
+
+## Verifica globale BIA/misure + T3 (12/11/2026, richiesta utente: proposte risolutive, calcoli, accessibilita, uso di BIA e misure in IA)
+| Agente | Incarico | sessionID | Note |
+|---|---|---|---|
+| senior-developer | T3: target etichettati, scenari calcolati dall'app, UI BiaActivity (titolo, sicurezza, affidabilita IT, accessibilita) | ses_e2f412bd3ffeyHlMw6rrnJwhBa | feat/bia-t3-scenari-locali (da develop 3cd7ffa) |
+| architetto-software | Audit calcoli con ricalcolo a mano (BMR/TDEE/target/macro/trend/coerenza schermate) | ses_e2f410751ffe77m8CW9zY6nzFB | sola lettura |
+| ux-reviewer | Usabilita e accessibilita flussi BIA/Misure e uscite IA | ses_e2f40e733ffeN9Qj6YAM0nnEuO | sola lettura |
+| architetto-software | Audit end-to-end dati BIA/misure verso tutti i consumatori IA | ses_e2f40c907ffewU3Kr0F4SZpf1R | sola lettura |
+In coda dopo gli esiti: correzioni dagli audit (tranche), retry business NATIVE_JSON + riga registro NutritionAdvice, integrazione D1 (branch feat/d1-poc-nutritionadvice), gate unione.
+
+## Review UX/accessibilita BIA e Misure (ses_e2f40e733ffeN9Qj6YAM0nnEuO, sola lettura statica, non verificata su device)
+25 rilievi: 1 bloccante, 8 alti, 9 medi, 5 bassi.
+Bloccante B1: storico BIA/misure, card con contentDescription generico 'Modifica rilevazione BIA' senza data/valori, eliminazione solo con long-press (BiaActivity.kt:746-750, BodyMeasuresActivity.kt:559-563).
+Alti: A1 form BIA 16 valori e data persi a rotazione (nessun onSaveInstanceState; NewBodyMeasurementActivity selectedDate non ricollegato); A2 import foto: job non riattaccato dopo ricreazione, no live region, no annulla; A3 salvare BIA/misura accoda 'consiglio obiettivo' IA a pagamento senza conferma (NutritionPathTrigger, BiaViewModel:129,214, BodyMeasurementsViewModel:104) e apre NutritionPathActivity da sola; A4 errori IA con codici tecnici in Toast (BiaActivity.kt:810) e 'Riprova' generico; A5 grafici senza alternativa testuale; A6 grafici fuorvianti (legenda 'Peso' per grasso/muscolo, asse % senza unita, 13 serie, 'measurement' in inglese); A7 contrasto text_muted ~3,3:1 con testo 11sp; A8 soglie contraddittorie: trend locale stabile <0,2 (BiaTrendBinder.kt:33-39) vs rumore IA 0,8/1,0 (BiaNoiseThresholds) + punteggio comparabilita /100 non spiegato.
+Medi: validazione form senza errore inline e senza range plausibili; target sotto 48dp (TimeRangeSelector 32dp, back/help 40dp, righe 36-40dp); attesa IA non annunciata/non annullabile; dialog analisi 15 sezioni; conferma IA generica senza dire cosa e inviato (foto, dati salute); anteprima import senza foto e con confidenza grezza; uscita dal form senza avviso; eliminazione BIA senza data nel messaggio; FLAG_SECURE assente su BIA/Misure/Progresso.
+Da rilevare: i trend locale/IA usano soglie diverse -> da unificare (collegato a T2 BiaNoiseThresholds).
+
+## Audit flusso dati BIA/misure verso IA (ses_e2f40c907ffewU3Kr0F4SZpf1R, sola lettura, non verificato dall'orchestratore)
+20 difetti. Alti: (1) BMR dipende da grasso della sola ultima BIA, senza limite di eta del dato; ultima BIA solo-peso => Katch->Mifflin senza avviso (~-166 kcal, ProfileCalculationService.kt:98,122); (2) nessuna plausibilita sul peso BIA (BiaViewModel.kt:72-80, BiaImportContract.kt:97); (3) job BIA automatico riparte a ogni avvio (chiave auto-<now>, BiaProgressCoachScheduler.kt:21-26) e analizza senza controllare se la BIA e gia analizzata; (4) consiglio obiettivo IA a ogni salvataggio BIA/misura senza conferma (NutritionPathTrigger.kt:23-39); (5) contesto BIA Coach: LC/BMI/safety con snapshot di OGGI anche per BIA vecchia, U con peso di profilo.
+Medio-alti: (6) analisi IA orfane/non invalidate dopo modifica o cancellazione BIA (DataDeletionService.deleteBiaMeasurements non cancella bia_analysis_results); (7) peso di profilo statico in 4 prompt (Bia, Weekly U=, Advice, NutritionPath) mentre piano/progressi usano WeightResolver; (8) soglie rumore divergenti: AdaptiveNutritionTargetEngine (muscolo -0,5 kg, grasso 0,3-0,5) vs BiaNoiseThresholds vs UI 0,2; (9) import foto: abbinamento etichette per sottostringa ('peso' vs 'peso osseo'), BiaRawImportContract.kt:65,127-159; (10) provenienza/derivati persi al salvataggio import; (11) fusi: misure a mezzogiorno UTC vs BIA ora locale; PersonalResponseEngine esclude misure prima delle 13:00 locali; (12) finestre diverse, trend 'recente' ancorato all'ultimo dato; (13) Proporzioni: ultima riga solo-peso blocca analisi, risultato non salvato; (14) toggle automazioni Proporzioni/Review senza effetto, cambio frequenza lascia vecchio job.
+Medi/bassi: qualita confronto inflazionata (N=N coerente, righe importate 12:00); delta calcolati in 5 punti con fonti diverse (PersonalResponseEngine solo BIA vs Weekly WR); storico non conservato (review REPLACE, progressi in SharedPreferences fuori da export/backup, BIA senza appValidation/versione); legenda BODY 11 vs 12 voci, BC senza legenda, date epoch nei prompt, delta Float non arrotondati; maybeEnqueue senza runCatching nelle misure; delete senza controllo profilo (teorico).
+Verificato OK: isolamento profileId nei DAO e job; WeightResolver; BIA Coach contesto (ISO, eta in anni, finestre 36, nessun dato posteriore); parametri job piccoli; import foto con conferma e preview; import storico idempotente; export/backup completi; migrazioni testate; Review con intervallo reale.
+
+## Audit calcoli (ses_e2f410751ffe77m8CW9zY6nzFB, sola lettura, ricalcoli a mano, non verificato dall'orchestratore)
+Formule verificate corrette: IMC, Mifflin, Katch (2-70%), TDEE, target x0,85, macro 4/4/9, giorno allenamento, recupero sgarro, delta settimanale.
+Errori certi: (1) Home 'Rimangono (kcal)' perde il segno sul superamento (HomeActivity.kt:629); (2) delta Home senza segno e icone legate a bene/male (HomeActivity.kt:261-280).
+Probabili: aspettativa settimanale dipende dal check-in di oggi (HomeViewModel.kt:281); Home/Cibo target senza adattamento/recupero diverso da piano e IA (DayEnergyProvider.kt:39-50); Home non vede settimane 2..N di periodo multi-settimana (HomeViewModel.kt:204-207); peso di profilo vecchio in 4 prompt e nel Profilo; soglie stabile/variato in 4 verdetti diversi (0,05/0,2-0,3/0,5/0,8-1,0); allenamento: check-in +140 kcal vs programma +312 (DailyActivityCheckInEngine vs DayEnergyEngine); nessun minimo kcal nei percorsi senza programma (donna sedentaria con recupero 1224 < BMR 1334).
+Dubbi: carbo 43,8 g su donna sedentaria (proteine 2 g/kg); peso senza plausibilita (785 kg => target 11.072 kcal); recomposizione su tutto lo storico; settimana completata la domenica stessa; periodi 1M/3M ancorati diversamente; PDF tronca (toInt) vs Home arrotonda; timestamp misure UTC mezzogiorno; DST nei giorni; Home 'oggi' congelato; BMR Katch con % vecchia e peso nuovo (-50 kcal); formatNumber duplicato 8 file; livello EVERYDAY_ONLY con doppio conteggio.
+Proposta audit: test golden su 2 profili (D 62a 164cm 78kg: BMR 1334,0 TDEE 2067,7 target 1757,5 carbo 143,0; U 40a 180cm 89,5kg: BMR 1825 TDEE 2828,8 target 2404,4 carbo 261,0).
+
+## Tranche correttive (da audit, 12/11/2026) - worktree da develop 3cd7ffa; T3 (BiaActivity/BiaAnalysis*) separata
+K1 Home numeri (segno, delta, settimana 2, oggi congelato, target = piano) | K2 motore+soglie (minimo kcal unico, Katch, soglie uniche, DST, allenamento parita, peso risolto nei prompt) | K3 Misure a11y/grafici/errori IA in italiano | K5 job/validazioni (job BIA duplicati, trigger obiettivo senza conferma, toggle automazioni, orfani, range plausibili peso).
+Dopo T3: K4 BiaActivity (storico accessibile, rotazione form, import foto, errori).
+
+| Agente | Tranche | sessionID | Branch |
+|---|---|---|---|
+| senior-developer | K1 Home numeri | ses_e2f371be0ffeAqk5uejl9inPHs | fix/k1-home-numeri |
+| senior-developer | K2 motore + soglie + minimo kcal | ses_e2f36d3fcffeXwNuZeKZitwDR8 | fix/k2-motore-soglie |
+| senior-developer | K3 Misure a11y/grafici/errori IA | ses_e2f3692cbffeCx4UzU6hFIJhXb | fix/k3-misure-a11y |
+| senior-developer | K5 job/validazioni/orfani | ses_e2f36460effeDFDv2WCwlJoPH3 | fix/k5-job-validazioni |
+In corso anche: T3 ses_e2f412bd3ffeyHlMw6rrnJwhBa (BIA). Sequenza integrazione: T3, K2, K5, K1, K3 (ordine da rivedere per conflitti), gate sull'unione; poi K4 BiaActivity; D1 separato (feat/d1-poc-nutritionadvice).
+
+- K3 si e fermato senza modifiche (perimetro ~20-25 file). Decisione orchestratore: sotto-tranche K3a (storico/form/validazioni), K3b (AiFailureMessages/attesa IA), K3c (grafici), K3d (contrasto/48dp, per ultimo) in sequenza sullo stesso branch; limite 10 file solo per produzione Kotlin, fino a 14 con risorse/test. K3a avviato (stessa sessione ses_e2f3692cbffeCx4UzU6hFIJhXb).
+
+- T3 fe41c21 (678 test dichiarati, BUILD SUCCESSFUL 10m54s su base 3cd7ffa) portato su develop con fast-forward. Target abituale/operativo etichettati; scenari e grasso perso calcolati dall'app; guardia NUMBER_NOT_IN_CONTEXT; UI BiaActivity (titolo, affidabilita IT, nota sicurezza condizionale, heading). Rischio: guardia numerica con falsi positivi, da provare con chiamata reale. K4 BiaActivity (storico/rotazione/import/errori) ora sbloccato dopo K5 (BiaViewModel).
+
+- K3a ec82bf5 (672 test dichiarati, BUILD SUCCESSFUL 21m43s, 2o tentativo; base 3cd7ffa; non unito): storico misure accessibile (azioni Modifica/Elimina), form con stato dopo rotazione + avviso uscita, intervalli plausibili con errori inline, date future bloccate. K3b avviato (stessa sessione). K3 usa BodyMeasurementRanges propri: K5 ha BodyValueRanges per ViewModel/import: da riallineare dopo il merge.
+
+- K2 lotto 1 efe1508 (667 test dichiarati, BUILD SUCCESSFUL 3m50s al 2o giro, base 3cd7ffa; non unito): SafetyCalorieFloor max(BMR,1200 F/1500 M) unico per motore/adattamento/recupero; Katch con grasso dell'ultima BIA che lo contiene (<=180 gg) e peso della stessa rilevazione; golden D/U OK. Lotto 2 avviato (soglie uniche, parita allenamento, DST, peso risolto nei prompt, tetto proteico/minimo carbo).
+
+- K5 411208c (680 test dichiarati, BUILD SUCCESSFUL 2m22s, base 3cd7ffa). Unito con develop(T3): conflitto in BiaAnalysisAiJobHandler.payloadJson risolto (firma unica result, measurement, measurementCount, safetyFlagActive). Gate unione T3+K5 in corso (gate-t3k5.log). K5 non fatto: appValidation nel payload BIA, progressi in export/backup, collegamento UI di goalAdvice e notes/warnings import (K4).
+
+- K1 3842d4e (668 test dichiarati, BUILD SUCCESSFUL 9m39s al 3o giro, base 3cd7ffa; non unito): segno 'Oltre il target', delta con segno/direzione, aspettativa settimanale su TDEE abituale, DayTargetResolver unico Home/Cibo (target del piano, teorico etichettato), settimana 2..N, cambio giorno (DayChange.todayFlow), DisplayNumberFormatter half-up migliaia '2.068' (Home, Cibo, PDF). Residuo: formatNumber duplicato in HistoryActivity, ProfileActivity, ProfileEditActivity, OnboardingWizardActivity, MeasurementsActivity, BiaActivity. HomeActivityCheckInDeviceTest/HomeCaloriesLayoutDeviceTest solo compilati. Ordine unione: T3+K5 (gate in corso) -> K1 -> K2 (dopo lotto 2) -> K3 (a,b) -> D1.
+
+- K3b 7fe59d6 (683 test dichiarati, BUILD SUCCESSFUL 13m57s, base ec82bf5->3cd7ffa; non unito): AiFailureMessages (tabella centrale, copertura categorie, 'Riprova' solo se retryable, Dettagli espandibile), Proporzioni con pannello errore persistente, attesa annunciata e Annulla. Limiti: nessun re-attach dopo rotazione (A2 BIA/K4); SchemaInvalid/ProviderProtocol non retryable in AiFailure quindi niente 'Riprova'. K3c avviato.
+
+- develop = ea048df (T3+K5): gate BUILD SUCCESSFUL 10m51s, 707 test unitari, 0 falliti (verificato). K1 unito (badeaf8) senza conflitti; gate T3+K5+K1 in corso (gate-k1.log).
+
+- K2 lotto 2 fc486ed (678 test dichiarati, BUILD SUCCESSFUL 6m59s al 2o giro; base efe1508): soglie uniche su BiaNoiseThresholds (trend, adattamento, binder, interpreter), frase UI soglia, qualita senza /100 e '>90 gg non Alta', peso risolto in Weekly/Advice/NutritionPath/Profilo. NON fatto: (7) tetto proteico/minimo carbo (rompe invarianti testate; decisione di prodotto aperta: D carbo 143,0 -> ~145,2 con tetto), (4) parita allenamento, (5) DST. Residuo: HomeViewModel (K1) righe ~371-372 chiama trend() senza metricKey (soglia storica 0,05): da collegare dopo merge. T3 stampa ancora score=/100 nel prompt (BiaAnalysisReport). Lotto 3 avviato (4,5 + chiavi ProfileCalculationService).
+
+- develop = badeaf8 (T3+K5+K1): gate BUILD SUCCESSFUL 9m3s, 724 test unitari, 0 falliti (verificato). Prossimo: K2 (dopo lotto 3) e K3 (dopo K3c), poi D1; collegare metricKey in HomeViewModel.
+
+- K3c 57c12cf (691 test dichiarati, BUILD SUCCESSFUL 8m19s, base 3cd7ffa): grafici con descrizione+tabella valori, legenda/unita per metrica, Misure con sola metrica scelta e asse date, serie distinguibili, 1A. Cambio visibile: Progresso e Misure da % normalizzate a valori reali. K3 (a,b,c) unito con develop (T3+K5+K1): conflitto solo strings.xml (aggiunte da entrambe le parti, tenute tutte). Gate develop+K3 in corso (gate-k3.log). K3d (contrasto/48dp) dopo.
+
+- K2 lotto 3 c3c05af (686 test dichiarati, BUILD SUCCESSFUL 12m12s; base fc486ed; non unito): parita allenamento dichiarata (check-in = quota prudente sopra TDEE abituale, mai sommata al programma; check-in <= costo programma), CalendarDays (giorni di calendario locali, DST) in WeeklyBodyDelta e metricSnapshot, metricKey in ProfileCalculationService, nota (7) tetto proteico (decisione aperta). Residuo: HomeViewModel righe ~371-372 trend() senza metricKey (da collegare dopo merge). Ordine: gate develop+K3 in corso, poi K2.
+
+- develop = 55da40a (T3+K5+K1+K3 a,b,c): gate BUILD SUCCESSFUL 8m33s, 764 test unitari, 0 falliti (verificato). K2 (3 lotti) unito a develop in worktree k2-motore-soglie: conflitto solo strings.xml (aggiunte), metricKey bodyFatPercent/muscleMassKg collegato in HomeViewModel:389-390; gate develop+K2 in corso (gate-k2.log).
+
+- develop = 5ad7d30 (T3+K5+K1+K3+K2): gate BUILD SUCCESSFUL 8m19s, 799 test unitari, 0 falliti (verificato). APK in worktree k2-motore-soglie (android/app/build/outputs/apk/debug). Samsung non collegato al momento. Restano: K3d, K4 BiaActivity, D1, installazione e verifica a schermo.
+
+## K4 e K3d avviati (12/11/2026) da develop 5ad7d30
+| Agente | Tranche | sessionID | Branch |
+|---|---|---|---|
+| senior-developer | K4: BiaActivity (storico a11y, form con stato, import foto riattaccato/annulla/anteprima, invito consiglio, errori AiFailureMessages, analisi obsoleta, dialog analisi) | ses_e2ee334b9ffeEYGcAQ8dqfuDD1 | feat/k4-bia-activity |
+| senior-developer | K3d: contrasto (text_muted >=4,5:1, test contrasto token), target 48dp, segmenti a piu righe, hub con etichette | ses_e2ee300f7ffeoUq7OuuNngBsyk | fix/k3d-contrasto-target |
+Da integrare ancora: D1 (feat/d1-poc-nutritionadvice). Decisioni aperte: tetto proteico/minimo carbo; 'Riprova' per SchemaInvalid/ProviderProtocol (AiFailure.retryable); FLAG_SECURE su BIA/Misure/Progresso; automazioni Proporzioni/Review non collegate.
+
+- K3d 7d24879 (803 test dichiarati, BUILD SUCCESSFUL 9m29s su base 5ad7d30) portato su develop con fast-forward. text_muted #839088 -> #5F6C65 (5,5:1), semantic_error/#warning scuriti, text_micro 12sp, target 48dp, segmenti a 2 righe, hub con etichette. Da verificare a vista: hub Rilevazioni, segmenti a font 1,3x/2x, header Home (screen_header_icon_size 48dp). Residuo: pulsante profilo Home area 20dp; contentDescription terza azione hub non contiene etichetta visibile.
+
+## Verifica a schermo su device (12/11/2026 sera, APK develop 7d24879, profilo Luca, font_scale originale 1.1 ripristinato)
+- Home: separatori migliaia (1.918, 2.638), riga fonte target 'Target del giorno dal piano alimentare, con adattamento e recupero'. OK.
+- Rilevazioni: hub con etichette visibili Nuova/Storico/Analizza con IA, 135 px (>=48dp), anche a font 1,3x. OK.
+- Storico Misure: card con data e valori, pulsanti Modifica/Elimina con data. OK. Andamento: solo metrica scelta, descrizione 'Peso corporeo, 2 rilevazioni dal ... da 87,4 a 88,6 kg', 'Mostra tabella dei valori', frase valori reali. OK.
+- Progresso: descrizione grafico, tabella valori, 1M/3M/6M/1A con descrizioni 'Intervallo 1 anno'. A 1,3x i segmenti 1M..1A hanno altezza ~40 px (bounds 1985-2025) = TAGLIATI/schiacciati (<48dp) -> da correggere. Etichette asse date ripetute '12/09' x4 con 2 soli punti (difetto minore).
+- K4 0be039c (823 test dichiarati, BUILD SUCCESSFUL 2m3s al 2o giro; base 5ad7d30): BiaActivity: storico a11y, stato dopo rotazione, uscita con avviso, errori in linea, invito consiglio, import riattaccato/annulla, analisi obsoleta, titolo unico. Non fatto: miniatura foto (volutamente), warnings import (serve riga in BiaImportAiJobHandler), schermata analisi, FLAG_SECURE, rinomina bottone hub. Unito con develop (K3d) in worktree k4-bia-activity (4a56707) senza conflitti; gate in corso (gate-k4.log).
+
+- develop = 4a56707 (K4+K3d+...): gate BUILD SUCCESSFUL 5m11s, 827 test unitari, 0 falliti (verificato). APK installato sul Samsung (in-place).
+
+- Verifica device (APK develop 4a56707 con K4): schermata BIA con 17 misurazioni salvate, storico con azioni Modifica/Elimina con data e descrizione completa (15 date distinte scorse). Non provati: form (rotazione), import foto, analisi IA nuova, TalkBack reale. Fix K3e avviato (selettore periodo >=48dp a font grande, asse date senza duplicati): ses in corso, branch fix/k3e-selettore-periodo.
+
+- K3e c13d99e (gate BUILD SUCCESSFUL 5m20s dichiarato; base 4a56707) su develop (ff). Verifica device a 1,3x: asse date ora '12/09, 27/09' senza duplicati. NOTA: i 40 px del selettore 1M..1A erano bounds RITAGLIATE dal bordo inferiore dello schermo (UIAutomator): dopo scroll i tasti sono 135 px (>=48dp). K3d non era difettoso su questo punto. develop = c13d99e. D1: merge develop in worktree d1 per gate.
+
+- develop = 6b86fc2 (+D1): gate BUILD SUCCESSFUL 3m48s, 862 test unitari, 0 falliti (verificato). Contratto JSON NutritionAdvice presente con flag spento (DEFAULT=PIPE). docs/D1_POC_NUTRITIONADVICE.md.
+
+## CONSENSO UTENTE (12/11/2026): prove IA reali su device autorizzate in modo continuativo ('ti do il consenso ricordatelo, testa ogni cosa anche analisi bia e nutrizione'): BIA Coach, proporzioni, consiglio alimentare, piano settimanale (Mamma/Luca), cambio pasto. Restano vietati: reset/uninstall/pm clear/seed, lettura/log chiavi API, cancellazioni di dati. Le chiamate scrivono risultati additivi nei profili.
+
+## Prove IA REALI su device (12/11/2026 sera, APK develop 6b86fc2, consenso utente)
+- Consiglio alimentare (Mamma, 'Stasera ho voglia di dolce...'): OK in ~11 s, 5 opzioni coerenti con i target residui.
+- Cambio pasto IA (Mamma, spuntino serale 161 kcal): OK in ~13 s, 2+ alternative a 161 kcal con dosi pratiche. Osservazione: macro identiche tra alternative diverse (28P/5C/3F) => numeri dichiarati dal modello, non calcolati (conferma audit).
+- Piano settimanale Mamma rigenerato: OK in ~23 s, 1 tentativo; P1 attivo: appValidation v2 con deviazioni kcal 0% sui giorni, avvisi CARBS_OUT_OF_BAND (target carbo 41,3 g vs 61 g = +47,8%) e ripetizioni. DIFETTI: titoli pasti generici ('Colazione leggera', 'Pranzo equilibrato', 'Cena leggera') mentre il piano precedente aveva piatti specifici; target carboidrati 41 g/giorno con proteine 160 g su 1381 kcal (46% kcal) = problema segnalato dall'audit (tetto proteico/minimo carbo): decisione presa dall'orchestratore come IPOTESI REVERSIBILE: implementare tetto proteico e minimo carbo (tranche K6).
+- BIA Coach (Luca, ultima BIA 27/09): risposta in ~7 s, ma DIFETTI: (1) 'Punti positivi: PROBABLY_POSITIVE' e 'Da monitorare: MONITOR' = token enum al posto di frasi (validatore li accetta); (2) classificazione grezza 'STABLE' visibile e verdetto='STABLE'; (3) testo calorie: 'target abituale 2974 kcal' ma 2974 e il TDEE (target abituale = 2528); target operativo 2242 e macro 179/220/72 corretti; (4) indicatori grezzi 'weightKg:' 'bodyFatPercent:' 'muscleMassKg:' e '-0.5 %' invece di pp; (5) 'Nessuna nota di sicurezza attiva' mostrato come nota; (6) decimali con punto nel testo del modello; scenari S1-S3 calcolati dall'app CORRETTI (87,4/85,4/83,4 kg a 18/16/14%).
+- Proporzioni (Luca): OK, ma date ISO 'Precedente 2026-07-25' e interpretazione 'rientrano nelle normali oscillazioni' per fianchi +4 cm e addome +3 cm (non supportata: manca soglia di rumore per circonferenze).
+- Tranche avviate: T4 (qualita output BIA Coach e proporzioni), K6 (tetto proteico/minimo carbo, titoli specifici piano). P2/P3 differiti: nei piani reali deviazione kcal 0%, attempts=1.
+
+| senior-developer | T4 qualita output BIA Coach e proporzioni | ses_e2e98fa9effeZfyv7J0hE92Lvt | fix/t4-bia-output-qualita |
+| senior-developer | K6 MacroPolicy (tetto proteico/minimo carbo) + titoli piano | ses_e2e98c4b4ffegeAFa9olNQowbU | fix/k6-macro-titoli-piano |
+
+## Import foto BIA provato su device (12/11/2026 sera, foto SINTETICA creata dall'orchestratore: valori dimostrativi 82,4 kg ecc., poi rimossa dal telefono; anteprima annullata, NULLA salvato)
+- Flusso: Importa foto -> Scegli dalla galleria -> conferma IA con frase privacy specifica -> anteprima in ~15 s: provider/modello, 'Confidenza della lettura: alta', provenienza, data rilevata 05/11/2026 07:45, avviso 'la foto non e conservata'. 15 campi su 16 letti correttamente (82,4; 24,6; 8; 58,9; 54,3; 1712; 20,3; 62,1; 44,7; 18,9; 3,3; 17,4; 14,3; 46; 26,8).
+- DIFETTI: (1) 'Muscolo scheletrico (kg)' RIMASTO VUOTO (la foto aveva 'Massa muscolo scheletrico 33,1 kg'): abbinamento etichetta mancante in BiaRawImportContract (sinonimo 'massa muscolo scheletrico'); (2) provenienza dice 'Derivati: acqua kg da acqua%*peso' anche se la foto riportava 'Acqua 44,7 kg' esplicito. Da correggere (K7).
+
+- K6 bb02eeb (878 test dichiarati, BUILD SUCCESSFUL 13m47s su base 6b86fc2) portato su develop con ff. MacroPolicy: proteine max(min(2,0 g/kg, 30% kcal),1,2 g/kg), grassi max(0,6 g/kg,20% kcal) min 35% kcal, carbo per differenza min 100 g (>=1500 kcal) / 80 g; golden D: 131,8P/46,8F/202,27C; U: 179/53,7/301,28; sedentaria 1381 kcal: 103,6/46,8/136,4. Titoli: TITLE_RULE nel prompt + avviso GENERIC_MEAL_TITLE non bloccante. Piani gia generati invariati: valgono alla prossima rigenerazione. Rischio: grassi 0,6 g/kg anche per performance.
+
+| senior-developer | K7 import foto BIA: sinonimi etichette (muscolo scheletrico ecc.) e derivati solo se manca l'esplicito | ses_e2e81348fffeb6N1IZdbN6pPun | fix/k7-import-etichette (da develop bb02eeb) |
+
+- T4 144bd4b (892 test dichiarati, BUILD SUCCESSFUL 8m48s al 2o giro; base 6b86fc2): validatore rifiuta placeholder/enum/testi <3 parole/verdetto=classificazione; etichette IT classificazioni e indicatori; sezione calorie e macro resa dall'app (appCalories); note neutre nascoste; decimali con virgola; proporzioni: soglia circonferenze 1,0 cm (ipotesi), APP_COMPARISON ABOVE/BELOW_THRESHOLD, date IT. Unito con develop(K6) senza conflitti (f4e3682); gate in corso (gate-t4.log).
+
+- K7 92fc005 (890 test dichiarati, BUILD SUCCESSFUL 17m35s, base bb02eeb; non unito): BiaMeasurementNormalizer con sinonimi per ogni campo (muscolo scheletrico, acqua, ecc.), derivati solo se manca l'esplicito, avviso se divergono >5%. Solo 2 file. Non riprovato su device. Ordine: gate T4 in corso -> ff T4 -> merge K7 -> gate -> install -> riprove device.
+
+- develop = f4e3682 (K6+T4): gate BUILD SUCCESSFUL 10m31s, 908 test unitari, 0 falliti (verificato). K7 unito (450a1e8) senza conflitti; gate finale in corso (gate-k7.log).
+
+- develop = 450a1e8 (tutto: K6+T4+K7): gate finale BUILD SUCCESSFUL 9m36s, 920 test unitari, 0 falliti (verificato). APK installato sul Samsung (in-place).
+
+## Prove IA su device, APK develop 450a1e8 (13/11/2026 mattina, consenso utente)
+- BIA Coach Luca: 1a esecuzione RESPINTA dai controlli (codice BIA_CLASSIFICATION_MISSING, 8 s, analisi non salvata); 2a esecuzione OK in ~9 s. Output molto migliorato: 'Esito: Stabile', affidabilita Bassa con motivo, sezione calorie resa dall'app corretta (oggi allenamento 2699 kcal 179P/369C/56F; target abituale 2528 kcal 179/327/56; TDEE 3175 e 2974 etichettati), confronto con etichette IT e 'punti percentuali', scenari S1-S3 corretti, nota sicurezza vuota non mostrata. DIFETTI RESIDUI: (a) token '|MODERATE' compare nel testo degli scenari S1/S2 (artefatto del parser pipe); (b) rifiuto non deterministico alla 1a esecuzione (costa quota; nessun 'Riprova' perche non retryable); (c) refuso del modello 'digiono'.
+- Proporzioni Luca: OK in ~9 s: date IT, 'da X a Y', 'oltre la soglia di rumore di 1,0 cm' per addome +3 e fianchi +4, nessuna 'normale oscillazione'.
+- Import foto: provato con foto SINTETICA (prima del merge K7) e poi, per un MIO ERRORE di tap nel selettore foto, e stata inviata a Gemini una FOTO REALE dalla galleria dell'utente: era uno screenshot BIA Fitdays di Luca (27/09). Anteprima ANNULLATA, nulla salvato; da dichiarare all'utente. Esito: muscolo scheletrico ora letto (41,2 OK, K7 funziona) MA ERRORE GRAVE: 'Acqua corporea (%)' = 52,5 (e il valore in kg della foto; corretto sarebbe 58,7 %) e 'Acqua corporea (kg)' = 47,0 (derivato sbagliato); 'Proteine (%)' = 14,3 (era kg; corretto 16 %) e 'Proteine (kg)' = 12,8 (derivato sbagliato). Cioe valori in kg assegnati ai campi % per l'alias generico 'acqua'/'proteine' (regressione K7). Verita attesa dalla rilevazione salvata 27/09: acqua 58,7 % / 52,5 kg; proteine 16 % / 14,3 kg. Tranche K8 avviata.
+- ADB instabile: device offline/not found a intermittenza (USB/cavo); prove interrotte prima della rigenerazione del piano di Mamma (nuovi macro) e del cambio profilo.
+
+## Piano Mamma rigenerato con nuovi macro (13/11/2026, APK 450a1e8): OK in ~23 s, 1 tentativo
+- Titoli specifici ('Yogurt greco con mela e cannella', 'Mandorle e pera', 'Petto di pollo con insalata e olio'), nessun avviso GENERIC_MEAL_TITLE.
+- Target 1381 kcal: proteine 103,6 g, carboidrati 133,7 g, grassi 48 g (prima 160/41/62). kcal giornaliere -0,1%..0%; proteine +0,4%; carbo fino a +24,9% e grassi fino a -33% (avvisi FAT_OUT_OF_BAND, non bloccanti); varieta ripetizioni avviso. appValidation v2 valid=true, attempts=1.
+- Aperto: T5 per BIA_CLASSIFICATION_MISSING e '|MODERATE' negli scenari (fix/t5-bia-parse-robusto).
+
+- K8 36e4275 (932 test dichiarati, BUILD SUCCESSFUL 14m48s, base 450a1e8) su develop (ff). Import: abbinamento per UNITA (kg non riempie %), coppie %/kg risolte con coerenza al peso 4% e plausibilita, ambiguo -> vuoto + avviso, sanitize con avvisi di coerenza. Non verificato su device (solo fixture). Residuo: T5 in corso.
+
+- T5 86a1133 (933 test dichiarati, BUILD SUCCESSFUL 5m59s, base 450a1e8): parser BA2 tollerante (record B, header, sinonimi), prompt senza esempio negativo con sintassi record, FIX specifico per BA2 in AiContractRegistry, 'Riprova' solo per tap manuale su rifiuti BIA (resolveForBiaAnalysis), parser G senza coda |MODERATE e validatore BIA_TEXT_ENUM_TAIL. Unito con develop(K8); gate in corso (gate-t5.log).
+
+- develop = 19b2b5e (K8+T5): gate BUILD SUCCESSFUL 8m16s, 945 test unitari, 0 falliti (verificato). APK installato sul Samsung.
+
+## Prove su device APK develop 19b2b5e (13/11/2026): BIA Coach Luca 5 esecuzioni su 5 OK in 9 s, nessuna coda enum, nessun token grezzo; proporzioni OK. Import foto NON riprovato (K8 non verificato su device: serve foto scelta dall'utente).
+
+- Verifica 13/11 scritta in docs/VERIFICA_2026-11-13.md (non committata).
+
+| senior-developer | T6: consiglio alimentare non deterministico (diagnosi causa, AiFailureMessages, token/validatore) + rifiuto di '86..5' nel dialog valore BIA | ses_e2bbd3694ffepRNz62Kl9YswRq | fix/t6-consiglio-parser-valori (da develop 19b2b5e) |
+
+- T6 9037c85 (956 test dichiarati, BUILD SUCCESSFUL 33s al 2o giro; base 19b2b5e) su develop (ff). Causa consiglio NON PROVATA: messaggio generico che nascondeva il motivo; NA1 token 900->1500, parser NA1 con errori specifici, kcal '450.0' accettate, foodsCsv richiesto solo con vincoli rigidi, UI con AiFailureMessages e Riprova manuale; log categoria 'MyFitAiAi'. BIA dialog: keepRawNumericInput (numberDecimal filtrava il secondo punto). APK installato.
