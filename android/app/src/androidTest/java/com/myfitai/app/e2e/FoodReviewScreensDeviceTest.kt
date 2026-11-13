@@ -113,7 +113,7 @@ class FoodReviewScreensDeviceTest {
                 assertEquals(0, activity.resources.getIdentifier("planStateCard", "id", activity.packageName))
             }
             val expectedIds = listOf(
-                "totalKcalBmr", "totalKcalTdee", "totalKcalTarget", "totalProteinTarget",
+                "totalKcalTarget", "totalProteinTarget",
                 "totalKcalPlanned", "totalProteinPlanned", "totalKcalConsumed", "totalProteinConsumed",
             )
             scenario.onActivity { activity ->
@@ -123,6 +123,9 @@ class FoodReviewScreensDeviceTest {
                 assertTrue(activity.findViewById<View>(R.id.dailyTotalRowPlanned) != null)
                 assertTrue(activity.findViewById<View>(R.id.dailyTotalRowConsumed) != null)
                 assertTrue(activity.findViewById<View>(R.id.dailyTotalLegend).visibility == View.VISIBLE)
+                // UX5b: BMR e TDEE escono dalla vista predefinita (restano nell'help), i valori restano nel layout.
+                assertEquals(View.GONE, activity.findViewById<View>(R.id.dailyTotalReferenceRows).visibility)
+                assertTrue(activity.findViewById<View>(R.id.totalKcalBmr) != null && activity.findViewById<View>(R.id.totalKcalTdee) != null)
                 assertTrue(activity.findViewById<View>(R.id.totalConsumptionNote).visibility == View.VISIBLE)
                 listOf(
                     "totalCarbsTarget", "totalFatTarget",

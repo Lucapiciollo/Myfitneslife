@@ -230,6 +230,7 @@ class AppDataContainer private constructor(context: Context) {
         mealCountPreferences = mealCountPreferences,
         biaFrequencyPreferences = biaFrequencyPreferences,
         aiAutomationPreferences = aiAutomationPreferences,
+        nutritionPlanUpdatePreferences = nutritionPlanUpdatePreferences,
     )
     val profileBackupService = ProfileBackupService(
         context = appContext,

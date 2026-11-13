@@ -385,10 +385,6 @@
     <string name="target_source_none">Obiettivo non disponibile: completa i dati richiesti nel profilo</string>
     <string name="food_target_label_plan_day">Obiettivo di oggi</string>
     <string name="food_target_label_theoretical">Obiettivo di oggi (da profilo)</string>
-    <string name="food_target_legend">%4$s: %1$s (%2$s). Obiettivo da profilo senza adattamento né recupero: %3$s.</string>
-    <string name="food_target_source_plan_day">dal piano, con adattamento e recupero</string>
-    <string name="food_target_source_theoretical">nessun piano per questo giorno</string>
-    <string name="food_target_source_plan_week">obiettivo settimanale del piano</string>
     <string name="food_target_description">%1$s: %2$s, proteine %3$s, obiettivo da profilo %4$s</string>
     <string name="home_plan_update_title">Il piano alimentare non è aggiornato</string>
     <string name="home_plan_update_message">Hai cambiato profilo o livello di attività: l\'obiettivo di oggi è quello del piano precedente. Rigenera il piano per aggiornarlo.</string>
@@ -557,4 +553,11 @@
     <!-- UX3: vocabolario unico, vedi docs/GLOSSARIO_UI.md -->
     <string name="food_target_label_plan_day_other">Obiettivo del giorno</string>
     <string name="food_target_label_theoretical_other">Obiettivo del giorno (da profilo)</string>
+    <!-- UX5b: Cibo totale giornaliero, nota "piano da aggiornare" in review e PDF -->
+    <string name="food_ux5b_origin_plan_day">Origine dell\'obiettivo: dal piano, con adattamento e recupero</string>
+    <string name="food_ux5b_origin_plan_week">Origine dell\'obiettivo: obiettivo settimanale del piano</string>
+    <string name="food_ux5b_origin_profile">Origine dell\'obiettivo: da profilo, nessun piano per questo giorno</string>
+    <string name="food_ux5b_profile_target">Obiettivo da profilo: %1$s</string>
+    <string name="weekly_review_ux5b_plan_stale_note">Il piano è precedente al cambio di profilo</string>
+    <string name="export_ux5b_plan_stale_note">Piano non aggiornato al profilo attuale</string>
 </resources>

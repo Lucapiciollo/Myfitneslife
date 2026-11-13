@@ -42,6 +42,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import com.myfitai.app.domain.display.DisplayNumberFormatter
 import com.myfitai.app.domain.display.DayTargetResolver
+import com.myfitai.app.domain.display.FoodTotalsPresentation
 import com.myfitai.app.domain.calculation.ProfileCalculationMapper
 import java.time.Instant
 import java.time.ZoneId
@@ -59,6 +60,7 @@ class FoodPlanActivity : BaseShellActivity() {
     private val weekDaySelector by lazy { findViewById<WeekDaySelectorView>(R.id.weekDaySelector) }
     private val animatedVisibilityTargets = mutableMapOf<Int, Boolean>()
     private var suppressDaySelectionMotion = true
+    private var lastCalorieReference: FoodPlanViewModel.CalorieReference? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -330,7 +332,11 @@ class FoodPlanActivity : BaseShellActivity() {
                 })
                 setOnClickListener { openMeal(meal.id) }; setChangeEnabled(changeEnabled)
                 val consumed = status == FoodConsumptionStatus.CONSUMED.name
-                setQuickConsume(displayMealType(meal.type), consumed) { onQuickConsume(meal.id, consumed) }
+                // UX5b: il tocco rapido esiste solo per oggi e per i giorni passati; nei giorni futuri la riga resta apribile.
+                val quickConsume: (() -> Unit)? = if (FoodTotalsPresentation.quickConsumeAvailable(day.dateEpochDay, LocalDate.now())) {
+                    { onQuickConsume(meal.id, consumed) }
+                } else null
+                setQuickConsume(displayMealType(meal.type), consumed, quickConsume)
                 setOnChangeClickListener { if (changeEnabled) openMealAlternatives(weekStart, day, meal) }
                 contentDescription = "${displayMealType(meal.type)}: ${meal.title}"
             }
@@ -534,18 +540,21 @@ class FoodPlanActivity : BaseShellActivity() {
             if (resolvedTarget.source == DayTargetResolver.Source.PLAN_DAY) { if (isToday) R.string.food_target_label_plan_day else R.string.food_target_label_plan_day_other }
             else if (isToday) R.string.food_target_label_theoretical else R.string.food_target_label_theoretical_other,
         )
-        val targetSourceLabel = getString(
-            when (resolvedTarget.source) {
-                DayTargetResolver.Source.PLAN_DAY -> R.string.food_target_source_plan_day
-                DayTargetResolver.Source.PLAN_WEEK -> R.string.food_target_source_plan_week
-                else -> R.string.food_target_source_theoretical
-            },
-        )
-        val baseTargetKcal = day.baseTargetKcal ?: planTargetKcal
-        findViewById<TextView>(R.id.dailyTotalLegend).text =
-            "Metabolismo a riposo (BMR): ${calorieReference.bmrKcal?.let { formatKcal(it) } ?: "non disponibile"} · " +
-             "Consumo giornaliero (TDEE): ${calorieReference.tdeeKcal?.let { formatKcal(it) } ?: "non disponibile"}, calcolato sul livello di attività del profilo. " +
-                 getString(R.string.food_target_legend, formatKcal(resolvedTarget.kcal), targetSourceLabel, formatKcal(resolvedTarget.theoreticalKcal), targetLabel)
+        lastCalorieReference = calorieReference
+        // UX5b: una sola riga di origine; BMR/TDEE e la spiegazione lunga restano nell'help (showTotalsHelp).
+        val planUpdatePending = data.activeProfileStore.currentIdOrNull()
+            ?.let(data.nutritionPlanUpdatePreferences::isPending) == true
+        val origin = FoodTotalsPresentation.origin(resolvedTarget, planUpdatePending)
+        val originText = when (origin.kind) {
+            FoodTotalsPresentation.Origin.Kind.PLAN_DAY -> getString(R.string.food_ux5b_origin_plan_day)
+            FoodTotalsPresentation.Origin.Kind.PLAN_WEEK -> getString(R.string.food_ux5b_origin_plan_week)
+            FoodTotalsPresentation.Origin.Kind.PLAN_STALE -> getString(R.string.target_source_plan_stale)
+            FoodTotalsPresentation.Origin.Kind.PROFILE -> getString(R.string.food_ux5b_origin_profile)
+            FoodTotalsPresentation.Origin.Kind.NONE -> getString(R.string.target_source_none)
+        }
+        findViewById<TextView>(R.id.dailyTotalLegend).text = origin.profileKcal
+            ?.let { "$originText. ${getString(R.string.food_ux5b_profile_target, formatKcal(it))}" }
+            ?: originText
         val rows = listOf(
             R.id.dailyTotalRowBmr,
             R.id.dailyTotalRowTdee,
@@ -605,11 +614,13 @@ class FoodPlanActivity : BaseShellActivity() {
     }
 
     private fun showTotalsHelp() {
+        val reference = lastCalorieReference
+        val bmr = reference?.bmrKcal?.let { formatKcal(it) } ?: "non disponibile"
+        val tdee = reference?.tdeeKcal?.let { formatKcal(it) } ?: "non disponibile"
         showHelpCard(
             "Come leggere le calorie",
-            
-            "Metabolismo a riposo (BMR): energia stimata senza applicare il livello di attività.\n\n" +
-                    "Consumo giornaliero (TDEE): stima locale calcolata sul profilo e sul livello di attività scelto, uguale per tutti i giorni.\n\n" +
+            "Metabolismo a riposo (BMR): $bmr. Energia stimata senza applicare il livello di attività.\n\n" +
+                    "Consumo giornaliero (TDEE): $tdee. Stima locale calcolata sul profilo e sul livello di attività scelto, uguale per tutti i giorni.\n\n" +
                     "Obiettivo di oggi (o del giorno selezionato): se il piano ha una voce per quel giorno è l'obiettivo del piano, con adattamento e recupero già applicati, uguale a quello mostrato in Home. Senza piano per il giorno è l'obiettivo da profilo (profilo e attività), indicato come tale; viene mostrato anche quello da profilo quando differisce.\n\n" +
                     "Piano: somma nutrizionale degli alimenti e degli integratori programmati.\n\n" +
                     "Consumate: somma dei soli elementi segnati come consumati nel giorno selezionato. Le portate non registrate non vengono conteggiate come zero effettivo."

@@ -11,6 +11,7 @@ import com.myfitai.app.R
 import com.myfitai.app.data.local.entity.BiaMeasurementEntity
 import com.myfitai.app.data.local.entity.BodyMeasurementEntity
 import com.myfitai.app.domain.display.DisplayNumberFormatter
+import com.myfitai.app.domain.display.FoodTotalsPresentation
 import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.domain.body.BodyProportionEngine
 import com.myfitai.app.domain.calculation.LocalCalculationEngine
@@ -39,6 +40,7 @@ import kotlin.math.max
  * - il report profilo e il piano settimanale restano separati dal JSON canonico.
  */
 internal class PdfExportRenderer(context: Context) {
+    private val planStaleNote: String = context.getString(R.string.export_ux5b_plan_stale_note)
     private data class Geometry(
         val cardCornerRadius: Float,
         val cardBorderStrokeWidth: Float,
@@ -292,6 +294,8 @@ internal class PdfExportRenderer(context: Context) {
         val latestPlanTargetProteinG: Float?,
         val latestPlanTargetCarbsG: Float?,
         val latestPlanTargetFatG: Float?,
+        /** UX5b: il profilo e' cambiato dopo la generazione del piano (stesso flag di Home e Cibo). */
+        val planUpdatePending: Boolean = false,
     )
 
     fun writeProfileReport(file: File, input: ProfileReportInput) {
@@ -318,6 +322,9 @@ internal class PdfExportRenderer(context: Context) {
 
             drawCard(canvas, pageMargin, 475f, contentWidth, 155f)
             text(canvas, "Snapshot attuale", contentLeft, 505f, typography.section, palette.text, true)
+            // UX5b: "Obiettivo da profilo" e' live, quello del piano e' salvato: se il piano e' indietro lo diciamo.
+            val planNote = FoodTotalsPresentation.planUpdateNoteVisible(input.planUpdatePending, input.latestPlanTargetKcal != null)
+            if (planNote) text(canvas, planStaleNote, 537f, 505f, typography.captionCompact, palette.warning, true, alignRight = true)
             val snapshot = listOf(
                 "Altezza" to formatCm(input.profile.heightCm),
                 "BMI" to format1(input.calculation.bmi),
@@ -429,6 +436,9 @@ internal class PdfExportRenderer(context: Context) {
 
             drawCard(canvas, pageMargin, 150f, contentWidth, 210f)
             text(canvas, "Piano alimentare attivo", contentLeft, 182f, typography.section, palette.text, true)
+            if (FoodTotalsPresentation.planUpdateNoteVisible(input.planUpdatePending, input.latestPlanTargetKcal != null)) {
+                text(canvas, planStaleNote, 537f, 182f, typography.captionCompact, palette.warning, true, alignRight = true)
+            }
             drawRows(canvas, contentLeft, 220f, 477f, listOf(
                 "Obiettivo del piano" to input.latestPlanTargetKcal?.let { "$it kcal" }.orDash(),
                 "Proteine" to input.latestPlanTargetProteinG?.let(::formatGram).orDash(),
