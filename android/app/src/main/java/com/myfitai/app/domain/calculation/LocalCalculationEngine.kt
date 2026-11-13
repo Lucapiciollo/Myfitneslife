@@ -263,10 +263,14 @@ object ProfileCalculationMapper {
         else -> null
     }
 
+    /**
+     * Livello di attivita del profilo. Le scelte correnti sono Sedentario, Moderato, Molto attivo; i valori storici gia
+     * salvati (Leggermente attivo, Moderatamente attivo, Estremamente attivo) restano leggibili e non si riscrivono.
+     */
     fun activity(value: String?): LocalCalculationEngine.ActivityLevel? = when (value?.trim()?.lowercase()) {
         "sedentario" -> LocalCalculationEngine.ActivityLevel.SEDENTARY
         "leggermente attivo" -> LocalCalculationEngine.ActivityLevel.LIGHT
-        "moderatamente attivo" -> LocalCalculationEngine.ActivityLevel.MODERATE
+        "moderato", "moderatamente attivo" -> LocalCalculationEngine.ActivityLevel.MODERATE
         "molto attivo" -> LocalCalculationEngine.ActivityLevel.VERY_ACTIVE
         "estremamente attivo" -> LocalCalculationEngine.ActivityLevel.EXTREME
         else -> null
