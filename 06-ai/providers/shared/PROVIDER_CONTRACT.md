@@ -28,7 +28,7 @@ Nessuna risposta AI entra direttamente in UI. Gli agenti possono restituire `age
 Il Business Validator considera valido un valore nutrizionale entro ±3% del relativo target dinamico corrente. La stessa regola deve essere comunicata a entrambi i provider. Non sono necessarie micro-correzioni se il risultato rientra nella soglia.
 
 ## Regola condivisa su comfort digestivo
-Gemini e OpenAI devono applicare la stessa policy su gonfiore e ritenzione: nessuna teoria non documentata di food-combining, nessuna diagnosi, valutazione solo di fattori concreti (sodio, grassi/fibre/volume pre-workout, carico fermentabile se supportato dallo storico, tolleranza individuale). Gli stessi input devono produrre gli stessi campi strutturati e passare gli stessi validator.
+Gemini e OpenAI devono applicare la stessa policy su gonfiore e ritenzione: nessuna teoria non documentata di food-combining, nessuna diagnosi, valutazione solo di fattori concreti (sodio, grassi/fibre/volume dei pasti, carico fermentabile se supportato dallo storico, tolleranza individuale). Gli stessi input devono produrre gli stessi campi strutturati e passare gli stessi validator.
 
 ## Condimenti e bevande — regola condivisa vincolante
 Gemini e OpenAI devono applicare integralmente `CONDIMENTS_BEVERAGES_RULES.md`.
@@ -38,11 +38,11 @@ Ogni condimento o bevanda con impatto nutrizionale deve essere quantificato e co
 ## Stagionalità e timing — regola condivisa vincolante
 Gemini e OpenAI devono applicare integralmente `SEASONALITY_TIMING_RULES.md`.
 
-Gemini e OpenAI devono applicare integralmente `TRAINING_DAYS_VARIETY_RULES.md` (target e tetto per giorno `TD`/`ED`, giorni di allenamento `TR`, memoria pasti `RM`).
+Gemini e OpenAI ricevono un solo target giornaliero, identico per tutti i giorni, calcolato dall'app dal livello di attività del profilo: nessun target o tetto per data, nessuna distinzione tra tipi di giorno. Per la varietà (memoria pasti `RM`) vale `TRAINING_DAYS_VARIETY_RULES.md`, ridotto dal 13/11/2026 a nota di dismissione più regola di varietà.
 
 Quando più alternative sono equivalenti e compatibili, preferire frutta, verdura e altri alimenti realmente stagionali rispetto alla data e all'area geografica fornite dall'app. La stagionalità è subordinata a sicurezza, target dinamici ±3%, timing, comfort digestivo, preferenze e aderenza. Non inventare la stagionalità se i dati necessari non sono disponibili.
 
-Gli orari devono essere coerenti con quelli forniti dall'app e con allenamento/sonno, senza regole pseudo-scientifiche rigide (es. frutta solo al mattino, carboidrati vietati la sera). Ogni sostituzione stagionale deve mantenere calorie e macro nei target dinamici entro ±3%.
+Gli orari devono essere coerenti con quelli forniti dall'app e con il sonno, senza regole pseudo-scientifiche rigide (es. frutta solo al mattino, carboidrati vietati la sera). Ogni sostituzione stagionale deve mantenere calorie e macro nei target dinamici entro ±3%.
 
 ## JSON parity vincolante — V8
 Gemini e OpenAI devono usare gli stessi schema canonici in `06-ai/schemas/`. Nessun provider può introdurre un DTO alternativo o alias di campo. Una risposta semanticamente valida ma con chiavi diverse è comunque `INVALID_SCHEMA` e non raggiunge Business Validator, persistenza o UI. Vedi `JSON_FORMAT_PARITY.md`.

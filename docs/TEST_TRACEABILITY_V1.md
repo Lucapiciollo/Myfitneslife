@@ -8,8 +8,8 @@ Status values are `PASS`, `STATIC REVIEW ONLY`, `NOT RUN`, and `FAIL`. `PASS` me
 | BIA history | PASS | PASS | PASS (QA seeded device) | NOT RUN | STATIC REVIEW ONLY | PASS | PASS |
 | Body measurements | PASS | PASS | PASS (QA seeded device) | NOT RUN | STATIC REVIEW ONLY | PASS | PASS |
 | Graph ranges/trends | PASS | STATIC REVIEW ONLY | PASS (device screenshots 1M/3M/6M/1Y) | PASS (device) | PASS | STATIC REVIEW ONLY | STATIC REVIEW ONLY |
-| NORMAL/SPORT classifier | PASS | PASS | NOT RUN | NOT RUN | PASS | PASS | STATIC REVIEW ONLY |
-| Workouts | PASS | PASS | PASS (QA seeded device) | NOT RUN | STATIC REVIEW ONLY | PASS | PASS |
+| NORMAL/SPORT classifier (da riscrivere 13/11/2026: SPORT solo da livello `Molto attivo`) | PASS | PASS | NOT RUN | NOT RUN | PASS | PASS | STATIC REVIEW ONLY |
+| Workouts (DISMESSO 13/11/2026: funzione rimossa, vedi `docs/PIANO_SEMPLIFICAZIONE_ATTIVITA.md`; esiti storici) | PASS | PASS | PASS (QA seeded device) | NOT RUN | STATIC REVIEW ONLY | PASS | PASS |
 | Nutrition targets | PASS | STATIC REVIEW ONLY | NOT RUN | NOT RUN | PASS | PASS | PASS |
 | Weekly diet structure | PASS | PASS | PASS (QA seeded device/fake runtime + Gemini real plan) | PASS (generated plan visible on device) | PASS (missing-key block) | PASS | PASS |
 | Whey/protein powder | PASS | PASS | NOT RUN | NOT RUN | PASS | PASS | PASS |

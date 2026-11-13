@@ -54,7 +54,7 @@ Tema unico chiaro: fondo caldo quasi bianco, surface bianche, verde MyFitAI, tes
 - Progressi
 - Analisi/review settimanale
 - Storico ed export
-- Allenamenti
+- Allenamenti: rimossi (decisione di prodotto 13/11/2026), resta il livello di attività nel Profilo
 - Impostazioni
 
 ## Architettura già decisa
@@ -65,7 +65,7 @@ Pipeline:
 
 NutritionAgent: solo alimentazione/timing, menu strutturato, nessuna diagnosi/invenzione.
 PlanReviewAgent: revisione indipendente del piano.
-ProgressAnalysisAgent: collega piano, aderenza, allenamenti, BIA e misure.
+ProgressAnalysisAgent: collega piano, aderenza, BIA e misure.
 Lista spesa: aggregazione deterministica dal piano; IA non è fonte di verità per i totali.
 
 ## Trigger futuri già decisi

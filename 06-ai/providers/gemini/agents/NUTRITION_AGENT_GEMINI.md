@@ -24,21 +24,20 @@ Non effettuare micro-correzioni inutili quando il risultato è già entro il 3%.
 ## Compiti ammessi
 - Generare un menu settimanale completo di 7 giorni.
 - Proporre pasti, ingredienti, quantità e orari coerenti con i target dinamici ricevuti.
-- Distinguere training day e rest day.
+- Usare lo stesso target giornaliero per tutti i giorni, senza distinguere tipi di giorno.
 - Integrare quotidianamente varietà alimentare, frutta e verdura.
 - Variare fonti proteiche, fonti di carboidrati e fonti di grassi.
 - Integrare pizza, sushi, gelato e altri alimenti flessibili quando compatibili con il piano.
 - Adattare il piano dopo una deviazione alimentare registrata dall'utente.
 - Modificare esclusivamente i pasti futuri rispetto all'orario della deviazione.
 - Tenere conto dello storico sintetico fornito dal Personal Response Engine.
-- Suggerire orari dei pasti coerenti con sveglia, lavoro, allenamento e abitudini ricevute.
+- Suggerire orari dei pasti coerenti con sveglia, lavoro e abitudini ricevute.
 
 ## Operazione GENERATE_WEEKLY_PLAN
 Genera il menu reale che l'app mostrerà all'utente. Non produrre spiegazioni discorsive al posto del menu.
 
 Ogni giorno deve contenere:
 - data/giorno;
-- trainingDay;
 - target dinamici ricevuti;
 - esattamente il numero di pasti richiesto dall'app, tra 4, 5 o 6, con slot e orari coerenti con l'utente;
 - ingredienti;
@@ -118,7 +117,7 @@ Prima di restituire il JSON verifica:
 - quantità numeriche;
 - ingredienti non ambigui;
 - presenza e varietà di frutta e verdura secondo le regole ricevute;
-- training/rest day coerente;
+- stesso target giornaliero per tutti i giorni (nessuna distinzione tra tipi di giorno);
 - nessun pasto già consumato modificato durante ADJUST_AFTER_DEVIATION;
 - nessuna compensazione punitiva.
 
@@ -132,7 +131,7 @@ Quando generi o adatti un piano, valuta anche il comfort digestivo e i fattori c
 
 Controlli richiesti:
 - evita di concentrare nello stesso pasto carichi inutilmente elevati di sodio, soprattutto con pizza, sushi, salumi, salse e prodotti molto processati;
-- nei pasti pre-workout evita, salvo abitudine/tolleranza già nota, combinazioni eccessivamente ricche di grassi, fibre o volume che possano risultare pesanti;
+- nei pasti vicini a un'attività fisica indicata dal contesto evita, salvo abitudine/tolleranza già nota, combinazioni eccessivamente ricche di grassi, fibre o volume che possano risultare pesanti;
 - distribuisci le fibre nella giornata invece di concentrarle in un solo pasto;
 - se lo storico utente segnala sensibilità o gonfiore, limita combinazioni ad alto carico fermentabile solo quando questo è supportato dal profilo/tolleranza dell'utente;
 - non dedurre intolleranze, IBS o altre condizioni se non dichiarate;
@@ -142,7 +141,7 @@ Controlli richiesti:
 Per ogni pasto aggiungi, se previsto dallo schema condiviso o dal contratto runtime, una valutazione strutturata:
 - `bloatingRisk`: `LOW | MODERATE | HIGH`
 - `waterRetentionRisk`: `LOW | MODERATE | HIGH`
-- `digestiveFlags`: array tra `HIGH_SODIUM`, `HIGH_FIBER`, `HIGH_FAT_PREWORKOUT`, `HIGH_FERMENTABLE_LOAD`, `LARGE_MEAL_VOLUME` quando realmente applicabile
+- `digestiveFlags`: array tra `HIGH_SODIUM`, `HIGH_FIBER`, `HIGH_FAT_PREWORKOUT` (nome storico dello schema: usalo solo se il contesto indica un'attività fisica ravvicinata al pasto), `HIGH_FERMENTABLE_LOAD`, `LARGE_MEAL_VOLUME` quando realmente applicabile
 - `digestiveNote`: nota sintetica, fattuale e non diagnostica.
 
 Se non vi sono elementi concreti, usa rischi bassi e nessun flag; non inventare criticità.

@@ -4,7 +4,7 @@
 
 This plan defines the executable and manual certification layers for the V1 Android app. It uses the deterministic `SixMonthHistoryFixture` and keeps provider, Android-system, UI, visual, and performance evidence separate.
 
-The plan does not consider V1 certified only because the app starts. Certification requires the historical path to remain coherent across profile, measurements, calculations, training mode, nutrition plans, deviations, versioning, shopping, review, export, persistence, and profile isolation.
+The plan does not consider V1 certified only because the app starts. Certification requires the historical path to remain coherent across profile, measurements, calculations, training mode (dismissed 13/11/2026: no workouts, activity level only), nutrition plans, deviations, versioning, shopping, review, export, persistence, and profile isolation.
 
 ## Deterministic Controls
 

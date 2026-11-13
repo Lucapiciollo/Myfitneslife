@@ -23,9 +23,8 @@ La stessa preferenza può essere applicata ad altri alimenti la cui disponibilit
 ## Timing nutrizionale
 Gli orari dei pasti devono essere coerenti con gli orari e le abitudini ricevute dall'app, con particolare attenzione a:
 - distanza dal sonno;
-- distanza dall'allenamento;
-- pre-workout non inutilmente ricco di grassi, fibre o volume;
-- post-workout compatibile con il normale pasto successivo, senza creare finestre anaboliche rigide o claim fisiologici non necessari;
+- nessun pasto dedicato a un allenamento: l'app non gestisce più allenamenti (dal 13/11/2026) e i pasti non sono legati a un programma; nessuna finestra anabolica rigida né claim fisiologici non necessari;
+- nessun pasto inutilmente ricco di grassi, fibre o volume, in particolare nelle ore vicine al sonno;
 - distribuzione ragionevole di proteine, carboidrati, fibre e grassi nella giornata.
 
 Non inventare orari se l'app non li fornisce e non imporre regole rigide del tipo “frutta solo al mattino”, “carboidrati vietati la sera” o equivalenti non giustificati.

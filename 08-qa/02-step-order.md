@@ -7,7 +7,7 @@ STEP 04 — Home
 STEP 05 — Profilo
 STEP 06 — BIA
 STEP 07 — Misure corporee
-STEP 08 — Allenamenti
+STEP 08 - Allenamenti (storico: funzione rimossa il 13/11/2026)
 STEP 09 — Piano alimentare
 STEP 10 — Inserimento sgarro
 STEP 11 — Piano aggiornato

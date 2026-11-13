@@ -37,11 +37,11 @@ La tavola allegata dall'utente è riferimento di stile, non un mock dei dati del
 |---|---|---|
 | Avvio | `SplashActivity`, `OnboardingActivity`, `OnboardingWizardActivity` | avanzamento onboarding, form profilo, validazione e salvataggio |
 | Shell | `TabHostActivity`, `BaseShellActivity` | quattro tab (Home, Cibo, Progresso, Altro), Activity root embedded, profilo attivo, rotellina Impostazioni IA, back/exit, CTA IA |
-| Home | `HomeActivity` | metriche, trend, calorie/consumi, check-in, recupero, aspettativa, pasti/workout, azioni e stati vuoti |
+| Home | `HomeActivity` | metriche, trend, calorie/consumi, check-in (SUPERATO 13/11/2026: rimosso), recupero, aspettativa, pasti/workout (SUPERATO: workout rimosso), azioni e stati vuoti |
 | Alimentazione | `FoodPlanActivity`, `NutritionPathActivity`, `NutritionPlanSettingsActivity`, `DietaryPreferencesActivity` | settimana/giorno, target, generazione, error/loading/empty, preferenze e schedulazione |
 | Pasti | `MealDetailActivity`, `MealAlternativeActivity`, `CheatEntryActivity`, `AdjustedPlanActivity` | tab dettaglio, ingredienti/pesi, alternative, inserimento extra, loading/error e preview piano adattato |
 | Spesa | `ShoppingListActivity` | aggregazione esistente, categorie/filtri, stato checkbox, reset e condivisione |
-| Allenamento | `WorkoutsActivity`, `NewWorkoutActivity` | settimana/giorno, rest/workout, inserimento/validazione/eliminazione |
+| Allenamento | `WorkoutsActivity`, `NewWorkoutActivity` | settimana/giorno, rest/workout, inserimento/validazione/eliminazione (RIMOSSA il 13/11/2026: schermata Allenamenti eliminata) |
 | Rilevazioni | `MeasurementsActivity`, `BiaActivity`, `BodyMeasuresActivity`, `NewBodyMeasurementActivity` | hub, form, storico, picker, import BIA, analisi, empty/loading/error |
 | Progressi e IA | `PhysicalEvolutionActivity`, `AiAnalysisActivity`, `WeeklyReviewActivity` | selettori periodo/metrica, grafici, stati dati insufficienti, analisi e review |
 | Profilo | `ProfileActivity`, `ProfileEditActivity` | profili, immagine/avatar, obiettivi, dati e preferenze |
@@ -54,7 +54,7 @@ Sono 30 Activity nel manifest includendo splash/host e flussi secondari. Il runt
 1. Token semantici centrali e tema Views/Compose in sincronia (slice attuale).
 2. Home, completando header e gerarchia delle sezioni con screenshot top/scroll, mantenendo l'attuale pannello metriche Compose e i restanti componenti Views.
 3. Primitive condivise e chrome: card, header, righe, CTA, bottom navigation, feedback/loading/empty/error.
-4. Tab e schermate per gruppi verticali: Alimentazione/pasti/spesa; Profilo/rilevazioni/BIA; Progressi/review/analisi; Allenamenti; IA/Altro/Settings/Export/History/Notifications.
+4. Tab e schermate per gruppi verticali: Alimentazione/pasti/spesa; Profilo/rilevazioni/BIA; Progressi/review/analisi; Allenamenti (rimosso 13/11/2026); IA/Altro/Settings/Export/History/Notifications.
 5. Form, picker, dropdown, dialog e modale IA; verifica integrazione con il tema comune.
 6. QA per slice con gli stessi dati: compilazione, test, route/tap/back/scroll/IME, stati, viewport compact, landscape e font scale; expanded solo se stabile.
 

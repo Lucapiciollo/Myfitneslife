@@ -1,20 +1,18 @@
-# Giorni di allenamento e varietà — regole provider-neutral
+# Giorni di allenamento e varietà - DISMESSO (13/11/2026)
 
-Valgono identiche per Gemini e OpenAI. Il prompt reale è `SYSTEM_PROMPT` in `NutritionPlanGenerationService`; questo documento è la specifica.
+Questa specifica è stata superata dalla semplificazione del 13/11/2026 (decisione di prodotto, vedi `docs/PIANO_SEMPLIFICAZIONE_ATTIVITA.md`): l'app non gestisce più allenamenti. Il nome del file è mantenuto solo per non rompere i riferimenti storici; il contenuto precedente (target e tetto per giorno, giorni di allenamento e di riposo, elenco degli allenamenti registrati, differenziazione dei menu per tipo di giorno) non è più in vigore e non deve essere applicato da Gemini né da OpenAI.
 
-## Target per giorno (autorità dell'app)
-- Le calorie e i macro di ogni data sono calcolati localmente da `TrainingEnergyPlanner` (`DayEnergyEngine`): fabbisogno del giorno = BMR × livello di attività quotidiana (allenamenti esclusi) + costo dell'allenamento; target = fattore obiettivo × fabbisogno del giorno, mai sotto il BMR. Proteine e grassi per kg, carboidrati come resto.
-- Il modello non calcola né corregge le calorie: legge le righe `TD:` (target del giorno, autorevoli) e rispetta `ED:<data>|<kcal>` (tetto del giorno, sostituisce `E` per quella data: la somma di pasti e integratori deve restare sotto).
-- `TR:<data>|<orario in minuti o ?>|<durata>|<intensità>` marca un giorno di allenamento; ogni altra data è di riposo. Il costo dell'allenamento è già incluso nel `TD`: nessuna aggiunta o sottrazione.
-- `WO:` elenca gli allenamenti registrati dall'utente, `SM:` la modalità di nutrizione sportiva.
-- Senza programma settimanale non compaiono `ED`/`TR` e vale il solo target abituale.
+## Cosa vale oggi
+- Il target calorico e i macro sono calcolati localmente dal livello di attività del profilo (TDEE = BMR x fattore del livello; target = TDEE x fattore dell'obiettivo, con minimo di sicurezza). Il valore è unico e identico per tutti i giorni della settimana: il modello non riceve né deduce target diversi per data.
+- Il modello non calcola né corregge le calorie: rispetta il target ricevuto entro la tolleranza di `AGENTS.md`.
+- Non esistono giorni di allenamento o di riposo, programma settimanale, check-in giornaliero o energia extra da allenamento. Il modello non deve introdurre queste distinzioni né differenziare i menu per tipo di giorno.
+- La modalità sportiva (riga `SM:`, creatina nel piano) dipende solo dal livello di attività `Molto attivo` (o dai valori storici equivalenti); non dipende da allenamenti registrati.
+- Un pasto prima o dopo attività fisica non è più legato a un programma: il modello non costruisce pasti dedicati a un allenamento non presente nei dati e gli slot seguono sveglia, lavoro e abitudini ricevute (`MEALS_PER_DAY`), senza slot extra.
 
 ## Timing
-- Con orario noto si può rendere più leggero e digeribile il pasto prima dell'allenamento e più ricco di proteine e carboidrati quello dopo, usando gli slot esistenti (`MEALS_PER_DAY`), senza slot extra.
 - Nessuna regola rigida sui carboidrati, nessuna "finestra anabolica"; vale `SEASONALITY_TIMING_RULES.md`.
 
-## Varietà
+## Varietà (ancora valida)
 - `RM:<tipo>|<titolo>`: pasti serviti nelle ultime 2 settimane (più recenti prima, massimo 60). Non riusarli, né usarne di equivalenti con gli stessi ingredienti principali, salvo assenza di alternative ragionevoli per target, allergie e preferenze.
-- I menu dei giorni di allenamento devono essere diversi da quelli di riposo (pasti diversi, non solo porzioni).
-- Le ripetizioni sono ammesse quando non evitabili: l'app non rifiuta né fa ritentare il piano. `MealVariety` le segnala come `WARNING` (`VARIETY_REPEATS_RECENT`, `VARIETY_REPEATS_IN_PLAN`, `VARIETY_TRAINING_SAME_AS_REST`) in `appValidation` e con un avviso breve all'utente.
+- Le ripetizioni sono ammesse quando non evitabili: l'app non rifiuta né fa ritentare il piano. `MealVariety` le segnala come `WARNING` (`VARIETY_REPEATS_RECENT`, `VARIETY_REPEATS_IN_PLAN`) in `appValidation` e con un avviso breve all'utente. Il segnale `VARIETY_TRAINING_SAME_AS_REST` è dismesso.
 - Il responso definitivo resta `appValidation` locale; `agentValidation` è solo autovalutazione.

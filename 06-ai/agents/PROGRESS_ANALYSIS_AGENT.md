@@ -16,7 +16,7 @@ L'app passa solo dati sintetici, non lo storico riga per riga:
 - `P`: obiettivo e livello attività.
 - `B0/B/BT`: BIA baseline, corrente e delta trend recente nell'ordine peso, body fat, massa muscolare, muscolo scheletrico, acqua, grasso viscerale.
 - `BM0/BM/BMT`: baseline, corrente e trend delle 11 circonferenze nell'ordine petto, vita, addome, spalle, glutei, braccio sx/dx, coscia sx/dx, polpaccio sx/dx.
-- `A`: conteggi sintetici di allenamenti, riposi, deviazioni registrate e finestra temporale.
+- `A`: conteggi sintetici di deviazioni registrate e finestra temporale (nessun dato su allenamenti o riposi: l'app non li gestisce più dal 13/11/2026).
 - `RS`: classificazione locale di ricomposizione come solo contesto.
 
 `?` significa dato non disponibile.
@@ -40,7 +40,7 @@ Classificazioni:
 - `NT`: trend sfavorevole.
 - `ID`: dati insufficienti/incoerenti.
 
-Pattern: peso, body fat, muscolo, vita, addome, arti, training, deviazioni registrate e coerenza complessiva dei segnali. Massimo 6 pattern. `F/U/X` = favorevole/sfavorevole/incerto. La sintesi deve restare <=18 parole.
+Pattern: peso, body fat, muscolo, vita, addome, arti, deviazioni registrate e coerenza complessiva dei segnali. Il codice `TR` resta nel protocollo solo per compatibilità del parser: non emetterlo, perché non esistono più dati sugli allenamenti. Massimo 6 pattern. `F/U/X` = favorevole/sfavorevole/incerto. La sintesi deve restare <=18 parole.
 
 ## Regole
 - Valuta segnali congiunti; il peso da solo non basta.
@@ -49,7 +49,7 @@ Pattern: peso, body fat, muscolo, vita, addome, arti, training, deviazioni regis
 - Non inventare aderenza o consumo: i pasti pianificati non provano che siano stati consumati.
 - Una deviazione registrata non descrive l'intera aderenza.
 - Non diagnosticare malattie, disidratazione, edema o perdita muscolare.
-- Non attribuire causalità certa a un alimento, piano o allenamento.
+- Non attribuire causalità certa a un alimento o al piano.
 - Non ricalcolare KPI già forniti dall'app.
 - Non modificare direttamente piano, calorie, macro o deficit.
 
