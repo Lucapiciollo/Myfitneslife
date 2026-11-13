@@ -1333,7 +1333,7 @@ class BiaActivity : BaseShellActivity() {
                             finishBiaAnalysis(button)
                             // Un'analisi fallita non salva nulla: la frase "nessun dato e' stato modificato" della tabella e' vera anche qui.
                             val raw = BiaFlowPresentation.analysisError(info.outputData.getString(AiJobWorker.KEY_ERROR))
-                            analysisFailurePanel.show(AiFailureMessages.resolve(raw))
+                            analysisFailurePanel.show(AiFailureMessages.resolveForBiaAnalysis(raw))
                         }
                         null -> Unit
                     }
@@ -1464,7 +1464,9 @@ class BiaActivity : BaseShellActivity() {
         val scenarios = jsonObjects(payload, "scenarios").joinToString("\n\n") { row ->
             getString(
                 R.string.bia_analysis_scenario_line,
-                row.optString("label"), row.optString("targetBodyFat"), row.optString("targetWeight"), row.optString("fatToLose"), row.optString("assumption"),
+                row.optString("label"), row.optString("targetBodyFat"), row.optString("targetWeight"), row.optString("fatToLose"),
+                // Results saved before T5 can carry the reliability glued to the comment (`...|MODERATE`): the stored text is left as is.
+                BiaAnalysisPresentation.scenarioComment(row.optString("assumption")),
             )
         }
         section(getString(R.string.bia_analysis_section_scenarios), scenarios)

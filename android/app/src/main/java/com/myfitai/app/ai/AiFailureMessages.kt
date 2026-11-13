@@ -66,6 +66,17 @@ object AiFailureMessages {
     /** L'analisi non e' partita (accodamento fallito): si puo' riprovare, nessun codice tecnico. */
     fun couldNotStart() = Presentation(R.string.ai_failure_start, Action.NONE, canRetry = true, technicalCode = null)
 
+    /**
+     * Come [resolve], per l'analisi BIA Coach: una risposta respinta dai controlli dell'app (codice `BIA_*`, `BA2_*`,
+     * `NUMBER_NOT_IN_CONTEXT`, ...) e' un'uscita non deterministica del modello, non un errore permanente della richiesta:
+     * il TAP MANUALE dell'utente su "Riprova" puo' funzionare. Il ritrying automatico resta escluso (costa quota) e
+     * [AiFailure.retryable] non cambia: la scelta vale solo per questa schermata. Ogni altra categoria resta com'e'.
+     */
+    fun resolveForBiaAnalysis(raw: String?): Presentation {
+        val resolved = resolve(raw)
+        return if (resolved.messageRes == R.string.ai_failure_rejected) resolved.copy(canRetry = true) else resolved
+    }
+
     private fun generic(code: String?) =
         Presentation(R.string.ai_failure_generic, Action.NONE, canRetry = false, technicalCode = code)
 

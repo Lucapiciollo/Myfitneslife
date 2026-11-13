@@ -81,6 +81,8 @@ object BiaAnalysisContract {
         var safety = ""
         var question: String? = null
         var validation = ""
+        // Classification recovered from outside the B record (header line, a line of its own): only used when B is absent.
+        var looseClassification: String? = null
         val comparisons = mutableListOf<Comparison>()
         val historical = mutableListOf<HistoricalPeriod>()
         val scenarios = mutableListOf<Scenario>()
@@ -91,8 +93,13 @@ object BiaAnalysisContract {
         lines.drop(1).forEach { line ->
             // Providers sometimes end a record with a stray separator; an empty tail is never data.
             val parts = line.split('|').dropLastWhile { it.isBlank() }
-            when (parts.firstOrNull()) {
-                "B" -> { require(parts.size >= 2 && classification == null) { "BA2_B_INVALID" }; classification = normalizeClassification(parts[1]) }
+            // The tag tolerates case, spaces (`S |`) and markdown/quote noise around it (`**B`, `- B`).
+            when (parts.firstOrNull()?.let(::recordTag)) {
+                "B" -> {
+                    require(classification == null) { "BA2_B_INVALID" }
+                    // An empty B is a missing classification (reported as such), not a malformed record.
+                    classification = parts.getOrNull(1)?.let { lenientClassification(it) ?: normalizeClassification(it) }
+                }
                 "S" -> { require(parts.size >= 2 && verdict == null) { "BA2_S_INVALID" }; verdict = parts.drop(1).joinToString("|").cleanText() }
                 "C" -> { require(parts.size >= 2 && what == null) { "BA2_C_INVALID" }; what = parts.drop(1).joinToString("|").cleanText() }
                 "F" -> { require(parts.size >= 2 && fatLoss == null) { "BA2_F_INVALID" }; fatLoss = parts.drop(1).joinToString("|").cleanText() }
@@ -111,7 +118,7 @@ object BiaAnalysisContract {
                     require(parts.size >= 7) { "BA2_R_ARITY_${parts.size}" }
                     comparisons += Comparison(
                         parts[1].cleanText(), parts[2].cleanText(), parts[3].cleanText(), parts[4].cleanText(),
-                        parts.subList(5, parts.lastIndex).joinToString("|").cleanText(), normalizeReliability(parts.last()),
+                        joinedText(parts, 5, parts.lastIndex).cleanText(), normalizeReliability(parts.last()),
                     )
                 }
                 "H" -> {
@@ -119,13 +126,15 @@ object BiaAnalysisContract {
                     historical += HistoricalPeriod(parts[1].cleanText(), parts.drop(2).joinToString("|").ifBlank { "?" }.cleanText())
                 }
                 "G" -> {
+                    // G|id|?|?|?|comment|reliability: 7 fields. With 6 there is no reliability and the last field is the
+                    // comment. The reliability is only ever the LAST field and never part of the comment.
                     require(parts.size >= 6) { "BA2_G_ARITY_${parts.size}" }
-                    val hasReliability = parts.last().uppercase() in setOf("HIGH", "MEDIUM", "LOW", "ALTA", "MEDIA", "BASSA", "?")
-                    val assumptionEndExclusive = if (hasReliability) parts.lastIndex else parts.size
+                    val tail = if (parts.size >= 7) reliabilityTail(parts.last()) else null
+                    val commentEndExclusive = if (tail != null) parts.lastIndex else parts.size
                     scenarios += Scenario(
                         parts[1].cleanText(), parts[2].cleanText(), parts[3].cleanText(), parts[4].cleanText(),
-                        parts.subList(5, assumptionEndExclusive).joinToString("|").cleanText(),
-                        if (hasReliability) normalizeReliability(parts.last()) else "?",
+                        joinedText(parts, 5, commentEndExclusive).ifBlank { "?" }.cleanText(),
+                        tail ?: "?",
                     )
                 }
                 "Y" -> { require(parts.size >= 2) { "BA2_Y_ARITY_${parts.size}" }; positives += parts.drop(1).joinToString("|").cleanText() }
@@ -147,11 +156,14 @@ object BiaAnalysisContract {
                 // Keep the required BA2 records authoritative while tolerating optional
                 // provider metadata/extension records. Required fields and business rules
                 // below still reject incomplete or malformed analyses.
-                else -> Unit
+                else -> { if (looseClassification == null) looseClassification = looseClassificationLine(line) }
             }
         }
+        // Only when the B record is absent: the header line (`BA2|STABLE`), a line of its own (`Stabile`,
+        // `Classificazione: Stabile`) or an enum written in the verdict (the validator still rejects that verdict).
+        val resolvedClassification = classification ?: looseClassification ?: verdict?.let { lenientClassificationExact(it) }
         return Interpretation(
-            classification = requireNotNull(classification) { "BIA_CLASSIFICATION_MISSING" },
+            classification = requireNotNull(resolvedClassification) { "BIA_CLASSIFICATION_MISSING" },
             verdict = requireNotNull(verdict) { "BIA_VERDICT_MISSING" },
             whatIsHappening = requireNotNull(what) { "BIA_SUMMARY_MISSING" },
             fatLoss = requireNotNull(fatLoss) { "BIA_FAT_LOSS_MISSING" },
@@ -303,7 +315,20 @@ object BiaAnalysisContract {
 
     /** Records may end with a stray `;` used as a separator by some providers; it is not part of the text. */
     private fun String.cleanText(): String =
-        replace('\n', ' ').replace('\r', ' ').trim().trimEnd(';').trim().also { require(it.isNotBlank()) }
+        replace('\n', ' ').replace('\r', ' ').trim { it.isWhitespace() || it in textNoise }.trimEnd(';')
+            .trim { it.isWhitespace() || it in textNoise }.also { require(it.isNotBlank()) }
+
+    /** Quotes, emphasis and code marks a provider may wrap around a whole field; never part of the text. */
+    private val textNoise = setOf('"', '\u201C', '\u201D', '*', '`')
+    private val tagNoise = textNoise + setOf('-', '\u2022', '>', '#', '\'', '\u2018', '\u2019')
+
+    /** `S`, ` s `, `**B`, `- B`, `"G` -> the record tag; null when the first field is not a BA2 tag. */
+    private fun recordTag(raw: String): String? =
+        raw.trim { it.isWhitespace() || it in tagNoise }.uppercase(java.util.Locale.ROOT).takeIf { it in RECORD_FIELDS }
+
+    /** Fields [from, toExclusive) joined back, without the stray separators that a record may leave at the end. */
+    private fun joinedText(parts: List<String>, from: Int, toExclusive: Int): String =
+        parts.subList(from, toExclusive).joinToString("|").trim().trimEnd('|').trim()
 
     internal fun normalizeClassification(value: String): String = when (val key = value.trim().trimEnd(';', '.', ',').uppercase().replace(' ', '_').replace('-', '_')) {
         "POSITIVO" -> "POSITIVE"
@@ -315,12 +340,49 @@ object BiaAnalysisContract {
         else -> key
     }
 
-    private fun normalizeReliability(value: String): String = when (val key = value.trim().trimEnd(';', '.', ',').uppercase()) {
-        "ALTA", "HIGH" -> "HIGH"
-        "MEDIA", "MEDIUM" -> "MEDIUM"
-        "BASSA", "LOW" -> "LOW"
-        "?" -> "?"
-        else -> key
+    private val classificationLabelPrefix = Regex("^(?:classification|classificazione|esito)\\s*[:=]\\s*", RegexOption.IGNORE_CASE)
+    private val classificationSearch = Regex("(?<![A-Z_])(PROBABLY_POSITIVE|INSUFFICIENT_DATA|POSITIVE|STABLE|MONITOR|NEGATIVE)(?![A-Z_])")
+
+    /** The whole text is one classification (any case, Italian synonym, quotes, an optional `Classificazione:` label). */
+    private fun lenientClassificationExact(raw: String): String? {
+        val cleaned = raw.trim { it.isWhitespace() || it in tagNoise || it in ".,;:()" }
+        val core = classificationLabelPrefix.replace(cleaned, "")
+        return normalizeClassification(core).takeIf { it in classifications }
+    }
+
+    /** [lenientClassificationExact], or the one classification mentioned in the text (two different ones are ambiguous). */
+    internal fun lenientClassification(raw: String): String? {
+        lenientClassificationExact(raw)?.let { return it }
+        val mentioned = classificationSearch.findAll(raw.uppercase(java.util.Locale.ROOT).replace('-', '_')).map { it.value }.toSet()
+        return mentioned.singleOrNull()
+    }
+
+    /** A line without a record tag that only states the classification (`Stabile`, `Classificazione: Stabile`). */
+    private fun looseClassificationLine(line: String): String? {
+        val text = line.trim().trimEnd('|').trim()
+        return if (text.isEmpty() || text.contains('|')) null else lenientClassificationExact(text)
+    }
+
+    private fun normalizeReliability(value: String): String =
+        when (val key = value.trim().trimEnd(';', '.', ',').trim { it in textNoise }.uppercase()) {
+            "ALTA", "ALTO", "HIGH" -> "HIGH"
+            "MEDIA", "MEDIO", "MODERATE", "MODERATA", "MODERATO", "MEDIUM" -> "MEDIUM"
+            "BASSA", "BASSO", "LOW" -> "LOW"
+            "?" -> "?"
+            else -> key
+        }
+
+    private val enumShape = Regex("^[A-Z][A-Z_]{2,}$")
+
+    /**
+     * Last field of a G record when it is the reliability: a known value or synonym, or any other enum-shaped token
+     * (upper case, e.g. `VERY_HIGH`), which is dropped (reliability unknown) instead of leaking into the comment.
+     * Null when the last field is part of the comment.
+     */
+    private fun reliabilityTail(raw: String): String? {
+        val key = normalizeReliability(raw)
+        if (key in reliabilityLevels || key == "?") return key
+        return if (enumShape.matches(raw.trim().trimEnd(';', '.', ','))) "?" else null
     }
 
     /** Some provider responses collapse the compact records into one line. */
@@ -389,7 +451,7 @@ object BiaAnalysisContract {
     }
 
     private val PROTOCOL = """
-BA2 records: B|classification; S|verdict; C|what is happening; F|comment on the app fat-change estimate (an estimate, never a fact); O|objective coherence; K|calories and macros; P|next check; L|reliability|reason; R|indicator|previous|current|difference|interpretation|reliability; H|period|historical trend; G|scenario id S1..S3 from SCENARI_APP|?|?|?|short comment on that scenario|reliability (the app writes the scenario numbers, put ? in the three numeric fields); Y|positive; M|monitor; X|priority action; D|safety note; N|one final question or ?; V|1_or_0|agent notes. Use ? for unavailable values. Every number followed by kg, %, kcal or g must be copied from the input: never calculate or invent new figures. Emit exactly three X records, unless classification is INSUFFICIENT_DATA: then emit 0 to 2 X records (data collection or repeat measurement only) and L|?|reason is allowed. D is mandatory only when the input says SAFETY_FLAG:ACTIVE (then no restriction or weight-loss advice); otherwise omit D or give one short sentence. S, Y and M are short Italian sentences, never enum codes (wrong: S|STABLE, Y|PROBABLY_POSITIVE, M|MONITOR; Y and M need at least 3 words). K is a qualitative comment: no kcal or gram figures (the app writes them). Never put | or newlines inside text.
+BA2 records: B|classification; S|verdict; C|what is happening; F|comment on the app fat-change estimate (an estimate, never a fact); O|objective coherence; K|calories and macros; P|next check; L|reliability|reason; R|indicator|previous|current|difference|interpretation|reliability; H|period|historical trend; G|scenario id S1..S3 from SCENARI_APP|?|?|?|short comment on that scenario|reliability (HIGH, MEDIUM or LOW, written only as the last field, never inside the comment; the app writes the scenario numbers, put ? in the three numeric fields); Y|positive; M|monitor; X|priority action; D|safety note; N|one final question or ?; V|1_or_0|agent notes. Use ? for unavailable values. Every number followed by kg, %, kcal or g must be copied from the input: never calculate or invent new figures. Emit exactly three X records, unless classification is INSUFFICIENT_DATA: then emit 0 to 2 X records (data collection or repeat measurement only) and L|?|reason is allowed. D is mandatory only when the input says SAFETY_FLAG:ACTIVE (then no restriction or weight-loss advice); otherwise omit D or give one short sentence. The B record is mandatory: always emit it as its own line right after BA2, with exactly one of POSITIVE, PROBABLY_POSITIVE, STABLE, MONITOR, NEGATIVE, INSUFFICIENT_DATA; a classification is written only there. S, Y and M are short Italian sentences: never write a classification name or any other code in capitals in a text field (Y and M need at least 3 words). K is a qualitative comment: no kcal or gram figures (the app writes them). Never put | or newlines inside text.
 """.trimIndent()
 }
 
@@ -504,6 +566,9 @@ object BiaAnalysisPresentation {
     /** Text written by the model as shown to the user: raw field names in Italian, decimal commas. */
     fun displayText(text: String): String = normalizeDecimals(proseFieldNames.fold(text) { acc, (regex, label) -> regex.replace(acc, label) })
 
+    /** Scenario comment as shown: like [displayText], without a reliability value or separator glued to the end (results before T5). */
+    fun scenarioComment(text: String): String = displayText(BiaFreeText.displayComment(text))
+
     private val neutralSafetyStarts = listOf("nessuna nota", "nessun avviso", "nessuna segnalazione", "nessun alert", "nessuna avvertenza")
     private val nonLetters = Regex("[^\\p{L}\\p{N}]+")
 
@@ -540,6 +605,32 @@ internal object BiaFreeText {
         return codeKey(trimmed) in BiaAnalysisContract.enumTokens
     }
 
+    private const val ENUM_VALUES = "HIGH|MEDIUM|MODERATE|LOW|POSITIVE|PROBABLY_POSITIVE|STABLE|MONITOR|NEGATIVE|INSUFFICIENT_DATA"
+    private const val ITALIAN_LEVELS = "ALTA|ALTO|MEDIA|MEDIO|MODERATA|MODERATO|BASSA|BASSO"
+
+    /** After a separator: any enum value in any case, an Italian level, or nothing at all (a trailing `|`). */
+    private val tailAfterSeparator = Regex("\\|\\s*(?:$ENUM_VALUES|$ITALIAN_LEVELS)?\\s*[.;]*\\s*$", RegexOption.IGNORE_CASE)
+
+    /** After a space: only the upper-case English enum value, so that `affidabilita alta` stays an ordinary sentence. */
+    private val tailAfterSpace = Regex("\\s(?:$ENUM_VALUES)\\s*[.;]*\\s*$")
+
+    /** True when the comment ends with a separator or with an enum value (`...corporeo|MODERATE`, `...corporeo MODERATE`). */
+    fun endsWithEnumTail(text: String): Boolean = text.trim().let { tailAfterSeparator.containsMatchIn(it) || tailAfterSpace.containsMatchIn(it) }
+
+    /**
+     * Comment of a scenario as shown to the user. Results saved before T5 can carry the reliability glued to the comment
+     * (`...corporeo|MODERATE`): the stored payload is not rewritten, the text shown is cleaned.
+     */
+    fun displayComment(text: String): String {
+        var current = text.trim()
+        if (isPlaceholder(current)) return ""
+        while (true) {
+            val cleaned = current.replace(tailAfterSeparator, "").let { if (it == current) it.replace(tailAfterSpace, "") else it }.trim()
+            if (cleaned == current) return current
+            current = cleaned
+        }
+    }
+
     fun validate(value: BiaAnalysisContract.Interpretation) {
         // Only the contract code itself: an Italian word such as "Stabile" is a (poor) sentence, not a leaked enum.
         require(codeKey(value.verdict) != codeKey(value.classification)) { "BIA_VERDICT_EQUALS_CLASSIFICATION" }
@@ -561,6 +652,12 @@ internal object BiaFreeText {
             "scenarios" to value.scenarios.map { it.assumption },
         )
         fields.forEach { (name, texts) -> require(texts.none(::isPlaceholder)) { "BIA_PLACEHOLDER_TEXT:$name" } }
+        // The comment of a pipe record (R, G) never ends with an enum value or a separator: the reliability is the LAST field,
+        // not the end of the sentence (observed on device: `...corporeo|MODERATE` shown to the user).
+        listOf(
+            "comparisons" to value.comparisons.map { it.interpretation },
+            "scenarios" to value.scenarios.map { it.assumption },
+        ).forEach { (name, texts) -> require(texts.none(::endsWithEnumTail)) { "BIA_TEXT_ENUM_TAIL:$name" } }
         listOf("positives" to value.positives, "monitor" to value.monitor).forEach { (name, texts) ->
             require(texts.all { core(it).split(whitespace).size >= MIN_LIST_WORDS }) { "BIA_TEXT_TOO_SHORT:$name" }
         }

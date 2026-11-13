@@ -149,7 +149,9 @@ class AiExecutionService(
                     is ValidatedOutput.Rejection.Business -> {
                         if (compact && attempt < maxSchemaRetries) {
                             attempt++
-                            currentRequest = request.copy(userPrompt = request.userPrompt + "\nFIX:${fixReason(rejection.reason)}. Return exactly one JSON envelope with one data property. ${spec.retryRule()} No markdown or code fences.")
+                            // Contract-specific, app-written hint (names the record to fix); never text from the model.
+                            val hint = spec.fixHint(rejection.reason)?.let { "$it " }.orEmpty()
+                            currentRequest = request.copy(userPrompt = request.userPrompt + "\nFIX:${fixReason(rejection.reason)}. ${hint}Return exactly one JSON envelope with one data property. ${spec.retryRule()} No markdown or code fences.")
                         } else {
                             throw Failure.from(rejection)
                         }
