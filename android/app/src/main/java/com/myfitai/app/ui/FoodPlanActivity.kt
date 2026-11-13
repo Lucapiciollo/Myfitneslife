@@ -531,7 +531,7 @@ class FoodPlanActivity : BaseShellActivity() {
             "Come leggere le calorie",
             
             "BMR a riposo: energia stimata senza applicare il livello di attività.\n\n" +
-                    "TDEE: stima locale calcolata sul profilo e sul livello di attività scelto, uguale per tutti i giorni. Non è una misurazione dell'allenamento singolo.\n\n" +
+                    "TDEE: stima locale calcolata sul profilo e sul livello di attività scelto, uguale per tutti i giorni.\n\n" +
                     "Target del giorno: se il piano ha una voce per quel giorno è il target del piano, con adattamento e recupero già applicati, uguale a quello mostrato in Home. Senza piano per il giorno è il target teorico (profilo e attività), indicato come tale; viene mostrato anche il teorico quando differisce.\n\n" +
                     "Piano: somma nutrizionale degli alimenti e degli integratori programmati.\n\n" +
                     "Consumate: somma dei soli elementi segnati come consumati nel giorno selezionato. Le portate non registrate non vengono conteggiate come zero effettivo."

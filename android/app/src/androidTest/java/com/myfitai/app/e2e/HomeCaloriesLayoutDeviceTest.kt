@@ -26,7 +26,7 @@ class HomeCaloriesLayoutDeviceTest {
     private val device = UiDevice.getInstance(instrumentation)
 
     @Test
-    fun calorieCardAndCheckIn_useCurrentTargetsWithoutClippingOrSyntheticData() {
+    fun calorieCard_useCurrentTargetsWithoutClippingOrSyntheticData() {
         ActivityScenario.launch<HomeActivity>(
             Intent(instrumentation.targetContext, HomeActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
         ).use { scenario ->
@@ -104,7 +104,6 @@ class HomeCaloriesLayoutDeviceTest {
                     R.id.caloriesTargetValue, R.id.caloriesTargetSourceText, R.id.caloriesConsumedText,
                     R.id.caloriesConsumedProteinText, R.id.caloriesRemainingText, R.id.caloriesConsumptionNote,
                     R.id.caloriesConsumedMaximumText, R.id.caloriesConsumedProteinMaximumText, R.id.caloriesRemainingMaximumText,
-                     R.id.activityCheckInSummary,
                 )
                 ids.forEach { id ->
                     val view = activity.findViewById<TextView>(id)

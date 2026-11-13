@@ -68,8 +68,6 @@ class ProfileActivity : BaseShellActivity() {
         // La configurazione IA è dell'app, non del profilo: si apre come schermata figlia (nessun flag radice/embedded)
         // così il Back del sistema torna a questo Profilo.
         findViewById<android.view.View>(R.id.profileAiSettingsButton).setOnClickListener { AiSettingsEntry.open(this) }
-        findViewById<SettingRowView>(R.id.rowWorkouts).setOnClickListener { go(WorkoutsActivity::class.java) }
-        updateWorkoutsRowVisibility()
         findViewById<SettingRowView>(R.id.rowNotifications).setOnClickListener { showNotificationSettings() }
         findViewById<SettingRowView>(R.id.rowExport).setOnClickListener { go(ExportActivity::class.java) }
     }
@@ -129,17 +127,6 @@ class ProfileActivity : BaseShellActivity() {
                 }
             }
             .show()
-    }
-
-    override fun onResume() {
-        super.onResume()
-        updateWorkoutsRowVisibility()
-    }
-
-    private fun updateWorkoutsRowVisibility() {
-        val profileId = data.activeProfileStore.currentIdOrNull() ?: return
-        findViewById<SettingRowView>(R.id.rowWorkouts).visibility =
-            if (data.workoutPreferences.isEnabled(profileId)) android.view.View.VISIBLE else android.view.View.GONE
     }
 
     private fun bindProfileActions() {

@@ -128,36 +128,6 @@
                    <View android:layout_width="match_parent" android:layout_height="@dimen/border_width_default" android:background="@color/divider" />
                    <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowMealCount" android:visibility="gone" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="Pasti al giorno" />
                    <TextView android:id="@+id/mealCountValue" style="@style/Text.MyFitAI.Caption" android:visibility="gone" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingStart="@dimen/space_16" android:paddingBottom="@dimen/space_8" android:text="Pasti al giorno" />
-                  <LinearLayout
-                     android:layout_width="match_parent"
-                     android:layout_height="wrap_content"
-                     android:gravity="center_vertical"
-                     android:orientation="horizontal"
-                     android:paddingVertical="@dimen/space_12">
-                     <LinearLayout
-                         android:layout_width="0dp"
-                         android:layout_height="wrap_content"
-                         android:layout_weight="1"
-                         android:orientation="vertical">
-                           <TextView
-                               style="@style/Text.MyFitAI.SettingsLabel"
-                               android:layout_width="wrap_content"
-                              android:layout_height="wrap_content"
-                              android:text="Abilita allenamenti" />
-                          <TextView
-                              style="@style/Text.MyFitAI.SettingsDescription"
-                              android:layout_width="wrap_content"
-                              android:layout_height="wrap_content"
-                              android:layout_marginTop="@dimen/space_2"
-                              android:text="Mostra e abilita la struttura degli allenamenti" />
-                     </LinearLayout>
-                      <com.google.android.material.materialswitch.MaterialSwitch
-                          android:id="@+id/workoutsEnabledSwitch"
-                          style="@style/Widget.MyFitAI.SettingsSwitch"
-                         android:layout_width="wrap_content"
-                         android:layout_height="wrap_content" />
-                 </LinearLayout>
-                  <View android:layout_width="match_parent" android:layout_height="@dimen/border_width_default" android:background="@color/divider" />
                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowUnits" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_gear" app:srLabel="Unità di misura" />
                   <View android:layout_width="match_parent" android:layout_height="@dimen/border_width_default" android:background="@color/divider" />
                   <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowPrivacy" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_lock" app:srLabel="Privacy e dati" app:srDescription="@string/settings_desc_privacy" />

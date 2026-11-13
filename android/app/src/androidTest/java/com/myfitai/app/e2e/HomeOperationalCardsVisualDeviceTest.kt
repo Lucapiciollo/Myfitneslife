@@ -61,8 +61,8 @@ class HomeOperationalCardsVisualDeviceTest {
                 }
                 assertTrue("AI notice visibility remains configuration-dependent", ai.visibility == View.VISIBLE || ai.visibility == View.GONE)
                 assertTrue(
-                    "combined quick actions card follows the workout section",
-                    quickActions.top >= activity.findViewById<View>(R.id.workoutSectionCard).bottom,
+                    "combined quick actions card follows the analysis hub card",
+                    quickActions.top >= analysis.bottom,
                 )
 
                 assertTrue("plan notice action callback missing", activity.findViewById<View>(R.id.planUpdateNoticeButton).hasOnClickListeners())
