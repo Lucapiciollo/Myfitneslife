@@ -557,7 +557,26 @@
     <string name="home_ux5a_note_all_skipped">Gli elementi registrati risultano saltati.</string>
     <string name="home_ux5a_note_none_registered">Nessun alimento registrato come consumato oggi.</string>
     <string name="home_ux5a_note_partial">Calorie e proteine sommano i soli elementi consumati (%1$d).</string>
-    <string name="home_ux5a_note_all_consumed">Totale di %1$d elementi segnati come consumati.</string>
+    <plurals name="home_ux5a_note_all_consumed">
+        <item quantity="one">Totale di %1$d elemento segnato come consumato.</item>
+        <item quantity="other">Totale di %1$d elementi segnati come consumati.</item>
+    </plurals>
+    <plurals name="food_ux6_total_only_consumed">
+        <item quantity="one">Totale del solo elemento (%1$d) segnato come consumato.</item>
+        <item quantity="other">Totale dei soli %1$d elementi segnati come consumati.</item>
+    </plurals>
+    <plurals name="food_ux6_total_all_consumed">
+        <item quantity="one">Totale di %1$d elemento segnato come consumato.</item>
+        <item quantity="other">Totale dei %1$d elementi segnati come consumati.</item>
+    </plurals>
+    <plurals name="food_ux6_coverage_none">
+        <item quantity="one">Nessuna registrazione su %1$d elemento pianificato</item>
+        <item quantity="other">Nessuna registrazione su %1$d elementi pianificati</item>
+    </plurals>
+    <plurals name="food_ux6_coverage_recorded">
+        <item quantity="one">Registrati: %2$d di %1$d elemento · consumati %3$d · saltati %4$d</item>
+        <item quantity="other">Registrati: %2$d di %1$d elementi · consumati %3$d · saltati %4$d</item>
+    </plurals>
     <string name="home_ux5a_calories_note">%1$s Gli anelli confrontano i consumi con l\'obiettivo di oggi.</string>
     <string name="home_ux5a_weekly_plan_pending_note">Piano da aggiornare: la stima usa il piano precedente</string>
     <string name="home_ux5a_measurements_title">Rilevazioni</string>

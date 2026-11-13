@@ -152,7 +152,7 @@
             android:orientation="vertical"
             android:paddingHorizontal="@dimen/space_16"
             android:paddingTop="@dimen/space_8"
-            android:paddingBottom="@dimen/space_12">
+            android:paddingBottom="@dimen/space_8">
             <TextView
                 android:id="@+id/mealStatusText"
                 style="@style/Text.MyFitAI.StatusValue"
@@ -161,26 +161,38 @@
                 android:accessibilityLiveRegion="polite"
                 android:gravity="center_horizontal"
                 android:paddingBottom="@dimen/space_8" />
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/consumedButton"
-                style="@style/Widget.MyFitAI.Button.Primary"
+            <!-- UX6: i due pulsanti stanno su UNA riga (peso uguale). Con font molto grande MealDetailActivity li impila. -->
+            <LinearLayout
+                android:id="@+id/mealActionButtons"
                 android:layout_width="match_parent"
-                android:layout_height="@dimen/button_primary_min_height"
-                android:text="@string/meal_detail_ux4_mark_consumed"
-                android:textAllCaps="false"
-                android:textStyle="bold"
-                android:visibility="gone"
-                app:icon="@drawable/ic_check"
-                app:iconGravity="textStart" />
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/skippedButton"
-                style="@style/Widget.MyFitAI.Button.Outlined"
-                android:layout_width="match_parent"
-                android:layout_height="@dimen/button_secondary_min_height"
-                android:layout_marginTop="@dimen/space_8"
-                android:text="@string/meal_detail_ux4_mark_skipped"
-                android:textAllCaps="false"
-                android:visibility="gone" />
+                android:layout_height="wrap_content"
+                android:baselineAligned="false"
+                android:orientation="horizontal">
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/consumedButton"
+                    style="@style/Widget.MyFitAI.Button.Primary"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:minHeight="@dimen/button_primary_min_height"
+                    android:text="@string/meal_detail_ux4_mark_consumed"
+                    android:textAllCaps="false"
+                    android:textStyle="bold"
+                    android:visibility="gone"
+                    app:icon="@drawable/ic_check"
+                    app:iconGravity="textStart" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/skippedButton"
+                    style="@style/Widget.MyFitAI.Button.Outlined"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginStart="@dimen/space_8"
+                    android:layout_weight="1"
+                    android:minHeight="@dimen/button_primary_min_height"
+                    android:text="@string/meal_detail_ux4_mark_skipped"
+                    android:textAllCaps="false"
+                    android:visibility="gone" />
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
     <include layout="@layout/view_bottom_navigation" />

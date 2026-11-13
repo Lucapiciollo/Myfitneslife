@@ -16,7 +16,6 @@ import com.myfitai.app.domain.food.FoodConsumptionStatus
 import com.myfitai.app.domain.food.FoodIngredient
 import com.myfitai.app.domain.food.FoodMeal
 import com.myfitai.app.domain.food.MealStatusChange
-import com.google.android.material.snackbar.Snackbar
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.ui.food.MealDetailViewModel
 import com.myfitai.app.ui.widgets.IngredientRowView
@@ -46,6 +45,7 @@ class MealDetailActivity : BaseShellActivity() {
         findViewById<View>(R.id.consumedButton).setOnClickListener { viewModel.tapStatus(FoodConsumptionStatus.CONSUMED) }
         findViewById<View>(R.id.skippedButton).setOnClickListener { viewModel.tapStatus(FoodConsumptionStatus.SKIPPED) }
         bindConsumptionFeedback()
+        bindActionButtonsStacking()
 
         val mealId = intent.getLongExtra(EXTRA_MEAL_ID, -1L)
         lifecycleScope.launch {
@@ -64,8 +64,7 @@ class MealDetailActivity : BaseShellActivity() {
             MealStatusChange.Kind.SKIPPED -> R.string.meal_ux4_snackbar_skipped
             MealStatusChange.Kind.CLEARED -> R.string.meal_ux4_snackbar_cleared
         }
-        Snackbar.make(findViewById(android.R.id.content), message, Snackbar.LENGTH_LONG)
-            .setAnchorView(findViewById<View>(R.id.mealActionBar))
+        SnackbarAnchors.make(this, message, R.id.mealActionBar)
             .setAction(R.string.meal_ux4_snackbar_undo) { viewModel.undo(change) }
             .show()
     }
@@ -113,6 +112,29 @@ class MealDetailActivity : BaseShellActivity() {
         preparationCard.visibility = View.GONE
         ingredientsContainer.visibility = View.VISIBLE
         preparationContainer.visibility = View.GONE
+    }
+
+    /**
+     * UX6: i due pulsanti stanno affiancati su una riga. Se con font molto grande un'etichetta supera
+     * [MAX_ACTION_BUTTON_LINES] righe (testo che si taglierebbe) la riga passa a verticale, una sola volta
+     * (si ripristina alla ricreazione dell'activity, p.es. dopo un cambio di dimensione carattere).
+     */
+    private fun bindActionButtonsStacking() {
+        val row = findViewById<LinearLayout>(R.id.mealActionButtons)
+        val buttons = listOf(findViewById<TextView>(R.id.consumedButton), findViewById<TextView>(R.id.skippedButton))
+        row.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+            if (row.orientation == LinearLayout.HORIZONTAL && buttons.any { it.lineCount > MAX_ACTION_BUTTON_LINES }) {
+                row.post {
+                    row.orientation = LinearLayout.VERTICAL
+                    buttons.forEachIndexed { index, button ->
+                        button.layoutParams = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                        ).apply { if (index > 0) topMargin = resources.getDimensionPixelSize(R.dimen.space_8) }
+                    }
+                }
+            }
+        }
     }
 
     private fun bindConsumptionFeedback() {
@@ -251,5 +273,6 @@ class MealDetailActivity : BaseShellActivity() {
     private fun formatMacro(value: Float): String = if (value % 1f == 0f) value.toInt().toString() else String.format(Locale.ITALIAN, "%.1f", value)
     companion object {
         const val EXTRA_MEAL_ID = "meal_id"
+        private const val MAX_ACTION_BUTTON_LINES = 2
     }
 }

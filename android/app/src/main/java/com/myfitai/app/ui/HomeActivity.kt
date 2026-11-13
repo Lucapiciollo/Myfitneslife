@@ -686,7 +686,7 @@ class HomeActivity : BaseShellActivity() {
             ConsumptionNote.Kind.ALL_SKIPPED -> getString(R.string.home_ux5a_note_all_skipped)
             ConsumptionNote.Kind.NONE_REGISTERED -> getString(R.string.home_ux5a_note_none_registered)
             ConsumptionNote.Kind.PARTIAL -> getString(R.string.home_ux5a_note_partial, calories.consumedCount)
-            ConsumptionNote.Kind.ALL_CONSUMED -> getString(R.string.home_ux5a_note_all_consumed, calories.consumedCount)
+            ConsumptionNote.Kind.ALL_CONSUMED -> resources.getQuantityString(R.plurals.home_ux5a_note_all_consumed, calories.consumedCount, calories.consumedCount)
         }
         findViewById<TextView>(R.id.caloriesConsumptionNote).text = getString(R.string.home_ux5a_calories_note, consumptionDetail)
         val remaining = RemainingKcal.of(calories.target, calories.consumedKcal)
@@ -892,8 +892,7 @@ class HomeActivity : BaseShellActivity() {
     }
 
     private fun showMealSnackbar(@androidx.annotation.StringRes message: Int, @androidx.annotation.StringRes action: Int? = null, onAction: (() -> Unit)? = null) {
-        val snackbar = com.google.android.material.snackbar.Snackbar.make(findViewById(android.R.id.content), message, com.google.android.material.snackbar.Snackbar.LENGTH_LONG)
-        findViewById<View?>(R.id.bottomNav)?.let { snackbar.setAnchorView(it) }
+        val snackbar = SnackbarAnchors.make(this, message)
         if (action != null && onAction != null) snackbar.setAction(action) { onAction() }
         snackbar.show()
     }
