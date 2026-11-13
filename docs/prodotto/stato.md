@@ -356,3 +356,6 @@ Dopo: L2b UI (Impostazioni IA, onboarding), L3 prove reali con chiave dell'utent
 - CORREZIONE alla diagnosi (13/11): la card 'Il tuo piano alimentare potrebbe essere aggiornato' ESISTE ed e visibile quando il flag pending e acceso, ma sta sotto i conti (visibile solo scorrendo); sbagliavo dicendo che niente segnalava il piano vecchio. Mamma ripristinata (Sedentario, flag pending_3 riportato a false via run-as su profilo fake, Home 1.625/1.381/-15%).
 | senior-developer | Fix Home: avviso piano non aggiornato sotto i conti, niente '-41%' con piano vecchio, audit | vedi esito | fix/home-piano-non-aggiornato |
 Richiesta utente: poi rilasciare versione aggiornata (install in-place + tag; nessun push/store).
+
+| ux-reviewer | Riesame UX Home/Cibo/Progresso/Altro (sola lettura) | ses_e2a3f8899ffeByf9A3u0owMYwX | repo principale, nessuna modifica |
+In corso in parallelo: fix Home (ses_e2a5432ffffe2x0p59F9I4SeSV). Dopo: integrazione, install in-place, prova su Mamma, tag; poi lotti di miglioramento UX scelti dall'utente.
