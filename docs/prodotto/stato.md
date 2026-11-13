@@ -381,3 +381,5 @@ Dopo: UX5 Home prima card semplificata + BMR/TDEE fuori da Cibo; poi integrazion
 | senior-developer | UX5a Home: card calorie con Dettagli collassati, azione rapida sul prossimo pasto (solo oggi/passati), nota piano da aggiornare sul bilancio settimanale, fusione azioni Rilevazioni se possibile | (vedi esito) | feat/ux5a-home-card (da develop 1703840) |
 | senior-developer | UX5b Cibo/review/PDF: Totale senza BMR/TDEE, piano precedente, tocco rapido solo oggi/passati | (vedi esito) | feat/ux5b-cibo-totale (da develop 1703840) |
 Decisioni mie (reversibili): tocco rapido solo oggi/passati; Dettagli del calcolo collassati; gate di combinazione UX1-UX4 fatto da UX5a/UX5b.
+
+- UX5b FERMATO (ses_e29df9262ffeVO9N576qaGRaTX): commit 5395844, unito in develop. Gate BUILD SUCCESSFUL 14m13s su base UX1-UX4 = prima verifica della combinazione: 993 test 0 falliti (XML riletti), nessuna correzione di merge necessaria. Non verificato a schermo: card Totale, note PDF (coordinate a vista), nota review globale per profilo.
