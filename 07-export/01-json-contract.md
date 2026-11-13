@@ -27,5 +27,5 @@ DEPRECATI e rimossi da v3: allenamenti (`workouts`), check-in giornalieri (`dail
 
 - L'export JSON, il CSV (zip: niente `workouts.csv`) e il PDF non includono piu allenamenti ne riposi.
 - Il restore accetta v1, v2 e v3. Con v1/v2 le chiavi dismesse vengono ignorate in silenzio e non vengono scritte; tutto il resto (profilo, BIA, misure, piani, consumi, sgarri, analisi, preferenze) e importato come prima. Il livello di attivita del profilo importato resta quello del file.
-- Le tabelle Room `workouts` e `daily_activity_checkins` esistono ancora ma non sono piu lette ne scritte da export/backup/PDF; la loro eliminazione e prevista dalla tranche F5 (MIGRATION_19_20), dopo l'export completo dei profili.
+- Le tabelle Room `workouts` e `daily_activity_checkins` sono state eliminate dalla migrazione Room 19->20 (MIGRATION_19_20, DROP TABLE; schema 20.json). Verificato su device il 13/11/2026: versione 20, tabelle assenti, conteggi delle altre 15 tabelle invariati.
 - Implementazione e costanti del formato: `ProfileExportFormat` (`domain/export`).

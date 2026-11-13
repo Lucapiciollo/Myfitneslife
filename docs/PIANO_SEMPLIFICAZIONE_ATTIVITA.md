@@ -6,7 +6,7 @@ Data: 13/11/2026. Base: develop 45ef74b. Fonte: mappa di sola lettura (explore) 
 Eliminare il discorso allenamenti (programma, giorni di allenamento/riposo, check-in giornaliero, energia extra da allenamento, schermata Allenamenti) e tenere SOLO il livello di attivita del profilo, che e gia la base del calcolo: TDEE = BMR x fattore (1,20 / 1,375 / 1,55 / 1,725 / 1,90). Un solo target giornaliero, uguale per tutti i giorni.
 
 ## Principi
-1. Nessun DROP di tabelle Room: le tabelle workouts e daily_activity_checkins restano inerti (nessuna perdita di dati reali, backup vecchi importabili, nessuna migrazione 19->20).
+1. [SUPERATO dalla decisione D4] Nessun DROP di tabelle Room. Con D4 le tabelle workouts e daily_activity_checkins sono state eliminate con MIGRATION_19_20 (verificata su device il 13/11/2026); i backup vecchi restano importabili ignorandole.
 2. Prima si toglie la logica, poi la UI, poi prompt/documenti, poi export. Tranche sequenziali (toccano gli stessi file), max 10 file di produzione, test prima del fix, gate completo, installazione in-place.
 3. Dati utente: profili Luca (programma Lun/Mer/Ven/Dom 90 min, livello 'Moderatamente attivo') e Mamma (sedentaria) non vanno perduti ne alterati senza avviso.
 

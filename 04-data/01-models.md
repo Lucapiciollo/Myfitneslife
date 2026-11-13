@@ -7,8 +7,8 @@
 - BiaMeasurement
 - BiaMeasurementConditions
 - BodyMeasurement
-- WorkoutEntry (DEPRECATO dal 13/11/2026: tabella `workouts` da eliminare con la migrazione 19->20; l'export v3 non la include; i backup v1/v2 restano importabili ignorandola)
-- DailyActivityCheckIn (DEPRECATO dal 13/11/2026: tabella `daily_activity_checkins`, stessa sorte di WorkoutEntry)
+- WorkoutEntry (DEPRECATO dal 13/11/2026: tabella `workouts` eliminata con la migrazione 19->20 (Room v20); l'export v3 non la include; i backup v1/v2 restano importabili ignorandola)
+- DailyActivityCheckIn (DEPRECATO dal 13/11/2026: tabella `daily_activity_checkins`, eliminata con la stessa migrazione)
 
 ## Alimentazione
 - NutritionTarget
