@@ -54,7 +54,6 @@ class PersonalResponseService(
                 plans = snapshots,
                 planVersionReasons = versionReasons,
                 cheats = cheats.all(profileId).first(),
-                workouts = workouts.all(profileId).first(),
                 bia = bia.all(profileId).first(),
                 bodyMeasurements = bodyMeasurements.all(profileId).first(),
                 nowEpochMillis = nowEpochMillis,

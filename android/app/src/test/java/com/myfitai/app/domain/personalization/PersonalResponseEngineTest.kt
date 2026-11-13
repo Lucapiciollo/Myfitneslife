@@ -3,7 +3,6 @@ package com.myfitai.app.domain.personalization
 import com.myfitai.app.data.local.entity.BiaMeasurementEntity
 import com.myfitai.app.data.local.entity.BodyMeasurementEntity
 import com.myfitai.app.data.local.entity.CheatEntryEntity
-import com.myfitai.app.data.local.entity.WorkoutEntity
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -19,7 +18,6 @@ class PersonalResponseEngineTest {
             PersonalResponseEngine.Input(
                 plans = emptyList(),
                 cheats = listOf(cheat(1, now - day(1))),
-                workouts = listOf(workout(1, now - day(1))),
                 bia = emptyList(),
                 bodyMeasurements = emptyList(),
                 nowEpochMillis = now,
@@ -42,11 +40,6 @@ class PersonalResponseEngineTest {
                     cheat(2, now - day(6), 450),
                     cheat(3, now - day(2), 250),
                 ),
-                workouts = listOf(
-                    workout(1, now - day(8), "Pesi", 60),
-                    workout(2, now - day(5), "Pesi", 55),
-                    workout(3, now - day(1), "Cardio", 40),
-                ),
                 bia = listOf(
                     bia(1, now - day(20), weight = 80f, fat = 18f, muscle = 61f),
                     bia(2, now - day(1), weight = 79f, fat = 17f, muscle = 61.5f),
@@ -60,10 +53,9 @@ class PersonalResponseEngineTest {
         )
 
         assertEquals(3, summary.cheatCount)
-        assertEquals(3, summary.workoutCount)
         assertEquals(3, summary.planVersions)
         assertTrue(summary.patterns.any { it.code == "RECURRENT_DEVIATIONS" })
-        assertTrue(summary.patterns.any { it.code == "TRAINING_ROUTINE" })
+        assertTrue(summary.patterns.none { it.code == "TRAINING_ROUTINE" })
         assertTrue(summary.patterns.any { it.code == "REPEATED_PLAN_ADAPTATION" })
         assertTrue(summary.patterns.any { it.code == "SIMULTANEOUS_BODY_TRENDS" })
         assertEquals(-1.0, summary.weightDeltaKg!!, 0.001)
@@ -75,6 +67,10 @@ class PersonalResponseEngineTest {
         assertTrue(context.contains("never causal"))
         assertTrue(context.contains("Do not alter local numerical targets"))
         assertFalse(context.contains("caused by", ignoreCase = true))
+        // The summary carries no workout/training figure: PH = lookback;weeks;versions;cheats.
+        assertEquals("PH:56;0;3;3", context.lines().first())
+        assertFalse(context.contains("TRAINING", ignoreCase = true))
+        assertFalse(context.contains("workout", ignoreCase = true))
     }
 
     @Test
@@ -84,8 +80,6 @@ class PersonalResponseEngineTest {
             planWeeks = 8,
             planVersions = 12,
             cheatCount = 5,
-            workoutCount = 20,
-            restDayCount = 3,
             weightDeltaKg = -1.0,
             bodyFatDeltaPoints = -0.5,
             muscleMassDeltaKg = 0.4,
@@ -118,17 +112,6 @@ class PersonalResponseEngineTest {
         estimatedCarbsG = null,
         estimatedFatG = null,
         planVersionId = null,
-        notes = null,
-    )
-
-    private fun workout(id: Long, time: Long, type: String = "Pesi", duration: Int = 60) = WorkoutEntity(
-        id = id,
-        profileId = 1,
-        startedAtEpochMillis = time,
-        type = type,
-        title = type,
-        durationMinutes = duration,
-        isRestDay = false,
         notes = null,
     )
 

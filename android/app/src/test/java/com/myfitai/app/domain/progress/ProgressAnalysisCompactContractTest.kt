@@ -19,4 +19,19 @@ class ProgressAnalysisCompactContractTest {
     fun rejectsUnknownClassificationCode() {
         ProgressAnalysisCompactContract.parse("""{"data":"PA1\nC|ZZ|H\nS|Sintesi valida\nV|1|ok"}""")
     }
+
+    @Test
+    fun savedAnalysesWithTheLegacyTrainingPatternRemainReadable() {
+        val result = ProgressAnalysisCompactContract.parse("""{"data":"PA1\nC|ST|M\nP|TR|X|L\nS|Dati stabili\nV|1|ok"}""")
+        assertEquals(ProgressAnalysisCompactContract.PatternCode.TRAINING, result.patterns.single().code)
+    }
+
+    @Test
+    fun promptNoLongerOffersTrainingOrWorkoutInputs() {
+        val prompt = ProgressAnalysisService.SYSTEM_PROMPT
+        assertTrue(!prompt.contains("TR training"))
+        assertTrue(!prompt.contains("workout", ignoreCase = true))
+        assertTrue(!ProgressAnalysisCompactContract.PROTOCOL.contains("_TR_"))
+        assertTrue(prompt.contains("A=registeredDeviations|windowDays"))
+    }
 }

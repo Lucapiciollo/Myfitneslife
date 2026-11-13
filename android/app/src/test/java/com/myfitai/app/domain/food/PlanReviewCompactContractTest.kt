@@ -31,6 +31,32 @@ class PlanReviewCompactContractTest {
         assertEquals(PlanReviewCompactContract.IssueCode.PROTEIN_DISTRIBUTION, result.issues.single().code)
     }
 
+    @Test
+    fun savedReviewsWithLegacyTrainingCodesRemainReadable() {
+        val result = PlanReviewCompactContract.parse(
+            """{"data":"PR1\nS|A|88\nI|PW|W|1|SNACK\nI|TC|I|-|-"}"""
+        )
+
+        assertEquals(
+            listOf(PlanReviewCompactContract.IssueCode.PREWORKOUT_LOAD, PlanReviewCompactContract.IssueCode.TRAINING_COHERENCE),
+            result.issues.map { it.code },
+        )
+        assertTrue(result.accepted)
+    }
+
+    @Test
+    fun reviewPromptNoLongerMentionsWorkouts() {
+        val prompt = PlanReviewService.SYSTEM_PROMPT
+        listOf("workout", "training").forEach {
+            assertFalse("prompt must not mention '$it'", prompt.contains(it, ignoreCase = true))
+        }
+        listOf("WO|", "PW ", "TC ").forEach {
+            assertFalse("prompt must not mention '$it'", prompt.contains(it))
+        }
+        assertTrue(prompt.contains("BC body-context coherence"))
+        assertTrue(prompt.contains("DC concrete digestive-comfort concern"))
+    }
+
     @Test(expected = IllegalArgumentException::class)
     fun approvedCannotContainBlockingIssue() {
         PlanReviewCompactContract.parse(

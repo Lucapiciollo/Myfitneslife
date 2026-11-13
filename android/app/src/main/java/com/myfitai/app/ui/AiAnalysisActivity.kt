@@ -48,7 +48,7 @@ class AiAnalysisActivity : BaseShellActivity() {
         }
         findViewById<TextView>(R.id.analysisSummaryTitle).text = "Ultimi ${summary.lookbackDays} giorni"
         findViewById<TextView>(R.id.analysisSummaryText).text = buildString {
-            append("Allenamenti: ${summary.workoutCount}; riposi: ${summary.restDayCount}; sgarri registrati: ${summary.cheatCount}.")
+            append("Sgarri registrati: ${summary.cheatCount}.")
             metric(" Peso", summary.weightDeltaKg, "kg")
             metric(" Grasso", summary.bodyFatDeltaPoints, "punti")
             metric(" Massa muscolare", summary.muscleMassDeltaKg, "kg")

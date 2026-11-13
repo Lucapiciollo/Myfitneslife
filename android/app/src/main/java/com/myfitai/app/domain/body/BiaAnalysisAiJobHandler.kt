@@ -116,7 +116,6 @@ class BiaAnalysisAiJobHandler(
             today = today(),
             report = report,
             bodyHistory = body.all(profileId).first(),
-            workoutHistory = workouts.all(profileId).first(),
             planDays = planDays,
             calculation = calculation,
         )

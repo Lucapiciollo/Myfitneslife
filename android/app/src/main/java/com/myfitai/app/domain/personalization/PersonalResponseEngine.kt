@@ -3,7 +3,6 @@ package com.myfitai.app.domain.personalization
 import com.myfitai.app.data.local.entity.BiaMeasurementEntity
 import com.myfitai.app.data.local.entity.BodyMeasurementEntity
 import com.myfitai.app.data.local.entity.CheatEntryEntity
-import com.myfitai.app.data.local.entity.WorkoutEntity
 import com.myfitai.app.domain.food.FoodPlanSnapshot
 import kotlin.math.roundToInt
 
@@ -13,7 +12,6 @@ object PersonalResponseEngine {
         val plans: List<FoodPlanSnapshot>,
         val planVersionReasons: List<String?> = emptyList(),
         val cheats: List<CheatEntryEntity>,
-        val workouts: List<WorkoutEntity>,
         val bia: List<BiaMeasurementEntity>,
         val bodyMeasurements: List<BodyMeasurementEntity>,
         val nowEpochMillis: Long,
@@ -27,8 +25,6 @@ object PersonalResponseEngine {
         val planWeeks: Int,
         val planVersions: Int,
         val cheatCount: Int,
-        val workoutCount: Int,
-        val restDayCount: Int,
         val weightDeltaKg: Double?,
         val bodyFatDeltaPoints: Double?,
         val muscleMassDeltaKg: Double?,
@@ -38,7 +34,7 @@ object PersonalResponseEngine {
         fun toPromptContext(maxChars: Int = 900): String {
             val text = buildString {
                 append("PH:").append(lookbackDays).append(';').append(planWeeks).append(';').append(planVersions)
-                    .append(';').append(cheatCount).append(';').append(workoutCount).append(';').append(restDayCount).append('\n')
+                    .append(';').append(cheatCount).append('\n')
                 append("PD:").append(weightDeltaKg.formatOrNA()).append(';').append(bodyFatDeltaPoints.formatOrNA())
                     .append(';').append(muscleMassDeltaKg.formatOrNA()).append(';').append(waistDeltaCm.formatOrNA())
                 patterns.forEach { append("\nPP:").append(it.code).append(';').append(it.evidenceCount).append(';').append(it.text.replace('\n', ' ').take(140)) }
@@ -52,7 +48,6 @@ object PersonalResponseEngine {
         require(input.lookbackDays in 7..365)
         val from = input.nowEpochMillis - input.lookbackDays * DAY_MS
         val recentCheats = input.cheats.filter { it.occurredAtEpochMillis in from..input.nowEpochMillis }
-        val recentWorkouts = input.workouts.filter { it.startedAtEpochMillis in from..input.nowEpochMillis }
         val recentBia = input.bia.filter { it.measuredAtEpochMillis in from..input.nowEpochMillis }
             .sortedWith(compareBy<BiaMeasurementEntity> { it.measuredAtEpochMillis }.thenBy { it.id })
         val recentBody = input.bodyMeasurements.filter { it.measuredAtEpochMillis in from..input.nowEpochMillis }
@@ -64,7 +59,6 @@ object PersonalResponseEngine {
 
         val patterns = buildList {
             deviationPattern(recentCheats)?.let(::add)
-            workoutPattern(recentWorkouts)?.let(::add)
             adaptationPattern(input.planVersionReasons)?.let(::add)
             simultaneousTrendPattern(recentBia, recentBody)?.let(::add)
         }
@@ -74,8 +68,6 @@ object PersonalResponseEngine {
             planWeeks = plans.map { it.weekStartEpochDay }.distinct().size,
             planVersions = input.planVersionReasons.size,
             cheatCount = recentCheats.size,
-            workoutCount = recentWorkouts.count { !it.isRestDay },
-            restDayCount = recentWorkouts.count { it.isRestDay },
             weightDeltaKg = delta(recentBia.mapNotNull { it.weightKg?.toDouble() }),
             bodyFatDeltaPoints = delta(recentBia.mapNotNull { it.bodyFatPercent?.toDouble() }),
             muscleMassDeltaKg = delta(recentBia.mapNotNull { it.muscleMassKg?.toDouble() }),
@@ -90,18 +82,6 @@ object PersonalResponseEngine {
         return Pattern("RECURRENT_DEVIATIONS", cheats.size, buildString {
             append("deviazioni=").append(cheats.size)
             if (avgKcal != null) append(";avgKcal≈").append(avgKcal)
-        })
-    }
-
-    private fun workoutPattern(workouts: List<WorkoutEntity>): Pattern? {
-        val sessions = workouts.filter { !it.isRestDay }
-        if (sessions.size < 3) return null
-        val mostFrequent = sessions.groupingBy { it.type.trim().ifBlank { "Altro" } }.eachCount().maxByOrNull { it.value }
-        val averageDuration = sessions.mapNotNull { it.durationMinutes }.filter { it > 0 }.takeIf { it.size >= 2 }?.average()?.roundToInt()
-        return Pattern("TRAINING_ROUTINE", sessions.size, buildString {
-            append("sessions=").append(sessions.size)
-            mostFrequent?.let { append(";type=").append(it.key).append(':').append(it.value) }
-            averageDuration?.let { append(";avgMin=").append(it) }
         })
     }
 

@@ -7,7 +7,7 @@ object ProgressAnalysisCompactContract {
     const val SCHEMA_NAME = "myfitai_progress_analysis_pipe_v1"
     const val PROTOCOL = """PA1
 C|PR_ST_WL_MR_NT_ID|L_M_H
-P|WT_BF_MU_WA_AB_LM_TR_DV_BC|F_U_X|L_M_H
+P|WT_BF_MU_WA_AB_LM_DV_BC|F_U_X|L_M_H
 S|summary
 V|1_or_0|notes"""
 
@@ -23,6 +23,7 @@ V|1_or_0|notes"""
     }
 
     enum class Confidence { LOW, MEDIUM, HIGH }
+    /** TRAINING is legacy: no longer proposed (protocol/prompt), kept so saved analyses stay readable. */
     enum class PatternCode { WEIGHT, BODY_FAT, MUSCLE, WAIST, ABDOMEN, LIMBS, TRAINING, DEVIATIONS, BODY_COHERENCE }
     enum class Direction { FAVORABLE, UNFAVORABLE, UNCERTAIN }
 

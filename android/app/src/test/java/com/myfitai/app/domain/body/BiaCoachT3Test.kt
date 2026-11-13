@@ -356,7 +356,7 @@ class BiaCoachT3Test {
     )
 
     private fun buildCoachContext(all: List<BiaMeasurementEntity>) = BiaAnalysisReport.coachContext(
-        profile = profile(), today = today, report = BiaAnalysisReport.build(all)!!, bodyHistory = emptyList(), workoutHistory = emptyList(),
+        profile = profile(), today = today, report = BiaAnalysisReport.build(all)!!, bodyHistory = emptyList(),
         planDays = emptyList(), calculation = calculation,
     )
 
@@ -370,6 +370,7 @@ class BiaCoachT3Test {
         assertEquals(1, prompt.lines().count { it.startsWith("TARGET_") })
         assertTrue(!prompt.contains("TARGET_OPERATIVO_OGGI_KCAL"))
         assertTrue(!prompt.contains("tipo_giorno"))
+        assertTrue(!prompt.contains("ALLENAMENTI"))
         assertTrue(prompt.contains("REGOLA_TARGET:"))
         // The old unlabelled lines are gone: a bare `target=` would be ambiguous.
         assertTrue(!prompt.contains("CALORIE_E_MACRO"))
@@ -381,7 +382,7 @@ class BiaCoachT3Test {
     fun context_withoutACalculationTellsTheModelTheTargetIsUnavailable() {
         val prompt = BiaAnalysisReport.coachContext(
             profile = profile(), today = today, report = BiaAnalysisReport.build(listOf(reading(1, 0, 68f, 34f, 23.1f)))!!,
-            bodyHistory = emptyList(), workoutHistory = emptyList(), planDays = emptyList(), calculation = null,
+            bodyHistory = emptyList(), planDays = emptyList(), calculation = null,
         ).prompt
 
         assertTrue(line(prompt, "TARGET_ABITUALE_KCAL").startsWith("TARGET_ABITUALE_KCAL:?"))

@@ -76,7 +76,6 @@ class WeeklyReviewActivity : BaseShellActivity() {
         val noPlan = metrics?.hasPlan == false
         findViewById<TextView>(R.id.adherenceValue).text = if (noPlan) "Nessun piano" else metrics?.adherencePercent?.let { "$it%" } ?: "—"
         findViewById<TextView>(R.id.cheatsValue).text = if (noPlan) "Nessun piano" else metrics?.cheatCount?.toString() ?: "—"
-        findViewById<TextView>(R.id.workoutsValue).text = if (noPlan) "Nessun piano" else metrics?.let { "${it.workoutCount}" } ?: "—"
         findViewById<TextView>(R.id.trackingCoverageText).text = when {
             metrics == null -> "Qui vedi quanti pasti del piano sono stati segnati come consumati."
             metrics.trackingCoveragePercent == null -> "Nessun pasto previsto: non è possibile calcolare il dato."

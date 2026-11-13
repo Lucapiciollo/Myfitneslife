@@ -58,7 +58,6 @@ class ProgressAnalysisService(
         val zone = time.zoneId
         val to = time.nowEpochMillis()
         val from = to - java.util.concurrent.TimeUnit.DAYS.toMillis(windowDays.toLong())
-        val periodWorkouts = workouts.between(profileId, from, to).first()
         val periodCheats = cheats.between(profileId, from, to).first()
 
         val request = AiStructuredRequest(
@@ -69,8 +68,6 @@ class ProgressAnalysisService(
                 userContext = AiUserContext.profileLine(profile, time.today(), snapshot.latestWeightKg),
                 calculationContext = AiUserContext.calculationLine(snapshot.calculation),
                 snapshot = snapshot,
-                workoutCount = periodWorkouts.count { !it.isRestDay },
-                restCount = periodWorkouts.count { it.isRestDay },
                 cheatCount = periodCheats.size,
                 windowDays = windowDays,
             ),
@@ -103,8 +100,6 @@ class ProgressAnalysisService(
         userContext: String,
         calculationContext: String,
         snapshot: ProfileCalculationService.Snapshot,
-        workoutCount: Int,
-        restCount: Int,
         cheatCount: Int,
         windowDays: Int,
     ): String = buildString {
@@ -120,7 +115,7 @@ class ProgressAnalysisService(
         appendLine("BM0:${bodyValues(bm) { it.baseline?.toDouble() }}")
         appendLine("BM:${bodyValues(bm) { it.current?.toDouble() }}")
         appendLine("BMT:${bodyValues(bm) { it.recentTrend.delta }}")
-        appendLine("A:$workoutCount|$restCount|$cheatCount|$windowDays")
+        appendLine("A:$cheatCount|$windowDays")
         appendLine("RS:${snapshot.recompositionState.name}")
     }
 
@@ -145,8 +140,8 @@ class ProgressAnalysisService(
 MyFitAI ProgressAnalysisAgent. Interpret only supplied historical signals; never calculate or change calorie/macro targets and never generate a diet. Output ONLY the compact protocol below in the JSON data envelope.
 ${ProgressAnalysisCompactContract.PROTOCOL}
 ${AiUserContext.INPUT_DESCRIPTION}
-Input: P=goal|activity. B0/B/BT order weightKg|bodyFatPct|muscleMassKg|skeletalMuscleKg|bodyWaterPct|visceralFat and means baseline/current/recent trend delta. BIA_ALL order bmrKcal|fatMassKg|leanMassKg|bodyWaterKg|subcutaneousFatPct|boneMassKg|proteinPct|proteinKg|bodyAgeYears|bmi. BM0/BM/BMT order chest|waist|abdomen|shoulders|glutes|hips|armLeft|armRight|thighLeft|thighRight|calfLeft|calfRight. A=workouts|restDays|registeredDeviations|windowDays. `?`=unavailable. RS is the local recomposition classification and is context, not proof.
-Classify from multiple coherent signals, not weight alone. PR=positive recomposition, ST=stable, WL=weight loss without clear muscle-risk signal, MR=weight loss with possible muscle-risk signal, NT=negative trend, ID=insufficient/inconsistent data. P codes: WT weight, BF body fat, MU muscle, WA waist, AB abdomen, LM limb measures, TR training, DV registered deviations, BC cross-signal body coherence. Direction F/U/X=favorable/unfavorable/uncertain. Confidence L/M/H.
+Input: P=goal|activity. B0/B/BT order weightKg|bodyFatPct|muscleMassKg|skeletalMuscleKg|bodyWaterPct|visceralFat and means baseline/current/recent trend delta. BIA_ALL order bmrKcal|fatMassKg|leanMassKg|bodyWaterKg|subcutaneousFatPct|boneMassKg|proteinPct|proteinKg|bodyAgeYears|bmi. BM0/BM/BMT order chest|waist|abdomen|shoulders|glutes|hips|armLeft|armRight|thighLeft|thighRight|calfLeft|calfRight. A=registeredDeviations|windowDays. `?`=unavailable. RS is the local recomposition classification and is context, not proof.
+Classify from multiple coherent signals, not weight alone. PR=positive recomposition, ST=stable, WL=weight loss without clear muscle-risk signal, MR=weight loss with possible muscle-risk signal, NT=negative trend, ID=insufficient/inconsistent data. P codes: WT weight, BF body fat, MU muscle, WA waist, AB abdomen, LM limb measures, DV registered deviations, BC cross-signal body coherence. Direction F/U/X=favorable/unfavorable/uncertain. Confidence L/M/H.
 BIA and circumferences are estimates/observations: distinguish association from causality, never diagnose disease/dehydration/edema/muscle loss, and lower confidence when signals conflict. Registered deviations are not proof of total adherence or intake. ${UnsupportedClaimGuard.PROMPT_SAFETY_RULES} Do not infer consumption from planned meals. Max 6 P records. S <=18 words, factual and useful. V=1 unless the supplied data are internally unusable; notes <=8 words. No markdown, no text outside records.
 """.trimIndent()
     }

@@ -15,14 +15,6 @@ import java.util.Locale
 class PlanReviewService(
     private val aiRuntime: AiRuntimeGateway,
 ) {
-    data class WorkoutSignal(
-        val dayOffset: Int,
-        val timeMinutes: Int,
-        val type: String,
-        val durationMinutes: Int,
-        val isRestDay: Boolean,
-    )
-
     data class Context(
         val monday: LocalDate,
         val targets: NutritionBusinessValidator.Targets,
@@ -31,9 +23,7 @@ class PlanReviewService(
         val wakeTimeMinutes: Int?,
         val sleepTimeMinutes: Int?,
         val dietaryPreferences: String?,
-        val sportsMode: SportsNutritionClassifier.Mode,
         val snapshot: ProfileCalculationService.Snapshot,
-        val workouts: List<WorkoutSignal>,
         val userContext: String = "",
         val calculationContext: String = "",
     )
@@ -70,13 +60,10 @@ class PlanReviewService(
         if (context.calculationContext.isNotBlank()) appendLine("LC:${context.calculationContext.replace('\n', ' ').replace('\r', ' ')}")
         appendLine("W|${context.monday.toEpochDay()}")
         appendLine("T|${context.targets.kcal.toInt()}|${f(context.targets.proteinG)}|${f(context.targets.carbsG)}|${f(context.targets.fatG)}")
-        appendLine("P|${c(context.goal)}|${c(context.activityLevel)}|${context.wakeTimeMinutes ?: "-"}|${context.sleepTimeMinutes ?: "-"}|${context.sportsMode.name}")
+        appendLine("P|${c(context.goal)}|${c(context.activityLevel)}|${context.wakeTimeMinutes ?: "-"}|${context.sleepTimeMinutes ?: "-"}")
         appendLine("DP|${c(context.dietaryPreferences)}")
         val s = context.snapshot
         appendLine("BC|${s.recompositionState.name}|${f(s.weightTrend.delta)}|${f(s.bodyFatTrend.delta)}|${f(s.muscleMassTrend.delta)}|${f(s.bodyMetrics.waist.recentTrend.delta)}|${f(s.bodyMetrics.abdomen.recentTrend.delta)}")
-        context.workouts.sortedWith(compareBy<WorkoutSignal> { it.dayOffset }.thenBy { it.timeMinutes }).forEach { w ->
-            appendLine("WO|${w.dayOffset}|${w.timeMinutes}|${c(w.type)}|${w.durationMinutes}|${if (w.isRestDay) 1 else 0}")
-        }
         plan.days.sortedBy { it.dateEpochDay }.forEach { day ->
             val offset = (day.dateEpochDay - context.monday.toEpochDay()).toInt()
             appendLine("D|$offset|${day.totalKcal}|${f(day.proteinG)}|${f(day.carbsG)}|${f(day.fatG)}")
@@ -105,13 +92,13 @@ class PlanReviewService(
     private fun f(value: Float?): String = value?.let { String.format(Locale.US, "%.1f", it) } ?: "-"
 
     companion object {
-        private val SYSTEM_PROMPT = """
-Independent MyFitAI nutrition-plan quality reviewer. The app already validated hard structure, arithmetic, daily totals, target tolerance and ingredient hard constraints; DO NOT redo arithmetic, recalculate targets, change deficit/macros, or generate a replacement plan. Review only qualitative quality from the compact input: meal timing vs wake/sleep/workouts, protein/macro distribution, genuine weekly variety from ingredient sets, cautious digestive load, training/rest coherence, fruit/vegetable variety, and consistency with BC body trends. BC is observational only: no diagnosis and no causal claims. Do not reject solely for pizza/sushi/gelato when compatible with the plan.
+        internal val SYSTEM_PROMPT = """
+Independent MyFitAI nutrition-plan quality reviewer. The app already validated hard structure, arithmetic, daily totals, target tolerance and ingredient hard constraints; DO NOT redo arithmetic, recalculate targets, change deficit/macros, or generate a replacement plan. Review only qualitative quality from the compact input: meal timing vs wake/sleep, protein/macro distribution, genuine weekly variety from ingredient sets, cautious digestive load, fruit/vegetable variety, and consistency with BC body trends. BC is observational only: no diagnosis and no causal claims. Do not reject solely for pizza/sushi/gelato when compatible with the plan.
 ${AiUserContext.INPUT_DESCRIPTION}
 DP format is A=allergies;I=intolerances;E=excludedFoods;D=dislikedFoods;P=preferredFoods;S=dietStyle;N=free-text food preferences and requirements. A/I/E/S are hard constraints already enforced locally. D/P are soft preferences. N is user-authored planning input: evaluate whether concrete requests in it, including frequency goals such as a requested number of pizzas or gelati per week, are reasonably reflected in the plan. Do not treat a request as a reason to reject a plan when it is compatible with the authoritative daily targets, but report a material omission as a review issue when the request could have been satisfied. Never ask the review agent to change calories or macros.
 Output ONLY JSON envelope whose data follows:
 ${PlanReviewCompactContract.PROTOCOL}
-Codes: PD protein distribution; MT meal timing; PW excessive pre-workout fat/fiber/volume; WV weak weekly variety; DM substantially duplicated meal; FC declared food constraint; DC concrete digestive-comfort concern; TC training/rest coherence; BC body-context coherence; FV fruit/vegetable variety. Severity I/W never blocks; M/C blocks. S=A only with no M/C. S=R requires at least one M/C. S=N only when essential review context is missing. Keep issues minimal: report only actionable findings; no prose.
+Codes: PD protein distribution; MT meal timing; WV weak weekly variety; DM substantially duplicated meal; FC declared food constraint; DC concrete digestive-comfort concern; BC body-context coherence; FV fruit/vegetable variety. Severity I/W never blocks; M/C blocks. S=A only with no M/C. S=R requires at least one M/C. S=N only when essential review context is missing. Keep issues minimal: report only actionable findings; no prose.
 """.trimIndent()
     }
 }
