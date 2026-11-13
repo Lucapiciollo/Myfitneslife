@@ -390,6 +390,13 @@
     <string name="food_target_source_theoretical">nessun piano per questo giorno</string>
     <string name="food_target_source_plan_week">target settimanale del piano</string>
     <string name="food_target_description">%1$s: %2$s, proteine %3$s, target teorico %4$s</string>
+    <string name="home_plan_update_title">Il piano alimentare non è aggiornato</string>
+    <string name="home_plan_update_message">Hai cambiato profilo o livello di attività: il target è quello del piano precedente. Rigenera il piano per aggiornarlo.</string>
+    <string name="home_plan_update_action">Rigenera alimentazione</string>
+    <string name="home_mode_plan_stale">piano da aggiornare</string>
+    <string name="target_source_plan_stale">Target del piano precedente: rigenera il piano per aggiornarlo</string>
+    <string name="target_source_plan_stale_theoretical">Target del piano precedente: i nuovi dati danno %1$s</string>
+    <string name="home_tdee_percent_plan_stale">Il target è quello del piano precedente, non ancora aggiornato ai nuovi dati: rigenera il piano per ricalcolarlo.</string>
 
     <!-- K4: BiaActivity e flusso BIA -->
     <string name="bia_k4_history_card_description">Rilevazione BIA del %1$s. %2$s.</string>

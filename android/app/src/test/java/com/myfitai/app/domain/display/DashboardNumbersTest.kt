@@ -19,6 +19,10 @@ import org.junit.Test
 
 class DashboardNumbersTest {
     private val minus = "\u2212"
+    private companion object {
+        const val STALE = "piano da aggiornare"
+        const val UNSET = "Obiettivo non impostato"
+    }
 
     // ---- (7) one formatter, one rounding rule -------------------------------------------------------------
 
@@ -233,6 +237,47 @@ class DashboardNumbersTest {
         val zone = ZoneId.of("Europe/Rome")
         val now = LocalDate.of(2026, 11, 12).atTime(23, 0).atZone(zone).toInstant().toEpochMilli()
         assertEquals(3_600_000L, DayChange.millisUntilNextDay(now, zone))
+    }
+
+    // ---- plan not updated: the target stays the plan's, the screen says so and drops the stale comparison ----
+
+    @Test
+    fun targetModeLineKeepsTheCurrentBehaviourWhenThePlanIsUpToDate() {
+        assertEquals(
+            "Dimagrimento \u00b7 -41% sul consumo",
+            TargetModeLine.text("Dimagrimento", -41, planStale = false, staleLabel = STALE, unsetLabel = UNSET),
+        )
+        assertEquals(
+            "Massa \u00b7 +10% sul consumo",
+            TargetModeLine.text("Massa", 10, planStale = false, staleLabel = STALE, unsetLabel = UNSET),
+        )
+        assertEquals(
+            "Mantenimento \u00b7 in pari col consumo",
+            TargetModeLine.text("Mantenimento", 0, planStale = false, staleLabel = STALE, unsetLabel = UNSET),
+        )
+        assertEquals("Dimagrimento", TargetModeLine.text("Dimagrimento", null, planStale = false, staleLabel = STALE, unsetLabel = UNSET))
+        assertEquals("-12% sul consumo", TargetModeLine.text(null, -12, planStale = false, staleLabel = STALE, unsetLabel = UNSET))
+        assertEquals(UNSET, TargetModeLine.text(null, null, planStale = false, staleLabel = STALE, unsetLabel = UNSET))
+    }
+
+    @Test
+    fun targetModeLineNeverShowsAPercentageWhenThePlanIsStale() {
+        val stale = TargetModeLine.text("Dimagrimento", -41, planStale = true, staleLabel = STALE, unsetLabel = UNSET)
+        assertEquals("Dimagrimento \u00b7 piano da aggiornare", stale)
+        assertFalse(stale.contains("%"))
+        assertFalse(stale.contains("consumo"))
+        assertEquals("Piano da aggiornare", TargetModeLine.text(null, -41, planStale = true, staleLabel = STALE, unsetLabel = UNSET))
+    }
+
+    @Test
+    fun theTargetIsStaleOnlyWhenItComesFromThePlanAndTheUpdateIsPending() {
+        assertTrue(TargetModeLine.isStale(true, DayTargetResolver.Source.PLAN_DAY))
+        assertTrue(TargetModeLine.isStale(true, DayTargetResolver.Source.PLAN_WEEK))
+        // A theoretical target is computed from the current profile: nothing to warn about.
+        assertFalse(TargetModeLine.isStale(true, DayTargetResolver.Source.THEORETICAL))
+        assertFalse(TargetModeLine.isStale(true, DayTargetResolver.Source.NONE))
+        assertFalse(TargetModeLine.isStale(false, DayTargetResolver.Source.PLAN_DAY))
+        assertFalse(TargetModeLine.isStale(false, DayTargetResolver.Source.PLAN_WEEK))
     }
 
     private class FakeTime(var millis: Long, override val zoneId: ZoneId = ZoneId.of("UTC")) : TimeProvider {

@@ -29,6 +29,7 @@ import com.myfitai.app.domain.display.DayTargetResolver
 import com.myfitai.app.domain.display.DisplayNumberFormatter
 import com.myfitai.app.domain.display.MetricDeltaPresenter
 import com.myfitai.app.domain.display.RemainingKcal
+import com.myfitai.app.domain.display.TargetModeLine
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.notifications.ExactAlarmAccess
 import com.myfitai.app.notifications.NotificationPreferences
@@ -87,6 +88,7 @@ class HomeActivity : BaseShellActivity() {
 
     private var currentNextMealId: Long? = null
     private var currentCalories: HomeViewModel.CalorieState? = null
+    private var renderedPlanUpdatePending: Boolean? = null
     private var currentUpcomingMeals: List<HomeViewModel.NextMealState> = emptyList()
     private val motionVisibilityTargets = mutableMapOf<Int, Boolean>()
     private var dashboardMetricPresentations by mutableStateOf(emptyList<DashboardMetricPresentation>())
@@ -96,6 +98,7 @@ class HomeActivity : BaseShellActivity() {
         setContentView(R.layout.activity_home)
         moveBodyOverviewToSecondBlock()
         moveRecoveryToThirdBlock()
+        movePlanUpdateNoticeBelowCalories()
         moveOperationalSectionsToEnd()
         adaptLandscapeContent()
         adaptQuickActions()
@@ -365,6 +368,16 @@ class HomeActivity : BaseShellActivity() {
         parent.addView(recoveryCard, 1.coerceAtMost(parent.childCount))
     }
 
+    /** The "plan not updated" notice sits right under the calorie card whose numbers it qualifies, not at the bottom. */
+    private fun movePlanUpdateNoticeBelowCalories() {
+        val bodyCard = findViewById<View>(R.id.bodyOverviewCard)
+        val notice = findViewById<View>(R.id.planUpdateNoticeCard)
+        val parent = bodyCard.parent as? ViewGroup ?: return
+        if (notice.parent !== parent) return
+        parent.removeView(notice)
+        parent.addView(notice, parent.indexOfChild(bodyCard) + 1)
+    }
+
     override fun onResume() {
         super.onResume()
         renderPlanUpdateNotice()
@@ -374,10 +387,18 @@ class HomeActivity : BaseShellActivity() {
         if (Build.VERSION.SDK_INT < 33 || NotificationPreferences(this).permissionPrompted) offerExactAlarmAccessOnce()
     }
 
+    private fun isPlanUpdatePending(): Boolean {
+        val profileId = data.activeProfileStore.currentIdOrNull() ?: return false
+        return data.nutritionPlanUpdatePreferences.isPending(profileId)
+    }
+
     private fun renderPlanUpdateNotice() {
-        val profileId = data.activeProfileStore.currentIdOrNull()
-        findViewById<android.view.View>(R.id.planUpdateNoticeCard)?.let { card ->
-            revealState(card, profileId != null && data.nutritionPlanUpdatePreferences.isPending(profileId))
+        val pending = isPlanUpdatePending()
+        findViewById<android.view.View>(R.id.planUpdateNoticeCard)?.let { card -> revealState(card, pending) }
+        // The flag is changed by other screens: when it differs from what the calorie card last drew, draw it again.
+        if (pending != renderedPlanUpdatePending) {
+            renderedPlanUpdatePending = pending
+            currentCalories?.let(::renderCalories)
         }
     }
 
@@ -604,6 +625,9 @@ class HomeActivity : BaseShellActivity() {
 
     private fun renderCalories(calories: HomeViewModel.CalorieState) {
         currentCalories = calories
+        val planPending = isPlanUpdatePending()
+        renderedPlanUpdatePending = planPending
+        val planStale = TargetModeLine.isStale(planPending, calories.targetSource)
         fun kcal(value: Int?) = value?.let { DisplayNumberFormatter.kcal(it) } ?: "-"
         findViewById<TextView>(R.id.caloriesBmrValue).text = kcal(calories.bmr)
         findViewById<TextView>(R.id.caloriesBiaBmrValue).text = kcal(calories.biaBmr)
@@ -692,38 +716,38 @@ class HomeActivity : BaseShellActivity() {
             append("BMR riportato dalla BIA: ${kcal(calories.biaBmr)}. ")
             append("TDEE ${kcal(calories.tdee)}. ")
             append("Target ${kcal(calories.target)}. ")
+            if (planStale) append("${getString(R.string.target_source_plan_stale)}. ")
             append("Consumate ${calories.consumedKcal?.let { kcal(it) } ?: "nessuna registrazione"}. ")
             append("Proteine consumate ${calories.consumedProteinG?.let { NutritionEstimateFormatter.formatEstimatedMacro(it, "g") } ?: "non disponibili"}.")
         }
         // One target for the day: the plan's (adaptation and recovery included) when it exists, otherwise the
         // theoretical one, and the line always says which of the two is on screen.
-        val targetLine = when (calories.targetSource) {
-            DayTargetResolver.Source.PLAN_DAY ->
+        // The target is still the old plan's while the update is pending: say so and compare nothing with the new TDEE.
+        val targetLine = when {
+            planStale ->
+                if (calories.theoreticalTarget != null && calories.theoreticalTarget != calories.target) {
+                    getString(R.string.target_source_plan_stale_theoretical, kcal(calories.theoreticalTarget))
+                } else {
+                    getString(R.string.target_source_plan_stale)
+                }
+            calories.targetSource == DayTargetResolver.Source.PLAN_DAY ->
                 if (calories.theoreticalTarget != null && calories.theoreticalTarget != calories.target) {
                     getString(R.string.target_source_plan_day_theoretical, kcal(calories.theoreticalTarget))
                 } else {
                     getString(R.string.target_source_plan_day)
                 }
-            DayTargetResolver.Source.THEORETICAL -> getString(R.string.target_source_theoretical)
-            DayTargetResolver.Source.PLAN_WEEK -> getString(R.string.target_source_plan_week)
-            DayTargetResolver.Source.NONE -> getString(R.string.target_source_none)
+            calories.targetSource == DayTargetResolver.Source.THEORETICAL -> getString(R.string.target_source_theoretical)
+            calories.targetSource == DayTargetResolver.Source.PLAN_WEEK -> getString(R.string.target_source_plan_week)
+            else -> getString(R.string.target_source_none)
         }
         findViewById<TextView>(R.id.caloriesTargetSourceText).text = targetLine
-        findViewById<TextView>(R.id.caloriesModeText).apply {
-            val percent = calories.energyPercent?.let { p ->
-                when {
-                    p > 0 -> "+$p% sul consumo"
-                    p < 0 -> "$p% sul consumo"
-                    else -> "in pari col consumo"
-                }
-            }
-            text = when {
-                calories.goalLabel != null && percent != null -> "${calories.goalLabel} · $percent"
-                calories.goalLabel != null -> calories.goalLabel
-                percent != null -> percent
-                else -> "Obiettivo non impostato"
-            }
-        }
+        findViewById<TextView>(R.id.caloriesModeText).text = TargetModeLine.text(
+            goalLabel = calories.goalLabel,
+            energyPercent = calories.energyPercent,
+            planStale = planStale,
+            staleLabel = getString(R.string.home_mode_plan_stale),
+            unsetLabel = "Obiettivo non impostato",
+        )
         listOf(
             R.id.caloriesBmrValue, R.id.caloriesBiaBmrValue, R.id.caloriesTdeeValue, R.id.caloriesTargetValue,
             R.id.caloriesConsumedText, R.id.caloriesConsumedProteinText, R.id.caloriesRemainingText,
@@ -733,13 +757,16 @@ class HomeActivity : BaseShellActivity() {
     private fun showTdeeExplanation() {
         val c = currentCalories
         fun kcal(value: Int?) = value?.let { DisplayNumberFormatter.kcal(it) } ?: "-"
-        val percentLine = c?.energyPercent?.let { p ->
-            when {
-                p > 0 -> "Surplus del +$p% rispetto al consumo, per favorire l'aumento di massa."
-                p < 0 -> "Deficit del $p% rispetto al consumo, per favorire la perdita di grasso."
-                else -> "Target in pari col consumo, per mantenere il peso."
-            }
-        } ?: "Imposta un obiettivo nel profilo per calcolare il target."
+        val percentLine = when {
+            c != null && TargetModeLine.isStale(isPlanUpdatePending(), c.targetSource) -> getString(R.string.home_tdee_percent_plan_stale)
+            else -> c?.energyPercent?.let { p ->
+                when {
+                    p > 0 -> "Surplus del +$p% rispetto al consumo, per favorire l'aumento di massa."
+                    p < 0 -> "Deficit del $p% rispetto al consumo, per favorire la perdita di grasso."
+                    else -> "Target in pari col consumo, per mantenere il peso."
+                }
+            } ?: "Imposta un obiettivo nel profilo per calcolare il target."
+        }
         val message = buildString {
             appendLine("• BMR locale: ${kcal(c?.bmr)}")
             appendLine("  Stima usata dall'app per calcolare TDEE e target.")

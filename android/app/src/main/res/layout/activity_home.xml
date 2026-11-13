@@ -89,6 +89,7 @@
                     android:id="@+id/planUpdateNoticeCard"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_12"
                     android:visibility="gone"
                     app:cardBackgroundColor="@color/surface_warning_soft"
                     app:cardCornerRadius="@dimen/radius_card"
@@ -104,14 +105,14 @@
                             style="@style/Text.MyFitAI.CardTitle"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Il tuo piano alimentare potrebbe essere aggiornato"
+                            android:text="@string/home_plan_update_title"
                             android:textColor="@color/text_primary" />
                         <TextView
                             style="@style/Text.MyFitAI.BodyCompact"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/space_4"
-                            android:text="Hai modificato dati o impostazioni che influenzano le calorie. Apri il piano per rigenerarlo con i nuovi target."
+                            android:text="@string/home_plan_update_message"
                             android:textColor="@color/text_primary" />
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/planUpdateNoticeButton"
@@ -120,7 +121,7 @@
                             android:layout_height="wrap_content"
                             android:layout_gravity="end"
                             android:layout_marginTop="@dimen/space_4"
-                            android:text="Rigenera alimentazione"
+                            android:text="@string/home_plan_update_action"
                             android:textColor="@color/accent_green_dark" />
                     </LinearLayout>
                   </com.google.android.material.card.MaterialCardView>
