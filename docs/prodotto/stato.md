@@ -369,3 +369,7 @@ PIANO UX (utente: 'fai tutti e proviamo alla fine'): ipotesi dichiarate e revers
 - UX1 FERMATO (ses_e2a294480ffeuLQd4Gzj4d7GW8): commit 8645d96 su feat/ux1-home-quickwin, unito in develop. Gate del subagente BUILD SUCCESSFUL 18m39s, 962 test 0 falliti (XML riletti, HomeProgressHintTest eseguito). Non fatto: etichette 1W/1M/3M/1Y (test device), token alpha per secondo pasto (non adatto). Non verificato a schermo: riga recupero compatta, titolo secondo pasto, header +16dp. androidTest HomeMealCardsLayoutDeviceTest e HomeRecoveryExpectationLayoutDeviceTest da eseguire.
 
 - UX2 FERMATO (ses_e2a2910c5ffeTuQ9V3JJ5PubXk): commit a1ae1fe, unito in develop (conflitto solo in strings.xml tra blocchi UX1/UX2, risolto tenendo entrambi, XML valido, 494 stringhe senza duplicati) = fe66896. Gate del subagente BUILD SUCCESSFUL 27m51s, 966 test 0 falliti (XML riletti). Non verificato a schermo: pulsante Genera/Rigenera con stile letto a runtime, spostamento del pulsante tra card vuota e fondo schermata, C/F nel Totale.
+
+| senior-developer | UX3 vocabolario unico (Obiettivo di oggi, TDEE/BMR in italiano, Extra->Sgarro) + audit livello | (vedi esito) | feat/ux3-vocabolario (da develop fe66896) |
+| senior-developer | UX4 registrazione pasto: barra azioni fissa + azione inline con Annulla | (vedi esito) | feat/ux4-registra-pasto (da develop fe66896) |
+Dopo: UX5 Home prima card semplificata + BMR/TDEE fuori da Cibo; poi integrazione, install in-place e prova a schermo (font 1,3x/2x).
