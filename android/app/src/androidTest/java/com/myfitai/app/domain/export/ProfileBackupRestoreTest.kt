@@ -54,8 +54,6 @@ class ProfileBackupRestoreTest {
         assertEquals(1, db.biaMeasurementDao().observeAll(profileId).first().size)
         assertEquals(1, db.bodyMeasurementDao().observeAll(profileId).first().size)
         assertEquals(1, db.cheatEntryDao().observeAll(profileId).first().size)
-        assertTrue(db.workoutDao().observeAll(profileId).first().isEmpty())
-        assertTrue(db.dailyActivityCheckInDao().observeAll(profileId).isEmpty())
     }
 
     @Test
@@ -64,7 +62,6 @@ class ProfileBackupRestoreTest {
         ProfileBackupService(context, db, store).restore(uri)
         val profileId = store.currentIdOrNull()!!
         assertEquals(1, db.biaMeasurementDao().observeAll(profileId).first().size)
-        assertTrue(db.workoutDao().observeAll(profileId).first().isEmpty())
     }
 
     @Test

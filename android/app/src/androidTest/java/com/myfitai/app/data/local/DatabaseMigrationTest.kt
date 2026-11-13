@@ -319,4 +319,46 @@ class DatabaseMigrationTest {
             }
         }
     }
+
+    @Test
+    fun migration19To20_dropsWorkoutsAndCheckinsAndKeepsEveryOtherTable() {
+        helper.createDatabase(MyFitAiDatabase.DATABASE_NAME, 19).apply {
+            execSQL("INSERT INTO user_profile (id, name, createdAtEpochMillis, updatedAtEpochMillis) VALUES (1, 'Luca', 1000, 2000)")
+            execSQL("INSERT INTO bia_measurements (id, profileId, measuredAtEpochMillis, weightKg, fasting, justWokeUp, afterBathroom, noRecentWorkout) VALUES (1, 1, 3000, 80.5, 1, 1, 1, 1)")
+            execSQL("INSERT INTO body_measurements (id, profileId, measuredAtEpochMillis, waistCm, glutesCm) VALUES (1, 1, 4000, 81.5, 97.0)")
+            execSQL("INSERT INTO meal_plans (id, profileId, createdAtEpochMillis, weekStartEpochDay, status) VALUES (1, 1, 5000, 21000, 'ACTIVE')")
+            execSQL("INSERT INTO workouts (id, profileId, startedAtEpochMillis, type, title, durationMinutes, isRestDay) VALUES (1, 1, 6000, 'PESI', 'Allenamento', 45, 0)")
+            execSQL("INSERT INTO daily_activity_checkins (id, profileId, dateEpochDay, status, adjustmentKcal, createdAtEpochMillis, updatedAtEpochMillis) VALUES (1, 1, 21000, 'DONE', 150, 7000, 7000)")
+            close()
+        }
+
+        helper.runMigrationsAndValidate(
+            MyFitAiDatabase.DATABASE_NAME,
+            20,
+            true,
+            DatabaseMigrations.MIGRATION_19_20,
+        ).use { db ->
+            db.query("SELECT name FROM sqlite_master WHERE name IN ('workouts', 'daily_activity_checkins') OR tbl_name IN ('workouts', 'daily_activity_checkins')").use { cursor ->
+                assertEquals(0, cursor.count)
+            }
+            mapOf(
+                "user_profile" to "SELECT name FROM user_profile WHERE id = 1",
+                "bia_measurements" to "SELECT weightKg FROM bia_measurements WHERE id = 1",
+                "body_measurements" to "SELECT waistCm FROM body_measurements WHERE id = 1",
+                "meal_plans" to "SELECT status FROM meal_plans WHERE id = 1",
+            ).forEach { (table, sql) ->
+                db.query(sql).use { cursor ->
+                    assertTrue("$table lost its row", cursor.moveToFirst())
+                }
+            }
+            db.query("SELECT name FROM user_profile WHERE id = 1").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals("Luca", cursor.getString(0))
+            }
+            db.query("SELECT weightKg FROM bia_measurements WHERE id = 1").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(80.5f, cursor.getFloat(0))
+            }
+        }
+    }
 }

@@ -6,7 +6,6 @@ import com.myfitai.app.data.local.entity.CheatEntryEntity
 import com.myfitai.app.data.local.entity.MealPlanEntity
 import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.data.local.entity.WeeklyReviewEntity
-import com.myfitai.app.data.local.entity.WorkoutEntity
 import com.myfitai.app.data.repository.DayDraft
 import com.myfitai.app.data.repository.IngredientDraft
 import com.myfitai.app.data.repository.MealDraft
@@ -29,8 +28,7 @@ object SixMonthHistoryFixture {
         val profile: UserProfileEntity,
         val bia: List<BiaMeasurementEntity>,
         val body: List<BodyMeasurementEntity>,
-        val workouts: List<WorkoutEntity>,
-        val plans: List<PlanFixture>,
+            val plans: List<PlanFixture>,
         val cheats: List<CheatEntryEntity>,
         val reviews: List<WeeklyReviewEntity>,
     )
@@ -102,7 +100,6 @@ object SixMonthHistoryFixture {
             )
         }
 
-        val workouts = generateWorkouts()
         val plans = generatePlans()
         val cheats = generateCheats()
         val reviews = plans.map { plan ->
@@ -115,7 +112,7 @@ object SixMonthHistoryFixture {
                 structuredJson = "{\"fixtureSeed\":$SEED,\"weekStartEpochDay\":${plan.weekStart.toEpochDay()}}",
             )
         }
-        return Dataset(profile, bia, body, workouts, plans, cheats, reviews)
+        return Dataset(profile, bia, body, plans, cheats, reviews)
     }
 
     fun epoch(date: LocalDate, hour: Int = 7): Long = date.atTime(hour, 0).toInstant(ZONE).toEpochMilli()
@@ -123,22 +120,6 @@ object SixMonthHistoryFixture {
     fun modeForWeek(weekStart: LocalDate): LocalCalculationEngine.ActivityLevel =
         if (weekStart.isBefore(START.plusMonths(2))) LocalCalculationEngine.ActivityLevel.SEDENTARY
         else LocalCalculationEngine.ActivityLevel.MODERATE
-
-    private fun generateWorkouts(): List<WorkoutEntity> = buildList {
-        var date = START.with(TemporalAdjusters.nextOrSame(java.time.DayOfWeek.MONDAY))
-        while (!date.isAfter(TODAY)) {
-            val sport = !date.isBefore(START.plusMonths(2))
-            if (sport) {
-                listOf(1, 3, 5, 6).forEach { offset ->
-                    val day = date.plusDays(offset.toLong())
-                    if (!day.isAfter(TODAY)) add(workout(day, "Pesi", false))
-                }
-            } else {
-                add(workout(date.plusDays(2), "Riposo", true))
-            }
-            date = date.plusWeeks(1)
-        }
-    }
 
     private fun generatePlans(): List<PlanFixture> {
         val firstMonday = START.with(TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY))
@@ -211,16 +192,6 @@ object SixMonthHistoryFixture {
             )
         }
     }
-
-    private fun workout(date: LocalDate, title: String, rest: Boolean) = WorkoutEntity(
-        profileId = 1,
-        startedAtEpochMillis = epoch(date, if (rest) 10 else 18),
-        type = if (rest) "REST" else "PESI",
-        title = title,
-        durationMinutes = if (rest) null else 55,
-        isRestDay = rest,
-        notes = "Fixture seed $SEED",
-    )
 
     private fun meal(type: String, title: String, protein: Int, p: Float, c: Float, f: Float, time: Int) = MealDraft(
         type = type,

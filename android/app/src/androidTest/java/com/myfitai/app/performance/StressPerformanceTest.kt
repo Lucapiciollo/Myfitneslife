@@ -9,7 +9,6 @@ import com.myfitai.app.data.local.entity.BiaMeasurementEntity
 import com.myfitai.app.data.local.entity.BodyMeasurementEntity
 import com.myfitai.app.data.local.entity.CheatEntryEntity
 import com.myfitai.app.data.local.entity.UserProfileEntity
-import com.myfitai.app.data.local.entity.WorkoutEntity
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.repository.DayDraft
 import com.myfitai.app.data.repository.IngredientDraft
@@ -70,7 +69,6 @@ class StressPerformanceTest {
 
         timings["bia_history_ms"] = measure { db.biaMeasurementDao().observeAll(profileId).first() }
         timings["body_history_ms"] = measure { db.bodyMeasurementDao().observeAll(profileId).first() }
-        timings["workout_history_ms"] = measure { db.workoutDao().observeAll(profileId).first() }
         timings["plan_roots_ms"] = measure { db.mealPlanDao().observePlans(profileId).first() }
 
         val latestPlan = db.mealPlanDao().observePlans(profileId).first().maxBy { it.weekStartEpochDay }
@@ -92,13 +90,11 @@ class StressPerformanceTest {
 
         assertEquals(48, db.biaMeasurementDao().observeAll(profileId).first().size)
         assertEquals(48, db.bodyMeasurementDao().observeAll(profileId).first().size)
-        assertEquals(200, db.workoutDao().observeAll(profileId).first().size)
         assertEquals(104, db.mealPlanDao().observePlans(profileId).first().size)
         assertEquals(40, db.cheatEntryDao().observeAll(profileId).first().size)
         assertTrue(snapshot.version.days.isNotEmpty())
         assertTrue(shopping.isNotEmpty())
         assertTrue(timings.values.all { it >= 0L })
-        println("STRESS_TIMINGS profile=$profileId data=$timings").also { }
     }
 
     private suspend fun seedHistory() {
@@ -109,7 +105,6 @@ class StressPerformanceTest {
                 db.biaMeasurementDao().insert(BiaMeasurementEntity(profileId = profileId, measuredAtEpochMillis = epoch(date), weightKg = 94f - index * .05f, bodyFatPercent = 22f - index * .03f, visceralFatLevel = 10f, muscleMassKg = 68f + index * .01f, skeletalMuscleKg = 34f, bodyWaterPercent = 55f, bmrKcal = null, fasting = true, justWokeUp = true, afterBathroom = true, noRecentWorkout = true))
                 db.bodyMeasurementDao().insert(BodyMeasurementEntity(profileId = profileId, measuredAtEpochMillis = epoch(date), chestCm = 104f, waistCm = 96f - index * .04f, abdomenCm = 99f, shouldersCm = 49f, glutesCm = 103f, armLeftCm = 35f, armRightCm = 35f, thighLeftCm = 60f, thighRightCm = 60f, calfLeftCm = 39f, calfRightCm = 39f))
             }
-            repeat(200) { index -> db.workoutDao().insert(WorkoutEntity(profileId = profileId, startedAtEpochMillis = epoch(start.plusDays(index.toLong())), type = "PESI", title = "Stress workout $profileIndex-$index", durationMinutes = 45, isRestDay = false)) }
             repeat(40) { index -> db.cheatEntryDao().insert(CheatEntryEntity(profileId = profileId, occurredAtEpochMillis = epoch(start.plusDays(index * 18L), 20), description = "Stress cheat $profileIndex-$index", quantityText = "1", estimatedKcal = 400, estimatedProteinG = 15f, estimatedCarbsG = 45f, estimatedFatG = 12f, planVersionId = null)) }
             repeat(104) { weekIndex ->
                 val week = start.plusWeeks(weekIndex.toLong())

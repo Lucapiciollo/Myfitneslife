@@ -11,7 +11,6 @@ import com.myfitai.app.data.local.entity.CheatEntryEntity
 import com.myfitai.app.data.local.entity.FoodConsumptionEntity
 import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.data.local.entity.WeeklyReviewEntity
-import com.myfitai.app.data.local.entity.WorkoutEntity
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.repository.MealPlanRepository
 import com.myfitai.app.domain.export.ProfileExportService
@@ -64,7 +63,6 @@ class SixMonthHistoryExportTest {
         val profileId = store.currentIdOrNull()!!
         assertEquals(13, db.biaMeasurementDao().observeAll(profileId).first().size)
         assertEquals(13, db.bodyMeasurementDao().observeAll(profileId).first().size)
-        assertTrue(db.workoutDao().observeAll(profileId).first().size > 70)
         assertEquals(18, db.cheatEntryDao().observeAll(profileId).first().size)
         assertEquals(26, db.mealPlanDao().observePlans(profileId).first().size)
         assertEquals(26, db.weeklyReviewDao().observeAll(profileId).first().size)
@@ -192,7 +190,6 @@ class SixMonthHistoryExportTest {
         store.selectProfile(profileId)
         fixture.bia.forEach { db.biaMeasurementDao().insert(it.copy(profileId = profileId)) }
         fixture.body.forEach { db.bodyMeasurementDao().insert(it.copy(profileId = profileId)) }
-        fixture.workouts.forEach { db.workoutDao().insert(it.copy(profileId = profileId)) }
         fixture.cheats.forEach { db.cheatEntryDao().insert(it.copy(profileId = profileId)) }
         fixture.reviews.forEach { db.weeklyReviewDao().upsert(it.copy(profileId = profileId)) }
         val plans = MealPlanRepository(db)
