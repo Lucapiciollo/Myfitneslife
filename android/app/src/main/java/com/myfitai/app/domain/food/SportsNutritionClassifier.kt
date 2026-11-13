@@ -1,22 +1,19 @@
 package com.myfitai.app.domain.food
 
-import com.myfitai.app.data.local.entity.WorkoutEntity
-import java.util.Locale
+import com.myfitai.app.domain.calculation.LocalCalculationEngine
+import com.myfitai.app.domain.calculation.ProfileCalculationMapper
 
-/** Deterministic local classifier: AI never decides whether the profile is sports-oriented. */
+/**
+ * Deterministic local classifier: AI never decides whether the profile is sports-oriented.
+ * Sports mode depends ONLY on the profile's activity level (very/extremely active, stored values included).
+ */
 object SportsNutritionClassifier {
     enum class Mode { NORMAL, SPORT }
 
-    fun classify(activityLevel: String?, workouts: List<WorkoutEntity>): Mode {
-        val normalized = activityLevel.orEmpty().trim().lowercase(Locale.ITALIAN)
-        val trainingSessions = workouts.count { !it.isRestDay }
-        val declaredHighActivity = normalized.contains("molto") || normalized.contains("estremamente")
-        val declaredModerate = normalized.contains("moderatamente")
-
-        return if (
-            declaredHighActivity ||
-            trainingSessions >= 3 ||
-            (declaredModerate && trainingSessions >= 2)
-        ) Mode.SPORT else Mode.NORMAL
+    fun classify(activityLevel: String?): Mode = when (ProfileCalculationMapper.activity(activityLevel)) {
+        LocalCalculationEngine.ActivityLevel.VERY_ACTIVE,
+        LocalCalculationEngine.ActivityLevel.EXTREME,
+        -> Mode.SPORT
+        else -> Mode.NORMAL
     }
 }

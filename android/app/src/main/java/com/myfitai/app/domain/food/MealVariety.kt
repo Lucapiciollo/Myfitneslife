@@ -25,15 +25,12 @@ object MealVariety {
         val repeatedFromRecent: List<String>,
         /** Meals served on two or more days of the new plan. */
         val repeatedInPeriod: List<String>,
-        /** Meals served both on a training day and on a rest day of the new plan. */
-        val trainingSameAsRest: List<String>,
     ) {
-        val hasRepetitions: Boolean get() = repeatedFromRecent.isNotEmpty() || repeatedInPeriod.isNotEmpty() || trainingSameAsRest.isNotEmpty()
+        val hasRepetitions: Boolean get() = repeatedFromRecent.isNotEmpty() || repeatedInPeriod.isNotEmpty()
 
         fun issues(): List<NutritionValidationIssue> = buildList {
             if (repeatedFromRecent.isNotEmpty()) add(issue("VARIETY_REPEATS_RECENT", "Pasti già proposti nelle ultime $MEMORY_WEEKS settimane", repeatedFromRecent))
             if (repeatedInPeriod.isNotEmpty()) add(issue("VARIETY_REPEATS_IN_PLAN", "Pasti ripetuti in più giorni del piano", repeatedInPeriod))
-            if (trainingSameAsRest.isNotEmpty()) add(issue("VARIETY_TRAINING_SAME_AS_REST", "Pasti uguali tra giorni di allenamento e di riposo", trainingSameAsRest))
         }
 
         /** Short Italian text for the user; null when nothing repeats. */
@@ -42,7 +39,6 @@ object MealVariety {
             val parts = buildList {
                 if (repeatedFromRecent.isNotEmpty()) add("${repeatedFromRecent.size} già proposti nelle ultime $MEMORY_WEEKS settimane")
                 if (repeatedInPeriod.isNotEmpty()) add("${repeatedInPeriod.size} ripetuti nel piano")
-                if (trainingSameAsRest.isNotEmpty()) add("${trainingSameAsRest.size} uguali tra allenamento e riposo")
             }
             return "Alcuni pasti si ripetono (${parts.joinToString(", ")}): consentito quando non era evitabile."
         }
@@ -68,28 +64,25 @@ object MealVariety {
 
     fun promptLines(memory: List<Meal>): List<String> = memory.map { "RM:${clean(it.type)}|${clean(it.title)}" }
 
-    fun check(generated: List<DayMeals>, trainingDays: Set<Long>, recent: List<Meal>): Report {
+    fun check(generated: List<DayMeals>, recent: List<Meal>): Report {
         val groups = mutableListOf<Group>()
         recent.forEach { meal ->
             val key = Key.of(meal)
             if (key.titleKey.isNotBlank() && groups.none { it.key.matches(key) }) groups += Group(key, meal, recent = true)
         }
         generated.forEach { day ->
-            val training = day.dateEpochDay in trainingDays
             day.meals.forEach { meal ->
                 val key = Key.of(meal)
                 if (key.titleKey.isBlank()) return@forEach
                 val group = groups.firstOrNull { it.key.matches(key) } ?: Group(key, meal).also { groups += it }
                 if (group.generatedDays.isEmpty()) group.shownTitle = meal.title
                 group.generatedDays += day.dateEpochDay
-                if (training) group.trainingDays += day.dateEpochDay else group.restDays += day.dateEpochDay
             }
         }
         val used = groups.filter { it.generatedDays.isNotEmpty() }
         return Report(
             repeatedFromRecent = used.filter { it.recent }.map { it.shownTitle },
             repeatedInPeriod = used.filter { it.generatedDays.size >= 2 }.map { it.shownTitle },
-            trainingSameAsRest = used.filter { it.trainingDays.isNotEmpty() && it.restDays.isNotEmpty() }.map { it.shownTitle },
         )
     }
 
@@ -97,8 +90,6 @@ object MealVariety {
         /** Title as written in the new plan, so notices quote what the user will see. */
         var shownTitle: String = meal.title
         val generatedDays = mutableSetOf<Long>()
-        val trainingDays = mutableSetOf<Long>()
-        val restDays = mutableSetOf<Long>()
     }
 
     /** Two meals are "the same" when the titles normalise equally or they use the same ingredient set. */

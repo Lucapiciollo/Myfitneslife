@@ -48,10 +48,8 @@ object CalorieRecoveryEngine {
         goal: LocalCalculationEngine.Goal,
         credits: List<Credit>,
         periodWeeks: Int = 1,
-        /** Per-date base targets (e.g. training vs rest days). Dates not listed use [baseTargets]. */
-        dailyBase: Map<LocalDate, NutritionBusinessValidator.Targets> = emptyMap(),
         /**
-         * Safety floor: recovery never pushes a day below min(this value, the day's base target).
+         * Safety floor: recovery never pushes a day below min(this value, the base target).
          * Default = soglia assoluta prudente ([SafetyCalorieFloor]); i chiamanti con BMR/sesso noti passano
          * [SafetyCalorieFloor.minimumKcal]. Non e piu possibile pianificare un recupero senza minimo.
          */
@@ -66,10 +64,9 @@ object CalorieRecoveryEngine {
             .filter { it.kcal > 0 }
             .sortedWith(compareBy<Credit> { it.occurredOn }.thenBy { it.sourceId })
         val availableBefore = validCredits.sumOf { it.kcal }
-        fun baseFor(date: LocalDate) = dailyBase[date] ?: baseTargets
-        // The cap is a share of THAT day's base target and never goes below the safety floor.
+        // The cap is a share of the single base target and never goes below the safety floor.
         fun capFor(date: LocalDate): Int {
-            val base = baseFor(date).kcal
+            val base = baseTargets.kcal
             val byRatio = (base * MAX_DAILY_REDUCTION_RATIO).roundToInt().coerceAtLeast(0)
             val byFloor = (base - minimumKcal).toInt().coerceAtLeast(0)
             return min(byRatio, byFloor)
@@ -110,7 +107,7 @@ object CalorieRecoveryEngine {
 
         val dayPlans = dates.map { date ->
             val recovery = recoveryByDate[date] ?: 0
-            val base = baseFor(date)
+            val base = baseTargets
             val effectiveKcal = (base.kcal - recovery)
                 .coerceAtLeast(base.kcal * (1.0 - MAX_DAILY_REDUCTION_RATIO))
                 .let { value -> maxOf(value, minOf(minimumKcal, base.kcal)) }

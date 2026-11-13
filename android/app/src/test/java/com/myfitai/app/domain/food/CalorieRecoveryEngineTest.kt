@@ -58,28 +58,20 @@ class CalorieRecoveryEngineTest {
     }
 
     @Test
-    fun recovery_capIsASharePerDayOfThatDaysOwnBaseTarget() {
+    fun recovery_capIsTenPercentOfTheSingleBaseTargetOnEveryDay() {
         val monday = LocalDate.of(2026, 9, 14)
-        val trainingBase = NutritionBusinessValidator.Targets(2600.0, 180.0, 330.0, 72.0)
-        val restBase = NutritionBusinessValidator.Targets(2200.0, 180.0, 230.0, 72.0)
-        val bases = (0L until 7L).associate { offset ->
-            monday.plusDays(offset) to if (offset % 2L == 0L) trainingBase else restBase
-        }
 
         val result = CalorieRecoveryEngine.plan(
             monday, monday, base, 90.0, LocalCalculationEngine.Goal.WEIGHT_LOSS,
-            listOf(CalorieRecoveryEngine.Credit(1, monday.minusDays(1), 1500)),
-            dailyBase = bases,
+            listOf(CalorieRecoveryEngine.Credit(1, monday.minusDays(1), 1000)),
         )
 
         result.days.forEach { day ->
-            val dayBase = bases.getValue(day.date)
-            assertTrue("${day.date} recovered=${day.recoveredKcal}", day.recoveredKcal <= (dayBase.kcal * 0.10).toInt())
-            assertEquals(dayBase.kcal - day.recoveredKcal, day.targets.kcal, 1.0)
-            assertEquals(180.0, day.targets.proteinG, 1e-9)
+            assertTrue("${day.date} recovered=${day.recoveredKcal}", day.recoveredKcal <= (base.kcal * 0.10).toInt())
+            assertEquals(base.kcal - day.recoveredKcal, day.targets.kcal, 1.0)
+            assertEquals(base.proteinG, day.targets.proteinG, 1e-9)
         }
-        assertTrue("a day with a larger base absorbs more", result.days.first().recoveredKcal >= result.days[1].recoveredKcal)
-        assertEquals(1500, result.plannedRecoveryKcal)
+        assertEquals(1000, result.plannedRecoveryKcal)
     }
 
     @Test
