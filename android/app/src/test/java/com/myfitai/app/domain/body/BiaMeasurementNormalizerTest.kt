@@ -276,4 +276,162 @@ class BiaMeasurementNormalizerTest {
         assertEquals(null, p.bodyFatPercent)
         assertEquals(null, p.bodyWaterKg)
     }
+
+    // Foto reale Fitdays (K8): i valori in kg non devono mai finire nei campi %, e viceversa.
+    private val fitdaysRealRows = listOf(
+        "Peso|89.5|kg",
+        "Grasso|19.9|%",
+        "Grasso viscerale|6|?",
+        "Massa muscolare|66.8|kg",
+        "Muscolo scheletrico|41.2|kg",
+        "Acqua|58.7|%",
+        "BMR|1918|kcal",
+        "Massa grassa|17.8|kg",
+        "Massa magra|71.6|kg",
+        "Acqua|52.5|kg",
+        "Grasso sottocutaneo|14.2|%",
+        "Massa ossea|4.8|kg",
+        "Proteine|16|%",
+        "Proteine|14.3|kg",
+        "Eta corporea|42|anni",
+        "BMI|26.2|?",
+    )
+
+    private fun assertFitdaysReal(result: BiaMeasurementNormalizer.Result, derived: Set<String> = emptySet()) {
+        val p = result.preview
+        assertEquals(89.5f, p.weightKg!!, 0.01f)
+        assertEquals(19.9f, p.bodyFatPercent!!, 0.01f)
+        assertEquals(6f, p.visceralFatLevel!!, 0.01f)
+        assertEquals(66.8f, p.muscleMassKg!!, 0.01f)
+        assertEquals(41.2f, p.skeletalMuscleKg!!, 0.01f)
+        assertEquals(58.7f, p.bodyWaterPercent!!, 0.1f)
+        assertEquals(1918f, p.bmrKcal!!, 0.01f)
+        assertEquals(17.8f, p.fatMassKg!!, 0.01f)
+        assertEquals(71.6f, p.leanMassKg!!, 0.01f)
+        assertEquals(52.5f, p.bodyWaterKg!!, 0.01f)
+        assertEquals(14.2f, p.subcutaneousFatPercent!!, 0.01f)
+        assertEquals(4.8f, p.boneMassKg!!, 0.01f)
+        assertEquals(16f, p.proteinPercent!!, 0.1f)
+        assertEquals(14.3f, p.proteinKg!!, 0.01f)
+        assertEquals(42f, p.bodyAgeYears!!, 0.01f)
+        assertEquals(26.2f, p.bmi!!, 0.01f)
+        assertEquals(derived, result.derivedFields)
+    }
+
+    @Test
+    fun fitdaysReal_percentAndKgBothPresent_neverCrossed() {
+        val result = normalizeRows(fitdaysRealRows)
+        assertFitdaysReal(result)
+        assertTrue(result.preview.warnings.toString(), result.preview.warnings.isEmpty())
+        assertEquals(58.7f, result.preview.bodyWaterPercent!!, 0.001f)
+        assertEquals(16f, result.preview.proteinPercent!!, 0.001f)
+    }
+
+    @Test
+    fun fitdaysReal_kgRowsBeforePercentRows_stillNeverCrossed() {
+        val kgFirst = fitdaysRealRows.filter { it.endsWith("|kg") } + fitdaysRealRows.filterNot { it.endsWith("|kg") }
+        val result = normalizeRows(kgFirst)
+        assertFitdaysReal(result)
+        assertTrue(result.preview.warnings.toString(), result.preview.warnings.isEmpty())
+    }
+
+    @Test
+    fun fitdaysReal_onlyKgWithGenericLabels_derivesPercentNeverAssignsKgToPercent() {
+        val rows = fitdaysRealRows.filterNot { it == "Acqua|58.7|%" || it == "Proteine|16|%" }
+        val result = normalizeRows(rows)
+        val p = result.preview
+        assertEquals(52.5f, p.bodyWaterKg!!, 0.001f)
+        assertEquals(14.3f, p.proteinKg!!, 0.001f)
+        assertEquals(58.7f, p.bodyWaterPercent!!, 0.1f)
+        assertEquals(16f, p.proteinPercent!!, 0.1f)
+        assertEquals(setOf("bodyWaterPercent", "proteinPercent"), result.derivedFields)
+    }
+
+    @Test
+    fun fitdaysReal_onlyPercentPresent_derivesKgNeverOverwritingPercent() {
+        val rows = fitdaysRealRows.filterNot { it == "Acqua|52.5|kg" || it == "Proteine|14.3|kg" }
+        val result = normalizeRows(rows)
+        val p = result.preview
+        assertEquals(58.7f, p.bodyWaterPercent!!, 0.001f)
+        assertEquals(16f, p.proteinPercent!!, 0.001f)
+        assertEquals(52.5f, p.bodyWaterKg!!, 0.1f)
+        assertEquals(14.3f, p.proteinKg!!, 0.1f)
+        assertEquals(setOf("bodyWaterKg", "proteinKg"), result.derivedFields)
+    }
+
+    @Test
+    fun missingUnit_isAssignedToTheFieldThatMatchesTheWeight() {
+        val kgMissing = normalizeRows(listOf("Peso|89.5|kg", "Acqua|58.7|%", "Acqua|52.5|?", "Proteine|16|%", "Proteine|14.3|?"))
+        assertEquals(58.7f, kgMissing.preview.bodyWaterPercent!!, 0.001f)
+        assertEquals(52.5f, kgMissing.preview.bodyWaterKg!!, 0.001f)
+        assertEquals(14.3f, kgMissing.preview.proteinKg!!, 0.001f)
+        assertTrue(kgMissing.derivedFields.isEmpty())
+        val percentMissing = normalizeRows(listOf("Peso|89.5|kg", "Acqua|58.7|", "Acqua|52.5|kg"))
+        assertEquals(58.7f, percentMissing.preview.bodyWaterPercent!!, 0.001f)
+        assertEquals(52.5f, percentMissing.preview.bodyWaterKg!!, 0.001f)
+    }
+
+    @Test
+    fun missingUnit_ambiguousValueIsNotAssignedAndWarns() {
+        val result = normalizeRows(listOf("Peso|89.5|kg", "Acqua|52.5|?", "Proteine|14.3|?"))
+        val p = result.preview
+        assertEquals(null, p.bodyWaterPercent)
+        assertEquals(null, p.bodyWaterKg)
+        assertEquals(null, p.proteinPercent)
+        assertEquals(null, p.proteinKg)
+        assertTrue(result.derivedFields.isEmpty())
+        assertEquals(p.warnings.toString(), 2, p.warnings.count { it.contains("ambiguo") })
+    }
+
+    @Test
+    fun missingUnit_plausibilityPicksTheOnlyPossibleField() {
+        val kg = normalizeRows(listOf("Peso|89.5|kg", "Acqua|30|?"))
+        assertEquals(30f, kg.preview.bodyWaterKg!!, 0.001f)
+        val percent = normalizeRows(listOf("Peso|89.5|kg", "Acqua|72|?"))
+        assertEquals(72f, percent.preview.bodyWaterPercent!!, 0.001f)
+        assertEquals(setOf("bodyWaterKg"), percent.derivedFields)
+    }
+
+    @Test
+    fun mislabelledUnits_bothRowsTaggedPercent_areRepairedWithTheWeightAndWarn() {
+        val kgFirst = normalizeRows(listOf("Peso|89.5|kg", "Acqua|52.5|%", "Acqua|58.7|%", "Proteine|14.3|%", "Proteine|16|%"))
+        val pctFirst = normalizeRows(listOf("Peso|89.5|kg", "Acqua|58.7|%", "Acqua|52.5|%", "Proteine|16|%", "Proteine|14.3|%"))
+        listOf(kgFirst, pctFirst).forEach { result ->
+            val p = result.preview
+            assertEquals(58.7f, p.bodyWaterPercent!!, 0.001f)
+            assertEquals(52.5f, p.bodyWaterKg!!, 0.001f)
+            assertEquals(16f, p.proteinPercent!!, 0.001f)
+            assertEquals(14.3f, p.proteinKg!!, 0.001f)
+            assertTrue(result.derivedFields.isEmpty())
+        }
+        assertTrue(kgFirst.preview.warnings.toString(), kgFirst.preview.warnings.any { it.contains("Acqua corporea") })
+    }
+
+    @Test
+    fun unitWrittenInLabel_isUsedAndConflictsFallBackToWeightCheck() {
+        val labelUnit = normalizeRows(listOf("Peso|89.5|kg", "Acqua corporea (%)|58.7|?", "Acqua corporea (kg)|52.5|?"))
+        assertEquals(58.7f, labelUnit.preview.bodyWaterPercent!!, 0.001f)
+        assertEquals(52.5f, labelUnit.preview.bodyWaterKg!!, 0.001f)
+        val conflict = normalizeRows(listOf("Peso|89.5|kg", "Acqua|58.7|%", "Acqua (kg)|52.5|%"))
+        assertEquals(58.7f, conflict.preview.bodyWaterPercent!!, 0.001f)
+        assertEquals(52.5f, conflict.preview.bodyWaterKg!!, 0.001f)
+    }
+
+    @Test
+    fun kgOnlyFields_neverTakePercentRows() {
+        val result = normalizeRows(listOf("Peso|89.5|kg", "Muscolo|45|%", "Massa ossea|5|%", "Massa magra|78|%"))
+        assertEquals(null, result.preview.muscleMassKg)
+        assertEquals(null, result.preview.boneMassKg)
+        assertEquals(null, result.preview.leanMassKg)
+    }
+
+    @Test
+    fun incoherentMasses_emitWarnings() {
+        val result = normalizeRows(listOf("Peso|80|kg", "Massa magra|50|kg", "Acqua|60|kg", "Massa muscolare|40|kg", "Muscolo scheletrico|45|kg"))
+        val w = result.preview.warnings
+        assertTrue(w.toString(), w.any { it.contains("Acqua") && it.contains("supera la massa magra") })
+        assertTrue(w.toString(), w.any { it.contains("Muscolo scheletrico") && it.contains("supera la massa muscolare") })
+        val sum = normalizeRows(listOf("Peso|80|kg", "Massa grassa|40|kg", "Massa magra|20|kg"))
+        assertTrue(sum.preview.warnings.toString(), sum.preview.warnings.any { it.contains("non coincide con il peso") })
+    }
 }

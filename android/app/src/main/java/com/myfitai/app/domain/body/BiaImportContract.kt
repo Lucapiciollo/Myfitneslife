@@ -102,8 +102,32 @@ object BiaImportContract {
             bodyAgeYears = clean(BodyValueRanges.BiaField.BODY_AGE, preview.bodyAgeYears),
             bmi = clean(BodyValueRanges.BiaField.BMI_FIELD, preview.bmi),
         )
-        return cleaned.copy(warnings = warnings)
+        val result = cleaned.copy(warnings = warnings)
+        return result.copy(warnings = warnings + coherenceWarnings(result))
     }
+
+    /** Controlli di coerenza tra grandezze in kg: segnalano soltanto, non cambiano i valori. */
+    private fun coherenceWarnings(p: Preview): List<String> = buildList {
+        fun kg(value: Float) = String.format(java.util.Locale.ROOT, "%.1f", value)
+        val weight = p.weightKg
+        val fat = p.fatMassKg
+        val lean = p.leanMassKg
+        if (weight != null && fat != null && lean != null && kotlin.math.abs(fat + lean - weight) / weight > COHERENCE_TOLERANCE) {
+            add("Massa grassa + massa magra (${kg(fat + lean)} kg) non coincide con il peso (${kg(weight)} kg): controllare la lettura.")
+        }
+        val leanLimit = lean?.times(1.02f)
+        if (leanLimit != null) {
+            p.bodyWaterKg?.takeIf { it > leanLimit }?.let { add("Acqua (${kg(it)} kg) supera la massa magra (${kg(lean)} kg): controllare unita' e valori.") }
+            p.muscleMassKg?.takeIf { it > leanLimit }?.let { add("Massa muscolare (${kg(it)} kg) supera la massa magra (${kg(lean)} kg): controllare la lettura.") }
+        }
+        val muscle = p.muscleMassKg
+        val skeletal = p.skeletalMuscleKg
+        if (muscle != null && skeletal != null && skeletal > muscle * 1.02f) {
+            add("Muscolo scheletrico (${kg(skeletal)} kg) supera la massa muscolare (${kg(muscle)} kg): controllare la lettura.")
+        }
+    }
+
+    private const val COHERENCE_TOLERANCE = 0.10f
 
     fun parse(json: String): Preview = sanitize(parseRaw(json))
 
