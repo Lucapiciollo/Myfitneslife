@@ -337,3 +337,7 @@ Decisione 13/11 (utente: 'fai il meglio'): NON ripristinare backup su profili re
 Poi Grok L2 (UI selezione, prezzi, usage), L3 prove reali con chiave inserita dall'utente. In parallelo: F6/F7 verifica semplificazione (Luca dopo migrazione).
 
 - Dopo migrazione 20, Luca ricontrollato su device: Home (TDEE 2.974, target 2.698), Progresso (89,5 kg, -1,2 kg), Cibo senza crash. Nota: il piano di Luca generato il 12/11 mostra ancora nel messaggio salvato '1 uguali tra allenamento e riposo' (testo memorizzato col vecchio codice; nessuna occorrenza nel codice attuale; sparisce alla rigenerazione). Lezione: max 2 BACK dall'app, altrimenti si esce al launcher.
+
+- Grok L1 FERMATO (ses_e2ac66221ffeAjts6dwokF4M23): commit 5bf6727, develop = d3d0a43. 938 test unitari 0 falliti riletti io dagli XML. Modelli grok-4.3 (default, 1.25/2.50 USD per 1M) e grok-4.7 (2.00/6.00); xAI Responses API. Nessuna chiamata reale a xAI fatta; formato risposta dedotto dalla doc. Sperimentale e spento (grokEnabled=false).
+| senior-developer | Grok L2a runtime: selezione a 3 vie, prezzi, usage, reasoning effort | vedi esito | feat/grok-l2a-runtime (da develop d3d0a43) |
+Dopo: L2b UI (Impostazioni IA, onboarding), L3 prove reali con chiave dell'utente.
