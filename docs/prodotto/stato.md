@@ -323,3 +323,5 @@ Dopo: F5 migrazione Room 19->20 (elimina workouts e daily_activity_checkins), po
 
 | senior-developer | F5a rimozione codice allenamenti (senza Room) | ses_e2af2a6a7ffeGpsXmyGBI8H4F6 | feat/sem-f5a-codice-morto (da develop b627f16) |
 Dopo F5a: F5b = MIGRATION_19_20 + entita/DAO/repository + schema 20 + fixture/seeder/test.
+
+Decisione 13/11 (utente: 'fai il meglio'): NON ripristinare backup su profili reali e NON creare profili di prova; 'Molto attivo' coperto da test unitari del motore (x1,725), non provato a schermo; restore v2/v3 coperto solo da test compilato (androidTest non eseguito). Da dichiarare nel report finale.
