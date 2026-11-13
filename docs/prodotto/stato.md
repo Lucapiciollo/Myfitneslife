@@ -373,3 +373,5 @@ PIANO UX (utente: 'fai tutti e proviamo alla fine'): ipotesi dichiarate e revers
 | senior-developer | UX3 vocabolario unico (Obiettivo di oggi, TDEE/BMR in italiano, Extra->Sgarro) + audit livello | (vedi esito) | feat/ux3-vocabolario (da develop fe66896) |
 | senior-developer | UX4 registrazione pasto: barra azioni fissa + azione inline con Annulla | (vedi esito) | feat/ux4-registra-pasto (da develop fe66896) |
 Dopo: UX5 Home prima card semplificata + BMR/TDEE fuori da Cibo; poi integrazione, install in-place e prova a schermo (font 1,3x/2x).
+
+- UX4 FERMATO PARZIALE (ses_e29fc0c0bffe4NZ5wH4wL8XqX5): commit cc4b091, unito in develop = 17d3695 (nessun conflitto). Gate del subagente BUILD SUCCESSFUL 13m53s, 983 test 0 falliti (XML riletti, MealStatusRecorderTest 13). Fatto: barra azioni fissa nel dettaglio pasto (consumato/saltato + stato + Annulla), azione 1 tocco sulle righe di Cibo con Annulla. NON fatto: azione rapida sulla card Home (11 file > 9): confluisce in UX5. Non verificato a schermo: sovrapposizione snackbar/barra, font grande, riga Cibo con colonna 48dp in piu. Decisione aperta: segnare consumato giorni futuri ammesso come nel dettaglio.
