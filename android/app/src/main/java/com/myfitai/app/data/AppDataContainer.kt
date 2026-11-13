@@ -237,8 +237,6 @@ class AppDataContainer private constructor(context: Context) {
         activeProfileStore = activeProfileStore,
         nutritionPlanSchedulePreferences = nutritionPlanSchedulePreferences,
         mealCountPreferences = mealCountPreferences,
-        workoutPreferences = workoutPreferences,
-        trainingProgramPreferences = trainingProgramPreferences,
         biaFrequencyPreferences = biaFrequencyPreferences,
         aiAutomationPreferences = aiAutomationPreferences,
     )
@@ -247,8 +245,6 @@ class AppDataContainer private constructor(context: Context) {
         db = db,
         activeProfiles = activeProfileStore,
         mealCountPreferences = mealCountPreferences,
-        workoutPreferences = workoutPreferences,
-        trainingProgramPreferences = trainingProgramPreferences,
         biaFrequencyPreferences = biaFrequencyPreferences,
         nutritionPlanSchedulePreferences = nutritionPlanSchedulePreferences,
         aiAutomationPreferences = aiAutomationPreferences,

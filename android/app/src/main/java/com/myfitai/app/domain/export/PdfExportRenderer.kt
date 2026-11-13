@@ -285,7 +285,6 @@ internal class PdfExportRenderer(context: Context) {
         val waistTrend: List<Pair<Long, Float>>,
         val biaCount: Int,
         val bodyCount: Int,
-        val workoutCount: Int,
         val cheatCount: Int,
         val reviewCount: Int,
         val planCount: Int,
@@ -422,11 +421,11 @@ internal class PdfExportRenderer(context: Context) {
             pageNumber++
         }
 
-        // 4. Alimentazione / allenamento
+        // 4. Alimentazione
         run {
             val page = startPage(document, pageNumber)
             val canvas = page.canvas
-            drawHeader(canvas, "Alimentazione e allenamento", "Sintesi operativa del periodo")
+            drawHeader(canvas, "Alimentazione", "Sintesi operativa del periodo")
 
             drawCard(canvas, pageMargin, 150f, contentWidth, 210f)
             text(canvas, "Piano alimentare attivo", contentLeft, 182f, typography.section, palette.text, true)
@@ -438,10 +437,9 @@ internal class PdfExportRenderer(context: Context) {
                 "Settimane con piano" to input.planCount.toString(),
             ), rowHeight = geometry.reportPlanRowHeight)
 
-            drawMetricCard(canvas, pageMargin, 390f, 247f, 105f, "ALLENAMENTI / RIPOSI", input.workoutCount.toString(), "eventi registrati", palette.accentSecondary)
-            drawMetricCard(canvas, 308f, 390f, 247f, 105f, "SGARRI REGISTRATI", input.cheatCount.toString(), "eventi nel periodo", palette.warning)
-            drawMetricCard(canvas, pageMargin, 520f, 247f, 105f, "RILEVAZIONI BIA", input.biaCount.toString(), "storico profilo", palette.accent)
-            drawMetricCard(canvas, 308f, 520f, 247f, 105f, "MISURE CORPOREE", input.bodyCount.toString(), "storico profilo", palette.accent)
+            drawMetricCard(canvas, pageMargin, 390f, 247f, 105f, "RILEVAZIONI BIA", input.biaCount.toString(), "storico profilo", palette.accent)
+            drawMetricCard(canvas, 308f, 390f, 247f, 105f, "MISURE CORPOREE", input.bodyCount.toString(), "storico profilo", palette.accent)
+            drawMetricCard(canvas, pageMargin, 520f, contentWidth, 105f, "SGARRI REGISTRATI", input.cheatCount.toString(), "eventi nel periodo", palette.warning)
 
             drawCard(canvas, pageMargin, 650f, contentWidth, 100f, palette.panelSecondary)
             text(canvas, "Interpretazione", contentLeft, 680f, typography.body, palette.text, true)
@@ -473,10 +471,9 @@ internal class PdfExportRenderer(context: Context) {
                 "4. Misure" to "circonferenze, delta, asimmetrie e proporzioni",
                 "5. Trend" to "grafici peso e vita basati sulle rilevazioni persistite",
                 "6. Alimentazione" to "target del piano corrente e numero di settimane disponibili",
-                "7. Allenamenti" to "conteggio sessioni e riposi registrati",
-                "8. Sgarri" to "conteggio degli eventi registrati",
-                "9. Weekly Review" to "review settimanali persistite (${input.reviewCount})",
-                "10. Metodologia" to "dati mancanti restano mancanti; nessuna stima viene inventata dal PDF",
+                "7. Sgarri" to "conteggio degli eventi registrati",
+                "8. Weekly Review" to "review settimanali persistite (${input.reviewCount})",
+                "9. Metodologia" to "dati mancanti restano mancanti; nessuna stima viene inventata dal PDF",
             )
             var y = 188f
             sections.forEach { (title, description) ->
