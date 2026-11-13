@@ -8,8 +8,6 @@ import com.myfitai.app.data.profile.MealCountPreferences
 import com.myfitai.app.data.profile.NutritionPlanUpdatePreferences
 import com.myfitai.app.data.profile.NutritionPlanSchedulePreferences
 import com.myfitai.app.data.profile.ProfilePhotoStore
-import com.myfitai.app.data.profile.TrainingProgramPreferences
-import com.myfitai.app.data.profile.WorkoutPreferences
 import com.myfitai.app.data.profile.AiAutomationPreferences
 import com.myfitai.app.data.repository.*
 import com.myfitai.app.domain.body.BodyProportionAnalysisService
@@ -65,8 +63,6 @@ class AppDataContainer private constructor(context: Context) {
     val nutritionPlanSchedulePreferences = NutritionPlanSchedulePreferences(appContext)
     val profilePhotoStore = ProfilePhotoStore(appContext)
     val biaFrequencyPreferences = BiaFrequencyPreferences(appContext)
-    val workoutPreferences = WorkoutPreferences(appContext)
-    val trainingProgramPreferences = TrainingProgramPreferences(appContext)
     val progressAnalysisPreferences = ProgressAnalysisPreferences(appContext)
     val aiAutomationPreferences = AiAutomationPreferences(appContext)
     val aiJobScheduler = AiJobScheduler(appContext)
@@ -81,8 +77,6 @@ class AppDataContainer private constructor(context: Context) {
     val aiRuntimeService = AiRuntimeService(appContext)
     val nutritionPathScheduler = NutritionPathScheduler(appContext, aiJobScheduler)
     val nutritionPathTrigger = NutritionPathTrigger(userProfileRepository, biaRepository, bodyMeasurementRepository, nutritionPathScheduler, aiRuntimeService, aiAutomationPreferences)
-    val workoutRepository = WorkoutRepository(db)
-    val dailyActivityCheckInRepository = DailyActivityCheckInRepository(db)
     val mealPlanRepository = MealPlanRepository(db)
     val cheatEntryRepository = CheatEntryRepository(db)
     val calorieRecoveryRepository = CalorieRecoveryRepository(db)
@@ -102,7 +96,6 @@ class AppDataContainer private constructor(context: Context) {
         activeProfileStore = activeProfileStore,
         plans = mealPlanRepository,
         cheats = cheatEntryRepository,
-        workouts = workoutRepository,
         bia = biaRepository,
         bodyMeasurements = bodyMeasurementRepository,
         expectationGoals = bodyExpectationGoalRepository,
@@ -117,7 +110,6 @@ class AppDataContainer private constructor(context: Context) {
         aiRuntime = aiRuntimeService,
         calculations = profileCalculationService,
         profiles = userProfileRepository,
-        workouts = workoutRepository,
         cheats = cheatEntryRepository,
         activeProfileStore = activeProfileStore,
         preferences = progressAnalysisPreferences,
@@ -140,17 +132,15 @@ class AppDataContainer private constructor(context: Context) {
         nutritionPlanUpdatePreferences = nutritionPlanUpdatePreferences,
         aiAutomationPreferences = aiAutomationPreferences,
         mealCountPreferences = mealCountPreferences,
-        workoutPreferences = workoutPreferences,
-        trainingProgramPreferences = trainingProgramPreferences,
         profilePhotoStore = profilePhotoStore,
         notificationScheduler = notificationScheduler,
+        context = appContext,
     )
 
     val nutritionPlanGenerationService = NutritionPlanGenerationService(
         aiRuntime = aiRuntimeService,
         calculations = profileCalculationService,
         profiles = userProfileRepository,
-        workouts = workoutRepository,
         plans = mealPlanRepository,
         cheats = cheatEntryRepository,
         recovery = calorieRecoveryRepository,
@@ -190,7 +180,6 @@ class AppDataContainer private constructor(context: Context) {
         aiRuntime = aiRuntimeService,
         reviews = weeklyReviewRepository,
         plans = mealPlanRepository,
-        workouts = workoutRepository,
         cheats = cheatEntryRepository,
         bia = biaRepository,
         bodyMeasurements = bodyMeasurementRepository,
@@ -221,7 +210,6 @@ class AppDataContainer private constructor(context: Context) {
                 profiles = userProfileRepository,
                 bia = biaRepository,
                 body = bodyMeasurementRepository,
-                workouts = workoutRepository,
                 plans = mealPlanRepository,
                 calculations = profileCalculationService,
                 scheduler = biaProgressCoachScheduler,

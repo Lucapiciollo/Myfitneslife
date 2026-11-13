@@ -455,19 +455,18 @@ class AiWorkflowIntegrationTest {
         val profiles = com.myfitai.app.data.repository.UserProfileRepository(db)
         val bia = com.myfitai.app.data.repository.BiaRepository(db)
         val body = com.myfitai.app.data.repository.BodyMeasurementRepository(db)
-        val workouts = com.myfitai.app.data.repository.WorkoutRepository(db)
         val plans = MealPlanRepository(db)
         val cheats = com.myfitai.app.data.repository.CheatEntryRepository(db)
         val reviews = com.myfitai.app.data.repository.WeeklyReviewRepository(db)
         val consumptions = com.myfitai.app.data.repository.FoodConsumptionRepository(db)
         val calculations = ProfileCalculationService(profiles, bia, body, store)
-        val personal = PersonalResponseService(store, plans, cheats, workouts, bia, body, com.myfitai.app.data.repository.BodyExpectationGoalRepository(db))
+        val personal = PersonalResponseService(store, plans, cheats, bia, body, com.myfitai.app.data.repository.BodyExpectationGoalRepository(db))
         return Services(
-            generation = NutritionPlanGenerationService(gateway, calculations, profiles, workouts, plans, cheats, com.myfitai.app.data.repository.CalorieRecoveryRepository(db), store, personal, time = time),
+            generation = NutritionPlanGenerationService(gateway, calculations, profiles, plans, cheats, com.myfitai.app.data.repository.CalorieRecoveryRepository(db), store, personal, time = time),
             mealAlternative = MealAlternativeService(gateway, profiles, plans, store, time),
             advice = NutritionAdviceService(gateway, profiles, plans, cheats, consumptions, store, time),
             cheat = CheatAdjustmentService(gateway, plans, cheats, profiles, store, time),
-            review = WeeklyReviewService(gateway, reviews, plans, workouts, cheats, bia, body, personal, store, time, consumptions, profiles),
+            review = WeeklyReviewService(gateway, reviews, plans, cheats, bia, body, personal, store, time, consumptions, profiles),
         )
     }
 
