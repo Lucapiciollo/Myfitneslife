@@ -293,3 +293,7 @@ Da integrare ancora: D1 (feat/d1-poc-nutritionadvice). Decisioni aperte: tetto p
 | senior-developer | T6: consiglio alimentare non deterministico (diagnosi causa, AiFailureMessages, token/validatore) + rifiuto di '86..5' nel dialog valore BIA | ses_e2bbd3694ffepRNz62Kl9YswRq | fix/t6-consiglio-parser-valori (da develop 19b2b5e) |
 
 - T6 9037c85 (956 test dichiarati, BUILD SUCCESSFUL 33s al 2o giro; base 19b2b5e) su develop (ff). Causa consiglio NON PROVATA: messaggio generico che nascondeva il motivo; NA1 token 900->1500, parser NA1 con errori specifici, kcal '450.0' accettate, foodsCsv richiesto solo con vincoli rigidi, UI con AiFailureMessages e Riprova manuale; log categoria 'MyFitAiAi'. BIA dialog: keepRawNumericInput (numberDecimal filtrava il secondo punto). APK installato.
+
+## Piano semplificazione attivita (13/11/2026): docs/PIANO_SEMPLIFICAZIONE_ATTIVITA.md. In attesa decisioni D1-D4. Nessun codice toccato.
+
+- Decisioni D1-D4 prese dall'utente: 3 livelli (Sedentario/Moderato/Molto attivo), sport da livello, ELIMINARE tabelle con MIGRATION_19_20 (previo export), Luca 'Moderatamente attivo' stabile in configurazione. Piano aggiornato in docs/PIANO_SEMPLIFICAZIONE_ATTIVITA.md.
