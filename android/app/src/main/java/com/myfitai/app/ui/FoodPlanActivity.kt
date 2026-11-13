@@ -378,8 +378,7 @@ class FoodPlanActivity : BaseShellActivity() {
     }
 
     private fun showMealSnackbar(@androidx.annotation.StringRes message: Int, @androidx.annotation.StringRes action: Int? = null, onAction: (() -> Unit)? = null) {
-        val snackbar = com.google.android.material.snackbar.Snackbar.make(findViewById(android.R.id.content), message, com.google.android.material.snackbar.Snackbar.LENGTH_LONG)
-        findViewById<View?>(R.id.bottomNav)?.let { snackbar.setAnchorView(it) }
+        val snackbar = SnackbarAnchors.make(this, message)
         if (action != null && onAction != null) snackbar.setAction(action) { onAction() }
         snackbar.show()
     }
@@ -602,14 +601,18 @@ class FoodPlanActivity : BaseShellActivity() {
             dayRecords.isEmpty() -> "Nessun pasto o integratore registrato."
             consumedItems.isEmpty() && consumed.skippedCount > 0 -> "Tutti gli elementi registrati risultano saltati."
             consumedItems.any { it.kcal == null || it.proteinG == null } -> "Alcuni valori nutrizionali degli elementi consumati non sono disponibili."
-            consumedItems.size < dayRecords.size -> "Totale dei soli ${consumedItems.size} elementi segnati come consumati."
-            else -> "Totale dei ${consumedItems.size} elementi segnati come consumati."
+            consumedItems.size < dayRecords.size ->
+                resources.getQuantityString(R.plurals.food_ux6_total_only_consumed, consumedItems.size, consumedItems.size)
+            else -> resources.getQuantityString(R.plurals.food_ux6_total_all_consumed, consumedItems.size, consumedItems.size)
         }
         val expected = day.meals.size + day.supplements.size
         findViewById<TextView>(R.id.consumptionCoverage).text = if (dayRecords.isEmpty()) {
-            "Nessuna registrazione su $expected elementi pianificati"
+            resources.getQuantityString(R.plurals.food_ux6_coverage_none, expected, expected)
         } else {
-            "Registrati: ${consumed.recordedCount} di $expected elementi · consumati ${consumed.consumedCount} · saltati ${consumed.skippedCount}"
+            resources.getQuantityString(
+                R.plurals.food_ux6_coverage_recorded, expected,
+                expected, consumed.recordedCount, consumed.consumedCount, consumed.skippedCount,
+            )
         }
     }
 
