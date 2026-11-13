@@ -345,3 +345,6 @@ Dopo: L2b UI (Impostazioni IA, onboarding), L3 prove reali con chiave dell'utent
 - Grok L2a CANCELLATO (ses_e2aad3aacffeKqpJ4j91KbOk6o, non per errore del subagente: nessun gate eseguito, nessun commit). Lavoro parziale NON committato e NON verificato nel worktree grok-l2a-runtime (7 file modificati + GrokPricingStore, GrokUsageTracker, GrokRuntimeTest nuovi). Non unito a develop. Riavvio in attesa della decisione dell'utente su costi/privacy Grok (a pagamento; crediti gratuiti solo con condivisione dati).
 
 - RIAVVIO 1/2 Grok L2a: nuovo sessionID ses_e2a96cf2bffeFPPoa0wt8hWv45 (precedente ses_e2aad3aacffeKqpJ4j91KbOk6o cancellato), mantiene il lavoro parziale non committato. Scelta utente: strada 1 (chiave xAI senza condivisione dati, tetto basso, inserita dall'utente).
+
+- Grok L2a FERMATO (ses_e2a96cf2bffeFPPoa0wt8hWv45): commit 5f7456c, develop = 9460efd. 950 test unitari 0 falliti (XML riletti; testDebugUnitTest era UP-TO-DATE, XML del 15:44 con GrokRuntimeTest). Selezione a 3 vie retrocompatibile, Grok usato solo se abilitato+scelto+chiave (altrimenti NOT_CONFIGURED), prezzi con x2 sopra 200k, reasoning.effort low (doc xAI), tracking ai_usage_records provider='GROK'. Nessuna UI, nessuna chiamata reale.
+| senior-developer | Grok L2b UI Impostazioni IA/Onboarding/badge | vedi esito | feat/grok-l2b-ui (da develop 9460efd) |
