@@ -146,7 +146,7 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
                     showHelpCard(
                         "Analisi progressi IA",
                         "L'analisi IA interpreta i dati registrati nel tempo, come peso, grasso corporeo, " +
-                            "massa muscolare, misure, allenamenti e sgarri. " +
+                            "massa muscolare, misure e sgarri. " +
                             "I valori mostrati nella pagina restano disponibili anche senza analisi IA: " +
                             "la scritta 'Ultima esecuzione: mai' significa solo che questa interpretazione non è ancora stata eseguita.",
                     )
@@ -224,7 +224,7 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
                 setOnClickListener {
                     showHelpCard(
                         "Review settimanale",
-                        "Raccoglie alimentazione, allenamenti e variazioni corporee degli ultimi sette giorni. " +
+                        "Raccoglie alimentazione e variazioni corporee degli ultimi sette giorni. " +
                             "La sintesi IA viene generata solo sui dati registrati e non sostituisce una valutazione professionale.",
                     )
                 }
@@ -256,7 +256,7 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
             setTextAppearance(R.style.Text_MyFitAI_SettingsLabel)
         })
         cardContent.addView(TextView(this).apply {
-            text = "Controlla alimentazione, allenamenti, variazioni corporee e sintesi IA della settimana."
+            text = "Controlla alimentazione, variazioni corporee e sintesi IA della settimana."
             setTextAppearance(R.style.Text_MyFitAI_Body)
         }, marginTopParams(R.dimen.space_6))
         cardContent.addView(MaterialButton(this).apply {
@@ -516,7 +516,7 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         ProgressAnalysisCompactContract.PatternCode.WAIST -> "Circonferenza vita"
         ProgressAnalysisCompactContract.PatternCode.ABDOMEN -> "Circonferenza addome"
         ProgressAnalysisCompactContract.PatternCode.LIMBS -> "Circonferenze arti"
-        ProgressAnalysisCompactContract.PatternCode.TRAINING -> "Allenamento"
+        ProgressAnalysisCompactContract.PatternCode.TRAINING -> "Routine" // legacy: le analisi salvate con 'TR' restano leggibili
         ProgressAnalysisCompactContract.PatternCode.DEVIATIONS -> "Rispetto del piano e deviazioni"
         ProgressAnalysisCompactContract.PatternCode.BODY_COHERENCE -> "Coerenza complessiva dei dati corporei"
     }
