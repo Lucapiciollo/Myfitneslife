@@ -39,17 +39,27 @@
                         android:layout_height="@dimen/divider_thickness"
                         android:layout_weight="1" />
                     <FrameLayout
-                        android:layout_width="@dimen/dashboard_pill_height"
-                        android:layout_height="@dimen/dashboard_pill_height"
-                        android:background="@drawable/bg_logo_circle">
-                        <ImageView
-                            android:id="@+id/profileButton"
-                            android:layout_width="@dimen/status_indicator_size"
-                            android:layout_height="@dimen/status_indicator_size"
+                        android:id="@+id/profileButton"
+                        android:layout_width="@dimen/icon_button_size"
+                        android:layout_height="@dimen/icon_button_size"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:contentDescription="@string/dashboard_profile_cd"
+                        android:focusable="true">
+                        <FrameLayout
+                            android:layout_width="@dimen/dashboard_pill_height"
+                            android:layout_height="@dimen/dashboard_pill_height"
                             android:layout_gravity="center"
-                            android:contentDescription="@string/dashboard_profile_cd"
-                            android:src="@drawable/ic_profile"
-                            app:tint="@color/accent_green" />
+                            android:background="@drawable/bg_logo_circle">
+                            <ImageView
+                                android:layout_width="@dimen/status_indicator_size"
+                                android:layout_height="@dimen/status_indicator_size"
+                                android:layout_gravity="center"
+                                android:contentDescription="@null"
+                                android:importantForAccessibility="no"
+                                android:src="@drawable/ic_profile"
+                                app:tint="@color/accent_green" />
+                        </FrameLayout>
                     </FrameLayout>
                 </LinearLayout>
 
@@ -69,11 +79,13 @@
                     android:textColor="@color/text_secondary"
                     style="@style/Text.MyFitAI.Body" />
                 <TextView
+                    android:id="@+id/homeProgressHintText"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_4"
                     android:text="@string/dashboard_subtitle"
                     android:textColor="@color/text_secondary"
+                    android:visibility="gone"
                     style="@style/Text.MyFitAI.Body" />
             </LinearLayout>
 
@@ -283,7 +295,7 @@
                      android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12"
-                    app:cardBackgroundColor="@color/white"
+                    app:cardBackgroundColor="@color/surface_primary"
                     app:cardCornerRadius="@dimen/radius_card"
                     app:cardElevation="@dimen/elevation_card"
                     app:strokeColor="@color/divider"
@@ -362,7 +374,7 @@
                      android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12"
-                    app:cardBackgroundColor="@color/white"
+                    app:cardBackgroundColor="@color/surface_primary"
                     app:cardCornerRadius="@dimen/radius_card"
                     app:cardElevation="@dimen/elevation_card"
                     app:strokeColor="@color/divider"
@@ -695,7 +707,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12"
-                    app:cardBackgroundColor="@color/white"
+                    app:cardBackgroundColor="@color/surface_primary"
                     app:cardCornerRadius="@dimen/radius_card"
                     app:cardElevation="@dimen/elevation_card"
                     app:strokeColor="@color/divider"
@@ -725,6 +737,7 @@
                         app:tint="@color/text_secondary" />
                   </FrameLayout>
                   <LinearLayout
+                    android:id="@+id/recoveryDetailPanel"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12"
@@ -743,6 +756,28 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/space_8"
                         android:text="Kcal extra ancora da distribuire nei prossimi giorni."
+                        style="@style/Text.MyFitAI.Supporting" />
+                  </LinearLayout>
+                  <LinearLayout
+                    android:id="@+id/recoveryCompactRow"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:visibility="gone">
+                    <TextView
+                        android:id="@+id/recoveryCompactValueText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0 kcal"
+                        style="@style/Text.MyFitAI.CardTitle" />
+                    <TextView
+                        android:id="@+id/recoveryCompactHintText"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/space_12"
+                        android:layout_weight="1"
+                        android:text="@string/home_recovery_compact_hint"
                         style="@style/Text.MyFitAI.Supporting" />
                   </LinearLayout>
                 </LinearLayout>
@@ -816,6 +851,15 @@
                                 android:text="Indicazione basata sul piano, non una previsione certa del peso." />
                         </LinearLayout>
 
+                        <TextView
+                            android:id="@+id/weeklyExpectationQuestionText"
+                            style="@style/Text.MyFitAI.Body"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/space_12"
+                            android:text="@string/home_weekly_expectation_question"
+                            android:visibility="gone" />
+
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
@@ -859,7 +903,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12"
-                    app:cardBackgroundColor="@color/white"
+                    app:cardBackgroundColor="@color/surface_primary"
                     app:cardCornerRadius="@dimen/radius_card"
                     app:cardElevation="@dimen/elevation_card"
                     app:strokeColor="@color/divider"
@@ -894,8 +938,7 @@
                     android:id="@+id/secondNextMealCard"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/space_8"
-                    android:alpha="0.58" />
+                    android:layout_marginTop="@dimen/space_8" />
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/todayMenuButton"
                     style="@style/Widget.MyFitAI.Button.Text"
@@ -912,7 +955,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12"
-                    app:cardBackgroundColor="@color/white"
+                    app:cardBackgroundColor="@color/surface_primary"
                     app:cardCornerRadius="@dimen/radius_card"
                     app:cardElevation="@dimen/elevation_card"
                     app:strokeColor="@color/divider"

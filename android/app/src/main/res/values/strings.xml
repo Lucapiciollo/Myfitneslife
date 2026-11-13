@@ -507,4 +507,21 @@
     <string name="ai_grok_pricing_invalid">Inserisci un prezzo valido</string>
     <string name="ai_grok_pricing_save">Salva</string>
     <string name="ai_grok_pricing_cancel">Annulla</string>
+
+    <!-- UX1: Home quick wins -->
+    <string name="dashboard_hint_register_meals">Registra i pasti di oggi per vedere quanto ti resta</string>
+    <string name="home_recovery_compact_hint">Nessun extra da distribuire.</string>
+    <string name="home_weekly_expectation_question">Hai raggiunto il traguardo della settimana?</string>
+    <string-array name="home_chart_range_labels">
+        <item>1W</item>
+        <item>1M</item>
+        <item>3M</item>
+        <item>1Y</item>
+    </string-array>
+    <string-array name="home_chart_range_descriptions">
+        <item>Intervallo 1 settimana</item>
+        <item>Intervallo 1 mese</item>
+        <item>Intervallo 3 mesi</item>
+        <item>Intervallo 1 anno</item>
+    </string-array>
 </resources>

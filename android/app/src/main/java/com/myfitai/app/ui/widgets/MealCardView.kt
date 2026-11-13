@@ -82,6 +82,12 @@ class MealCardView @JvmOverloads constructor(
         titleView.text = title
     }
 
+    /** Lighter hierarchy for the card that follows the main one: it stays fully opaque because it is still tappable. */
+    fun setSecondary(secondary: Boolean) {
+        titleView.setTextAppearance(if (secondary) R.style.Text_MyFitAI_Body else R.style.Text_MyFitAI_BodyEmphasis)
+        titleView.setTextColor(context.getColor(R.color.text_primary))
+    }
+
     fun setKcal(kcal: String) {
         kcalView.text = kcal
     }
