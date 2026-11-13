@@ -310,3 +310,9 @@ Da integrare ancora: D1 (feat/d1-poc-nutritionadvice). Decisioni aperte: tetto p
 - B1 2f16724 (917 test dichiarati, BUILD SUCCESSFUL 13m20s) e A3 93476c2 (921 test dichiarati, BUILD SUCCESSFUL 14m6s) uniti nel worktree sem-int-1 (integrazione/sem-1) senza conflitti sopra develop 7b97b7c; gate unione in corso (gate-sem1.log). A2 ancora in corso.
 
 - develop = b4b6a83: B1+A3+A2 (integrazione/sem-1 d09c645, gate BUILD SUCCESSFUL, 927 test unitari 0 falliti verificati) + F4 documenti. Primo gate sem-1 fallito per file locked (gate precedente non fermato) e secondo mai partito (filtro che uccideva il comando): non erano errori di codice. APK da worktree sem-int-1.
+
+## Verifica device APK develop fd7b87b (13/11/2026): Home Luca (TDEE 2.974, target 2.698 dal piano, teorico 2.528) e Mamma (1.625 / 1.381) senza diciture allenamento; Profilo senza riga Allenamenti; Dati personali: livello con Sedentario/Moderato/Molto attivo e 'Moderatamente attivo' di Luca in coda (verificato con uiautomator --windows); Altro senza switch allenamenti; guida aggiornata; Impostazioni piano senza giorni di allenamento; BIA Coach Luca: un solo target 2528 (179/327/56) + TDEE 2974. Non provato: 'Molto attivo' su un profilo, import foto, TalkBack. B2 e F3 avviati.
+
+| senior-developer | B2 testi residui senza allenamenti | ses_e2b1908eaffejmoVK7HiqRpnou | feat/sem-b2-testi-residui (da develop fd7b87b) |
+| senior-developer | F3 export v3, backup tollerante v1/v2, PDF, cancellazione dati | ses_e2b18d326ffeG780W8ZmufyruK | feat/sem-f3-export-backup (da develop fd7b87b) |
+Dopo: F5 migrazione Room 19->20 (elimina workouts e daily_activity_checkins), poi F6 test device e F7 verifica.
