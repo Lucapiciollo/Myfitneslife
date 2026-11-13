@@ -104,38 +104,6 @@ interface BodyMeasurementDao {
 }
 
 @Dao
-interface WorkoutDao {
-    @Query("SELECT * FROM workouts WHERE profileId = :profileId ORDER BY startedAtEpochMillis DESC, id DESC")
-    fun observeAll(profileId: Long): Flow<List<WorkoutEntity>>
-
-    @Query("SELECT * FROM workouts WHERE profileId = :profileId AND startedAtEpochMillis BETWEEN :from AND :to ORDER BY startedAtEpochMillis ASC, id ASC")
-    fun observeBetween(profileId: Long, from: Long, to: Long): Flow<List<WorkoutEntity>>
-
-    @Insert suspend fun insert(value: WorkoutEntity): Long
-    @Update suspend fun update(value: WorkoutEntity)
-    @Delete suspend fun delete(value: WorkoutEntity)
-    @Query("DELETE FROM workouts WHERE profileId = :profileId")
-    suspend fun deleteByProfile(profileId: Long)
-}
-
-@Dao
-interface DailyActivityCheckInDao {
-    @Query("SELECT * FROM daily_activity_checkins WHERE profileId = :profileId ORDER BY dateEpochDay ASC")
-    suspend fun observeAll(profileId: Long): List<DailyActivityCheckInEntity>
-    @Query("SELECT * FROM daily_activity_checkins WHERE profileId = :profileId AND dateEpochDay = :dateEpochDay LIMIT 1")
-    fun observeForDay(profileId: Long, dateEpochDay: Long): Flow<DailyActivityCheckInEntity?>
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsert(value: DailyActivityCheckInEntity): Long
-
-    @Query("DELETE FROM daily_activity_checkins WHERE profileId = :profileId AND dateEpochDay = :dateEpochDay")
-    suspend fun deleteForDay(profileId: Long, dateEpochDay: Long)
-
-    @Query("DELETE FROM daily_activity_checkins WHERE profileId = :profileId")
-    suspend fun deleteByProfile(profileId: Long)
-}
-
-@Dao
 interface BodyExpectationGoalDao {
     @Query("SELECT * FROM body_expectation_goals WHERE profileId = :profileId ORDER BY periodStartEpochDay DESC")
     fun observeAll(profileId: Long): Flow<List<BodyExpectationGoalEntity>>

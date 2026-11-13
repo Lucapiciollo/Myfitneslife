@@ -56,7 +56,6 @@ class SixMonthQaDataSeeder(context: Context) {
             plans.appendVersion(profileId, planId, epoch(week, 8), version(week, "AI_GENERATION", null))
             if (weekIndex % 5 == 0) plans.appendVersion(profileId, planId, epoch(week, 9), version(week, "QA", "AI_MEAL_SWAP:$weekIndex"))
         }
-        repeat(104) { index -> db.workoutDao().insert(WorkoutEntity(profileId = profileId, startedAtEpochMillis = epoch(start.plusDays(index.toLong())), type = "PESI", title = "QA workout $index", durationMinutes = 50, isRestDay = false)) }
         repeat(20) { index -> db.cheatEntryDao().insert(CheatEntryEntity(profileId = profileId, occurredAtEpochMillis = epoch(start.plusDays(index * 9L), 20), description = "QA sgarro $index", quantityText = "1 porzione", estimatedKcal = 350, estimatedProteinG = 10f, estimatedCarbsG = 40f, estimatedFatG = 12f, planVersionId = null)) }
         return counts(profileId)
     }
@@ -98,13 +97,6 @@ class SixMonthQaDataSeeder(context: Context) {
                 waistCm = 96f - index * .58f + oscillation(index), abdomenCm = 99f - index * .55f,
                 shouldersCm = 49f, glutesCm = 103f - index * .15f, armLeftCm = 35f,
                 armRightCm = 35f, thighLeftCm = 60f, thighRightCm = 60f, calfLeftCm = 39f, calfRightCm = 39f,
-            ))
-        }
-        repeat(26) { index ->
-            db.workoutDao().insert(WorkoutEntity(
-                profileId = profileId,
-                startedAtEpochMillis = epoch(seedToday.minusWeeks(25).plusDays(index * 7L + 2L), 18),
-                type = "PESI", title = "QA workout ${index + 1}", durationMinutes = 50, isRestDay = false,
             ))
         }
 
@@ -198,16 +190,6 @@ class SixMonthQaDataSeeder(context: Context) {
                 calfRightCm = 39f,
             ))
         }
-        repeat(52) { index ->
-            db.workoutDao().insert(WorkoutEntity(
-                profileId = profileId,
-                startedAtEpochMillis = epoch(start.plusDays(index * 7L + 2L), 18),
-                type = "PESI",
-                title = "Demo workout $index",
-                durationMinutes = 50,
-                isRestDay = false,
-            ))
-        }
 
         return calculationSummary(profileId)
     }
@@ -215,7 +197,6 @@ class SixMonthQaDataSeeder(context: Context) {
     private suspend fun calculationSummary(profileId: Long): String {
         val biaCount = db.biaMeasurementDao().observeAll(profileId).first().size
         val bodyCount = db.bodyMeasurementDao().observeAll(profileId).first().size
-        val workoutCount = db.workoutDao().observeAll(profileId).first().size
         val calculation = ProfileCalculationService(
             profiles,
             BiaRepository(db),
@@ -223,7 +204,7 @@ class SixMonthQaDataSeeder(context: Context) {
             active,
         ).activeProfileSnapshot(today)!!
         val result = calculation.calculation
-        return "demo=$profileId bia=$biaCount body=$bodyCount workouts=$workoutCount " +
+        return "demo=$profileId bia=$biaCount body=$bodyCount " +
             "bmi=${fmt(result.bmi)} bmr=${fmt(result.bmrKcal)} tdee=${fmt(result.tdeeKcal)} " +
             "target=${fmt(result.targetKcal)} protein=${fmt(result.proteinG)} carbs=${fmt(result.carbsG)} fat=${fmt(result.fatG)} " +
             "weightDelta=${fmt(calculation.weightTrend.delta)} waistDelta=${fmt(calculation.waistTrend.delta)} " +
@@ -240,7 +221,6 @@ class SixMonthQaDataSeeder(context: Context) {
                 db.biaMeasurementDao().insert(BiaMeasurementEntity(profileId = profileId, measuredAtEpochMillis = epoch(date), weightKg = 94f - point * .03f, bodyFatPercent = 22f, visceralFatLevel = 10f, muscleMassKg = 68f, skeletalMuscleKg = 34f, bodyWaterPercent = 55f, bmrKcal = null, fasting = true, justWokeUp = true, afterBathroom = true, noRecentWorkout = true))
                 db.bodyMeasurementDao().insert(BodyMeasurementEntity(profileId = profileId, measuredAtEpochMillis = epoch(date), chestCm = 104f, waistCm = 96f, abdomenCm = 99f, shouldersCm = 49f, glutesCm = 103f, armLeftCm = 35f, armRightCm = 35f, thighLeftCm = 60f, thighRightCm = 60f, calfLeftCm = 39f, calfRightCm = 39f))
             }
-            repeat(200) { workout -> db.workoutDao().insert(WorkoutEntity(profileId = profileId, startedAtEpochMillis = epoch(start.minusMonths(18).plusDays(workout.toLong())), type = "PESI", title = "Stress $workout", durationMinutes = 45, isRestDay = false)) }
             repeat(40) { cheat -> db.cheatEntryDao().insert(CheatEntryEntity(profileId = profileId, occurredAtEpochMillis = epoch(start.minusMonths(18).plusDays(cheat * 18L), 20), description = "Stress $cheat", quantityText = "1", estimatedKcal = 400, estimatedProteinG = 15f, estimatedCarbsG = 45f, estimatedFatG = 12f, planVersionId = null)) }
             repeat(104) { weekIndex ->
                 val week = start.minusMonths(18).with(TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY)).plusWeeks(weekIndex.toLong())
@@ -251,7 +231,7 @@ class SixMonthQaDataSeeder(context: Context) {
         return counts(active.currentIdOrNull() ?: 1L)
     }
 
-    private suspend fun counts(profileId: Long): String = "profile=$profileId bia=${db.biaMeasurementDao().observeAll(profileId).first().size} body=${db.bodyMeasurementDao().observeAll(profileId).first().size} workouts=${db.workoutDao().observeAll(profileId).first().size} plans=${db.mealPlanDao().observePlans(profileId).first().size} cheats=${db.cheatEntryDao().observeAll(profileId).first().size}"
+    private suspend fun counts(profileId: Long): String = "profile=$profileId bia=${db.biaMeasurementDao().observeAll(profileId).first().size} body=${db.bodyMeasurementDao().observeAll(profileId).first().size} plans=${db.mealPlanDao().observePlans(profileId).first().size} cheats=${db.cheatEntryDao().observeAll(profileId).first().size}"
 
     private fun profile(name: String, activity: String, weight: Float, initial: Float) = UserProfileEntity(name = name, birthDateEpochDay = LocalDate.of(1983, 8, 9).toEpochDay(), heightCm = 186f, currentWeightKg = weight, goal = "Ricomposizione", activityLevel = activity, wakeTimeMinutes = 420, sleepTimeMinutes = 1410, dietaryPreferencesJson = null, createdAtEpochMillis = 1L, updatedAtEpochMillis = epoch(today), biologicalSex = "Maschio", initialWeightKg = initial)
     private fun version(week: LocalDate, source: String, reason: String?) = PlanVersionDraft(source, reason, 2400, 180f, 280f, 70f, (0..6).map { day -> DayDraft(week.plusDays(day.toLong()).toEpochDay(), 2400, 180f, 280f, 70f, listOf(meal("Colazione", 600, 420), meal("Pranzo", 800, 780), meal("Cena", 1000, 1200)), supplements = listOf(SupplementDraft("PROTEIN_POWDER", "Whey", 30f, "g", 1110, 120, 24f, 3f, 2f, "QA")), hydrationNote = "Idratazione QA prudente" ) })

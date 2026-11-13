@@ -8,7 +8,6 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.time.LocalDate
 
 class SixMonthHistoryFixtureTest {
     private val dataset = SixMonthHistoryFixture.build()
@@ -22,7 +21,6 @@ class SixMonthHistoryFixtureTest {
         assertEquals(13, dataset.body.size)
         assertEquals(26, dataset.plans.size)
         assertEquals(18, dataset.cheats.size)
-        assertTrue(dataset.workouts.size > 70)
         assertEquals(94f, dataset.bia.first().weightKg!!, 0.6f)
         assertEquals(89f, dataset.bia.last().weightKg!!, 0.6f)
         assertEquals(22f, dataset.bia.first().bodyFatPercent!!, 0.5f)
@@ -32,17 +30,12 @@ class SixMonthHistoryFixtureTest {
     }
 
     @Test
-    fun fixture_hasNormalAndSportWorkoutPhases() {
-        val firstWeek = dataset.plans[1].weekStart
-        val sportWeek = dataset.plans[12].weekStart
-        val firstWorkouts = dataset.workouts.filter { date(it.startedAtEpochMillis) in firstWeek..firstWeek.plusDays(6) }
-        val sportWorkouts = dataset.workouts.filter { date(it.startedAtEpochMillis) in sportWeek..sportWeek.plusDays(6) }
-
+    fun fixture_hasNormalAndSportActivityPhases() {
         assertEquals(SportsNutritionClassifier.Mode.NORMAL, SportsNutritionClassifier.classify("sedentario"))
         assertEquals(SportsNutritionClassifier.Mode.NORMAL, SportsNutritionClassifier.classify("moderatamente attivo"))
         assertEquals(SportsNutritionClassifier.Mode.SPORT, SportsNutritionClassifier.classify("molto attivo"))
-        assertTrue(sportWorkouts.count { !it.isRestDay } >= 4)
-        assertTrue(firstWorkouts.all { it.isRestDay })
+        assertEquals(LocalCalculationEngine.ActivityLevel.SEDENTARY, SixMonthHistoryFixture.modeForWeek(dataset.plans[1].weekStart))
+        assertEquals(LocalCalculationEngine.ActivityLevel.MODERATE, SixMonthHistoryFixture.modeForWeek(dataset.plans[12].weekStart))
     }
 
     @Test
@@ -120,8 +113,6 @@ class SixMonthHistoryFixtureTest {
         assertTrue(calculation.waistHeightRatio!! < 0.5)
         assertFalse(first.weightKg == last.weightKg)
     }
-
-    private fun date(epoch: Long): LocalDate = java.time.Instant.ofEpochMilli(epoch).atZone(SixMonthHistoryFixture.ZONE).toLocalDate()
 }
 
 private object NutritionPlanContractResponseFactory {

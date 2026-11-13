@@ -15,8 +15,6 @@ import com.myfitai.app.data.local.entity.*
         BiaMeasurementEntity::class,
         BiaAnalysisResultEntity::class,
         BodyMeasurementEntity::class,
-        WorkoutEntity::class,
-        DailyActivityCheckInEntity::class,
         MealPlanEntity::class,
         MealPlanVersionEntity::class,
         MealPlanDayEntity::class,
@@ -28,7 +26,7 @@ import com.myfitai.app.data.local.entity.*
         BodyExpectationGoalEntity::class,
         AiUsageRecordEntity::class,
     ],
-    version = 19,
+    version = 20,
     exportSchema = true,
 )
 abstract class MyFitAiDatabase : RoomDatabase() {
@@ -36,8 +34,6 @@ abstract class MyFitAiDatabase : RoomDatabase() {
     abstract fun biaMeasurementDao(): BiaMeasurementDao
     abstract fun biaAnalysisResultDao(): BiaAnalysisResultDao
     abstract fun bodyMeasurementDao(): BodyMeasurementDao
-    abstract fun workoutDao(): WorkoutDao
-    abstract fun dailyActivityCheckInDao(): DailyActivityCheckInDao
     abstract fun mealPlanDao(): MealPlanDao
     abstract fun cheatEntryDao(): CheatEntryDao
     abstract fun foodConsumptionDao(): FoodConsumptionDao
@@ -381,6 +377,17 @@ object DatabaseMigrations {
         }
     }
 
+    /**
+     * Semplificazione attivita (D4): le tabelle degli allenamenti e dei check-in giornalieri non sono piu usate.
+     * Nessuna altra tabella ha foreign key verso di loro; gli indici cadono con DROP TABLE.
+     */
+    val MIGRATION_19_20 = object : Migration(19, 20) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("DROP TABLE IF EXISTS daily_activity_checkins")
+            db.execSQL("DROP TABLE IF EXISTS workouts")
+        }
+    }
+
     private fun addMissingColumns(db: SupportSQLiteDatabase, table: String, definitions: List<String>) {
         val existing = mutableSetOf<String>()
         db.query("PRAGMA table_info($table)").use { cursor ->
@@ -412,5 +419,6 @@ object DatabaseMigrations {
         MIGRATION_16_17,
         MIGRATION_17_18,
         MIGRATION_18_19,
+        MIGRATION_19_20,
     )
 }

@@ -7,8 +7,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.myfitai.app.data.local.entity.BiaMeasurementEntity
 import com.myfitai.app.data.local.entity.BodyMeasurementEntity
 import com.myfitai.app.data.local.entity.UserProfileEntity
-import com.myfitai.app.data.local.entity.WorkoutEntity
-import com.myfitai.app.data.local.entity.DailyActivityCheckInEntity
 import com.myfitai.app.data.local.entity.BiaAnalysisResultEntity
 import com.myfitai.app.data.local.entity.BodyExpectationGoalEntity
 import com.myfitai.app.data.local.entity.FoodConsumptionEntity
@@ -133,33 +131,6 @@ class MyFitAiDatabaseTest {
         assertEquals(88f, saved.waistCm)
         assertEquals(102f, saved.chestCm)
         assertEquals("seconda", saved.notes)
-    }
-
-    @Test
-    fun workoutHistory_isIsolatedByProfile_andRangeAscending() = runBlocking {
-        val profile1Id = db.userProfileDao().insert(profile("Workout uno"))
-        val profile2Id = db.userProfileDao().insert(profile("Workout due"))
-        val dao = db.workoutDao()
-        dao.insert(workout(profile1Id, 3000, "Upper"))
-        dao.insert(workout(profile1Id, 1000, "Lower"))
-        dao.insert(workout(profile1Id, 2000, "Riposo", rest = true))
-        dao.insert(workout(profile2Id, 4000, "Cardio"))
-        assertEquals(listOf(3000L, 2000L, 1000L), dao.observeAll(profile1Id).first().map { it.startedAtEpochMillis })
-        assertEquals(listOf(1000L, 2000L), dao.observeBetween(profile1Id, 1000, 2500).first().map { it.startedAtEpochMillis })
-        assertEquals(listOf("Cardio"), dao.observeAll(profile2Id).first().map { it.title })
-    }
-
-    @Test
-    fun dailyActivityCheckIn_isUniquePerProfileAndDay() = runBlocking {
-        val profile1Id = db.userProfileDao().insert(profile("Check-in uno"))
-        val profile2Id = db.userProfileDao().insert(profile("Check-in due"))
-        val dao = db.dailyActivityCheckInDao()
-        dao.upsert(checkIn(profile1Id, 20_000L, "REST", 0))
-        dao.upsert(checkIn(profile1Id, 20_000L, "PLANNED_WORKOUT", 140))
-        dao.upsert(checkIn(profile2Id, 20_000L, "REST", 0))
-        assertEquals("PLANNED_WORKOUT", dao.observeForDay(profile1Id, 20_000L).first()?.status)
-        assertEquals(140, dao.observeForDay(profile1Id, 20_000L).first()?.adjustmentKcal)
-        assertEquals("REST", dao.observeForDay(profile2Id, 20_000L).first()?.status)
     }
 
     @Test
@@ -531,10 +502,6 @@ class MyFitAiDatabaseTest {
         ))
         db.bodyMeasurementDao().insert(measure(deletingProfileId, 1000L, 90f))
         db.bodyMeasurementDao().insert(measure(retainedProfileId, 2000L, 70f))
-        db.workoutDao().insert(workout(deletingProfileId, 1000L, "Da eliminare"))
-        db.workoutDao().insert(workout(retainedProfileId, 2000L, "Da mantenere"))
-        db.dailyActivityCheckInDao().upsert(checkIn(deletingProfileId, 1L, "REST", 0))
-        db.dailyActivityCheckInDao().upsert(checkIn(retainedProfileId, 2L, "REST", 0))
 
         val profileStore = ActiveProfileStore(ApplicationProvider.getApplicationContext())
         profileStore.selectProfile(deletingProfileId)
@@ -549,12 +516,8 @@ class MyFitAiDatabaseTest {
         assertTrue(db.biaAnalysisResultDao().observeAll(deletingProfileId).first().isEmpty())
         assertTrue(db.bodyExpectationGoalDao().observeAll(deletingProfileId).first().isEmpty())
         assertTrue(db.bodyMeasurementDao().observeAll(deletingProfileId).first().isEmpty())
-        assertTrue(db.workoutDao().observeAll(deletingProfileId).first().isEmpty())
-        assertTrue(db.dailyActivityCheckInDao().observeAll(deletingProfileId).isEmpty())
         assertEquals(1, db.biaMeasurementDao().observeAll(retainedProfileId).first().size)
         assertEquals(1, db.bodyMeasurementDao().observeAll(retainedProfileId).first().size)
-        assertEquals(1, db.workoutDao().observeAll(retainedProfileId).first().size)
-        assertEquals(1, db.dailyActivityCheckInDao().observeAll(retainedProfileId).size)
     }
 
     @Test
@@ -579,23 +542,4 @@ class MyFitAiDatabaseTest {
 
     private fun bia(profileId: Long, at: Long, weight: Float?) = BiaMeasurementEntity(profileId = profileId, measuredAtEpochMillis = at, weightKg = weight, bodyFatPercent = null, visceralFatLevel = null, muscleMassKg = null, skeletalMuscleKg = null, bodyWaterPercent = null, bmrKcal = null, fasting = false, justWokeUp = false, afterBathroom = false, noRecentWorkout = false)
 
-    private fun workout(profileId: Long, at: Long, title: String, rest: Boolean = false) = WorkoutEntity(
-        profileId = profileId,
-        startedAtEpochMillis = at,
-        type = if (rest) "REST" else "PESI",
-        title = title,
-        durationMinutes = if (rest) null else 45,
-        isRestDay = rest,
-    )
-
-    private fun checkIn(profileId: Long, day: Long, status: String, adjustment: Int) = DailyActivityCheckInEntity(
-        profileId = profileId,
-        dateEpochDay = day,
-        status = status,
-        durationMinutes = if (status == "REST") null else 60,
-        intensity = if (status == "REST") null else "MODERATE",
-        adjustmentKcal = adjustment,
-        createdAtEpochMillis = 1000L,
-        updatedAtEpochMillis = 1000L,
-    )
 }

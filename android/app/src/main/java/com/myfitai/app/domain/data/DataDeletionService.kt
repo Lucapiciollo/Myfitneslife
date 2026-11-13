@@ -97,9 +97,6 @@ class DataDeletionService(
         db.bodyExpectationGoalDao().deleteByProfile(profileId)
         db.biaMeasurementDao().deleteByProfile(profileId)
         db.bodyMeasurementDao().deleteByProfile(profileId)
-        // Righe residue di allenamenti/check-in: le tabelle verranno eliminate da F5, nel frattempo si puliscono con il profilo.
-        db.workoutDao().deleteByProfile(profileId)
-        db.dailyActivityCheckInDao().deleteByProfile(profileId)
         db.mealPlanDao().deleteByProfile(profileId)
         db.foodConsumptionDao().deleteByProfile(profileId)
         db.cheatEntryDao().deleteByProfile(profileId)

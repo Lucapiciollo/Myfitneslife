@@ -53,9 +53,6 @@ class ProfileBackupService(
             db.bodyExpectationGoalDao().deleteByProfile(profileId)
             db.biaMeasurementDao().deleteByProfile(profileId)
             db.bodyMeasurementDao().deleteByProfile(profileId)
-            // Righe residue di allenamenti/check-in (tabelle eliminate da F5) non fanno piu parte del backup: vengono solo pulite.
-            db.workoutDao().deleteByProfile(profileId)
-            db.dailyActivityCheckInDao().deleteByProfile(profileId)
             db.mealPlanDao().deleteByProfile(profileId)
             db.cheatEntryDao().deleteByProfile(profileId)
             db.weeklyReviewDao().deleteByProfile(profileId)

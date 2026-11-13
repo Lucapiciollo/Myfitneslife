@@ -71,14 +71,6 @@ class BodyMeasurementRepository(private val db: MyFitAiDatabase) {
     suspend fun delete(value: BodyMeasurementEntity) = db.bodyMeasurementDao().delete(value)
 }
 
-class WorkoutRepository(private val db: MyFitAiDatabase) {
-    fun all(profileId: Long): Flow<List<WorkoutEntity>> = db.workoutDao().observeAll(profileId)
-    fun between(profileId: Long, from: Long, to: Long) = db.workoutDao().observeBetween(profileId, from, to)
-    suspend fun insert(value: WorkoutEntity) = db.workoutDao().insert(value)
-    suspend fun update(value: WorkoutEntity) = db.workoutDao().update(value)
-    suspend fun delete(value: WorkoutEntity) = db.workoutDao().delete(value)
-}
-
 class CheatEntryRepository(private val db: MyFitAiDatabase) {
     fun all(profileId: Long): Flow<List<CheatEntryEntity>> = db.cheatEntryDao().observeAll(profileId)
     fun between(profileId: Long, from: Long, to: Long) = db.cheatEntryDao().observeBetween(profileId, from, to)
@@ -102,17 +94,6 @@ class WeeklyReviewRepository(private val db: MyFitAiDatabase) {
     fun all(profileId: Long): Flow<List<WeeklyReviewEntity>> = db.weeklyReviewDao().observeAll(profileId)
     suspend fun getForWeek(profileId: Long, weekStartEpochDay: Long) = db.weeklyReviewDao().getForWeek(profileId, weekStartEpochDay)
     suspend fun upsert(value: WeeklyReviewEntity) = db.weeklyReviewDao().upsert(value)
-}
-
-class DailyActivityCheckInRepository(private val db: MyFitAiDatabase) {
-    fun observeForDay(profileId: Long, dateEpochDay: Long): Flow<DailyActivityCheckInEntity?> =
-        db.dailyActivityCheckInDao().observeForDay(profileId, dateEpochDay)
-
-    suspend fun upsert(value: DailyActivityCheckInEntity): Long = db.dailyActivityCheckInDao().upsert(value)
-    suspend fun all(profileId: Long): List<DailyActivityCheckInEntity> = db.dailyActivityCheckInDao().observeAll(profileId)
-
-    suspend fun deleteForDay(profileId: Long, dateEpochDay: Long) =
-        db.dailyActivityCheckInDao().deleteForDay(profileId, dateEpochDay)
 }
 
 class BodyExpectationGoalRepository(private val db: MyFitAiDatabase) {
