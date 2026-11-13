@@ -297,3 +297,5 @@ Da integrare ancora: D1 (feat/d1-poc-nutritionadvice). Decisioni aperte: tetto p
 ## Piano semplificazione attivita (13/11/2026): docs/PIANO_SEMPLIFICAZIONE_ATTIVITA.md. In attesa decisioni D1-D4. Nessun codice toccato.
 
 - Decisioni D1-D4 prese dall'utente: 3 livelli (Sedentario/Moderato/Molto attivo), sport da livello, ELIMINARE tabelle con MIGRATION_19_20 (previo export), Luca 'Moderatamente attivo' stabile in configurazione. Piano aggiornato in docs/PIANO_SEMPLIFICAZIONE_ATTIVITA.md.
+
+## F0 semplificazione attivita (13/11/2026): tag git pre-semplificazione-attivita su e26e489. Backup JSON completi dei profili esportati dall'app (schema myfitai_profile_export_v2) e copiati FUORI dal repository in C:\Users\LucaPiciollo\Luca\backup-myfitai\ (dati di salute, non committare): luca 1,2 MB, mamma 0,2 MB. Contenuto: workouts=0 e dailyActivityCheckIns=0 per ENTRAMBI i profili -> il DROP delle tabelle non perde dati reali. Programma di allenamento (SharedPreferences) in profilePreferences. Nota: Mamma ha una BIA 11/11/2026 (80 kg) non inserita dall'orchestratore.
