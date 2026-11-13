@@ -325,3 +325,6 @@ Dopo: F5 migrazione Room 19->20 (elimina workouts e daily_activity_checkins), po
 Dopo F5a: F5b = MIGRATION_19_20 + entita/DAO/repository + schema 20 + fixture/seeder/test.
 
 Decisione 13/11 (utente: 'fai il meglio'): NON ripristinare backup su profili reali e NON creare profili di prova; 'Molto attivo' coperto da test unitari del motore (x1,725), non provato a schermo; restore v2/v3 coperto solo da test compilato (androidTest non eseguito). Da dichiarare nel report finale.
+
+- F5a FERMATO (ses_e2af2a6a7ffeGpsXmyGBI8H4F6): commit 85e77ef, develop = 57f69d7. Gate del subagente BUILD SUCCESSFUL, 923 test 0 falliti (riletti io dagli XML nel suo worktree). 6 file cancellati (TrainingProgram*, WorkoutPreferences, DailyActivityCheckInEngine, TrainingEnergyPlanner).
+| senior-developer | F5b Room 19->20 | (vedi esito) | feat/sem-f5b-room-20 (da develop 57f69d7) |
