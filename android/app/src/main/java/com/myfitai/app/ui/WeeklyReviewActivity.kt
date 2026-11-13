@@ -117,21 +117,21 @@ class WeeklyReviewActivity : BaseShellActivity() {
             findViewById<TextView>(R.id.avgKcalValue).text = "Nessun piano"
             findViewById<TextView>(R.id.targetKcalValue).text = "Nessun piano associato a questa settimana"
             findViewById<TextView>(R.id.avgProteinValue).text = "—"
-            findViewById<TextView>(R.id.targetProteinValue).text = "Target: —"
+            findViewById<TextView>(R.id.targetProteinValue).text = "Obiettivo: —"
             findViewById<TextView>(R.id.avgCarbsValue).text = "—"
-            findViewById<TextView>(R.id.targetCarbsValue).text = "Target: —"
+            findViewById<TextView>(R.id.targetCarbsValue).text = "Obiettivo: —"
             findViewById<TextView>(R.id.avgFatValue).text = "—"
-            findViewById<TextView>(R.id.targetFatValue).text = "Target: —"
+            findViewById<TextView>(R.id.targetFatValue).text = "Obiettivo: —"
             return
         }
         findViewById<TextView>(R.id.avgKcalValue).text = NutritionEstimateFormatter.formatEstimatedKcal(metrics?.plannedAverageKcal)
-        findViewById<TextView>(R.id.targetKcalValue).text = "Target: ${metrics?.targetKcal ?: "—"}"
+        findViewById<TextView>(R.id.targetKcalValue).text = "Obiettivo: ${metrics?.targetKcal ?: "—"}"
         findViewById<TextView>(R.id.avgProteinValue).text = NutritionEstimateFormatter.formatEstimatedMacro(metrics?.plannedAverageProteinG, "g")
-        findViewById<TextView>(R.id.targetProteinValue).text = "Target: ${metrics?.targetProteinG?.let(::format1) ?: "—"}"
+        findViewById<TextView>(R.id.targetProteinValue).text = "Obiettivo: ${metrics?.targetProteinG?.let(::format1) ?: "—"}"
         findViewById<TextView>(R.id.avgCarbsValue).text = NutritionEstimateFormatter.formatEstimatedMacro(metrics?.plannedAverageCarbsG, "g")
-        findViewById<TextView>(R.id.targetCarbsValue).text = "Target: ${metrics?.targetCarbsG?.let(::format1) ?: "—"}"
+        findViewById<TextView>(R.id.targetCarbsValue).text = "Obiettivo: ${metrics?.targetCarbsG?.let(::format1) ?: "—"}"
         findViewById<TextView>(R.id.avgFatValue).text = NutritionEstimateFormatter.formatEstimatedMacro(metrics?.plannedAverageFatG, "g")
-        findViewById<TextView>(R.id.targetFatValue).text = "Target: ${metrics?.targetFatG?.let(::format1) ?: "—"}"
+        findViewById<TextView>(R.id.targetFatValue).text = "Obiettivo: ${metrics?.targetFatG?.let(::format1) ?: "—"}"
     }
 
     private fun renderBodyChanges(metrics: WeeklyReviewService.LocalMetrics?) {

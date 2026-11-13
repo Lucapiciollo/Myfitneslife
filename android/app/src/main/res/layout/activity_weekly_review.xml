@@ -106,23 +106,23 @@
                             <LinearLayout style="@style/Widget.MyFitAI.HomeSectionContent" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
                         <com.myfitai.app.ui.widgets.SectionHeaderView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Piano nutrizionale medio" />
                         <TextView android:id="@+id/avgKcalValue" style="@style/Text.MyFitAI.CardValue" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:text="—" />
-                        <TextView android:id="@+id/targetKcalValue" style="@style/Text.MyFitAI.Body" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Target: —" />
+                        <TextView android:id="@+id/targetKcalValue" style="@style/Text.MyFitAI.Body" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Obiettivo: —" />
 
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_20" android:orientation="horizontal">
                 <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical">
                     <TextView style="@style/Text.MyFitAI.Caption" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Proteine" />
                     <TextView android:id="@+id/avgProteinValue" style="@style/Text.MyFitAI.CardTitle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:text="—" />
-                    <TextView android:id="@+id/targetProteinValue" style="@style/Text.MyFitAI.Caption" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Target: —" />
+                    <TextView android:id="@+id/targetProteinValue" style="@style/Text.MyFitAI.Caption" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Obiettivo: —" />
                 </LinearLayout>
                 <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical">
                     <TextView style="@style/Text.MyFitAI.Caption" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Carboidrati" />
                     <TextView android:id="@+id/avgCarbsValue" style="@style/Text.MyFitAI.CardTitle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:text="—" />
-                    <TextView android:id="@+id/targetCarbsValue" style="@style/Text.MyFitAI.Caption" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Target: —" />
+                    <TextView android:id="@+id/targetCarbsValue" style="@style/Text.MyFitAI.Caption" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Obiettivo: —" />
                 </LinearLayout>
                 <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical">
                     <TextView style="@style/Text.MyFitAI.Caption" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Grassi" />
                     <TextView android:id="@+id/avgFatValue" style="@style/Text.MyFitAI.CardTitle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_4" android:text="—" />
-                    <TextView android:id="@+id/targetFatValue" style="@style/Text.MyFitAI.Caption" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Target: —" />
+                    <TextView android:id="@+id/targetFatValue" style="@style/Text.MyFitAI.Caption" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Obiettivo: —" />
                 </LinearLayout>
                         </LinearLayout>
                             </LinearLayout>

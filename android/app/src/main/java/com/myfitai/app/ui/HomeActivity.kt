@@ -157,7 +157,7 @@ class HomeActivity : BaseShellActivity() {
             )
         }
         findViewById<android.view.View>(R.id.recoveryHelpButton).setOnClickListener {
-            showHelpCard("Riserva di recupero", "Indica le calorie extra da distribuire nei giorni successivi quando hai consumato meno del previsto o hai registrato uno sgarro. È un supporto al riequilibrio, non una misura clinica.")
+            showHelpCard("Riserva di recupero", "Indica le calorie da recuperare e distribuire nei giorni successivi quando hai consumato meno del previsto o hai registrato uno sgarro. È un supporto al riequilibrio, non una misura clinica.")
         }
         findViewById<android.view.View>(R.id.nextMealHelpButton).setOnClickListener {
             showHelpCard("Prossimo pasto", "Mostra il prossimo pasto previsto dal piano alimentare di oggi, con orario, nome e calorie quando disponibili.")
@@ -580,7 +580,7 @@ class HomeActivity : BaseShellActivity() {
             hint.text = "Da distribuire gradualmente nei prossimi giorni · $credits${expiry?.let { " · prima scadenza $it" }.orEmpty()}. Evita compensazioni drastiche."
         } else {
             value.text = "0 kcal"
-            hint.text = "Nessun extra da distribuire: sei in pari con il recupero."
+            hint.text = "Nessun recupero da distribuire: sei in pari."
             ValueUnitFormatter.apply(findViewById<TextView>(R.id.recoveryCompactValueText))
         }
         ValueUnitFormatter.apply(value)
@@ -724,10 +724,10 @@ class HomeActivity : BaseShellActivity() {
         caloriesConsumedText.visibility = if (target > 0) View.VISIBLE else View.GONE
         renderProgressHint(calories)
         findViewById<View>(R.id.caloriesSummaryBody).contentDescription = buildString {
-            append("BMR locale: ${kcal(calories.bmr)}. ")
-            append("BMR riportato dalla BIA: ${kcal(calories.biaBmr)}. ")
-            append("TDEE ${kcal(calories.tdee)}. ")
-            append("Target ${kcal(calories.target)}. ")
+            append("Metabolismo a riposo (BMR): ${kcal(calories.bmr)}. ")
+            append("Metabolismo a riposo da BIA (BMR): ${kcal(calories.biaBmr)}. ")
+            append("Consumo giornaliero (TDEE) ${kcal(calories.tdee)}. ")
+            append("Obiettivo di oggi ${kcal(calories.target)}. ")
             if (planStale) append("${getString(R.string.target_source_plan_stale)}. ")
             append("Consumate ${calories.consumedKcal?.let { kcal(it) } ?: "nessuna registrazione"}. ")
             append("Proteine consumate ${calories.consumedProteinG?.let { NutritionEstimateFormatter.formatEstimatedMacro(it, "g") } ?: "non disponibili"}.")
@@ -790,21 +790,21 @@ class HomeActivity : BaseShellActivity() {
                 when {
                     p > 0 -> "Surplus del +$p% rispetto al consumo, per favorire l'aumento di massa."
                     p < 0 -> "Deficit del $p% rispetto al consumo, per favorire la perdita di grasso."
-                    else -> "Target in pari col consumo, per mantenere il peso."
+                    else -> "Obiettivo in pari col consumo, per mantenere il peso."
                 }
-            } ?: "Imposta un obiettivo nel profilo per calcolare il target."
+            } ?: "Imposta il tuo obiettivo nel profilo per calcolare le calorie di oggi."
         }
         val message = buildString {
-            appendLine("• BMR locale: ${kcal(c?.bmr)}")
-            appendLine("  Stima usata dall'app per calcolare TDEE e target.")
+            appendLine("• Metabolismo a riposo (BMR): ${kcal(c?.bmr)}")
+            appendLine("  Stima usata dall'app per calcolare consumo giornaliero (TDEE) e obiettivo di oggi.")
             appendLine()
-            appendLine("• BMR riportato dalla BIA: ${kcal(c?.biaBmr)}")
+            appendLine("• Metabolismo a riposo da BIA (BMR): ${kcal(c?.biaBmr)}")
             appendLine("  Valore salvato dalla rilevazione, mostrato come riferimento.")
             appendLine()
             appendLine("• Consumo giornaliero (TDEE): ${kcal(c?.tdee)}")
-            appendLine("  BMR locale moltiplicato per il livello di attività.")
+            appendLine("  Metabolismo a riposo (BMR) moltiplicato per il livello di attività.")
             appendLine()
-            appendLine("• Target calorico: ${kcal(c?.target)}")
+            appendLine("• Obiettivo di oggi: ${kcal(c?.target)}")
             append("  $percentLine")
         }
         showHelpCard("Come calcoliamo le calorie", message)

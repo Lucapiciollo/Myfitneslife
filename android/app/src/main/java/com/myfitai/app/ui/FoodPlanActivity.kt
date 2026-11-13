@@ -261,7 +261,7 @@ class FoodPlanActivity : BaseShellActivity() {
             FoodPlanPresentation.StatusKind.ERROR -> if (generation.fixProfile) "${generation.error}\n${getString(R.string.food_plan_profile_fix_hint)}" else generation.error
             FoodPlanPresentation.StatusKind.AGE_WARNING -> getString(R.string.food_plan_profile_age_warning, ProfileAgeRule.MIN_AGE_YEARS, ProfileAgeRule.MAX_AGE_YEARS)
             FoodPlanPresentation.StatusKind.SUCCESS -> listOfNotNull(generation.successMessage, generation.usageMessage).joinToString("\n")
-            FoodPlanPresentation.StatusKind.GOAL_CHANGED -> "Hai modificato impostazioni che influenzano le calorie: rigenera il piano per applicare i nuovi target."
+            FoodPlanPresentation.StatusKind.GOAL_CHANGED -> "Hai modificato impostazioni che influenzano le calorie: rigenera il piano per applicare i nuovi obiettivi."
             FoodPlanPresentation.StatusKind.NONE -> null
         }
         stateDot.background = getDrawable(
@@ -529,9 +529,10 @@ class FoodPlanActivity : BaseShellActivity() {
         )
         val dayTargetKcal = resolvedTarget.kcal
         val dayTargetProtein = resolvedTarget.proteinG
+        val isToday = selectedDate == LocalDate.now()
         val targetLabel = getString(
-            if (resolvedTarget.source == DayTargetResolver.Source.PLAN_DAY) R.string.food_target_label_plan_day
-            else R.string.food_target_label_theoretical,
+            if (resolvedTarget.source == DayTargetResolver.Source.PLAN_DAY) { if (isToday) R.string.food_target_label_plan_day else R.string.food_target_label_plan_day_other }
+            else if (isToday) R.string.food_target_label_theoretical else R.string.food_target_label_theoretical_other,
         )
         val targetSourceLabel = getString(
             when (resolvedTarget.source) {
@@ -542,9 +543,9 @@ class FoodPlanActivity : BaseShellActivity() {
         )
         val baseTargetKcal = day.baseTargetKcal ?: planTargetKcal
         findViewById<TextView>(R.id.dailyTotalLegend).text =
-            "BMR: ${calorieReference.bmrKcal?.let { formatKcal(it) } ?: "non disponibile"} a riposo · " +
-             "TDEE: ${calorieReference.tdeeKcal?.let { formatKcal(it) } ?: "non disponibile"}, calcolato sul livello di attività del profilo. " +
-                 getString(R.string.food_target_legend, formatKcal(resolvedTarget.kcal), targetSourceLabel, formatKcal(resolvedTarget.theoreticalKcal))
+            "Metabolismo a riposo (BMR): ${calorieReference.bmrKcal?.let { formatKcal(it) } ?: "non disponibile"} · " +
+             "Consumo giornaliero (TDEE): ${calorieReference.tdeeKcal?.let { formatKcal(it) } ?: "non disponibile"}, calcolato sul livello di attività del profilo. " +
+                 getString(R.string.food_target_legend, formatKcal(resolvedTarget.kcal), targetSourceLabel, formatKcal(resolvedTarget.theoreticalKcal), targetLabel)
         val rows = listOf(
             R.id.dailyTotalRowBmr,
             R.id.dailyTotalRowTdee,
@@ -557,7 +558,7 @@ class FoodPlanActivity : BaseShellActivity() {
         findViewById<TextView>(R.id.totalKcalBmr).text = formatKcal(calorieReference.bmrKcal)
         findViewById<TextView>(R.id.totalKcalTdee).text = formatKcal(calorieReference.tdeeKcal)
         findViewById<TextView>(R.id.dailyTdeeLabel).text =
-            "TDEE · livello di attività"
+            "Consumo giornaliero (TDEE)"
         findViewById<TextView>(R.id.dailyTargetLabel).text = targetLabel
         findViewById<View>(R.id.dailyTotalRowTarget).visibility = if (dayTargetKcal != null || dayTargetProtein != null) View.VISIBLE else View.GONE
         findViewById<TextView>(R.id.totalKcalTarget).text = formatKcal(dayTargetKcal)
@@ -566,8 +567,8 @@ class FoodPlanActivity : BaseShellActivity() {
         findViewById<TextView>(R.id.totalProteinPlanned).text = NutritionEstimateFormatter.formatEstimatedMacro(totals.proteinG, "g")
         findViewById<TextView>(R.id.totalKcalConsumed).text = formatConsumed(consumedKcal, "kcal")
         findViewById<TextView>(R.id.totalProteinConsumed).text = formatConsumed(consumedProtein, "g")
-        findViewById<View>(R.id.dailyTotalRowBmr).contentDescription = calorieReference.bmrKcal?.let { "Metabolismo a riposo, ${formatKcal(it)}" }
-         findViewById<View>(R.id.dailyTotalRowTdee).contentDescription = calorieReference.tdeeKcal?.let { "TDEE, ${formatKcal(it)}" }
+        findViewById<View>(R.id.dailyTotalRowBmr).contentDescription = calorieReference.bmrKcal?.let { "Metabolismo a riposo (BMR), ${formatKcal(it)}" }
+         findViewById<View>(R.id.dailyTotalRowTdee).contentDescription = calorieReference.tdeeKcal?.let { "Consumo giornaliero (TDEE), ${formatKcal(it)}" }
         findViewById<View>(R.id.dailyTotalRowTarget).contentDescription = getString(R.string.food_target_description, targetLabel, formatKcal(dayTargetKcal), formatValue(dayTargetProtein, "g"), formatKcal(resolvedTarget.theoreticalKcal))
         findViewById<View>(R.id.dailyTotalRowPlanned).contentDescription = "Nel menu: ${NutritionEstimateFormatter.formatEstimatedKcal(totals.kcal)}, proteine ${NutritionEstimateFormatter.formatEstimatedMacro(totals.proteinG, "g")}"
         findViewById<View>(R.id.dailyTotalRowConsumed).contentDescription = "Consumate: ${formatConsumed(consumedKcal, "kcal")}, proteine ${formatConsumed(consumedProtein, "g")}"
@@ -607,9 +608,9 @@ class FoodPlanActivity : BaseShellActivity() {
         showHelpCard(
             "Come leggere le calorie",
             
-            "BMR a riposo: energia stimata senza applicare il livello di attività.\n\n" +
-                    "TDEE: stima locale calcolata sul profilo e sul livello di attività scelto, uguale per tutti i giorni.\n\n" +
-                    "Target del giorno: se il piano ha una voce per quel giorno è il target del piano, con adattamento e recupero già applicati, uguale a quello mostrato in Home. Senza piano per il giorno è il target teorico (profilo e attività), indicato come tale; viene mostrato anche il teorico quando differisce.\n\n" +
+            "Metabolismo a riposo (BMR): energia stimata senza applicare il livello di attività.\n\n" +
+                    "Consumo giornaliero (TDEE): stima locale calcolata sul profilo e sul livello di attività scelto, uguale per tutti i giorni.\n\n" +
+                    "Obiettivo di oggi (o del giorno selezionato): se il piano ha una voce per quel giorno è l'obiettivo del piano, con adattamento e recupero già applicati, uguale a quello mostrato in Home. Senza piano per il giorno è l'obiettivo da profilo (profilo e attività), indicato come tale; viene mostrato anche quello da profilo quando differisce.\n\n" +
                     "Piano: somma nutrizionale degli alimenti e degli integratori programmati.\n\n" +
                     "Consumate: somma dei soli elementi segnati come consumati nel giorno selezionato. Le portate non registrate non vengono conteggiate come zero effettivo."
         )

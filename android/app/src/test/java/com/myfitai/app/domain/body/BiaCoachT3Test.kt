@@ -395,7 +395,7 @@ class BiaCoachT3Test {
 
         assertTrue(line(prompt, "TARGET_ABITUALE_KCAL").contains("tdee=${Math.round(metrics.tdeeKcal!!)}"))
         assertTrue(line(prompt, "TARGET_ABITUALE_KCAL").contains("target=${Math.round(metrics.targetKcal!!)}"))
-        assertTrue(BiaAnalysisReport.caloriesSection(calculation).contains("Target abituale: ${Math.round(metrics.targetKcal!!)} kcal"))
+        assertTrue(BiaAnalysisReport.caloriesSection(calculation).contains("Obiettivo da profilo: ${Math.round(metrics.targetKcal!!)} kcal"))
     }
 
     @Test

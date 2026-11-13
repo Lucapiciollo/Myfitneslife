@@ -228,8 +228,8 @@ object BiaAnalysisReport {
         val lines = mutableListOf<String>()
         calculation?.let { habitual ->
             val parts = listOfNotNull(habitual.targetKcal?.let { "${whole(it)} kcal" }) + macros(habitual.proteinG, habitual.carbsG, habitual.fatG)
-            if (parts.isNotEmpty()) lines += "Target abituale: " + parts.joinToString(", ")
-            habitual.tdeeKcal?.let { lines += "Consumo abituale stimato (TDEE): ${whole(it)} kcal" }
+            if (parts.isNotEmpty()) lines += "Obiettivo da profilo: " + parts.joinToString(", ")
+            habitual.tdeeKcal?.let { lines += "Consumo giornaliero (TDEE): ${whole(it)} kcal" }
         }
         return lines.joinToString("\n")
     }
