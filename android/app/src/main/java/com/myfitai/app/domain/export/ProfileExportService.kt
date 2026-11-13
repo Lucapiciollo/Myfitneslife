@@ -19,6 +19,7 @@ import com.myfitai.app.domain.food.FoodSupplement
 import com.myfitai.app.domain.food.NutritionPlanPeriod
 import com.myfitai.app.domain.shopping.ShoppingListEngine
 import com.myfitai.app.data.profile.NutritionPlanSchedulePreferences
+import com.myfitai.app.data.profile.NutritionPlanUpdatePreferences
 import com.myfitai.app.data.profile.MealCountPreferences
 import com.myfitai.app.data.profile.BiaFrequencyPreferences
 import com.myfitai.app.data.profile.AiAutomationPreferences
@@ -43,6 +44,7 @@ class ProfileExportService(
     private val mealCountPreferences: MealCountPreferences? = null,
     private val biaFrequencyPreferences: BiaFrequencyPreferences? = null,
     private val aiAutomationPreferences: AiAutomationPreferences? = null,
+    private val nutritionPlanUpdatePreferences: NutritionPlanUpdatePreferences? = null,
 ) {
     enum class Format { JSON, CSV_ZIP, PDF, WEEKLY_PLAN_PDF }
     data class ExportedFile(val file: File, val mimeType: String)
@@ -141,6 +143,7 @@ class ProfileExportService(
                         latestPlanTargetProteinG = latestPlan?.version?.targetProteinG,
                         latestPlanTargetCarbsG = latestPlan?.version?.targetCarbsG,
                         latestPlanTargetFatG = latestPlan?.version?.targetFatG,
+                        planUpdatePending = nutritionPlanUpdatePreferences?.isPending(profileId) == true,
                     )
                 )
                 ExportedFile(file, "application/pdf")

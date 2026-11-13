@@ -43,6 +43,7 @@ class ProductClarityDeviceTest {
                 assertEquals("Metabolismo a riposo (BMR)", activity.findViewById<android.widget.TextView>(R.id.dailyBmrLabel).text.toString())
                 assertEquals("Consumo giornaliero (TDEE)", activity.findViewById<android.widget.TextView>(R.id.dailyTdeeLabel).text.toString())
                 assertTrue(activity.findViewById<android.view.View>(R.id.dailyTotalLegend).contentDescription == null)
+                assertEquals(View.GONE, activity.findViewById<View>(R.id.dailyTotalReferenceRows).visibility)
                 assertTrue(activity.findViewById<android.view.View>(R.id.totalConsumptionNote).visibility == View.VISIBLE)
                 listOf("totalCarbsTarget", "totalFatTarget", "totalCarbsConsumed", "totalFatConsumed").forEach { name ->
                     assertEquals("Daily total exposes carbs/fat only as 'Nel menu'", 0, activity.resources.getIdentifier(name, "id", activity.packageName))

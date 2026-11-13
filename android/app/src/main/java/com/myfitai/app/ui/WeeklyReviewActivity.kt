@@ -13,6 +13,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.button.MaterialButton
 import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
+import com.myfitai.app.domain.display.FoodTotalsPresentation
 import com.myfitai.app.domain.review.WeeklyReviewService
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.ui.review.WeeklyReviewViewModel
@@ -113,6 +114,12 @@ class WeeklyReviewActivity : BaseShellActivity() {
     }
 
     private fun renderNutrition(metrics: WeeklyReviewService.LocalMetrics?) {
+        // UX5b: nessun cambio di calcolo, solo una nota quando il profilo e' cambiato dopo la generazione del piano.
+        val planUpdatePending = data.activeProfileStore.currentIdOrNull()
+            ?.let(data.nutritionPlanUpdatePreferences::isPending) == true
+        findViewById<View>(R.id.planStaleNote).visibility = if (
+            FoodTotalsPresentation.planUpdateNoteVisible(planUpdatePending, hasPlanTarget = metrics?.hasPlan == true && metrics.targetKcal != null)
+        ) View.VISIBLE else View.GONE
         if (metrics != null && !metrics.hasPlan) {
             findViewById<TextView>(R.id.avgKcalValue).text = "Nessun piano"
             findViewById<TextView>(R.id.targetKcalValue).text = "Nessun piano associato a questa settimana"
