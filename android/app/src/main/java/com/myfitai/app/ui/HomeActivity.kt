@@ -27,6 +27,7 @@ import com.myfitai.app.domain.calculation.LocalCalculationEngine
 import com.myfitai.app.domain.calculation.WeightSource
 import com.myfitai.app.domain.display.DayTargetResolver
 import com.myfitai.app.domain.display.DisplayNumberFormatter
+import com.myfitai.app.domain.display.HomeProgressHint
 import com.myfitai.app.domain.display.MetricDeltaPresenter
 import com.myfitai.app.domain.display.RemainingKcal
 import com.myfitai.app.domain.display.TargetModeLine
@@ -135,7 +136,7 @@ class HomeActivity : BaseShellActivity() {
         findViewById<android.view.View>(R.id.nextMealCard).setOnClickListener {
             currentNextMealId?.let { mealId ->
                 startActivity(Intent(this, MealDetailActivity::class.java).putExtra(MealDetailActivity.EXTRA_MEAL_ID, mealId))
-            } ?: openFoodPlan()
+            } ?: openFoodPlan(requiresAi = false)
         }
         findViewById<android.view.View>(R.id.secondNextMealCard).setOnClickListener {
             currentUpcomingMeals.getOrNull(1)?.let { meal ->
@@ -169,13 +170,18 @@ class HomeActivity : BaseShellActivity() {
                 startActivity(Intent(this@HomeActivity, CheatEntryActivity::class.java))
             }
         }
+        findViewById<MealCardView>(R.id.secondNextMealCard).setSecondary(true)
         findViewById<TextView>(R.id.todayLabel).text = todayLabel()
         renderAiConfigurationNotice()
 
         findViewById<TimeRangeSelectorView>(R.id.timeRangeSelector).apply {
             // Keep the dashboard selector aligned with the full body-history view so
             // less frequent measurements are available without an extra navigation step.
-            setRanges(listOf("1W", "1M", "3M", "1Y"), selectedIndex = 3)
+            setRanges(resources.getStringArray(R.array.home_chart_range_labels).toList(), selectedIndex = 3)
+            // The sigla is only a label: the accessible name states the full interval, as in Progress.
+            resources.getStringArray(R.array.home_chart_range_descriptions).forEachIndexed { index, description ->
+                getChildAt(index)?.contentDescription = description
+            }
             setOnRangeSelectedListener(viewModel::selectRange)
         }
 
@@ -405,7 +411,6 @@ class HomeActivity : BaseShellActivity() {
     private fun renderAiConfigurationNotice() {
         val providerAvailable = aiProviderConfigured
         findViewById<android.view.View>(R.id.aiConfigurationNoticeCard)?.let { card -> revealState(card, !providerAvailable) }
-        findViewById<View?>(R.id.todayMenuButton)?.let { setAiActionEnabled(it, providerAvailable) }
         findViewById<View?>(R.id.planUpdateNoticeButton)?.let { setAiActionEnabled(it, providerAvailable) }
         findViewById<View?>(R.id.addExtraButton)?.let { setAiActionEnabled(it, providerAvailable) }
     }
@@ -529,6 +534,7 @@ class HomeActivity : BaseShellActivity() {
         caution.text = result.caution
         val hasResult = result.plannedDays > 0
         val currentGoal = viewModel.state.value.expectationGoals.firstOrNull { it.periodStartEpochDay == monday.toEpochDay() }
+        findViewById<TextView>(R.id.weeklyExpectationQuestionText).visibility = if (hasResult) View.VISIBLE else View.GONE
         findViewById<TextView>(R.id.weeklyExpectationActionButton).apply {
             visibility = if (hasResult) View.VISIBLE else View.GONE
             val goal = viewModel.state.value.expectationGoals.firstOrNull { it.periodStartEpochDay == monday.toEpochDay() }
@@ -563,7 +569,11 @@ class HomeActivity : BaseShellActivity() {
     private fun renderRecovery(recovery: HomeViewModel.RecoveryState) {
         val value = findViewById<TextView>(R.id.recoveryValueText)
         val hint = findViewById<TextView>(R.id.recoveryHintText)
-        if (recovery.pendingKcal > 0) {
+        val compact = recovery.pendingKcal <= 0
+        // 0 kcal is a real value (kept on screen), but it does not deserve a full panel: one compact row instead.
+        findViewById<View>(R.id.recoveryDetailPanel).visibility = if (compact) View.GONE else View.VISIBLE
+        findViewById<View>(R.id.recoveryCompactRow).visibility = if (compact) View.VISIBLE else View.GONE
+        if (!compact) {
             value.text = DisplayNumberFormatter.kcal(recovery.pendingKcal)
             val credits = if (recovery.creditCount == 1) "1 sgarro recente" else "${recovery.creditCount} sgarri recenti"
             val expiry = recovery.nextExpiry?.format(DateTimeFormatter.ofPattern("dd/MM", Locale.ITALIAN))
@@ -571,6 +581,7 @@ class HomeActivity : BaseShellActivity() {
         } else {
             value.text = "0 kcal"
             hint.text = "Nessun extra da distribuire: sei in pari con il recupero."
+            ValueUnitFormatter.apply(findViewById<TextView>(R.id.recoveryCompactValueText))
         }
         ValueUnitFormatter.apply(value)
     }
@@ -596,7 +607,7 @@ class HomeActivity : BaseShellActivity() {
     private fun showTodayMenu() {
         val meals = currentUpcomingMeals
         if (meals.isEmpty()) {
-            openFoodPlan()
+            openFoodPlan(requiresAi = false)
             return
         }
         val items = meals.map { meal ->
@@ -615,7 +626,7 @@ class HomeActivity : BaseShellActivity() {
         MaterialAlertDialogBuilder(this)
             .setTitle("Prossimi pasti")
             .setItems(items) { _, which ->
-                if (!com.myfitai.app.ai.AiProviderAccess.requireConfigured(this)) return@setItems
+                // Opening a saved meal is consultation: it never needs an AI provider.
                 val meal = meals.getOrNull(which) ?: return@setItems
                 startActivity(Intent(this, MealDetailActivity::class.java).putExtra(MealDetailActivity.EXTRA_MEAL_ID, meal.mealId))
             }
@@ -711,6 +722,7 @@ class HomeActivity : BaseShellActivity() {
             setProgress(target, if (calories.consumedKcal != null) target - calories.consumedKcal else 0, target > 0 && calories.consumedKcal != null)
         }
         caloriesConsumedText.visibility = if (target > 0) View.VISIBLE else View.GONE
+        renderProgressHint(calories)
         findViewById<View>(R.id.caloriesSummaryBody).contentDescription = buildString {
             append("BMR locale: ${kcal(calories.bmr)}. ")
             append("BMR riportato dalla BIA: ${kcal(calories.biaBmr)}. ")
@@ -752,6 +764,21 @@ class HomeActivity : BaseShellActivity() {
             R.id.caloriesBmrValue, R.id.caloriesBiaBmrValue, R.id.caloriesTdeeValue, R.id.caloriesTargetValue,
             R.id.caloriesConsumedText, R.id.caloriesConsumedProteinText, R.id.caloriesRemainingText,
         ).forEach { ValueUnitFormatter.apply(findViewById(it)) }
+    }
+
+    private fun renderProgressHint(calories: HomeViewModel.CalorieState) {
+        val line = findViewById<TextView>(R.id.homeProgressHintText)
+        when (HomeProgressHint.of(calories.target, calories.consumedCount, calories.consumedKcal)) {
+            HomeProgressHint.Kind.ENCOURAGEMENT -> {
+                line.setText(R.string.dashboard_subtitle)
+                line.visibility = View.VISIBLE
+            }
+            HomeProgressHint.Kind.REGISTER_MEALS -> {
+                line.setText(R.string.dashboard_hint_register_meals)
+                line.visibility = View.VISIBLE
+            }
+            HomeProgressHint.Kind.HIDDEN -> line.visibility = View.GONE
+        }
     }
 
     private fun showTdeeExplanation() {

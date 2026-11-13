@@ -89,8 +89,9 @@ abstract class BaseShellActivity : AppCompatActivity() {
         return null
     }
 
-    protected fun openFoodPlan(weekStartEpochDay: Long? = null): Boolean {
-        if (weekStartEpochDay == null && !AiProviderAccess.requireConfigured(this)) return false
+    protected fun openFoodPlan(weekStartEpochDay: Long? = null, requiresAi: Boolean = true): Boolean {
+        // Plain consultation of the plan (requiresAi = false) never needs a provider; regeneration entry points keep the gate.
+        if (requiresAi && weekStartEpochDay == null && !AiProviderAccess.requireConfigured(this)) return false
         (parent as? TabHostActivity)?.let {
             it.selectTab(BottomNavBinder.Tab.FOOD)
             weekStartEpochDay?.let { week -> it.currentFoodPlanActivity()?.selectWeekFromNavigation(week) }

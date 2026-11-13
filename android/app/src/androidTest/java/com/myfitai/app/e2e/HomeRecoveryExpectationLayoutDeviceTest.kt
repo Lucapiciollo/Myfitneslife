@@ -69,6 +69,10 @@ class HomeRecoveryExpectationLayoutDeviceTest {
                 if (formatUnits) ValueUnitFormatter.apply(activity.findViewById(R.id.recoveryValueText))
                 show(R.id.weeklyExpectationActionButton)
                 show(R.id.weeklyExpectationNegativeButton)
+                show(R.id.weeklyExpectationQuestionText)
+                // The synthetic values above exercise the full panel, which is hidden when real recovery is 0 kcal.
+                show(R.id.recoveryDetailPanel)
+                activity.findViewById<View>(R.id.recoveryCompactRow).visibility = View.GONE
                 show(R.id.weeklyExpectationOutcomeText)
                 text(R.id.weeklyExpectationOutcomeText, "Esito registrato: sì, traguardo raggiunto.")
 
@@ -84,7 +88,7 @@ class HomeRecoveryExpectationLayoutDeviceTest {
                 listOf(
                     R.id.recoveryValueText, R.id.recoveryHintText, R.id.weeklyExpectationStatus,
                     R.id.weeklyExpectationDetail, R.id.weeklyExpectationCaution, R.id.weeklyExpectationOutcomeText,
-                    R.id.weeklyExpectationActionButton, R.id.weeklyExpectationNegativeButton,
+                    R.id.weeklyExpectationActionButton, R.id.weeklyExpectationNegativeButton, R.id.weeklyExpectationQuestionText,
                 ).forEach { id ->
                     val view = activity.findViewById<TextView>(id)
                     val layout = view.layout
