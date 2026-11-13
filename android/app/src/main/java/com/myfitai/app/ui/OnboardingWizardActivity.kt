@@ -31,10 +31,10 @@ import com.myfitai.app.ai.AiSettingsStore
 import com.myfitai.app.ai.GeminiByokProvider
 import com.myfitai.app.ai.OpenAiProvider
 import com.myfitai.app.data.AppDataContainer
-import com.myfitai.app.domain.calculation.TrainingEnergyPlanner
 import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.data.profile.NutritionPlanSchedulePreferences
 import com.myfitai.app.domain.food.DietaryProfile
+import com.myfitai.app.domain.profile.ActivityLevelChoices
 import com.myfitai.app.domain.profile.ProfileAgeRule
 import com.myfitai.app.notifications.NotificationPreferences
 import com.myfitai.app.security.AiCredentialProvider
@@ -231,7 +231,9 @@ class OnboardingWizardActivity : AppCompatActivity() {
         sexInput = dropdown(content, R.string.profile_sex_hint, listOf("Maschio", "Femmina"))
         heightInput = textInput(content, R.string.profile_height_hint, "numberDecimal", singleLine = true)
         weightInput = textInput(content, R.string.profile_weight_hint, "numberDecimal", singleLine = true)
-        activityInput = dropdown(content, R.string.profile_activity_hint, resources.getStringArray(R.array.profile_activity_levels).toList(), R.string.profile_activity_helper)
+        // Un valore storico fuori dalle 3 scelte si mostra com'e e resta salvato finche l'utente non ne sceglie un altro.
+        val activityChoices = ActivityLevelChoices.options(resources.getStringArray(R.array.profile_activity_levels).toList(), profile?.activityLevel)
+        activityInput = dropdown(content, R.string.profile_activity_hint, activityChoices, R.string.profile_activity_helper)
         goalInput = dropdown(content, R.string.profile_goal_hint, resources.getStringArray(R.array.profile_goals).toList())
         nameInput?.setText(profile?.name.orEmpty())
         birthDateInput?.setText(birthDateEpochDay?.let { LocalDate.ofEpochDay(it).format(formatter) }.orEmpty())
@@ -472,11 +474,7 @@ class OnboardingWizardActivity : AppCompatActivity() {
                 photoPath = null, createdAtEpochMillis = now, updatedAtEpochMillis = now,
             )).also {
                 data.activeProfileStore.selectProfile(it, makeDefault = true)
-                data.trainingProgramPreferences.setActivityBasis(it, TrainingEnergyPlanner.ActivityBasis.EVERYDAY_ONLY)
             }
-        }
-        if (activity != existing.activityLevel) {
-            data.trainingProgramPreferences.setActivityBasis(existing.id, TrainingEnergyPlanner.ActivityBasis.EVERYDAY_ONLY)
         }
         val calorieInputsChanged = goal != existing.goal || activity != existing.activityLevel ||
             birth != existing.birthDateEpochDay || sex != existing.biologicalSex ||

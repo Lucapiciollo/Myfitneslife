@@ -127,7 +127,7 @@
     <string name="profile_sex_hint">Sesso biologico</string>
     <string name="profile_height_hint">Altezza (cm)</string>
     <string name="profile_weight_hint">Peso (kg)</string>
-    <string name="profile_activity_helper">Attività di tutti i giorni, esclusi gli allenamenti: quelli si impostano a parte e aggiungono calorie solo nei giorni in cui ti alleni.</string>
+    <string name="profile_activity_helper">Comprende la tua attività abituale, anche sportiva. Si imposta una volta e vale per tutti i giorni: puoi cambiarlo quando la tua routine cambia.</string>
     <string name="exact_alarm_title">Promemoria pasti puntuali</string>
     <string name="exact_alarm_message">Per far arrivare l\'avviso del pasto all\'orario previsto Android richiede l\'accesso «Allarmi e promemoria». Senza, il sistema può ritardare l\'avviso anche di un\'ora.</string>
     <string name="exact_alarm_open_settings">Apri impostazioni</string>
