@@ -359,3 +359,5 @@ Richiesta utente: poi rilasciare versione aggiornata (install in-place + tag; ne
 
 | ux-reviewer | Riesame UX Home/Cibo/Progresso/Altro (sola lettura) | ses_e2a3f8899ffeByf9A3u0owMYwX | repo principale, nessuna modifica |
 In corso in parallelo: fix Home (ses_e2a5432ffffe2x0p59F9I4SeSV). Dopo: integrazione, install in-place, prova su Mamma, tag; poi lotti di miglioramento UX scelti dall'utente.
+
+- Fix Home piano non aggiornato: subagente cancellato (ses_e2a5432ffffe2x0p59F9I4SeSV) DOPO gate BUILD SUCCESSFUL 18m (958 test, 0 falliti, DashboardNumbersTest eseguito 17:28); commit 6a0d0d3 fatto da me dal suo worktree, merge 21615a2, tag release-2026-11-13-home-piano. Installato in-place. Verificato su Mamma: con Molto attivo + Non ora, chip 'piano da aggiornare' (niente -41%), riga 'Target del piano precedente: i nuovi dati danno 1.985 kcal', card con Rigenera subito dopo la card calorie. Audit del subagente perso (cancellato prima dell'output). Mamma ripristinata: Sedentario, flag pending a false, Home 1.625/1.381/-15%. Riesame UX: docs/UX_RIESAME_2026-11-13.md (ses_e2a3f8899ffeByf9A3u0owMYwX).
