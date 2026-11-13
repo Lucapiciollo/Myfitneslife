@@ -306,3 +306,7 @@ Da integrare ancora: D1 (feat/d1-poc-nutritionadvice). Decisioni aperte: tetto p
 - In corso: A2 ses_e2b7aafcbffeXZgL2ZGabBZd7B (feat/sem-a2-sport-varieta), A3 ses_e2b7a8257ffei1HT6LWApwK645 (feat/sem-a3-prompt-analisi), B1 ses_e2b7a232affeB5ic27mwdNmPs2 (feat/sem-b1-ui-allenamenti).
 - F4 documenti fa67407 su docs/sem-f4-documenti (ses_e2b780bc8ffe6U9QQ6HEgTJH9h), 34 file, nessun gate necessario; dubbi: esempio canonical-json-parity-example.json non valida gia prima; PA1 input A senza workouts (A3 deve allineare); PW/TC dismessi (parser A3 tollerante).
 - Incidente orchestratore: ho scartato per errore un git checkout di docs/prodotto/stato.md con note non committate; ricostruite qui. Il subagente F4 aveva scritto DEVELOPMENT_PLAN.md anche nel repo principale (scartato: identico al commit del suo branch).
+
+- B1 2f16724 (917 test dichiarati, BUILD SUCCESSFUL 13m20s) e A3 93476c2 (921 test dichiarati, BUILD SUCCESSFUL 14m6s) uniti nel worktree sem-int-1 (integrazione/sem-1) senza conflitti sopra develop 7b97b7c; gate unione in corso (gate-sem1.log). A2 ancora in corso.
+
+- develop = b4b6a83: B1+A3+A2 (integrazione/sem-1 d09c645, gate BUILD SUCCESSFUL, 927 test unitari 0 falliti verificati) + F4 documenti. Primo gate sem-1 fallito per file locked (gate precedente non fermato) e secondo mai partito (filtro che uccideva il comando): non erano errori di codice. APK da worktree sem-int-1.
