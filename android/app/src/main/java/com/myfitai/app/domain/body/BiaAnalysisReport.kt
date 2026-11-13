@@ -3,7 +3,6 @@ package com.myfitai.app.domain.body
 import com.myfitai.app.data.local.entity.BiaMeasurementEntity
 import com.myfitai.app.data.local.entity.BodyMeasurementEntity
 import com.myfitai.app.data.local.entity.UserProfileEntity
-import com.myfitai.app.data.local.entity.WorkoutEntity
 import com.myfitai.app.domain.ai.AiUserContext
 import com.myfitai.app.domain.calculation.LocalCalculationEngine
 import com.myfitai.app.domain.calculation.ProfileCalculationMapper
@@ -148,7 +147,7 @@ object BiaAnalysisReport {
 
     /**
      * Builds the whole coach input in the same format as [AiUserContext]: age in years, ISO `yyyy-MM-dd`
-     * dates everywhere, no epoch values. Every window (BIA, body measurements, workouts, plan days,
+     * dates everywhere, no epoch values. Every window (BIA, body measurements, plan days,
      * weights) is capped to [MAX_HISTORY_ROWS] rows and never contains data later than the analysed reading.
      *
      * The calorie target is ONE, the profile's (`TARGET_ABITUALE_KCAL` from [calculation], the same figure as Home,
@@ -160,7 +159,6 @@ object BiaAnalysisReport {
         today: LocalDate,
         report: Report,
         bodyHistory: List<BodyMeasurementEntity>,
-        workoutHistory: List<WorkoutEntity>,
         planDays: List<PlanDay>,
         calculation: LocalCalculationEngine.Result?,
         zone: ZoneId = ZoneId.systemDefault(),
@@ -168,7 +166,6 @@ object BiaAnalysisReport {
         val cutoff = report.latest.measuredAtEpochMillis + DAY_MILLIS
         val cutoffEpochDay = Instant.ofEpochMilli(report.latest.measuredAtEpochMillis).atZone(zone).toLocalDate().toEpochDay()
         val body = bodyHistory.filter { it.measuredAtEpochMillis <= cutoff }.sortedBy { it.measuredAtEpochMillis }.takeLast(MAX_HISTORY_ROWS)
-        val workouts = workoutHistory.filter { it.startedAtEpochMillis <= cutoff }.sortedBy { it.startedAtEpochMillis }.takeLast(MAX_HISTORY_ROWS)
         val plan = planDays.filter { it.dateEpochDay <= cutoffEpochDay }.sortedBy { it.dateEpochDay }.takeLast(MAX_HISTORY_ROWS)
         val weights = (
             report.history.mapNotNull { row -> row.weightKg?.let { row.measuredAtEpochMillis to it } } +
@@ -207,7 +204,6 @@ object BiaAnalysisReport {
             appendLine("NOTE_UTENTE:${report.latest.notes?.takeIf { it.isNotBlank() }?.replace('\n', ' ') ?: "?"}")
             appendLine("MISURE_CORPOREE:${body.joinToString(";") { "date=${BiaHistoryImportContract.dayKey(it.measuredAtEpochMillis)},weight=${it.weightKg ?: "?"},waist=${it.waistCm ?: "?"},abdomen=${it.abdomenCm ?: "?"},hips=${it.hipsCm ?: "?"},chest=${it.chestCm ?: "?"},arms=${it.armLeftCm ?: "?"}/${it.armRightCm ?: "?"},thighs=${it.thighLeftCm ?: "?"}/${it.thighRightCm ?: "?"}" }.ifBlank { "?" }}")
             appendLine("STORICO_PESO:${weights.joinToString(";") { "${BiaHistoryImportContract.dayKey(it.first)}=${it.second}" }.ifBlank { "?" }}")
-            appendLine("ALLENAMENTI:${workouts.joinToString(";") { "date=${BiaHistoryImportContract.dayKey(it.startedAtEpochMillis)},type=${it.type},title=${it.title.replace('|', '/')},duration=${it.durationMinutes ?: "?"},rest=${it.isRestDay}" }.ifBlank { "?" }}")
             appendLine("NOTA_PIANO:il piano alimentare e pianificato, NON e consumo registrato.")
             appendLine("PIANO_PIANIFICATO:${plan.joinToString(";") { "date=${LocalDate.ofEpochDay(it.dateEpochDay)},kcal=${it.kcal ?: "?"},p=${it.proteinG ?: "?"},c=${it.carbsG ?: "?"},f=${it.fatG ?: "?"}" }.ifBlank { "?" }}")
             appendLine(fatLossEstimateLine(report))

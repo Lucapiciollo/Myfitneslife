@@ -82,6 +82,8 @@ class UnsupportedClaimGuardAndPromptRulesTest {
         assertTrue(prompt.contains("O <=18") || prompt.contains("each O/G <=18 words"))
         assertTrue(prompt.contains("O 1..6"))
         assertTrue(prompt.contains("G 1..5"))
+        assertTrue(!prompt.contains("workout", ignoreCase = true))
+        assertTrue(prompt.contains("E=registered deviations"))
     }
 
     @Test

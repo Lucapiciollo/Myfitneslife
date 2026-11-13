@@ -4,7 +4,6 @@ import androidx.work.Data
 import com.myfitai.app.data.local.entity.BiaMeasurementEntity
 import com.myfitai.app.data.local.entity.BodyMeasurementEntity
 import com.myfitai.app.data.local.entity.UserProfileEntity
-import com.myfitai.app.data.local.entity.WorkoutEntity
 import com.myfitai.app.domain.ai.AiUserContext
 import com.myfitai.app.domain.calculation.LocalCalculationEngine
 import java.time.LocalDate
@@ -171,17 +170,10 @@ class BiaAnalysisReportTest {
         weightKg = weight,
     )
 
-    private fun workout(dayIndex: Int) = WorkoutEntity(
-        profileId = 1L,
-        startedAtEpochMillis = 1_700_000_000_000L + dayIndex * day,
-        type = "Forza", title = "Allenamento", durationMinutes = 45, isRestDay = false,
-    )
-
     private fun context(
         all: List<BiaMeasurementEntity>,
         profile: UserProfileEntity = makeProfile(),
         bodyHistory: List<BodyMeasurementEntity> = emptyList(),
-        workouts: List<WorkoutEntity> = emptyList(),
         plan: List<BiaAnalysisReport.PlanDay> = emptyList(),
         calculation: LocalCalculationEngine.Result? = null,
     ) = BiaAnalysisReport.coachContext(
@@ -189,7 +181,6 @@ class BiaAnalysisReportTest {
         today = today,
         report = BiaAnalysisReport.build(all)!!,
         bodyHistory = bodyHistory,
-        workoutHistory = workouts,
         planDays = plan,
         calculation = calculation,
     )
@@ -201,7 +192,6 @@ class BiaAnalysisReportTest {
         val prompt = context(
             all = listOf(reading(1, 0), reading(2, 10)),
             bodyHistory = listOf(body(5)),
-            workouts = listOf(workout(6)),
             plan = listOf(BiaAnalysisReport.PlanDay(LocalDate.of(2023, 11, 14).toEpochDay(), 1800, 120, 180, 55)),
         ).prompt
 
@@ -209,6 +199,9 @@ class BiaAnalysisReportTest {
         assertTrue(prompt, prompt.contains("U=Femmina|62|165.0|68.0|Ricomposizione|Sedentario|420|1380"))
         assertTrue(!prompt.contains("birthDate"))
         assertTrue(prompt.contains("DATA_ANALISI:2026-11-12"))
+        // Workouts are no longer part of the coach input; the measurement condition stays.
+        assertTrue(prompt, !prompt.contains("ALLENAMENTI"))
+        assertTrue(prompt, prompt.contains("noWorkout="))
         assertTrue(prompt.contains("date=2023-11-14,kcal=1800"))
         // No epoch millis or epoch days anywhere (8+ consecutive digits, or 5-digit epoch days after "date=").
         assertTrue(prompt, !Regex("\\d{8,}").containsMatchIn(prompt))
@@ -237,12 +230,10 @@ class BiaAnalysisReportTest {
         val prompt = context(
             all = bia,
             bodyHistory = (1..60).map { body(it) } + body(200),
-            workouts = (1..60).map { workout(it) } + workout(200),
             plan = plan,
         ).prompt
 
         assertEquals(BiaAnalysisReport.MAX_HISTORY_ROWS, line(prompt, "MISURE_CORPOREE").removePrefix("MISURE_CORPOREE:").split(";").size)
-        assertEquals(BiaAnalysisReport.MAX_HISTORY_ROWS, line(prompt, "ALLENAMENTI").removePrefix("ALLENAMENTI:").split(";").size)
         assertEquals(BiaAnalysisReport.MAX_HISTORY_ROWS, line(prompt, "PIANO_PIANIFICATO").removePrefix("PIANO_PIANIFICATO:").split(";").size)
         assertEquals(BiaAnalysisReport.MAX_HISTORY_ROWS, line(prompt, "STORICO_PESO").removePrefix("STORICO_PESO:").split(";").size)
         // The reading at day 200 is after the latest BIA (day 40): it is not sent.

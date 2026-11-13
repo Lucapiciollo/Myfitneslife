@@ -299,20 +299,9 @@ class NutritionPlanGenerationService(
                     wakeTimeMinutes = profile.wakeTimeMinutes,
                     sleepTimeMinutes = profile.sleepTimeMinutes,
                     dietaryPreferences = dietaryProfile.toPromptCompact(),
-                    sportsMode = sportsMode,
                     snapshot = snapshot,
                     userContext = AiUserContext.profileLine(profile, time.today(), snapshot.latestWeightKg),
                     calculationContext = AiUserContext.calculationLine(snapshot.calculation),
-                    workouts = weekWorkouts.map { w ->
-                        val dt = Instant.ofEpochMilli(w.startedAtEpochMillis).atZone(zone)
-                        PlanReviewService.WorkoutSignal(
-                            dayOffset = (dt.toLocalDate().toEpochDay() - monday.toEpochDay()).toInt().coerceIn(0, periodWeeks * 7 - 1),
-                            timeMinutes = dt.toLocalTime().hour * 60 + dt.toLocalTime().minute,
-                            type = w.type,
-                            durationMinutes = w.durationMinutes ?: 0,
-                            isRestDay = w.isRestDay,
-                        )
-                    },
                 ),
             )
             if (!review.accepted) {

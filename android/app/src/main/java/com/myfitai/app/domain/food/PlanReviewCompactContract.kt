@@ -31,11 +31,13 @@ I|issueCode|I_W_M_C|dayOffset_or_-|mealType_or_-"""
     enum class IssueCode(val code: String) {
         PROTEIN_DISTRIBUTION("PD"),
         MEAL_TIMING("MT"),
+        /** Legacy code: no longer proposed to the reviewer, still parsed so older outputs stay readable. */
         PREWORKOUT_LOAD("PW"),
         WEEKLY_VARIETY("WV"),
         DUPLICATE_MEAL("DM"),
         FOOD_CONSTRAINT("FC"),
         DIGESTIVE_COMFORT("DC"),
+        /** Legacy code: no longer proposed to the reviewer, still parsed so older outputs stay readable. */
         TRAINING_COHERENCE("TC"),
         BODY_CONTEXT_COHERENCE("BC"),
         FRUIT_VEGETABLE_VARIETY("FV");
