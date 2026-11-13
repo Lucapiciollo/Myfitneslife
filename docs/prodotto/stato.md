@@ -383,3 +383,6 @@ Dopo: UX5 Home prima card semplificata + BMR/TDEE fuori da Cibo; poi integrazion
 Decisioni mie (reversibili): tocco rapido solo oggi/passati; Dettagli del calcolo collassati; gate di combinazione UX1-UX4 fatto da UX5a/UX5b.
 
 - UX5b FERMATO (ses_e29df9262ffeVO9N576qaGRaTX): commit 5395844, unito in develop. Gate BUILD SUCCESSFUL 14m13s su base UX1-UX4 = prima verifica della combinazione: 993 test 0 falliti (XML riletti), nessuna correzione di merge necessaria. Non verificato a schermo: card Totale, note PDF (coordinate a vista), nota review globale per profilo.
+
+- UX5a FERMATO (ses_e29dfc0ceffeTsckc49rPtrQ7F): commit aee82c1, unito in develop = ea86adf (nessun conflitto; strings.xml 524 voci valido senza duplicati). Gate del subagente BUILD SUCCESSFUL 16m57s, 991 test 0 falliti (XML riletti). Fatto: Dettagli del calcolo collassati (stato solo in memoria), azione rapida prossimo pasto (solo oggi/passati), nota piano da aggiornare su bilancio settimanale, card Rilevazioni unica (Nuova BIA/Nuove misure/Storico), Apri analisi dati -> tab Progresso. RISCHIO: la Home non apre piu l'hub MeasurementsActivity (Analisi BIA con Coach, impatto sul piano): resta in Altro > Rilevazioni; da decidere se serve un link in Home.
+Gate finale combinazione UX1-UX5 in corso: worktree ux-final (integrazione/ux-final = develop ea86adf), log Temp\opencode\gate-uxfinal.log.
