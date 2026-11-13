@@ -318,3 +318,5 @@ Da integrare ancora: D1 (feat/d1-poc-nutritionadvice). Decisioni aperte: tetto p
 Dopo: F5 migrazione Room 19->20 (elimina workouts e daily_activity_checkins), poi F6 test device e F7 verifica.
 
 - B2 FERMATO (ses_e2b1908eaffejmoVK7HiqRpnou): commit e716951 su feat/sem-b2-testi-residui; il subagente riporta BUILD SUCCESSFUL, 927 test 0 falliti (da riverificare in integrazione). 4 file, 21 stringhe orfane rimosse, PatternCode.TRAINING mostra 'Routine'. Classi Training*/WorkoutPreferences restano finche F3/F5.
+
+- develop = e05859f: B2+F3 (integrazione/sem-2, gate BUILD SUCCESSFUL, 932 test unitari 0 falliti, letti dai file XML). Installato in-place: schermata Esporta/importa senza 'allenamenti'; export JSON del profilo Mamma = schema myfitai_profile_export_v3 senza chiavi workouts/dailyActivityCheckIns (file di cache poi cancellato). NON eseguito: restore di un backup (ProfileBackupRestoreTest e androidTest mai eseguito; il restore sostituisce il profilo, non provato su dati reali).
