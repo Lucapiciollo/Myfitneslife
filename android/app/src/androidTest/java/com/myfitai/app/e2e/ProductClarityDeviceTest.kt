@@ -44,8 +44,8 @@ class ProductClarityDeviceTest {
                 assertEquals("TDEE · attività abituale", activity.findViewById<android.widget.TextView>(R.id.dailyTdeeLabel).text.toString())
                 assertTrue(activity.findViewById<android.view.View>(R.id.dailyTotalLegend).contentDescription == null)
                 assertTrue(activity.findViewById<android.view.View>(R.id.totalConsumptionNote).visibility == View.VISIBLE)
-                listOf("totalCarbsTarget", "totalFatTarget", "totalCarbsPlanned", "totalFatPlanned", "totalCarbsConsumed", "totalFatConsumed").forEach { name ->
-                    assertEquals("Daily total should only expose calories and protein", 0, activity.resources.getIdentifier(name, "id", activity.packageName))
+                listOf("totalCarbsTarget", "totalFatTarget", "totalCarbsConsumed", "totalFatConsumed").forEach { name ->
+                    assertEquals("Daily total exposes carbs/fat only as 'Nel menu'", 0, activity.resources.getIdentifier(name, "id", activity.packageName))
                 }
                 assertEquals("Only one plan generation action should remain", 0,
                     activity.resources.getIdentifier("regenerateForGoalButton", "id", activity.packageName))

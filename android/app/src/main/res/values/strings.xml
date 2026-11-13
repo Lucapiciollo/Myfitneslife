@@ -507,4 +507,15 @@
     <string name="ai_grok_pricing_invalid">Inserisci un prezzo valido</string>
     <string name="ai_grok_pricing_save">Salva</string>
     <string name="ai_grok_pricing_cancel">Annulla</string>
+    <!-- UX2: schermata Cibo (FoodPlan), presentazione e ordine -->
+    <string name="food_plan_ux2_meals_card_title">Pasti del giorno</string>
+    <string name="food_plan_ux2_meals_help_description">Spiega il piano alimentare e i pasti del giorno</string>
+    <string name="food_plan_ux2_meals_help_title">Pasti del giorno</string>
+    <string name="food_plan_ux2_meals_help_body">Mostra i pasti previsti per il giorno selezionato. Tocca un pasto per vedere i dettagli e, quando disponibile, scegliere un\'alternativa.\n\nIl piano della settimana si genera o si rigenera con IA dal pulsante in fondo alla schermata e viene controllato localmente prima di essere salvato.</string>
+    <string name="food_plan_ux2_goal_changed_banner">I dati del profilo o le misure sono cambiati dopo la generazione: rigenera il piano per applicare i nuovi target.</string>
+    <string name="food_plan_ux2_meal_count_hint">%1$d pasti al giorno</string>
+    <string name="food_plan_ux2_macro_carbs">Carboidrati</string>
+    <string name="food_plan_ux2_macro_fat">Grassi</string>
+    <string name="food_plan_ux2_macro_in_menu">Nel menu</string>
+    <string name="food_plan_ux2_macro_menu_description">Nel menu: carboidrati %1$s, grassi %2$s</string>
 </resources>

@@ -34,7 +34,7 @@ class CheatEntrySelectedDateDeviceTest {
             val monitor = instrumentation.addMonitor(CheatEntryActivity::class.java.name, null, false)
             foodScenario.onActivity { activity ->
                 assertEquals(View.VISIBLE, activity.findViewById<View>(R.id.cheatButton).visibility)
-                if (activity.findViewById<View>(R.id.emptyPlanText).visibility == View.VISIBLE) {
+                if (activity.findViewById<View>(R.id.emptyPlanCard).visibility == View.VISIBLE) {
                     assertFalse(activity.findViewById<View>(R.id.shoppingButton).visibility == View.VISIBLE)
                 }
                 activity.findViewById<View>(R.id.cheatButton).performClick()

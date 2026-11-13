@@ -55,206 +55,95 @@
                 android:layout_height="wrap_content"
                  android:layout_marginTop="@dimen/space_12" />
 
-             <TextView
-                 android:id="@+id/mealCountHint"
+            <TextView
+                android:id="@+id/mealCountHint"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_8"
                 android:gravity="center"
-                android:text="Pasti al giorno"
-                 android:textColor="@color/text_secondary"
-                 style="@style/Text.MyFitAI.Caption" />
-              <TextView
-                 android:id="@+id/emptyPlanText"
-                 android:layout_width="match_parent"
-                 android:layout_height="wrap_content"
-                 android:layout_marginTop="@dimen/space_12"
-                 android:gravity="start"
-                 android:textAlignment="viewStart"
-                 android:padding="@dimen/space_12"
-                 android:text="@string/food_plan_empty_current"
-                  android:textColor="@color/text_secondary"
-                  style="@style/Text.MyFitAI.Body"
-                 android:visibility="gone" />
+                android:text="@string/food_plan_ux2_meal_count_hint"
+                android:textColor="@color/text_secondary"
+                style="@style/Text.MyFitAI.Caption"
+                android:visibility="gone" />
 
-             <com.google.android.material.card.MaterialCardView
-                 android:id="@+id/dayMealsCard"
+            <TextView
+                android:id="@+id/goalChangedNotice"
+                style="@style/Text.MyFitAI.BodyCompact"
                 android:layout_width="match_parent"
-                 android:layout_height="wrap_content"
-                 android:layout_marginTop="@dimen/space_12"
-                 android:visibility="gone"
-                  style="@style/Widget.MyFitAI.Card">
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_12"
+                android:background="@drawable/bg_banner_warning"
+                android:padding="@dimen/space_12"
+                android:text="@string/food_plan_ux2_goal_changed_banner"
+                android:textColor="@color/text_primary"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:id="@+id/generationStatusContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_12"
+                android:background="@drawable/bg_banner_info"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="@dimen/space_12"
+                android:visibility="gone">
+                <View
+                    android:id="@+id/planStateDot"
+                    android:layout_width="@dimen/food_plan_status_dot_size"
+                    android:layout_height="@dimen/food_plan_status_dot_size"
+                    android:background="@drawable/bg_status_dot_neutral" />
+                <ProgressBar
+                    android:id="@+id/generationProgress"
+                    android:layout_width="@dimen/compact_progress_indicator_size"
+                    android:layout_height="@dimen/compact_progress_indicator_size"
+                    android:indeterminate="true"
+                    android:visibility="gone" />
+                <TextView
+                    android:id="@+id/generationStatusText"
+                    style="@style/Text.MyFitAI.SettingsDescription"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="@dimen/space_8" />
+            </LinearLayout>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/emptyPlanCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_12"
+                android:visibility="gone"
+                style="@style/Widget.MyFitAI.Card">
                 <LinearLayout
                     style="@style/Widget.MyFitAI.WhiteCardContent"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
-                     <LinearLayout
-                         android:layout_width="match_parent"
-                         android:layout_height="@dimen/settings_section_header_height"
-                         android:gravity="center_vertical"
-                         android:orientation="horizontal">
-                         <com.myfitai.app.ui.widgets.SectionHeaderView
-                             android:layout_width="0dp"
-                             android:layout_height="wrap_content"
-                             android:layout_weight="1"
-                             android:text="Piano alimentare" />
-                         <ImageButton
-                             android:id="@+id/foodPlanHelpButton"
-                             android:layout_width="@dimen/screen_header_icon_size"
-                             android:layout_height="@dimen/screen_header_icon_size"
-                             android:layout_marginEnd="@dimen/space_4"
-                             android:background="@android:color/transparent"
-                             android:contentDescription="Spiega piano alimentare"
-                             android:padding="@dimen/space_8"
-                             android:src="@drawable/ic_help_outline"
-                             app:tint="@color/text_secondary" />
-                     </LinearLayout>
-                     <TextView
-                         android:id="@+id/goalChangedNotice"
-                         style="@style/Text.MyFitAI.BodyCompact"
-                         android:layout_width="match_parent"
-                         android:layout_height="wrap_content"
-                         android:layout_marginTop="@dimen/space_12"
-                         android:background="@color/surface_primary"
-                         android:padding="@dimen/space_12"
-                         android:text="I dati del profilo o le misure sono cambiati dopo la generazione. Usa il pulsante unico qui sotto per rigenerare il piano aggiornato."
-                         android:textColor="@color/text_primary"
-                         android:visibility="gone" />
-                     <LinearLayout
-                         android:id="@+id/generationStatusContainer"
-                         android:layout_width="match_parent"
-                         android:layout_height="wrap_content"
-                         android:layout_marginTop="@dimen/space_8"
-                         android:gravity="center_vertical"
-                         android:orientation="horizontal"
-                         android:visibility="gone">
-                         <View
-                             android:id="@+id/planStateDot"
-                             android:layout_width="@dimen/food_plan_status_dot_size"
-                             android:layout_height="@dimen/food_plan_status_dot_size"
-                             android:background="@drawable/bg_status_dot_neutral" />
-                         <ProgressBar
-                             android:id="@+id/generationProgress"
-                             android:layout_width="@dimen/compact_progress_indicator_size"
-                             android:layout_height="@dimen/compact_progress_indicator_size"
-                             android:indeterminate="true"
-                             android:visibility="gone" />
-                         <TextView
-                             android:id="@+id/generationStatusText"
-                             style="@style/Text.MyFitAI.SettingsDescription"
-                             android:layout_width="0dp"
-                             android:layout_height="wrap_content"
-                             android:layout_weight="1"
-                             android:layout_marginStart="@dimen/space_8" />
-                     </LinearLayout>
-                     <View
-                         android:layout_width="match_parent"
-                          android:layout_height="@dimen/divider_thickness"
-                         android:layout_marginTop="@dimen/space_12"
-                         android:background="@color/divider" />
-                     <LinearLayout
-                         android:layout_width="match_parent"
-                         android:layout_height="@dimen/settings_section_header_height"
-                         android:gravity="center_vertical"
-                         android:orientation="horizontal">
-                         <com.myfitai.app.ui.widgets.SectionHeaderView
-                             android:layout_width="0dp"
-                             android:layout_height="wrap_content"
-                             android:layout_weight="1"
-                             android:text="Pasti del giorno" />
-                         <ImageButton
-                             android:id="@+id/dayMealsHelpButton"
-                             android:layout_width="@dimen/screen_header_icon_size"
-                             android:layout_height="@dimen/screen_header_icon_size"
-                             android:layout_marginEnd="@dimen/space_4"
-                             android:background="@android:color/transparent"
-                             android:contentDescription="Spiega pasti del giorno"
-                             android:padding="@dimen/space_8"
-                             android:src="@drawable/ic_help_outline"
-                             app:tint="@color/text_secondary" />
-                     </LinearLayout>
-                    <LinearLayout
-                        android:id="@+id/mealsContainer"
+                    <TextView
+                        android:id="@+id/emptyPlanText"
+                        style="@style/Text.MyFitAI.Body"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/space_8"
+                        android:gravity="start"
+                        android:textAlignment="viewStart"
+                        android:text="@string/food_plan_empty_current"
+                        android:textColor="@color/text_secondary" />
+                    <LinearLayout
+                        android:id="@+id/planGenerateSlotEmpty"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
                         android:orientation="vertical" />
-                 </LinearLayout>
-             </com.google.android.material.card.MaterialCardView>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
-             <com.google.android.material.button.MaterialButton
-                 android:id="@+id/generatePlanButton"
-                 android:layout_width="match_parent"
-                  android:layout_height="@dimen/button_primary_min_height"
-                 android:layout_marginTop="@dimen/space_12"
-                 android:text="Genera piano con IA"
-                 android:textAllCaps="false"
-                 android:textStyle="bold"
-                 app:backgroundTint="@color/accent_green"
-                   app:cornerRadius="@dimen/radius_field" />
-
-             <TextView
-                 android:id="@+id/planScheduleStatusText"
-                 style="@style/Text.MyFitAI.SettingsDescription"
-                 android:layout_width="match_parent"
-                 android:layout_height="wrap_content"
-                 android:layout_marginTop="@dimen/space_4"
-                 android:text="Schedulazione piano non attiva" />
-
-             <com.google.android.material.card.MaterialCardView
-                 android:id="@+id/aiConfigurationNoticeCard"
-                 android:layout_width="match_parent"
-                 android:layout_height="wrap_content"
-                 android:layout_marginTop="@dimen/space_8"
-                 android:visibility="gone"
-                 app:cardBackgroundColor="@color/surface_primary"
-                 app:cardCornerRadius="@dimen/radius_card"
-                 app:cardElevation="@dimen/elevation_card"
-                 app:strokeColor="@color/accent_green"
-                 app:strokeWidth="@dimen/border_width_default">
-                 <LinearLayout
-                     android:layout_width="match_parent"
-                     android:layout_height="wrap_content"
-                     android:orientation="vertical"
-                     android:padding="@dimen/space_16">
-                       <TextView
-                           style="@style/Text.MyFitAI.CardTitle"
-                           android:layout_width="match_parent"
-                           android:layout_height="wrap_content"
-                           android:text="Nessun provider IA configurato" />
-                      <TextView
-                          style="@style/Text.MyFitAI.BodyCompact"
-                          android:layout_width="match_parent"
-                         android:layout_height="wrap_content"
-                         android:layout_marginTop="@dimen/space_4"
-                          android:text="Per usare Alimentazione devi scegliere Gemini o OpenAI e configurare la relativa API key personale nelle Impostazioni." />
-                     <com.google.android.material.button.MaterialButton
-                         android:id="@+id/aiConfigurationNoticeButton"
-                         style="@style/Widget.MyFitAI.Button.Text"
-                         android:layout_width="wrap_content"
-                         android:layout_height="wrap_content"
-                         android:layout_marginTop="@dimen/space_4"
-                         android:text="Apri impostazioni IA" />
-                 </LinearLayout>
-             </com.google.android.material.card.MaterialCardView>
-
-             <com.google.android.material.button.MaterialButton
-                 android:id="@+id/planSettingsButton"
-                 style="@style/Widget.MyFitAI.Button.Outlined"
-                 android:layout_width="match_parent"
-                  android:layout_height="@dimen/button_secondary_min_height"
-                 android:layout_marginTop="@dimen/space_8"
-                 android:text="Configura alimentazione"
-                 android:textAllCaps="false" />
-
-             <com.google.android.material.card.MaterialCardView
-                 android:id="@+id/weekActionsCard"
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/dayMealsCard"
                 android:layout_width="match_parent"
-                 android:layout_height="wrap_content"
-                 android:layout_marginTop="@dimen/space_12"
-                 android:visibility="gone"
-                  style="@style/Widget.MyFitAI.Card">
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_12"
+                android:visibility="gone"
+                style="@style/Widget.MyFitAI.Card">
                 <LinearLayout
                     style="@style/Widget.MyFitAI.WhiteCardContent"
                     android:layout_width="match_parent"
@@ -262,59 +151,31 @@
                     android:orientation="vertical">
                     <LinearLayout
                         android:layout_width="match_parent"
-                         android:layout_height="@dimen/settings_section_header_height"
+                        android:layout_height="@dimen/settings_section_header_height"
                         android:gravity="center_vertical"
                         android:orientation="horizontal">
                         <com.myfitai.app.ui.widgets.SectionHeaderView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Azioni settimana" />
+                            android:text="@string/food_plan_ux2_meals_card_title" />
                         <ImageButton
-                            android:id="@+id/weekActionsHelpButton"
+                            android:id="@+id/dayMealsHelpButton"
                             android:layout_width="@dimen/screen_header_icon_size"
                             android:layout_height="@dimen/screen_header_icon_size"
                             android:layout_marginEnd="@dimen/space_4"
                             android:background="@android:color/transparent"
-                            android:contentDescription="Spiega azioni settimana"
+                            android:contentDescription="@string/food_plan_ux2_meals_help_description"
                             android:padding="@dimen/space_8"
                             android:src="@drawable/ic_help_outline"
                             app:tint="@color/text_secondary" />
                     </LinearLayout>
                     <LinearLayout
+                        android:id="@+id/mealsContainer"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                     android:layout_marginTop="@dimen/space_8"
-                         android:orientation="horizontal"
-                         android:gravity="center_vertical">
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/shoppingButton"
-                            style="@style/Widget.MyFitAI.Button.Outlined"
-                            android:layout_width="0dp"
-                  android:layout_height="@dimen/button_secondary_min_height"
-                            android:layout_weight="1"
-                            android:layout_marginEnd="@dimen/space_4"
-                            android:gravity="center"
-                            android:text="Lista spesa"
-                            android:textAllCaps="false"
-                            app:icon="@drawable/ic_cart"
-                            app:iconGravity="textStart" />
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/cheatButton"
-                            style="@style/Widget.MyFitAI.Button.Outlined"
-                            android:layout_width="0dp"
-                            android:layout_height="@dimen/button_secondary_min_height"
-                            android:layout_weight="1"
-                            android:layout_marginStart="@dimen/space_4"
-                            android:gravity="center"
-                            android:minLines="2"
-                            android:text="Extra"
-                            android:textColor="@color/accent_green_dark"
-                            app:strokeColor="@color/accent_green_dark"
-                            android:textAllCaps="false"
-                            app:icon="@drawable/ic_add_circle"
-                            app:iconGravity="textStart" />
-                    </LinearLayout>
+                        android:layout_marginTop="@dimen/space_8"
+                        android:orientation="vertical" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -550,9 +411,223 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:paddingTop="@dimen/space_4" />
+                    <LinearLayout
+                        android:id="@+id/dailyTotalMacros"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_12"
+                        android:orientation="vertical"
+                        android:visibility="gone">
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1.2"
+                                style="@style/Text.MyFitAI.Micro" />
+                            <TextView
+                                style="@style/Text.MyFitAI.Caption"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:gravity="end"
+                                android:text="@string/food_plan_ux2_macro_carbs"
+                                android:textStyle="bold" />
+                            <TextView
+                                style="@style/Text.MyFitAI.Caption"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:gravity="end"
+                                android:text="@string/food_plan_ux2_macro_fat"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="@dimen/border_width_default"
+                            android:background="@color/divider" />
+                        <LinearLayout
+                            android:id="@+id/dailyTotalRowMacrosPlanned"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:minHeight="@dimen/control_min_height">
+                            <TextView
+                                style="@style/Text.MyFitAI.Body"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1.2"
+                                android:text="@string/food_plan_ux2_macro_in_menu" />
+                            <TextView
+                                android:id="@+id/totalCarbsPlanned"
+                                style="@style/Text.MyFitAI.BodyEmphasis"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:gravity="end"
+                                android:text="-" />
+                            <TextView
+                                android:id="@+id/totalFatPlanned"
+                                style="@style/Text.MyFitAI.BodyEmphasis"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:gravity="end"
+                                android:text="-" />
+                        </LinearLayout>
+                    </LinearLayout>
                     </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+
+             <com.google.android.material.card.MaterialCardView
+                 android:id="@+id/weekActionsCard"
+                android:layout_width="match_parent"
+                 android:layout_height="wrap_content"
+                 android:layout_marginTop="@dimen/space_12"
+                 android:visibility="gone"
+                  style="@style/Widget.MyFitAI.Card">
+                <LinearLayout
+                    style="@style/Widget.MyFitAI.WhiteCardContent"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                         android:layout_height="@dimen/settings_section_header_height"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+                        <com.myfitai.app.ui.widgets.SectionHeaderView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Azioni settimana" />
+                        <ImageButton
+                            android:id="@+id/weekActionsHelpButton"
+                            android:layout_width="@dimen/screen_header_icon_size"
+                            android:layout_height="@dimen/screen_header_icon_size"
+                            android:layout_marginEnd="@dimen/space_4"
+                            android:background="@android:color/transparent"
+                            android:contentDescription="Spiega azioni settimana"
+                            android:padding="@dimen/space_8"
+                            android:src="@drawable/ic_help_outline"
+                            app:tint="@color/text_secondary" />
+                    </LinearLayout>
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                     android:layout_marginTop="@dimen/space_8"
+                         android:orientation="horizontal"
+                         android:gravity="center_vertical">
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/shoppingButton"
+                            style="@style/Widget.MyFitAI.Button.Outlined"
+                            android:layout_width="0dp"
+                  android:layout_height="@dimen/button_secondary_min_height"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="@dimen/space_4"
+                            android:gravity="center"
+                            android:text="Lista spesa"
+                            android:textAllCaps="false"
+                            app:icon="@drawable/ic_cart"
+                            app:iconGravity="textStart" />
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/cheatButton"
+                            style="@style/Widget.MyFitAI.Button.Outlined"
+                            android:layout_width="0dp"
+                            android:layout_height="@dimen/button_secondary_min_height"
+                            android:layout_weight="1"
+                            android:layout_marginStart="@dimen/space_4"
+                            android:gravity="center"
+                            android:minLines="2"
+                            android:text="Extra"
+                            android:textAllCaps="false"
+                            app:icon="@drawable/ic_add_circle"
+                            app:iconGravity="textStart" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <LinearLayout
+                android:id="@+id/planManagementContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+                <LinearLayout
+                    android:id="@+id/planGenerateSlotBottom"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+                    <LinearLayout
+                        android:id="@+id/planGenerateGroup"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/aiConfigurationNoticeCard"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/space_12"
+                            android:visibility="gone"
+                            app:cardBackgroundColor="@color/surface_primary"
+                            app:cardCornerRadius="@dimen/radius_card"
+                            app:cardElevation="@dimen/elevation_card"
+                            app:strokeColor="@color/accent_green"
+                            app:strokeWidth="@dimen/border_width_default">
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical"
+                                android:padding="@dimen/space_16">
+                                <TextView
+                                    style="@style/Text.MyFitAI.CardTitle"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:text="Nessun provider IA configurato" />
+                                <TextView
+                                    style="@style/Text.MyFitAI.BodyCompact"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="@dimen/space_4"
+                                    android:text="Per usare Alimentazione devi scegliere Gemini o OpenAI e configurare la relativa API key personale nelle Impostazioni." />
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/aiConfigurationNoticeButton"
+                                    style="@style/Widget.MyFitAI.Button.Text"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="@dimen/space_4"
+                                    android:text="Apri impostazioni IA" />
+                            </LinearLayout>
+                        </com.google.android.material.card.MaterialCardView>
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/generatePlanButton"
+                            style="@style/Widget.MyFitAI.Button.Primary"
+                            android:layout_width="match_parent"
+                            android:layout_height="@dimen/button_primary_min_height"
+                            android:layout_marginTop="@dimen/space_12"
+                            android:text="Genera piano con IA" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/planSettingsButton"
+                    style="@style/Widget.MyFitAI.Button.Outlined"
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/button_secondary_min_height"
+                    android:layout_marginTop="@dimen/space_8"
+                    android:text="Configura alimentazione" />
+
+                <TextView
+                    android:id="@+id/planScheduleStatusText"
+                    style="@style/Text.MyFitAI.SettingsDescription"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_4"
+                    android:visibility="gone" />
+            </LinearLayout>
+
 
              <com.google.android.material.card.MaterialCardView
                  android:id="@+id/nutritionEstimateCard"
