@@ -52,3 +52,6 @@ F6 Test device e collaudo; F7 Verifica finale (Luca, Mamma, import backup vecchi
 
 ## Ordine e prima mossa
 Sequenza: F0 -> A1 -> A2 -> A3 -> A4 -> B1 -> B2 -> F3 -> F4 -> F5 -> F6 -> F7. Non c'e parallelismo utile (stessi file), tranne F4 (solo documenti) che puo girare in parallelo ad A3/A4.
+
+## Chiarimento (13/11/2026): il calcolo calorico resta
+Il TDEE in Home e il target calorico restano, calcolati dal livello di attivita scelto nel profilo: TDEE = BMR x fattore del livello (Sedentario 1,20 / Moderato 1,55 / Molto attivo 1,725), target = TDEE x fattore dell'obiettivo (es. -15% dimagrimento) con minimo di sicurezza. Il livello sportivo ('Molto attivo') quindi alza il TDEE e il target come oggi. Si elimina SOLO la variazione giorno per giorno (check-in, programma, giorni di allenamento/riposo, kcal extra del singolo allenamento). Home mostra BMR, TDEE e target, un solo valore per tutti i giorni.
