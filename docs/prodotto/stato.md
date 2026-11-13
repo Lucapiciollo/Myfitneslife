@@ -341,3 +341,5 @@ Poi Grok L2 (UI selezione, prezzi, usage), L3 prove reali con chiave inserita da
 - Grok L1 FERMATO (ses_e2ac66221ffeAjts6dwokF4M23): commit 5bf6727, develop = d3d0a43. 938 test unitari 0 falliti riletti io dagli XML. Modelli grok-4.3 (default, 1.25/2.50 USD per 1M) e grok-4.7 (2.00/6.00); xAI Responses API. Nessuna chiamata reale a xAI fatta; formato risposta dedotto dalla doc. Sperimentale e spento (grokEnabled=false).
 | senior-developer | Grok L2a runtime: selezione a 3 vie, prezzi, usage, reasoning effort | vedi esito | feat/grok-l2a-runtime (da develop d3d0a43) |
 Dopo: L2b UI (Impostazioni IA, onboarding), L3 prove reali con chiave dell'utente.
+
+- Grok L2a CANCELLATO (ses_e2aad3aacffeKqpJ4j91KbOk6o, non per errore del subagente: nessun gate eseguito, nessun commit). Lavoro parziale NON committato e NON verificato nel worktree grok-l2a-runtime (7 file modificati + GrokPricingStore, GrokUsageTracker, GrokRuntimeTest nuovi). Non unito a develop. Riavvio in attesa della decisione dell'utente su costi/privacy Grok (a pagamento; crediti gratuiti solo con condivisione dati).
