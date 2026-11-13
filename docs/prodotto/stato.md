@@ -335,3 +335,5 @@ Decisione 13/11 (utente: 'fai il meglio'): NON ripristinare backup su profili re
 
 | senior-developer | Grok L1: provider xAI backend, sperimentale e spento (utente: 'grok come llm') | vedi esito | feat/grok-l1-provider (da develop 4f498f5) |
 Poi Grok L2 (UI selezione, prezzi, usage), L3 prove reali con chiave inserita dall'utente. In parallelo: F6/F7 verifica semplificazione (Luca dopo migrazione).
+
+- Dopo migrazione 20, Luca ricontrollato su device: Home (TDEE 2.974, target 2.698), Progresso (89,5 kg, -1,2 kg), Cibo senza crash. Nota: il piano di Luca generato il 12/11 mostra ancora nel messaggio salvato '1 uguali tra allenamento e riposo' (testo memorizzato col vecchio codice; nessuna occorrenza nel codice attuale; sparisce alla rigenerazione). Lezione: max 2 BACK dall'app, altrimenti si esce al launcher.
