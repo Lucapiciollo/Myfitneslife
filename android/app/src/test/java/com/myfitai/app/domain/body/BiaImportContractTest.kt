@@ -34,4 +34,14 @@ class BiaImportContractTest {
         assertEquals(52.9f, preview.bodyWaterKg!!, 0.01f)
         assertEquals(15.9f, preview.proteinPercent!!, 0.01f)
     }
+
+    @Test
+    fun coherenceChecks_warnWithoutChangingValues() {
+        val preview = BiaImportContract.parse("""
+            {"isBiaDocument":true,"rejectionReason":"","confidence":"HIGH","notes":"","weightKg":80,"fatMassKg":40,"leanMassKg":20,"bodyWaterKg":30}
+        """.trimIndent())
+        assertEquals(30f, preview.bodyWaterKg!!, 0.001f)
+        assertTrue(preview.warnings.toString(), preview.warnings.any { it.contains("non coincide con il peso") })
+        assertTrue(preview.warnings.toString(), preview.warnings.any { it.contains("Acqua") && it.contains("supera la massa magra") })
+    }
 }
