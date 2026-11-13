@@ -348,3 +348,5 @@ Dopo: L2b UI (Impostazioni IA, onboarding), L3 prove reali con chiave dell'utent
 
 - Grok L2a FERMATO (ses_e2a96cf2bffeFPPoa0wt8hWv45): commit 5f7456c, develop = 9460efd. 950 test unitari 0 falliti (XML riletti; testDebugUnitTest era UP-TO-DATE, XML del 15:44 con GrokRuntimeTest). Selezione a 3 vie retrocompatibile, Grok usato solo se abilitato+scelto+chiave (altrimenti NOT_CONFIGURED), prezzi con x2 sopra 200k, reasoning.effort low (doc xAI), tracking ai_usage_records provider='GROK'. Nessuna UI, nessuna chiamata reale.
 | senior-developer | Grok L2b UI Impostazioni IA/Onboarding/badge | vedi esito | feat/grok-l2b-ui (da develop 9460efd) |
+
+- Grok L2b FERMATO (ses_e2a8b5863ffehVKxTi8Kd6KM8a): commit a0e33e7, develop = f6deaee. Gate del subagente BUILD SUCCESSFUL 22m49s, 955 test unitari 0 falliti (XML riletti, eseguiti davvero). Installato in-place: Altro > Impostazioni IA mostra 'Usa Grok (sperimentale)' con avviso xAI, spento; nessun crash. NON provato: accensione, conferma, inserimento chiave, modello, costi, font 1,3x/2x, onboarding (non toccato, non propone Grok), nessuna chiamata reale a xAI. Prossimo: L3 prove reali con chiave inserita dall'utente.
