@@ -119,11 +119,11 @@ class SixMonthHistoryExportTest {
         val exported = service.export(ProfileExportService.Format.JSON)
         val root = JSONObject(exported.file.readText())
 
-        assertEquals("myfitai_profile_export_v1", root.getString("schema"))
+        assertEquals("myfitai_profile_export_v3", root.getString("schema"))
         assertEquals("Test Sport", root.getJSONObject("profile").getString("name"))
         assertEquals(13, root.getJSONArray("biaMeasurements").length())
         assertEquals(13, root.getJSONArray("bodyMeasurements").length())
-        assertTrue(root.getJSONArray("workouts").length() > 70)
+        // Le righe legacy in tabella (fixture) non devono piu comparire nel formato v3.
         assertEquals(18, root.getJSONArray("cheatEntries").length())
         assertEquals(26, root.getJSONArray("weeklyReviews").length())
         assertEquals(1, root.getJSONArray("foodConsumptions").length())

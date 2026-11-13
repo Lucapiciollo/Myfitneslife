@@ -48,7 +48,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/space_12"
-                 android:text="Puoi salvare un backup completo e ripristinare il profilo attivo con BIA, misure, alimentazione, storico, allenamenti, consumi e versioni dei piani. L'import del backup sostituisce il profilo dopo conferma e riavvia l'app."
+                 android:text="Puoi salvare un backup completo e ripristinare il profilo attivo con BIA, misure, alimentazione, storico, consumi e versioni dei piani. L'import del backup sostituisce il profilo dopo conferma e riavvia l'app."
                 style="@style/Text.MyFitAI.Body" />
 
             <com.myfitai.app.ui.widgets.SettingListCardView
@@ -99,7 +99,7 @@
                         android:layout_height="wrap_content"
                         app:srIcon="@drawable/ic_setting_export"
                         app:srLabel="Esporta JSON"
-                        app:srDescription="Completo: profilo, BIA, misure, allenamenti, piani e tutte le versioni, sgarri e review" />
+                        app:srDescription="Completo: profilo, BIA, misure, piani e tutte le versioni, sgarri e review" />
                     <com.myfitai.app.ui.widgets.SettingRowView
                         android:id="@+id/exportCsvRow"
                         android:layout_width="match_parent"

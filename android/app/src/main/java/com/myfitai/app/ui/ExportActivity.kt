@@ -63,7 +63,7 @@ class ExportActivity : BaseShellActivity() {
     private fun importBackup(uri: Uri) {
         MaterialAlertDialogBuilder(this)
             .setTitle("Importa backup completo?")
-             .setMessage("Il profilo attivo e tutti i suoi dati verranno sostituiti dai dati del file: BIA, misure, alimentazione, storico, allenamenti, consumi e versioni dei piani. Le chiavi IA non fanno parte del backup. L'operazione è transazionale.")
+             .setMessage("Il profilo attivo e tutti i suoi dati verranno sostituiti dai dati del file: BIA, misure, alimentazione, storico, consumi e versioni dei piani. Le chiavi IA non fanno parte del backup. L'operazione è transazionale.")
             .setNegativeButton("Annulla", null)
             .setPositiveButton("Importa") { _, _ ->
                 lifecycleScope.launch {

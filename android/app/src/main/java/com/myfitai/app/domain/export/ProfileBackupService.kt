@@ -7,10 +7,6 @@ import com.myfitai.app.data.local.MyFitAiDatabase
 import com.myfitai.app.data.local.entity.*
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.profile.MealCountPreferences
-import com.myfitai.app.data.profile.TrainingProgramPreferences
-import com.myfitai.app.data.profile.WorkoutPreferences
-import com.myfitai.app.domain.calculation.TrainingEnergyPlanner
-import com.myfitai.app.domain.calculation.TrainingProgram
 import com.myfitai.app.data.profile.BiaFrequencyPreferences
 import com.myfitai.app.data.profile.NutritionPlanSchedulePreferences
 import com.myfitai.app.data.profile.AiAutomationPreferences
@@ -22,12 +18,10 @@ class ProfileBackupService(
     private val db: MyFitAiDatabase,
     private val activeProfiles: ActiveProfileStore,
     private val mealCountPreferences: MealCountPreferences? = null,
-    private val workoutPreferences: WorkoutPreferences? = null,
     private val biaFrequencyPreferences: BiaFrequencyPreferences? = null,
     private val nutritionPlanSchedulePreferences: NutritionPlanSchedulePreferences? = null,
     private val aiAutomationPreferences: AiAutomationPreferences? = null,
     private val profilePhotoStore: ProfilePhotoStore? = null,
-    private val trainingProgramPreferences: TrainingProgramPreferences? = null,
 ) {
     private val resolver = context.applicationContext.contentResolver
 
@@ -35,7 +29,7 @@ class ProfileBackupService(
         val bytes = resolver.openInputStream(uri)?.use { it.readBytes() } ?: error("Impossibile leggere il backup")
         require(bytes.size <= MAX_BYTES) { "Backup troppo grande" }
         val root = JSONObject(bytes.toString(Charsets.UTF_8))
-        require(root.optString("schema") == "myfitai_profile_export_v2" || root.optString("schema") == "myfitai_profile_export_v1") { "Formato backup MyFitAI non riconosciuto" }
+        require(ProfileExportFormat.isRestorable(root.optString("schema"))) { "Formato backup MyFitAI non riconosciuto" }
         val currentProfileId = activeProfiles.currentIdOrNull()
         val replace = currentProfileId != null
         val profile = root.getJSONObject("profile")
@@ -59,6 +53,7 @@ class ProfileBackupService(
             db.bodyExpectationGoalDao().deleteByProfile(profileId)
             db.biaMeasurementDao().deleteByProfile(profileId)
             db.bodyMeasurementDao().deleteByProfile(profileId)
+            // Righe residue di allenamenti/check-in (tabelle eliminate da F5) non fanno piu parte del backup: vengono solo pulite.
             db.workoutDao().deleteByProfile(profileId)
             db.dailyActivityCheckInDao().deleteByProfile(profileId)
             db.mealPlanDao().deleteByProfile(profileId)
@@ -79,8 +74,6 @@ class ProfileBackupService(
         } }
         val biaIds = restoreBia(root, profileId)
         restoreBody(root, profileId)
-        restoreWorkouts(root, profileId)
-        restoreActivityCheckIns(root, profileId)
         restoreBiaAnalysisResults(root, profileId, biaIds)
         restoreExpectationGoals(root, profileId)
         val maps = restorePlans(root, profileId)
@@ -112,11 +105,7 @@ class ProfileBackupService(
     private fun restorePreferences(root: JSONObject, profileId: Long) {
         val prefs = root.optJSONObject("profilePreferences") ?: return
         mealCountPreferences?.set(profileId, prefs.optInt("mealCount", MealCountPreferences.DEFAULT))
-        workoutPreferences?.setEnabled(profileId, prefs.optBoolean("workoutsEnabled", WorkoutPreferences.DEFAULT_ENABLED))
-        // Older backups have no program: leave the profile's current one untouched.
-        TrainingProgram.fromJson(prefs.optJSONObject("trainingProgram"))?.let { trainingProgramPreferences?.set(profileId, it) }
-        TrainingEnergyPlanner.ActivityBasis.entries.firstOrNull { it.name == prefs.optString("trainingActivityBasis") }
-            ?.let { trainingProgramPreferences?.setActivityBasis(profileId, it) }
+        // Chiavi dismesse (v1/v2: workoutsEnabled, trainingProgram, trainingActivityBasis) ignorate: vedi ProfileExportFormat.
         biaFrequencyPreferences?.intervalDays = prefs.optInt("biaIntervalDays", BiaFrequencyPreferences.DEFAULT_INTERVAL_DAYS)
         prefs.optJSONObject("nutritionSchedule")?.let { schedule ->
             nutritionPlanSchedulePreferences?.setEnabled(profileId, schedule.optBoolean("enabled"))
@@ -169,35 +158,6 @@ class ProfileBackupService(
                 armRightCm = row.floatOrNull("armRightCm"), thighLeftCm = row.floatOrNull("thighLeftCm"), thighRightCm = row.floatOrNull("thighRightCm"),
                 calfLeftCm = row.floatOrNull("calfLeftCm"), calfRightCm = row.floatOrNull("calfRightCm"), notes = row.stringOrNull("notes"),
                 hipsCm = row.floatOrNull("hipsCm"), weightKg = row.floatOrNull("weightKg"),
-            ))
-        }
-    }
-
-    private suspend fun restoreWorkouts(root: JSONObject, profileId: Long) {
-        val rows = root.optJSONArray("workouts") ?: return
-        for (index in 0 until rows.length()) {
-            val row = rows.getJSONObject(index)
-            db.workoutDao().insert(WorkoutEntity(
-                profileId = profileId, startedAtEpochMillis = row.getLong("startedAtEpochMillis"),
-                type = row.optString("type"), title = row.optString("title"), durationMinutes = row.intOrNull("durationMinutes"),
-                isRestDay = row.optBoolean("isRestDay"), notes = row.stringOrNull("notes"),
-            ))
-        }
-    }
-
-    private suspend fun restoreActivityCheckIns(root: JSONObject, profileId: Long) {
-        val rows = root.optJSONArray("dailyActivityCheckIns") ?: return
-        for (index in 0 until rows.length()) {
-            val row = rows.getJSONObject(index)
-            db.dailyActivityCheckInDao().upsert(DailyActivityCheckInEntity(
-                profileId = profileId,
-                dateEpochDay = row.getLong("dateEpochDay"),
-                status = row.optString("status"),
-                durationMinutes = row.intOrNull("durationMinutes"),
-                intensity = row.stringOrNull("intensity"),
-                adjustmentKcal = row.optInt("adjustmentKcal", 0),
-                createdAtEpochMillis = row.optLong("createdAtEpochMillis", System.currentTimeMillis()),
-                updatedAtEpochMillis = row.optLong("updatedAtEpochMillis", System.currentTimeMillis()),
             ))
         }
     }
