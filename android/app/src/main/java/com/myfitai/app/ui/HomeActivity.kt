@@ -27,10 +27,17 @@ import com.myfitai.app.domain.calculation.LocalCalculationEngine
 import com.myfitai.app.domain.calculation.WeightSource
 import com.myfitai.app.domain.display.DayTargetResolver
 import com.myfitai.app.domain.display.DisplayNumberFormatter
+import com.myfitai.app.domain.display.ConsumptionNote
 import com.myfitai.app.domain.display.HomeProgressHint
 import com.myfitai.app.domain.display.MetricDeltaPresenter
+import com.myfitai.app.domain.display.QuickConsumeRule
 import com.myfitai.app.domain.display.RemainingKcal
 import com.myfitai.app.domain.display.TargetModeLine
+import com.myfitai.app.domain.display.WeeklyEstimateNote
+import com.myfitai.app.domain.food.FoodConsumptionStatus
+import androidx.core.view.ViewCompat
+import com.myfitai.app.data.local.entity.FoodConsumptionEntity
+import com.myfitai.app.ui.widgets.MealSlotIcons
 import com.myfitai.app.navigation.BottomNavBinder
 import com.myfitai.app.notifications.ExactAlarmAccess
 import com.myfitai.app.notifications.NotificationPreferences
@@ -91,6 +98,8 @@ class HomeActivity : BaseShellActivity() {
     private var currentCalories: HomeViewModel.CalorieState? = null
     private var renderedPlanUpdatePending: Boolean? = null
     private var currentUpcomingMeals: List<HomeViewModel.NextMealState> = emptyList()
+    /** "Dettagli del calcolo" open/closed: kept only while this screen instance lives (never persisted). */
+    private var calorieDetailsExpanded = false
     private val motionVisibilityTargets = mutableMapOf<Int, Boolean>()
     private var dashboardMetricPresentations by mutableStateOf(emptyList<DashboardMetricPresentation>())
 
@@ -102,7 +111,7 @@ class HomeActivity : BaseShellActivity() {
         movePlanUpdateNoticeBelowCalories()
         moveOperationalSectionsToEnd()
         adaptLandscapeContent()
-        adaptQuickActions()
+        bindCalorieDetailsToggle()
         bindBottom(BottomNavBinder.Tab.HOME)
         installDashboardMetricsComposeView()
         requestNotificationPermissionOnce()
@@ -117,7 +126,8 @@ class HomeActivity : BaseShellActivity() {
         findViewById<android.view.View>(R.id.aiConfigurationNoticeButton).setOnClickListener { AiSettingsEntry.open(this) }
         findViewById<android.view.View>(R.id.biaDueNoticeCard).setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java)) }
         findViewById<android.view.View>(R.id.biaDueNoticeButton).setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java)) }
-        findViewById<android.view.View>(R.id.analysisHubButton).setOnClickListener { startActivity(Intent(this, MeasurementsActivity::class.java)) }
+        // "Analisi e review" lives in the Progress tab; the Rilevazioni hub stays reachable from Altro.
+        findViewById<android.view.View>(R.id.analysisHubButton).setOnClickListener { go(PhysicalEvolutionActivity::class.java) }
         findViewById<android.view.View>(R.id.weeklyExpectationActionButton).setOnClickListener {
             viewModel.confirmExpectation("REACHED")
         }
@@ -163,7 +173,6 @@ class HomeActivity : BaseShellActivity() {
             showHelpCard("Prossimo pasto", "Mostra il prossimo pasto previsto dal piano alimentare di oggi, con orario, nome e calorie quando disponibili.")
         }
         findViewById<android.view.View>(R.id.todayMenuButton).setOnClickListener { showTodayMenu() }
-        findViewById<android.view.View>(R.id.measurementsButton).setOnClickListener { go(MeasurementsActivity::class.java) }
         findViewById<android.view.View>(R.id.addExtraButton).apply {
             setAiActionEnabled(this)
             setOnClickListener {
@@ -315,6 +324,7 @@ class HomeActivity : BaseShellActivity() {
                 child.id == R.id.biaDueNoticeCard ||
                 child.id == R.id.analysisHubCard ||
                 child.id == R.id.quickActionsCard ||
+                child.id == R.id.cheatActionCard ||
                 child.id == R.id.dashboardMetricsPanel ||
                 child.findViewById<View>(R.id.bodyOverviewHelpButton) != null
             val params = GridLayout.LayoutParams().apply {
@@ -333,17 +343,29 @@ class HomeActivity : BaseShellActivity() {
         }
     }
 
-    private fun adaptQuickActions() {
-        val actions = findViewById<android.widget.LinearLayout>(R.id.quickActionsRow) ?: return
-        if (resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) {
-            actions.orientation = android.widget.LinearLayout.HORIZONTAL
-            actions.findViewById<View>(R.id.measurementsButton)?.layoutParams =
-                android.widget.LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-            actions.findViewById<View>(R.id.addExtraButton)?.layoutParams =
-                android.widget.LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply {
-                    marginStart = resources.getDimensionPixelSize(R.dimen.space_8)
-                    topMargin = 0
-                }
+    private fun bindCalorieDetailsToggle() {
+        findViewById<View>(R.id.caloriesDetailsToggle).setOnClickListener {
+            calorieDetailsExpanded = !calorieDetailsExpanded
+            renderCalorieDetails(animate = true)
+        }
+        renderCalorieDetails(animate = false)
+    }
+
+    /** BMR, BMR da BIA and TDEE live here, collapsed by default; the values are the same as before and stay in the explanation dialog. */
+    private fun renderCalorieDetails(animate: Boolean) {
+        val expanded = calorieDetailsExpanded
+        UiMotion.reveal(findViewById(R.id.caloriesDetailsContainer), expanded, animateChange = animate)
+        ViewCompat.setStateDescription(
+            findViewById(R.id.caloriesDetailsToggle),
+            getString(if (expanded) R.string.home_ux5a_details_state_expanded else R.string.home_ux5a_details_state_collapsed),
+        )
+        val chevron = findViewById<View>(R.id.caloriesDetailsChevron)
+        val rotation = if (expanded) 180f else 0f
+        chevron.animate().cancel()
+        if (animate && UiMotion.animationsEnabled(this)) {
+            chevron.animate().rotation(rotation).setDuration(resources.getInteger(R.integer.motion_selection_ms).toLong()).start()
+        } else {
+            chevron.rotation = rotation
         }
     }
 
@@ -351,6 +373,7 @@ class HomeActivity : BaseShellActivity() {
         val sections = listOf(
             findViewById<View>(R.id.analysisHubCard),
             findViewById<View>(R.id.quickActionsCard),
+            findViewById<View>(R.id.cheatActionCard),
         )
         val parent = sections.firstOrNull()?.parent as? ViewGroup ?: return
         if (sections.any { it.parent !== parent }) return
@@ -405,7 +428,14 @@ class HomeActivity : BaseShellActivity() {
         if (pending != renderedPlanUpdatePending) {
             renderedPlanUpdatePending = pending
             currentCalories?.let(::renderCalories)
+            renderWeeklyPlanPendingNote(viewModel.state.value.weeklyExpectation.plannedDays)
         }
+    }
+
+    /** The weekly estimate compares the new TDEE with the old plan while the update is pending: say so, change nothing else. */
+    private fun renderWeeklyPlanPendingNote(plannedDays: Int) {
+        findViewById<View>(R.id.weeklyExpectationPlanPendingNote).visibility =
+            if (WeeklyEstimateNote.shouldShow(isPlanUpdatePending(), plannedDays)) View.VISIBLE else View.GONE
     }
 
     private fun renderAiConfigurationNotice() {
@@ -467,7 +497,7 @@ class HomeActivity : BaseShellActivity() {
         renderWeeklyExpectation(state.weeklyExpectation)
         renderRecovery(state.recovery)
         renderUpcomingMeals(state.upcomingMeals)
-        renderNextMeal(state.nextMeal)
+        renderNextMeal(state.nextMeal, state.todayEpochDay, state.consumptionRecords)
     }
 
     private fun renderBodyTrend(series: List<HomeViewModel.TrendSeries>) {
@@ -532,6 +562,7 @@ class HomeActivity : BaseShellActivity() {
             }
         }
         caution.text = result.caution
+        renderWeeklyPlanPendingNote(result.plannedDays)
         val hasResult = result.plannedDays > 0
         val currentGoal = viewModel.state.value.expectationGoals.firstOrNull { it.periodStartEpochDay == monday.toEpochDay() }
         findViewById<TextView>(R.id.weeklyExpectationQuestionText).visibility = if (hasResult) View.VISIBLE else View.GONE
@@ -642,16 +673,22 @@ class HomeActivity : BaseShellActivity() {
         fun kcal(value: Int?) = value?.let { DisplayNumberFormatter.kcal(it) } ?: "-"
         findViewById<TextView>(R.id.caloriesBmrValue).text = kcal(calories.bmr)
         findViewById<TextView>(R.id.caloriesBiaBmrValue).text = kcal(calories.biaBmr)
+        // The BIA reference is shown only when a BIA provided it.
+        val hasBiaBmr = calories.biaBmr != null
+        findViewById<View>(R.id.caloriesBiaBmrRow).visibility = if (hasBiaBmr) View.VISIBLE else View.GONE
+        findViewById<View>(R.id.caloriesBiaBmrDivider).visibility = if (hasBiaBmr) View.VISIBLE else View.GONE
         findViewById<TextView>(R.id.caloriesTdeeValue).text = kcal(calories.tdee)
         findViewById<TextView>(R.id.caloriesTargetValue).text = kcal(calories.target)
         val caloriesConsumedText = findViewById<TextView>(R.id.caloriesConsumedText)
         caloriesConsumedText.text = calories.consumedKcal?.let { DisplayNumberFormatter.integer(it) } ?: "-"
-        findViewById<TextView>(R.id.caloriesConsumptionNote).text = when {
-            calories.consumedCount == 0 && calories.recordedCount > 0 -> "Gli elementi registrati risultano saltati."
-            calories.consumedCount == 0 -> "Nessun alimento registrato come consumato oggi."
-            calories.consumedCount < calories.recordedCount -> "Calorie e proteine sommano i soli elementi consumati (${calories.consumedCount})."
-            else -> "Totale di ${calories.consumedCount} elementi segnati come consumati."
+        // One note under the rings (the two old notes merged into one).
+        val consumptionDetail = when (ConsumptionNote.kindOf(calories.consumedCount, calories.recordedCount)) {
+            ConsumptionNote.Kind.ALL_SKIPPED -> getString(R.string.home_ux5a_note_all_skipped)
+            ConsumptionNote.Kind.NONE_REGISTERED -> getString(R.string.home_ux5a_note_none_registered)
+            ConsumptionNote.Kind.PARTIAL -> getString(R.string.home_ux5a_note_partial, calories.consumedCount)
+            ConsumptionNote.Kind.ALL_CONSUMED -> getString(R.string.home_ux5a_note_all_consumed, calories.consumedCount)
         }
+        findViewById<TextView>(R.id.caloriesConsumptionNote).text = getString(R.string.home_ux5a_calories_note, consumptionDetail)
         val remaining = RemainingKcal.of(calories.target, calories.consumedKcal)
         val remainingLabel = findViewById<TextView>(R.id.caloriesRemainingLabel)
         // The overshoot is stated in words and with a sign, never only through colour.
@@ -810,7 +847,7 @@ class HomeActivity : BaseShellActivity() {
         showHelpCard("Come calcoliamo le calorie", message)
     }
 
-    private fun renderNextMeal(next: HomeViewModel.NextMealState?) {
+    private fun renderNextMeal(next: HomeViewModel.NextMealState?, todayEpochDay: Long, records: List<FoodConsumptionEntity>) {
         currentNextMealId = next?.mealId
         findViewById<MealCardView>(R.id.nextMealCard).apply {
             if (next == null) {
@@ -818,12 +855,47 @@ class HomeActivity : BaseShellActivity() {
                 setTitle("Nessun pasto pianificato")
                 setKcal("Apri il piano alimentare")
                 setMeal(null, null, describe = false)
+                setQuickConsume("", QuickConsumeRule.State.HIDDEN, null)
                 contentDescription = "Nessun pasto pianificato. Apri il piano alimentare"
                 return@apply
             }
             renderMeal(this, next)
             contentDescription = "Prossimo pasto: ${next.title}"
+            // Today's (or past) meals only; the rest of the card still opens the detail.
+            val consumed = records.any { it.mealId == next.mealId && it.status == FoodConsumptionStatus.CONSUMED.name }
+            val quickState = QuickConsumeRule.stateOf(next.dateEpochDay, todayEpochDay, consumed)
+            setQuickConsume(MealSlotIcons.label(next.type, next.timeMinutes), quickState) { onQuickConsume(next.mealId, consumed) }
         }
+    }
+
+    /**
+     * Same shared logic as the meal detail and the Food list (MealStatusRecorder). The rings update by themselves:
+     * Home already observes the consumption records. A meal already consumed is never cleared by the tap: only the snackbar action does.
+     */
+    private fun onQuickConsume(mealId: Long, alreadyConsumed: Boolean) {
+        val recorder = data.mealStatusRecorder
+        if (alreadyConsumed) {
+            showMealSnackbar(R.string.meal_ux4_snackbar_already_consumed, R.string.meal_detail_ux4_undo_consumed) {
+                lifecycleScope.launch { runCatching { recorder.tap(mealId, FoodConsumptionStatus.CONSUMED) } }
+            }
+            return
+        }
+        lifecycleScope.launch {
+            val change = runCatching { recorder.markConsumed(mealId) }.getOrNull()
+            when {
+                change == null -> showMealSnackbar(R.string.meal_ux4_snackbar_error)
+                change.changed -> showMealSnackbar(R.string.meal_ux4_snackbar_consumed, R.string.meal_ux4_snackbar_undo) {
+                    lifecycleScope.launch { runCatching { recorder.restore(change) } }
+                }
+            }
+        }
+    }
+
+    private fun showMealSnackbar(@androidx.annotation.StringRes message: Int, @androidx.annotation.StringRes action: Int? = null, onAction: (() -> Unit)? = null) {
+        val snackbar = com.google.android.material.snackbar.Snackbar.make(findViewById(android.R.id.content), message, com.google.android.material.snackbar.Snackbar.LENGTH_LONG)
+        findViewById<View?>(R.id.bottomNav)?.let { snackbar.setAnchorView(it) }
+        if (action != null && onAction != null) snackbar.setAction(action) { onAction() }
+        snackbar.show()
     }
 
     private fun renderMeal(card: MealCardView, meal: HomeViewModel.NextMealState) {

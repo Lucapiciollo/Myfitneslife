@@ -44,7 +44,7 @@ class LandscapeHomeCheatDeviceTest {
         ActivityScenario.launch(HomeActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
                 assertTrue(activity.findViewById<android.view.View>(com.myfitai.app.R.id.bodyMeasurementTrendChart) != null)
-                assertTrue(activity.findViewById<android.widget.TextView>(com.myfitai.app.R.id.measurementsButton).text.toString() == "Aggiungi rilevazione")
+                assertTrue(activity.findViewById<android.widget.TextView>(com.myfitai.app.R.id.quickAddBiaButton).text.toString() == "Nuova BIA")
                 assertTrue(activity.findViewById<android.widget.TextView>(com.myfitai.app.R.id.addExtraButton).text.toString() == "Inserisci sgarro")
             }
         }

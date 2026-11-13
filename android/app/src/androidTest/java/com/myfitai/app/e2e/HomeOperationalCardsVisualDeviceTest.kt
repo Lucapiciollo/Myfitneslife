@@ -69,10 +69,9 @@ class HomeOperationalCardsVisualDeviceTest {
                 assertTrue("AI notice action callback remains installed", activity.findViewById<View>(R.id.aiConfigurationNoticeButton).hasOnClickListeners())
                 assertTrue("BIA notice action callback missing", activity.findViewById<View>(R.id.biaDueNoticeButton).hasOnClickListeners())
                 assertTrue("analysis callback missing", activity.findViewById<View>(R.id.analysisHubButton).hasOnClickListeners())
-                assertTrue("measurement callback missing", activity.findViewById<View>(R.id.quickAddBiaButton).hasOnClickListeners())
+                assertTrue("rilevazioni: nuova BIA callback missing", activity.findViewById<View>(R.id.quickAddBiaButton).hasOnClickListeners())
                 assertTrue("body measurement callback missing", activity.findViewById<View>(R.id.quickAddBodyMeasurementButton).hasOnClickListeners())
                 assertTrue("history callback missing", activity.findViewById<View>(R.id.quickOpenHistoryButton).hasOnClickListeners())
-                assertTrue("measurement hub callback missing", activity.findViewById<View>(R.id.measurementsButton).hasOnClickListeners())
                 assertTrue("extra callback missing", activity.findViewById<View>(R.id.addExtraButton).hasOnClickListeners())
 
                 val focusView: View = if (focus == "notices") plan else activity.findViewById(R.id.quickActionsRow)
@@ -90,6 +89,7 @@ class HomeOperationalCardsVisualDeviceTest {
                     R.id.biaDueNoticeCard,
                     R.id.analysisHubCard,
                     R.id.quickActionsCard,
+                    R.id.cheatActionCard,
                 ).forEach { id -> assertNotNull("missing ${activity.resources.getResourceEntryName(id)}", activity.findViewById<View>(id)) }
             }
             if (holdMs > 0) Thread.sleep(holdMs)
@@ -97,8 +97,8 @@ class HomeOperationalCardsVisualDeviceTest {
     }
 
     @Test
-    fun analysisCard_usesPolishedLayoutAndOpensMeasurements() {
-        val monitor = instrumentation.addMonitor("com.myfitai.app.ui.MeasurementsActivity", null, false)
+    fun analysisCard_usesPolishedLayoutAndOpensProgress() {
+        val monitor = instrumentation.addMonitor("com.myfitai.app.ui.TabHostActivity", null, false)
         ActivityScenario.launch<HomeActivity>(
             Intent(instrumentation.targetContext, HomeActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
@@ -119,7 +119,7 @@ class HomeOperationalCardsVisualDeviceTest {
                 action.performClick()
             }
             val launched = instrumentation.waitForMonitorWithTimeout(monitor, 5_000)
-            assertTrue("analysis route opens the existing measurements screen", launched?.javaClass?.simpleName == "MeasurementsActivity")
+            assertTrue("UX5a: analysis route opens the Progress tab (tab host)", launched?.javaClass?.simpleName == "TabHostActivity")
             launched?.finish()
         }
         instrumentation.removeMonitor(monitor)
