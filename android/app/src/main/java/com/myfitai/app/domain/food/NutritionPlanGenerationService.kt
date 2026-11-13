@@ -148,11 +148,8 @@ class NutritionPlanGenerationService(
         )
 
         val zone = time.zoneId
-        val from = monday.atStartOfDay(zone).toInstant().toEpochMilli()
-        val to = monday.plusWeeks(periodWeeks.toLong()).atStartOfDay(zone).toInstant().toEpochMilli() - 1
-        // Kept only for the sports-nutrition classifier and the plan review (reworked by the next tranches).
-        val weekWorkouts = workouts.between(profileId, from, to).first()
-        val sportsMode = SportsNutritionClassifier.classify(profile.activityLevel, weekWorkouts)
+        // Sports mode depends only on the profile's activity level (very/extremely active).
+        val sportsMode = SportsNutritionClassifier.classify(profile.activityLevel)
         val mealsPerDay = mealCountPreferences?.get(profileId) ?: MealCountPreferences.DEFAULT
         val personalContext = personalResponse.promptContext(nowEpochMillis = time.nowEpochMillis(), profileId = profileId)
         val dietaryProfile = DietaryProfile.parse(profile.dietaryPreferencesJson)
@@ -277,7 +274,6 @@ class NutritionPlanGenerationService(
             generated = response.days.map { day ->
                 MealVariety.DayMeals(day.dateEpochDay, day.meals.map { meal -> MealVariety.Meal(meal.type, meal.title, meal.ingredients.map { it.name }) })
             },
-            trainingDays = emptySet(),
             recent = recentMeals,
         )
         val integrityWithVariety = integrity.copy(warnings = integrity.warnings + varietyReport.issues())

@@ -1,43 +1,35 @@
 package com.myfitai.app.domain.food
 
-import com.myfitai.app.data.local.entity.WorkoutEntity
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class SportsNutritionClassifierTest {
 
     @Test
-    fun sedentaryWithoutWorkouts_isNormal() {
-        val mode = SportsNutritionClassifier.classify("sedentario", emptyList())
-        assertEquals(SportsNutritionClassifier.Mode.NORMAL, mode)
+    fun sedentary_isNormal() {
+        assertEquals(SportsNutritionClassifier.Mode.NORMAL, SportsNutritionClassifier.classify("sedentario"))
     }
 
     @Test
-    fun moderateWithStructuredWorkouts_isSport() {
-        val mode = SportsNutritionClassifier.classify(
-            "moderatamente attivo",
-            listOf(
-                workout(1_000L, "PESI", "Upper", false),
-                workout(2_000L, "PESI", "Lower", false),
-            ),
-        )
-        assertEquals(SportsNutritionClassifier.Mode.SPORT, mode)
+    fun moderateAndLightLevels_areNormal() {
+        assertEquals(SportsNutritionClassifier.Mode.NORMAL, SportsNutritionClassifier.classify("moderatamente attivo"))
+        assertEquals(SportsNutritionClassifier.Mode.NORMAL, SportsNutritionClassifier.classify("leggermente attivo"))
     }
 
     @Test
-    fun highActivityWithoutWorkouts_isSport() {
-        val mode = SportsNutritionClassifier.classify("molto attivo", emptyList())
-        assertEquals(SportsNutritionClassifier.Mode.SPORT, mode)
+    fun veryActive_isSport_regardlessOfCaseAndSpaces() {
+        assertEquals(SportsNutritionClassifier.Mode.SPORT, SportsNutritionClassifier.classify("molto attivo"))
+        assertEquals(SportsNutritionClassifier.Mode.SPORT, SportsNutritionClassifier.classify("  Molto attivo "))
     }
 
-    private fun workout(startedAt: Long, type: String, title: String, rest: Boolean) = WorkoutEntity(
-        id = 0,
-        profileId = 1,
-        startedAtEpochMillis = startedAt,
-        type = type,
-        title = title,
-        durationMinutes = if (rest) null else 60,
-        isRestDay = rest,
-        notes = null,
-    )
+    @Test
+    fun storedExtremelyActiveLevel_isSport() {
+        assertEquals(SportsNutritionClassifier.Mode.SPORT, SportsNutritionClassifier.classify("Estremamente attivo"))
+    }
+
+    @Test
+    fun missingOrUnknownLevel_isNormal() {
+        assertEquals(SportsNutritionClassifier.Mode.NORMAL, SportsNutritionClassifier.classify(null))
+        assertEquals(SportsNutritionClassifier.Mode.NORMAL, SportsNutritionClassifier.classify("boh"))
+    }
 }

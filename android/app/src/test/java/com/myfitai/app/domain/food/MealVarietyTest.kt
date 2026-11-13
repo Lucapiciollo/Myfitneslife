@@ -2,6 +2,7 @@ package com.myfitai.app.domain.food
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -38,7 +39,6 @@ class MealVarietyTest {
     fun aDistinctPlanHasNoNotice() {
         val report = MealVariety.check(
             generated = listOf(day(100, meal("A")), day(101, meal("B"))),
-            trainingDays = setOf(101L),
             recent = listOf(meal("Z")),
         )
         assertFalse(report.hasRepetitions)
@@ -50,43 +50,38 @@ class MealVarietyTest {
     fun detectsMealsServedRecentlyAndRepeatedInThePlan() {
         val report = MealVariety.check(
             generated = listOf(day(100, meal("Pasta al pomodoro"), meal("Insalata")), day(101, meal("Pasta  al Pomodoro"))),
-            trainingDays = emptySet(),
             recent = listOf(meal("pasta al pomodoro")),
         )
         assertEquals(listOf("Pasta al pomodoro"), report.repeatedFromRecent)
         assertEquals(listOf("Pasta al pomodoro"), report.repeatedInPeriod)
-        assertTrue(report.trainingSameAsRest.isEmpty())
         assertEquals(setOf("VARIETY_REPEATS_RECENT", "VARIETY_REPEATS_IN_PLAN"), report.issues().map { it.code }.toSet())
         assertTrue(report.issues().all { it.severity == Severity.WARNING })
     }
 
     @Test
-    fun detectsTrainingMealsEqualToRestMeals() {
+    fun sameMealOnTwoDaysIsOnlyAPlanRepetition_noTrainingVsRestWarningExists() {
         val report = MealVariety.check(
             generated = listOf(day(100, meal("Riso e pollo")), day(101, meal("Riso e pollo"), meal("Frittata"))),
-            trainingDays = setOf(101L),
             recent = emptyList(),
         )
-        assertEquals(listOf("Riso e pollo"), report.trainingSameAsRest)
-        assertTrue(report.notice()!!.contains("uguali tra allenamento e riposo"))
+        assertEquals(listOf("Riso e pollo"), report.repeatedInPeriod)
+        assertFalse(report.notice()!!.contains("allenamento"))
+        assertFalse(report.issues().any { it.code == "VARIETY_TRAINING_SAME_AS_REST" })
+        assertEquals(setOf("VARIETY_REPEATS_IN_PLAN"), report.issues().map { it.code }.toSet())
     }
 
     @Test
-    fun noTrainingDaysMeansNoTrainingComparison() {
-        val report = MealVariety.check(
-            generated = listOf(day(100, meal("A")), day(101, meal("A"))),
-            trainingDays = emptySet(),
-            recent = emptyList(),
-        )
-        assertTrue(report.trainingSameAsRest.isEmpty())
-        assertEquals(listOf("A"), report.repeatedInPeriod)
+    fun oldAppValidationWithRemovedTrainingCodeStillParses() {
+        val old = """{"available":true,"valid":true,"validatorVersion":"nutrition-integrity-v2","derivedTotals":true,"issues":[],"warnings":[{"code":"VARIETY_TRAINING_SAME_AS_REST","severity":"WARNING","message":"x","dayEpochDay":null,"mealTitle":null,"expected":null,"actual":null,"deviationPercent":null}]}"""
+        val parsed = NutritionIntegrityValidator.parse(old)
+        assertNotNull(parsed)
+        assertEquals("VARIETY_TRAINING_SAME_AS_REST", parsed!!.warnings.single().code)
     }
 
     @Test
     fun sameIngredientSetCountsAsTheSameMealEvenWithAnotherTitle() {
         val report = MealVariety.check(
             generated = listOf(day(100, meal("Bowl del lunedì", "Riso", "Pollo", "Zucchine"))),
-            trainingDays = emptySet(),
             recent = listOf(meal("Piatto unico", "zucchine", "RISO", "pollo")),
         )
         assertEquals(1, report.repeatedFromRecent.size)
@@ -96,7 +91,6 @@ class MealVarietyTest {
     fun shortIngredientListsAreNotMatchedByIngredientsAlone() {
         val report = MealVariety.check(
             generated = listOf(day(100, meal("Yogurt con miele", "Yogurt", "Miele"))),
-            trainingDays = emptySet(),
             recent = listOf(meal("Colazione leggera", "Yogurt", "Miele")),
         )
         assertFalse(report.hasRepetitions)

@@ -38,8 +38,9 @@ class SixMonthHistoryFixtureTest {
         val firstWorkouts = dataset.workouts.filter { date(it.startedAtEpochMillis) in firstWeek..firstWeek.plusDays(6) }
         val sportWorkouts = dataset.workouts.filter { date(it.startedAtEpochMillis) in sportWeek..sportWeek.plusDays(6) }
 
-        assertEquals(SportsNutritionClassifier.Mode.NORMAL, SportsNutritionClassifier.classify("sedentario", firstWorkouts))
-        assertEquals(SportsNutritionClassifier.Mode.SPORT, SportsNutritionClassifier.classify("moderatamente attivo", sportWorkouts))
+        assertEquals(SportsNutritionClassifier.Mode.NORMAL, SportsNutritionClassifier.classify("sedentario"))
+        assertEquals(SportsNutritionClassifier.Mode.NORMAL, SportsNutritionClassifier.classify("moderatamente attivo"))
+        assertEquals(SportsNutritionClassifier.Mode.SPORT, SportsNutritionClassifier.classify("molto attivo"))
         assertTrue(sportWorkouts.count { !it.isRestDay } >= 4)
         assertTrue(firstWorkouts.all { it.isRestDay })
     }

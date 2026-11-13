@@ -143,11 +143,10 @@ object NutritionPlanContract {
         expectedFirstDate: LocalDate = expectedWeekStart,
         expectedPeriodWeeks: Int = 1,
         maintenanceCeilingKcal: Double? = null,
-        dailyCeilingKcal: Map<Long, Double> = emptyMap(),
     ): Result<Unit> = validateBusinessAssessed(
         response, expectedWeekStart, targets, sportsMode, enforceWeeklyVariety, mealsPerDay, dailyTargets,
         dietaryProfile, tolerance, targetBelowOnly, expectedFirstDate, expectedPeriodWeeks,
-        maintenanceCeilingKcal, dailyCeilingKcal,
+        maintenanceCeilingKcal,
     ).map { }
 
     /** Same gate as [validateBusiness], returning the accepted [NutritionPlanAssessment.Assessment] (attempt = business attempt index). */
@@ -167,14 +166,11 @@ object NutritionPlanContract {
         // A deficit-oriented plan must never reach maintenance expenditure,
         // even when it falls within the target's percentage tolerance.
         maintenanceCeilingKcal: Double? = null,
-        // Per-date ceiling (that day's expenditure, e.g. training vs rest days); overrides the single ceiling.
-        dailyCeilingKcal: Map<Long, Double> = emptyMap(),
         attempt: Int = 0,
     ): Result<NutritionPlanAssessment.Assessment> = runCatching {
         require(maintenanceCeilingKcal == null || (maintenanceCeilingKcal.isFinite() && maintenanceCeilingKcal > 0.0)) {
             "MAINTENANCE_CEILING_INVALID"
         }
-        require(dailyCeilingKcal.values.all { it.isFinite() && it > 0.0 }) { "MAINTENANCE_CEILING_INVALID" }
         require(response.weekStartEpochDay == expectedWeekStart.toEpochDay()) { "WEEK_START_MISMATCH" }
         val expectedLastDate = expectedWeekStart.plusWeeks(expectedPeriodWeeks.toLong()).minusDays(1)
         require(!expectedFirstDate.isBefore(expectedWeekStart) && !expectedFirstDate.isAfter(expectedLastDate)) { "GENERATION_START_INVALID" }
@@ -193,9 +189,8 @@ object NutritionPlanContract {
         assessment.toleranceExceededReason()?.let { reason -> throw IllegalArgumentException(reason) }
 
         response.days.forEach { day ->
-            val dayCeilingKcal = dailyCeilingKcal[day.dateEpochDay] ?: maintenanceCeilingKcal
-            if (dayCeilingKcal != null) {
-                require(day.totalKcal < dayCeilingKcal) {
+            if (maintenanceCeilingKcal != null) {
+                require(day.totalKcal < maintenanceCeilingKcal) {
                     "DEFICIT_PLAN_REACHES_MAINTENANCE:${day.dateEpochDay}"
                 }
             }
