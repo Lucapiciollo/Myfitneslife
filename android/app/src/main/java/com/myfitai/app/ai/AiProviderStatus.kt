@@ -27,6 +27,19 @@ data class AiProviderStatus(
 
     companion object {
         fun from(config: AiRuntimeConfig): AiProviderStatus {
+            if (config.grokActive) {
+                // Grok chosen and enabled: state consistent with selectedProvider(); the alternative is a historical provider with a key.
+                val previous = if (config.useGemini) AiProviderType.GEMINI else AiProviderType.OPENAI
+                val previousConfigured = if (config.useGemini) config.geminiConfigured else config.openAiConfigured
+                val other = if (config.useGemini) AiProviderType.OPENAI else AiProviderType.GEMINI
+                val otherConfigured = if (config.useGemini) config.openAiConfigured else config.geminiConfigured
+                return when {
+                    config.grokConfigured -> AiProviderStatus(State.ACTIVE, AiProviderType.GROK)
+                    previousConfigured -> AiProviderStatus(State.SELECTED_WITHOUT_KEY, AiProviderType.GROK, alternative = previous)
+                    otherConfigured -> AiProviderStatus(State.SELECTED_WITHOUT_KEY, AiProviderType.GROK, alternative = other)
+                    else -> AiProviderStatus(State.NONE, AiProviderType.GROK)
+                }
+            }
             val selected = if (config.useGemini) AiProviderType.GEMINI else AiProviderType.OPENAI
             val other = if (config.useGemini) AiProviderType.OPENAI else AiProviderType.GEMINI
             val selectedConfigured = if (config.useGemini) config.geminiConfigured else config.openAiConfigured
