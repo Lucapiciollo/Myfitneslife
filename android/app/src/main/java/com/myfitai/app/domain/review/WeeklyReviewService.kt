@@ -11,7 +11,6 @@ import com.myfitai.app.data.repository.CheatEntryRepository
 import com.myfitai.app.data.repository.FoodConsumptionRepository
 import com.myfitai.app.data.repository.MealPlanRepository
 import com.myfitai.app.data.repository.WeeklyReviewRepository
-import com.myfitai.app.data.repository.WorkoutRepository
 import com.myfitai.app.data.repository.UserProfileRepository
 import com.myfitai.app.domain.ai.AiUserContext
 import com.myfitai.app.domain.ai.UnsupportedClaimGuard
@@ -30,7 +29,6 @@ class WeeklyReviewService(
     private val aiRuntime: AiRuntimeGateway,
     private val reviews: WeeklyReviewRepository,
     private val plans: MealPlanRepository,
-    private val workouts: WorkoutRepository,
     private val cheats: CheatEntryRepository,
     private val bia: BiaRepository,
     private val bodyMeasurements: BodyMeasurementRepository,

@@ -14,7 +14,6 @@ import com.myfitai.app.data.repository.MealPlanRepository
 import com.myfitai.app.data.repository.PlanVersionDraft
 import com.myfitai.app.data.repository.SupplementDraft
 import com.myfitai.app.data.repository.UserProfileRepository
-import com.myfitai.app.data.repository.WorkoutRepository
 import com.myfitai.app.domain.calculation.AdaptiveNutritionTargetEngine
 import com.myfitai.app.domain.calculation.LocalCalculationEngine
 import com.myfitai.app.domain.calculation.MacroPolicy
@@ -36,7 +35,6 @@ class NutritionPlanGenerationService(
     private val aiRuntime: AiRuntimeGateway,
     private val calculations: ProfileCalculationService,
     private val profiles: UserProfileRepository,
-    private val workouts: WorkoutRepository,
     private val plans: MealPlanRepository,
     private val cheats: CheatEntryRepository,
     private val recovery: CalorieRecoveryRepository,

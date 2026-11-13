@@ -5,7 +5,6 @@ import com.myfitai.app.data.repository.BiaRepository
 import com.myfitai.app.data.repository.BodyMeasurementRepository
 import com.myfitai.app.data.repository.CheatEntryRepository
 import com.myfitai.app.data.repository.MealPlanRepository
-import com.myfitai.app.data.repository.WorkoutRepository
 import com.myfitai.app.data.repository.BodyExpectationGoalRepository
 import kotlinx.coroutines.flow.first
 import java.time.Instant
@@ -16,7 +15,6 @@ class PersonalResponseService(
     private val activeProfileStore: ActiveProfileStore,
     private val plans: MealPlanRepository,
     private val cheats: CheatEntryRepository,
-    private val workouts: WorkoutRepository,
     private val bia: BiaRepository,
     private val bodyMeasurements: BodyMeasurementRepository,
     private val expectationGoals: BodyExpectationGoalRepository,

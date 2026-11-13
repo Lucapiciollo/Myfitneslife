@@ -6,7 +6,6 @@ import com.myfitai.app.ai.AiUsageMetadata
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.repository.CheatEntryRepository
 import com.myfitai.app.data.repository.UserProfileRepository
-import com.myfitai.app.data.repository.WorkoutRepository
 import com.myfitai.app.domain.calculation.ProfileCalculationService
 import com.myfitai.app.domain.time.SystemTimeProvider
 import com.myfitai.app.domain.time.TimeProvider
@@ -24,7 +23,6 @@ class ProgressAnalysisService(
     private val aiRuntime: AiRuntimeGateway,
     private val calculations: ProfileCalculationService,
     private val profiles: UserProfileRepository,
-    private val workouts: WorkoutRepository,
     private val cheats: CheatEntryRepository,
     private val activeProfileStore: ActiveProfileStore,
     private val preferences: ProgressAnalysisPreferences,

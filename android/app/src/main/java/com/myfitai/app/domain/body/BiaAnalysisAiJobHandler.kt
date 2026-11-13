@@ -9,7 +9,6 @@ import com.myfitai.app.data.repository.BiaRepository
 import com.myfitai.app.data.repository.BodyMeasurementRepository
 import com.myfitai.app.data.repository.MealPlanRepository
 import com.myfitai.app.data.repository.UserProfileRepository
-import com.myfitai.app.data.repository.WorkoutRepository
 import com.myfitai.app.domain.ai.AiJobFailures
 import com.myfitai.app.domain.ai.AiJobHandler
 import com.myfitai.app.domain.ai.AiJobOutcome
@@ -31,7 +30,6 @@ class BiaAnalysisAiJobHandler(
     private val profiles: UserProfileRepository,
     private val bia: BiaRepository,
     private val body: BodyMeasurementRepository,
-    private val workouts: WorkoutRepository,
     private val plans: MealPlanRepository,
     private val calculations: ProfileCalculationService,
     private val scheduler: BiaProgressCoachScheduler,

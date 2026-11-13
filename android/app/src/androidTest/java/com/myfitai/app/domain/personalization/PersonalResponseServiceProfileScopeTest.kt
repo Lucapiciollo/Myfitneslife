@@ -13,7 +13,6 @@ import com.myfitai.app.data.repository.BodyMeasurementRepository
 import com.myfitai.app.data.repository.CheatEntryRepository
 import com.myfitai.app.data.repository.MealPlanRepository
 import com.myfitai.app.data.repository.UserProfileRepository
-import com.myfitai.app.data.repository.WorkoutRepository
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -48,8 +47,7 @@ class PersonalResponseServiceProfileScopeTest {
         bia.insert(reading(profileB, now - 10 * day, 70f))
         bia.insert(reading(profileB, now - 2 * day, 71f))
         service = PersonalResponseService(
-            ActiveProfileStore(context), MealPlanRepository(db), CheatEntryRepository(db), WorkoutRepository(db),
-            bia, BodyMeasurementRepository(db), BodyExpectationGoalRepository(db),
+            ActiveProfileStore(context), MealPlanRepository(db), CheatEntryRepository(db), bia, BodyMeasurementRepository(db), BodyExpectationGoalRepository(db),
         )
     }
 

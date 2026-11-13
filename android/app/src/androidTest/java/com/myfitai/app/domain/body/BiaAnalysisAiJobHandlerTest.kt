@@ -19,7 +19,6 @@ import com.myfitai.app.data.repository.BiaRepository
 import com.myfitai.app.data.repository.BodyMeasurementRepository
 import com.myfitai.app.data.repository.MealPlanRepository
 import com.myfitai.app.data.repository.UserProfileRepository
-import com.myfitai.app.data.repository.WorkoutRepository
 import com.myfitai.app.domain.ai.AiJobOutcome
 import com.myfitai.app.domain.ai.AiJobScheduler
 import com.myfitai.app.domain.ai.AiJobWorker
@@ -72,7 +71,6 @@ class BiaAnalysisAiJobHandlerTest {
             profiles = profiles,
             bia = biaRepository,
             body = body,
-            workouts = WorkoutRepository(db),
             plans = MealPlanRepository(db),
             calculations = ProfileCalculationService(profiles, biaRepository, body, activeProfile),
             scheduler = BiaProgressCoachScheduler(AiAutomationPreferences(context), activeProfile, AiJobScheduler(context)),
