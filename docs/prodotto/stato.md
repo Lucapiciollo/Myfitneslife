@@ -316,3 +316,5 @@ Da integrare ancora: D1 (feat/d1-poc-nutritionadvice). Decisioni aperte: tetto p
 | senior-developer | B2 testi residui senza allenamenti | ses_e2b1908eaffejmoVK7HiqRpnou | feat/sem-b2-testi-residui (da develop fd7b87b) |
 | senior-developer | F3 export v3, backup tollerante v1/v2, PDF, cancellazione dati | ses_e2b18d326ffeG780W8ZmufyruK | feat/sem-f3-export-backup (da develop fd7b87b) |
 Dopo: F5 migrazione Room 19->20 (elimina workouts e daily_activity_checkins), poi F6 test device e F7 verifica.
+
+- B2 FERMATO (ses_e2b1908eaffejmoVK7HiqRpnou): commit e716951 su feat/sem-b2-testi-residui; il subagente riporta BUILD SUCCESSFUL, 927 test 0 falliti (da riverificare in integrazione). 4 file, 21 stringhe orfane rimosse, PatternCode.TRAINING mostra 'Routine'. Classi Training*/WorkoutPreferences restano finche F3/F5.
