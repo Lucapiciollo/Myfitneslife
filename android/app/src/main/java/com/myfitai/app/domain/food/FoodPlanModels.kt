@@ -22,6 +22,8 @@ data class FoodPlanVersion(
     val targetCarbsG: Float?,
     val targetFatG: Float?,
     val days: List<FoodPlanDay>,
+    /** Impronta degli input nutrizionali con cui il piano e stato generato; null = piano precedente alla UX7. */
+    val inputsFingerprint: String? = null,
 )
 
 data class FoodPlanDay(

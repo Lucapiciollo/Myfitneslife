@@ -325,6 +325,8 @@ class NutritionPlanGenerationService(
             targetCarbsG = persistedTargets.carbsG.toFloat(),
             targetFatG = persistedTargets.fatG.toFloat(),
             appValidationJson = integrityWithVariety.toJson().toString(),
+            // UX7: l'impronta degli input con cui target e piano sono stati calcolati.
+            inputsFingerprint = snapshot.inputsFingerprint,
             days = response.days.sortedBy { it.dateEpochDay }.map { day ->
                 val dayTargets = dailyTargetsByEpochDay[day.dateEpochDay] ?: baseTargets
                 DayDraft(

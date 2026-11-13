@@ -8,6 +8,8 @@ import com.myfitai.app.data.local.entity.MealPlanEntity
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.domain.body.BodyProportionEngine
 import com.myfitai.app.domain.calculation.LocalCalculationEngine
+import com.myfitai.app.domain.calculation.PlanFingerprint
+import com.myfitai.app.domain.calculation.PlanStaleness
 import com.myfitai.app.domain.calculation.ProfileCalculationMapper
 import com.myfitai.app.domain.calculation.WeightResolver
 import com.myfitai.app.domain.food.FoodIngredient
@@ -143,7 +145,12 @@ class ProfileExportService(
                         latestPlanTargetProteinG = latestPlan?.version?.targetProteinG,
                         latestPlanTargetCarbsG = latestPlan?.version?.targetCarbsG,
                         latestPlanTargetFatG = latestPlan?.version?.targetFatG,
-                        planUpdatePending = nutritionPlanUpdatePreferences?.isPending(profileId) == true,
+                        // UX7: stessa regola di Home/Cibo/review: impronta del piano vs impronta di adesso, flag solo per i piani senza impronta.
+                        planUpdatePending = PlanStaleness.isStale(
+                            planFingerprint = latestPlan?.version?.inputsFingerprint,
+                            currentFingerprint = PlanFingerprint.of(profile, bia, body, time.today()),
+                            legacyPendingFlag = nutritionPlanUpdatePreferences?.isPending(profileId) == true,
+                        ),
                     )
                 )
                 ExportedFile(file, "application/pdf")

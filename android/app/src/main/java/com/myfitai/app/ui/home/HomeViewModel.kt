@@ -96,6 +96,9 @@ class HomeViewModel(
         val proteinTargetG: Double? = null,
         val consumedCount: Int = 0,
         val recordedCount: Int = 0,
+        /** UX7: impronta degli input di adesso e quella del piano mostrato; con [PlanStaleness] danno l'unico avviso "piano non aggiornato". */
+        val currentInputsFingerprint: String? = null,
+        val planInputsFingerprint: String? = null,
     )
     data class NextMealState(
         val mealId: Long,
@@ -262,6 +265,7 @@ class HomeViewModel(
                 proteinTargetG = resolved.proteinG,
                 consumedCount = consumed.consumedCount,
                 recordedCount = consumed.recordedCount,
+                planInputsFingerprint = snapshot?.version?.inputsFingerprint,
             ),
             weeklyExpectation = WeeklyBodyExpectation.calculate(
                 // One TDEE (the profile's) for every day of the week.
@@ -362,7 +366,8 @@ class HomeViewModel(
     private suspend fun calorieState(source: Source): CalorieState {
         val profile = source.profile ?: return CalorieState()
         val latestBia = source.bia.maxByOrNull { it.measuredAtEpochMillis }
-        val calculation = profileCalculationService.profileSnapshot(profile.id)?.calculation
+        val snapshot = profileCalculationService.profileSnapshot(profile.id)
+        val calculation = snapshot?.calculation
         val metrics = OperationalNutritionMetrics.calculate(calculation)
         val tdeeInt = metrics.tdeeKcal?.let { Math.round(it).toInt() }
         val targetInt = metrics.targetKcal?.let { Math.round(it).toInt() }
@@ -381,6 +386,7 @@ class HomeViewModel(
             habitualTdee = tdeeInt,
             goalLabel = goalLabel(ProfileCalculationMapper.goal(profile.goal)),
             energyPercent = energyPercent,
+            currentInputsFingerprint = snapshot?.inputsFingerprint,
         )
     }
 

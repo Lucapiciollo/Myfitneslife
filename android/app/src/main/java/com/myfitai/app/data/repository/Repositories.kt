@@ -162,6 +162,8 @@ data class PlanVersionDraft(
     val targetFatG: Float?,
     val days: List<DayDraft>,
     val appValidationJson: String? = null,
+    /** Solo la generazione la imposta; adattamenti e scambi ereditano quella della versione da cui derivano. */
+    val inputsFingerprint: String? = null,
 )
 
 data class LegacyMealAlarmId(val versionId: Long, val mealId: Long)
@@ -243,7 +245,8 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
     ): Long = db.withTransaction {
         val dao = db.mealPlanDao()
         val plan = dao.getPlan(profileId, planId) ?: error("PLAN_NOT_FOUND_FOR_PROFILE")
-        val nextVersion = (dao.getLatestVersion(profileId, plan.id)?.versionNumber ?: 0) + 1
+        val previous = dao.getLatestVersion(profileId, plan.id)
+        val nextVersion = (previous?.versionNumber ?: 0) + 1
         val versionId = dao.insertVersion(
             MealPlanVersionEntity(
                 planId = planId,
@@ -256,6 +259,7 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
                 targetCarbsG = draft.targetCarbsG,
                 targetFatG = draft.targetFatG,
                 appValidationJson = draft.appValidationJson,
+                inputsFingerprint = draft.inputsFingerprint ?: previous?.inputsFingerprint,
             )
         )
 
@@ -375,6 +379,7 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
                 targetCarbsG = version.targetCarbsG,
                 targetFatG = version.targetFatG,
                 days = days,
+                inputsFingerprint = version.inputsFingerprint,
             ),
         )
     }

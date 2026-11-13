@@ -14,6 +14,7 @@ import com.myfitai.app.data.repository.WeeklyReviewRepository
 import com.myfitai.app.data.repository.UserProfileRepository
 import com.myfitai.app.domain.ai.AiUserContext
 import com.myfitai.app.domain.ai.UnsupportedClaimGuard
+import com.myfitai.app.domain.calculation.PlanFingerprint
 import com.myfitai.app.domain.calculation.WeightResolver
 import com.myfitai.app.domain.food.FoodPlanMetrics
 import com.myfitai.app.domain.personalization.PersonalResponseService
@@ -58,6 +59,9 @@ class WeeklyReviewService(
         val bodyFatDeltaSpanDays: Int? = null,
         val muscleMassDeltaSpanDays: Int? = null,
         val waistDeltaSpanDays: Int? = null,
+        /** UX7: impronte per [PlanStaleness]; null se il contesto non ha il profilo (allora vale solo il vecchio flag). */
+        val planInputsFingerprint: String? = null,
+        val currentInputsFingerprint: String? = null,
     )
 
     data class Result(val entity: WeeklyReviewEntity, val response: WeeklyReviewContract.Response, val metrics: LocalMetrics, val provider: String, val model: String)
@@ -136,6 +140,8 @@ class WeeklyReviewService(
             bodyFatDeltaSpanDays = bodyFatDelta?.spanDays,
             muscleMassDeltaSpanDays = muscleDelta?.spanDays,
             waistDeltaSpanDays = waistDelta?.spanDays,
+            planInputsFingerprint = plan?.version?.inputsFingerprint,
+            currentInputsFingerprint = profiles?.get(profileId)?.let { PlanFingerprint.of(it, allBia, allBody, time.today(), zone) },
         )
     }
 
