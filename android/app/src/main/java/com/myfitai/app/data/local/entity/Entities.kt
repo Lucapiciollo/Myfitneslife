@@ -135,6 +135,8 @@ data class MealPlanVersionEntity(
     val targetCarbsG: Float?,
     val targetFatG: Float?,
     val appValidationJson: String? = null,
+    /** Impronta degli input nutrizionali alla generazione (UX7); null per i piani precedenti alla migrazione 21. */
+    val inputsFingerprint: String? = null,
 )
 
 @Entity(

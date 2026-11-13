@@ -43,6 +43,7 @@ import java.util.Locale
 import com.myfitai.app.domain.display.DisplayNumberFormatter
 import com.myfitai.app.domain.display.DayTargetResolver
 import com.myfitai.app.domain.display.FoodTotalsPresentation
+import com.myfitai.app.domain.calculation.PlanStaleness
 import com.myfitai.app.domain.calculation.ProfileCalculationMapper
 import java.time.Instant
 import java.time.ZoneId
@@ -179,8 +180,13 @@ class FoodPlanActivity : BaseShellActivity() {
 
         val empty = findViewById<TextView>(R.id.emptyPlanText)
         val providerConfigured = aiProviderConfigured
-        val planUpdatePending = data.activeProfileStore.currentIdOrNull()
-            ?.let(data.nutritionPlanUpdatePreferences::isPending) == true
+        // UX7: UNA regola ([PlanStaleness]) condivisa con Home, review e PDF; il flag vale solo per i piani senza impronta.
+        val planUpdatePending = PlanStaleness.isStale(
+            planFingerprint = state.snapshot?.version?.inputsFingerprint,
+            currentFingerprint = state.currentInputsFingerprint,
+            legacyPendingFlag = data.activeProfileStore.currentIdOrNull()
+                ?.let(data.nutritionPlanUpdatePreferences::isPending) == true,
+        )
         val aiConfigurationNoticeCard = findViewById<View>(R.id.aiConfigurationNoticeCard)
         revealState(aiConfigurationNoticeCard, !providerConfigured)
         val day = state.selectedDay
@@ -195,7 +201,7 @@ class FoodPlanActivity : BaseShellActivity() {
                 generationError = state.generation.error != null,
                 generationSuccess = state.generation.successMessage != null,
                 profileAgeInvalid = state.profileAgeStatus != ProfileAgeRule.Status.VALID,
-                goalChanged = state.goalChangedSinceGeneration || planUpdatePending,
+                goalChanged = planUpdatePending,
                 hasDayContent = hasDayContent,
                 scheduleActive = scheduleActive,
             ),
@@ -234,7 +240,7 @@ class FoodPlanActivity : BaseShellActivity() {
         renderGeneration(state, visibility, currentWeek, periodCanBeGenerated)
         renderPlanScheduleStatus(visibility.scheduleStatus)
         renderMeals(state.weekStart, day, state.consumptionRecords)
-        renderTotals(day, state.snapshot?.version, state.consumptionRecords, state.calorieReference)
+        renderTotals(day, state.snapshot?.version, state.consumptionRecords, state.calorieReference, planUpdatePending)
     }
 
     private fun renderGeneration(state: FoodPlanViewModel.State, visibility: FoodPlanPresentation.Visibility, currentWeek: Boolean, periodCanBeGenerated: Boolean) {
@@ -506,6 +512,7 @@ class FoodPlanActivity : BaseShellActivity() {
         version: FoodPlanVersion?,
         records: List<com.myfitai.app.data.local.entity.FoodConsumptionEntity>,
         calorieReference: FoodPlanViewModel.CalorieReference,
+        planUpdatePending: Boolean,
     ) {
         val totalContainer = findViewById<View>(R.id.dailyTotalContainer); val totalHeader = findViewById<View>(R.id.dailyTotalHeader)
         if (day == null) { totalContainer.visibility = View.GONE; totalHeader.visibility = View.GONE; return }
@@ -541,8 +548,6 @@ class FoodPlanActivity : BaseShellActivity() {
         )
         lastCalorieReference = calorieReference
         // UX5b: una sola riga di origine; BMR/TDEE e la spiegazione lunga restano nell'help (showTotalsHelp).
-        val planUpdatePending = data.activeProfileStore.currentIdOrNull()
-            ?.let(data.nutritionPlanUpdatePreferences::isPending) == true
         val origin = FoodTotalsPresentation.origin(resolvedTarget, planUpdatePending)
         val originText = when (origin.kind) {
             FoodTotalsPresentation.Origin.Kind.PLAN_DAY -> getString(R.string.food_ux5b_origin_plan_day)

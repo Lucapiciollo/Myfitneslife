@@ -26,7 +26,7 @@ import com.myfitai.app.data.local.entity.*
         BodyExpectationGoalEntity::class,
         AiUsageRecordEntity::class,
     ],
-    version = 20,
+    version = 21,
     exportSchema = true,
 )
 abstract class MyFitAiDatabase : RoomDatabase() {
@@ -388,6 +388,16 @@ object DatabaseMigrations {
         }
     }
 
+    /**
+     * UX7: impronta degli input nutrizionali salvata con la versione del piano. Colonna nullable senza default:
+     * le righe esistenti restano intatte con impronta null (per loro vale ancora il vecchio flag).
+     */
+    val MIGRATION_20_21 = object : Migration(20, 21) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE meal_plan_versions ADD COLUMN inputsFingerprint TEXT")
+        }
+    }
+
     private fun addMissingColumns(db: SupportSQLiteDatabase, table: String, definitions: List<String>) {
         val existing = mutableSetOf<String>()
         db.query("PRAGMA table_info($table)").use { cursor ->
@@ -420,5 +430,6 @@ object DatabaseMigrations {
         MIGRATION_17_18,
         MIGRATION_18_19,
         MIGRATION_19_20,
+        MIGRATION_20_21,
     )
 }

@@ -361,4 +361,50 @@ class DatabaseMigrationTest {
             }
         }
     }
+
+    @Test
+    fun migration20To21_addsNullableFingerprintAndKeepsExistingPlanVersionsIntact() {
+        helper.createDatabase(MyFitAiDatabase.DATABASE_NAME, 20).apply {
+            execSQL("INSERT INTO user_profile (id, name, createdAtEpochMillis, updatedAtEpochMillis) VALUES (1, 'Luca', 1000, 2000)")
+            execSQL("INSERT INTO meal_plans (id, profileId, createdAtEpochMillis, weekStartEpochDay, status) VALUES (1, 1, 5000, 21000, 'ACTIVE')")
+            execSQL("INSERT INTO meal_plan_versions (id, planId, versionNumber, createdAtEpochMillis, source, reason, targetKcal, targetProteinG, targetCarbsG, targetFatG, appValidationJson) VALUES (1, 1, 1, 6000, 'GEMINI', 'AI_GENERATION', 2200, 160.0, 230.0, 70.0, '{\"ok\":true}')")
+            execSQL("INSERT INTO meal_plan_versions (id, planId, versionNumber, createdAtEpochMillis, source, reason, targetKcal, targetProteinG, targetCarbsG, targetFatG) VALUES (2, 1, 2, 7000, 'LEGACY', NULL, 2100, 150.0, 220.0, 65.0)")
+            execSQL("INSERT INTO meal_plan_days (id, versionId, dateEpochDay, totalKcal, proteinG, carbsG, fatG) VALUES (1, 1, 21000, 2200, 160.0, 230.0, 70.0)")
+            close()
+        }
+
+        helper.runMigrationsAndValidate(
+            MyFitAiDatabase.DATABASE_NAME,
+            21,
+            true,
+            DatabaseMigrations.MIGRATION_20_21,
+        ).use { db ->
+            db.query("SELECT id, versionNumber, source, reason, targetKcal, targetProteinG, appValidationJson, inputsFingerprint FROM meal_plan_versions ORDER BY id").use { cursor ->
+                assertEquals(2, cursor.count)
+                cursor.moveToFirst()
+                assertEquals(1, cursor.getInt(0))
+                assertEquals(1, cursor.getInt(1))
+                assertEquals("GEMINI", cursor.getString(2))
+                assertEquals("AI_GENERATION", cursor.getString(3))
+                assertEquals(2200, cursor.getInt(4))
+                assertEquals(160.0f, cursor.getFloat(5))
+                assertEquals("{\"ok\":true}", cursor.getString(6))
+                assertTrue("le righe esistenti devono avere impronta null", cursor.isNull(7))
+                cursor.moveToNext()
+                assertEquals(2, cursor.getInt(0))
+                assertEquals("LEGACY", cursor.getString(2))
+                assertTrue(cursor.isNull(3))
+                assertEquals(2100, cursor.getInt(4))
+                assertTrue("le righe esistenti devono avere impronta null", cursor.isNull(7))
+            }
+            db.query("SELECT totalKcal FROM meal_plan_days WHERE id = 1").use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals(2200, cursor.getInt(0))
+            }
+            db.query("SELECT name FROM user_profile WHERE id = 1").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals("Luca", cursor.getString(0))
+            }
+        }
+    }
 }

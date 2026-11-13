@@ -84,6 +84,8 @@ class ProfileCalculationService(
         val latestWaistCm: Float?,
         val biaMetrics: BiaSnapshot,
         val bodyMetrics: BodyMeasurementsSnapshot,
+        /** Impronta degli input nutrizionali di adesso ([PlanFingerprint]); la stessa regola per Home, Cibo, review e PDF. */
+        val inputsFingerprint: String,
     )
 
     suspend fun activeProfileSnapshot(today: LocalDate = LocalDate.now()): Snapshot? {
@@ -187,6 +189,12 @@ class ProfileCalculationService(
             latestWaistCm = latestAvailableWaist,
             biaMetrics = biaMetrics,
             bodyMetrics = bodyMetrics,
+            inputsFingerprint = PlanFingerprint.of(
+                profile,
+                weightReading.valueKg,
+                katchSource.bodyFatPercent,
+                katchSource.referenceWeightKg,
+            ),
         )
     }
 

@@ -14,6 +14,7 @@ import com.myfitai.app.data.local.entity.FoodConsumptionEntity
 import com.myfitai.app.domain.food.FoodPlanDay
 import com.myfitai.app.domain.food.FoodPlanSnapshot
 import com.myfitai.app.domain.food.NutritionPlanGenerationService
+import com.myfitai.app.domain.calculation.PlanFingerprint
 import com.myfitai.app.domain.calculation.ProfileCalculationService
 import com.myfitai.app.domain.food.PlanPrerequisites
 import com.myfitai.app.domain.profile.ProfileAgeRule
@@ -74,8 +75,7 @@ class FoodPlanViewModel(
         val weekStart: LocalDate,
         val snapshot: FoodPlanSnapshot?,
         val records: List<FoodConsumptionEntity>,
-        val profileUpdatedAt: Long?,
-        val latestMeasurementAt: Long?,
+        val currentInputsFingerprint: String?,
         val profileAgeStatus: ProfileAgeRule.Status = ProfileAgeRule.Status.VALID,
     )
     data class GenerationState(
@@ -95,7 +95,8 @@ class FoodPlanViewModel(
         val generation: GenerationState = GenerationState(),
         val consumptionRecords: List<FoodConsumptionEntity> = emptyList(),
         val calorieReference: CalorieReference = CalorieReference(null, null, null, null),
-        val goalChangedSinceGeneration: Boolean = false,
+        /** UX7: impronta degli input nutrizionali di adesso; con quella del piano ([PlanStaleness]) decide l'avviso "dati cambiati". */
+        val currentInputsFingerprint: String? = null,
         /** Stato dell'età del profilo salvato; diverso da VALID impedisce la generazione dei target. */
         val profileAgeStatus: ProfileAgeRule.Status = ProfileAgeRule.Status.VALID,
     )
@@ -140,7 +141,7 @@ class FoodPlanViewModel(
     }
 
     private val source = activeProfileStore.activeProfileId.flatMapLatest { profileId ->
-            if (profileId <= 0L) flowOf(SourceData(selectedWeekStart.value, null, emptyList(), null, null))
+            if (profileId <= 0L) flowOf(SourceData(selectedWeekStart.value, null, emptyList(), null))
         else selectedWeekStart.flatMapLatest { weekStart ->
             combine(
                 repository.latestSnapshotForDisplayedWeek(profileId, weekStart.toEpochDay()),
@@ -153,10 +154,7 @@ class FoodPlanViewModel(
                     weekStart,
                     snapshot,
                     records,
-                    profile?.updatedAtEpochMillis,
-                    (bia.maxOfOrNull { it.measuredAtEpochMillis } ?: Long.MIN_VALUE)
-                        .coerceAtLeast(bodyMeasurements.maxOfOrNull { it.measuredAtEpochMillis } ?: Long.MIN_VALUE)
-                        .takeUnless { it == Long.MIN_VALUE },
+                    profile?.let { PlanFingerprint.of(it, bia, bodyMeasurements, time.today()) },
                     // Stessa fonte di data del servizio (TimeProvider); data assente = nessun avviso.
                     profile?.let { ProfileAgeRule.warningStatus(it.birthDateEpochDay, time.today()) } ?: ProfileAgeRule.Status.VALID,
                 )
@@ -165,7 +163,7 @@ class FoodPlanViewModel(
     }
 
     val state: StateFlow<State> = combine(source, selectedDayIndex, generationState, calorieReference) { sourceData, dayIndex, generation, calorieReference ->
-        val (weekStart, snapshot, records, profileUpdatedAt, latestMeasurementAt, profileAgeStatus) = sourceData
+        val (weekStart, snapshot, records, currentInputsFingerprint, profileAgeStatus) = sourceData
         val safeIndex = dayIndex.coerceIn(0, 6)
         State(
             weekStart = weekStart,
@@ -176,8 +174,7 @@ class FoodPlanViewModel(
             generation = generation,
             consumptionRecords = records,
             calorieReference = calorieReference,
-            goalChangedSinceGeneration = snapshot != null && listOfNotNull(profileUpdatedAt, latestMeasurementAt)
-                .any { it >= snapshot.version.createdAtEpochMillis },
+            currentInputsFingerprint = currentInputsFingerprint,
             profileAgeStatus = profileAgeStatus,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), State())

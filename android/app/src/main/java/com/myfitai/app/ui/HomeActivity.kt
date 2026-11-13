@@ -24,6 +24,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.domain.calculation.LocalCalculationEngine
+import com.myfitai.app.domain.calculation.PlanStaleness
 import com.myfitai.app.domain.calculation.WeightSource
 import com.myfitai.app.domain.display.DayTargetResolver
 import com.myfitai.app.domain.display.DisplayNumberFormatter
@@ -416,9 +417,16 @@ class HomeActivity : BaseShellActivity() {
         if (Build.VERSION.SDK_INT < 33 || NotificationPreferences(this).permissionPrompted) offerExactAlarmAccessOnce()
     }
 
-    private fun isPlanUpdatePending(): Boolean {
+    /** UX7: UNA regola ([PlanStaleness]): impronta del piano vs impronta di adesso; il flag vale solo per i piani senza impronta. */
+    private fun isPlanUpdatePending(calories: HomeViewModel.CalorieState = viewModel.state.value.calories): Boolean {
         val profileId = data.activeProfileStore.currentIdOrNull() ?: return false
-        return data.nutritionPlanUpdatePreferences.isPending(profileId)
+        // Finche i dati non sono caricati manca l'impronta: non mostrare un avviso che poi sparirebbe.
+        if (viewModel.state.value.loading) return false
+        return PlanStaleness.isStale(
+            planFingerprint = calories.planInputsFingerprint,
+            currentFingerprint = calories.currentInputsFingerprint,
+            legacyPendingFlag = data.nutritionPlanUpdatePreferences.isPending(profileId),
+        )
     }
 
     private fun renderPlanUpdateNotice() {
@@ -667,7 +675,7 @@ class HomeActivity : BaseShellActivity() {
 
     private fun renderCalories(calories: HomeViewModel.CalorieState) {
         currentCalories = calories
-        val planPending = isPlanUpdatePending()
+        val planPending = isPlanUpdatePending(calories)
         renderedPlanUpdatePending = planPending
         val planStale = TargetModeLine.isStale(planPending, calories.targetSource)
         fun kcal(value: Int?) = value?.let { DisplayNumberFormatter.kcal(it) } ?: "-"
@@ -822,7 +830,7 @@ class HomeActivity : BaseShellActivity() {
         val c = currentCalories
         fun kcal(value: Int?) = value?.let { DisplayNumberFormatter.kcal(it) } ?: "-"
         val percentLine = when {
-            c != null && TargetModeLine.isStale(isPlanUpdatePending(), c.targetSource) -> getString(R.string.home_tdee_percent_plan_stale)
+            c != null && TargetModeLine.isStale(isPlanUpdatePending(c), c.targetSource) -> getString(R.string.home_tdee_percent_plan_stale)
             else -> c?.energyPercent?.let { p ->
                 when {
                     p > 0 -> "Surplus del +$p% rispetto al consumo, per favorire l'aumento di massa."
