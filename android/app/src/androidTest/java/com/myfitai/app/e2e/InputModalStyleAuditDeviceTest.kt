@@ -15,7 +15,6 @@ import com.google.android.material.textfield.TextInputLayout
 import com.myfitai.app.ui.CheatEntryActivity
 import com.myfitai.app.ui.DietaryPreferencesActivity
 import com.myfitai.app.ui.NewBodyMeasurementActivity
-import com.myfitai.app.ui.NewWorkoutActivity
 import com.myfitai.app.ui.NutritionPlanSettingsActivity
 import com.myfitai.app.ui.ProfileActivity
 import com.myfitai.app.ui.ProfileEditActivity

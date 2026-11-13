@@ -22,7 +22,6 @@ import java.util.concurrent.TimeUnit
 import com.myfitai.app.data.local.MyFitAiDatabase
 import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.data.profile.ActiveProfileStore
-import com.myfitai.app.data.profile.WorkoutPreferences
 import com.myfitai.app.domain.food.FoodSupplement
 import com.myfitai.app.domain.ai.AiJobType
 import com.myfitai.app.domain.ai.AiJobWorker
@@ -38,7 +37,6 @@ import com.myfitai.app.ui.NutritionPathActivity
 import com.myfitai.app.ui.AiAutomationsActivity
 import com.myfitai.app.ui.AiSettingsActivity
 import com.myfitai.app.ui.NutritionPlanSettingsActivity
-import com.myfitai.app.ui.NewWorkoutActivity
 import com.myfitai.app.ui.NotificationsActivity
 import com.myfitai.app.ui.PhysicalEvolutionActivity
 import com.myfitai.app.ui.ProfileActivity
@@ -46,7 +44,6 @@ import com.myfitai.app.ui.ProfileEditActivity
 import com.myfitai.app.ui.SettingsActivity
 import com.myfitai.app.ui.ShoppingListActivity
 import com.myfitai.app.ui.WeeklyReviewActivity
-import com.myfitai.app.ui.WorkoutsActivity
 import com.myfitai.app.domain.progress.ProgressAnalysisCompactContract
 import com.myfitai.app.domain.progress.ProgressAnalysisPreferences
 import org.junit.Assert.assertEquals
@@ -55,7 +52,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.time.LocalDate
 
 /** Smoke coverage for local screens; provider-dependent actions are intentionally not invoked. */
 @RunWith(AndroidJUnit4::class)
@@ -84,8 +80,6 @@ class ActivitySmokeTest {
             ))
         }
         ActiveProfileStore(context).selectProfile(profileId)
-        // The smoke suite must not depend on a persisted Settings toggle from a previous test run.
-        WorkoutPreferences(context).setEnabled(profileId, WorkoutPreferences.DEFAULT_ENABLED)
     }
 
     @Test
@@ -101,8 +95,6 @@ class ActivitySmokeTest {
         smoke(BiaActivity::class.java, BiaActivity.EXTRA_OPEN_HISTORY to true)
         smoke(BodyMeasuresActivity::class.java, BodyMeasuresActivity.EXTRA_OPEN_HISTORY to true)
         smoke(HistoryActivity::class.java)
-        smoke(WorkoutsActivity::class.java)
-        smoke(NewWorkoutActivity::class.java, NewWorkoutActivity.EXTRA_DATE_EPOCH_DAY to LocalDate.now().toEpochDay())
         smoke(NewBodyMeasurementActivity::class.java)
         smoke(NutritionPathActivity::class.java)
         smoke(NutritionPlanSettingsActivity::class.java)

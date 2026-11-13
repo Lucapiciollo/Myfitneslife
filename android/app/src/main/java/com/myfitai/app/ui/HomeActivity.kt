@@ -25,7 +25,6 @@ import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.domain.calculation.LocalCalculationEngine
 import com.myfitai.app.domain.calculation.WeightSource
-import com.myfitai.app.domain.calculation.DailyActivityCheckInEngine
 import com.myfitai.app.domain.display.DayTargetResolver
 import com.myfitai.app.domain.display.DisplayNumberFormatter
 import com.myfitai.app.domain.display.MetricDeltaPresenter
@@ -46,7 +45,6 @@ import com.myfitai.app.ui.widgets.TimeRangeSelectorView
 import com.myfitai.app.ui.widgets.ValueUnitFormatter
 import com.myfitai.app.ui.widgets.TargetProgressRingView
 import com.myfitai.app.ui.widgets.BodyMeasurementTrendView
-import com.myfitai.app.ui.widgets.WorkoutCardView
 import com.myfitai.app.ui.motion.UiMotion
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -68,7 +66,6 @@ class HomeActivity : BaseShellActivity() {
             profiles = data.userProfileRepository,
             biaRepository = data.biaRepository,
             bodyRepository = data.bodyMeasurementRepository,
-            workoutRepository = data.workoutRepository,
             mealPlanRepository = data.mealPlanRepository,
             cheatRepository = data.cheatEntryRepository,
             recoveryRepository = data.calorieRecoveryRepository,
@@ -76,7 +73,6 @@ class HomeActivity : BaseShellActivity() {
             bodyExpectationGoalRepository = data.bodyExpectationGoalRepository,
             nutritionPlanSchedulePreferences = data.nutritionPlanSchedulePreferences,
             activeProfileStore = data.activeProfileStore,
-            dailyActivityCheckIns = data.dailyActivityCheckInRepository,
             profileCalculationService = data.profileCalculationService,
         )
     }
@@ -105,7 +101,6 @@ class HomeActivity : BaseShellActivity() {
         adaptQuickActions()
         bindBottom(BottomNavBinder.Tab.HOME)
         installDashboardMetricsComposeView()
-        renderWorkoutConfiguration()
         requestNotificationPermissionOnce()
 
         findViewById<android.view.View>(R.id.profileButton).setOnClickListener { go(ProfileActivity::class.java) }
@@ -144,13 +139,8 @@ class HomeActivity : BaseShellActivity() {
                 startActivity(Intent(this, MealDetailActivity::class.java).putExtra(MealDetailActivity.EXTRA_MEAL_ID, meal.mealId))
             }
         }
-        findViewById<android.view.View>(R.id.nextWorkoutCard).setOnClickListener { go(WorkoutsActivity::class.java) }
         findViewById<android.view.View>(R.id.caloriesCard).setOnClickListener { showTdeeExplanation() }
         findViewById<android.view.View>(R.id.caloriesHelpButton).setOnClickListener { showTdeeExplanation() }
-        findViewById<android.view.View>(R.id.activityCheckInRestButton).setOnClickListener { viewModel.setRestDay() }
-        findViewById<android.view.View>(R.id.activityCheckInWorkoutButton).setOnClickListener { showActivityCheckInDialog() }
-        findViewById<android.view.View>(R.id.activityCheckInEditButton).setOnClickListener { showActivityCheckInDialog() }
-        findViewById<android.view.View>(R.id.activityCheckInClearButton).setOnClickListener { viewModel.clearActivityCheckIn() }
         findViewById<android.view.View>(R.id.bodyOverviewHelpButton).setOnClickListener {
             showHelpCard("Panoramica del corpo", "Le tre card mostrano l'ultima rilevazione disponibile di peso, percentuale di grasso e massa muscolare. Il grafico mostra l'andamento del peso nel periodo selezionato.")
         }
@@ -167,9 +157,6 @@ class HomeActivity : BaseShellActivity() {
         }
         findViewById<android.view.View>(R.id.nextMealHelpButton).setOnClickListener {
             showHelpCard("Prossimo pasto", "Mostra il prossimo pasto previsto dal piano alimentare di oggi, con orario, nome e calorie quando disponibili.")
-        }
-        findViewById<android.view.View>(R.id.nextWorkoutHelpButton).setOnClickListener {
-            showHelpCard("Prossimo allenamento", "Mostra il prossimo allenamento programmato, così puoi vedere rapidamente cosa è previsto oggi o nei prossimi giorni.")
         }
         findViewById<android.view.View>(R.id.todayMenuButton).setOnClickListener { showTodayMenu() }
         findViewById<android.view.View>(R.id.measurementsButton).setOnClickListener { go(MeasurementsActivity::class.java) }
@@ -319,7 +306,6 @@ class HomeActivity : BaseShellActivity() {
                 child.id == R.id.biaDueNoticeCard ||
                 child.id == R.id.analysisHubCard ||
                 child.id == R.id.quickActionsCard ||
-                child.id == R.id.activityCheckInCard ||
                 child.id == R.id.dashboardMetricsPanel ||
                 child.findViewById<View>(R.id.bodyOverviewHelpButton) != null
             val params = GridLayout.LayoutParams().apply {
@@ -381,7 +367,6 @@ class HomeActivity : BaseShellActivity() {
 
     override fun onResume() {
         super.onResume()
-        renderWorkoutConfiguration()
         renderPlanUpdateNotice()
         renderAiConfigurationNotice()
         renderBiaDueNotice(viewModel.state.value)
@@ -402,12 +387,6 @@ class HomeActivity : BaseShellActivity() {
         findViewById<View?>(R.id.todayMenuButton)?.let { setAiActionEnabled(it, providerAvailable) }
         findViewById<View?>(R.id.planUpdateNoticeButton)?.let { setAiActionEnabled(it, providerAvailable) }
         findViewById<View?>(R.id.addExtraButton)?.let { setAiActionEnabled(it, providerAvailable) }
-    }
-
-    private fun renderWorkoutConfiguration() {
-        val profileId = data.activeProfileStore.currentIdOrNull() ?: return
-        val enabled = data.workoutPreferences.isEnabled(profileId)
-        findViewById<android.view.View>(R.id.workoutSectionCard)?.let { card -> revealState(card, enabled) }
     }
 
     private fun revealState(view: android.view.View, visible: Boolean) {
@@ -459,12 +438,10 @@ class HomeActivity : BaseShellActivity() {
         renderBodyTrend(state.bodyMeasurementTrendSeries)
         findViewById<TextView>(R.id.recompositionStateText).text = recompositionText(state.recompositionState)
         renderCalories(state.calories)
-        renderActivityCheckIn(state.activityCheckIn, state.calories)
         renderWeeklyExpectation(state.weeklyExpectation)
         renderRecovery(state.recovery)
         renderUpcomingMeals(state.upcomingMeals)
         renderNextMeal(state.nextMeal)
-        renderNextWorkout(state.nextWorkout)
     }
 
     private fun renderBodyTrend(series: List<HomeViewModel.TrendSeries>) {
@@ -810,29 +787,6 @@ class HomeActivity : BaseShellActivity() {
         card.setMeal(meal.type, meal.timeMinutes, describe = true)
     }
 
-    private fun renderNextWorkout(next: HomeViewModel.NextWorkoutState?) {
-        findViewById<WorkoutCardView>(R.id.nextWorkoutCard).apply {
-            if (next == null) {
-                setTime("—")
-                setTitle("Nessun allenamento pianificato")
-                setImage(R.drawable.img_next_workout)
-                contentDescription = "Nessun allenamento pianificato. Apri Allenamenti"
-                return@apply
-            }
-            val dateTime = Instant.ofEpochMilli(next.startedAtEpochMillis).atZone(ZoneId.systemDefault())
-            val today = LocalDate.now()
-            val dayLabel = when (dateTime.toLocalDate()) {
-                today -> "Oggi"
-                today.plusDays(1) -> "Domani"
-                else -> dateTime.format(DateTimeFormatter.ofPattern("EEE d MMM", Locale.ITALIAN))
-            }
-            setTime("$dayLabel ${dateTime.format(DateTimeFormatter.ofPattern("HH:mm", Locale.ITALIAN))}")
-            setTitle(next.title)
-            setImage(if (next.type.equals("Cardio", true)) R.drawable.img_workout_cardio else R.drawable.img_workout_weights)
-            contentDescription = "Prossimo allenamento: ${next.title}"
-        }
-    }
-
     private fun todayLabel(): String = LocalDate.now()
         .format(DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.ITALIAN))
         .replaceFirstChar { it.uppercase(Locale.ITALIAN) }
@@ -852,61 +806,6 @@ class HomeActivity : BaseShellActivity() {
 
     private companion object {
         const val LANDSCAPE_GRID_TAG = "home_landscape_grid"
-    }
-
-    private fun renderActivityCheckIn(
-        checkIn: HomeViewModel.ActivityCheckInState,
-        calories: HomeViewModel.CalorieState,
-    ) {
-        val summary = findViewById<TextView>(R.id.activityCheckInSummary)
-        val status = checkIn.status
-        when (status) {
-            "REST" -> {
-                summary.text = "Riposo registrato per oggi. TDEE e target operativo sono ricalcolati sul livello sedentario di base."
-                findViewById<View>(R.id.activityCheckInRestButton).visibility = View.GONE
-                findViewById<View>(R.id.activityCheckInWorkoutButton).visibility = View.VISIBLE
-                findViewById<View>(R.id.activityCheckInEditButton).visibility = View.GONE
-                findViewById<View>(R.id.activityCheckInClearButton).visibility = View.VISIBLE
-            }
-            "PLANNED_WORKOUT" -> {
-                val intensity = when (checkIn.intensity) {
-                    "LIGHT" -> "leggera"
-                    "HARD" -> "intensa"
-                    else -> "media"
-                }
-                summary.text = "Allenamento previsto: ${checkIn.durationMinutes} min · intensità $intensity. " +
-                    "Target teorico con l'attività ${(calories.theoreticalTarget ?: calories.target)?.let { DisplayNumberFormatter.kcal(it) } ?: "non disponibile"} (+${checkIn.adjustmentKcal} kcal)."
-                findViewById<View>(R.id.activityCheckInRestButton).visibility = View.GONE
-                findViewById<View>(R.id.activityCheckInWorkoutButton).visibility = View.GONE
-                findViewById<View>(R.id.activityCheckInEditButton).visibility = View.VISIBLE
-                findViewById<View>(R.id.activityCheckInClearButton).visibility = View.VISIBLE
-            }
-            else -> {
-                summary.text = "Nessun allenamento registrato oggi. Il TDEE operativo usa il livello di riposo."
-                findViewById<View>(R.id.activityCheckInRestButton).visibility = View.VISIBLE
-                findViewById<View>(R.id.activityCheckInWorkoutButton).visibility = View.VISIBLE
-                findViewById<View>(R.id.activityCheckInEditButton).visibility = View.GONE
-                findViewById<View>(R.id.activityCheckInClearButton).visibility = View.GONE
-            }
-        }
-    }
-
-    private fun showActivityCheckInDialog() {
-        val options = arrayOf("30 minuti · leggera", "45 minuti · media", "60 minuti · media", "60 minuti · intensa", "75+ minuti · intensa")
-        MaterialAlertDialogBuilder(this)
-            .setTitle("Allenamento previsto oggi")
-            .setItems(options) { _, which ->
-                val values = when (which) {
-                    0 -> 30 to DailyActivityCheckInEngine.Intensity.LIGHT
-                    1 -> 45 to DailyActivityCheckInEngine.Intensity.MODERATE
-                    2 -> 60 to DailyActivityCheckInEngine.Intensity.MODERATE
-                    3 -> 60 to DailyActivityCheckInEngine.Intensity.HARD
-                    else -> 75 to DailyActivityCheckInEngine.Intensity.HARD
-                }
-                viewModel.setPlannedWorkout(values.first, values.second)
-            }
-            .setNegativeButton("Annulla", null)
-            .show()
     }
 
     private fun renderBiaDueNotice(state: HomeViewModel.DashboardState) {

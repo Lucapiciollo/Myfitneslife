@@ -19,7 +19,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.activity.result.contract.ActivityResultContracts
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.card.MaterialCardView
-import com.google.android.material.materialswitch.MaterialSwitch
 import com.google.android.material.textfield.TextInputLayout
 import com.google.android.material.timepicker.MaterialTimePicker
 import com.google.android.material.timepicker.TimeFormat
@@ -63,7 +62,6 @@ class SettingsActivity : BaseShellActivity() {
         bindBack()
         SettingsSurfaces.normalize(this)
         bindSectionHelp()
-        bindWorkoutConfiguration()
         bindAiEntryRows()
 
         findViewById<View>(R.id.rowAppGuide).setOnClickListener { showAppGuide() }
@@ -250,15 +248,6 @@ class SettingsActivity : BaseShellActivity() {
             .show()
     }
 
-    private fun bindWorkoutConfiguration() {
-        val profileId = data.activeProfileStore.currentIdOrNull() ?: return
-        val enabledSwitch = findViewById<MaterialSwitch>(R.id.workoutsEnabledSwitch)
-        enabledSwitch.isChecked = data.workoutPreferences.isEnabled(profileId)
-        enabledSwitch.setOnCheckedChangeListener { _, checked ->
-            data.workoutPreferences.setEnabled(profileId, checked)
-        }
-    }
-
     private fun bindSectionHelp() {
         findViewById<View>(R.id.generalSectionHelpButton).setOnClickListener {
             showHelpCard(
@@ -330,10 +319,10 @@ class SettingsActivity : BaseShellActivity() {
 
     private fun showAppGuide() {
         val sections = listOf(
-            HelpSection("Il percorso MyFitAI", "Da dove parti e dove arrivi", "Inserisci profilo, rilevazioni, allenamenti e preferenze alimentari. L'app usa questi dati per costruire il percorso e lo aggiorna quando registri nuove informazioni."),
+            HelpSection("Il percorso MyFitAI", "Da dove parti e dove arrivi", "Inserisci profilo, rilevazioni e preferenze alimentari. L'app usa questi dati per costruire il percorso e lo aggiorna quando registri nuove informazioni."),
             HelpSection("1. Profilo e rilevazioni", "La base del calcolo", "Peso, altezza, età, sesso biologico, massa grassa, circonferenze e livello di attività descrivono il punto di partenza. Più i dati sono recenti e coerenti, più l'interpretazione è utile."),
-            HelpSection("2. Calorie di base", "BMR e TDEE", "Il BMR è il consumo stimato a riposo. Con una massa grassa plausibile si usa Katch-McArdle: 370 + 21,6 × massa magra in kg. Altrimenti si usa Mifflin-St Jeor. Il TDEE è il BMR moltiplicato per l'attività: 1,20 sedentario, 1,375 leggero, 1,55 moderato, 1,725 molto attivo, 1,90 estremo."),
-            HelpSection("3. Target giornaliero", "Profilo, piano e consumo", "In Alimentazione puoi confrontare il BMR a riposo, il TDEE operativo calcolato sul profilo e sull'attività del giorno, il target operativo, il target del piano, i valori del menu e calorie/proteine registrate come consumate. Il TDEE non rappresenta la spesa misurata di un allenamento singolo."),
+            HelpSection("2. Calorie di base", "BMR e TDEE", "Il BMR è il consumo stimato a riposo. Con una massa grassa plausibile si usa Katch-McArdle: 370 + 21,6 × massa magra in kg. Altrimenti si usa Mifflin-St Jeor. Il consumo (TDEE) si calcola dal tuo livello di attività nel profilo: nessuna variazione giorno per giorno."),
+            HelpSection("3. Target giornaliero", "Profilo, piano e consumo", "In Alimentazione puoi confrontare il BMR a riposo, il TDEE calcolato sul profilo, il target del giorno, il target del piano, i valori del menu e calorie/proteine registrate come consumate."),
             HelpSection("4. Obiettivo e target", "Il numero calorico di riferimento", "Il target iniziale deriva dal TDEE: ricomposizione 95%, perdita di peso 85%, mantenimento 100%, aumento massa 110%, performance 100%. Sono fattori iniziali e non promesse sul risultato."),
             HelpSection("5. Macronutrienti", "Come vengono distribuiti i macro", "Le proteine sono 2,0 g/kg per perdita, ricomposizione e aumento massa, oppure 1,8 g/kg per mantenimento e performance. I grassi sono 0,8 g/kg, oppure 0,9 g/kg nella performance. I carboidrati ricevono le calorie rimanenti: (target - calorie di proteine e grassi) / 4."),
             HelpSection("6. Adattamento", "Il piano impara dai trend", "Il target cambia solo con evidenze sufficienti: almeno 21 giorni e almeno due segnali tra peso, massa grassa, massa muscolare, vita e addome. Uno stallo prolungato richiede almeno 28 giorni. La correzione è graduale, a passi del 2,5%, e resta dentro limiti conservativi."),
@@ -355,12 +344,11 @@ class SettingsActivity : BaseShellActivity() {
             DeletionAction("pasti e consumi registrati", "gli alimenti e i pasti segnati come consumati", data.dataDeletionService::deleteFoodConsumptions),
             DeletionAction("misurazioni BIA", "le rilevazioni BIA", data.dataDeletionService::deleteBiaMeasurements),
             DeletionAction("misurazioni corporee", "peso, altezza e le altre rilevazioni corporee registrate", data.dataDeletionService::deleteBodyMeasurements),
-            DeletionAction("allenamenti registrati", "le sessioni di allenamento", data.dataDeletionService::deleteWorkouts),
             DeletionAction("extra registrati", "gli extra e il relativo storico", data.dataDeletionService::deleteCheatEntries),
             DeletionAction("riepiloghi settimanali", "le review settimanali", data.dataDeletionService::deleteWeeklyReviews),
             DeletionAction(
                 "tutti i dati di attività",
-                "piani alimentari, pasti e consumi, misurazioni BIA e corporee, allenamenti, extra e riepiloghi settimanali",
+                "piani alimentari, pasti e consumi, misurazioni BIA e corporee, extra e riepiloghi settimanali",
                 data.dataDeletionService::deleteRecordedData,
             ),
         )

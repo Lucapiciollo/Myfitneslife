@@ -23,7 +23,6 @@
     <string name="dashboard_metric_unavailable">Non disponibile</string>
     <string name="dashboard_metric_insufficient_data">Dati insufficienti</string>
     <string name="dashboard_next_meal_title">Prossimo pasto</string>
-    <string name="dashboard_next_workout_title">Prossimo allenamento</string>
     <string name="profile_avatar_cd">Foto profilo</string>
     <string name="ai_action_requires_provider">Richiede un provider IA configurato</string>
     <string name="ai_action_provider_tooltip">Configura Gemini o OpenAI in Impostazioni IA (rotellina in alto) per usare questa funzione.</string>
@@ -35,7 +34,6 @@
     <string name="ai_gemini_key_input_cd">Chiave API Gemini, campo protetto. Incolla o digita la chiave, poi usa Verifica e salva.</string>
     <string name="ai_openai_key_input_cd">Chiave API OpenAI, campo protetto. Incolla o digita la chiave, poi usa Verifica e salva.</string>
     <string name="profile_row_day_schedule">Orari della giornata</string>
-    <string name="profile_row_workouts">Allenamenti</string>
     <string name="profile_row_openai_key">Chiave OpenAI</string>
     <string name="profile_row_notifications">Notifiche</string>
     <string name="profile_row_export">Esporta / importa dati</string>
@@ -43,7 +41,6 @@
     <string name="profile_desc_personal_data">Nome, nascita, sesso, altezza, peso, obiettivo, attività e orari</string>
     <string name="profile_desc_goals">Obiettivo e livello di attività</string>
     <string name="profile_desc_day_schedule">Sveglia, sonno e orari della giornata</string>
-    <string name="profile_desc_workouts">Allenamenti e giorni di riposo</string>
     <string name="profile_desc_notifications">Promemoria e notifiche locali</string>
     <string name="profile_desc_export">Esporta o importa i tuoi dati</string>
     <string name="action_cancel">Annulla</string>
@@ -89,7 +86,6 @@
     <string name="settings_desc_delete_consumptions">Rimuove pasti segnati e consumi</string>
     <string name="settings_desc_delete_bia">Rimuove lo storico bioimpedenziometrico</string>
     <string name="settings_desc_delete_body">Rimuove peso e misure corporee</string>
-    <string name="settings_desc_delete_workouts">Rimuove allenamenti e giorni di riposo</string>
     <string name="settings_desc_delete_cheats">Rimuove gli extra registrati</string>
     <string name="settings_desc_delete_reviews">Rimuove le review settimanali</string>
     <string name="settings_desc_delete_all">Rimuove tutti i dati di attività del profilo</string>

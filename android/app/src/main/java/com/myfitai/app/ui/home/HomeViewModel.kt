@@ -7,8 +7,6 @@ import com.myfitai.app.data.local.entity.BiaMeasurementEntity
 import com.myfitai.app.data.local.entity.BodyMeasurementEntity
 import com.myfitai.app.data.local.entity.FoodConsumptionEntity
 import com.myfitai.app.data.local.entity.UserProfileEntity
-import com.myfitai.app.data.local.entity.WorkoutEntity
-import com.myfitai.app.data.local.entity.DailyActivityCheckInEntity
 import com.myfitai.app.data.local.entity.BodyExpectationGoalEntity
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.profile.NutritionPlanSchedulePreferences
@@ -20,10 +18,8 @@ import com.myfitai.app.data.repository.FoodConsumptionRepository
 import com.myfitai.app.data.repository.MealPlanRepository
 import com.myfitai.app.data.repository.MealPlanWeekSelector
 import com.myfitai.app.data.repository.UserProfileRepository
-import com.myfitai.app.data.repository.WorkoutRepository
 import com.myfitai.app.data.repository.BodyExpectationGoalRepository
 import com.myfitai.app.domain.calculation.LocalCalculationEngine
-import com.myfitai.app.domain.calculation.DailyActivityCheckInEngine
 import com.myfitai.app.domain.calculation.ProfileCalculationMapper
 import com.myfitai.app.domain.calculation.ProfileCalculationService
 import com.myfitai.app.domain.calculation.WeightResolver
@@ -64,7 +60,6 @@ class HomeViewModel(
     private val profiles: UserProfileRepository,
     private val biaRepository: BiaRepository,
     private val bodyRepository: BodyMeasurementRepository,
-    private val workoutRepository: WorkoutRepository,
     private val mealPlanRepository: MealPlanRepository,
     private val cheatRepository: CheatEntryRepository,
     private val recoveryRepository: CalorieRecoveryRepository,
@@ -72,7 +67,6 @@ class HomeViewModel(
     private val bodyExpectationGoalRepository: BodyExpectationGoalRepository,
     private val nutritionPlanSchedulePreferences: NutritionPlanSchedulePreferences,
     private val activeProfileStore: ActiveProfileStore,
-    private val dailyActivityCheckIns: com.myfitai.app.data.repository.DailyActivityCheckInRepository,
     private val profileCalculationService: ProfileCalculationService,
     private val time: TimeProvider = SystemTimeProvider,
 ) : ViewModel() {
@@ -103,7 +97,6 @@ class HomeViewModel(
         val consumedCount: Int = 0,
         val recordedCount: Int = 0,
     )
-    data class NextWorkoutState(val startedAtEpochMillis: Long, val title: String, val type: String)
     data class NextMealState(
         val mealId: Long,
         val dateEpochDay: Long,
@@ -127,7 +120,6 @@ class HomeViewModel(
         val bodyMeasurementTrendSeries: List<TrendSeries> = emptyList(),
         val recompositionState: LocalCalculationEngine.RecompositionState = LocalCalculationEngine.RecompositionState.NOT_ENOUGH_DATA,
         val calories: CalorieState = CalorieState(),
-        val nextWorkout: NextWorkoutState? = null,
         val nextMeal: NextMealState? = null,
         val upcomingMeals: List<NextMealState> = emptyList(),
         val consumptionRecords: List<FoodConsumptionEntity> = emptyList(),
@@ -135,22 +127,12 @@ class HomeViewModel(
         val latestBiaTimestamp: Long? = null,
         val weeklyExpectation: WeeklyBodyExpectation.Result = WeeklyBodyExpectation.Result(available = false),
         val expectationGoals: List<BodyExpectationGoalEntity> = emptyList(),
-        val activityCheckIn: ActivityCheckInState = ActivityCheckInState(),
-    )
-
-    data class ActivityCheckInState(
-        val status: String? = null,
-        val durationMinutes: Int? = null,
-        val intensity: String? = null,
-        val adjustmentKcal: Int = 0,
     )
 
     private data class Source(
         val profile: UserProfileEntity?,
         val bia: List<BiaMeasurementEntity>,
         val body: List<BodyMeasurementEntity>,
-        val workouts: List<WorkoutEntity>,
-        val activityCheckIn: DailyActivityCheckInEntity?,
     )
 
     // Home's selector is initialized to 1Y; keep the chart query on the same range from first render.
@@ -162,17 +144,15 @@ class HomeViewModel(
 
     private val profileAndDay = combine(activeProfileStore.activeProfileId, today) { profileId, day -> profileId to day }
 
-    private val source = profileAndDay.flatMapLatest { (profileId, day) ->
+    private val source = profileAndDay.flatMapLatest { (profileId, _) ->
         if (profileId <= 0L) {
-            flowOf(Source(null, emptyList(), emptyList(), emptyList(), null))
+            flowOf(Source(null, emptyList(), emptyList()))
         } else {
             combine(
                 profiles.profile(profileId),
                 biaRepository.all(profileId),
                 bodyRepository.all(profileId),
-                workoutRepository.all(profileId),
-                dailyActivityCheckIns.observeForDay(profileId, day.toEpochDay()),
-            ) { profile, bia, body, workouts, activity -> Source(profile, bia, body, workouts, activity) }
+            ) { profile, bia, body -> Source(profile, bia, body) }
         }
     }
 
@@ -297,38 +277,6 @@ class HomeViewModel(
 
     fun selectRange(index: Int) { selectedRange.value = index.coerceIn(0, 3) }
 
-    fun setRestDay() = saveActivityCheckIn("REST", null, null, 0)
-
-    fun setPlannedWorkout(durationMinutes: Int, intensity: DailyActivityCheckInEngine.Intensity) =
-        saveActivityCheckIn(
-            status = "PLANNED_WORKOUT",
-            durationMinutes = durationMinutes,
-            intensity = intensity.name,
-            adjustmentKcal = DailyActivityCheckInEngine.adjustmentKcal(durationMinutes, intensity),
-        )
-
-    fun clearActivityCheckIn() {
-        val profileId = activeProfileStore.currentIdOrNull() ?: return
-        viewModelScope.launch { dailyActivityCheckIns.deleteForDay(profileId, time.today().toEpochDay()) }
-    }
-
-    private fun saveActivityCheckIn(status: String, durationMinutes: Int?, intensity: String?, adjustmentKcal: Int) {
-        val profileId = activeProfileStore.currentIdOrNull() ?: return
-        viewModelScope.launch {
-            val now = System.currentTimeMillis()
-            dailyActivityCheckIns.upsert(DailyActivityCheckInEntity(
-                profileId = profileId,
-                dateEpochDay = time.today().toEpochDay(),
-                status = status,
-                durationMinutes = durationMinutes,
-                intensity = intensity,
-                adjustmentKcal = adjustmentKcal,
-                createdAtEpochMillis = now,
-                updatedAtEpochMillis = now,
-            ))
-        }
-    }
-
     fun confirmExpectation(status: String, note: String? = null) {
         val profileId = activeProfileStore.currentIdOrNull() ?: return
         val result = state.value.weeklyExpectation
@@ -380,13 +328,6 @@ class HomeViewModel(
         val fatSeries = fatInRange.map { it.second }
         val muscleSeries = muscleInRange.map { it.second }
         val bodyMeasurementTrendSeries = bodyMeasurementTrendSeries(source, rangePeriod)
-        val now = System.currentTimeMillis()
-        val nextWorkout = source.workouts
-            .asSequence()
-            .filter { !it.isRestDay && it.startedAtEpochMillis >= now }
-            .minWithOrNull(compareBy<WorkoutEntity> { it.startedAtEpochMillis }.thenBy { it.id })
-            ?.let { NextWorkoutState(it.startedAtEpochMillis, it.title, it.type) }
-
         val calories = calorieState(source)
 
         return DashboardState(
@@ -410,18 +351,11 @@ class HomeViewModel(
             bodyMeasurementTrendSeries = bodyMeasurementTrendSeries(source, rangePeriod),
             recompositionState = LocalCalculationEngine.classifyRecomposition(fatTrend.delta, muscleTrend.delta),
             calories = calories,
-            nextWorkout = nextWorkout,
             nextMeal = upcomingMeals.firstOrNull(),
             upcomingMeals = upcomingMeals,
             consumptionRecords = consumption,
             recovery = recovery,
             latestBiaTimestamp = source.bia.maxByOrNull { it.measuredAtEpochMillis }?.measuredAtEpochMillis,
-            activityCheckIn = ActivityCheckInState(
-                status = source.activityCheckIn?.status,
-                durationMinutes = source.activityCheckIn?.durationMinutes,
-                intensity = source.activityCheckIn?.intensity,
-                adjustmentKcal = source.activityCheckIn?.adjustmentKcal ?: 0,
-            ),
         )
     }
 
@@ -589,7 +523,6 @@ class HomeViewModel(
         private val profiles: UserProfileRepository,
         private val biaRepository: BiaRepository,
         private val bodyRepository: BodyMeasurementRepository,
-        private val workoutRepository: WorkoutRepository,
         private val mealPlanRepository: MealPlanRepository,
         private val cheatRepository: CheatEntryRepository,
         private val recoveryRepository: CalorieRecoveryRepository,
@@ -597,13 +530,12 @@ class HomeViewModel(
         private val bodyExpectationGoalRepository: BodyExpectationGoalRepository,
         private val nutritionPlanSchedulePreferences: NutritionPlanSchedulePreferences,
         private val activeProfileStore: ActiveProfileStore,
-        private val dailyActivityCheckIns: com.myfitai.app.data.repository.DailyActivityCheckInRepository,
         private val profileCalculationService: ProfileCalculationService,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(HomeViewModel::class.java))
-            return HomeViewModel(profiles, biaRepository, bodyRepository, workoutRepository, mealPlanRepository, cheatRepository, recoveryRepository, foodConsumptionRepository, bodyExpectationGoalRepository, nutritionPlanSchedulePreferences, activeProfileStore, dailyActivityCheckIns, profileCalculationService) as T
+            return HomeViewModel(profiles, biaRepository, bodyRepository, mealPlanRepository, cheatRepository, recoveryRepository, foodConsumptionRepository, bodyExpectationGoalRepository, nutritionPlanSchedulePreferences, activeProfileStore, profileCalculationService) as T
         }
     }
 }
