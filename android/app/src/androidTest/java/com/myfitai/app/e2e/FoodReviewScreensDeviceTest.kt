@@ -100,7 +100,7 @@ class FoodReviewScreensDeviceTest {
     }
 
     @Test
-    fun dailyTotals_showOnlyKcalAndProteinWithClearBasePlanAndConsumptionRows() {
+    fun dailyTotals_showMenuMacrosButNoCarbsFatTargetOrConsumption() {
         ActivityScenario.launch<FoodPlanActivity>(Intent(context, FoodPlanActivity::class.java).apply {
             putExtra(FoodPlanActivity.EXTRA_WEEK_START_EPOCH_DAY, weekStart)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
@@ -108,8 +108,8 @@ class FoodReviewScreensDeviceTest {
             assertTrue(device.wait(Until.hasObject(By.res("com.myfitai.app:id/dailyTotalCard")), 10_000))
             scenario.onActivity { activity ->
                 assertTrue(activity.findViewById<View>(R.id.dayMealsCard).visibility == View.VISIBLE)
-                assertTrue(activity.findViewById<View>(R.id.foodPlanHelpButton).visibility == View.VISIBLE)
                 assertTrue(activity.findViewById<View>(R.id.dayMealsHelpButton).visibility == View.VISIBLE)
+                assertEquals("Il '?' del piano è uno solo", 0, activity.resources.getIdentifier("foodPlanHelpButton", "id", activity.packageName))
                 assertEquals(0, activity.resources.getIdentifier("planStateCard", "id", activity.packageName))
             }
             val expectedIds = listOf(
@@ -126,12 +126,13 @@ class FoodReviewScreensDeviceTest {
                 assertTrue(activity.findViewById<View>(R.id.totalConsumptionNote).visibility == View.VISIBLE)
                 listOf(
                     "totalCarbsTarget", "totalFatTarget",
-                    "totalCarbsPlanned", "totalFatPlanned",
                     "totalCarbsConsumed", "totalFatConsumed",
                 ).forEach { name ->
                     assertEquals("Macro field $name should not be in the daily summary", 0,
                         activity.resources.getIdentifier(name, "id", activity.packageName))
                 }
+                assertTrue(activity.findViewById<View>(R.id.totalCarbsPlanned) != null)
+                assertTrue(activity.findViewById<View>(R.id.totalFatPlanned) != null)
             }
             expectedIds.forEach { id -> assertTrue("Missing daily total field $id", device.hasObject(By.res("com.myfitai.app:id/$id"))) }
             val dir = File(context.getExternalFilesDir(null), "qa-artifacts").apply { mkdirs() }

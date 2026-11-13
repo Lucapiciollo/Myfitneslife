@@ -3,7 +3,6 @@ package com.myfitai.app.ui
 import com.myfitai.app.navigation.AiSettingsEntry
 import android.app.Activity
 import android.content.Intent
-import android.content.res.ColorStateList
 import android.os.Bundle
 import android.view.View
 import android.widget.LinearLayout
@@ -30,6 +29,7 @@ import com.myfitai.app.data.profile.NutritionPlanSchedulePreferences
 import com.myfitai.app.domain.food.FoodConsumptionMetrics
 import com.myfitai.app.domain.food.FoodConsumptionStatus
 import com.myfitai.app.navigation.BottomNavBinder
+import com.myfitai.app.ui.food.FoodPlanPresentation
 import com.myfitai.app.ui.food.FoodPlanViewModel
 import com.myfitai.app.ui.widgets.MealPlanRowView
 import com.myfitai.app.ui.widgets.KeyValueRowView
@@ -85,7 +85,6 @@ class FoodPlanActivity : BaseShellActivity() {
         findViewById<View>(R.id.aiConfigurationNoticeButton).setOnClickListener { AiSettingsEntry.open(this) }
         bindFoodHelp()
         findViewById<View>(R.id.dailyTotalHelpButton).setOnClickListener { showTotalsHelp() }
-        renderMealCountPreference()
         weekDaySelector.setOnDaySelectedListener(viewModel::selectDay)
         lifecycleScope.launch { repeatOnLifecycle(Lifecycle.State.STARTED) { viewModel.state.collect(::render) } }
     }
@@ -105,23 +104,31 @@ class FoodPlanActivity : BaseShellActivity() {
                 "Apri la lista della spesa per raccogliere gli ingredienti del piano oppure registra uno sgarro per tenerne conto nello storico dei consumi.",
             )
         }
-        findViewById<View>(R.id.foodPlanHelpButton).setOnClickListener {
-            showHelpCard(
-                "Piano alimentare",
-                "Qui puoi generare o rigenerare con IA il piano della settimana selezionata. Il piano viene controllato localmente prima di essere salvato.",
-            )
-        }
+        // Un solo '?' per card dei pasti: spiega pasti del giorno e generazione del piano.
         findViewById<View>(R.id.dayMealsHelpButton).setOnClickListener {
             showHelpCard(
-                "Pasti del giorno",
-                "Mostra i pasti previsti per il giorno selezionato. Tocca un pasto per vedere i dettagli e, quando disponibile, scegliere un'alternativa.",
+                getString(R.string.food_plan_ux2_meals_help_title),
+                getString(R.string.food_plan_ux2_meals_help_body),
             )
         }
     }
 
     private fun renderMealCountPreference() {
         val profileId = data.activeProfileStore.currentIdOrNull() ?: return
-        findViewById<TextView>(R.id.mealCountHint).text = "${data.mealCountPreferences.get(profileId)} pasti al giorno"
+        findViewById<TextView>(R.id.mealCountHint).text =
+            getString(R.string.food_plan_ux2_meal_count_hint, data.mealCountPreferences.get(profileId))
+    }
+
+    /**
+     * Il pulsante Genera è uno solo: senza piano vive nella card dello stato vuoto (CTA),
+     * con un piano in fondo alla schermata, dopo le azioni della settimana.
+     */
+    private fun placeGenerateGroup(inEmptyCard: Boolean) {
+        val group = findViewById<View>(R.id.planGenerateGroup)
+        val target = findViewById<LinearLayout>(if (inEmptyCard) R.id.planGenerateSlotEmpty else R.id.planGenerateSlotBottom)
+        if (group.parent === target) return
+        (group.parent as? android.view.ViewGroup)?.removeView(group)
+        target.addView(group, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
     }
 
     private fun openProfileEditor() = startActivity(Intent(this, ProfileEditActivity::class.java))
@@ -174,17 +181,29 @@ class FoodPlanActivity : BaseShellActivity() {
             ?.let(data.nutritionPlanUpdatePreferences::isPending) == true
         val aiConfigurationNoticeCard = findViewById<View>(R.id.aiConfigurationNoticeCard)
         revealState(aiConfigurationNoticeCard, !providerConfigured)
-        val goalChangedNotice = findViewById<TextView>(R.id.goalChangedNotice)
-        revealState(goalChangedNotice, currentWeek && (state.goalChangedSinceGeneration || planUpdatePending))
         val day = state.selectedDay
-        val dayMealsCard = findViewById<View>(R.id.dayMealsCard)
         val hasDayContent = day != null && (day.meals.isNotEmpty() || day.supplements.isNotEmpty() || !day.hydrationNote.isNullOrBlank())
-        val hasPlanStateMessage = state.goalChangedSinceGeneration || planUpdatePending || state.generation.running || state.generation.error != null || state.generation.successMessage != null || state.profileAgeStatus != ProfileAgeRule.Status.VALID
-        // Keep the merged plan/meals card visible while the first plan is being
-        // generated, so the running state and progress indicator are not hidden
-        // just because no persisted plan exists yet.
-        revealState(dayMealsCard, hasDayContent || hasPlanStateMessage)
-        revealState(empty, !state.hasPlan)
+        val scheduleActive = profileId?.let { data.nutritionPlanSchedulePreferences.get(it).enabled } == true
+        val visibility = FoodPlanPresentation.resolve(
+            FoodPlanPresentation.Inputs(
+                hasPlan = state.hasPlan,
+                currentWeek = currentWeek,
+                periodCanBeGenerated = periodCanBeGenerated,
+                generationRunning = state.generation.running,
+                generationError = state.generation.error != null,
+                generationSuccess = state.generation.successMessage != null,
+                profileAgeInvalid = state.profileAgeStatus != ProfileAgeRule.Status.VALID,
+                goalChanged = state.goalChangedSinceGeneration || planUpdatePending,
+                hasDayContent = hasDayContent,
+                scheduleActive = scheduleActive,
+            ),
+        )
+        revealState(findViewById(R.id.goalChangedNotice), visibility.goalChangedBanner)
+        revealState(findViewById(R.id.dayMealsCard), visibility.mealsCard)
+        revealState(findViewById(R.id.emptyPlanCard), visibility.emptyCard)
+        placeGenerateGroup(visibility.generateInEmptyCard)
+        revealState(findViewById(R.id.mealCountHint), visibility.mealCountHint)
+        if (visibility.mealCountHint) renderMealCountPreference()
         if (!state.hasPlan) {
             empty.text = if (currentWeek) getString(R.string.food_plan_empty_current) else getString(R.string.food_plan_empty_history)
         }
@@ -210,13 +229,13 @@ class FoodPlanActivity : BaseShellActivity() {
         revealState(dailyTotalCard, generatedContentVisible)
         revealState(nutritionEstimateCard, generatedContentVisible)
 
-        renderGeneration(state, currentWeek, periodCanBeGenerated, planUpdatePending)
-        renderPlanScheduleStatus()
+        renderGeneration(state, visibility, currentWeek, periodCanBeGenerated)
+        renderPlanScheduleStatus(visibility.scheduleStatus)
         renderMeals(state.weekStart, day, state.consumptionRecords)
         renderTotals(day, state.snapshot?.version, state.consumptionRecords, state.calorieReference)
     }
 
-    private fun renderGeneration(state: FoodPlanViewModel.State, currentWeek: Boolean, periodCanBeGenerated: Boolean, planUpdatePending: Boolean) {
+    private fun renderGeneration(state: FoodPlanViewModel.State, visibility: FoodPlanPresentation.Visibility, currentWeek: Boolean, periodCanBeGenerated: Boolean) {
         // The pending flag describes the current week's plan: a plan generated for another week does not clear it.
         if (state.generation.successMessage != null && currentWeek) {
             data.activeProfileStore.currentIdOrNull()?.let { profileId ->
@@ -233,42 +252,62 @@ class FoodPlanActivity : BaseShellActivity() {
         revealState(button, periodCanBeGenerated)
         setAiActionEnabled(button, periodCanBeGenerated && !generation.running)
         button.text = when { generation.running -> "Generazione in corso…"; state.hasPlan -> "Rigenera piano con IA"; else -> "Genera piano con IA" }
-        if (state.hasPlan && !generation.running) {
-            button.backgroundTintList = ColorStateList.valueOf(getColor(R.color.surface_primary))
-            button.setTextColor(getColor(R.color.accent_green_dark))
-            button.strokeWidth = resources.getDimensionPixelSize(R.dimen.border_width_default)
-            button.strokeColor = ColorStateList.valueOf(getColor(R.color.accent_green))
-        } else {
-            button.backgroundTintList = ColorStateList.valueOf(getColor(R.color.accent_green))
-            button.setTextColor(getColor(R.color.white))
-            button.strokeWidth = resources.getDimensionPixelSize(R.dimen.border_width_none)
-        }
-        val ageWarning = state.profileAgeStatus != ProfileAgeRule.Status.VALID && generation.error == null && !generation.running
-        val message = when {
-            generation.running -> "Il piano viene generato e validato localmente prima del salvataggio."
-            generation.error != null -> if (generation.fixProfile) "${generation.error}\n${getString(R.string.food_plan_profile_fix_hint)}" else generation.error
-            ageWarning -> getString(R.string.food_plan_profile_age_warning, ProfileAgeRule.MIN_AGE_YEARS, ProfileAgeRule.MAX_AGE_YEARS)
-            generation.successMessage != null -> listOfNotNull(generation.successMessage, generation.usageMessage).joinToString("\n")
-            state.goalChangedSinceGeneration || planUpdatePending -> "Hai modificato impostazioni che influenzano le calorie: rigenera il piano per applicare i nuovi target."
-            else -> null
+        // Stesso pulsante, due stili condivisi: cambiano solo lo stile (Primary/Outlined) e l'enabled.
+        applyButtonStyle(button, if (state.hasPlan && !generation.running) R.style.Widget_MyFitAI_Button_Outlined else R.style.Widget_MyFitAI_Button_Primary)
+        val statusKind = visibility.statusKind
+        val ageWarning = statusKind == FoodPlanPresentation.StatusKind.AGE_WARNING
+        val message = when (statusKind) {
+            FoodPlanPresentation.StatusKind.RUNNING -> "Il piano viene generato e validato localmente prima del salvataggio."
+            FoodPlanPresentation.StatusKind.ERROR -> if (generation.fixProfile) "${generation.error}\n${getString(R.string.food_plan_profile_fix_hint)}" else generation.error
+            FoodPlanPresentation.StatusKind.AGE_WARNING -> getString(R.string.food_plan_profile_age_warning, ProfileAgeRule.MIN_AGE_YEARS, ProfileAgeRule.MAX_AGE_YEARS)
+            FoodPlanPresentation.StatusKind.SUCCESS -> listOfNotNull(generation.successMessage, generation.usageMessage).joinToString("\n")
+            FoodPlanPresentation.StatusKind.GOAL_CHANGED -> "Hai modificato impostazioni che influenzano le calorie: rigenera il piano per applicare i nuovi target."
+            FoodPlanPresentation.StatusKind.NONE -> null
         }
         stateDot.background = getDrawable(
-            when {
-                generation.error != null -> R.drawable.bg_status_dot_error
-                ageWarning -> R.drawable.bg_status_dot_warning
-                generation.running -> R.drawable.bg_status_dot_warning
-                generation.successMessage != null -> R.drawable.bg_status_dot_success
-                state.goalChangedSinceGeneration || planUpdatePending -> R.drawable.bg_status_dot_warning
-                else -> R.drawable.bg_status_dot_neutral
+            when (statusKind) {
+                FoodPlanPresentation.StatusKind.ERROR -> R.drawable.bg_status_dot_error
+                FoodPlanPresentation.StatusKind.AGE_WARNING, FoodPlanPresentation.StatusKind.RUNNING, FoodPlanPresentation.StatusKind.GOAL_CHANGED -> R.drawable.bg_status_dot_warning
+                FoodPlanPresentation.StatusKind.SUCCESS -> R.drawable.bg_status_dot_success
+                FoodPlanPresentation.StatusKind.NONE -> R.drawable.bg_status_dot_neutral
             }
         )
-        revealState(statusContainer, periodCanBeGenerated && message != null)
+        // Banner sopra la card dei pasti: ruolo semantico (errore/avviso/info) dai drawable condivisi.
+        statusContainer.background = getDrawable(
+            when (statusKind) {
+                FoodPlanPresentation.StatusKind.ERROR -> R.drawable.bg_error_soft
+                FoodPlanPresentation.StatusKind.AGE_WARNING, FoodPlanPresentation.StatusKind.GOAL_CHANGED -> R.drawable.bg_banner_warning
+                else -> R.drawable.bg_banner_info
+            }
+        )
+        revealState(statusContainer, visibility.statusBanner)
         revealState(progress, generation.running)
         status.text = message.orEmpty()
         // L'avviso porta all'editor profilo, dove si corregge il dato che blocca la generazione.
-        val opensProfile = ageWarning || (generation.error != null && generation.fixProfile)
+        val opensProfile = ageWarning || (statusKind == FoodPlanPresentation.StatusKind.ERROR && generation.fixProfile)
         status.isClickable = opensProfile
         status.setOnClickListener(if (opensProfile) View.OnClickListener { openProfileEditor() } else null)
+    }
+
+    /**
+     * Applica a un MaterialButton già inflato i valori di uno stile condiviso (Primary/Outlined):
+     * il pulsante che cambia ruolo a runtime non ricolora nulla a mano e non duplica i token.
+     */
+    private fun applyButtonStyle(button: MaterialButton, @androidx.annotation.StyleRes style: Int) {
+        val backgroundTint = androidx.appcompat.R.attr.backgroundTint
+        val strokeColor = com.google.android.material.R.attr.strokeColor
+        val strokeWidth = com.google.android.material.R.attr.strokeWidth
+        val textColor = android.R.attr.textColor
+        val attrs = intArrayOf(backgroundTint, strokeColor, strokeWidth, textColor).also { it.sort() }
+        val array = obtainStyledAttributes(style, attrs)
+        try {
+            array.getColorStateList(attrs.indexOf(backgroundTint))?.let { button.backgroundTintList = it }
+            button.strokeColor = array.getColorStateList(attrs.indexOf(strokeColor))
+            button.strokeWidth = array.getDimensionPixelSize(attrs.indexOf(strokeWidth), 0)
+            array.getColorStateList(attrs.indexOf(textColor))?.let { button.setTextColor(it) }
+        } finally {
+            array.recycle()
+        }
     }
 
     private fun revealState(view: View, visible: Boolean) {
@@ -306,18 +345,13 @@ class FoodPlanActivity : BaseShellActivity() {
         }
     }
 
-    private fun renderPlanScheduleStatus() {
+    private fun renderPlanScheduleStatus(visible: Boolean) {
         val status = findViewById<TextView>(R.id.planScheduleStatusText)
-        val profileId = data.activeProfileStore.currentIdOrNull()
-        if (profileId == null) {
-            status.text = "Schedulazione piano non disponibile: nessun profilo attivo."
-            return
-        }
+        // Mostrata solo quando rilevante (schedulazione attiva): "non attiva" non è un'informazione utile.
+        revealState(status, visible)
+        if (!visible) return
+        val profileId = data.activeProfileStore.currentIdOrNull() ?: return
         val config = data.nutritionPlanSchedulePreferences.get(profileId)
-        if (!config.enabled) {
-            status.text = "Schedulazione piano non attiva."
-            return
-        }
         val key = data.nutritionPlanSchedulePreferences.scheduledJobKey(profileId)
         val due = key?.removePrefix("auto-")?.toLongOrNull()
         val frequency = when (config.frequency) {
@@ -506,6 +540,15 @@ class FoodPlanActivity : BaseShellActivity() {
         findViewById<View>(R.id.dailyTotalRowConsumed).contentDescription = "Consumate: ${formatConsumed(consumedKcal, "kcal")}, proteine ${formatConsumed(consumedProtein, "g")}"
         findViewById<View>(R.id.dailyTotalRowPlanned).visibility = if (totals.kcal != null || totals.proteinG != null) View.VISIBLE else View.GONE
         findViewById<View>(R.id.dailyTotalRowConsumed).visibility = View.VISIBLE
+        val macrosVisible = FoodPlanPresentation.macroColumnsVisible(totals)
+        findViewById<View>(R.id.dailyTotalMacros).visibility = if (macrosVisible) View.VISIBLE else View.GONE
+        findViewById<TextView>(R.id.totalCarbsPlanned).text = NutritionEstimateFormatter.formatEstimatedMacro(totals.carbsG, "g")
+        findViewById<TextView>(R.id.totalFatPlanned).text = NutritionEstimateFormatter.formatEstimatedMacro(totals.fatG, "g")
+        findViewById<View>(R.id.dailyTotalRowMacrosPlanned).contentDescription = getString(
+            R.string.food_plan_ux2_macro_menu_description,
+            NutritionEstimateFormatter.formatEstimatedMacro(totals.carbsG, "g"),
+            NutritionEstimateFormatter.formatEstimatedMacro(totals.fatG, "g"),
+        )
         val consumedRowLabel = findViewById<View>(R.id.dailyTotalRowConsumed).findViewById<TextView>(R.id.dailyConsumedLabel)
         consumedRowLabel.text = when {
             dayRecords.isEmpty() -> "Consumate · non registrate"
