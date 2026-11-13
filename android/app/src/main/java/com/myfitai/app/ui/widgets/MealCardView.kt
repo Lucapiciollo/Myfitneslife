@@ -8,6 +8,7 @@ import android.widget.TextView
 import com.google.android.material.imageview.ShapeableImageView
 import com.google.android.material.shape.ShapeAppearanceModel
 import com.myfitai.app.R
+import com.myfitai.app.domain.display.QuickConsumeRule
 
 /** Card riutilizzabile per il prossimo pasto: icona, orario, titolo, kcal, miniatura foto. */
 class MealCardView @JvmOverloads constructor(
@@ -19,6 +20,7 @@ class MealCardView @JvmOverloads constructor(
     private val titleView: TextView
     private val kcalView: TextView
     private val thumbnail: ShapeableImageView
+    private val quickButton: ImageView
 
     init {
         orientation = HORIZONTAL
@@ -65,6 +67,23 @@ class MealCardView @JvmOverloads constructor(
         textColumn.addView(kcalView)
         addView(textColumn)
 
+        // UX5a: azione rapida "Segna come consumato" (area 48dp), solo per i pasti di oggi: nascosta di default.
+        quickButton = ImageView(context).apply {
+            val size = resources.getDimensionPixelSize(R.dimen.icon_button_size)
+            layoutParams = LayoutParams(size, size).apply { marginEnd = resources.getDimensionPixelSize(R.dimen.space_8) }
+            setImageResource(R.drawable.ic_check)
+            val iconPadding = resources.getDimensionPixelSize(R.dimen.space_8)
+            setPadding(iconPadding, iconPadding, iconPadding, iconPadding)
+            val ripple = android.util.TypedValue()
+            if (context.theme.resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, ripple, true)) {
+                setBackgroundResource(ripple.resourceId)
+            }
+            isClickable = true
+            isFocusable = true
+            visibility = GONE
+        }
+        addView(quickButton)
+
         thumbnail = ShapeableImageView(context).apply {
             val size = resources.getDimensionPixelSize(R.dimen.dashboard_thumbnail_size)
             layoutParams = LayoutParams(size, size)
@@ -108,5 +127,26 @@ class MealCardView @JvmOverloads constructor(
 
     fun setImage(resId: Int) {
         thumbnail.setImageResource(resId)
+    }
+
+    /**
+     * UX5a: one-tap "mark as consumed". [state] HIDDEN removes the control (future days); DONE only changes how it reads
+     * (colour and description): the tap is always forwarded to [listener], which never clears the status silently.
+     */
+    fun setQuickConsume(mealTitle: String, state: QuickConsumeRule.State, listener: (() -> Unit)?) {
+        val visible = state != QuickConsumeRule.State.HIDDEN && listener != null
+        quickButton.visibility = if (visible) VISIBLE else GONE
+        if (!visible) {
+            quickButton.setOnClickListener(null)
+            quickButton.isClickable = false
+            return
+        }
+        val done = state == QuickConsumeRule.State.DONE
+        quickButton.setColorFilter(context.getColor(if (done) R.color.accent_green_dark else R.color.text_muted))
+        quickButton.contentDescription = context.getString(
+            if (done) R.string.meal_ux4_quick_consumed_cd else R.string.meal_ux4_quick_consume_cd,
+            mealTitle,
+        )
+        quickButton.setOnClickListener { listener?.invoke() }
     }
 }

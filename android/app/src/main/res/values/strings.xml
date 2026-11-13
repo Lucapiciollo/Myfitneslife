@@ -554,6 +554,19 @@
     <string name="meal_ux4_quick_consume_cd">Segna come consumato: %1$s</string>
     <string name="meal_ux4_quick_consumed_cd">Pasto consumato: %1$s. Tocca per annullare il consumo</string>
 
+    <!-- UX5a: Home, card calorie meno densa, azione rapida sul prossimo pasto, card Rilevazioni -->
+    <string name="home_ux5a_details_title">Dettagli del calcolo</string>
+    <string name="home_ux5a_details_state_expanded">Espanso</string>
+    <string name="home_ux5a_details_state_collapsed">Compresso</string>
+    <string name="home_ux5a_note_all_skipped">Gli elementi registrati risultano saltati.</string>
+    <string name="home_ux5a_note_none_registered">Nessun alimento registrato come consumato oggi.</string>
+    <string name="home_ux5a_note_partial">Calorie e proteine sommano i soli elementi consumati (%1$d).</string>
+    <string name="home_ux5a_note_all_consumed">Totale di %1$d elementi segnati come consumati.</string>
+    <string name="home_ux5a_calories_note">%1$s Gli anelli confrontano i consumi con l\'obiettivo di oggi.</string>
+    <string name="home_ux5a_weekly_plan_pending_note">Piano da aggiornare: la stima usa il piano precedente</string>
+    <string name="home_ux5a_measurements_title">Rilevazioni</string>
+    <string name="home_ux5a_measurements_subtitle">Registra una nuova BIA o nuove misure, oppure apri lo storico.</string>
+
     <!-- UX3: vocabolario unico, vedi docs/GLOSSARIO_UI.md -->
     <string name="food_target_label_plan_day_other">Obiettivo del giorno</string>
     <string name="food_target_label_theoretical_other">Obiettivo del giorno (da profilo)</string>

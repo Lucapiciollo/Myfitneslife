@@ -90,21 +90,27 @@ class HomeCaloriesLayoutDeviceTest {
                     if (consumed == null) assertTrue("missing consumption is not displayed as zero", consumedValue.text == "—")
                 }
                 val scroll = activity.findViewById<ScrollView>(R.id.homeScrollView)
+                assertTrue("UX5a: details are collapsed by default", activity.findViewById<View>(R.id.caloriesDetailsContainer).visibility == View.GONE)
                 val card = activity.findViewById<View>(R.id.caloriesCard)
                 val rect = Rect()
                 card.getDrawingRect(rect)
                 scroll.offsetDescendantRectToMyCoords(card, rect)
                 scroll.scrollTo(0, rect.top)
+                // UX5a: BMR, BMR da BIA and TDEE sit in "Dettagli del calcolo": open it to measure them like the visible values.
+                activity.findViewById<View>(R.id.caloriesDetailsToggle).performClick()
             }
+            Thread.sleep(600L)
             instrumentation.waitForIdleSync()
             device.takeScreenshot(File(instrumentation.targetContext.getExternalFilesDir(null), "qa-artifacts/home-calorie-ring.png").apply { parentFile?.mkdirs() })
             scenario.onActivity { activity ->
+                assertTrue("details open after the tap", activity.findViewById<View>(R.id.caloriesDetailsContainer).visibility == View.VISIBLE)
+                val biaVisible = activity.findViewById<View>(R.id.caloriesBiaBmrRow).visibility == View.VISIBLE
                 val ids = listOf(
-                    R.id.caloriesModeText, R.id.caloriesBmrValue, R.id.caloriesBiaBmrValue, R.id.caloriesTdeeValue,
+                    R.id.caloriesModeText, R.id.caloriesBmrValue, R.id.caloriesTdeeValue,
                     R.id.caloriesTargetValue, R.id.caloriesTargetSourceText, R.id.caloriesConsumedText,
                     R.id.caloriesConsumedProteinText, R.id.caloriesRemainingText, R.id.caloriesConsumptionNote,
                     R.id.caloriesConsumedMaximumText, R.id.caloriesConsumedProteinMaximumText, R.id.caloriesRemainingMaximumText,
-                )
+                ) + if (biaVisible) listOf(R.id.caloriesBiaBmrValue) else emptyList()
                 ids.forEach { id ->
                     val view = activity.findViewById<TextView>(id)
                     val layout = view.layout
