@@ -67,6 +67,15 @@ class FoodTotalsPresentationTest {
     }
 
     @Test
+    fun planUpdateNote_onlyForTheCurrentWeek() {
+        val monday = java.time.LocalDate.of(2026, 11, 9)
+        assertTrue(FoodTotalsPresentation.planUpdateNoteVisible(true, true, weekStart = monday, today = java.time.LocalDate.of(2026, 11, 13)))
+        assertTrue(FoodTotalsPresentation.planUpdateNoteVisible(true, true, weekStart = monday, today = java.time.LocalDate.of(2026, 11, 15)))
+        assertFalse(FoodTotalsPresentation.planUpdateNoteVisible(true, true, weekStart = monday, today = java.time.LocalDate.of(2026, 11, 16)))
+        assertFalse(FoodTotalsPresentation.planUpdateNoteVisible(true, true, weekStart = monday.minusWeeks(3), today = java.time.LocalDate.of(2026, 11, 13)))
+    }
+
+    @Test
     fun planUpdateNote_requiresPendingFlagAndAPlanTarget() {
         assertTrue(FoodTotalsPresentation.planUpdateNoteVisible(planUpdatePending = true, hasPlanTarget = true))
         assertFalse(FoodTotalsPresentation.planUpdateNoteVisible(planUpdatePending = true, hasPlanTarget = false))

@@ -35,4 +35,13 @@ object FoodTotalsPresentation {
 
     /** Nota "piano non aggiornato" in review e PDF: serve il flag in sospeso e un obiettivo del piano da annotare. */
     fun planUpdateNoteVisible(planUpdatePending: Boolean, hasPlanTarget: Boolean): Boolean = planUpdatePending && hasPlanTarget
+
+    /**
+     * Review: la nota riguarda solo la settimana in corso. Una settimana conclusa e stata vissuta con il piano di allora,
+     * quindi un cambio di profilo successivo non la rende "non aggiornata".
+     */
+    fun planUpdateNoteVisible(planUpdatePending: Boolean, hasPlanTarget: Boolean, weekStart: LocalDate, today: LocalDate): Boolean {
+        val monday = today.minusDays((today.dayOfWeek.value - 1).toLong())
+        return planUpdateNoteVisible(planUpdatePending, hasPlanTarget) && weekStart == monday
+    }
 }

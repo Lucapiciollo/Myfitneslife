@@ -123,7 +123,12 @@ class WeeklyReviewActivity : BaseShellActivity() {
                 ?.let(data.nutritionPlanUpdatePreferences::isPending) == true,
         )
         findViewById<View>(R.id.planStaleNote).visibility = if (
-            FoodTotalsPresentation.planUpdateNoteVisible(planUpdatePending, hasPlanTarget = metrics?.hasPlan == true && metrics.targetKcal != null)
+            FoodTotalsPresentation.planUpdateNoteVisible(
+                planUpdatePending,
+                hasPlanTarget = metrics?.hasPlan == true && metrics.targetKcal != null,
+                weekStart = metrics?.weekStart ?: LocalDate.MIN,
+                today = LocalDate.now(),
+            )
         ) View.VISIBLE else View.GONE
         if (metrics != null && !metrics.hasPlan) {
             findViewById<TextView>(R.id.avgKcalValue).text = "Nessun piano"
