@@ -110,6 +110,15 @@ data class IngredientDraft(
     val weightState: String?,
     val nutritionConfidence: String?,
     val category: String?,
+    /** Snapshot nutrizionale dal catalogo (migrazione 22); null per le bozze create da piani precedenti. */
+    val foodId: String? = null,
+    val grams: Float? = null,
+    val kcal: Float? = null,
+    val proteinG: Float? = null,
+    val carbsG: Float? = null,
+    val fatG: Float? = null,
+    val fiberG: Float? = null,
+    val sodiumMg: Float? = null,
 )
 
 data class MealDraft(
@@ -122,6 +131,7 @@ data class MealDraft(
     val fatG: Float?,
     val preparation: String?,
     val ingredients: List<IngredientDraft>,
+    val nutritionSource: String = com.myfitai.app.domain.food.FoodMeal.NUTRITION_SOURCE_DECLARED,
 )
 
 data class SupplementDraft(
@@ -164,6 +174,8 @@ data class PlanVersionDraft(
     val appValidationJson: String? = null,
     /** Solo la generazione la imposta; adattamenti e scambi ereditano quella della versione da cui derivano. */
     val inputsFingerprint: String? = null,
+    /** Versione del catalogo alimenti con cui sono stati calcolati i macro; null per le versioni dichiarate dal modello. */
+    val catalogVersion: String? = null,
 )
 
 data class LegacyMealAlarmId(val versionId: Long, val mealId: Long)
@@ -260,6 +272,7 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
                 targetFatG = draft.targetFatG,
                 appValidationJson = draft.appValidationJson,
                 inputsFingerprint = draft.inputsFingerprint ?: previous?.inputsFingerprint,
+                catalogVersion = draft.catalogVersion,
             )
         )
 
@@ -281,32 +294,11 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
             ))).single()
 
             day.meals.forEachIndexed { mealIndex, meal ->
-                val mealId = dao.insertMeals(listOf(MealEntity(
-                    dayId = dayId,
-                    sortOrder = mealIndex,
-                    type = meal.type,
-                    title = meal.title,
-                    timeMinutes = meal.timeMinutes,
-                    kcal = meal.kcal,
-                    proteinG = meal.proteinG,
-                    carbsG = meal.carbsG,
-                    fatG = meal.fatG,
-                    preparation = meal.preparation,
-                ))).single()
+                val mealId = dao.insertMeals(listOf(meal.toEntity(dayId = dayId, sortOrder = mealIndex))).single()
 
                 if (meal.ingredients.isNotEmpty()) {
                     dao.insertIngredients(meal.ingredients.mapIndexed { ingredientIndex, ingredient ->
-                        MealIngredientEntity(
-                            mealId = mealId,
-                            name = ingredient.name,
-                            quantity = ingredient.quantity,
-                            unit = ingredient.unit,
-                            displayDose = ingredient.displayDose,
-                            weightState = ingredient.weightState,
-                            nutritionConfidence = ingredient.nutritionConfidence,
-                            category = ingredient.category,
-                            sortOrder = ingredientIndex,
-                        )
+                        ingredient.toEntity(mealId = mealId, sortOrder = ingredientIndex)
                     })
                 }
             }
@@ -332,33 +324,7 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
                 targetFatG = day.targetFatG,
                 baseTargetKcal = day.baseTargetKcal,
                 meals = dao.getMeals(profileId, day.id).map { meal ->
-                    com.myfitai.app.domain.food.FoodMeal(
-                        id = meal.id,
-                        dayId = meal.dayId,
-                        sortOrder = meal.sortOrder,
-                        type = meal.type,
-                        title = meal.title,
-                        timeMinutes = meal.timeMinutes,
-                        kcal = meal.kcal,
-                        proteinG = meal.proteinG,
-                        carbsG = meal.carbsG,
-                        fatG = meal.fatG,
-                        preparation = meal.preparation,
-                        ingredients = dao.getIngredients(profileId, meal.id).map { ingredient ->
-                            com.myfitai.app.domain.food.FoodIngredient(
-                                id = ingredient.id,
-                                mealId = ingredient.mealId,
-                                name = ingredient.name,
-                                quantity = ingredient.quantity,
-                                unit = ingredient.unit,
-                                displayDose = ingredient.displayDose,
-                                weightState = ingredient.weightState,
-                                nutritionConfidence = ingredient.nutritionConfidence,
-                                category = ingredient.category,
-                                sortOrder = ingredient.sortOrder,
-                            )
-                        },
-                    )
+                    meal.toFoodMeal(dao.getIngredients(profileId, meal.id).map { it.toFoodIngredient() })
                 },
                 supplements = parseSupplements(day.supplementsJson),
                 hydrationNote = day.hydrationNote,
@@ -380,6 +346,7 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
                 targetFatG = version.targetFatG,
                 days = days,
                 inputsFingerprint = version.inputsFingerprint,
+                catalogVersion = version.catalogVersion,
             ),
         )
     }
@@ -387,71 +354,19 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
     suspend fun getMealDetail(profileId: Long, mealId: Long): com.myfitai.app.domain.food.FoodMeal? = db.withTransaction {
         val dao = db.mealPlanDao()
         val meal = dao.getMeal(profileId, mealId) ?: return@withTransaction null
-        com.myfitai.app.domain.food.FoodMeal(
-            id = meal.id,
-            dayId = meal.dayId,
-            sortOrder = meal.sortOrder,
-            type = meal.type,
-            title = meal.title,
-            timeMinutes = meal.timeMinutes,
-            kcal = meal.kcal,
-            proteinG = meal.proteinG,
-            carbsG = meal.carbsG,
-            fatG = meal.fatG,
-            preparation = meal.preparation,
-            ingredients = dao.getIngredients(profileId, meal.id).map { ingredient ->
-                com.myfitai.app.domain.food.FoodIngredient(
-                    id = ingredient.id,
-                    mealId = ingredient.mealId,
-                    name = ingredient.name,
-                    quantity = ingredient.quantity,
-                    unit = ingredient.unit,
-                    displayDose = ingredient.displayDose,
-                    weightState = ingredient.weightState,
-                    nutritionConfidence = ingredient.nutritionConfidence,
-                    category = ingredient.category,
-                    sortOrder = ingredient.sortOrder,
-                )
-            },
-        )
+        meal.toFoodMeal(dao.getIngredients(profileId, meal.id).map { it.toFoodIngredient() })
     }
 
     suspend fun getMealContext(profileId: Long, mealId: Long): MealDetailContext? = db.withTransaction {
         val dao = db.mealPlanDao()
         val row = dao.getMealContext(profileId, mealId) ?: return@withTransaction null
-        val ingredients = dao.getIngredients(profileId, mealId).map { ingredient ->
-            com.myfitai.app.domain.food.FoodIngredient(
-                id = ingredient.id,
-                mealId = ingredient.mealId,
-                name = ingredient.name,
-                quantity = ingredient.quantity,
-                unit = ingredient.unit,
-                displayDose = ingredient.displayDose,
-                weightState = ingredient.weightState,
-                nutritionConfidence = ingredient.nutritionConfidence,
-                category = ingredient.category,
-                sortOrder = ingredient.sortOrder,
-            )
-        }
+        val ingredients = dao.getIngredients(profileId, mealId).map { it.toFoodIngredient() }
         MealDetailContext(
             planId = row.planId,
             planVersionId = row.planVersionId,
             dayId = row.dayId,
             dateEpochDay = row.dateEpochDay,
-            meal = com.myfitai.app.domain.food.FoodMeal(
-                id = row.mealId,
-                dayId = row.mealDayId,
-                sortOrder = row.mealSortOrder,
-                type = row.mealType,
-                title = row.mealTitle,
-                timeMinutes = row.mealTimeMinutes,
-                kcal = row.mealKcal,
-                proteinG = row.mealProteinG,
-                carbsG = row.mealCarbsG,
-                fatG = row.mealFatG,
-                preparation = row.mealPreparation,
-                ingredients = ingredients,
-            ),
+            meal = row.toFoodMeal(ingredients),
         )
     }
 
@@ -464,33 +379,7 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
                 planVersionId = row.planVersionId,
                 versionNumber = row.versionNumber,
                 dateEpochDay = row.dateEpochDay,
-                meal = com.myfitai.app.domain.food.FoodMeal(
-                    id = row.mealId,
-                    dayId = row.mealDayId,
-                    sortOrder = row.mealSortOrder,
-                    type = row.mealType,
-                    title = row.mealTitle,
-                    timeMinutes = row.mealTimeMinutes,
-                    kcal = row.mealKcal,
-                    proteinG = row.mealProteinG,
-                    carbsG = row.mealCarbsG,
-                    fatG = row.mealFatG,
-                    preparation = row.mealPreparation,
-                    ingredients = dao.getIngredients(profileId, row.mealId).map { ingredient ->
-                        com.myfitai.app.domain.food.FoodIngredient(
-                            id = ingredient.id,
-                            mealId = ingredient.mealId,
-                            name = ingredient.name,
-                            quantity = ingredient.quantity,
-                            unit = ingredient.unit,
-                            displayDose = ingredient.displayDose,
-                            weightState = ingredient.weightState,
-                            nutritionConfidence = ingredient.nutritionConfidence,
-                            category = ingredient.category,
-                            sortOrder = ingredient.sortOrder,
-                        )
-                    },
-                ),
+                meal = row.toFoodMeal(dao.getIngredients(profileId, row.mealId).map { it.toFoodIngredient() }),
             )
         }
     }

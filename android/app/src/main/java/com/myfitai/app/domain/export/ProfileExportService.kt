@@ -5,6 +5,8 @@ import androidx.core.content.FileProvider
 import androidx.room.withTransaction
 import com.myfitai.app.data.local.MyFitAiDatabase
 import com.myfitai.app.data.local.entity.MealPlanEntity
+import com.myfitai.app.data.repository.toFoodIngredient
+import com.myfitai.app.data.repository.toFoodMeal
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.domain.body.BodyProportionEngine
 import com.myfitai.app.domain.calculation.LocalCalculationEngine
@@ -266,33 +268,7 @@ class ProfileExportService(
                 carbsG = day.carbsG,
                 fatG = day.fatG,
                 meals = dao.getMeals(plan.profileId, day.id).map { meal ->
-                    FoodMeal(
-                        id = meal.id,
-                        dayId = meal.dayId,
-                        sortOrder = meal.sortOrder,
-                        type = meal.type,
-                        title = meal.title,
-                        timeMinutes = meal.timeMinutes,
-                        kcal = meal.kcal,
-                        proteinG = meal.proteinG,
-                        carbsG = meal.carbsG,
-                        fatG = meal.fatG,
-                        preparation = meal.preparation,
-                        ingredients = dao.getIngredients(plan.profileId, meal.id).map { ingredient ->
-                            FoodIngredient(
-                                id = ingredient.id,
-                                mealId = ingredient.mealId,
-                                name = ingredient.name,
-                                quantity = ingredient.quantity,
-                                unit = ingredient.unit,
-                                displayDose = ingredient.displayDose,
-                                weightState = ingredient.weightState,
-                                nutritionConfidence = ingredient.nutritionConfidence,
-                                category = ingredient.category,
-                                sortOrder = ingredient.sortOrder,
-                            )
-                        },
-                    )
+                    meal.toFoodMeal(dao.getIngredients(plan.profileId, meal.id).map { it.toFoodIngredient() })
                 },
                 supplements = parseSupplements(day.supplementsJson),
                 hydrationNote = day.hydrationNote,

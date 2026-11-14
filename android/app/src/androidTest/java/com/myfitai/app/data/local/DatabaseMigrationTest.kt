@@ -407,4 +407,91 @@ class DatabaseMigrationTest {
             }
         }
     }
+
+    @Test
+    fun migration21To22_addsNullableIngredientSnapshot_declaredNutritionSource_catalogVersion_andEmptyCustomFoods() {
+        helper.createDatabase(MyFitAiDatabase.DATABASE_NAME, 21).apply {
+            execSQL("INSERT INTO user_profile (id, name, createdAtEpochMillis, updatedAtEpochMillis) VALUES (1, 'Luca', 1000, 2000)")
+            execSQL("INSERT INTO meal_plans (id, profileId, createdAtEpochMillis, weekStartEpochDay, status) VALUES (1, 1, 5000, 21000, 'ACTIVE')")
+            execSQL("INSERT INTO meal_plan_versions (id, planId, versionNumber, createdAtEpochMillis, source, reason, targetKcal, targetProteinG, targetCarbsG, targetFatG, inputsFingerprint) VALUES (1, 1, 1, 6000, 'GEMINI', 'AI_GENERATION', 2200, 160.0, 230.0, 70.0, 'fp1')")
+            execSQL("INSERT INTO meal_plan_days (id, versionId, dateEpochDay, totalKcal, proteinG, carbsG, fatG) VALUES (1, 1, 21000, 2200, 160.0, 230.0, 70.0)")
+            execSQL("INSERT INTO meals (id, dayId, sortOrder, type, title, timeMinutes, kcal, proteinG, carbsG, fatG, preparation) VALUES (1, 1, 0, 'Pranzo', 'Riso e pollo', 780, 700, 50.0, 80.0, 18.0, 'Cuocere')")
+            execSQL("INSERT INTO meals (id, dayId, sortOrder, type, title, timeMinutes, kcal, proteinG, carbsG, fatG, preparation) VALUES (2, 1, 1, 'Cena', 'Salmone', 1200, 650, 45.0, 40.0, 30.0, NULL)")
+            execSQL("INSERT INTO meal_ingredients (id, mealId, name, quantity, unit, displayDose, weightState, nutritionConfidence, category, sortOrder) VALUES (1, 1, 'Riso', 80.0, 'g', '80 g', 'DRY', 'HIGH', 'carbs', 0)")
+            execSQL("INSERT INTO meal_ingredients (id, mealId, name, quantity, unit, displayDose, weightState, nutritionConfidence, category, sortOrder) VALUES (2, 1, 'Pollo', 200.0, 'g', '200 g', 'RAW', 'HIGH', 'protein', 1)")
+            execSQL("INSERT INTO meal_ingredients (id, mealId, name, quantity, unit, displayDose, weightState, nutritionConfidence, category, sortOrder) VALUES (3, 2, 'Salmone', 180.0, 'g', '180 g', 'RAW', 'HIGH', 'protein', 0)")
+            close()
+        }
+
+        helper.runMigrationsAndValidate(
+            MyFitAiDatabase.DATABASE_NAME,
+            22,
+            true,
+            DatabaseMigrations.MIGRATION_21_22,
+        ).use { db ->
+            // Ingredienti: dati intatti e snapshot nullo.
+            db.query("SELECT id, mealId, name, quantity, unit, displayDose, weightState, nutritionConfidence, category, sortOrder, foodId, grams, kcal, proteinG, carbsG, fatG, fiberG, sodiumMg FROM meal_ingredients ORDER BY id").use { cursor ->
+                assertEquals(3, cursor.count)
+                cursor.moveToFirst()
+                assertEquals("Riso", cursor.getString(2))
+                assertEquals(80f, cursor.getFloat(3))
+                assertEquals("g", cursor.getString(4))
+                assertEquals("80 g", cursor.getString(5))
+                assertEquals("DRY", cursor.getString(6))
+                assertEquals(0, cursor.getInt(9))
+                do {
+                    for (column in 10..17) assertTrue("colonna $column deve essere NULL", cursor.isNull(column))
+                } while (cursor.moveToNext())
+            }
+            // Pasti: dati intatti e nutritionSource = DECLARED.
+            db.query("SELECT id, title, timeMinutes, kcal, proteinG, carbsG, fatG, preparation, nutritionSource FROM meals ORDER BY id").use { cursor ->
+                assertEquals(2, cursor.count)
+                cursor.moveToFirst()
+                assertEquals("Riso e pollo", cursor.getString(1))
+                assertEquals(780, cursor.getInt(2))
+                assertEquals(700, cursor.getInt(3))
+                assertEquals(50f, cursor.getFloat(4))
+                assertEquals("Cuocere", cursor.getString(7))
+                assertEquals("DECLARED", cursor.getString(8))
+                cursor.moveToNext()
+                assertEquals("Salmone", cursor.getString(1))
+                assertTrue(cursor.isNull(7))
+                assertEquals("DECLARED", cursor.getString(8))
+            }
+            // Versioni: dati intatti e catalogVersion nulla.
+            db.query("SELECT versionNumber, source, targetKcal, inputsFingerprint, catalogVersion FROM meal_plan_versions WHERE id = 1").use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals(1, cursor.getInt(0))
+                assertEquals("GEMINI", cursor.getString(1))
+                assertEquals(2200, cursor.getInt(2))
+                assertEquals("fp1", cursor.getString(3))
+                assertTrue("le versioni esistenti non hanno versione di catalogo", cursor.isNull(4))
+            }
+            // Cascata e giorni invariati.
+            db.query("SELECT totalKcal FROM meal_plan_days WHERE id = 1").use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals(2200, cursor.getInt(0))
+            }
+            // Nuova tabella vuota e indicizzata.
+            db.query("SELECT COUNT(*) FROM custom_foods").use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals(0, cursor.getInt(0))
+            }
+            db.query("SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'custom_foods' AND name = 'index_custom_foods_profileId'").use { cursor ->
+                assertEquals(1, cursor.count)
+            }
+            // La nuova tabella accetta un alimento con i default di fonte/affidabilita.
+            db.execSQL("INSERT INTO custom_foods (profileId, name, kcalPer100, proteinPer100, carbsPer100, fatPer100, fiberPer100, sodiumMgPer100, createdAtEpochMillis) VALUES (1, 'Torta della nonna', 380.0, 5.0, 50.0, 18.0, 1.0, 90.0, 9000)")
+            db.query("SELECT source, confidence, notes FROM custom_foods").use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals("USER", cursor.getString(0))
+                assertEquals("ESTIMATED", cursor.getString(1))
+                assertTrue(cursor.isNull(2))
+            }
+            db.query("SELECT name FROM user_profile WHERE id = 1").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals("Luca", cursor.getString(0))
+            }
+        }
+    }
 }

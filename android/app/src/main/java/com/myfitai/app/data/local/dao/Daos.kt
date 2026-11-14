@@ -119,6 +119,21 @@ interface BodyExpectationGoalDao {
 
 }
 
+/** Alimenti dell'utente (v22): solo persistenza, nessun consumatore UI in questo lotto. */
+@Dao
+interface CustomFoodDao {
+    @Query("SELECT * FROM custom_foods WHERE profileId = :profileId ORDER BY name COLLATE NOCASE ASC, id ASC")
+    fun observeAll(profileId: Long): Flow<List<CustomFoodEntity>>
+
+    @Insert suspend fun insert(value: CustomFoodEntity): Long
+
+    @Query("DELETE FROM custom_foods WHERE profileId = :profileId AND id = :id")
+    suspend fun delete(profileId: Long, id: Long)
+
+    @Query("DELETE FROM custom_foods WHERE profileId = :profileId")
+    suspend fun deleteByProfile(profileId: Long)
+}
+
 @Dao
 interface MealPlanDao {
     @Query("SELECT * FROM meal_plans WHERE profileId = :profileId ORDER BY weekStartEpochDay DESC, id DESC")
@@ -143,7 +158,7 @@ interface MealPlanDao {
     @Query("SELECT v.* FROM meal_plan_versions v INNER JOIN meal_plans p ON p.id = v.planId WHERE p.id = :planId AND p.profileId = :profileId ORDER BY v.versionNumber DESC, v.id DESC")
     fun observeVersions(profileId: Long, planId: Long): Flow<List<MealPlanVersionEntity>>
 
-    @Query("SELECT p.id AS planId, p.weekStartEpochDay AS weekStartEpochDay, v.id AS planVersionId, v.versionNumber AS versionNumber, d.dateEpochDay AS dateEpochDay, m.id AS mealId, m.dayId AS mealDayId, m.sortOrder AS mealSortOrder, m.type AS mealType, m.title AS mealTitle, m.timeMinutes AS mealTimeMinutes, m.kcal AS mealKcal, m.proteinG AS mealProteinG, m.carbsG AS mealCarbsG, m.fatG AS mealFatG, m.preparation AS mealPreparation FROM meals m INNER JOIN meal_plan_days d ON d.id = m.dayId INNER JOIN meal_plan_versions v ON v.id = d.versionId INNER JOIN meal_plans p ON p.id = v.planId WHERE p.profileId = :profileId AND m.id != :excludedMealId ORDER BY v.createdAtEpochMillis DESC, v.id DESC, d.dateEpochDay DESC, m.sortOrder ASC")
+    @Query("SELECT p.id AS planId, p.weekStartEpochDay AS weekStartEpochDay, v.id AS planVersionId, v.versionNumber AS versionNumber, d.dateEpochDay AS dateEpochDay, m.id AS mealId, m.dayId AS mealDayId, m.sortOrder AS mealSortOrder, m.type AS mealType, m.title AS mealTitle, m.timeMinutes AS mealTimeMinutes, m.kcal AS mealKcal, m.proteinG AS mealProteinG, m.carbsG AS mealCarbsG, m.fatG AS mealFatG, m.preparation AS mealPreparation, m.nutritionSource AS mealNutritionSource FROM meals m INNER JOIN meal_plan_days d ON d.id = m.dayId INNER JOIN meal_plan_versions v ON v.id = d.versionId INNER JOIN meal_plans p ON p.id = v.planId WHERE p.profileId = :profileId AND m.id != :excludedMealId ORDER BY v.createdAtEpochMillis DESC, v.id DESC, d.dateEpochDay DESC, m.sortOrder ASC")
     suspend fun getHistoricalMealRows(profileId: Long, excludedMealId: Long): List<HistoricalMealRow>
 
     @Query("SELECT v.* FROM meal_plan_versions v INNER JOIN meal_plans p ON p.id = v.planId WHERE p.id = :planId AND p.profileId = :profileId ORDER BY v.versionNumber DESC, v.id DESC LIMIT 1")
@@ -158,7 +173,7 @@ interface MealPlanDao {
     @Query("SELECT m.* FROM meals m INNER JOIN meal_plan_days d ON d.id = m.dayId INNER JOIN meal_plan_versions v ON v.id = d.versionId INNER JOIN meal_plans p ON p.id = v.planId WHERE m.id = :mealId AND p.profileId = :profileId LIMIT 1")
     suspend fun getMeal(profileId: Long, mealId: Long): MealEntity?
 
-    @Query("SELECT p.id AS planId, v.id AS planVersionId, d.id AS dayId, d.dateEpochDay AS dateEpochDay, m.id AS mealId, m.dayId AS mealDayId, m.sortOrder AS mealSortOrder, m.type AS mealType, m.title AS mealTitle, m.timeMinutes AS mealTimeMinutes, m.kcal AS mealKcal, m.proteinG AS mealProteinG, m.carbsG AS mealCarbsG, m.fatG AS mealFatG, m.preparation AS mealPreparation FROM meals m INNER JOIN meal_plan_days d ON d.id = m.dayId INNER JOIN meal_plan_versions v ON v.id = d.versionId INNER JOIN meal_plans p ON p.id = v.planId WHERE m.id = :mealId AND p.profileId = :profileId LIMIT 1")
+    @Query("SELECT p.id AS planId, v.id AS planVersionId, d.id AS dayId, d.dateEpochDay AS dateEpochDay, m.id AS mealId, m.dayId AS mealDayId, m.sortOrder AS mealSortOrder, m.type AS mealType, m.title AS mealTitle, m.timeMinutes AS mealTimeMinutes, m.kcal AS mealKcal, m.proteinG AS mealProteinG, m.carbsG AS mealCarbsG, m.fatG AS mealFatG, m.preparation AS mealPreparation, m.nutritionSource AS mealNutritionSource FROM meals m INNER JOIN meal_plan_days d ON d.id = m.dayId INNER JOIN meal_plan_versions v ON v.id = d.versionId INNER JOIN meal_plans p ON p.id = v.planId WHERE m.id = :mealId AND p.profileId = :profileId LIMIT 1")
     suspend fun getMealContext(profileId: Long, mealId: Long): MealContextRow?
 
     @Query("SELECT i.* FROM meal_ingredients i INNER JOIN meals m ON m.id = i.mealId INNER JOIN meal_plan_days d ON d.id = m.dayId INNER JOIN meal_plan_versions v ON v.id = d.versionId INNER JOIN meal_plans p ON p.id = v.planId WHERE i.mealId = :mealId AND p.profileId = :profileId ORDER BY i.sortOrder ASC, i.id ASC")
@@ -205,6 +220,7 @@ data class MealContextRow(
     val mealCarbsG: Float?,
     val mealFatG: Float?,
     val mealPreparation: String?,
+    val mealNutritionSource: String = "DECLARED",
 )
 
 data class HistoricalMealRow(
@@ -224,6 +240,7 @@ data class HistoricalMealRow(
     val mealCarbsG: Float?,
     val mealFatG: Float?,
     val mealPreparation: String?,
+    val mealNutritionSource: String = "DECLARED",
 )
 
 @Dao

@@ -137,6 +137,8 @@ data class MealPlanVersionEntity(
     val appValidationJson: String? = null,
     /** Impronta degli input nutrizionali alla generazione (UX7); null per i piani precedenti alla migrazione 21. */
     val inputsFingerprint: String? = null,
+    /** Versione del catalogo alimenti usata per calcolare i macro (migrazione 22); null per i piani precedenti. */
+    val catalogVersion: String? = null,
 )
 
 @Entity(
@@ -188,6 +190,8 @@ data class MealEntity(
     val carbsG: Float?,
     val fatG: Float?,
     val preparation: String?,
+    /** DECLARED = macro dichiarati dal modello (piani storici); COMPUTED = calcolati dal catalogo (migrazione 22). */
+    @ColumnInfo(defaultValue = "'DECLARED'") val nutritionSource: String = "DECLARED",
 )
 
 @Entity(
@@ -211,6 +215,15 @@ data class MealIngredientEntity(
     val nutritionConfidence: String?,
     val category: String?,
     val sortOrder: Int,
+    /** Snapshot nutrizionale per ingrediente (migrazione 22); tutti null per i piani precedenti. */
+    val foodId: String? = null,
+    val grams: Float? = null,
+    val kcal: Float? = null,
+    val proteinG: Float? = null,
+    val carbsG: Float? = null,
+    val fatG: Float? = null,
+    val fiberG: Float? = null,
+    val sodiumMg: Float? = null,
 )
 
 @Entity(
@@ -302,4 +315,25 @@ data class BodyExpectationGoalEntity(
     val note: String?,
     val createdAtEpochMillis: Long,
     val updatedAtEpochMillis: Long,
+)
+
+/** Alimento inserito dall'utente (migrazione 22); valori per 100 g, sempre marcati come stima. */
+@Entity(
+    tableName = "custom_foods",
+    indices = [Index("profileId")],
+)
+data class CustomFoodEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val profileId: Long,
+    val name: String,
+    val kcalPer100: Float,
+    val proteinPer100: Float,
+    val carbsPer100: Float,
+    val fatPer100: Float,
+    val fiberPer100: Float? = null,
+    val sodiumMgPer100: Float? = null,
+    val createdAtEpochMillis: Long,
+    val notes: String? = null,
+    @ColumnInfo(defaultValue = "'USER'") val source: String = "USER",
+    @ColumnInfo(defaultValue = "'ESTIMATED'") val confidence: String = "ESTIMATED",
 )

@@ -25,8 +25,9 @@ import com.myfitai.app.data.local.entity.*
         WeeklyReviewEntity::class,
         BodyExpectationGoalEntity::class,
         AiUsageRecordEntity::class,
+        CustomFoodEntity::class,
     ],
-    version = 21,
+    version = 22,
     exportSchema = true,
 )
 abstract class MyFitAiDatabase : RoomDatabase() {
@@ -41,6 +42,7 @@ abstract class MyFitAiDatabase : RoomDatabase() {
     abstract fun bodyExpectationGoalDao(): BodyExpectationGoalDao
     abstract fun aiUsageDao(): AiUsageDao
     abstract fun calorieRecoveryQueryDao(): CalorieRecoveryQueryDao
+    abstract fun customFoodDao(): CustomFoodDao
 
     companion object {
         const val DATABASE_NAME = "myfitai.db"
@@ -398,6 +400,42 @@ object DatabaseMigrations {
         }
     }
 
+    /**
+     * Macro da database alimenti (v22, solo additiva): snapshot nutrizionale nullable per ingrediente, origine dei macro del pasto
+     * ('DECLARED' per tutti i piani esistenti), versione del catalogo sulla versione del piano e tabella degli alimenti
+     * dell'utente. Nessuna riga esistente viene riscritta: i piani storici restano leggibili invariati.
+     */
+    val MIGRATION_21_22 = object : Migration(21, 22) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE meal_ingredients ADD COLUMN foodId TEXT")
+            db.execSQL("ALTER TABLE meal_ingredients ADD COLUMN grams REAL")
+            db.execSQL("ALTER TABLE meal_ingredients ADD COLUMN kcal REAL")
+            db.execSQL("ALTER TABLE meal_ingredients ADD COLUMN proteinG REAL")
+            db.execSQL("ALTER TABLE meal_ingredients ADD COLUMN carbsG REAL")
+            db.execSQL("ALTER TABLE meal_ingredients ADD COLUMN fatG REAL")
+            db.execSQL("ALTER TABLE meal_ingredients ADD COLUMN fiberG REAL")
+            db.execSQL("ALTER TABLE meal_ingredients ADD COLUMN sodiumMg REAL")
+            db.execSQL("ALTER TABLE meals ADD COLUMN nutritionSource TEXT NOT NULL DEFAULT 'DECLARED'")
+            db.execSQL("ALTER TABLE meal_plan_versions ADD COLUMN catalogVersion TEXT")
+            db.execSQL("""CREATE TABLE IF NOT EXISTS custom_foods (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                profileId INTEGER NOT NULL,
+                name TEXT NOT NULL,
+                kcalPer100 REAL NOT NULL,
+                proteinPer100 REAL NOT NULL,
+                carbsPer100 REAL NOT NULL,
+                fatPer100 REAL NOT NULL,
+                fiberPer100 REAL,
+                sodiumMgPer100 REAL,
+                createdAtEpochMillis INTEGER NOT NULL,
+                notes TEXT,
+                source TEXT NOT NULL DEFAULT 'USER',
+                confidence TEXT NOT NULL DEFAULT 'ESTIMATED'
+            )""".trimIndent())
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_custom_foods_profileId ON custom_foods(profileId)")
+        }
+    }
+
     private fun addMissingColumns(db: SupportSQLiteDatabase, table: String, definitions: List<String>) {
         val existing = mutableSetOf<String>()
         db.query("PRAGMA table_info($table)").use { cursor ->
@@ -431,5 +469,6 @@ object DatabaseMigrations {
         MIGRATION_18_19,
         MIGRATION_19_20,
         MIGRATION_20_21,
+        MIGRATION_21_22,
     )
 }

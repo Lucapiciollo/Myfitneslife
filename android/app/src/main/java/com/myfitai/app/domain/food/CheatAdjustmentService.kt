@@ -323,7 +323,17 @@ class CheatAdjustmentService(
         carbsG = meal.carbsG?.times(scale.toFloat()),
         fatG = meal.fatG?.times(scale.toFloat()),
         preparation = meal.preparation,
-        ingredients = meal.ingredients.map { IngredientDraft(it.name, it.quantity, it.unit, it.displayDose.orEmpty(), it.weightState.orEmpty(), it.nutritionConfidence.orEmpty(), it.category.orEmpty()) },
+        ingredients = meal.ingredients.map {
+            // Stessa copia dell'unico mapper (snapshot incluso); i testi mancanti restano vuoti come prima.
+            it.toDraft().copy(
+                displayDose = it.displayDose.orEmpty(),
+                weightState = it.weightState.orEmpty(),
+                nutritionConfidence = it.nutritionConfidence.orEmpty(),
+                category = it.category.orEmpty(),
+            )
+        },
+        // I totali del pasto sono scalati: non coincidono piu con la somma dello snapshot, quindi tornano "dichiarati".
+        nutritionSource = FoodMeal.NUTRITION_SOURCE_DECLARED,
     )
 
     private fun toDraft(day: FoodPlanDay) = DayDraft(
@@ -342,10 +352,7 @@ class CheatAdjustmentService(
         hydrationNote = day.hydrationNote,
     )
 
-    private fun toDraft(meal: FoodMeal) = MealDraft(
-        meal.type, meal.title, meal.timeMinutes, meal.kcal, meal.proteinG, meal.carbsG, meal.fatG, meal.preparation,
-        meal.ingredients.map { IngredientDraft(it.name, it.quantity, it.unit, it.displayDose, it.weightState, it.nutritionConfidence, it.category) },
-    )
+    private fun toDraft(meal: FoodMeal): MealDraft = meal.toDraft()
 
     private fun FoodSupplement.toDraft() = SupplementDraft(kind, name, dose, unit, timeMinutes, kcal, proteinG, carbsG, fatG, notes)
     private fun sumOrNull(values: List<Float?>): Float? = values.filterNotNull().takeIf { it.isNotEmpty() }?.sum()
