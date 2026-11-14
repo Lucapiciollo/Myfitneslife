@@ -96,14 +96,14 @@ class HomeCaloriesLayoutDeviceTest {
                 card.getDrawingRect(rect)
                 scroll.offsetDescendantRectToMyCoords(card, rect)
                 scroll.scrollTo(0, rect.top)
-                // UX5a: BMR, BMR da BIA and TDEE sit in "Dettagli del calcolo": open it to measure them like the visible values.
-                activity.findViewById<View>(R.id.caloriesDetailsToggle).performClick()
+                // "Dettagli del calcolo" (BMR, BMR da BIA, TDEE) is open by default: no tap needed.
+                Unit
             }
             Thread.sleep(600L)
             instrumentation.waitForIdleSync()
             device.takeScreenshot(File(instrumentation.targetContext.getExternalFilesDir(null), "qa-artifacts/home-calorie-ring.png").apply { parentFile?.mkdirs() })
             scenario.onActivity { activity ->
-                assertTrue("details open after the tap", activity.findViewById<View>(R.id.caloriesDetailsContainer).visibility == View.VISIBLE)
+                assertTrue("details open by default", activity.findViewById<View>(R.id.caloriesDetailsContainer).visibility == View.VISIBLE)
                 val biaVisible = activity.findViewById<View>(R.id.caloriesBiaBmrRow).visibility == View.VISIBLE
                 val ids = listOf(
                     R.id.caloriesModeText, R.id.caloriesBmrValue, R.id.caloriesTdeeValue,
