@@ -550,4 +550,6 @@
     <string name="food_ux5b_profile_target">Obiettivo da profilo: %1$s</string>
     <string name="weekly_review_ux5b_plan_stale_note">Il piano è precedente al cambio di profilo</string>
     <string name="export_ux5b_plan_stale_note">Piano non aggiornato al profilo attuale</string>
+    <!-- UX12: fabbisogno base senza sport -->
+    <string name="home_ux12_base_no_sport">Fabbisogno base, senza sport (BMR × 1,20)</string>
 </resources>

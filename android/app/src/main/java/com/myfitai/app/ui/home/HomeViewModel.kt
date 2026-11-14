@@ -79,6 +79,8 @@ class HomeViewModel(
         val bmr: Int? = null,
         val biaBmr: Int? = null,
         val tdee: Int? = null,
+        /** BMR x fattore sedentario: fabbisogno senza sport, mostrato nei dettagli del calcolo. */
+        val baseNoSport: Int? = null,
         val target: Int? = null,
         val goalLabel: String? = null,
         val energyPercent: Int? = null,
@@ -380,6 +382,7 @@ class HomeViewModel(
             bmr = metrics.bmrKcal?.let { Math.round(it).toInt() },
             biaBmr = latestBia?.bmrKcal?.let { Math.round(it).toInt() },
             tdee = tdeeInt,
+            baseNoSport = com.myfitai.app.domain.display.BaseCalories.withoutSport(metrics.bmrKcal),
             target = targetInt,
             proteinTargetG = metrics.proteinG,
             planTarget = targetInt,

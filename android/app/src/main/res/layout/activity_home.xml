@@ -559,6 +559,31 @@
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
+                                android:text="@string/home_ux12_base_no_sport" />
+                            <TextView
+                                android:id="@+id/caloriesBaseNoSportValue"
+                                style="@style/Text.MyFitAI.CardTitle"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="@dimen/space_12"
+                                android:gravity="end"
+                                android:text="-" />
+                        </LinearLayout>
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="@dimen/divider_thickness"
+                            android:background="@color/divider" />
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:paddingVertical="@dimen/space_8">
+                            <TextView
+                                style="@style/Text.MyFitAI.Body"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
                                 android:text="Consumo giornaliero (TDEE)" />
                             <TextView
                                 android:id="@+id/caloriesTdeeValue"
