@@ -99,8 +99,8 @@ class HomeActivity : BaseShellActivity() {
     private var currentCalories: HomeViewModel.CalorieState? = null
     private var renderedPlanUpdatePending: Boolean? = null
     private var currentUpcomingMeals: List<HomeViewModel.NextMealState> = emptyList()
-    /** "Dettagli del calcolo" open/closed: kept only while this screen instance lives (never persisted). */
-    private var calorieDetailsExpanded = false
+    /** "Dettagli del calcolo" open/closed: open by default (basic needs BMR/TDEE stay in view), kept only while this screen instance lives. */
+    private var calorieDetailsExpanded = true
     private val motionVisibilityTargets = mutableMapOf<Int, Boolean>()
     private var dashboardMetricPresentations by mutableStateOf(emptyList<DashboardMetricPresentation>())
 
@@ -352,7 +352,7 @@ class HomeActivity : BaseShellActivity() {
         renderCalorieDetails(animate = false)
     }
 
-    /** BMR, BMR da BIA and TDEE live here, collapsed by default; the values are the same as before and stay in the explanation dialog. */
+    /** BMR, BMR da BIA and TDEE live here, open by default and collapsible; the values are the same as before and stay in the explanation dialog. */
     private fun renderCalorieDetails(animate: Boolean) {
         val expanded = calorieDetailsExpanded
         UiMotion.reveal(findViewById(R.id.caloriesDetailsContainer), expanded, animateChange = animate)
