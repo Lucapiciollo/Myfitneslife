@@ -433,6 +433,7 @@ class AiSettingsActivity : BaseShellActivity() {
             AiCredentialProvider.GEMINI -> "Gemini"
             AiCredentialProvider.OPENAI -> "OpenAI"
             AiCredentialProvider.GROK -> "Grok"
+            AiCredentialProvider.GROQ -> "Groq"
         }
         val tail = "La chiave precedente non è stata modificata."
         return when (error) {

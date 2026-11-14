@@ -33,6 +33,27 @@ object AiModelConfig {
         GROK_4_7,
     )
 
+    // Groq (groq.com, experimental, off by default). Model IDs, strict structured outputs and modalities taken from
+    // console.groq.com/docs/models, /docs/structured-outputs and /docs/vision on 14/11/2026.
+    const val GROQ_GPT_OSS_20B = "openai/gpt-oss-20b"
+    const val GROQ_GPT_OSS_120B = "openai/gpt-oss-120b"
+    const val GROQ_QWEN_38_27B = "qwen/qwen3.8-27b"
+
+    /** Cheapest Groq model with `strict: true` structured outputs (production, text only): default when Groq is enabled. */
+    const val GROQ = GROQ_GPT_OSS_20B
+
+    val GROQ_SELECTABLE = listOf(
+        GROQ_GPT_OSS_20B,
+        GROQ_GPT_OSS_120B,
+        GROQ_QWEN_38_27B,
+    )
+
+    /**
+     * Only the Groq models documented with image input (docs/vision: qwen/qwen3.8-27b). The gpt-oss models are text-only
+     * (input: Text), so a photo request must never be sent to them: callers that offer photo features check this first.
+     */
+    fun groqSupportsImages(model: String): Boolean = model == GROQ_QWEN_38_27B
+
     val GEMINI_SELECTABLE = listOf(
         GEMINI_25_FLASH,
         GEMINI_35_FLASH_LITE,
@@ -63,6 +84,9 @@ object AiModelConfig {
         OPENAI_GPT_4O_MINI -> "GPT-4o mini"
         GROK_4_3 -> "Grok 4.3"
         GROK_4_7 -> "Grok 4.7"
+        GROQ_GPT_OSS_20B -> "GPT-OSS 20B"
+        GROQ_GPT_OSS_120B -> "GPT-OSS 120B"
+        GROQ_QWEN_38_27B -> "Qwen 3.8 27B (anteprima)"
         else -> model
     }
 
