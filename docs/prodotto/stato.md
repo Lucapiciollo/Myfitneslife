@@ -448,3 +448,5 @@ Dopo: Flag L3 = BIA Coach spiega i flag (non li decide) + claim assistente.
 - Utente (14/11): 'non ha blocchi' = la madre non ha patologie/farmaci da dichiarare: nessun blocco specifico per lei; resta rete di sicurezza generale (eta<18, gravidanza, DCA) da fare dopo. Passo 2 (macro dal database alimentare): avviato progetto di design (architetto-software, sola lettura, background): ses vedi esito.
 
 - Progetto macro da database CONCLUSO (ses_e25801ecfffeWeVWZk4ga8gVad): docs/PROGETTO_MACRO_DA_DATABASE_2026-11-14.md. Lotti L0-L8, prima spike S1 (JVM, sola lettura). Nessuna modifica al codice. Decisioni utente in attesa (validatore B consigliata, fonte USDA+CREA, ecc.).
+
+| senior-developer | Spike S1: macro dichiarati vs calcolati (USDA mini-catalogo, backup v2 reali in sola lettura, riparabilita), solo tools/spike-s1 + docs | (vedi esito) | spike/s1-macro-da-database (da develop) |
