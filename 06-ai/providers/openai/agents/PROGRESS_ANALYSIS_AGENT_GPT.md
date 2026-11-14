@@ -40,3 +40,6 @@ Massimo 6 record `P`. `S` massimo 18 parole. `V` notes massimo 8 parole. Nessun 
 
 ## Token policy
 Non ripetere input, non produrre JSON descrittivo, non spiegare i codici nell'output. Gemini e OpenAI usano lo stesso contratto compatto provider-neutral.
+
+## Flag corporei calcolati dall'app (FLAG_APP)
+Se l'input contiene la riga `FLAG_APP` valgono le regole di `06-ai/providers/shared/BODY_FLAGS_EXPLAIN_RULES.md`, identiche per Gemini e OpenAI: l'agente spiega soltanto i flag decisi dal codice (`BodyFlagEngine`), non li crea, non li declassa e non fa diagnosi. Oggi la riga e inviata al BIA Progress Coach; il protocollo compatto `PA1` non la riceve ancora e non cambia.

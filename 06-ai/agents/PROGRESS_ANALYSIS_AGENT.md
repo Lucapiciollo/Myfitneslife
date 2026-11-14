@@ -58,3 +58,6 @@ Input posizionale e output a codici sono vincolanti per ridurre il costo. Non ri
 
 ## Persistenza e scheduling
 Solo un'analisi validata aggiorna `lastSuccess`, classificazione, confidenza, sintesi, provider e modello. `lastSuccess + intervallo configurato` determina la prossima esecuzione mostrata nel tab. Errori o dati insufficienti non spostano l'ultima esecuzione valida.
+
+## Flag corporei calcolati dall'app (FLAG_APP)
+Se l'input contiene la riga `FLAG_APP` valgono le regole di `06-ai/providers/shared/BODY_FLAGS_EXPLAIN_RULES.md`, identiche per Gemini e OpenAI: l'agente spiega soltanto i flag decisi dal codice (`BodyFlagEngine`), non li crea, non li declassa e non fa diagnosi. Oggi la riga e inviata al BIA Progress Coach; il protocollo compatto `PA1` non la riceve ancora e non cambia.

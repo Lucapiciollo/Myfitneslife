@@ -204,6 +204,12 @@ object BiaAnalysisContract {
          * must appear in it ([BiaNumberGuard]); null keeps the check off (old saved results, unit tests).
          */
         val contextText: String? = null,
+        /**
+         * Flags decided by the app and sent in `FLAG_APP` ([BodyFlagCoach]). When set, the text is also rejected if it uses
+         * a diagnostic or prescriptive term, cites a flag code that was not passed, or states a body signal (waist,
+         * visceral fat, muscle, rapid weight loss, BMI) without the matching flag. Null keeps these checks off.
+         */
+        val allowedFlagCodes: Set<BodyFlagCode>? = null,
     )
 
     /**
@@ -249,6 +255,11 @@ object BiaAnalysisContract {
         ) + value.comparisons.flatMap { listOf(it.indicator, it.interpretation) } +
             value.historical.map { it.summary } + value.scenarios.map { it.assumption } +
             value.positives + value.monitor + value.actions
+        // Flags: the model only explains what the app decided. The safety note (D) is exempt from the "signal without flag" rule.
+        context.allowedFlagCodes?.let { allowedFlags ->
+            val violation = BodyFlagCoach.violation(numericText(value), text.filter { it !== value.safetyNote }, allowedFlags)
+            violation?.let { throw IllegalArgumentException(it) }
+        }
         require(!UnsupportedClaimGuard.containsAffirmed(text, unsupportedClaimTerms)) { "UNSUPPORTED_MEDICAL_OR_CAUSAL_CLAIM" }
         require(value.comparisons.size <= 12) { "TOO_MANY_COMPARISONS" }
         require(value.historical.size <= 4) { "TOO_MANY_HISTORICAL_PERIODS" }
@@ -580,7 +591,9 @@ object BiaAnalysisPresentation {
      */
     fun safetyNoteToShow(note: String): String? {
         val words = plainWords(note)
-        if (words.isEmpty() || words == plainWords(BiaAnalysisAiJobHandler.DEFAULT_SAFETY_NOTE)) return null
+        if (words.isEmpty() || words == plainWords(BiaAnalysisAiJobHandler.DEFAULT_SAFETY_NOTE) ||
+            words == plainWords(BiaAnalysisAiJobHandler.LEGACY_SAFETY_NOTE)
+        ) return null
         val neutral = neutralSafetyStarts.any { words.startsWith(it) } && words.split(' ').size <= 8 && " ma " !in " $words "
         return if (neutral) null else displayText(note.trim())
     }
@@ -683,7 +696,7 @@ object BiaNumberGuard {
 
     private const val NUM = "\\d{1,3}(?:\\.\\d{3})+(?:,\\d+)?|\\d+(?:[.,]\\d+)?"
     private val quantityRegex = Regex(
-        "(?<![\\p{L}\\p{N}.,])($NUM)(?:\\s*[-\\u2013\\u2014]\\s*($NUM))?\\s*(kcal|kg|%|g(?![\\p{L}]))",
+        "(?<![\\p{L}\\p{N}.,])($NUM)(?:\\s*[-\\u2013\\u2014]\\s*($NUM))?\\s*(kcal|kg|cm|%|g(?![\\p{L}]))",
         RegexOption.IGNORE_CASE,
     )
     private val contextNumberRegex = Regex("\\d+(?:[.,]\\d+)?")

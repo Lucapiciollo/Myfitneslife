@@ -29,6 +29,8 @@ data class BodyFlagReport(
     val hint: BodyFlagHint?,
     val biaTrendNeedsSameConditions: Boolean,
     val thresholdsVersion: String,
+    /** Regole non valutate e motivo interno (mai testo per l'utente): serve al BIA Coach per dire "nessun flag: motivo". */
+    val skipped: List<BodyFlagSkip> = emptyList(),
 )
 
 /**
@@ -78,6 +80,7 @@ class BodyFlagService(
                 hint = hint(evaluation, needsSameConditions),
                 biaTrendNeedsSameConditions = needsSameConditions,
                 thresholdsVersion = evaluation.thresholdsVersion,
+                skipped = evaluation.skipped,
             )
         }
 

@@ -68,6 +68,9 @@ object AiContractRegistry {
         "BIA_TEXT_ENUM_TAIL" to "A G or R comment ends with a reliability value or a separator. Write the comment as plain Italian text and put HIGH, MEDIUM or LOW only as the last field of the record, never inside the comment.",
         "BIA_RELIABILITY_MISSING" to "Add the record L|<HIGH, MEDIUM or LOW>|<short reason>.",
         "THREE_ACTIONS_REQUIRED" to "Write exactly three X records (priority actions), each a short Italian sentence.",
+        "BODY_FLAG_SIGNAL_NOT_PROVIDED" to "The text states a body signal that is not in the FLAG_APP line. Explain only the flags listed in FLAG_APP; if there is none, say so in one neutral sentence and add no other signal.",
+        "BODY_FLAG_CODE_NOT_PROVIDED" to "The text names a flag that is not in the FLAG_APP line. Explain only the flags listed in FLAG_APP and never write flag codes in the text.",
+        "BODY_FLAG_FORBIDDEN_TERM" to "The text uses a diagnostic or prescriptive term. Do not diagnose and do not give therapeutic advice or dosages: write a signal to discuss with a doctor.",
     )
 
     /**

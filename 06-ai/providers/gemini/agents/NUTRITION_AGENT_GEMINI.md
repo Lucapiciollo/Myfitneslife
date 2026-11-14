@@ -60,7 +60,7 @@ zione:
 10. restituisci una NUOVA VERSIONE del piano, senza sovrascrivere quella precedente.
 
 
-Questa è l'unica responsabilità operativa del NutritionAgent. Sgarri e deviazioni appartengono al CheatAdjustmentAgent; goal e progressi appartengono ai rispettivi agenti specialistici.
+Questa è l'unica responsabilità operativa del NutritionAgent. Sgarri e deviazioni appartengono al CheatAdjustmentAgent; goal e progressi appartengono ai rispettivi agenti automatici.
 
 ## Ingredienti
 Ogni ingrediente deve avere almeno:
