@@ -134,27 +134,6 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/space_4"
                         android:text="@string/ai_grok_data_notice" />
-                    <LinearLayout
-                        android:id="@+id/aiGrokMissingKeyGroup"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/space_8"
-                        android:orientation="vertical"
-                        android:visibility="gone">
-                        <TextView
-                            style="@style/Text.MyFitAI.SettingsStatus"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="@string/ai_grok_key_needed_hint" />
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/aiGrokGoToKeyButton"
-                            style="@style/Widget.MyFitAI.Button.Outlined"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="@dimen/space_8"
-                            android:contentDescription="@string/ai_grok_key_needed_action_cd"
-                            android:text="@string/ai_grok_key_needed_action" />
-                    </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

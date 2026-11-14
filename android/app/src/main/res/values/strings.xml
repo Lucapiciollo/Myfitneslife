@@ -592,8 +592,4 @@
     <string name="food_ux5b_profile_target">Obiettivo da profilo: %1$s</string>
     <string name="weekly_review_ux5b_plan_stale_note">Il piano è precedente al cambio di profilo</string>
     <string name="export_ux5b_plan_stale_note">Piano non aggiornato al profilo attuale</string>
-    <!-- UX11: la chiave Grok va raggiunta dall'interruttore -->
-    <string name="ai_grok_key_needed_hint">Grok non ha ancora una chiave: senza, non verrà usato. Inseriscila nel campo «Chiave API Grok (xAI)» nella sezione Chiavi API.</string>
-    <string name="ai_grok_key_needed_action">Vai al campo della chiave</string>
-    <string name="ai_grok_key_needed_action_cd">Porta al campo in cui inserire la chiave API Grok di xAI</string>
 </resources>
