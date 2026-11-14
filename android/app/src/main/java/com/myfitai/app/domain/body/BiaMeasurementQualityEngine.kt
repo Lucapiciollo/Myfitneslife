@@ -100,6 +100,13 @@ object BiaMeasurementQualityEngine {
         return Result(level, score.coerceIn(0, 100), reasons, summary)
     }
 
+    /**
+     * Unica definizione di "comparabilita degradata": livello basso o condizioni di misura dichiarate diverse.
+     * Usata dal BIA Coach (soglie di rumore raddoppiate) e dal motore di segnalazioni (misura scartata).
+     */
+    fun isDegraded(result: Result?): Boolean =
+        result?.let { it.level == Level.LOW || it.reasons.any { reason -> reason.startsWith("Condizione diversa") } } ?: false
+
     fun label(level: Level): String = when (level) {
         Level.HIGH -> "Alta"
         Level.MEDIUM -> "Media"
