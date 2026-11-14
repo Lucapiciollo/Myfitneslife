@@ -6,6 +6,7 @@ import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.repository.DayDraft
 import com.myfitai.app.data.repository.IngredientDraft
 import com.myfitai.app.data.repository.MealDraft
+import com.myfitai.app.data.repository.toDraft
 import com.myfitai.app.data.repository.MealPlanRepository
 import com.myfitai.app.data.repository.PlanVersionDraft
 import com.myfitai.app.data.repository.SupplementDraft
@@ -210,9 +211,8 @@ class MealAlternativeService(
             carbsG = historyMeal.carbsG,
             fatG = historyMeal.fatG,
             preparation = historyMeal.preparation,
-            ingredients = historyMeal.ingredients.map { ingredient ->
-                IngredientDraft(ingredient.name, ingredient.quantity, ingredient.unit, ingredient.displayDose, ingredient.weightState, ingredient.nutritionConfidence, ingredient.category)
-            },
+            ingredients = historyMeal.ingredients.map { it.toDraft() },
+            // kcal viene riallineata al target del pasto sostituito: i totali non sono piu la somma dello snapshot (resta DECLARED).
         )
         val days = latest.version.days.map { day ->
             val meals = day.meals.map { meal -> if (meal.id == sourceMeal.id) replacement else meal.toDraft() }
@@ -366,11 +366,7 @@ class MealAlternativeService(
         return preferred - disliked
     }
 
-    private fun FoodMeal.toDraft() = MealDraft(
-        type, title, timeMinutes, kcal, proteinG, carbsG, fatG, preparation,
-        ingredients.map { IngredientDraft(it.name, it.quantity, it.unit, it.displayDose, it.weightState, it.nutritionConfidence, it.category) },
-    )
-
+    // Un'alternativa generata arriva dal contratto (senza snapshot): resta "dichiarata" finche il lotto del contratto non la calcola.
     private fun FoodSupplement.toDraft() = SupplementDraft(kind, name, dose, unit, timeMinutes, kcal, proteinG, carbsG, fatG, notes)
     private fun sumOrZero(values: List<Float?>): Double = values.filterNotNull().sumOf { it.toDouble() }
 

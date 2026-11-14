@@ -24,6 +24,8 @@ data class FoodPlanVersion(
     val days: List<FoodPlanDay>,
     /** Impronta degli input nutrizionali con cui il piano e stato generato; null = piano precedente alla UX7. */
     val inputsFingerprint: String? = null,
+    /** Versione del catalogo alimenti usata per calcolare i macro; null per i piani dichiarati dal modello. */
+    val catalogVersion: String? = null,
 )
 
 data class FoodPlanDay(
@@ -69,12 +71,20 @@ data class FoodMeal(
     val fatG: Float?,
     val preparation: String?,
     val ingredients: List<FoodIngredient>,
-)
+    /** DECLARED = macro dichiarati dal modello (piani storici); COMPUTED = calcolati dal catalogo. */
+    val nutritionSource: String = NUTRITION_SOURCE_DECLARED,
+) {
+    companion object {
+        const val NUTRITION_SOURCE_DECLARED = "DECLARED"
+        const val NUTRITION_SOURCE_COMPUTED = "COMPUTED"
+    }
+}
 
 data class FoodIngredient(
     val id: Long,
     val mealId: Long,
     val name: String,
+    /** Grammi (o millilitri se unit = 'ml'): la semantica storica resta valida anche per i nuovi ingredienti. */
     val quantity: Float,
     val unit: String,
     val displayDose: String?,
@@ -82,4 +92,13 @@ data class FoodIngredient(
     val nutritionConfidence: String?,
     val category: String?,
     val sortOrder: Int,
+    /** Snapshot nutrizionale dal catalogo; tutti null per gli ingredienti dei piani precedenti. */
+    val foodId: String? = null,
+    val grams: Float? = null,
+    val kcal: Float? = null,
+    val proteinG: Float? = null,
+    val carbsG: Float? = null,
+    val fatG: Float? = null,
+    val fiberG: Float? = null,
+    val sodiumMg: Float? = null,
 )

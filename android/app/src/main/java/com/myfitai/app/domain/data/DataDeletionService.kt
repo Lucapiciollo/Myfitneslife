@@ -101,6 +101,7 @@ class DataDeletionService(
         db.foodConsumptionDao().deleteByProfile(profileId)
         db.cheatEntryDao().deleteByProfile(profileId)
         db.weeklyReviewDao().deleteByProfile(profileId)
+        db.customFoodDao().deleteByProfile(profileId)
     }
 
     private fun cancelProfileJobs(profileId: Long) {
