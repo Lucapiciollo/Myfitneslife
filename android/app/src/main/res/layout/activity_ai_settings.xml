@@ -99,62 +99,6 @@
                         android:layout_marginTop="@dimen/space_8"
                         android:textAllCaps="false"
                         android:visibility="gone" />
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="@dimen/divider_thickness"
-                        android:layout_marginTop="@dimen/space_12"
-                        android:background="@color/divider" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/space_8"
-                        android:gravity="center_vertical"
-                        android:minHeight="@dimen/control_min_height"
-                        android:orientation="horizontal">
-                        <TextView
-                            android:id="@+id/aiGrokSwitchLabel"
-                            style="@style/Text.MyFitAI.SettingsLabel"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="@string/ai_grok_switch_label" />
-                        <com.google.android.material.materialswitch.MaterialSwitch
-                            android:id="@+id/aiGrokSwitch"
-                            style="@style/Widget.MyFitAI.SettingsSwitch"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:contentDescription="@string/ai_grok_switch_cd" />
-                    </LinearLayout>
-                    <TextView
-                        android:id="@+id/aiGrokNotice"
-                        style="@style/Text.MyFitAI.SettingsDescription"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/space_4"
-                        android:text="@string/ai_grok_data_notice" />
-                    <LinearLayout
-                        android:id="@+id/aiGrokMissingKeyGroup"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/space_8"
-                        android:orientation="vertical"
-                        android:visibility="gone">
-                        <TextView
-                            style="@style/Text.MyFitAI.SettingsStatus"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="@string/ai_grok_key_needed_hint" />
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/aiGrokGoToKeyButton"
-                            style="@style/Widget.MyFitAI.Button.Outlined"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="@dimen/space_8"
-                            android:contentDescription="@string/ai_grok_key_needed_action_cd"
-                            android:text="@string/ai_grok_key_needed_action" />
-                    </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -351,105 +295,6 @@
                         </LinearLayout>
                     </LinearLayout>
 
-                    <LinearLayout
-                        android:id="@+id/grokKeyGroup"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:visibility="gone">
-                        <View
-                            android:layout_width="match_parent"
-                            android:layout_height="@dimen/divider_thickness"
-                            android:layout_marginTop="@dimen/space_12"
-                            android:background="@color/divider" />
-                        <LinearLayout
-                            android:id="@+id/grokKeyContainer"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="@dimen/space_12"
-                            android:orientation="vertical">
-                            <TextView
-                                style="@style/Text.MyFitAI.SettingsLabel"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:text="@string/ai_grok_key_label" />
-                            <TextView
-                                android:id="@+id/grokKeyStatusText"
-                                style="@style/Text.MyFitAI.SettingsStatus"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="@dimen/space_2"
-                                android:text="@string/ai_grok_key_missing" />
-                            <com.google.android.material.textfield.TextInputLayout
-                                android:id="@+id/grokInputLayout"
-                                style="@style/Widget.MyFitAI.InputReadableCompact"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="@dimen/space_8"
-                                android:hint="@string/ai_key_hint_grok"
-                                app:endIconMode="password_toggle"
-                                app:passwordToggleTint="@color/text_secondary">
-                                <com.google.android.material.textfield.TextInputEditText
-                                    android:id="@+id/grokApiKeyInput"
-                                    style="@style/Widget.MyFitAI.InputEditTextReadableCompact"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="wrap_content"
-                                    android:contentDescription="@string/ai_grok_key_input_cd"
-                                    android:importantForAutofill="no"
-                                    android:inputType="textPassword"
-                                    android:singleLine="true" />
-                            </com.google.android.material.textfield.TextInputLayout>
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="@dimen/space_8"
-                                android:orientation="horizontal">
-                                <com.google.android.material.button.MaterialButton
-                                    android:id="@+id/pasteGrokKeyButton"
-                                    style="@style/Widget.MyFitAI.SettingsButton.Outlined"
-                                    android:layout_width="0dp"
-                                    android:layout_height="@dimen/button_secondary_min_height"
-                                    android:layout_marginEnd="@dimen/space_4"
-                                    android:layout_weight="1"
-                                    android:text="Incolla"
-                                    android:textAllCaps="false" />
-                                <com.google.android.material.button.MaterialButton
-                                    android:id="@+id/saveGrokKeyButton"
-                                    style="@style/Widget.MyFitAI.SettingsButton.Primary"
-                                    android:layout_width="0dp"
-                                    android:layout_height="@dimen/button_secondary_min_height"
-                                    android:layout_marginStart="@dimen/space_4"
-                                    android:layout_weight="1"
-                                    android:text="Verifica e salva"
-                                    android:textAllCaps="false" />
-                            </LinearLayout>
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="@dimen/space_6"
-                                android:orientation="horizontal">
-                                <com.google.android.material.button.MaterialButton
-                                    android:id="@+id/replaceGrokKeyButton"
-                                    style="@style/Widget.MyFitAI.SettingsButton.Outlined"
-                                    android:layout_width="0dp"
-                                    android:layout_height="@dimen/button_secondary_min_height"
-                                    android:layout_marginEnd="@dimen/space_4"
-                                    android:layout_weight="1"
-                                    android:text="Sostituisci"
-                                    android:textAllCaps="false" />
-                                <com.google.android.material.button.MaterialButton
-                                    android:id="@+id/deleteGrokKeyButton"
-                                    style="@style/Widget.MyFitAI.SettingsButton.Outlined"
-                                    android:layout_width="0dp"
-                                    android:layout_height="@dimen/button_secondary_min_height"
-                                    android:layout_marginStart="@dimen/space_4"
-                                    android:layout_weight="1"
-                                    android:text="Rimuovi"
-                                    android:textAllCaps="false" />
-                            </LinearLayout>
-                        </LinearLayout>
-                    </LinearLayout>
-
                     <TextView
                         style="@style/Text.MyFitAI.SettingsDescription"
                         android:layout_width="match_parent"
@@ -518,35 +363,6 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/space_2" />
-
-                    <LinearLayout
-                        android:id="@+id/grokModelGroup"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:visibility="gone">
-                        <com.google.android.material.textfield.TextInputLayout
-                            style="@style/Widget.MyFitAI.InputDropdown"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="@dimen/space_12"
-                            android:hint="@string/ai_grok_model_hint"
-                            app:endIconMode="dropdown_menu">
-                            <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                                android:id="@+id/grokModelInput"
-                                style="@style/Widget.MyFitAI.InputDropdownText"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:contentDescription="@string/ai_grok_model_cd"
-                                android:inputType="none" />
-                        </com.google.android.material.textfield.TextInputLayout>
-                        <TextView
-                            android:id="@+id/grokModelCostText"
-                            style="@style/Text.MyFitAI.SettingsDescription"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="@dimen/space_2" />
-                    </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

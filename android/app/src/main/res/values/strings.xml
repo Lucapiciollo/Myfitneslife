@@ -461,48 +461,6 @@
     <string name="bia_k4_obsolete_notice">Questa analisi si riferisce a valori poi modificati: rifalla per aggiornarla.</string>
     <string name="bia_k4_obsolete_action">Rifai analisi</string>
 
-    <!-- Grok (xAI): provider sperimentale, spento di default -->
-    <string name="ai_provider_grok_label">Grok (sperimentale)</string>
-    <string name="ai_grok_switch_label">Usa Grok (sperimentale)</string>
-    <string name="ai_grok_switch_cd">Usa Grok sperimentale. Spento di default. Se acceso, i dati delle richieste IA vengono inviati a xAI.</string>
-    <string name="ai_grok_data_notice">Grok è sperimentale ed è spento di default. Se lo attivi, i dati inviati nelle richieste IA (peso, bioimpedenziometria, misure, obiettivi) vanno a xAI. Usa una chiave API senza condivisione dei dati per l\'addestramento e imposta un tetto di spesa nella console xAI.</string>
-    <string name="ai_grok_confirm_title">Attivare Grok (sperimentale)?</string>
-    <string name="ai_grok_confirm_positive">Attiva Grok</string>
-    <string name="ai_grok_enabled_toast">Grok (sperimentale) attivato</string>
-    <string name="ai_provider_grok_missing_key">Grok (sperimentale) è attivo ma manca la chiave: le funzioni IA restano disattivate finché non la inserisci. Non si passa mai in automatico a un altro provider.</string>
-    <string name="ai_key_hint_grok">Chiave API Grok (xAI)</string>
-    <string name="ai_grok_key_input_cd">Chiave API Grok di xAI, campo protetto. Incolla o digita la chiave, poi usa Verifica e salva.</string>
-    <string name="ai_grok_key_label">Grok (sperimentale)</string>
-    <string name="ai_grok_key_missing">Nessuna chiave Grok salvata</string>
-    <string name="ai_grok_key_configured">Grok configurato · chiave nascosta\nModello selezionato: %1$s</string>
-    <string name="ai_grok_model_hint">Modello Grok (sperimentale)</string>
-    <string name="ai_grok_model_cd">Seleziona il modello Grok sperimentale</string>
-    <string name="ai_grok_model_confirm_title">Modello Grok (sperimentale)</string>
-    <string name="ai_grok_price_note">Sotto 200k token di prompt; oltre tutte le tariffe raddoppiano.</string>
-    <string name="ai_grok_cost_title">Costi Grok</string>
-    <string name="ai_grok_cost_loading">Calcolo…</string>
-    <string name="ai_grok_cost_unavailable">Non disponibile · %1$s</string>
-    <string name="ai_grok_cost_month">%1$s / mese</string>
-    <string name="ai_grok_cost_pricing_label">%1$s · %2$s</string>
-    <string name="ai_grok_cost_pricing_manual">prezzi manuali</string>
-    <string name="ai_grok_cost_pricing_listing">listino %1$s</string>
-    <string name="ai_grok_cost_dialog_model">Modello: %1$s</string>
-    <string name="ai_grok_cost_dialog_usage">Oggi: %1$s\nQuesto mese: %2$s\nTotale: %3$s\nRichieste registrate: %4$d</string>
-    <string name="ai_grok_cost_dialog_rates">Input: %1$s / 1M token\nOutput + reasoning: %2$s / 1M token\nCache input: %3$s / 1M token</string>
-    <string name="ai_grok_cost_dialog_source">Fonte: %1$s\nRiferimento listino: %2$s</string>
-    <string name="ai_grok_cost_source_manual">manuale</string>
-    <string name="ai_grok_cost_source_bundled">listino incluso nell\'app</string>
-    <string name="ai_grok_cost_dialog_note">Con un prompt da 200k token in su xAI raddoppia tutte le tariffe: il calcolo lo applica in automatico. La spesa comprende solo le chiamate Grok effettuate da MyFitAI da quando il tracciamento è attivo; non è il saldo ufficiale xAI.</string>
-    <string name="ai_grok_cost_edit">Modifica prezzi</string>
-    <string name="ai_grok_cost_restore">Ripristina listino</string>
-    <string name="ai_grok_cost_restored">Prezzi Grok ripristinati</string>
-    <string name="ai_grok_cost_close">Chiudi</string>
-    <string name="ai_grok_pricing_title">Prezzi Grok manuali</string>
-    <string name="ai_grok_pricing_message">Sono le tariffe sotto 200k token di prompt. I costi già registrati non vengono ricalcolati.</string>
-    <string name="ai_grok_pricing_output_hint">Output USD / 1M token</string>
-    <string name="ai_grok_pricing_invalid">Inserisci un prezzo valido</string>
-    <string name="ai_grok_pricing_save">Salva</string>
-    <string name="ai_grok_pricing_cancel">Annulla</string>
 
     <!-- UX1: Home quick wins -->
     <string name="dashboard_hint_register_meals">Registra i pasti di oggi per vedere quanto ti resta</string>
@@ -592,8 +550,6 @@
     <string name="food_ux5b_profile_target">Obiettivo da profilo: %1$s</string>
     <string name="weekly_review_ux5b_plan_stale_note">Il piano è precedente al cambio di profilo</string>
     <string name="export_ux5b_plan_stale_note">Piano non aggiornato al profilo attuale</string>
-    <!-- UX11: la chiave Grok va raggiunta dall'interruttore -->
-    <string name="ai_grok_key_needed_hint">Grok non ha ancora una chiave: senza, non verrà usato. Inseriscila nel campo «Chiave API Grok (xAI)» nella sezione Chiavi API.</string>
-    <string name="ai_grok_key_needed_action">Vai al campo della chiave</string>
-    <string name="ai_grok_key_needed_action_cd">Porta al campo in cui inserire la chiave API Grok di xAI</string>
+    <!-- UX12: fabbisogno base senza sport -->
+    <string name="home_ux12_base_no_sport">Fabbisogno base, senza sport (BMR × 1,20)</string>
 </resources>

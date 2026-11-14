@@ -686,6 +686,7 @@ class HomeActivity : BaseShellActivity() {
         findViewById<View>(R.id.caloriesBiaBmrRow).visibility = if (hasBiaBmr) View.VISIBLE else View.GONE
         findViewById<View>(R.id.caloriesBiaBmrDivider).visibility = if (hasBiaBmr) View.VISIBLE else View.GONE
         findViewById<TextView>(R.id.caloriesTdeeValue).text = kcal(calories.tdee)
+        findViewById<TextView>(R.id.caloriesBaseNoSportValue).text = kcal(calories.baseNoSport)
         findViewById<TextView>(R.id.caloriesTargetValue).text = kcal(calories.target)
         val caloriesConsumedText = findViewById<TextView>(R.id.caloriesConsumedText)
         caloriesConsumedText.text = calories.consumedKcal?.let { DisplayNumberFormatter.integer(it) } ?: "-"
@@ -806,7 +807,7 @@ class HomeActivity : BaseShellActivity() {
             unsetLabel = "Obiettivo non impostato",
         )
         listOf(
-            R.id.caloriesBmrValue, R.id.caloriesBiaBmrValue, R.id.caloriesTdeeValue, R.id.caloriesTargetValue,
+            R.id.caloriesBmrValue, R.id.caloriesBiaBmrValue, R.id.caloriesBaseNoSportValue, R.id.caloriesTdeeValue, R.id.caloriesTargetValue,
             R.id.caloriesConsumedText, R.id.caloriesConsumedProteinText, R.id.caloriesRemainingText,
         ).forEach { ValueUnitFormatter.apply(findViewById(it)) }
     }
