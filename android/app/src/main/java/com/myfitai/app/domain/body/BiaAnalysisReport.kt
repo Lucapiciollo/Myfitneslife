@@ -45,7 +45,7 @@ object BiaAnalysisReport {
     ) {
         /** Different conditions or low comparability: the noise thresholds are doubled. */
         val degradedComparability: Boolean
-            get() = quality?.let { q -> q.level == BiaMeasurementQualityEngine.Level.LOW || q.reasons.any { it.startsWith("Condizione diversa") } } ?: false
+            get() = BiaMeasurementQualityEngine.isDegraded(quality)
     }
 
     /**
