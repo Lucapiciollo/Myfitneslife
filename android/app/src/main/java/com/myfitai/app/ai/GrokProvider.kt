@@ -6,8 +6,8 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /**
- * EXPERIMENTAL xAI Grok transport (Responses API, OpenAI-compatible). Off by default: [AiProviderType.GROK] is only selected
- * when `AiSettingsStore.grokEnabled` is true and the user chose it. The API key is decrypted only for the
+ * EXPERIMENTAL xAI Grok transport (Responses API, OpenAI-compatible). Off by default: nothing selects
+ * [AiProviderType.GROK] until the provider selector/UI is wired (batch 2). The API key is decrypted only for the
  * duration of generateStructured() and is never stored on this provider, logged or copied into an exception.
  *
  * The canonical JSON contracts are untouched: only the copy of the schema sent to xAI goes through
@@ -54,19 +54,11 @@ class GrokProvider(
     companion object {
         private const val ENDPOINT = "https://api.x.ai/v1/responses"
 
-        /** Default reasoning effort sent to xAI: cheap and fast, enough for deterministic-schema nutrition JSON. */
-        const val DEFAULT_REASONING_EFFORT = "low"
-        private val REASONING_EFFORTS = setOf("low", "medium", "high", "xhigh")
-
         /**
          * Responses API body (docs.x.ai). `store=false` is mandatory with images ("do not store request history").
          * `max_output_tokens` only caps visible output: reasoning tokens are not counted by xAI.
          */
-        internal fun buildRequestBody(
-            model: String,
-            request: AiStructuredRequest,
-            reasoningEffort: String? = DEFAULT_REASONING_EFFORT,
-        ): JSONObject {
+        internal fun buildRequestBody(model: String, request: AiStructuredRequest): JSONObject {
             val body = JSONObject()
                 .put("model", model)
                 .put("instructions", request.systemPrompt)
@@ -83,18 +75,8 @@ class GrokProvider(
                             .put("schema", GrokSchemaAdapter.adapt(request.schemaJson).schema)
                     )
                 )
-            // docs.x.ai (models + reasoning, 13/11/2026): grok-4.3 and grok-4.7 accept `reasoning.effort` on the Responses API.
-            // Without it grok-4.7 would think at "high" (default): "low" keeps latency and cost of reasoning tokens down.
-            reasoningEffort?.let { body.put("reasoning", JSONObject().put("effort", validatedEffort(model, it))) }
             request.maxOutputTokens?.let { body.put("max_output_tokens", it) }
             return body
-        }
-
-        /** Documented efforts: grok-4.7 low/medium/high/xhigh; grok-4.3 also `none`. Anything else is a programming error, not a request. */
-        internal fun validatedEffort(model: String, effort: String): String {
-            val allowed = if (model == AiModelConfig.GROK_4_3) REASONING_EFFORTS + "none" else REASONING_EFFORTS
-            require(effort in allowed) { "Unsupported reasoning effort for $model" }
-            return effort
         }
 
         /**
