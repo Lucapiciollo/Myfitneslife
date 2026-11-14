@@ -5,12 +5,15 @@ import android.os.Bundle
 import android.text.SpannableStringBuilder
 import android.text.style.ForegroundColorSpan
 import android.view.View
+import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.ImageButton
 import android.widget.FrameLayout
 import androidx.activity.viewModels
+import androidx.core.view.ViewCompat
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -22,7 +25,13 @@ import com.myfitai.app.domain.progress.ProgressAnalysisCompactContract
 import com.myfitai.app.domain.progress.ProgressAnalysisRequirements
 import com.myfitai.app.domain.progress.ProgressAnalysisService
 import com.myfitai.app.domain.ai.AiJobType
+import com.myfitai.app.domain.body.BodyFlag
+import com.myfitai.app.domain.body.BodyFlagReport
+import com.myfitai.app.domain.body.BodyFlagSeverity
 import com.myfitai.app.navigation.BottomNavBinder
+import com.myfitai.app.ui.dialog.HelpDialogSpec
+import com.myfitai.app.ui.dialog.HelpSection
+import com.myfitai.app.ui.progress.BodyFlagTexts
 import com.myfitai.app.ui.progress.PhysicalEvolutionState
 import com.myfitai.app.ui.progress.PhysicalEvolutionViewModel
 import com.myfitai.app.ui.progress.ProgressMetricState
@@ -44,11 +53,13 @@ import java.util.concurrent.TimeUnit
 class PhysicalEvolutionActivity : BaseShellActivity() {
     private val data by lazy { AppDataContainer.get(this) }
     private val viewModel: PhysicalEvolutionViewModel by viewModels {
-        PhysicalEvolutionViewModel.Factory(data.biaRepository, data.bodyMeasurementRepository, data.activeProfileStore)
+        PhysicalEvolutionViewModel.Factory(data.biaRepository, data.bodyMeasurementRepository, data.userProfileRepository, data.activeProfileStore)
     }
     private var metricIndex = 0
     private var rangeIndex = 1
     private var latestState = PhysicalEvolutionState()
+    private var renderedFlags: BodyFlagReport? = null
+    private var flagsRendered = false
     private lateinit var analysisLastText: TextView
     private lateinit var analysisNextText: TextView
     private lateinit var analysisJobMessageText: TextView
@@ -528,6 +539,7 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
     }
 
     private fun render(state: PhysicalEvolutionState) {
+        renderBodyFlags(state.bodyFlags)
         val selected = when (metricIndex) { 1 -> state.bodyFat; 2 -> state.muscle; else -> state.weight }
         val filtered = viewModel.filtered(selected, rangeIndex)
         val metric = ChartAccessibility.EvolutionMetric.fromIndex(metricIndex)
@@ -569,6 +581,81 @@ class PhysicalEvolutionActivity : BaseShellActivity() {
         findViewById<View>(R.id.otherIndicatorsCard).visibility = if (
             viewModel.latest(state.bodyFat) == null && viewModel.latest(state.muscle) == null && viewModel.latest(state.bodyWater) == null
         ) View.GONE else View.VISIBLE
+    }
+
+    /** FLAG L2: elenco, stato vuoto e suggerimento delle segnalazioni del motore. Testi solo da [BodyFlagTexts] e strings.xml. */
+    private fun renderBodyFlags(report: BodyFlagReport?) {
+        if (flagsRendered && report == renderedFlags) return
+        flagsRendered = true
+        renderedFlags = report
+        val card = findViewById<View>(R.id.bodyFlagsCard)
+        if (report == null) {
+            card.visibility = View.GONE
+            return
+        }
+        card.visibility = View.VISIBLE
+        ViewCompat.setAccessibilityHeading(findViewById<View>(R.id.bodyFlagsTitle), true)
+        val container = findViewById<LinearLayout>(R.id.bodyFlagsContainer)
+        container.removeAllViews()
+        report.flags.forEachIndexed { index, flag ->
+            container.addView(bodyFlagRow(container, flag, report.heightCm, isLast = index == report.flags.lastIndex))
+        }
+        val noFlags = report.flags.isEmpty()
+        findViewById<View>(R.id.bodyFlagsEmpty).visibility = if (noFlags) View.VISIBLE else View.GONE
+        val hintText = findViewById<TextView>(R.id.bodyFlagsHint)
+        val hintRes = if (noFlags) report.hint?.let { BodyFlagTexts.hintLabels.getValue(it) } else null
+        hintText.visibility = if (hintRes != null) View.VISIBLE else View.GONE
+        hintRes?.let { hintText.setText(it) }
+        findViewById<View>(R.id.bodyFlagsBiaNote).visibility = if (report.biaTrendNeedsSameConditions) View.VISIBLE else View.GONE
+    }
+
+    private fun bodyFlagRow(parent: ViewGroup, flag: BodyFlag, heightCm: Double?, isLast: Boolean): View {
+        val entry = BodyFlagTexts.entries.getValue(flag.code)
+        val title = getString(entry.title)
+        val contextText = getString(entry.context, *BodyFlagTexts.contextArgs(flag, heightCm).toTypedArray())
+        val severityText = getString(BodyFlagTexts.severityLabels.getValue(flag.severity))
+        val reliabilityText = getString(BodyFlagTexts.reliabilityLabels.getValue(flag.reliability))
+        val row = layoutInflater.inflate(R.layout.item_body_flag, parent, false)
+        row.findViewById<TextView>(R.id.bodyFlagTitle).text = title
+        row.findViewById<TextView>(R.id.bodyFlagContext).text = contextText
+        row.findViewById<TextView>(R.id.bodyFlagReliabilityChip).text = reliabilityText
+        // La gravita e' sempre scritta nel chip: il colore (ruoli semantici esistenti) non e' l'unico segnale.
+        val attention = flag.severity == BodyFlagSeverity.ATTENZIONE
+        row.findViewById<TextView>(R.id.bodyFlagSeverityChip).apply {
+            text = severityText
+            setTextColor(getColor(if (attention) R.color.semantic_warning else R.color.text_secondary))
+            background = android.graphics.drawable.GradientDrawable().apply {
+                cornerRadius = resources.getDimension(R.dimen.radius_chip)
+                setColor(getColor(if (attention) R.color.surface_warning_soft else R.color.surface_info_soft))
+                setStroke(dimen(R.dimen.border_width_default), getColor(if (attention) R.color.warning_soft_stroke else R.color.info_soft_stroke))
+            }
+        }
+        row.findViewById<View>(R.id.bodyFlagDivider).visibility = if (isLast) View.GONE else View.VISIBLE
+        // Una sola voce per TalkBack, nell'ordine: titolo, gravita, affidabilita, contesto; l'azione dice cosa apre.
+        row.contentDescription = getString(R.string.body_flag_item_description, title, severityText, reliabilityText, contextText)
+        ViewCompat.replaceAccessibilityAction(
+            row,
+            AccessibilityNodeInfoCompat.AccessibilityActionCompat.ACTION_CLICK,
+            getString(R.string.body_flag_why_link),
+            null,
+        )
+        row.setOnClickListener { showBodyFlagWhy(title, contextText, entry) }
+        return row
+    }
+
+    private fun showBodyFlagWhy(title: String, contextText: String, entry: BodyFlagTexts.Entry) {
+        showHelpDialog(
+            HelpDialogSpec(
+                title = title,
+                message = contextText,
+                sections = listOf(
+                    HelpSection(getString(R.string.body_flag_section_threshold), null, getString(entry.why)),
+                    HelpSection(getString(R.string.body_flag_section_limits), null, getString(entry.limit)),
+                    HelpSection(getString(R.string.body_flag_section_action), null, getString(entry.action)),
+                ),
+                highlightHeadings = false,
+            ),
+        )
     }
 
     /** Grafico della sola metrica scelta, con valori reali: legenda e asse con unita', descrizione e tabella per l'accessibilita'. */

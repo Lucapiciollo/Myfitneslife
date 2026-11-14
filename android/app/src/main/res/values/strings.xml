@@ -552,4 +552,94 @@
     <string name="export_ux5b_plan_stale_note">Piano non aggiornato al profilo attuale</string>
     <!-- UX12: fabbisogno base senza sport -->
     <string name="home_ux12_base_no_sport">Fabbisogno base, senza sport (BMR × 1,20)</string>
+
+    <!-- ===== FLAG L2: segnalazioni corporee in Progresso. Chiavi = BodyFlagCode.messageKey + _title/_context/_why/_limit (guardia: BodyFlagTextsTest). Linguaggio prudente, mai testi dell'IA. ===== -->
+    <string name="body_flag_card_title">Segnali da approfondire</string>
+    <string name="body_flag_card_subtitle">Segnali calcolati con regole fisse dai dati che hai registrato. Non sostituiscono il parere del medico.</string>
+    <string name="body_flag_empty">Nessun segnale con i dati disponibili</string>
+    <string name="body_flag_hint_not_adult">Questi segnali sono pensati per le persone adulte.</string>
+    <string name="body_flag_hint_add_birth_date">Inserisci la data di nascita nel profilo per attivare i segnali.</string>
+    <string name="body_flag_hint_add_height">Inserisci l\'altezza nel profilo per valutare il rapporto vita/altezza.</string>
+    <string name="body_flag_hint_measure_waist">Misura la vita per valutare il rapporto vita/altezza</string>
+    <string name="body_flag_hint_add_bia">Registra almeno 3 BIA nelle stesse condizioni</string>
+    <string name="body_flag_bia_same_conditions_note">Le tendenze BIA richiedono misure con le stesse condizioni dichiarate</string>
+    <string name="body_flag_severity_info">Info</string>
+    <string name="body_flag_severity_attention">Da approfondire</string>
+    <string name="body_flag_reliability_high">Affidabilità alta</string>
+    <string name="body_flag_reliability_medium">Affidabilità media</string>
+    <string name="body_flag_reliability_low">Affidabilità bassa</string>
+    <string name="body_flag_why_link">Perché questo segnale</string>
+    <string name="body_flag_section_threshold">Soglia e fonte</string>
+    <string name="body_flag_section_limits">Limiti della misura</string>
+    <string name="body_flag_section_action">Cosa fare</string>
+    <string name="body_flag_item_description">%1$s. %2$s. %3$s. %4$s</string>
+    <string name="body_flag_action_remeasure">Rimisura in condizioni standard: al mattino, a digiuno, dopo il bagno e prima di allenarti, con lo stesso strumento. Se il segnale resta, parlane con il medico.</string>
+    <string name="body_flag_action_waist">Rimisura la vita in condizioni standard: a metà tra l\'ultima costola e l\'osso del fianco, a fine espirazione, con il metro in piano e senza stringere. Se il valore resta questo, parlane con il medico.</string>
+    <string name="body_flag_action_strength_test">Prova un semplice test di forza: alzati da una sedia cinque volte senza usare le mani e nota se ti costa più fatica del solito. Rimisura anche la BIA in condizioni standard. Se noti meno forza o se il segnale resta, parlane con il medico.</string>
+    <string name="body_flag_action_info">Leggi questo dato insieme agli altri indicatori, senza basarti su una sola misura. Se hai dubbi, parlane con il medico.</string>
+
+    <string name="body_flag_rapid_weight_loss_title">Calo di peso rapido</string>
+    <string name="body_flag_rapid_weight_loss_context">Peso da %1$s kg a %2$s kg: circa %3$s kg e %4$s kg a settimana nelle ultime due settimane</string>
+    <string name="body_flag_rapid_weight_loss_why">Il segnale compare quando il peso scende di più di 1 kg a settimana per due settimane consecutive. È una regola prudente di MyFitAI, ancora da calibrare, non una soglia di un ente sanitario.</string>
+    <string name="body_flag_rapid_weight_loss_limit">Il peso cambia da un giorno all\'altro per acqua, sale e orario della pesata: letture prese in condizioni diverse possono far sembrare il calo più rapido del reale.</string>
+
+    <string name="body_flag_lean_mass_loss_share_title">Massa magra in calo</string>
+    <string name="body_flag_lean_mass_loss_share_context">Massa magra da %1$s kg a %2$s kg mentre il peso passa da %3$s kg a %4$s kg</string>
+    <string name="body_flag_lean_mass_loss_share_why">Il segnale compare quando la massa magra scende di almeno 2 kg e pesa per più del 40 per cento sul calo di peso, su almeno tre BIA confrontabili distanti più di quattro settimane. È una regola di MyFitAI, ancora da calibrare.</string>
+    <string name="body_flag_lean_mass_loss_share_limit">La BIA di casa è una stima e la massa magra include anche l\'acqua: idratazione, pasti e orario possono spostare il valore.</string>
+
+    <string name="body_flag_skeletal_muscle_decline_check_strength_title">Muscolo scheletrico in calo</string>
+    <string name="body_flag_skeletal_muscle_decline_check_strength_context">Muscolo scheletrico da %1$s kg a %2$s kg nelle BIA confrontabili</string>
+    <string name="body_flag_skeletal_muscle_decline_check_strength_why">Il segnale compare quando il muscolo scheletrico scende di almeno 1,5 kg, oltre il normale rumore della bilancia, su almeno tre BIA confrontabili, se hai 60 anni o più oppure un indice di massa corporea basso. Le indicazioni europee sulla massa muscolare guardano anche alla forza e non si basano su una bilancia di casa.</string>
+    <string name="body_flag_skeletal_muscle_decline_check_strength_limit">La BIA di casa non misura direttamente il muscolo e da sola non basta: per capire se la forza è cambiata serve un test funzionale.</string>
+
+    <string name="body_flag_whtr_high_title">Rapporto vita/altezza alto</string>
+    <string name="body_flag_whtr_high_context">Vita %1$s cm su altezza %2$s cm: rapporto %3$s</string>
+    <string name="body_flag_whtr_high_why">Un rapporto tra vita e altezza di 0,6 o più è il livello più alto indicato dalle linee guida NICE per gli adulti.</string>
+    <string name="body_flag_whtr_high_limit">La vita misurata a casa cambia con la posizione del metro e con il momento della giornata. Il rapporto non distingue tra massa grassa e muscolare.</string>
+
+    <string name="body_flag_whtr_above_half_title">Rapporto vita/altezza da controllare</string>
+    <string name="body_flag_whtr_above_half_context">Vita %1$s cm su altezza %2$s cm: rapporto %3$s</string>
+    <string name="body_flag_whtr_above_half_why">Un rapporto tra vita e altezza di 0,5 o più è il primo livello di attenzione indicato dalle linee guida NICE per gli adulti: la vita dovrebbe restare sotto la metà dell\'altezza.</string>
+    <string name="body_flag_whtr_above_half_limit">La vita misurata a casa cambia con la posizione del metro e con il momento della giornata. Il rapporto non distingue tra massa grassa e muscolare.</string>
+
+    <string name="body_flag_waist_second_level_title">Circonferenza vita alta</string>
+    <string name="body_flag_waist_second_level_context">Vita %1$s cm</string>
+    <string name="body_flag_waist_second_level_why">L\'OMS indica come secondo livello 102 cm per gli uomini e 88 cm per le donne, negli adulti. I valori derivano soprattutto da studi su popolazioni europee.</string>
+    <string name="body_flag_waist_second_level_limit">La vita misurata a casa cambia con la posizione del metro e con il momento della giornata, e non tiene conto della statura.</string>
+
+    <string name="body_flag_waist_first_level_title">Circonferenza vita da controllare</string>
+    <string name="body_flag_waist_first_level_context">Vita %1$s cm</string>
+    <string name="body_flag_waist_first_level_why">L\'OMS indica come primo livello di attenzione 94 cm per gli uomini e 80 cm per le donne, negli adulti. I valori derivano soprattutto da studi su popolazioni europee.</string>
+    <string name="body_flag_waist_first_level_limit">La vita misurata a casa cambia con la posizione del metro e con il momento della giornata, e non tiene conto della statura.</string>
+
+    <string name="body_flag_visceral_fat_rising_title">Grasso viscerale in aumento</string>
+    <string name="body_flag_visceral_fat_rising_context">Livello di grasso viscerale da %1$s a %2$s, con rapporto vita/altezza %3$s</string>
+    <string name="body_flag_visceral_fat_rising_why">Il segnale compare quando il livello sale di almeno 1 punto su almeno tre BIA confrontabili distanti più di quattro settimane, e solo se il rapporto vita/altezza è 0,5 o più. Il livello è una scala della bilancia e non ha soglie mediche.</string>
+    <string name="body_flag_visceral_fat_rising_limit">È una stima della bilancia e può cambiare con idratazione e orario: conta l\'andamento, non il singolo valore.</string>
+
+    <string name="body_flag_bmi_band_under_title">Indice di massa corporea basso</string>
+    <string name="body_flag_bmi_band_under_context">Indice di massa corporea %1$s con peso %2$s kg</string>
+    <string name="body_flag_bmi_band_under_why">Un valore sotto 18,5 rientra nella fascia di peso basso indicata dall\'OMS per gli adulti. È un dato informativo.</string>
+    <string name="body_flag_bmi_band_under_limit">L\'indice non distingue tra massa grassa e massa magra e non considera costituzione, età o attività fisica.</string>
+
+    <string name="body_flag_bmi_band_over_title">Indice di massa corporea sopra 25</string>
+    <string name="body_flag_bmi_band_over_context">Indice di massa corporea %1$s con peso %2$s kg</string>
+    <string name="body_flag_bmi_band_over_why">Un valore da 25 a meno di 30 rientra nella fascia di peso elevato indicata dall\'OMS per gli adulti. È un dato informativo.</string>
+    <string name="body_flag_bmi_band_over_limit">L\'indice non distingue tra massa grassa e massa magra: chi ha molto muscolo può avere un valore alto senza eccesso di grasso.</string>
+
+    <string name="body_flag_bmi_band_high_title">Indice di massa corporea alto</string>
+    <string name="body_flag_bmi_band_high_context">Indice di massa corporea %1$s con peso %2$s kg</string>
+    <string name="body_flag_bmi_band_high_why">Un valore di 30 o più rientra nella fascia più alta indicata dall\'OMS per gli adulti. È un dato informativo.</string>
+    <string name="body_flag_bmi_band_high_limit">L\'indice non distingue tra massa grassa e massa magra e non considera costituzione, età o attività fisica.</string>
+
+    <string name="body_flag_body_fat_trend_up_title">Grasso corporeo in aumento</string>
+    <string name="body_flag_body_fat_trend_up_context">Grasso corporeo da %1$s%% a %2$s%%</string>
+    <string name="body_flag_body_fat_trend_up_why">Mostra la variazione tra BIA confrontabili quando supera il normale rumore della bilancia, circa 1 punto percentuale. Non esiste una soglia medica: è solo un andamento.</string>
+    <string name="body_flag_body_fat_trend_up_limit">Il valore cambia con acqua corporea, pasti e orario: confronta solo misure prese nelle stesse condizioni.</string>
+
+    <string name="body_flag_body_fat_trend_down_title">Grasso corporeo in calo</string>
+    <string name="body_flag_body_fat_trend_down_context">Grasso corporeo da %1$s%% a %2$s%%</string>
+    <string name="body_flag_body_fat_trend_down_why">Mostra la variazione tra BIA confrontabili quando supera il normale rumore della bilancia, circa 1 punto percentuale. Non esiste una soglia medica: è solo un andamento.</string>
+    <string name="body_flag_body_fat_trend_down_limit">Il valore cambia con acqua corporea, pasti e orario: confronta solo misure prese nelle stesse condizioni.</string>
 </resources>

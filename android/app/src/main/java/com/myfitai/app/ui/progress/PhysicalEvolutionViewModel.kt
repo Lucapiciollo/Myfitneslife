@@ -6,6 +6,9 @@ import androidx.lifecycle.viewModelScope
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.repository.BiaRepository
 import com.myfitai.app.data.repository.BodyMeasurementRepository
+import com.myfitai.app.data.repository.UserProfileRepository
+import com.myfitai.app.domain.body.BodyFlagReport
+import com.myfitai.app.domain.body.BodyFlagService
 import com.myfitai.app.domain.progress.ProgressSeriesEngine
 import com.myfitai.app.domain.progress.ProgressSeriesPoint
 import kotlinx.coroutines.flow.SharingStarted
@@ -28,20 +31,33 @@ data class PhysicalEvolutionState(
     val bodyFat: ProgressMetricState = ProgressMetricState(),
     val muscle: ProgressMetricState = ProgressMetricState(),
     val bodyWater: ProgressMetricState = ProgressMetricState(),
+    /** Segnalazioni corporee del motore (FLAG L2); null senza profilo attivo. */
+    val bodyFlags: BodyFlagReport? = null,
 )
 
 class PhysicalEvolutionViewModel(
     bia: BiaRepository,
     bodyMeasurements: BodyMeasurementRepository,
+    profiles: UserProfileRepository,
     activeProfileStore: ActiveProfileStore,
 ) : ViewModel() {
+    private data class Inputs(
+        val bia: List<com.myfitai.app.data.local.entity.BiaMeasurementEntity>,
+        val body: List<com.myfitai.app.data.local.entity.BodyMeasurementEntity>,
+        val profile: com.myfitai.app.data.local.entity.UserProfileEntity?,
+    )
+
     val state: StateFlow<PhysicalEvolutionState> = activeProfileStore.activeProfileId.flatMapLatest { profileId ->
         if (profileId <= 0L) {
-            kotlinx.coroutines.flow.flowOf(emptyList<com.myfitai.app.data.local.entity.BiaMeasurementEntity>() to emptyList<com.myfitai.app.data.local.entity.BodyMeasurementEntity>())
+            flowOf(Inputs(emptyList(), emptyList(), null))
         } else {
-            kotlinx.coroutines.flow.combine(bia.all(profileId), bodyMeasurements.all(profileId)) { biaRows, bodyRows -> biaRows to bodyRows }
+            kotlinx.coroutines.flow.combine(
+                bia.all(profileId),
+                bodyMeasurements.all(profileId),
+                profiles.profile(profileId),
+            ) { biaRows, bodyRows, profile -> Inputs(biaRows, bodyRows, profile) }
         }
-    }.map { (biaRows, bodyRows) ->
+    }.map { (biaRows, bodyRows, profile) ->
         fun metric(selector: (com.myfitai.app.data.local.entity.BiaMeasurementEntity) -> Float?): ProgressMetricState {
             val points = biaRows.mapNotNull { row -> selector(row)?.let { ProgressPoint(row.measuredAtEpochMillis, it) } }
                 .sortedBy { it.timestamp }
@@ -66,6 +82,10 @@ class PhysicalEvolutionViewModel(
             bodyFat = metric { it.bodyFatPercent },
             muscle = metric { it.muscleMassKg },
             bodyWater = metric { it.bodyWaterPercent },
+            bodyFlags = profile?.let {
+                val zone = ZoneId.systemDefault()
+                BodyFlagService.evaluate(it, biaRows, bodyRows, LocalDate.now(zone), zone)
+            },
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PhysicalEvolutionState())
 
@@ -111,9 +131,10 @@ class PhysicalEvolutionViewModel(
     class Factory(
         private val bia: BiaRepository,
         private val bodyMeasurements: BodyMeasurementRepository,
+        private val profiles: UserProfileRepository,
         private val activeProfileStore: ActiveProfileStore,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T = PhysicalEvolutionViewModel(bia, bodyMeasurements, activeProfileStore) as T
+        override fun <T : ViewModel> create(modelClass: Class<T>): T = PhysicalEvolutionViewModel(bia, bodyMeasurements, profiles, activeProfileStore) as T
     }
 }
