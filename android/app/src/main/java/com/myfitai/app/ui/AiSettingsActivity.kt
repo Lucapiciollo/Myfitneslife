@@ -106,6 +106,7 @@ class AiSettingsActivity : BaseShellActivity() {
     }
 
     private fun bindGrokSwitch() {
+        findViewById<View>(R.id.aiGrokGoToKeyButton).setOnClickListener { scrollToGrokKey() }
         findViewById<MaterialSwitch>(R.id.aiGrokSwitch).setOnCheckedChangeListener { button, checked ->
             if (renderingGrokSwitch) return@setOnCheckedChangeListener
             if (checked) {
@@ -153,6 +154,22 @@ class AiSettingsActivity : BaseShellActivity() {
         }
     }
 
+    /** Porta lo scorrimento al campo della chiave Grok (sta nella card "Chiavi API", sotto Gemini e OpenAI). */
+    private fun scrollToGrokKey() {
+        val scroll = findViewById<android.widget.ScrollView>(R.id.aiSettingsScroll)
+        val target = findViewById<View>(R.id.grokKeyGroup)
+        scroll.post {
+            var y = target.top
+            var parent = target.parent as? View
+            while (parent != null && parent !== scroll) {
+                y += parent.top
+                parent = parent.parent as? View
+            }
+            scroll.smoothScrollTo(0, (y - resources.getDimensionPixelSize(R.dimen.space_16)).coerceAtLeast(0))
+            findViewById<View>(R.id.grokApiKeyInput).requestFocus()
+        }
+    }
+
     private fun activeModel(type: AiProviderType): String = when (type) {
         AiProviderType.GEMINI -> settings.selectedGeminiModel
         AiProviderType.GROK -> settings.selectedGrokModel
@@ -173,6 +190,8 @@ class AiSettingsActivity : BaseShellActivity() {
         // Grok e' sperimentale e spento di default: chiave, modello e costi compaiono solo se e' acceso o ha gia' una chiave da gestire.
         val grokVisible = if (grokEnabled || grokConfigured) View.VISIBLE else View.GONE
         findViewById<View>(R.id.grokKeyGroup).visibility = grokVisible
+        // UX11: la chiave sta nella card "Chiavi API", lontano dall'interruttore: con Grok acceso e senza chiave lo diciamo qui.
+        findViewById<View>(R.id.aiGrokMissingKeyGroup).visibility = if (grokEnabled && !grokConfigured) View.VISIBLE else View.GONE
         findViewById<View>(R.id.grokModelGroup).visibility = grokVisible
         grokCostViews.forEach { it.visibility = grokVisible }
         renderingGrokSwitch = true
