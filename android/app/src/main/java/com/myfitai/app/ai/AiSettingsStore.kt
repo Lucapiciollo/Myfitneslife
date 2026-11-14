@@ -10,6 +10,15 @@ class AiSettingsStore(context: Context) {
         get() = prefs.getBoolean(KEY_USE_GEMINI, true)
         set(value) { prefs.edit().putBoolean(KEY_USE_GEMINI, value).apply() }
 
+    /**
+     * Interruttore locale (MACRO L3): true = piano settimanale con protocollo MFP2 (l'IA sceglie alimenti e grammi,
+     * l'app calcola macro dal catalogo). Default false = comportamento MFP1 invariato. Nessuna UI: si accende
+     * modificando questa preferenza (file shared_prefs/ai_settings.xml, chiave `use_food_catalog_plan`).
+     */
+    var useFoodCatalogPlan: Boolean
+        get() = prefs.getBoolean(KEY_USE_FOOD_CATALOG_PLAN, false)
+        set(value) { prefs.edit().putBoolean(KEY_USE_FOOD_CATALOG_PLAN, value).apply() }
+
     var geminiVerifiedModel: String?
         get() = prefs.getString(KEY_GEMINI_VERIFIED_MODEL, null)
         set(value) {
@@ -39,6 +48,7 @@ class AiSettingsStore(context: Context) {
     private companion object {
         const val PREFS_NAME = "ai_settings"
         const val KEY_USE_GEMINI = "use_gemini"
+        const val KEY_USE_FOOD_CATALOG_PLAN = "use_food_catalog_plan"
         const val KEY_GEMINI_VERIFIED_MODEL = "gemini_verified_model"
         const val KEY_SELECTED_GEMINI_MODEL = "selected_gemini_model"
         const val KEY_SELECTED_OPENAI_MODEL = "selected_openai_model"

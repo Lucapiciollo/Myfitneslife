@@ -65,10 +65,15 @@ object NutritionPlanContract {
     data class GeneratedMeal(
         val type: String, val title: String, val timeMinutes: Int, val kcal: Int, val proteinG: Float,
         val carbsG: Float, val fatG: Float, val preparation: String, val ingredients: List<GeneratedIngredient>,
+        /** DECLARED = numeri dichiarati dal modello (MFP1); COMPUTED = calcolati dall'app dal catalogo (MFP2). */
+        val nutritionSource: String = FoodMeal.NUTRITION_SOURCE_DECLARED,
     )
     data class GeneratedIngredient(
         val name: String, val quantity: Float, val unit: String, val displayDose: String,
         val weightState: String, val nutritionConfidence: String, val category: String,
+        /** Snapshot calcolato dal catalogo (solo MFP2); tutti null per un ingrediente dichiarato dal modello. */
+        val foodId: String? = null, val grams: Float? = null, val kcal: Float? = null, val proteinG: Float? = null,
+        val carbsG: Float? = null, val fatG: Float? = null, val fiberG: Float? = null, val sodiumMg: Float? = null,
     )
 
     fun parse(jsonText: String): Response {

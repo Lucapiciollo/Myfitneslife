@@ -95,6 +95,20 @@ object AiContractRegistry {
         "FOOD_CONSTRAINT_VIOLATION" to "An option contains a food that violates a hard constraint (A, I, E or S in DP): replace it with a compliant one and list only compliant foods in foodsCsv.",
     )
 
+    /**
+     * Weekly plan from the food catalog (MFP2, lotto MACRO L3). The model writes only foodId + grams, so every
+     * rejection is about structure, the closed vocabulary or the kcal range reachable with the chosen foods.
+     */
+    private val WEEKLY_NUTRITION_V2_FIX_HINTS: Map<String, String> = mapOf(
+        "PIPE_I_FOOD_UNKNOWN" to "A foodId is not in the CAT list of the user message. Copy every foodId exactly from CAT (column id); never invent or alter an id.",
+        "PIPE_I_GRAMS_INVALID" to "Write I|foodId|grams with grams a positive number using a dot and no unit, for example I|it.riso_basmati|80.",
+        "PIPE_S_GRAMS_INVALID" to "Write S|kind|foodId|grams|timeMinutes|notes with grams a positive number using a dot and no unit.",
+        "PIPE_M_PREPARATION_HAS_QUANTITY" to "A preparation contains a quantity (digits followed by g, ml, spoons, slices...). Rewrite preparations without any quantity; doses belong to the I records only.",
+        "PIPE_MEAL_WITHOUT_INGREDIENTS" to "Every M record needs at least one I|foodId|grams record right after it.",
+        "FOOD_CONSTRAINT_VIOLATION" to "A chosen food violates a hard constraint (A, I, E or S in DP): replace it with a food from CAT that complies.",
+        "TARGET_TOLERANCE_EXCEEDED" to "For the listed days the foods you chose cannot reach the TD kcal after rescaling: actual is the kcal of your proposal, reach is the kcal range achievable with those foods. Choose foods and grams so that TD falls inside reach (more or less energy-dense foods, larger or smaller portions).",
+    )
+
     val all: List<Spec> = listOf(
         Spec("myfitai_bia_raw_pipe_v2", Format.COMPACT_PIPE, "B2", 350, persisted = false),
         Spec("myfitai_bia_pipe_v1", Format.COMPACT_PIPE, "BIA1", 350, persisted = false),
@@ -109,6 +123,7 @@ object AiContractRegistry {
         Spec("myfitai_plan_review_pipe_v1", Format.COMPACT_PIPE, "PR1", 1_500, persisted = true),
         Spec("myfitai_nutrition_path_pipe_v1", Format.COMPACT_PIPE, "NP1", 1_500, persisted = true),
         Spec("myfitai_weekly_nutrition_pipe_v1", Format.COMPACT_PIPE, "MFP1", null, persisted = true, geminiNativeSchema = false),
+        Spec("myfitai_weekly_nutrition_pipe_v2", Format.COMPACT_PIPE, "MFP2", null, persisted = true, geminiNativeSchema = false, fixHints = WEEKLY_NUTRITION_V2_FIX_HINTS),
     )
 
     private val bySchemaName: Map<String, Spec> = all.associateBy { it.schemaName }.also {
