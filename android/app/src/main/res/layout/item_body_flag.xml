@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- FLAG L2: una segnalazione corporea. Il testo e' compilato da BodyFlagTexts; ogni TextView va a capo (nessun maxLines/ellipsize) e i chip vanno a capo nel ChipGroup, cosi' a font 1,3x e 2,0x nulla viene troncato. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/bodyFlagRow"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="?attr/selectableItemBackground"
+    android:clickable="true"
+    android:focusable="true"
+    android:orientation="vertical"
+    android:paddingTop="@dimen/space_10">
+
+    <TextView
+        android:id="@+id/bodyFlagTitle"
+        style="@style/Text.MyFitAI.BodyEmphasis"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:importantForAccessibility="no" />
+
+    <com.google.android.material.chip.ChipGroup
+        android:id="@+id/bodyFlagChips"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_6"
+        android:importantForAccessibility="no"
+        app:chipSpacingHorizontal="@dimen/space_6"
+        app:chipSpacingVertical="@dimen/space_4">
+
+        <TextView
+            android:id="@+id/bodyFlagSeverityChip"
+            style="@style/Text.MyFitAI.Micro"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:importantForAccessibility="no"
+            android:paddingHorizontal="@dimen/space_10"
+            android:paddingVertical="@dimen/space_4"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/bodyFlagReliabilityChip"
+            style="@style/Text.MyFitAI.Micro"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_chip"
+            android:importantForAccessibility="no"
+            android:paddingHorizontal="@dimen/space_10"
+            android:paddingVertical="@dimen/space_4"
+            android:textColor="@color/text_secondary" />
+    </com.google.android.material.chip.ChipGroup>
+
+    <TextView
+        android:id="@+id/bodyFlagContext"
+        style="@style/Text.MyFitAI.Body"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_6"
+        android:importantForAccessibility="no" />
+
+    <TextView
+        android:id="@+id/bodyFlagWhyLink"
+        style="@style/Text.MyFitAI.Navigation"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_6"
+        android:importantForAccessibility="no"
+        android:paddingBottom="@dimen/space_8"
+        android:text="@string/body_flag_why_link" />
+
+    <View
+        android:id="@+id/bodyFlagDivider"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/border_width_default"
+        android:background="@color/divider"
+        android:importantForAccessibility="no" />
+</LinearLayout>
