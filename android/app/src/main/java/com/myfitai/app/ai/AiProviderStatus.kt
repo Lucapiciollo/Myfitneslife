@@ -31,33 +31,26 @@ data class AiProviderStatus(
             AiProviderType.GEMINI -> "Gemini"
             AiProviderType.OPENAI -> "OpenAI"
             AiProviderType.GROK -> "Grok"
-            AiProviderType.GROQ -> "Groq"
             AiProviderType.NOT_CONFIGURED -> ""
         }
 
-        /** Voci del selettore provider: Grok e Groq compaiono solo con il rispettivo interruttore sperimentale acceso (spenti di default). */
-        fun selectableProviders(grokEnabled: Boolean, groqEnabled: Boolean = false): List<AiProviderType> =
-            listOf(AiProviderType.GEMINI, AiProviderType.OPENAI) +
-                listOfNotNull(AiProviderType.GROK.takeIf { grokEnabled }, AiProviderType.GROQ.takeIf { groqEnabled })
+        /** Voci del selettore provider: Grok compare solo con l'interruttore sperimentale acceso (spento di default). */
+        fun selectableProviders(grokEnabled: Boolean): List<AiProviderType> =
+            if (grokEnabled) listOf(AiProviderType.GEMINI, AiProviderType.OPENAI, AiProviderType.GROK)
+            else listOf(AiProviderType.GEMINI, AiProviderType.OPENAI)
 
         fun from(config: AiRuntimeConfig): AiProviderStatus {
-            val experimental = when {
-                config.grokActive -> AiProviderType.GROK to config.grokConfigured
-                config.groqActive -> AiProviderType.GROQ to config.groqConfigured
-                else -> null
-            }
-            if (experimental != null) {
-                // Experimental provider chosen and enabled: state consistent with selectedProvider(); the alternative is a historical provider with a key.
-                val (type, configured) = experimental
+            if (config.grokActive) {
+                // Grok chosen and enabled: state consistent with selectedProvider(); the alternative is a historical provider with a key.
                 val previous = if (config.useGemini) AiProviderType.GEMINI else AiProviderType.OPENAI
                 val previousConfigured = if (config.useGemini) config.geminiConfigured else config.openAiConfigured
                 val other = if (config.useGemini) AiProviderType.OPENAI else AiProviderType.GEMINI
                 val otherConfigured = if (config.useGemini) config.openAiConfigured else config.geminiConfigured
                 return when {
-                    configured -> AiProviderStatus(State.ACTIVE, type)
-                    previousConfigured -> AiProviderStatus(State.SELECTED_WITHOUT_KEY, type, alternative = previous)
-                    otherConfigured -> AiProviderStatus(State.SELECTED_WITHOUT_KEY, type, alternative = other)
-                    else -> AiProviderStatus(State.NONE, type)
+                    config.grokConfigured -> AiProviderStatus(State.ACTIVE, AiProviderType.GROK)
+                    previousConfigured -> AiProviderStatus(State.SELECTED_WITHOUT_KEY, AiProviderType.GROK, alternative = previous)
+                    otherConfigured -> AiProviderStatus(State.SELECTED_WITHOUT_KEY, AiProviderType.GROK, alternative = other)
+                    else -> AiProviderStatus(State.NONE, AiProviderType.GROK)
                 }
             }
             val selected = if (config.useGemini) AiProviderType.GEMINI else AiProviderType.OPENAI

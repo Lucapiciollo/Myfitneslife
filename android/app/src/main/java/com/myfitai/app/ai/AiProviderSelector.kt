@@ -29,11 +29,6 @@ object AiProviderSelector {
                 credentialStore = credentials,
                 model = settings.selectedGrokModel,
             )
-            // Experimental: AiRuntimeConfig.selectedProvider() returns GROQ only when groqEnabled (off by default) and the user chose it.
-            AiProviderType.GROQ -> GroqProvider(
-                credentialStore = credentials,
-                model = settings.selectedGroqModel,
-            )
             AiProviderType.NOT_CONFIGURED -> null
         }
     }

@@ -15,9 +15,9 @@ class AiSettingsStore(context: Context) {
         set(value) { prefs.edit().putBoolean(KEY_USE_GEMINI, value).remove(KEY_SELECTED_PROVIDER).apply() }
 
     /**
-     * Explicit provider choice (GEMINI, OPENAI or experimental GROK/GROQ). Read-time migration: when never written, it is derived
+     * Explicit provider choice (GEMINI, OPENAI or experimental GROK). Read-time migration: when never written, it is derived
      * from [useGemini] (GEMINI if true, OPENAI otherwise), so existing installations keep exactly what they use today.
-     * Choosing GROK or GROQ does not touch [useGemini], which remains the fallback if the experimental provider is disabled.
+     * Choosing GROK does not touch [useGemini], which remains the fallback if Grok is disabled.
      */
     var selectedProvider: AiProviderType
         get() = resolveSelectedProvider(prefs.getString(KEY_SELECTED_PROVIDER, null), useGemini)
@@ -73,20 +73,6 @@ class AiSettingsStore(context: Context) {
             prefs.edit().putString(KEY_SELECTED_GROK_MODEL, value).apply()
         }
 
-    /** Experimental Groq switch: OFF by default. Groq is only selected when this is true AND [selectedProvider] is GROQ. */
-    var groqEnabled: Boolean
-        get() = prefs.getBoolean(KEY_GROQ_ENABLED, false)
-        set(value) { prefs.edit().putBoolean(KEY_GROQ_ENABLED, value).apply() }
-
-    var selectedGroqModel: String
-        get() = prefs.getString(KEY_SELECTED_GROQ_MODEL, AiModelConfig.GROQ)
-            ?.takeIf { it in AiModelConfig.GROQ_SELECTABLE }
-            ?: AiModelConfig.GROQ
-        set(value) {
-            require(value in AiModelConfig.GROQ_SELECTABLE)
-            prefs.edit().putString(KEY_SELECTED_GROQ_MODEL, value).apply()
-        }
-
     companion object {
         /** Pure migration rule (unit-testable): absent/unknown value falls back to the legacy boolean. NOT_CONFIGURED is never persisted. */
         internal fun resolveSelectedProvider(stored: String?, useGemini: Boolean): AiProviderType {
@@ -102,8 +88,6 @@ class AiSettingsStore(context: Context) {
         private const val KEY_SELECTED_OPENAI_MODEL = "selected_openai_model"
         private const val KEY_GROK_ENABLED = "grok_enabled"
         private const val KEY_SELECTED_GROK_MODEL = "selected_grok_model"
-        private const val KEY_GROQ_ENABLED = "groq_enabled"
-        private const val KEY_SELECTED_GROQ_MODEL = "selected_groq_model"
     }
 }
 

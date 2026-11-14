@@ -13,7 +13,6 @@ class AiRuntimeService(context: Context) : AiRuntimeGateway {
     private val geminiUsageTracker = GeminiUsageTracker(appContext)
     private val openAiUsageTracker = OpenAiUsageTracker(appContext)
     private val grokUsageTracker = GrokUsageTracker(appContext)
-    private val groqUsageTracker = GroqUsageTracker(appContext)
 
     fun config(): AiRuntimeConfig = AiRuntimeConfig(
         useGemini = settings.useGemini,
@@ -22,9 +21,6 @@ class AiRuntimeService(context: Context) : AiRuntimeGateway {
         grokEnabled = settings.grokEnabled,
         grokSelected = settings.selectedProvider == AiProviderType.GROK,
         grokConfigured = credentialStore.exists(AiCredentialProvider.GROK),
-        groqEnabled = settings.groqEnabled,
-        groqSelected = settings.selectedProvider == AiProviderType.GROQ,
-        groqConfigured = credentialStore.exists(AiCredentialProvider.GROQ),
     )
 
     fun selectedProviderType(): AiProviderType = config().selectedProvider()
@@ -56,7 +52,6 @@ class AiRuntimeService(context: Context) : AiRuntimeGateway {
             AiProviderType.GEMINI -> UsageTrackingAiProvider(selected, geminiUsageTracker)
             AiProviderType.OPENAI -> OpenAiUsageTrackingProvider(selected, openAiUsageTracker)
             AiProviderType.GROK -> GrokUsageTrackingProvider(selected, grokUsageTracker)
-            AiProviderType.GROQ -> GroqUsageTrackingProvider(selected, groqUsageTracker)
             else -> selected
         }
 

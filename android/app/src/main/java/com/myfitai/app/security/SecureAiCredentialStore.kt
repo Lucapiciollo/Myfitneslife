@@ -15,7 +15,6 @@ enum class AiCredentialProvider(val storageKey: String) {
     OPENAI("openai"),
     GEMINI("gemini"),
     GROK("grok"),
-    GROQ("groq"),
 }
 
 /** Stores only AES-GCM ciphertext and IV; plaintext keys exist only during a request. */
