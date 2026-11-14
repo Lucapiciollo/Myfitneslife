@@ -7,10 +7,7 @@ import org.junit.Test
 
 /** Linguaggio prudente: codici, chiavi, motivi e chiavi di evidenza non devono contenere termini diagnostici. */
 class BodyFlagVocabularyTest {
-    private val forbidden = listOf(
-        "diagnos", "sarcopen", "malatt", "obesit", "obesity", "patolog", "pathol", "disease", "disturb",
-        "anoress", "bulim", "ipertension", "diabet", "cura", "terapi", "prescri",
-    )
+    private val forbidden = BodyFlagVocabulary.STEMS
 
     private fun assertClean(label: String, text: String) {
         val lower = text.lowercase()

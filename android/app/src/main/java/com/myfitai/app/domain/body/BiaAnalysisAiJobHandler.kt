@@ -36,6 +36,11 @@ class BiaAnalysisAiJobHandler(
     private val results: BiaAnalysisResultRepository,
     private val clock: () -> Long = System::currentTimeMillis,
     private val today: () -> LocalDate = LocalDate::now,
+    /**
+     * Flags decided by the app ([BodyFlagService.load]); injectable so tests can fake it. Null = the coach runs
+     * without the `FLAG_APP` block and without the flag checks (as before).
+     */
+    private val flagReports: (suspend (profileId: Long, today: LocalDate) -> BodyFlagReport?)? = null,
 ) : AiJobHandler {
     override suspend fun execute(profileId: Long, jobKey: String, params: Data): AiJobOutcome {
         return try {
@@ -63,6 +68,7 @@ class BiaAnalysisAiJobHandler(
                     biologicalSex = profile.biologicalSex,
                     appScenarios = context.scenarios,
                     appCalories = context.caloriesText,
+                    allowedFlagCodes = context.allowedFlagCodes,
                 ),
             )
             val resultId = results.insert(
@@ -116,8 +122,19 @@ class BiaAnalysisAiJobHandler(
             bodyHistory = body.all(profileId).first(),
             planDays = planDays,
             calculation = calculation,
+            flags = flagReports?.let { BodyFlagCoach.Input(loadFlags(it, profileId)) },
         )
     }
+
+    /** A failure of the flag engine never blocks the analysis: the coach then gets "nessun flag" and no signal is accepted. */
+    private suspend fun loadFlags(loader: suspend (Long, LocalDate) -> BodyFlagReport?, profileId: Long): BodyFlagReport? =
+        try {
+            loader(profileId, today())
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (failure: Exception) {
+            null
+        }
 
     companion object {
         const val KEY_MEASUREMENT_ID = "measurement_id"
@@ -126,8 +143,14 @@ class BiaAnalysisAiJobHandler(
         const val KEY_SKIP_REASON = "skip_reason"
         private const val NO_MEASUREMENT = -1L
 
-        /** Fixed sentence stored by the app before T3 when the model gave no safety note; the UI no longer shows it. */
-        const val DEFAULT_SAFETY_NOTE = "Analisi informativa, non sostituisce il parere di un medico o di un nutrizionista."
+        /**
+         * Fixed sentence stored by the app before T3 when the model gave no safety note; the UI no longer shows it (see
+         * [BiaAnalysisPresentation.safetyNoteToShow]). It must not name professions: the app is an automatic assistant.
+         */
+        const val DEFAULT_SAFETY_NOTE = "Analisi informativa: \u00E8 un assistente automatico, non sostituisce il parere del medico."
+
+        /** Same fixed sentence as stored in results saved before the claim change: still "no note". */
+        const val LEGACY_SAFETY_NOTE = "Analisi informativa, non sostituisce il parere di un medico o di un nutrizionista."
 
         /** The only parameter a manual analysis needs; everything else is read from Room. */
         fun params(measurementId: Long): Data = Data.Builder().putLong(KEY_MEASUREMENT_ID, measurementId).build()

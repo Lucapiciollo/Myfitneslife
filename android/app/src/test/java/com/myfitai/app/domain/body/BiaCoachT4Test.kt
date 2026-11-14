@@ -284,11 +284,12 @@ class BiaCoachT4Test {
     fun safetyNote_neutralSentencesAreNotShown() {
         listOf(
             "Nessuna nota di sicurezza attiva.", "nessuna nota di sicurezza attiva", "  NESSUNA NOTA DI SICUREZZA ATTIVA!  ", "Nessuna nota di sicurezza.",
-            "Nessuna nota.", "Nessun avviso di sicurezza.", "Nessuna segnalazione.", "?", "", "-", BiaAnalysisAiJobHandler.DEFAULT_SAFETY_NOTE,
+            "Nessuna nota.", "Nessun avviso di sicurezza.", "Nessuna segnalazione.", "?", "", "-",
+            BiaAnalysisAiJobHandler.DEFAULT_SAFETY_NOTE, BiaAnalysisAiJobHandler.LEGACY_SAFETY_NOTE,
         ).forEach { assertNull("'$it'", P.safetyNoteToShow(it)) }
         assertEquals(
-            "Parlane con il tuo medico o con un nutrizionista.",
-            P.safetyNoteToShow(" Parlane con il tuo medico o con un nutrizionista. "),
+            "Parlane con il tuo medico.",
+            P.safetyNoteToShow(" Parlane con il tuo medico. "),
         )
         // A real note that merely contains the words is kept.
         assertEquals(

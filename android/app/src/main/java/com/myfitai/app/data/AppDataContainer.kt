@@ -35,6 +35,7 @@ import com.myfitai.app.domain.body.BiaImportAiJobHandler
 import com.myfitai.app.domain.body.BiaAnalysisAiJobHandler
 import com.myfitai.app.domain.body.BiaAnalysisService
 import com.myfitai.app.domain.body.BiaProgressCoachScheduler
+import com.myfitai.app.domain.body.BodyFlagService
 import com.myfitai.app.domain.review.WeeklyReviewAiJobHandler
 import com.myfitai.app.domain.ai.AiJobRegistry
 import com.myfitai.app.domain.ai.AiJobScheduler
@@ -106,6 +107,7 @@ class AppDataContainer private constructor(context: Context) {
 
     val bodyProportionAnalysisService = BodyProportionAnalysisService(aiRuntimeService)
     val biaAnalysisService = BiaAnalysisService(aiRuntimeService)
+    val bodyFlagService = BodyFlagService(userProfileRepository, biaRepository, bodyMeasurementRepository)
     val biaImportService = BiaImportService(aiRuntimeService)
     val planReviewService = PlanReviewService(aiRuntimeService)
 
@@ -217,6 +219,7 @@ class AppDataContainer private constructor(context: Context) {
                 calculations = profileCalculationService,
                 scheduler = biaProgressCoachScheduler,
                 results = biaAnalysisResultRepository,
+                flagReports = { profileId, today -> bodyFlagService.load(profileId, today) },
             ),
             AiJobType.BIA_IMPORT to BiaImportAiJobHandler(biaImportService, aiImageJobStore),
         ))

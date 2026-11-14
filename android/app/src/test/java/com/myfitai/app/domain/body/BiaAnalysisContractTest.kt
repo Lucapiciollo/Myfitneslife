@@ -624,7 +624,7 @@ class BiaAnalysisContractTest {
         val missing = BiaAnalysisContract.parse(envelope(ba2(safety = "")))
         assertEquals("SAFETY_NOTE_REQUIRED", BiaAnalysisContract.validateBusinessWith(missing, flagged).exceptionOrNull()?.message)
 
-        val noted = BiaAnalysisContract.parse(envelope(ba2(safety = "Ne parlerei con il medico o con un nutrizionista.")))
+        val noted = BiaAnalysisContract.parse(envelope(ba2(safety = "Ne parlerei con il medico.")))
         assertTrue(BiaAnalysisContract.validateBusinessWith(noted, flagged).isSuccess)
     }
 

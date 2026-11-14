@@ -1,7 +1,7 @@
 # Controllo vincoli alimentari — limiti dichiarati
 
 **Controllo su elenco, non garanzia medica.** Il controllo è basato su elenchi curati. Non sostituisce il parere di
-medico, allergologo o dietista. L'app non può garantire l'assenza di un allergene o di un ingrediente vietato.
+medico o allergologo. L'app non può garantire l'assenza di un allergene o di un ingrediente vietato.
 
 Implementazione: `FoodConstraintValidator`, `FoodSynonyms`, `DietaryProfile`
 (`android/app/src/main/java/com/myfitai/app/domain/food/`). Test: `FoodSynonymsGoldenTest`,

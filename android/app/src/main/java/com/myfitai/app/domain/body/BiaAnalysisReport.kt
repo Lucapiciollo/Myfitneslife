@@ -139,6 +139,8 @@ object BiaAnalysisReport {
         val scenarios: List<BiaScenarioCalculator.Scenario> = emptyList(),
         /** Calories and macros written by the app ([caloriesSection]); the model only adds a qualitative comment. */
         val caloriesText: String = "",
+        /** Flags decided by the app and sent as `FLAG_APP`; null when the context was built without the flag block. */
+        val allowedFlagCodes: Set<BodyFlagCode>? = null,
     )
 
     private const val DAY_MILLIS = 86_400_000L
@@ -152,7 +154,8 @@ object BiaAnalysisReport {
      *
      * The calorie target is ONE, the profile's (`TARGET_ABITUALE_KCAL` from [calculation], the same figure as Home,
      * Food and the plan); the fat scenarios and the fat-loss estimate are calculated
-     * here by [BiaScenarioCalculator] and the model only comments them.
+     * here by [BiaScenarioCalculator] and the model only comments them. [flags] adds the `FLAG_APP` line (flags already
+     * decided by [BodyFlagEngine]; the model only explains them); null leaves the line out.
      */
     fun coachContext(
         profile: UserProfileEntity,
@@ -162,6 +165,7 @@ object BiaAnalysisReport {
         planDays: List<PlanDay>,
         calculation: LocalCalculationEngine.Result?,
         zone: ZoneId = ZoneId.systemDefault(),
+        flags: BodyFlagCoach.Input? = null,
     ): CoachContext {
         val cutoff = report.latest.measuredAtEpochMillis + DAY_MILLIS
         val cutoffEpochDay = Instant.ofEpochMilli(report.latest.measuredAtEpochMillis).atZone(zone).toLocalDate().toEpochDay()
@@ -208,8 +212,10 @@ object BiaAnalysisReport {
             appendLine("PIANO_PIANIFICATO:${plan.joinToString(";") { "date=${LocalDate.ofEpochDay(it.dateEpochDay)},kcal=${it.kcal ?: "?"},p=${it.proteinG ?: "?"},c=${it.carbsG ?: "?"},f=${it.fatG ?: "?"}" }.ifBlank { "?" }}")
             appendLine(fatLossEstimateLine(report))
             appendLine(scenariosLine(scenarios))
+            // Flags decided by the app (BodyFlagEngine): the model only explains them. Omitted for callers without flags.
+            flags?.let { appendLine(BodyFlagCoach.contextLine(it.report)) }
         }
-        return CoachContext(prompt, safety, scenarios, caloriesSection(calculation))
+        return CoachContext(prompt, safety, scenarios, caloriesSection(calculation), flags?.let { BodyFlagCoach.allowedCodes(it.report) })
     }
 
     private fun whole(value: Double): String = Math.round(value).toString()

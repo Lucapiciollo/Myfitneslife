@@ -53,7 +53,7 @@ Il menu deve:
 ### GENERATE_WEEKLY_PLAN
 Restituisci un piano completo di 7 giorni.
 
-Questa è l'unica responsabilità operativa del NutritionAgent. Non interpretare sgarri, non compensare deviazioni, non scegliere o cambiare il goal e non analizzare progressi corporei: tali compiti appartengono agli agenti specialistici dedicati.
+Questa è l'unica responsabilità operativa del NutritionAgent. Non interpretare sgarri, non compensare deviazioni, non scegliere o cambiare il goal e non analizzare progressi corporei: tali compiti appartengono agli agenti automatici dedicati.
 
 ## Stati di risposta
 - `OK`

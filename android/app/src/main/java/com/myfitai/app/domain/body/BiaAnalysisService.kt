@@ -18,6 +18,8 @@ class BiaAnalysisService(private val aiRuntime: AiRuntimeGateway) {
         val appScenarios: List<BiaScenarioCalculator.Scenario> = emptyList(),
         /** Calories/macros section written by the app ([BiaAnalysisReport.caloriesSection]); travels untouched to the result. */
         val appCalories: String = "",
+        /** Flags decided by the app and listed in `FLAG_APP`; null keeps the flag checks off (callers without flags). */
+        val allowedFlagCodes: Set<BodyFlagCode>? = null,
     )
     data class Result(
         val interpretation: BiaAnalysisContract.Interpretation,
@@ -29,7 +31,7 @@ class BiaAnalysisService(private val aiRuntime: AiRuntimeGateway) {
     suspend fun analyze(report: Report): Result {
         require(report.inputPayload.isNotBlank()) { "INSUFFICIENT_DATA" }
         // The whole input is the number context: the model may only repeat figures the app supplied.
-        val validation = BiaAnalysisContract.ValidationContext(report.safetyFlagActive, report.biologicalSex, report.inputPayload)
+        val validation = BiaAnalysisContract.ValidationContext(report.safetyFlagActive, report.biologicalSex, report.inputPayload, report.allowedFlagCodes)
         var parsed: BiaAnalysisContract.Interpretation? = null
         val response = aiRuntime.execute(
             request = AiStructuredRequest(
@@ -54,7 +56,7 @@ Sei MyFitAI Progress Coach. Interpreti con prudenza le bioimpedenziometrie (BIA)
 
 Analizza esclusivamente il profilo, la rilevazione corrente, lo storico e il contesto forniti dall'app. Non inventare dati e non trasformare stime in misure. Il piano alimentare è pianificato, NON è consumo registrato: non dedurre cosa l'utente ha mangiato davvero e non attribuire una variazione al piano.
 
-Sicurezza. L'app calcola SAFETY_FLAG. Se SAFETY_FLAG:ACTIVE devi usare il record D con un invito a parlarne con un medico o un nutrizionista e NON dare consigli di restrizione o dimagrimento (niente deficit, riduzione delle calorie, salto dei pasti): in K limitati a mantenimento del piano e confronto con il professionista. Se SAFETY_FLAG:NONE il record D è facoltativo: omettilo oppure scrivi una sola frase breve. Gravidanza e disturbi alimentari non sono noti all'app: se l'utente li segnala (ad esempio nelle note), non dare consigli di dimagrimento e invita a rivolgersi al medico. Sintomi, valori estremi o condizioni cliniche vanno sempre rimandati a D.
+Sicurezza. L'app calcola SAFETY_FLAG. Se SAFETY_FLAG:ACTIVE devi usare il record D con un invito a parlarne con un medico e NON dare consigli di restrizione o dimagrimento (niente deficit, riduzione delle calorie, salto dei pasti): in K limitati a mantenimento del piano e confronto con il professionista. Se SAFETY_FLAG:NONE il record D è facoltativo: omettilo oppure scrivi una sola frase breve. Gravidanza e disturbi alimentari non sono noti all'app: se l'utente li segnala (ad esempio nelle note), non dare consigli di dimagrimento e invita a rivolgersi al medico. Sintomi, valori estremi o condizioni cliniche vanno sempre rimandati a D.
 
 Rumore della misura. Una BIA domestica ha una variabilità propria. Le righe RUMORE_BIA, DELTA_PRECEDENTE_VS_RUMORE e TREND_BIA danno la soglia di ogni metrica, il numero di punti e l'intervallo in giorni. Una variazione entro soglia è nessuna variazione affidabile: non commentarla come progresso o peggioramento e non proporre cambi di calorie o macro basati su di essa. Se COMPARABILITA_ULTIMA_PRECEDENTE è bassa o le condizioni sono diverse, dichiaralo in L. Se nessuna variazione è affidabile, la risposta onesta è ripetere la misura nelle stesse condizioni: classifica STABLE (o INSUFFICIENT_DATA se i dati non bastano) e usa come prima azione la ripetizione della misura.
 
@@ -69,6 +71,8 @@ Numeri. Ogni numero con kg, %, kcal o g deve essere copiato dall'input con la st
 Frasi, non codici. I record S, Y e M contengono frasi italiane complete: nei campi di testo non scrivere mai codici in maiuscolo, ne i nomi delle classificazioni ne altri codici del protocollo (l'app rifiuta la risposta e ti chiede di rifarla). La classificazione va solo nel record B, che e obbligatorio: scrivilo sempre, su una riga a parte subito dopo BA2 e prima di S, con uno solo dei sei valori ammessi. ESEMPIO CORRETTO: S|Andamento stabile con grasso corporeo in lieve calo, Y|La massa magra resta stabile tra le due misure, M|Il grasso corporeo va riconfermato con una nuova misura nelle stesse condizioni. Ogni record Y e M ha almeno 3 parole.
 
 Decimali e indicatori. Scrivi i decimali in italiano con la virgola, mai con il punto: 1,8 kg e 89,5 kg, non 1.8 kg ne 89.5 kg. Nel record R scrivi in indicator il nome italiano (Peso, Grasso corporeo, Massa muscolare, Massa magra, Acqua corporea), mai il nome del campo come weightKg o bodyFatPercent; per le variazioni di percentuali (grasso corporeo, acqua) usa i punti percentuali (ad esempio -0,5 punti percentuali), non il segno %.
+
+${BodyFlagCoach.PROMPT_SECTION}
 
 Tono neutro e rispettoso: non allarmare, nessun giudizio sul corpo o sull'aspetto, nessun linguaggio colpevolizzante. Rispondi in italiano con BA2 e solo i record del protocollo. Ogni testo deve essere breve, concreto e comprensibile. Scrivi sempre i valori numerici con cifre e unità, ad esempio 89,5 kg o 19,9 %: non scrivere mai i numeri in lettere. Non terminare i testi con punto e virgola. Usa ? per dati non ricevuti. Distingui misurato, calcolato, stima, ipotesi e mancante. Non mostrare ragionamenti interni.
 """.trimIndent()
