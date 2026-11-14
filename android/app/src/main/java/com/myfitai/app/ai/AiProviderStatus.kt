@@ -6,7 +6,7 @@ package com.myfitai.app.ai
  */
 data class AiProviderStatus(
     val state: State,
-    /** Provider scelto dall'utente (Gemini, OpenAI o Grok sperimentale), anche se privo di chiave. */
+    /** Provider scelto dall'utente (Gemini o OpenAI), anche se privo di chiave. */
     val selected: AiProviderType,
     /** Altro provider con chiave presente, offerto con un tocco esplicito (mai come fallback automatico). */
     val alternative: AiProviderType? = null,
@@ -26,19 +26,6 @@ data class AiProviderStatus(
     val needsAttention: Boolean get() = state != State.ACTIVE
 
     companion object {
-        /** Nome breve del provider per badge e testi di stato (nomi di prodotto, non tradotti). */
-        fun displayName(type: AiProviderType): String = when (type) {
-            AiProviderType.GEMINI -> "Gemini"
-            AiProviderType.OPENAI -> "OpenAI"
-            AiProviderType.GROK -> "Grok"
-            AiProviderType.NOT_CONFIGURED -> ""
-        }
-
-        /** Voci del selettore provider: Grok compare solo con l'interruttore sperimentale acceso (spento di default). */
-        fun selectableProviders(grokEnabled: Boolean): List<AiProviderType> =
-            if (grokEnabled) listOf(AiProviderType.GEMINI, AiProviderType.OPENAI, AiProviderType.GROK)
-            else listOf(AiProviderType.GEMINI, AiProviderType.OPENAI)
-
         fun from(config: AiRuntimeConfig): AiProviderStatus {
             if (config.grokActive) {
                 // Grok chosen and enabled: state consistent with selectedProvider(); the alternative is a historical provider with a key.

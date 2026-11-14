@@ -13,8 +13,6 @@ import android.widget.Toast
 import androidx.core.view.ViewCompat
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.android.material.materialswitch.MaterialSwitch
 import com.google.android.material.textfield.TextInputEditText
 import com.myfitai.app.R
 import com.myfitai.app.ai.AiModelConfig
@@ -23,7 +21,6 @@ import com.myfitai.app.ai.AiProviderType
 import com.myfitai.app.ai.AiRuntimeConfig
 import com.myfitai.app.ai.AiSettingsStore
 import com.myfitai.app.ai.GeminiByokProvider
-import com.myfitai.app.ai.GrokProvider
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.security.AiCredentialProvider
 import com.myfitai.app.security.SecureAiCredentialStore
@@ -42,9 +39,6 @@ class AiSettingsActivity : BaseShellActivity() {
     private lateinit var settings: AiSettingsStore
     private lateinit var credentialStore: SecureAiCredentialStore
     private lateinit var providerSegment: SelectableSegmentView
-    private var segmentProviders: List<AiProviderType> = emptyList()
-    private var grokCostViews: List<View> = emptyList()
-    private var renderingGrokSwitch = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -69,25 +63,21 @@ class AiSettingsActivity : BaseShellActivity() {
 
         val geminiInput = findViewById<TextInputEditText>(R.id.geminiApiKeyInput)
         val openAiInput = findViewById<TextInputEditText>(R.id.openAiApiKeyInput)
-        val grokInput = findViewById<TextInputEditText>(R.id.grokApiKeyInput)
-        listOf(geminiInput, openAiInput, grokInput).forEach {
+        listOf(geminiInput, openAiInput).forEach {
             it.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_YES
             it.importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_NO
             it.isLongClickable = false
         }
 
         providerSegment = findViewById(R.id.aiProviderSegment)
+        providerSegment.setSegments(listOf("Gemini", "OpenAI"), if (settings.useGemini) 0 else 1)
         providerSegment.setOnSegmentSelectedListener { index ->
-            // Nessun passaggio silenzioso: la scelta cambia solo per un tocco esplicito sulla voce.
-            segmentProviders.getOrNull(index)?.let { settings.selectedProvider = it }
+            settings.useGemini = index == 0
             render()
         }
-        bindGrokSwitch()
 
-        bindKeyActions(geminiInput, openAiInput, grokInput)
+        bindKeyActions(geminiInput, openAiInput)
         bindAutomationsLink()
-        // Grok va aggiunto prima: i binder inseriscono la propria riga in testa (ordine finale Gemini, OpenAI, Grok).
-        grokCostViews = GrokCostSettingsBinder.bind(this, findViewById(R.id.aiCostGroup))
         GeminiCostSettingsBinder.bind(this, findViewById(R.id.aiCostGroup), settings)
         render()
     }
@@ -101,83 +91,13 @@ class AiSettingsActivity : BaseShellActivity() {
         // Nessun segreto digitato deve restare in memoria visibile quando l'utente esce dalla schermata.
         findViewById<TextInputEditText?>(R.id.geminiApiKeyInput)?.text?.clear()
         findViewById<TextInputEditText?>(R.id.openAiApiKeyInput)?.text?.clear()
-        findViewById<TextInputEditText?>(R.id.grokApiKeyInput)?.text?.clear()
         super.onStop()
-    }
-
-    private fun bindGrokSwitch() {
-        findViewById<MaterialSwitch>(R.id.aiGrokSwitch).setOnCheckedChangeListener { button, checked ->
-            if (renderingGrokSwitch) return@setOnCheckedChangeListener
-            if (checked) {
-                // Il consenso e' esplicito: l'interruttore resta spento finche' l'utente non conferma.
-                renderingGrokSwitch = true
-                button.isChecked = false
-                renderingGrokSwitch = false
-                MaterialAlertDialogBuilder(this)
-                    .setTitle(R.string.ai_grok_confirm_title)
-                    .setMessage(R.string.ai_grok_data_notice)
-                    .setNegativeButton("Annulla", null)
-                    .setPositiveButton(R.string.ai_grok_confirm_positive) { _, _ ->
-                        settings.grokEnabled = true
-                        settings.selectedProvider = AiProviderType.GROK
-                        Toast.makeText(this, R.string.ai_grok_enabled_toast, Toast.LENGTH_SHORT).show()
-                        render()
-                    }
-                    .show()
-            } else {
-                settings.grokEnabled = false
-                // Torna al provider storico, quello che il runtime userebbe comunque: stato e interfaccia restano coerenti.
-                if (settings.selectedProvider == AiProviderType.GROK) {
-                    settings.selectedProvider = if (settings.useGemini) AiProviderType.GEMINI else AiProviderType.OPENAI
-                }
-                render()
-            }
-        }
-    }
-
-    /** Ricostruisce il segmento solo se cambiano le voci (Grok acceso/spento), mai dentro il proprio callback di selezione. */
-    private fun renderProviderSegment(selected: AiProviderType, grokEnabled: Boolean) {
-        val providers = AiProviderStatus.selectableProviders(grokEnabled)
-        if (providers != segmentProviders) {
-            segmentProviders = providers
-            providerSegment.setSegments(
-                providers.map { providerName(it) },
-                providers.indexOf(selected).coerceAtLeast(0),
-            )
-            return
-        }
-        val index = providers.indexOf(selected)
-        if (index >= 0) {
-            val id = providerSegment.getChildAt(index).id
-            if (providerSegment.checkedButtonId != id) providerSegment.check(id)
-        }
-    }
-
-    private fun activeModel(type: AiProviderType): String = when (type) {
-        AiProviderType.GEMINI -> settings.selectedGeminiModel
-        AiProviderType.GROK -> settings.selectedGrokModel
-        else -> settings.selectedOpenAiModel
     }
 
     private fun render() {
         if (!::settings.isInitialized) return
         val geminiConfigured = credentialStore.exists(AiCredentialProvider.GEMINI)
         val openAiConfigured = credentialStore.exists(AiCredentialProvider.OPENAI)
-        val grokConfigured = credentialStore.exists(AiCredentialProvider.GROK)
-        val grokEnabled = settings.grokEnabled
-        findViewById<View>(R.id.grokInputLayout).visibility = if (grokConfigured) View.GONE else View.VISIBLE
-        findViewById<View>(R.id.pasteGrokKeyButton).visibility = if (grokConfigured) View.GONE else View.VISIBLE
-        findViewById<View>(R.id.saveGrokKeyButton).visibility = if (grokConfigured) View.GONE else View.VISIBLE
-        findViewById<View>(R.id.replaceGrokKeyButton).visibility = if (grokConfigured) View.VISIBLE else View.GONE
-        findViewById<View>(R.id.deleteGrokKeyButton).visibility = if (grokConfigured) View.VISIBLE else View.GONE
-        // Grok e' sperimentale e spento di default: chiave, modello e costi compaiono solo se e' acceso o ha gia' una chiave da gestire.
-        val grokVisible = if (grokEnabled || grokConfigured) View.VISIBLE else View.GONE
-        findViewById<View>(R.id.grokKeyGroup).visibility = grokVisible
-        findViewById<View>(R.id.grokModelGroup).visibility = grokVisible
-        grokCostViews.forEach { it.visibility = grokVisible }
-        renderingGrokSwitch = true
-        findViewById<MaterialSwitch>(R.id.aiGrokSwitch).isChecked = grokEnabled
-        renderingGrokSwitch = false
         findViewById<View>(R.id.geminiInputLayout).visibility = if (geminiConfigured) View.GONE else View.VISIBLE
         findViewById<View>(R.id.pasteGeminiKeyButton).visibility = if (geminiConfigured) View.GONE else View.VISIBLE
         findViewById<View>(R.id.saveGeminiKeyButton).visibility = if (geminiConfigured) View.GONE else View.VISIBLE
@@ -190,16 +110,8 @@ class AiSettingsActivity : BaseShellActivity() {
         findViewById<View>(R.id.deleteOpenAiKeyButton).visibility = if (openAiConfigured) View.VISIBLE else View.GONE
 
         val status = AiProviderStatus.from(
-            AiRuntimeConfig(
-                useGemini = settings.useGemini,
-                geminiConfigured = geminiConfigured,
-                openAiConfigured = openAiConfigured,
-                grokEnabled = grokEnabled,
-                grokSelected = settings.selectedProvider == AiProviderType.GROK,
-                grokConfigured = grokConfigured,
-            ),
+            AiRuntimeConfig(useGemini = settings.useGemini, geminiConfigured = geminiConfigured, openAiConfigured = openAiConfigured),
         )
-        renderProviderSegment(status.selected, grokEnabled)
         renderProviderStatus(status)
 
         findViewById<TextView>(R.id.geminiKeyStatusText).text = if (geminiConfigured) {
@@ -212,11 +124,6 @@ class AiSettingsActivity : BaseShellActivity() {
         } else {
             "Chiave OpenAI non configurata"
         }
-        findViewById<TextView>(R.id.grokKeyStatusText).text = if (grokConfigured) {
-            getString(R.string.ai_grok_key_configured, AiModelConfig.displayName(settings.selectedGrokModel))
-        } else {
-            getString(R.string.ai_grok_key_missing)
-        }
     }
 
     private fun renderProviderStatus(status: AiProviderStatus) {
@@ -226,15 +133,16 @@ class AiSettingsActivity : BaseShellActivity() {
             AiProviderStatus.State.ACTIVE -> getString(
                 R.string.ai_provider_active,
                 providerName(status.selected),
-                AiModelConfig.displayName(activeModel(status.selected)),
+                AiModelConfig.displayName(
+                    if (status.selected == AiProviderType.GEMINI) settings.selectedGeminiModel else settings.selectedOpenAiModel,
+                ),
             )
             AiProviderStatus.State.SELECTED_WITHOUT_KEY -> {
                 val other = checkNotNull(status.alternative)
-                missingKeyText(status.selected) + " " +
+                getString(R.string.ai_provider_missing_key, providerName(status.selected)) + " " +
                     getString(R.string.ai_provider_other_configured, providerName(other))
             }
-            AiProviderStatus.State.NONE ->
-                if (status.selected == AiProviderType.GROK) getString(R.string.ai_provider_grok_missing_key) else getString(R.string.ai_provider_none)
+            AiProviderStatus.State.NONE -> getString(R.string.ai_provider_none)
         }
         val alternative = status.alternative
         if (status.state == AiProviderStatus.State.SELECTED_WITHOUT_KEY && alternative != null) {
@@ -242,8 +150,7 @@ class AiSettingsActivity : BaseShellActivity() {
             useOther.visibility = View.VISIBLE
             // Un tocco esplicito dell'utente: nessun fallback automatico tra provider.
             useOther.setOnClickListener {
-                val index = segmentProviders.indexOf(alternative)
-                if (index >= 0) providerSegment.check(providerSegment.getChildAt(index).id)
+                providerSegment.check(providerSegment.getChildAt(if (alternative == AiProviderType.GEMINI) 0 else 1).id)
             }
         } else {
             useOther.visibility = View.GONE
@@ -251,31 +158,14 @@ class AiSettingsActivity : BaseShellActivity() {
         }
     }
 
-    private fun missingKeyText(type: AiProviderType): String =
-        if (type == AiProviderType.GROK) getString(R.string.ai_provider_grok_missing_key)
-        else getString(R.string.ai_provider_missing_key, providerName(type))
+    private fun providerName(type: AiProviderType): String = when (type) {
+        AiProviderType.GEMINI -> "Gemini"
+        AiProviderType.OPENAI -> "OpenAI"
+        AiProviderType.GROK -> "Grok"
+        AiProviderType.NOT_CONFIGURED -> ""
+    }
 
-    private fun providerName(type: AiProviderType): String =
-        if (type == AiProviderType.GROK) getString(R.string.ai_provider_grok_label) else AiProviderStatus.displayName(type)
-
-    private fun bindKeyActions(geminiInput: TextInputEditText, openAiInput: TextInputEditText, grokInput: TextInputEditText) {
-        findViewById<View>(R.id.saveGrokKeyButton).setOnClickListener {
-            saveCredential(AiCredentialProvider.GROK, grokInput) { candidate ->
-                GrokProvider(credentialStore).verifyApiKey(candidate)
-            }
-        }
-        findViewById<View>(R.id.pasteGrokKeyButton).setOnClickListener { pasteInto(grokInput) }
-        findViewById<View>(R.id.replaceGrokKeyButton).setOnClickListener {
-            grokInput.text?.clear()
-            findViewById<View>(R.id.grokInputLayout).visibility = View.VISIBLE
-            findViewById<View>(R.id.saveGrokKeyButton).visibility = View.VISIBLE
-            findViewById<View>(R.id.replaceGrokKeyButton).visibility = View.GONE
-        }
-        findViewById<View>(R.id.deleteGrokKeyButton).setOnClickListener {
-            credentialStore.delete(AiCredentialProvider.GROK)
-            grokInput.text?.clear()
-            render()
-        }
+    private fun bindKeyActions(geminiInput: TextInputEditText, openAiInput: TextInputEditText) {
         findViewById<View>(R.id.saveOpenAiKeyButton).setOnClickListener {
             saveCredential(AiCredentialProvider.OPENAI, openAiInput) { candidate ->
                 com.myfitai.app.ai.OpenAiProvider(credentialStore).verifyApiKey(candidate)
@@ -398,7 +288,7 @@ class AiSettingsActivity : BaseShellActivity() {
     private fun logVerificationOutcome(provider: AiCredentialProvider, error: Throwable) {
         val debuggable = (applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
         if (!debuggable) return
-        val providerName = provider.name
+        val providerName = if (provider == AiCredentialProvider.GEMINI) "GEMINI" else "OPENAI"
         val detail = when (error) {
             is com.myfitai.app.ai.AiTransportException.Http -> "status=${error.statusCode} kind=${error.failureKind}"
             is com.myfitai.app.ai.AiTransportException.Network -> "status=- kind=NETWORK"
@@ -410,11 +300,7 @@ class AiSettingsActivity : BaseShellActivity() {
     }
 
     private fun providerError(provider: AiCredentialProvider, error: Throwable): String {
-        val label = when (provider) {
-            AiCredentialProvider.GEMINI -> "Gemini"
-            AiCredentialProvider.OPENAI -> "OpenAI"
-            AiCredentialProvider.GROK -> "Grok"
-        }
+        val label = if (provider == AiCredentialProvider.GEMINI) "Gemini" else "OpenAI"
         val tail = "La chiave precedente non è stata modificata."
         return when (error) {
             is com.myfitai.app.ai.AiTransportException.Http -> when (error.failureKind) {
@@ -424,7 +310,7 @@ class AiSettingsActivity : BaseShellActivity() {
                         "Di solito accade quando la Auth Key è legata a un progetto/organizzazione che non consente l'accesso via API key REST. $tail"
                 com.myfitai.app.ai.AiTransportFailureKind.MODEL_UNAVAILABLE ->
                     if (provider == AiCredentialProvider.GEMINI) "Modello Gemini non disponibile (nemmeno il fallback). $tail"
-                    else "Modello $label non disponibile per questa chiave. $tail"
+                    else "Modello OpenAI non disponibile per questa chiave. $tail"
                 com.myfitai.app.ai.AiTransportFailureKind.QUOTA_EXHAUSTED -> "Quota $label esaurita. $tail"
                 com.myfitai.app.ai.AiTransportFailureKind.RATE_LIMITED -> "Limite temporaneo $label raggiunto. Riprova più tardi."
                 com.myfitai.app.ai.AiTransportFailureKind.PROVIDER_UNAVAILABLE -> "$label non è temporaneamente disponibile (HTTP ${error.statusCode}). Riprova più tardi; $tail"

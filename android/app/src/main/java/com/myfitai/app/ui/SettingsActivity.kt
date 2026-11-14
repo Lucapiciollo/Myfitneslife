@@ -26,7 +26,7 @@ import com.myfitai.app.ui.dialog.HelpDialogSpec
 import com.myfitai.app.ui.dialog.HelpSection
 import com.myfitai.app.R
 import com.myfitai.app.ai.AiProviderAccess
-import com.myfitai.app.ai.AiProviderStatus
+import com.myfitai.app.ai.AiProviderType
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.data.profile.MealCountPreferences
@@ -297,7 +297,7 @@ class SettingsActivity : BaseShellActivity() {
         if (status.needsAttention) {
             row.setTrailingBadge(getString(R.string.settings_row_ai_status_unconfigured), R.color.semantic_warning)
         } else {
-            row.setTrailingBadge(AiProviderStatus.displayName(status.selected), R.color.accent_green_dark)
+            row.setTrailingBadge(if (status.selected == AiProviderType.GEMINI) "Gemini" else "OpenAI", R.color.accent_green_dark)
         }
     }
 
