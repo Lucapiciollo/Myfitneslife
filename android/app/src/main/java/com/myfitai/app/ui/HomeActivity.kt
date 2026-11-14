@@ -682,7 +682,7 @@ class HomeActivity : BaseShellActivity() {
         findViewById<TextView>(R.id.caloriesBmrValue).text = kcal(calories.bmr)
         findViewById<TextView>(R.id.caloriesBiaBmrValue).text = kcal(calories.biaBmr)
         // The BIA reference is shown only when a BIA provided it.
-        val hasBiaBmr = calories.biaBmr != null
+        val hasBiaBmr = com.myfitai.app.domain.display.BiaBmrRowRule.visible(calories.bmr, calories.biaBmr)
         findViewById<View>(R.id.caloriesBiaBmrRow).visibility = if (hasBiaBmr) View.VISIBLE else View.GONE
         findViewById<View>(R.id.caloriesBiaBmrDivider).visibility = if (hasBiaBmr) View.VISIBLE else View.GONE
         findViewById<TextView>(R.id.caloriesTdeeValue).text = kcal(calories.tdee)

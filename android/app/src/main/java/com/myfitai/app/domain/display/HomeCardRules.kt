@@ -36,3 +36,8 @@ object ConsumptionNote {
         else -> Kind.ALL_CONSUMED
     }
 }
+
+/** Home, Dettagli del calcolo: il BMR da BIA si mostra solo se c'e e aggiunge informazione (se coincide col BMR locale e una riga doppia). */
+object BiaBmrRowRule {
+    fun visible(bmr: Int?, biaBmr: Int?): Boolean = biaBmr != null && biaBmr != bmr
+}
