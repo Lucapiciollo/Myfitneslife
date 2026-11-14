@@ -161,7 +161,6 @@ class AiSettingsActivity : BaseShellActivity() {
     private fun providerName(type: AiProviderType): String = when (type) {
         AiProviderType.GEMINI -> "Gemini"
         AiProviderType.OPENAI -> "OpenAI"
-        AiProviderType.GROK -> "Grok"
         AiProviderType.NOT_CONFIGURED -> ""
     }
 

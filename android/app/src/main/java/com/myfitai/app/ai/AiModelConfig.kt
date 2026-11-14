@@ -21,18 +21,6 @@ object AiModelConfig {
     /** Cheapest supported OpenAI model: default for new installations. */
     const val OPENAI = OPENAI_GPT_5_NANO
 
-    // xAI Grok (experimental, off by default). Names taken from docs.x.ai/developers/models on 13/11/2026.
-    const val GROK_4_3 = "grok-4.3"
-    const val GROK_4_7 = "grok-4.7"
-
-    /** Cheapest verified Grok model with structured outputs and image input: default when Grok is enabled. */
-    const val GROK = GROK_4_3
-
-    val GROK_SELECTABLE = listOf(
-        GROK_4_3,
-        GROK_4_7,
-    )
-
     val GEMINI_SELECTABLE = listOf(
         GEMINI_25_FLASH,
         GEMINI_35_FLASH_LITE,
@@ -61,8 +49,6 @@ object AiModelConfig {
         OPENAI_GPT_5_MINI -> "GPT-5 Mini"
         OPENAI_GPT_5_NANO -> "GPT-5 Nano"
         OPENAI_GPT_4O_MINI -> "GPT-4o mini"
-        GROK_4_3 -> "Grok 4.3"
-        GROK_4_7 -> "Grok 4.7"
         else -> model
     }
 
