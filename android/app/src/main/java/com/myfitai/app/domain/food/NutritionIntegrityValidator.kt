@@ -32,6 +32,8 @@ data class AppNutritionValidation(
     val attempts: Int? = null,
     /** Tolerance values in force (v2); null when unknown. */
     val tolerancePolicy: NutritionPlanAssessment.TolerancePolicy? = null,
+    /** Riepilogo della riparazione dei piani calcolati dal catalogo (MFP2); null per i piani dichiarati dal modello. */
+    val computation: JSONObject? = null,
 ) {
     /**
      * Serialises the document persisted in `meal_plan_versions.appValidationJson`. Only numbers, codes and fixed
@@ -46,6 +48,7 @@ data class AppNutritionValidation(
         put("warnings", JSONArray().apply { warnings.forEach { put(it.toJson()) } })
         attempts?.let { put("attempts", it) }
         tolerancePolicy?.let { put("tolerancePolicy", it.toJson()) }
+        computation?.let { put("computation", it) }
         if (deviations.isNotEmpty()) put("deviations", JSONArray().apply { deviations.forEach { put(it.toJson()) } })
     }
 }
@@ -144,6 +147,12 @@ object NutritionIntegrityValidator {
         macroKcalToleranceRatio: Double = KCAL_TOLERANCE_RATIO,
         /** The single evaluation of the final plan; computed here with [tolerance] when the caller has none. */
         assessment: NutritionPlanAssessment.Assessment? = null,
+        /**
+         * Piano calcolato dal catalogo (MFP2): kcal e macro sono derivati dal database alimentare, quindi la coerenza
+         * kcal/macro dichiarata per pasto non si controlla (nulla e' dichiarato dal modello) e gli avvisi di
+         * riparazione (proteine sotto target) restano avvisi: non finiscono mai tra gli errori.
+         */
+        computation: FoodCatalogPlanBuilder.Computation? = null,
     ): AppNutritionValidation {
         val errors = mutableListOf<NutritionValidationIssue>()
         val warnings = mutableListOf<NutritionValidationIssue>()
@@ -153,8 +162,10 @@ object NutritionIntegrityValidator {
         response.days.forEach { day ->
             if (day.meals.size != mealsPerDay) errors += issue("MEAL_COUNT_INVALID", "Il numero di pasti non coincide con il profilo", dayEpochDay = day.dateEpochDay, expected = mealsPerDay.toDouble(), actual = day.meals.size.toDouble())
 
-            day.meals.forEach { meal -> validateItem(meal.kcal, meal.proteinG, meal.carbsG, meal.fatG, day.dateEpochDay, meal.title, errors, macroKcalToleranceRatio) }
-            day.supplements.forEach { supplement -> validateItem(supplement.kcal, supplement.proteinG, supplement.carbsG, supplement.fatG, day.dateEpochDay, supplement.name, errors, macroKcalToleranceRatio) }
+            if (computation == null) {
+                day.meals.forEach { meal -> validateItem(meal.kcal, meal.proteinG, meal.carbsG, meal.fatG, day.dateEpochDay, meal.title, errors, macroKcalToleranceRatio) }
+                day.supplements.forEach { supplement -> validateItem(supplement.kcal, supplement.proteinG, supplement.carbsG, supplement.fatG, day.dateEpochDay, supplement.name, errors, macroKcalToleranceRatio) }
+            }
 
             val mealKcal = day.meals.sumOf { it.kcal } + day.supplements.sumOf { it.kcal }
             val mealProtein = day.meals.sumOf { it.proteinG.toDouble() } + day.supplements.sumOf { it.proteinG.toDouble() }
@@ -168,6 +179,9 @@ object NutritionIntegrityValidator {
                 warnings += issue("INGREDIENT_NUTRITION_NOT_VERIFIABLE", "Fonte nutrizionale ingrediente non verificabile", day.dateEpochDay)
             }
         }
+        computation?.warnings?.forEach { w ->
+            if (warnings.none { it.code == w.code && it.dayEpochDay == w.dayEpochDay }) warnings += w
+        }
         return AppNutritionValidation(
             available = true,
             valid = errors.isEmpty(),
@@ -177,6 +191,7 @@ object NutritionIntegrityValidator {
             deviations = evaluated.days,
             attempts = evaluated.attempt + 1,
             tolerancePolicy = evaluated.tolerancePolicy,
+            computation = computation?.toJson(),
         )
     }
 

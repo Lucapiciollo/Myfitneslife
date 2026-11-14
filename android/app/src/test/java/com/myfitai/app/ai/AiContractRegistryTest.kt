@@ -8,6 +8,7 @@ import com.myfitai.app.domain.food.CheatAdjustmentCompactContract
 import com.myfitai.app.domain.food.CheatAdjustmentContract
 import com.myfitai.app.domain.food.CheatUnderstandingCompactContract
 import com.myfitai.app.domain.food.CheatUnderstandingContract
+import com.myfitai.app.domain.food.FoodCatalogPlanContract
 import com.myfitai.app.domain.food.MealAlternativeCompactContract
 import com.myfitai.app.domain.food.MealAlternativeContract
 import com.myfitai.app.domain.food.NutritionAdviceCompactContract
@@ -41,6 +42,7 @@ class AiContractRegistryTest {
         PlanReviewCompactContract.SCHEMA_NAME to PlanReviewCompactContract.PROTOCOL,
         NutritionPathContract.SCHEMA_NAME to NutritionPathContract.PROTOCOL,
         NutritionPlanCompactContract.SCHEMA_NAME to NutritionPlanCompactContract.PROTOCOL,
+        FoodCatalogPlanContract.SCHEMA_NAME to FoodCatalogPlanContract.PROTOCOL,
     ).map { (schema, protocol) -> schema to protocol.lineSequence().first().trim() }
 
     @Test
@@ -113,13 +115,17 @@ class AiContractRegistryTest {
         expected.forEach { (schema, cap) -> assertEquals(schema, cap, AiContractRegistry.require(schema).maxOutputTokens) }
         // The weekly plan has a variable length: no application cap.
         assertNull(AiContractRegistry.require("myfitai_weekly_nutrition_pipe_v1").maxOutputTokens)
-        assertEquals(expected.size + 1, AiContractRegistry.all.size)
+        assertNull(AiContractRegistry.require("myfitai_weekly_nutrition_pipe_v2").maxOutputTokens)
+        assertEquals(expected.size + 2, AiContractRegistry.all.size)
     }
 
     @Test
     fun geminiNativeSchemaIsDisabledOnlyForTheTwoWorkloadsItRejects() {
         val withoutNative = AiContractRegistry.all.filterNot { it.geminiNativeSchema }.map { it.schemaName }.toSet()
-        assertEquals(setOf("myfitai_weekly_nutrition_pipe_v1", "myfitai_meal_alternatives_pipe_v1"), withoutNative)
+        assertEquals(
+            setOf("myfitai_weekly_nutrition_pipe_v1", "myfitai_weekly_nutrition_pipe_v2", "myfitai_meal_alternatives_pipe_v1"),
+            withoutNative,
+        )
     }
 
     @Test

@@ -2,6 +2,7 @@ package com.myfitai.app.data
 
 import android.content.Context
 import com.myfitai.app.ai.AiRuntimeService
+import com.myfitai.app.ai.AiSettingsStore
 import com.myfitai.app.data.local.MyFitAiDatabase
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.profile.MealCountPreferences
@@ -22,6 +23,7 @@ import com.myfitai.app.domain.food.NutritionAdviceService
 import com.myfitai.app.domain.food.NutritionPlanGenerationService
 import com.myfitai.app.domain.food.NutritionPlanScheduler
 import com.myfitai.app.domain.food.PlanReviewService
+import com.myfitai.app.domain.food.catalog.AssetFoodCatalogLoader
 import com.myfitai.app.domain.food.NutritionPathScheduler
 import com.myfitai.app.domain.food.NutritionPathTrigger
 import com.myfitai.app.domain.food.NutritionPathAiJobHandler
@@ -110,6 +112,8 @@ class AppDataContainer private constructor(context: Context) {
     val bodyFlagService = BodyFlagService(userProfileRepository, biaRepository, bodyMeasurementRepository)
     val biaImportService = BiaImportService(aiRuntimeService)
     val planReviewService = PlanReviewService(aiRuntimeService)
+    private val aiSettingsStore = AiSettingsStore(appContext)
+    val foodCatalogLoader = AssetFoodCatalogLoader(appContext.assets)
 
     val progressAnalysisService = ProgressAnalysisService(
         aiRuntime = aiRuntimeService,
@@ -153,6 +157,8 @@ class AppDataContainer private constructor(context: Context) {
         personalResponse = personalResponseService,
         mealCountPreferences = mealCountPreferences,
         planReview = planReviewService,
+        foodCatalogLoader = foodCatalogLoader,
+        useFoodCatalogPlan = { aiSettingsStore.useFoodCatalogPlan },
     )
 
     val cheatAdjustmentService = CheatAdjustmentService(

@@ -8,6 +8,7 @@ import com.myfitai.app.domain.food.CheatAdjustmentCompactContract
 import com.myfitai.app.domain.food.CheatAdjustmentContract
 import com.myfitai.app.domain.food.CheatUnderstandingCompactContract
 import com.myfitai.app.domain.food.CheatUnderstandingContract
+import com.myfitai.app.domain.food.FoodCatalogPlanContract
 import com.myfitai.app.domain.food.MealAlternativeCompactContract
 import com.myfitai.app.domain.food.MealAlternativeContract
 import com.myfitai.app.domain.food.NutritionAdviceCompactContract
@@ -169,6 +170,7 @@ class AiExecutionServiceTest {
         PlanReviewCompactContract.SCHEMA_NAME to PlanReviewCompactContract.PROTOCOL,
         NutritionPathContract.SCHEMA_NAME to NutritionPathContract.PROTOCOL,
         NutritionPlanCompactContract.SCHEMA_NAME to NutritionPlanCompactContract.PROTOCOL,
+        FoodCatalogPlanContract.SCHEMA_NAME to FoodCatalogPlanContract.PROTOCOL,
     ).map { (schema, protocol) -> schema to protocol.lineSequence().first().trim() }
 
     private fun retryPrompt(schemaName: String, firstResponse: String, validator: (String) -> Result<Unit>): String = runBlocking {

@@ -22,6 +22,8 @@ import com.myfitai.app.domain.calculation.ProfileCalculationMapper
 
 import com.myfitai.app.domain.calculation.ProfileCalculationService
 import com.myfitai.app.domain.calculation.SafetyCalorieFloor
+import com.myfitai.app.domain.food.catalog.CatalogConstraints
+import com.myfitai.app.domain.food.catalog.FoodCatalogLoader
 import com.myfitai.app.domain.personalization.PersonalResponseService
 import com.myfitai.app.domain.time.SystemTimeProvider
 import com.myfitai.app.domain.time.TimeProvider
@@ -43,6 +45,10 @@ class NutritionPlanGenerationService(
     private val mealCountPreferences: MealCountPreferences? = null,
     private val planReview: PlanReviewService? = null,
     private val time: TimeProvider = SystemTimeProvider,
+    /** Catalogo alimenti per il protocollo MFP2 (MACRO L3); null = sempre MFP1. */
+    private val foodCatalogLoader: FoodCatalogLoader? = null,
+    /** Interruttore locale (default spento): con false il flusso MFP1 e' quello di sempre. */
+    private val useFoodCatalogPlan: () -> Boolean = { false },
 ) {
     sealed class GenerationException(message: String) : Exception(message) {
         /** Prerequisiti mancanti; [message] è già leggibile ("Completa prima: ...") e [prerequisites] indica dove correggerli. */
@@ -192,29 +198,43 @@ class NutritionPlanGenerationService(
                 resolvedGoal == LocalCalculationEngine.Goal.RECOMPOSITION
         }
 
-        val request = AiStructuredRequest(
+        // MFP2 (l'IA sceglie alimenti e grammi, l'app calcola) solo con l'interruttore acceso e il catalogo disponibile.
+        val catalogPlan = if (useFoodCatalogPlan()) foodCatalogLoader?.load()?.let { FoodCatalogPlanBuilder(it) } else null
+        val userPrompt = buildUserPrompt(
+            monday = monday,
+            generationStart = generationStart,
+            periodWeeks = periodWeeks,
+            profile = profile,
+            baseTargets = baseTargets,
+            dailyTargets = dailyTargets,
+            targetTolerance = targetTolerance,
+            maintenanceCeilingKcal = maintenanceCeilingKcal,
+            dietaryProfile = dietaryProfile,
+            recoveryPlan = recoveryPlan,
+            recentMeals = recentMeals,
+            personalContext = personalContext,
+            snapshot = snapshot,
+            sportsMode = sportsMode,
+            mealsPerDay = mealsPerDay,
+        )
+        val request = if (catalogPlan == null) AiStructuredRequest(
             systemPrompt = SYSTEM_PROMPT,
-            userPrompt = buildUserPrompt(
-                monday = monday,
-                generationStart = generationStart,
-                periodWeeks = periodWeeks,
-                profile = profile,
-                baseTargets = baseTargets,
-                dailyTargets = dailyTargets,
-                targetTolerance = targetTolerance,
-                maintenanceCeilingKcal = maintenanceCeilingKcal,
-                dietaryProfile = dietaryProfile,
-                recoveryPlan = recoveryPlan,
-                recentMeals = recentMeals,
-                personalContext = personalContext,
-                snapshot = snapshot,
-                sportsMode = sportsMode,
-                mealsPerDay = mealsPerDay,
-            ),
+            userPrompt = userPrompt,
             schemaName = NutritionPlanCompactContract.SCHEMA_NAME,
             schemaJson = NutritionPlanCompactContract.schemaJson,
             // Number of generated days/meals varies; avoid a fixed output cap for plans.
             // Provider/model hard limits still apply; truncated output is rejected.
+            maxOutputTokens = null,
+            thinkingBudget = 0,
+            allowSchemaFallback = true,
+        ) else AiStructuredRequest(
+            systemPrompt = FoodCatalogPlanPrompt.SYSTEM_PROMPT,
+            userPrompt = userPrompt + FoodCatalogPlanPrompt.catalogBlock(
+                catalogPlan.catalog,
+                CatalogConstraints(profile = dietaryProfile, month = generationStart.monthValue),
+            ),
+            schemaName = FoodCatalogPlanContract.SCHEMA_NAME,
+            schemaJson = FoodCatalogPlanContract.schemaJson,
             maxOutputTokens = null,
             thinkingBudget = 0,
             allowSchemaFallback = true,
@@ -224,6 +244,18 @@ class NutritionPlanGenerationService(
         // ±4% on every retry; the accepted evaluation is the one persisted and shown. The model's D totals are
         // ignored (the compact parser derives every day from the M/S records) and meal numbers are model-declared.
         var accepted: Pair<NutritionPlanContract.Response, NutritionPlanAssessment.Assessment>? = null
+        var acceptedComputation: FoodCatalogPlanBuilder.Computation? = null
+        val catalogContext = FoodCatalogPlanBuilder.Context(
+            monday = monday,
+            generationStart = generationStart,
+            periodWeeks = periodWeeks,
+            targets = baseTargets,
+            dailyTargets = dailyTargets,
+            dietaryProfile = dietaryProfile,
+            sportsMode = sportsMode,
+            mealsPerDay = mealsPerDay,
+            maintenanceCeilingKcal = maintenanceCeilingKcal,
+        )
         var attemptIndex = 0
         val validated = aiRuntime.execute(
             request = request,
@@ -231,6 +263,13 @@ class NutritionPlanGenerationService(
             businessValidator = { json ->
                 runCatching {
                     val currentAttempt = attemptIndex++
+                    if (catalogPlan != null) {
+                        // MFP2: parse -> catalogo -> riparazione verso il target del giorno -> piano con numeri CALCOLATI.
+                        val ok = catalogPlan.evaluate(json, catalogContext, currentAttempt)
+                        accepted = ok.response to ok.assessment
+                        acceptedComputation = ok.computation
+                        return@runCatching
+                    }
                     val response = NutritionPlanCompactContract.parseEnvelope(json, mealsPerDay)
                     val assessment = NutritionPlanContract.validateBusinessAssessed(
                         response = response,
@@ -265,6 +304,7 @@ class NutritionPlanGenerationService(
             mealsPerDay = mealsPerDay,
             dailyTargets = dailyTargets,
             assessment = assessment,
+            computation = acceptedComputation,
         )
 
         // Variety is informative: repeated meals are allowed, so the result is a notice and warnings, never a rejection.
@@ -325,6 +365,7 @@ class NutritionPlanGenerationService(
             targetCarbsG = persistedTargets.carbsG.toFloat(),
             targetFatG = persistedTargets.fatG.toFloat(),
             appValidationJson = integrityWithVariety.toJson().toString(),
+            catalogVersion = if (acceptedComputation != null) catalogPlan?.catalog?.version?.toString() else null,
             // UX7: l'impronta degli input con cui target e piano sono stati calcolati.
             inputsFingerprint = snapshot.inputsFingerprint,
             days = response.days.sortedBy { it.dateEpochDay }.map { day ->
@@ -350,6 +391,7 @@ class NutritionPlanGenerationService(
                             carbsG = meal.carbsG,
                             fatG = meal.fatG,
                             preparation = meal.preparation,
+                            nutritionSource = meal.nutritionSource,
                             ingredients = meal.ingredients.map { ingredient ->
                                 IngredientDraft(
                                     name = ingredient.name,
@@ -359,6 +401,14 @@ class NutritionPlanGenerationService(
                                     weightState = ingredient.weightState,
                                     nutritionConfidence = ingredient.nutritionConfidence,
                                     category = ingredient.category,
+                                    foodId = ingredient.foodId,
+                                    grams = ingredient.grams,
+                                    kcal = ingredient.kcal,
+                                    proteinG = ingredient.proteinG,
+                                    carbsG = ingredient.carbsG,
+                                    fatG = ingredient.fatG,
+                                    fiberG = ingredient.fiberG,
+                                    sodiumMg = ingredient.sodiumMg,
                                 )
                             },
                         )
