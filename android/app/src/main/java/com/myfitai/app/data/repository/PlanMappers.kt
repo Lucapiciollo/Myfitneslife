@@ -6,6 +6,7 @@ import com.myfitai.app.data.local.entity.MealEntity
 import com.myfitai.app.data.local.entity.MealIngredientEntity
 import com.myfitai.app.domain.food.FoodIngredient
 import com.myfitai.app.domain.food.FoodMeal
+import com.myfitai.app.domain.food.NutritionPlanContract
 
 /**
  * Unico punto in cui un ingrediente/pasto viene copiato tra entita Room, modello di dominio e bozza di una nuova
@@ -102,6 +103,38 @@ fun FoodIngredient.toDraft() = IngredientDraft(
 )
 
 fun FoodMeal.toDraft() = MealDraft(
+    type = type,
+    title = title,
+    timeMinutes = timeMinutes,
+    kcal = kcal,
+    proteinG = proteinG,
+    carbsG = carbsG,
+    fatG = fatG,
+    preparation = preparation,
+    ingredients = ingredients.map { it.toDraft() },
+    nutritionSource = nutritionSource,
+)
+
+/** Pasto/ingrediente calcolato dall'app (MFP2, alternative MA2) -> bozza di versione: snapshot incluso. */
+fun NutritionPlanContract.GeneratedIngredient.toDraft() = IngredientDraft(
+    name = name,
+    quantity = quantity,
+    unit = unit,
+    displayDose = displayDose,
+    weightState = weightState,
+    nutritionConfidence = nutritionConfidence,
+    category = category,
+    foodId = foodId,
+    grams = grams,
+    kcal = kcal,
+    proteinG = proteinG,
+    carbsG = carbsG,
+    fatG = fatG,
+    fiberG = fiberG,
+    sodiumMg = sodiumMg,
+)
+
+fun NutritionPlanContract.GeneratedMeal.toDraft() = MealDraft(
     type = type,
     title = title,
     timeMinutes = timeMinutes,
