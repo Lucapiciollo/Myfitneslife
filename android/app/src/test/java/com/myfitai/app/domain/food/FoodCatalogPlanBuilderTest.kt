@@ -279,6 +279,35 @@ class FoodCatalogPlanBuilderTest {
     }
 
     @Test
+    fun similarFoodIds_prefersTheSameStem_zucchinaToZucchine_notZucchero() {
+        val ids = catalog.entries.map { it.id }
+        val zucchina = FoodCatalogPlanBuilder.similarFoodIds("it.zucchina", ids)
+        assertEquals(listOf("it.zucchine", "it.zucchine_cotte"), zucchina.take(2))
+        assertEquals(zucchina, FoodCatalogPlanBuilder.similarFoodIds("it.zucchina", ids.reversed()))
+        // Stessa radice anche con la desinenza al plurale maschile.
+        assertEquals("it.zucchine", FoodCatalogPlanBuilder.similarFoodIds("it.zucchini", ids).first())
+        // pomodoro -> solo la famiglia pomodor*: le voci con la parola identica (concentrato/passata) prima delle altre.
+        val pomodoro = FoodCatalogPlanBuilder.similarFoodIds("it.pomodoro", ids)
+        assertEquals(3, pomodoro.size)
+        assertTrue(pomodoro.toString(), pomodoro.all { "pomodor" in it })
+        assertEquals(listOf("it.concentrato_pomodoro", "it.passata_pomodoro"), pomodoro.take(2))
+        // peperoni_polvere: il token specifico (peperon*) vince sul solo 'polvere' generico.
+        val peperoni = FoodCatalogPlanBuilder.similarFoodIds("it.peperoni_polvere", ids)
+        assertEquals("it.peperoncino_polvere", peperoni.first())
+        assertTrue(peperoni.toString(), peperoni.size <= 3)
+    }
+
+    @Test
+    fun similarFoodIds_reasonStaysWithinTheCap_andIsDeterministic() {
+        val all = catalog.entries.map { it.id }
+        val ids = listOf("it.zucchina", "it.peperoni_polvere", "it.pomodoro", "it.fagiolini_bolliti", "it.zucchina_molto_lunga_1")
+        val reason = FoodCatalogPlanBuilder.unknownFoodReason(ids, all)
+        assertTrue(reason.length <= AiExecutionServiceReasonCap)
+        assertEquals(reason, FoodCatalogPlanBuilder.unknownFoodReason(ids, all.reversed()))
+        assertTrue(reason, reason.contains("it.zucchina>it.zucchine"))
+    }
+
+    @Test
     fun structuralRulesOfTheBusinessGateStillApply() {
         // Giorno mancante rispetto a quello chiesto: le date D restano validate, anche con un W sbagliato.
         assertEquals("WEEK_DATES_INVALID", rejection(payload(date = dayEpoch - 1)))
