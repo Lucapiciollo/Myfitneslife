@@ -347,6 +347,7 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
                 days = days,
                 inputsFingerprint = version.inputsFingerprint,
                 catalogVersion = version.catalogVersion,
+                appValidationJson = version.appValidationJson,
             ),
         )
     }

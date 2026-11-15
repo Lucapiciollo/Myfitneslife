@@ -26,6 +26,8 @@ data class FoodPlanVersion(
     val inputsFingerprint: String? = null,
     /** Versione del catalogo alimenti usata per calcolare i macro; null per i piani dichiarati dal modello. */
     val catalogVersion: String? = null,
+    /** Documento appValidation (JSON) del piano, letto con NutritionIntegrityValidator.parse; null per i piani senza. */
+    val appValidationJson: String? = null,
 )
 
 data class FoodPlanDay(
