@@ -167,6 +167,7 @@ class AppDataContainer private constructor(context: Context) {
         cheats = cheatEntryRepository,
         profiles = userProfileRepository,
         activeProfileStore = activeProfileStore,
+        foodCatalogLoader = foodCatalogLoader,
     )
 
     val nutritionAdviceService = NutritionAdviceService(

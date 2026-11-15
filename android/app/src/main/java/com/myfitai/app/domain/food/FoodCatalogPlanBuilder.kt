@@ -387,7 +387,7 @@ class FoodCatalogPlanBuilder(val catalog: FoodCatalog) {
         waterG = food.per100.water ?: 0.0,
     )
 
-    private fun ingredientInput(food: FoodEntry, grams: Double, fixed: Boolean = false) = IngredientInput(
+    internal fun ingredientInput(food: FoodEntry, grams: Double, fixed: Boolean = false) = IngredientInput(
         foodId = food.id,
         per100 = calcPer100(food),
         grams = grams,
@@ -402,7 +402,7 @@ class FoodCatalogPlanBuilder(val catalog: FoodCatalog) {
      * Ingrediente persistibile: nome del catalogo (con lo stato crudo/cotto se il nome non lo dice), quantita' in grammi
      * (in ml per i liquidi, cosi' i lettori esistenti restano compatibili), dose pratica dalle sole equivalenze note.
      */
-    private fun generatedIngredient(food: FoodEntry, grams: Double): NutritionPlanContract.GeneratedIngredient {
+    internal fun generatedIngredient(food: FoodEntry, grams: Double): NutritionPlanContract.GeneratedIngredient {
         val t = NutritionCalculator.ingredient(calcPer100(food), grams)
         val liquid = food.density?.takeIf { it > 0.0 }
         val quantity = if (liquid != null) Math.round(grams / liquid).toFloat() else grams.toFloat()

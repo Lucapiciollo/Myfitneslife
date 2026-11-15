@@ -484,3 +484,4 @@ Dopo: L3 contratto MFP2 e integrazione (richiede L1+L2+L4 uniti).
 
 | senior-developer | Macro L5a alternative pasto su catalogo (contratto MFP2 ridotto, tolleranza 3%, cronologia COMPUTED) | ses_e236cad32ffeELbD1ekH2jTx0d | feat/macro-l5a-alternative |
 | senior-developer | Macro L5b sgarro su piani COMPUTED (DayRepair sui pasti futuri) | ses_e236c7eaaffeA5dbuhV7n6Q970 | feat/macro-l5b-sgarro |
+- Macro L5b sgarro su piani COMPUTED (feat/macro-l5b-sgarro): i pasti futuri COMPUTED del giorno vengono riparati con DayRepair (CheatComputedDayAdjuster; DEFAULT, WIDE solo se INFEASIBLE) verso il nuovo target, snapshot/dosi/totali ricalcolati e catalogVersion ereditata dalla nuova versione. Giorni DECLARED, misti (futuri non tutti COMPUTED), non risolvibili o INFEASIBLE: comportamento storico invariato (totali scalati, pasto DECLARED, con avviso nel riepilogo se il piano era calcolato). Non verificato su device; consumo reale da pasto non letto (solo orario).
