@@ -475,3 +475,5 @@ Dopo: L3 contratto MFP2 e integrazione (richiede L1+L2+L4 uniti).
 - 15/11 verifica schermate piano calcolato su telefono: Cibo e dettaglio pasto mostrano macro calcolati (589 kcal, 34,1 P, 67,5 C, 20,5 G; ingredienti con '2 uova', 87 ml). Difetti: card pasto con testo spezzato a meta' parola (font_scale 1,1: 'Colaz/ione'); immagini ingrediente tutte uguali (placeholder riso, preesistente); dettaglio senza kcal per ingrediente.
 | senior-developer | Macro L3b rifiniture (titoli coerenti, dosi naturali, log tentativi rifiutati) | ses_e238c8725ffevzTYzbJBl2duG1 | feat/macro-l3b-rifiniture |
 | senior-developer | UX card pasto testo spezzato | ses_e238c64b2ffeT727Ac20bZluds | fix/ux-card-pasto |
+
+- UX card pasto FERMATO (ses_e238c64b2ffeT727Ac20bZluds): commit 54c4ca0, develop = 9d8aefa. Gate BUILD SUCCESSFUL 18m41s, 88 task eseguiti; XML 142 file, 1199 test, 0 falliti, 1 skipped (MealPlanRowLayoutPolicyTest 6 test, XML 00:57 dopo ultimo sorgente 00:48). Verificato SU DEVICE (APK installata in-place, font 1,1): tipo pasto, kcal e titolo su righe proprie, nessuna parola spezzata, pulsanti a destra impilati; nessun crash. Non verificati: font 1,3 e 2,0, landscape.
