@@ -8,8 +8,11 @@ object MealAlternativeContract {
     const val SCHEMA_NAME = "myfitai_meal_alternatives_pipe_v1"
     val schemaJson: String = AiCompactEnvelope.schemaJson(MealAlternativeCompactContract.PROTOCOL)
 
-    data class Ingredient(val name: String, val quantity: Float, val unit: String, val displayDose: String, val weightState: String, val nutritionConfidence: String, val category: String)
-    data class Alternative(val title: String, val kcal: Int, val proteinG: Float, val carbsG: Float, val fatG: Float, val preparation: String, val reason: String, val ingredients: List<Ingredient>)
+    /** [foodId]/[grams] solo per le alternative MA2 calcolate dal catalogo: lo snapshot nutrizionale si ricostruisce da questi due valori. */
+    data class Ingredient(val name: String, val quantity: Float, val unit: String, val displayDose: String, val weightState: String, val nutritionConfidence: String, val category: String, val foodId: String? = null, val grams: Float? = null)
+
+    /** [catalogVersion] != null = alternativa COMPUTED (macro calcolati dall'app dal catalogo); null = dichiarata dal modello (MA1). */
+    data class Alternative(val title: String, val kcal: Int, val proteinG: Float, val carbsG: Float, val fatG: Float, val preparation: String, val reason: String, val ingredients: List<Ingredient>, val catalogVersion: Int? = null)
     data class Response(val alternatives: List<Alternative>, val agentValidation: NutritionPlanContract.AgentValidation)
 
     fun parse(jsonText: String): Response {

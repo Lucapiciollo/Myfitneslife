@@ -429,6 +429,36 @@ class FoodCatalogPlanBuilder(val catalog: FoodCatalog) {
         )
     }
 
+    /**
+     * Pasto calcolato dai SOLI grammi (nessuna riparazione): stessa aritmetica di [build] (ingrediente = per100 x grammi,
+     * pasto = somma degli ingredienti gia' calcolati). Serve a ricostruire in modo deterministico un pasto gia'
+     * accettato (alternativa MA2 al momento dell'applicazione), partendo da (alimento, grammi).
+     */
+    internal fun computedMeal(
+        type: String,
+        title: String,
+        timeMinutes: Int,
+        preparation: String,
+        items: List<Pair<FoodEntry, Double>>,
+    ): NutritionPlanContract.GeneratedMeal {
+        val ingredients = items.map { (food, grams) -> generatedIngredient(food, Math.round(grams * 10.0) / 10.0) }
+        val totals = ingredients.fold(NutrientTotals.ZERO) { acc, i ->
+            acc + NutrientTotals(i.kcal!!.toDouble(), i.proteinG!!.toDouble(), i.carbsG!!.toDouble(), i.fatG!!.toDouble(), i.fiberG!!.toDouble(), i.sodiumMg!!.toDouble())
+        }
+        return NutritionPlanContract.GeneratedMeal(
+            type = type,
+            title = title,
+            timeMinutes = timeMinutes,
+            kcal = Math.round(totals.kcal).toInt(),
+            proteinG = round1(totals.proteinG).toFloat(),
+            carbsG = round1(totals.carbsG).toFloat(),
+            fatG = round1(totals.fatG).toFloat(),
+            preparation = preparation,
+            ingredients = ingredients,
+            nutritionSource = FoodMeal.NUTRITION_SOURCE_COMPUTED,
+        )
+    }
+
     private fun displayDose(food: FoodEntry, grams: Double): String {
         val equivalents = food.units.map { UnitEquivalent(it.name, it.grams, PLURALS[it.name] ?: it.name) }
         val dose = DoseFormatter.format(grams, equivalents)

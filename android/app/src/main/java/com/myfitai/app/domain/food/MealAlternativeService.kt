@@ -8,6 +8,7 @@ import com.myfitai.app.data.repository.IngredientDraft
 import com.myfitai.app.data.repository.MealDraft
 import com.myfitai.app.data.repository.toDraft
 import com.myfitai.app.data.repository.MealPlanRepository
+import com.myfitai.app.domain.food.catalog.FoodCatalogLoader
 import com.myfitai.app.data.repository.PlanVersionDraft
 import com.myfitai.app.data.repository.SupplementDraft
 import com.myfitai.app.data.repository.UserProfileRepository
@@ -26,6 +27,9 @@ class MealAlternativeService(
     private val plans: MealPlanRepository,
     private val activeProfileStore: ActiveProfileStore,
     private val time: TimeProvider = SystemTimeProvider,
+    /** MFP2/MA2: catalogo alimenti e interruttore (stesso di NutritionPlanGenerationService); spento = solo flusso MA1. */
+    private val foodCatalogLoader: FoodCatalogLoader? = null,
+    private val useFoodCatalogPlan: () -> Boolean = { false },
 ) {
     data class Alternatives(
         val planId: Long,
@@ -83,6 +87,15 @@ class MealAlternativeService(
         val meal = day.meals.firstOrNull { it.id == mealId } ?: throw AlternativeException.NeedsInput(listOf("pasto"))
         val targetKcal = meal.kcal ?: throw AlternativeException.NeedsInput(listOf("calorie del pasto"))
         ensureNotPast(dayEpochDay, meal.timeMinutes)
+
+        // Pasto COMPUTED + interruttore acceso: l'IA sceglie alimenti e grammi, l'app calcola (MA2). Altrimenti MA1 invariato.
+        if (meal.nutritionSource == FoodMeal.NUTRITION_SOURCE_COMPUTED && useFoodCatalogPlan()) {
+            foodCatalogLoader?.load()?.let { catalog ->
+                val result = MealAlternativeCatalogEngine(catalog)
+                    .generate(aiRuntime, MealAlternativeCatalogEngine.Input(weekStartEpochDay, dayEpochDay, meal, dietaryProfile))
+                return Alternatives(snapshot.planId, snapshot.version.id, weekStartEpochDay, dayEpochDay, meal.id, meal.type, meal.timeMinutes, targetKcal, result.items, result.provider, result.model)
+            }
+        }
 
         val request = AiStructuredRequest(
             systemPrompt = SYSTEM_PROMPT,
@@ -202,18 +215,8 @@ class MealAlternativeService(
         if (persistedAlternative != historyMeal) throw AlternativeException.InvalidAlternative()
         ensureNotPast(sourceDay.dateEpochDay, sourceMeal.timeMinutes)
 
-        val replacement = MealDraft(
-            type = sourceMeal.type,
-            title = historyMeal.title,
-            timeMinutes = sourceMeal.timeMinutes,
-            kcal = candidateKcal,
-            proteinG = historyMeal.proteinG,
-            carbsG = historyMeal.carbsG,
-            fatG = historyMeal.fatG,
-            preparation = historyMeal.preparation,
-            ingredients = historyMeal.ingredients.map { it.toDraft() },
-            // kcal viene riallineata al target del pasto sostituito: i totali non sono piu la somma dello snapshot (resta DECLARED).
-        )
+        val replacement = MealAlternativeCatalogEngine.historicalReplacement(historyMeal, sourceMeal)
+        // COMPUTED: totali = somma dello snapshot degli ingredienti. DECLARED: totali dichiarati, kcal non riallineate al target.
         val days = latest.version.days.map { day ->
             val meals = day.meals.map { meal -> if (meal.id == sourceMeal.id) replacement else meal.toDraft() }
             val supplements = day.supplements.map { it.toDraft() }
@@ -245,16 +248,20 @@ class MealAlternativeService(
                 targetCarbsG = latest.version.targetCarbsG,
                 targetFatG = latest.version.targetFatG,
                 days = days,
+                catalogVersion = catalogVersionAfterSwap(latest.version.catalogVersion, replacement),
             ),
         )
-        return ApplyResult(versionId, historyMeal.title, candidateKcal)
+        return ApplyResult(versionId, historyMeal.title, replacement.kcal ?: candidateKcal)
     }
 
     suspend fun apply(generated: Alternatives, alternative: MealAlternativeContract.Alternative): ApplyResult {
-        if (alternative !in generated.items || alternative.kcal != generated.targetKcal) throw AlternativeException.InvalidAlternative()
+        val computed = alternative.catalogVersion != null
+        // MA1: kcal identiche al target. MA2 (COMPUTED): le kcal calcolate sono verificate in [MealAlternativeCatalogEngine.rebuild].
+        if (alternative !in generated.items || (!computed && alternative.kcal != generated.targetKcal)) throw AlternativeException.InvalidAlternative()
         val profileId = activeProfileStore.currentIdOrNull() ?: throw AlternativeException.NeedsInput(listOf("profilo attivo"))
         val profile = profiles.get(profileId) ?: throw AlternativeException.NeedsInput(listOf("profilo"))
-        if (FoodConstraintValidator.validateAlternative(alternative, readableDietaryProfile(profile)).isFailure) {
+        val dietaryProfile = readableDietaryProfile(profile)
+        if (FoodConstraintValidator.validateAlternative(alternative, dietaryProfile).isFailure) {
             throw AlternativeException.InvalidAlternative()
         }
         val latest = plans.loadLatestSnapshot(profileId, generated.weekStartEpochDay) ?: throw AlternativeException.StalePlan()
@@ -264,7 +271,15 @@ class MealAlternativeService(
         if (sourceMeal.kcal != generated.targetKcal || sourceMeal.type != generated.mealType || sourceMeal.timeMinutes != generated.mealTimeMinutes) throw AlternativeException.StalePlan()
         ensureNotPast(sourceDay.dateEpochDay, sourceMeal.timeMinutes)
 
-        val replacement = MealDraft(
+        val replacement = if (computed) {
+            // Il numero mostrato non e' mai la fonte: si ricostruisce lo snapshot da (foodId, grammi) e si riverifica tutto.
+            val catalog = foodCatalogLoader?.load() ?: throw AlternativeException.InvalidAlternative()
+            val rebuilt = runCatching {
+                MealAlternativeCatalogEngine(catalog)
+                    .rebuild(alternative, MealAlternativeCatalogEngine.Input(generated.weekStartEpochDay, generated.dayEpochDay, sourceMeal, dietaryProfile))
+            }.getOrElse { throw AlternativeException.InvalidAlternative() }
+            rebuilt.toDraft().copy(type = sourceMeal.type, timeMinutes = sourceMeal.timeMinutes)
+        } else MealDraft(
             type = sourceMeal.type,
             title = alternative.title,
             timeMinutes = sourceMeal.timeMinutes,
@@ -302,10 +317,15 @@ class MealAlternativeService(
             profileId = profileId,
             planId = latest.planId,
             createdAtEpochMillis = time.nowEpochMillis(),
-            draft = PlanVersionDraft(generated.provider, "AI_MEAL_SWAP:${sourceMeal.id}", latest.version.targetKcal, latest.version.targetProteinG, latest.version.targetCarbsG, latest.version.targetFatG, days),
+            draft = PlanVersionDraft(generated.provider, "AI_MEAL_SWAP:${sourceMeal.id}", latest.version.targetKcal, latest.version.targetProteinG, latest.version.targetCarbsG, latest.version.targetFatG, days,
+                catalogVersion = catalogVersionAfterSwap(latest.version.catalogVersion, replacement)),
         )
-        return ApplyResult(versionId, alternative.title, generated.targetKcal)
+        return ApplyResult(versionId, alternative.title, replacement.kcal ?: generated.targetKcal)
     }
+
+    /** Lo scambio eredita la versione del catalogo del piano; se il piano era dichiarato e il nuovo pasto e' COMPUTED, quella del catalogo in uso. */
+    private fun catalogVersionAfterSwap(inherited: String?, replacement: MealDraft): String? =
+        inherited ?: if (replacement.nutritionSource == FoodMeal.NUTRITION_SOURCE_COMPUTED) foodCatalogLoader?.load()?.version?.toString() else null
 
     private fun buildPrompt(dietaryProfile: DietaryProfile, day: FoodPlanDay, meal: FoodMeal, targetKcal: Int): String = buildString {
         appendLine("MEAL_TYPE:${meal.type}")
@@ -366,7 +386,7 @@ class MealAlternativeService(
         return preferred - disliked
     }
 
-    // Un'alternativa generata arriva dal contratto (senza snapshot): resta "dichiarata" finche il lotto del contratto non la calcola.
+    // Le alternative MA1 arrivano dal contratto senza snapshot e restano "dichiarate"; quelle MA2 si ricostruiscono da (foodId, grammi).
     private fun FoodSupplement.toDraft() = SupplementDraft(kind, name, dose, unit, timeMinutes, kcal, proteinG, carbsG, fatG, notes)
     private fun sumOrZero(values: List<Float?>): Double = values.filterNotNull().sumOf { it.toDouble() }
 

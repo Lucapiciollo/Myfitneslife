@@ -45,9 +45,13 @@ class MealAlternativesAiJobHandler(private val service: MealAlternativeService) 
                                     put("weightState", ingredient.weightState)
                                     put("nutritionConfidence", ingredient.nutritionConfidence)
                                     put("category", ingredient.category)
+                                    // MA2: lo snapshot si ricostruisce all'applicazione da (foodId, grammi): payload compatto (limite Data 10 KB).
+                                    ingredient.foodId?.let { put("foodId", it) }
+                                    ingredient.grams?.let { put("grams", it.toString().toDouble()) }
                                 })
                             }
                         })
+                        item.catalogVersion?.let { put("catalogVersion", it) }
                     })
                 }
             })

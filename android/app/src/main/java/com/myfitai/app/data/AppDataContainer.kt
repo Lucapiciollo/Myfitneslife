@@ -186,6 +186,8 @@ class AppDataContainer private constructor(context: Context) {
         profiles = userProfileRepository,
         plans = mealPlanRepository,
         activeProfileStore = activeProfileStore,
+        foodCatalogLoader = foodCatalogLoader,
+        useFoodCatalogPlan = { aiSettingsStore.useFoodCatalogPlan },
     )
 
     val weeklyReviewService = WeeklyReviewService(

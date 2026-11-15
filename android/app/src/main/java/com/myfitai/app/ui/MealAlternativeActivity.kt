@@ -121,8 +121,8 @@ class MealAlternativeActivity : BaseShellActivity() {
                     val item = items.getJSONObject(i)
                     val ingredients = item.getJSONArray("ingredients")
                     add(MealAlternativeContract.Alternative(item.getString("title"), item.getInt("kcal"), item.getDouble("proteinG").toFloat(), item.getDouble("carbsG").toFloat(), item.getDouble("fatG").toFloat(), item.getString("preparation"), item.getString("reason"), buildList {
-                        for (j in 0 until ingredients.length()) { val v = ingredients.getJSONObject(j); add(MealAlternativeContract.Ingredient(v.getString("name"), v.getDouble("quantity").toFloat(), v.getString("unit"), v.getString("displayDose"), v.getString("weightState"), v.getString("nutritionConfidence"), v.getString("category"))) }
-                    }))
+                        for (j in 0 until ingredients.length()) { val v = ingredients.getJSONObject(j); add(MealAlternativeContract.Ingredient(v.getString("name"), v.getDouble("quantity").toFloat(), v.getString("unit"), v.getString("displayDose"), v.getString("weightState"), v.getString("nutritionConfidence"), v.getString("category"), v.optString("foodId").takeIf { it.isNotEmpty() }, if (v.has("grams")) v.getDouble("grams").toFloat() else null)) }
+                    }, if (item.has("catalogVersion")) item.getInt("catalogVersion") else null))
                 }
             }
             generated = MealAlternativeService.Alternatives(root.getLong("planId"), root.getLong("sourceVersionId"), root.getLong("weekStartEpochDay"), root.getLong("dayEpochDay"), root.getLong("mealId"), root.getString("mealType"), root.optInt("mealTimeMinutes").takeIf { !root.isNull("mealTimeMinutes") }, root.getInt("targetKcal"), alternatives, root.getString("provider"), root.getString("model"))
