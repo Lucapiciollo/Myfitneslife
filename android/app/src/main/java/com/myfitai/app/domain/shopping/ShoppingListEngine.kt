@@ -2,6 +2,9 @@ package com.myfitai.app.domain.shopping
 
 import com.myfitai.app.domain.food.FoodIngredient
 import com.myfitai.app.domain.food.FoodPlanSnapshot
+import com.myfitai.app.domain.food.catalog.FoodCatalog
+import com.myfitai.app.domain.food.catalog.FoodEntry
+import com.myfitai.app.domain.food.catalog.FoodState
 import java.text.Normalizer
 import java.util.Locale
 import kotlin.math.abs
@@ -28,7 +31,11 @@ object ShoppingListEngine {
         }
     }
 
-    fun aggregate(snapshot: FoodPlanSnapshot): List<Item> {
+    /**
+     * [catalog] (opzionale) serve solo ai piani con snapshot (foodId, piani MFP2): gli ingredienti con foodId si
+     * aggregano per alimento, gli altri restano sul comportamento storico per nome (invariato senza catalogo).
+     */
+    fun aggregate(snapshot: FoodPlanSnapshot, catalog: FoodCatalog? = null): List<Item> {
         data class Acc(
             val name: String,
             val category: String,
@@ -39,12 +46,32 @@ object ShoppingListEngine {
         )
 
         val aggregated = linkedMapOf<String, Acc>()
-        snapshot.version.days
+        val ordered = snapshot.version.days
             .sortedBy { it.dateEpochDay }
             .flatMap { it.meals.sortedBy { meal -> meal.sortOrder } }
             .flatMap { it.ingredients.sortedBy { ingredient -> ingredient.sortOrder } }
+        val resolver = SnapshotResolver(ordered, catalog, snapshot.version.catalogVersion)
+        ordered
             .forEach { ingredient ->
                 if (!ingredient.quantity.isFinite() || ingredient.quantity <= 0f) return@forEach
+                val resolved = resolver.resolve(ingredient)
+                if (resolved != null) {
+                    val existingFood = aggregated[resolved.key]
+                    if (existingFood == null) {
+                        aggregated[resolved.key] = Acc(
+                            name = resolved.name,
+                            category = resolved.category,
+                            unit = resolved.unit,
+                            weightState = resolved.weightState,
+                            quantity = resolved.quantity,
+                            count = 1,
+                        )
+                    } else {
+                        existingFood.quantity += resolved.quantity
+                        existingFood.count++
+                    }
+                    return@forEach
+                }
                 val normalizedUnit = normalizeUnit(ingredient.unit)
                 val converted = convertQuantity(ingredient.quantity.toDouble(), ingredient.unit, normalizedUnit)
                 val category = normalizeCategory(ingredient.category)
@@ -77,6 +104,113 @@ object ShoppingListEngine {
                 sourceCount = acc.count,
             )
         }.sortedWith(compareBy<Item> { it.category.lowercase(Locale.ROOT) }.thenBy { it.name.lowercase(Locale.ROOT) }.thenBy { it.unit })
+    }
+
+    private class Resolution(
+        val key: String,
+        val name: String,
+        val category: String,
+        val unit: String,
+        val weightState: String?,
+        val quantity: Double,
+    )
+
+    /**
+     * Risolve gli ingredienti con snapshot (foodId) sul catalogo. Un ingrediente NON risolto (null) segue il percorso storico.
+     * - foodId + voce nota: grammi dello snapshot (o g/ml via densita'), cotto -> crudo SOLO se il catalogo dichiara la resa,
+     *   liquidi in ml via densita', categoria dal catalogo (shopCat).
+     * - foodId senza catalogo (o versione diversa/voce ignota): chiave per foodId e unita', nome e categoria dell'ingrediente.
+     * - senza foodId: solo nei piani con foodId e solo se il nome combacia ESATTAMENTE con un alimento gia' presente nel piano
+     *   (stesso alimento con e senza foodId: niente doppio conteggio); altrimenti storico.
+     */
+    private class SnapshotResolver(
+        ingredients: List<FoodIngredient>,
+        catalog: FoodCatalog?,
+        catalogVersion: String?,
+    ) {
+        private val catalog: FoodCatalog? = catalog?.takeIf { catalogVersion == null || catalogVersion == it.version.toString() }
+        private val planFoodIds: Set<String> = ingredients.mapNotNull { it.foodId?.trim()?.takeIf(String::isNotEmpty) }.toSet()
+
+        fun resolve(ingredient: FoodIngredient): Resolution? {
+            val foodId = ingredient.foodId?.trim()?.takeIf { it.isNotEmpty() }
+            if (foodId != null) return resolveSnapshot(ingredient, foodId)
+            return resolveByName(ingredient)
+        }
+
+        private fun resolveSnapshot(ingredient: FoodIngredient, foodId: String): Resolution? {
+            val entry = catalog?.byId(foodId)
+            if (entry == null) {
+                val unit = normalizeUnit(ingredient.unit)
+                return Resolution(
+                    key = "food:$foodId|$unit",
+                    name = canonicalName(ingredient.name),
+                    category = normalizeCategory(ingredient.category),
+                    unit = unit,
+                    weightState = ingredient.weightState?.trim()?.takeIf { it.isNotBlank() },
+                    quantity = convertQuantity(ingredient.quantity.toDouble(), ingredient.unit, unit),
+                )
+            }
+            val grams = ingredient.grams?.takeIf { it.isFinite() && it > 0f }?.toDouble()
+                ?: gramsFrom(ingredient.quantity.toDouble(), ingredient.unit, entry)
+                ?: return null
+            return fromEntry(entry, grams)
+        }
+
+        private fun resolveByName(ingredient: FoodIngredient): Resolution? {
+            val cat = catalog ?: return null
+            if (planFoodIds.isEmpty()) return null
+            val found = cat.findByAlias(ingredient.name) ?: return null
+            val declared = when (normalizeText(ingredient.weightState.orEmpty())) {
+                "crudo", "secco" -> FoodState.RAW
+                "cotto" -> FoodState.COOKED
+                else -> null
+            }
+            val candidates = buildList {
+                if (declared == null || found.state == declared) add(found)
+                cat.pairOf(found)?.takeIf { declared != null && it.state == declared }?.let { add(it) }
+            }
+            val match = candidates.firstOrNull { it.id in planFoodIds } ?: return null
+            val grams = gramsFrom(ingredient.quantity.toDouble(), ingredient.unit, match) ?: return null
+            return fromEntry(match, grams)
+        }
+
+        private fun gramsFrom(quantity: Double, unit: String, entry: FoodEntry): Double? {
+            val normalized = normalizeUnit(unit)
+            val converted = convertQuantity(quantity, unit, normalized)
+            return when (normalized) {
+                "g" -> converted
+                "ml" -> entry.density?.takeIf { it > 0.0 }?.let { converted * it }
+                else -> null
+            }
+        }
+
+        private fun fromEntry(entry: FoodEntry, grams: Double): Resolution {
+            var target = entry
+            var targetGrams = grams
+            val yieldRatio = entry.yieldCookedPerRaw
+            if (entry.state == FoodState.COOKED && yieldRatio != null && yieldRatio > 0.0) {
+                val pair = catalog?.pairOf(entry)
+                if (pair != null && pair.state == FoodState.RAW) {
+                    target = pair
+                    targetGrams = grams / yieldRatio
+                }
+            }
+            val density = target.density?.takeIf { it > 0.0 }
+            val unit = if (density != null) "ml" else "g"
+            val quantity = if (density != null) targetGrams / density else targetGrams
+            return Resolution(
+                key = "food:${target.id}|$unit",
+                name = target.name,
+                category = normalizeCategory(target.shopCategory),
+                unit = unit,
+                weightState = when (target.state) {
+                    FoodState.RAW -> "crudo"
+                    FoodState.COOKED -> "cotto"
+                    else -> null
+                },
+                quantity = quantity,
+            )
+        }
     }
 
     fun stableKey(name: String, unit: String, weightState: String?): String = listOf(

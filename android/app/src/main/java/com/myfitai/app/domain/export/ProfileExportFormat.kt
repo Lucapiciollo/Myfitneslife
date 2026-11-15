@@ -20,8 +20,15 @@ import java.util.zip.ZipOutputStream
  *
  * v3 non contiene piu allenamenti, check-in di attivita giornaliera, programma di allenamento e
  * relative preferenze. I backup v1/v2 restano importabili: le chiavi dismesse vengono ignorate.
+ *
+ * Revisione 2 (stesso schema v3, solo chiavi AGGIUNTE, nessuna rimossa o rinominata): per i piani con valori calcolati
+ * dal catalogo (COMPUTED) i pasti portano `nutritionSource`, le versioni `catalogVersion` e gli ingredienti lo snapshot
+ * (`foodId`, `grams`, `kcal`, `proteinG`, `carbsG`, `fatG`, `fiberG`, `sodiumMg`). Chi legge ignora le chiavi sconosciute;
+ * il restore le legge se presenti e tratta l'assenza (backup precedenti, piani DECLARED) come prima. Vedi [MealPlanBackupMapper].
  */
 object ProfileExportFormat {
+    /** 1 = implicita negli export precedenti; 2 = campi COMPUTED dei piani (additivi). */
+    const val SCHEMA_REVISION = 2
     const val SCHEMA_V1 = "myfitai_profile_export_v1"
     const val SCHEMA_V2 = "myfitai_profile_export_v2"
     const val SCHEMA_V3 = "myfitai_profile_export_v3"
@@ -56,6 +63,7 @@ object ProfileExportFormat {
         mealPlans: JSONArray,
     ): JSONObject = JSONObject().apply {
         put("schema", CURRENT_SCHEMA)
+        put("schemaRevision", SCHEMA_REVISION)
         put("exportedAtEpochMillis", exportedAtEpochMillis)
         put("profileId", profileId)
         put("profile", JSONObject().apply {

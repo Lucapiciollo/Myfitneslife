@@ -548,7 +548,8 @@ internal class PdfExportRenderer(context: Context) {
                 palette.muted,
                 geometry.bodyLineHeightLarge,
             )
-            text(canvas, "Versione piano: ${snapshot.version.versionNumber}", contentLeft, 404f, typography.label, palette.muted)
+            val computedNote = ExportNutritionText.planNote(snapshot.version)
+            text(canvas, "Versione piano: ${snapshot.version.versionNumber}" + (computedNote?.let { " | $it" } ?: ""), contentLeft, 404f, typography.label, palette.muted)
 
             drawCard(canvas, pageMargin, 450f, contentWidth, 275f)
             text(canvas, if (days.size > 7) "Periodo" else "Settimana", contentLeft, 482f, typography.sectionSecondary, palette.text, true)
@@ -725,7 +726,8 @@ internal class PdfExportRenderer(context: Context) {
         .joinToString(" - ") { ingredient ->
             val dose = ingredient.displayDose?.takeIf { it.isNotBlank() }
                 ?: "${formatNumber(ingredient.quantity)} ${ingredient.unit}"
-            "${ingredient.name} $dose"
+            val detail = ExportNutritionText.ingredientDetail(meal, ingredient, dose)
+            if (detail == null) "${ingredient.name} $dose" else "${ingredient.name} $dose $detail"
         }
 
     private inline fun <T> Iterable<T>.sumOfFloat(selector: (T) -> Float): Float = fold(0f) { sum, item ->
