@@ -2,6 +2,8 @@ package com.myfitai.app.domain.food.catalog
 
 import com.myfitai.app.domain.food.DietaryProfile
 import com.myfitai.app.domain.food.FoodSynonyms
+import com.myfitai.app.domain.food.nutrition.DoseFormatter
+import com.myfitai.app.domain.food.nutrition.UnitEquivalent
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -312,5 +314,62 @@ class FoodCatalogAssetTest {
         assertEquals(catalog.subsetFor(constraints).map { it.id }, catalog.subsetFor(constraints).map { it.id })
         assertTrue(catalog.subsetFor(constraints).size <= 120)
         assertTrue(catalog.subsetFor(constraints).none { it.id == "it.arancia" })
+    }
+
+    /** Condimenti e grassi dosati a cucchiaino/cucchiaio: il passo di porzione deve cadere su un'unita' pratica (L6c). */
+    private val SPOON_STEP_IDS = listOf(
+        "olio_evo", "olio_girasole", "olio_arachide", "olio_sesamo", "olio_cocco", "olio_lino", "burro", "maionese", "zucchero",
+        "zucchero_velo", "miele", "sciroppo_acero", "aceto_vino", "aceto_balsamico", "salsa_soia", "ketchup", "concentrato_pomodoro",
+        "crema_mandorle", "crema_anacardi", "tahin", "marmellata", "marmellata_senza_zuccheri", "cacao_amaro", "semi_sesamo", "semi_canapa",
+    ).map { "it.$it" }
+
+    private val PLURALS = mapOf("cucchiaio" to "cucchiai", "cucchiaino" to "cucchiaini")
+
+    private fun equivalentsOf(id: String): List<UnitEquivalent> =
+        catalog.byId(id)!!.units.map { UnitEquivalent(it.name, it.grams, PLURALS[it.name] ?: it.name) }
+
+    @Test
+    fun spoonDosedEntriesHaveStepsOnPracticalUnits() {
+        SPOON_STEP_IDS.forEach { id ->
+            val e = catalog.byId(id)!!
+            assertTrue("$id: scalabile", e.scalable)
+            val spoons = e.units.filter { it.name == "cucchiaino" || it.name == "cucchiaio" }
+            assertTrue("$id: senza cucchiaino/cucchiaio", spoons.isNotEmpty())
+            // passo = multiplo di mezza unita' (mezzo cucchiaino/cucchiaio) entro l'1%
+            assertTrue("$id: stepG ${e.stepGrams} non multiplo di un'unita' ${spoons.map { it.grams }}", spoons.any { isMultiple(e.stepGrams, it.grams / 2.0) })
+            assertEquals("$id: minG = un passo", e.stepGrams, e.minGrams, 1e-9)
+            assertTrue("$id: maxG ${e.maxGrams} non multiplo del passo ${e.stepGrams}", isMultiple(e.maxGrams, e.stepGrams))
+        }
+    }
+
+    private fun isMultiple(value: Double, base: Double): Boolean {
+        val ratio = value / base
+        return ratio >= 1.0 - 1e-9 && abs(ratio - Math.round(ratio)) <= 0.01 * ratio
+    }
+
+    @Test
+    fun realOliveOilDosesLandOnSpoons() {
+        val eq = equivalentsOf("it.olio_evo")
+        assertEquals("1 cucchiaino", DoseFormatter.format(4.5, eq))
+        assertEquals("2 cucchiaini", DoseFormatter.format(9.0, eq))
+        assertEquals("1 cucchiaio", DoseFormatter.format(13.5, eq))
+        assertEquals("2 cucchiai", DoseFormatter.format(27.0, eq))
+    }
+
+    @Test
+    fun everyStepMultipleOfSpoonEntriesIsReadableNotGramsOnly() {
+        SPOON_STEP_IDS.forEach { id ->
+            val e = catalog.byId(id)!!
+            val eq = equivalentsOf(id)
+            // oltre le 5 unita' del cucchiaio/cucchiaino piu' grande la griglia del formatter e' a interi: li' i grammi sono ammessi
+            val limit = 5.0 * e.units.filter { it.name == "cucchiaino" || it.name == "cucchiaio" }.maxOf { it.grams }
+            var k = 1
+            while (k * e.stepGrams <= minOf(e.maxGrams, limit) + 1e-9) {
+                val grams = k * e.stepGrams
+                val dose = DoseFormatter.format(grams, eq)
+                assertFalse("$id: $grams g -> \"$dose\" (solo grammi)", dose.endsWith(" g"))
+                k++
+            }
+        }
     }
 }

@@ -41,7 +41,7 @@ class FoodCatalogPlanPromptTest {
             assertTrue(line, parts[2] in setOf("R", "C", "S", "-"))
             assertTrue(line, Regex("[0-9.]+-[0-9.]+").matches(parts[7]))
         }
-        assertTrue(lines.any { it.startsWith("it.olio_evo|Olio extravergine d'oliva|S|884|0|0|100|5-30|5|cucchiaio=13.5;cucchiaino=4.5") })
+        assertTrue(lines.any { it.startsWith("it.olio_evo|Olio extravergine d'oliva|S|884|0|0|100|4.5-27|4.5|cucchiaio=13.5;cucchiaino=4.5") })
     }
 
     @Test

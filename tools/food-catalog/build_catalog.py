@@ -32,6 +32,40 @@ DEFAULT_USDA = os.path.join(tempfile.gettempdir(), "myfitai-usda-fdc")
 CATALOG_VERSION = 1
 BUILD_DATE = "2026-11-14"
 
+# Passo pratico dei condimenti/grassi con cucchiaino o cucchiaio noti (lotto L6b). Il passo di porzione coincide con
+# i grammi dell'unita' (o della sua meta') GIA' presenti in `units` (USDA food_portion): cosi' le dosi proposte
+# dall'app cadono su unita' naturali (olio 9 g = 2 cucchiaini, 13,5 g = 1 cucchiaio) invece di 5 g = "1,1 cucchiaini".
+# id (senza 'it.') -> (nome unita', frazione). minG = un passo; maxG = il multiplo di passo non sopra il vecchio massimo.
+# Correzione di dati compatibile: nessuna struttura cambia, catalogVersion resta 1 (i piani salvano grammi, non passi).
+STEP_FROM_UNIT = {
+    "olio_evo": ("cucchiaino", 1), "olio_girasole": ("cucchiaino", 1), "olio_arachide": ("cucchiaino", 1),
+    "olio_sesamo": ("cucchiaino", 1), "olio_cocco": ("cucchiaino", 1), "olio_lino": ("cucchiaio", 0.5),
+    "burro": ("cucchiaio", 0.5), "maionese": ("cucchiaio", 0.5), "zucchero": ("cucchiaino", 0.5),
+    "zucchero_velo": ("cucchiaino", 1), "miele": ("cucchiaio", 0.5), "sciroppo_acero": ("cucchiaio", 0.5),
+    "aceto_vino": ("cucchiaino", 1), "aceto_balsamico": ("cucchiaino", 1), "salsa_soia": ("cucchiaino", 1),
+    "ketchup": ("cucchiaio", 0.5), "concentrato_pomodoro": ("cucchiaio", 0.5), "crema_mandorle": ("cucchiaio", 0.5),
+    "crema_anacardi": ("cucchiaio", 0.5), "tahin": ("cucchiaio", 0.5), "marmellata": ("cucchiaio", 0.5),
+    "marmellata_senza_zuccheri": ("cucchiaio", 0.5), "cacao_amaro": ("cucchiaio", 0.5), "semi_sesamo": ("cucchiaio", 0.5),
+}
+
+
+def apply_step_overrides(entries):
+    """Imposta stepG/minG/maxG delle voci di STEP_FROM_UNIT dai grammi dell'unita' nota. Idempotente."""
+    by_id = {e["id"]: e for e in entries}
+    missing = []
+    for short, (unit, fraction) in STEP_FROM_UNIT.items():
+        e = by_id.get("it." + short)
+        unit_g = next((u["g"] for u in (e or {}).get("units", []) if u["n"] == unit), None)
+        if not unit_g:
+            missing.append("%s: unita' '%s' assente" % (short, unit))
+            continue
+        step = round(unit_g * fraction, 2)
+        e["stepG"] = num(step)
+        e["minG"] = num(step)
+        e["maxG"] = num(round(int(e["maxG"] / step + 1e-9) * step, 2))
+    return missing
+
+
 DATASETS = [
     ("foundation", "f2025", "foundation_food", "Foundation", "2025-12-18",
      "https://fdc.nal.usda.gov/fdc-datasets/FoodData_Central_foundation_food_csv_2025-12-18.zip"),
@@ -310,6 +344,7 @@ def main():
     entries = [x for x in (build_entry(e, foods, errors) for e in table) if x]
     finalize(entries, errors)
     apply_yield(table, entries)
+    errors.extend(apply_step_overrides(entries))
     sanity(entries, errors)
     if errors:
         print("\n".join(errors), file=sys.stderr)
