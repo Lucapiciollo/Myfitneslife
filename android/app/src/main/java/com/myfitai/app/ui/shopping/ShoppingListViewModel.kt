@@ -3,14 +3,19 @@ package com.myfitai.app.ui.shopping
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.CreationExtras
+import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.repository.MealPlanRepository
+import com.myfitai.app.domain.food.catalog.FoodCatalogLoader
 import com.myfitai.app.domain.shopping.ShoppingListEngine
 import com.myfitai.app.domain.shopping.ShoppingListStateStore
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.temporal.TemporalAdjusters
@@ -20,6 +25,7 @@ class ShoppingListViewModel(
     private val activeProfileStore: ActiveProfileStore,
     private val stateStore: ShoppingListStateStore,
     initialWeekStartEpochDay: Long?,
+    private val catalogLoader: FoodCatalogLoader? = null,
 ) : ViewModel() {
 
     enum class ViewMode { WEEK, CATEGORY }
@@ -127,7 +133,10 @@ class ShoppingListViewModel(
                 )
                 return@launch
             }
-            val items = ShoppingListEngine.aggregate(snapshot)
+            val catalog = catalogLoader?.let { loader ->
+                withContext(Dispatchers.Default) { runCatching { loader.load() }.getOrNull() }
+            }
+            val items = ShoppingListEngine.aggregate(snapshot, catalog)
             _state.value = _state.value.copy(
                 loading = false,
                 profileId = profileId,
@@ -152,6 +161,15 @@ class ShoppingListViewModel(
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(ShoppingListViewModel::class.java))
             return ShoppingListViewModel(plans, activeProfileStore, stateStore, initialWeekStartEpochDay) as T
+        }
+
+        /** Con i CreationExtras l'Activity non deve passare nulla: il catalogo si legge dal contenitore dati dell'applicazione. */
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
+            require(modelClass.isAssignableFrom(ShoppingListViewModel::class.java))
+            val loader = extras[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY]
+                ?.let { application -> runCatching { AppDataContainer.get(application).foodCatalogLoader }.getOrNull() }
+            return ShoppingListViewModel(plans, activeProfileStore, stateStore, initialWeekStartEpochDay, loader) as T
         }
     }
 

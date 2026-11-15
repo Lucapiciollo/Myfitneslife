@@ -21,6 +21,8 @@ import com.myfitai.app.domain.food.FoodPlanSnapshot
 import com.myfitai.app.domain.food.FoodPlanVersion
 import com.myfitai.app.domain.food.FoodSupplement
 import com.myfitai.app.domain.food.NutritionPlanPeriod
+import com.myfitai.app.domain.food.catalog.AssetFoodCatalogLoader
+import com.myfitai.app.domain.food.catalog.FoodCatalogLoader
 import com.myfitai.app.domain.shopping.ShoppingListEngine
 import com.myfitai.app.data.profile.NutritionPlanSchedulePreferences
 import com.myfitai.app.data.profile.NutritionPlanUpdatePreferences
@@ -49,11 +51,13 @@ class ProfileExportService(
     private val biaFrequencyPreferences: BiaFrequencyPreferences? = null,
     private val aiAutomationPreferences: AiAutomationPreferences? = null,
     private val nutritionPlanUpdatePreferences: NutritionPlanUpdatePreferences? = null,
+    foodCatalogLoader: FoodCatalogLoader? = null,
 ) {
     enum class Format { JSON, CSV_ZIP, PDF, WEEKLY_PLAN_PDF }
     data class ExportedFile(val file: File, val mimeType: String)
 
     private val appContext = context.applicationContext
+    private val catalogLoader: FoodCatalogLoader = foodCatalogLoader ?: AssetFoodCatalogLoader(appContext.assets)
 
     suspend fun export(format: Format): ExportedFile {
         activeProfileStore.refreshFromPersistence()
@@ -90,7 +94,7 @@ class ProfileExportService(
                         snapshot.version.days.any { it.dateEpochDay == currentDate.toEpochDay() }
                     )
             } ?: error("Nessun piano completo per il periodo configurato disponibile")
-            val shopping = ShoppingListEngine.aggregate(snapshot)
+            val shopping = ShoppingListEngine.aggregate(snapshot, runCatching { catalogLoader.load() }.getOrNull())
             val file = exportFile(profile.name, "dieta-settimanale", "pdf")
             PdfExportRenderer(appContext).writeWeeklyPlanReport(file, profile.name, snapshot, shopping)
             return ExportedFile(file, "application/pdf")
@@ -200,12 +204,8 @@ class ProfileExportService(
                     val mealsJson = JSONArray()
                     db.mealPlanDao().getMeals(profileId, day.id).forEach { meal ->
                         val ingredients = JSONArray()
-                        db.mealPlanDao().getIngredients(profileId, meal.id).forEach { ing -> ingredients.put(JSONObject().apply {
-                            put("id", ing.id); put("name", ing.name); put("quantity", ing.quantity); put("unit", ing.unit); putNullable("displayDose", ing.displayDose); putNullable("weightState", ing.weightState); putNullable("nutritionConfidence", ing.nutritionConfidence); putNullable("category", ing.category); put("sortOrder", ing.sortOrder)
-                        }) }
-                        mealsJson.put(JSONObject().apply {
-                            put("id", meal.id); put("sortOrder", meal.sortOrder); put("type", meal.type); put("title", meal.title); putNullable("timeMinutes", meal.timeMinutes); putNullable("kcal", meal.kcal); putNullable("proteinG", meal.proteinG); putNullable("carbsG", meal.carbsG); putNullable("fatG", meal.fatG); putNullable("preparation", meal.preparation); put("ingredients", ingredients)
-                        })
+                        db.mealPlanDao().getIngredients(profileId, meal.id).forEach { ing -> ingredients.put(MealPlanBackupMapper.ingredientToJson(ing)) }
+                        mealsJson.put(MealPlanBackupMapper.mealToJson(meal, ingredients))
                     }
                     val supplementsJson = JSONArray()
                     parseSupplements(day.supplementsJson).forEach { supplement ->
@@ -235,7 +235,7 @@ class ProfileExportService(
                         put("meals", mealsJson)
                     })
                 }
-                versionsJson.put(JSONObject().apply { put("id", version.id); put("versionNumber", version.versionNumber); put("createdAtEpochMillis", version.createdAtEpochMillis); put("source", version.source); putNullable("reason", version.reason); putNullable("targetKcal", version.targetKcal); putNullable("targetProteinG", version.targetProteinG); putNullable("targetCarbsG", version.targetCarbsG); putNullable("targetFatG", version.targetFatG); putNullable("appValidationJson", version.appValidationJson); put("days", daysJson) })
+                versionsJson.put(MealPlanBackupMapper.versionToJson(version, daysJson))
             }
             planJson.put(JSONObject().apply { put("id", plan.id); put("weekStartEpochDay", plan.weekStartEpochDay); put("createdAtEpochMillis", plan.createdAtEpochMillis); put("status", plan.status); put("versions", versionsJson) })
         }
@@ -289,6 +289,7 @@ class ProfileExportService(
                 targetCarbsG = version.targetCarbsG,
                 targetFatG = version.targetFatG,
                 days = days,
+                catalogVersion = version.catalogVersion,
             ),
         )
     }

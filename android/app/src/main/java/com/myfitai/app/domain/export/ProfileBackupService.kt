@@ -173,12 +173,7 @@ class ProfileBackupService(
             val versions = oldPlan.optJSONArray("versions") ?: continue
             for (vIndex in 0 until versions.length()) {
                 val oldVersion = versions.getJSONObject(vIndex)
-                val newVersion = db.mealPlanDao().insertVersion(MealPlanVersionEntity(
-                    planId = newPlan, versionNumber = oldVersion.getInt("versionNumber"), createdAtEpochMillis = oldVersion.getLong("createdAtEpochMillis"),
-                    source = oldVersion.optString("source"), reason = oldVersion.stringOrNull("reason"), targetKcal = oldVersion.intOrNull("targetKcal"),
-                    targetProteinG = oldVersion.floatOrNull("targetProteinG"), targetCarbsG = oldVersion.floatOrNull("targetCarbsG"), targetFatG = oldVersion.floatOrNull("targetFatG"),
-                    appValidationJson = oldVersion.stringOrNull("appValidationJson"),
-                ))
+                val newVersion = db.mealPlanDao().insertVersion(MealPlanBackupMapper.versionFromJson(oldVersion, newPlan))
                 versionIds[oldVersion.getLong("id")] = newVersion
                 val days = oldVersion.optJSONArray("days") ?: continue
                 for (dIndex in 0 until days.length()) {
@@ -193,20 +188,12 @@ class ProfileBackupService(
                     val meals = oldDay.optJSONArray("meals") ?: continue
                     for (mIndex in 0 until meals.length()) {
                         val oldMeal = meals.getJSONObject(mIndex)
-                        val newMeal = db.mealPlanDao().insertMeals(listOf(MealEntity(
-                            dayId = newDay, sortOrder = oldMeal.getInt("sortOrder"), type = oldMeal.optString("type"), title = oldMeal.optString("title"),
-                            timeMinutes = oldMeal.intOrNull("timeMinutes"), kcal = oldMeal.intOrNull("kcal"), proteinG = oldMeal.floatOrNull("proteinG"),
-                            carbsG = oldMeal.floatOrNull("carbsG"), fatG = oldMeal.floatOrNull("fatG"), preparation = oldMeal.stringOrNull("preparation"),
-                        ))).single()
+                        val newMeal = db.mealPlanDao().insertMeals(listOf(MealPlanBackupMapper.mealFromJson(oldMeal, newDay))).single()
                         mealIds[oldMeal.optLong("id")] = newMeal
                         val ingredients = oldMeal.optJSONArray("ingredients") ?: continue
                         for (iIndex in 0 until ingredients.length()) {
                             val oldIngredient = ingredients.getJSONObject(iIndex)
-                            db.mealPlanDao().insertIngredients(listOf(MealIngredientEntity(
-                                mealId = newMeal, name = oldIngredient.optString("name"), quantity = oldIngredient.optDouble("quantity").toFloat(),
-                                unit = oldIngredient.optString("unit"), displayDose = oldIngredient.stringOrNull("displayDose"), weightState = oldIngredient.stringOrNull("weightState"),
-                                nutritionConfidence = oldIngredient.stringOrNull("nutritionConfidence"), category = oldIngredient.stringOrNull("category"), sortOrder = oldIngredient.optInt("sortOrder"),
-                            )))
+                            db.mealPlanDao().insertIngredients(listOf(MealPlanBackupMapper.ingredientFromJson(oldIngredient, newMeal)))
                         }
                     }
                 }
