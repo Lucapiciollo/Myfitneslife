@@ -251,7 +251,12 @@ class FoodPlanViewModel(
         raw.contains("raggiungibile", ignoreCase = true) || raw.contains("disponibile", ignoreCase = true) ->
             "$raw Riprova a generare il piano."
         else -> "Generazione non riuscita ($raw). Riprova a generare il piano."
+    }.let { text ->
+        // Il codice stabile dell'ultimo motivo resta visibile (diagnostica L6d), senza testo del modello.
+        if (raw != null && GENERATION_CODE.matches(raw) && !text.contains(raw)) "$text [$raw]" else text
     }
+
+    private val GENERATION_CODE = Regex("^[A-Z][A-Z0-9_]{2,59}$")
 
     private fun providerLimitMessage(error: AiTransportException.Http): String = when (error.failureKind) {
         AiTransportFailureKind.QUOTA_EXHAUSTED -> {

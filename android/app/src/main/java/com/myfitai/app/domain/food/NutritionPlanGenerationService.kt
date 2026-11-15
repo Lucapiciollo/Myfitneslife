@@ -49,6 +49,8 @@ class NutritionPlanGenerationService(
     private val foodCatalogLoader: FoodCatalogLoader? = null,
     /** Interruttore locale (default spento): con false il flusso MFP1 e' quello di sempre. */
     private val useFoodCatalogPlan: () -> Boolean = { false },
+    /** Riceve la sintesi dell'ultimo rifiuto MFP2 quando la generazione fallisce dopo tutti i tentativi (diagnostica L6d). */
+    private val recordMfp2Failure: (String) -> Unit = {},
 ) {
     sealed class GenerationException(message: String) : Exception(message) {
         /** Prerequisiti mancanti; [message] è già leggibile ("Completa prima: ...") e [prerequisites] indica dove correggerli. */
@@ -62,6 +64,15 @@ class NutritionPlanGenerationService(
             val code: String = DietaryProfile.UNREADABLE_CODE
         }
         class InvalidAiOutput(message: String) : GenerationException(message)
+    }
+
+    /** Log.w non bloccante (in JVM android.util.Log non esiste): una riga per ogni rifiuto MFP2, senza testo del modello. */
+    private fun logMfp2Rejection(rejection: FoodCatalogPlanBuilder.AttemptRejection) {
+        try {
+            android.util.Log.w(FoodCatalogPlanBuilder.LOG_TAG, FoodCatalogPlanBuilder.logLine(rejection))
+        } catch (_: RuntimeException) {
+            // test JVM senza Android: la diagnostica non deve mai rompere la generazione.
+        }
     }
 
     data class Result(
@@ -260,7 +271,7 @@ class NutritionPlanGenerationService(
         // MFP2: motivi (codice stabile + dettaglio breve) dei tentativi di business rifiutati prima di quello accettato.
         // Limite: l'indice conta solo i tentativi che hanno superato lo schema; i rifiuti di schema/JSON non passano da qui.
         val rejectedAttempts = mutableListOf<FoodCatalogPlanBuilder.AttemptRejection>()
-        val validated = aiRuntime.execute(
+        val validated = try { aiRuntime.execute(
             request = request,
             maxSchemaRetries = 2,
             businessValidator = { json ->
@@ -296,10 +307,21 @@ class NutritionPlanGenerationService(
                     // Integrity and macros are informative (persisted in appValidation): they never block.
                     accepted = response to assessment
                 }.onFailure { error ->
-                    if (catalogPlan != null) rejectedAttempts += FoodCatalogPlanBuilder.rejectionOf(currentAttempt, error)
+                    if (catalogPlan != null) {
+                        val rejection = FoodCatalogPlanBuilder.rejectionOf(currentAttempt, error)
+                        rejectedAttempts += rejection
+                        logMfp2Rejection(rejection)
+                    }
                 }
             },
-        )
+        ) } catch (error: Throwable) {
+            // Diagnostica L6d: se la generazione MFP2 fallisce dopo tutti i tentativi resta traccia dell'ultimo motivo.
+            val last = rejectedAttempts.lastOrNull()
+            if (catalogPlan != null && last != null && error !is kotlinx.coroutines.CancellationException) {
+                runCatching { recordMfp2Failure(FoodCatalogPlanBuilder.failureSummary(last)) }
+            }
+            throw error
+        }
         val (response, assessment) = accepted
             ?: throw GenerationException.InvalidAiOutput("INVALID_COMPACT_PROTOCOL")
 
