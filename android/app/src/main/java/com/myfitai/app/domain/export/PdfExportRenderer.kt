@@ -551,16 +551,25 @@ internal class PdfExportRenderer(context: Context) {
             val computedNote = ExportNutritionText.planNote(snapshot.version)
             text(canvas, "Versione piano: ${snapshot.version.versionNumber}" + (computedNote?.let { " | $it" } ?: ""), contentLeft, 404f, typography.label, palette.muted)
 
-            drawCard(canvas, pageMargin, 450f, contentWidth, 275f)
+            // Il riquadro ha l'altezza del suo contenuto (nessuno spazio vuoto fisso) e non supera mai il footer.
+            val summaryTop = 450f
+            val summaryLayout = PdfWeekSummaryLayout.layout(
+                rowCount = days.size,
+                top = summaryTop,
+                pageBottomLimit = geometry.footerRuleY - 20f,
+                innerLeft = contentLeft,
+                innerRight = 535f,
+            )
+            drawCard(canvas, pageMargin, summaryTop, contentWidth, summaryLayout.height)
             text(canvas, if (days.size > 7) "Periodo" else "Settimana", contentLeft, 482f, typography.sectionSecondary, palette.text, true)
-            var y = 515f
-            days.forEach { day ->
+            days.forEachIndexed { index, day ->
+                val cell = summaryLayout.cells[index]
                 val date = LocalDate.ofEpochDay(day.dateEpochDay)
                 val label = date.format(DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.ITALIAN))
                     .replaceFirstChar { it.titlecase(Locale.ITALIAN) }
-                text(canvas, label, contentLeft, y, typography.summary, palette.text, true)
-                text(canvas, "${day.meals.size} pasti", 535f, y, typography.label, palette.muted, alignRight = true)
-                y += 30f
+                val y = summaryTop + cell.baselineOffset
+                text(canvas, label, cell.left, y, typography.summary, palette.text, true)
+                text(canvas, "${day.meals.size} pasti", cell.right, y, typography.label, palette.muted, alignRight = true)
             }
             drawFooter(canvas, pageNumber, shortLabel)
             document.finishPage(page)
