@@ -100,7 +100,7 @@ object AiContractRegistry {
      * rejection is about structure, the closed vocabulary or the kcal range reachable with the chosen foods.
      */
     private val WEEKLY_NUTRITION_V2_FIX_HINTS: Map<String, String> = mapOf(
-        "PIPE_I_FOOD_UNKNOWN" to "A foodId is not in the CAT list of the user message. Copy every foodId exactly from CAT (column id); never invent or alter an id.",
+        "PIPE_I_FOOD_UNKNOWN" to "A foodId is not in the CAT list of the user message. Copy every foodId exactly from CAT (column id); never invent or alter an id. The reason lists each wrong id followed by '>' and the closest CAT ids: use one of them or another id copied from CAT.",
         "PIPE_I_GRAMS_INVALID" to "Write I|foodId|grams with grams a positive number using a dot and no unit, for example I|it.riso_basmati|80.",
         "PIPE_S_GRAMS_INVALID" to "Write S|kind|foodId|grams|timeMinutes|notes with grams a positive number using a dot and no unit.",
         "PIPE_M_PREPARATION_HAS_QUANTITY" to "A preparation contains a quantity (digits followed by g, ml, spoons, slices...). Rewrite preparations without any quantity; doses belong to the I records only.",

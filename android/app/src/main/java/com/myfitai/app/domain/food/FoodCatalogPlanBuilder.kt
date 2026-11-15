@@ -156,7 +156,15 @@ class FoodCatalogPlanBuilder(val catalog: FoodCatalog) {
      */
     fun evaluate(json: String, context: Context, attempt: Int): Accepted {
         val tolerance = NutritionPlanAssessment.toleranceForAttempt(attempt)
-        val proposal = FoodCatalogPlanContract.parseEnvelope(json, catalog, context.mealsPerDay)
+        val parsed = try {
+            FoodCatalogPlanContract.parseEnvelope(json, catalog, context.mealsPerDay)
+        } catch (e: IllegalArgumentException) {
+            throw withSimilarFoodIds(e, context)
+        }
+        // W e' un dato che l'app conosce gia' (lunedi' della richiesta): il valore scritto dal modello e' solo
+        // informativo e viene sostituito, cosi' un numero riscritto male non fa fallire un piano valido. Le date dei
+        // giorni (D) restano validate dal gate.
+        val proposal = parsed.copy(weekStartEpochDay = context.monday.toEpochDay())
         val built = build(
             proposal,
             Params(
@@ -184,6 +192,20 @@ class FoodCatalogPlanBuilder(val catalog: FoodCatalog) {
             attempt = attempt,
         ).getOrThrow()
         return Accepted(built.response, assessment, built.computation)
+    }
+
+    /**
+     * `PIPE_I_FOOD_UNKNOWN:id1,id2` -> `PIPE_I_FOOD_UNKNOWN:id1>sim1,sim2,sim3;id2>...` con i foodId del CAT (stessi
+     * vincoli e mese del prompt) piu' simili, in modo che il retry possa correggere l'id. Altri errori invariati.
+     */
+    private fun withSimilarFoodIds(error: IllegalArgumentException, context: Context): IllegalArgumentException {
+        val message = error.message.orEmpty()
+        if (!message.startsWith(UNKNOWN_FOOD_PREFIX)) return error
+        val ids = message.removePrefix(UNKNOWN_FOOD_PREFIX).split(',').map { it.trim() }.filter { it.isNotEmpty() }
+        val candidates = catalog.subsetFor(
+            CatalogConstraints(profile = context.dietaryProfile, month = context.generationStart.monthValue),
+        ).map { it.id }
+        return IllegalArgumentException(unknownFoodReason(ids, candidates))
     }
 
     /**
@@ -506,6 +528,55 @@ class FoodCatalogPlanBuilder(val catalog: FoodCatalog) {
                 ?: return AttemptRejection(attempt + 1, "UNCLASSIFIED", "")
             val detail = match.groupValues[2].replace(Regex("\\s+"), " ").trim().take(MAX_DETAIL_CHARS)
             return AttemptRejection(attempt + 1, match.groupValues[1].take(MAX_CODE_CHARS), detail)
+        }
+
+        private const val UNKNOWN_FOOD_PREFIX = "PIPE_I_FOOD_UNKNOWN:"
+        private const val MAX_SIMILAR_IDS = 3
+        private const val MIN_TOKEN_CHARS = 3
+        private const val MIN_COMMON_PREFIX = 5
+
+        private val STATE_TOKEN = Regex("^(cott|crud|bollit|lessat|arrost|grigliat|secch|fresc)[oaie]$|^(scatola|forno|vapore)$")
+
+        private fun idTokens(id: String): List<String> =
+            id.removePrefix("it.").lowercase().split('_', '.', '-')
+                .filter { it.length >= MIN_TOKEN_CHARS && !STATE_TOKEN.matches(it) }
+
+        private fun tokenScore(a: String, b: String): Int = when {
+            a == b -> 2
+            a.commonPrefixWith(b).length >= MIN_COMMON_PREFIX -> 1
+            else -> 0
+        }
+
+        /**
+         * Fino a [MAX_SIMILAR_IDS] id di [candidates] simili a [unknown], deterministici: punteggio per token condivisi
+         * (uguale = 2, prefisso comune di almeno 5 caratteri = 1; i token di stato crudo/cotto/secco non contano), poi
+         * meno token in piu', poi ordine alfabetico.
+         */
+        internal fun similarFoodIds(unknown: String, candidates: Collection<String>): List<String> {
+            val wanted = idTokens(unknown)
+            if (wanted.isEmpty()) return emptyList()
+            return candidates.asSequence().map { id ->
+                val tokens = idTokens(id)
+                val score = wanted.sumOf { w -> tokens.maxOfOrNull { tokenScore(w, it) } ?: 0 }
+                Triple(id, score, tokens.size)
+            }.filter { it.second > 0 }
+                .sortedWith(compareByDescending<Triple<String, Int, Int>> { it.second }.thenBy { it.third }.thenBy { it.first })
+                .take(MAX_SIMILAR_IDS).map { it.first }.toList()
+        }
+
+        /** Motivo di retry per foodId sconosciuti, con suggerimenti dal CAT; al massimo [NutritionPlanAssessment.MAX_REASON_CHARS]. */
+        internal fun unknownFoodReason(ids: List<String>, candidates: Collection<String>): String {
+            val entries = ids.map { id ->
+                val similar = similarFoodIds(id, candidates)
+                if (similar.isEmpty()) id else "$id>${similar.joinToString(",")}"
+            }
+            val out = StringBuilder(UNKNOWN_FOOD_PREFIX)
+            entries.forEachIndexed { index, entry ->
+                val piece = if (index == 0) entry else ";$entry"
+                if (index > 0 && out.length + piece.length > NutritionPlanAssessment.MAX_REASON_CHARS) return@forEachIndexed
+                out.append(piece)
+            }
+            return out.toString().take(NutritionPlanAssessment.MAX_REASON_CHARS)
         }
 
         /** Tag logcat della diagnostica MFP2 (L6d). */

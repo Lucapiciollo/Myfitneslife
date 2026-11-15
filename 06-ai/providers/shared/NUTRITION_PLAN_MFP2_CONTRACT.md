@@ -20,6 +20,7 @@ H|hydrationNote
 V|1_or_0|notes
 ```
 
+- `W`: dato INFORMATIVO. L'app conosce gia' il lunedi' della richiesta e lo usa al posto del numero scritto dal modello (lotto L6e: un `W` riscritto male non fa piu' fallire il piano). Il record resta obbligatorio e numerico; le date `D` restano validate (`WEEK_DATES_INVALID`).
 - Una `D` per ogni data richiesta, seguita da esattamente `MEALS_PER_DAY` record `M`; ogni `M` ha almeno un `I`.
 - `foodId`: copiato dall'elenco `CAT` del messaggio utente. Vocabolario CHIUSO: un id non presente nel catalogo e' rifiutato.
 - `grams`: numero positivo con il punto, senza unita'. Rifiutati zero, negativi, testo, virgola, esponente, unita' attaccata.
@@ -41,7 +42,7 @@ it.riso_basmati|Riso bianco (crudo)|R|365|7.1|80|0.7|30-130|5|
 Le voci personalizzate dell'utente (`custom_foods`) NON sono ancora incluse: esiste solo la persistenza, senza tag di allergeni ne' limiti di porzione, quindi non possono passare il controllo per tag.
 
 ## Validazione e riparazione (app)
-1. Parsing e rifiuti con motivi stabili (`PIPE_I_FOOD_UNKNOWN:<id>`, `PIPE_I_GRAMS_INVALID`, `PIPE_M_PREPARATION_HAS_QUANTITY`, `PIPE_MEAL_WITHOUT_INGREDIENTS`, `PIPE_DAY_MUST_HAVE_<n>_MEALS`, ...).
+1. Parsing e rifiuti con motivi stabili (`PIPE_I_FOOD_UNKNOWN:<id>>sim1,sim2,sim3;...` con fino a 3 foodId del `CAT` piu' simili per ogni id sconosciuto, deterministici: token condivisi, poi meno token in piu', poi ordine alfabetico; motivo di retry <= 320 caratteri; `PIPE_I_GRAMS_INVALID`, `PIPE_M_PREPARATION_HAS_QUANTITY`, `PIPE_MEAL_WITHOUT_INGREDIENTS`, `PIPE_DAY_MUST_HAVE_<n>_MEALS`, ...).
 2. Allergeni/esclusioni per TAG del catalogo (`FOOD_CONSTRAINT_VIOLATION:<id,...>`), oltre al controllo per nome gia' esistente.
 3. Riparazione per giorno (`DayRepair`): grammi riscalati entro 0,6x-1,5x per voce e +-40% kcal per pasto, nei limiti min/max del catalogo; priorita' kcal, poi proteine, grassi, carboidrati. Nessun pasto e' bloccato come "consumato" in questo flusso (la generazione parte da oggi e non conosce pasti consumati del periodo).
 4. Se le kcal del giorno non sono raggiungibili con gli alimenti scelti, il rifiuto contiene l'intervallo raggiungibile per il retry: `TARGET_TOLERANCE_EXCEEDED:<epochDay>:target=<kcal>;actual=<kcal proposta>;reach=<min>-<max>|...`.
