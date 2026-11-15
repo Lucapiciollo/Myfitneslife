@@ -63,6 +63,7 @@
     <dimen name="body_trend_range_control_height">@dimen/control_min_height</dimen>
     <dimen name="time_range_selector_min_height">@dimen/control_min_height</dimen>
     <dimen name="food_meal_row_min_height">72dp</dimen>
+    <dimen name="food_meal_row_text_min_width">144dp</dimen>
     <dimen name="food_plan_status_dot_size">12dp</dimen>
     <dimen name="bia_trend_chart_height">240dp</dimen>
     <dimen name="body_measurement_illustration_height">290dp</dimen>
