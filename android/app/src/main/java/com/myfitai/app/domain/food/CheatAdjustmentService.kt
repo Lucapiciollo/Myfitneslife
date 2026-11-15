@@ -7,6 +7,7 @@ import com.myfitai.app.data.local.entity.CheatEntryEntity
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.data.repository.*
 import com.myfitai.app.domain.calculation.NutritionBusinessValidator
+import com.myfitai.app.domain.food.catalog.FoodCatalogLoader
 import com.myfitai.app.domain.time.SystemTimeProvider
 import com.myfitai.app.domain.time.TimeProvider
 import java.time.Instant
@@ -20,6 +21,8 @@ class CheatAdjustmentService(
     private val profiles: UserProfileRepository,
     private val activeProfileStore: ActiveProfileStore,
     private val time: TimeProvider = SystemTimeProvider,
+    /** Catalogo alimenti: serve a riparare i grammi dei pasti COMPUTED; null = solo comportamento dichiarato (storico). */
+    private val foodCatalogLoader: FoodCatalogLoader? = null,
 ) {
     data class Input(
         val description: String,
@@ -172,6 +175,9 @@ class CheatAdjustmentService(
 
         var remainingSurplus = confirmed.estimate.kcal.toDouble()
         val reductions = mutableMapOf<Long, Int>()
+        val adjuster = foodCatalogLoader?.let { loader -> runCatching { CheatComputedDayAdjuster(loader.load()) }.getOrNull() }
+        var recomputedDays = 0
+        var declaredFallbackDays = 0
         val adjustedDays = snapshot.version.days.map { sourceDay ->
             val eligibleIndex = eligibleDays.indexOfFirst { it.id == sourceDay.id }
             if (eligibleIndex < 0) return@map toDraft(sourceDay)
@@ -188,7 +194,18 @@ class CheatAdjustmentService(
             val newTarget = (baseTarget - reduction).coerceAtLeast(1)
             val targetForAdjustableMeals = (newTarget - lockedKcal).coerceAtLeast(0)
             val scale = if (adjustableKcal > 0) targetForAdjustableMeals.toDouble() / adjustableKcal else 1.0
-            val adjustedMeals = sourceDay.meals.map { sourceMeal ->
+            // Giorno COMPUTED: grammi riparati verso il nuovo target (stesso solver del piano). Altrimenti
+            // (dichiarato, misto, non risolvibile, INFEASIBLE) comportamento storico: totali scalati, pasto DECLARED.
+            val outcome = adjuster?.adjust(
+                day = sourceDay,
+                adjustable = sourceDay.meals.indices.filter { sourceDay.meals[it] in adjustable }.toSet(),
+                targetKcal = newTarget,
+                macroScale = newTarget.toDouble() / baseTarget,
+            )
+            val recomputed = outcome as? CheatComputedDayAdjuster.Outcome.Computed
+            if (recomputed != null) recomputedDays++
+            else if (outcome is CheatComputedDayAdjuster.Outcome.Fallback && outcome.reason != CheatComputedDayAdjuster.FallbackReason.DECLARED) declaredFallbackDays++
+            val adjustedMeals = recomputed?.meals ?: sourceDay.meals.map { sourceMeal ->
                 if (sourceMeal !in adjustable || sourceMeal.kcal == null) toDraft(sourceMeal)
                 else scaleMeal(sourceMeal, scale)
             }
@@ -221,12 +238,18 @@ class CheatAdjustmentService(
                 targetCarbsG = snapshot.version.targetCarbsG,
                 targetFatG = snapshot.version.targetFatG,
                 days = adjustedDays,
+                // La nuova versione eredita il catalogo con cui sono stati calcolati i macro (null per i piani dichiarati).
+                catalogVersion = snapshot.version.catalogVersion,
             ),
         )
 
+        val computedNote = buildString {
+            if (recomputedDays > 0) append(" Grammi dei pasti futuri ricalcolati dal catalogo in $recomputedDays giorni.")
+            if (declaredFallbackDays > 0) append(" In $declaredFallbackDays giorni i pasti non sono ricalcolabili entro i limiti: totali scalati come dichiarati.")
+        }
         return Result(
             cheatId, true, versionId, confirmed.estimate.kcal, confirmed.estimateSummary,
-            "Surplus di ${confirmed.estimate.kcal} kcal inserito nel serbatoio e distribuito sui prossimi ${reductions.size} giorni. Obiettivi ridotti gradualmente; residuo non ancora distribuito: ${remainingSurplus.coerceAtLeast(0.0).roundToInt()} kcal.",
+            "Surplus di ${confirmed.estimate.kcal} kcal inserito nel serbatoio e distribuito sui prossimi ${reductions.size} giorni. Obiettivi ridotti gradualmente; residuo non ancora distribuito: ${remainingSurplus.coerceAtLeast(0.0).roundToInt()} kcal.$computedNote",
             reductions.keys.map { "Obiettivo ${java.time.LocalDate.ofEpochDay(it)}: -${reductions.getValue(it)} kcal" },
         )
     }
