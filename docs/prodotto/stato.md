@@ -497,3 +497,5 @@ Dopo: L3 contratto MFP2 e integrazione (richiede L1+L2+L4 uniti).
 | senior-developer | Macro L6b lista spesa/export/PDF su snapshot + passo olio/condimenti | (vedi esito) | feat/macro-l6b-spesa-export |
 
 - SessionID: L6a = ses_e2142a8bfffeHF0nNGjPfbp3rY; L6b = ses_e21426332ffeEhS1eDrw3MU17U.
+
+- Macro L6a FERMATO (ses_e2142a8bfffeHF0nNGjPfbp3rY): commit 40ff068, develop = 9731495 (nessun conflitto). Gate del subagente BUILD SUCCESSFUL 20m53s, 88 task eseguiti; XML 145 file, 1237 test, 0 falliti, 0 skipped; NutritionSourcePresentationTest 11 test XML 11:45 (sorgente piu recente 11:32). Box info Cibo/alternative/dettaglio distinguono DECLARED/COMPUTED/MIXED, riga kcal+P/C/G per ingrediente COMPUTED, fonte catalogo USDA, avviso proteine neutro. Non verificato su device (font 1,3/2,0). Attesa L6b; poi gate combinato e prova device.
