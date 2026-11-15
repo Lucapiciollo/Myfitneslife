@@ -57,6 +57,37 @@ class FoodCatalog private constructor(val version: Int, val entries: List<FoodEn
 
     fun byId(id: String): FoodEntry? = byIdIndex[id]
 
+    /** Un alimento citato in un testo libero: [key] e' la chiave normalizzata (nome o alias) che ha combaciato. */
+    data class Mention(val entry: FoodEntry, val key: String)
+
+    private val maxAliasTokens: Int = aliasIndex.keys.maxOfOrNull { it.count { c -> c == ' ' } + 1 } ?: 1
+
+    /** Chiavi normalizzate (nome e alias) di una voce. */
+    fun keysOf(entry: FoodEntry): Set<String> =
+        (entry.aliases + entry.name).map { normalizeAlias(it) }.filter { it.isNotEmpty() }.toSet()
+
+    /**
+     * Alimenti del catalogo citati in [text] (per nome o alias, dopo la normalizzazione), nell'ordine del testo.
+     * Combacia sempre la chiave PIU' LUNGA a ogni posizione ("patate dolci" batte "patate") e consuma le parole usate.
+     */
+    fun mentionsIn(text: String): List<Mention> {
+        val tokens = normalizeAlias(text).split(' ').filter { it.isNotEmpty() }
+        val found = mutableListOf<Mention>()
+        var i = 0
+        while (i < tokens.size) {
+            var matched = 0
+            for (len in minOf(maxAliasTokens, tokens.size - i) downTo 1) {
+                val key = tokens.subList(i, i + len).joinToString(" ")
+                val entry = aliasIndex[key] ?: continue
+                found += Mention(entry, key)
+                matched = len
+                break
+            }
+            i += if (matched > 0) matched else 1
+        }
+        return found
+    }
+
     /** Cerca per nome o alias, dopo la normalizzazione: "L'Olio d'oliva" e "olio oliva" sono la stessa chiave. */
     fun findByAlias(text: String): FoodEntry? = aliasIndex[normalizeAlias(text)]
 

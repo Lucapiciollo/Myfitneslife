@@ -33,10 +33,37 @@ class DoseFormatterTest {
     @Test
     fun readableFractions() {
         assertEquals("1/2 cucchiaino", DoseFormatter.format(2.25, listOf(tsp)))
-        assertEquals("1/4 cucchiaino", DoseFormatter.format(1.125, listOf(tsp)))
-        assertEquals("3/4 cucchiaio", DoseFormatter.format(10.0, listOf(tbsp)))
         assertEquals("1 e 1/2 uova", DoseFormatter.format(75.0, listOf(egg)))
         assertEquals("1 e 1/2 cucchiai", DoseFormatter.format(20.0, listOf(tbsp)))
+    }
+
+    @Test
+    fun quartersAreNeverProduced_gramsOrMillilitersInstead() {
+        // L3b: niente 1/4 e 3/4. Prima: "1/4 cucchiaino" (1,125 g) e "3/4 cucchiaio" (10 g).
+        assertEquals("1,1 g", DoseFormatter.format(1.125, listOf(tsp)))
+        assertEquals("10 g", DoseFormatter.format(10.0, listOf(tbsp)))
+        // Casi reali della prova MFP2: olio 10 g con cucchiaio/cucchiaino 13,5/4,5 e cannella 2 g con 7,8/2,6.
+        assertEquals("10 g", DoseFormatter.format(10.0, listOf(tbsp, tsp)))
+        assertEquals("2 g", DoseFormatter.format(2.0, listOf(UnitEquivalent("cucchiaio", 7.8, "cucchiai"), UnitEquivalent("cucchiaino", 2.6, "cucchiaini"))))
+        // Un quarto o tre quarti esatti non sono piu' una dose leggibile.
+        assertEquals("3,4 g", DoseFormatter.format(3.375, listOf(tbsp)))
+        assertEquals("10 g", DoseFormatter.format(10.125, listOf(tbsp)))
+    }
+
+    @Test
+    fun smallerUnitAvoidsTheQuarter_wholeBeatsHalf() {
+        // 9 g: 2 cucchiaini invece di 2/3 di cucchiaio.
+        assertEquals("2 cucchiaini", DoseFormatter.format(9.0, listOf(tbsp, tsp)))
+        // 2,25 g: 1/2 cucchiaino (non 1/6 di cucchiaio).
+        assertEquals("1/2 cucchiaino", DoseFormatter.format(2.25, listOf(tbsp, tsp)))
+        // 18 g: 4 cucchiaini (intero) batte 1 e 1/3 cucchiaio (-> 1 e 1/2, scarto 12%).
+        assertEquals("4 cucchiaini", DoseFormatter.format(18.0, listOf(tbsp, tsp)))
+        // Intero con il cucchiaino (3 x 4,5 = 13,5) e intero con il cucchiaio: a parita' vince l'unita' piu' grande.
+        assertEquals("1 cucchiaio", DoseFormatter.format(13.5, listOf(tsp, tbsp)))
+        // 6,75 g: 1 e 1/2 cucchiaini oppure 1/2 cucchiaio, entrambi mezzi: vince l'unita' piu' grande.
+        assertEquals("1/2 cucchiaio", DoseFormatter.format(6.75, listOf(tsp, tbsp)))
+        // 4,6 g di olio: 1 cucchiaino (scarto 2,2%) e' preferito alla frazione.
+        assertEquals("1 cucchiaino", DoseFormatter.format(4.6, listOf(tbsp, tsp)))
     }
 
     @Test
@@ -75,8 +102,8 @@ class DoseFormatterTest {
 
     @Test
     fun toleranceIsConfigurable() {
-        // 10 g con cucchiaio da 13,5 g: 3/4 = 10,125 g (scarto 1,25%): accettato a 3%, rifiutato a 1%.
-        assertEquals("3/4 cucchiaio", DoseFormatter.format(10.0, listOf(tbsp), 0.03))
-        assertEquals("10 g", DoseFormatter.format(10.0, listOf(tbsp), 0.01))
+        // 6,9 g con cucchiaio da 13,5 g: 1/2 = 6,75 g (scarto 2,2%): accettato a 3%, rifiutato a 1%.
+        assertEquals("1/2 cucchiaio", DoseFormatter.format(6.9, listOf(tbsp), 0.03))
+        assertEquals("6,9 g", DoseFormatter.format(6.9, listOf(tbsp), 0.01))
     }
 }

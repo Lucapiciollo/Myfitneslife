@@ -21,15 +21,18 @@ data class UnitEquivalent(
 /**
  * Formattazione deterministica di displayDose a partire dai grammi.
  *
- * Usa SOLO le equivalenze fornite in ingresso: se nessuna rappresenta i grammi entro la tolleranza con una
- * quantità leggibile (interi, mezzi, quarti sotto l'unità) il risultato è solo in grammi ("150 g").
- * Non inventa mai pesi per le unità.
+ * Usa SOLO le equivalenze fornite in ingresso. Una dose e' "naturale" se e' un numero INTERO o MEZZO di unita'
+ * (1 cucchiaino, 1/2 cucchiaio, 1 e 1/2 uova) entro la tolleranza sul peso: i quarti (1/4, 3/4) non si producono
+ * mai. Tra piu' unita' valide vince quella con il numero intero, poi il mezzo; a parita' lo scarto minore, poi
+ * l'unita' piu' grande. Cosi' 9 g diventano "2 cucchiaini" (non 3/4 di cucchiaio) e, se nessuna unita' funziona,
+ * il risultato e' solo in grammi ("150 g"). Non inventa mai pesi per le unita'.
  */
 object DoseFormatter {
-    /** Scarto relativo massimo tra grammi reali e grammi dell'unità arrotondata alla quantità leggibile. */
+    /** Scarto relativo massimo tra grammi reali e grammi dell'unita' arrotondata alla quantita' leggibile. */
     const val DEFAULT_TOLERANCE = 0.03
 
     private const val MAX_UNITS = 12.0
+    private const val MIN_UNITS = 0.5
     private const val EPS = 1e-9
 
     fun format(
@@ -57,16 +60,14 @@ object DoseFormatter {
         return if (dec == 0) "$whole g" else "$whole,$dec g"
     }
 
+    /** [halves] = quantita' in mezzi (2 = una unita', 3 = una e mezza). */
     private class Candidate(
         val eq: UnitEquivalent,
-        val quarters: Int,
+        val halves: Int,
         val relDev: Double,
     ) {
-        val complexity: Int = when {
-            quarters % 4 == 0 -> 0
-            quarters % 2 == 0 -> 1
-            else -> 2
-        }
+        /** 0 = numero intero, 1 = con il mezzo. */
+        val complexity: Int = if (halves % 2 == 0) 0 else 1
 
         fun isBetterThan(o: Candidate): Boolean {
             if (complexity != o.complexity) return complexity < o.complexity
@@ -75,19 +76,13 @@ object DoseFormatter {
         }
 
         fun render(): String {
-            val whole = quarters / 4
-            val frac = when (quarters % 4) {
-                1 -> "1/4"
-                2 -> "1/2"
-                3 -> "3/4"
-                else -> null
-            }
+            val whole = halves / 2
             val qty = when {
-                frac == null -> "$whole"
-                whole == 0 -> frac
-                else -> "$whole e $frac"
+                halves % 2 == 0 -> "$whole"
+                whole == 0 -> "1/2"
+                else -> "$whole e 1/2"
             }
-            val singular = quarters <= 4
+            val singular = halves <= 2
             val unit = if (singular) eq.name else eq.pluralName
             return buildString {
                 append(qty).append(' ').append(unit)
@@ -98,17 +93,13 @@ object DoseFormatter {
 
     private fun candidate(grams: Double, eq: UnitEquivalent, tolerance: Double): Candidate? {
         val count = grams / eq.gramsPerUnit
-        if (count < 0.25 - EPS || count > MAX_UNITS) return null
-        // Griglia leggibile: quarti sotto 1, mezzi da 1 a 5, interi oltre.
-        val grid = when {
-            count < 1.0 -> 0.25
-            count < 5.0 -> 0.5
-            else -> 1.0
-        }
+        if (count < MIN_UNITS / 2.0 - EPS || count > MAX_UNITS) return null
+        // Griglia leggibile: mezzi fino a 5 unita', interi oltre.
+        val grid = if (count < 5.0) 0.5 else 1.0
         val q = floor(count / grid + 0.5) * grid
-        if (q < 0.25 - EPS) return null
+        if (q < MIN_UNITS - EPS) return null
         val relDev = abs(q * eq.gramsPerUnit - grams) / grams
         if (relDev > tolerance + EPS) return null
-        return Candidate(eq, Math.round(q * 4.0).toInt(), relDev)
+        return Candidate(eq, Math.round(q * 2.0).toInt(), relDev)
     }
 }

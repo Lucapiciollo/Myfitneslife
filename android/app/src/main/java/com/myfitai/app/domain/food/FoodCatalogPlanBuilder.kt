@@ -73,6 +73,13 @@ class FoodCatalogPlanBuilder(val catalog: FoodCatalog) {
         val changes: List<Change>,
     )
 
+    /**
+     * Un tentativo rifiutato (parser, riparazione, vincoli, gate): [attempt] e' 1-based, [code] un codice stabile
+     * (maiuscole e underscore) e [detail] al massimo [MAX_DETAIL_CHARS] caratteri di numeri/identificatori scritti
+     * dall'app. Mai testo del modello ne' dati personali (vedi [rejectionOf]).
+     */
+    data class AttemptRejection(val attempt: Int, val code: String, val detail: String)
+
     /** Riepilogo della riparazione e avvisi non bloccanti: finisce in appValidationJson (chiave `computation`). */
     data class Computation(
         val catalogVersion: Int,
@@ -80,12 +87,22 @@ class FoodCatalogPlanBuilder(val catalog: FoodCatalog) {
         val tolerance: Double,
         val days: List<DayComputation>,
         val warnings: List<NutritionValidationIssue>,
+        /** Titoli dei pasti sostituiti perche' citavano un alimento assente dagli ingredienti. */
+        val titlesReplaced: Int = 0,
+        /** Tentativi rifiutati PRIMA di quello accettato (raccolti dal chiamante, vedi [rejectionOf]). */
+        val attemptsLog: List<AttemptRejection> = emptyList(),
     ) {
         fun toJson(): JSONObject = JSONObject().apply {
             put("source", FoodMeal.NUTRITION_SOURCE_COMPUTED)
             put("catalogVersion", catalogVersion)
             put("attempt", attempt + 1)
             put("tolerancePercent", round1(tolerance * 100.0))
+            put("titlesReplaced", titlesReplaced)
+            put("attemptsLog", JSONArray().apply {
+                attemptsLog.take(MAX_LOGGED_ATTEMPTS).forEach {
+                    put(JSONObject().put("attempt", it.attempt).put("code", it.code).put("detail", it.detail))
+                }
+            })
             var budget = MAX_LISTED_CHANGES
             put("days", JSONArray().apply {
                 days.forEach { day ->
@@ -194,7 +211,7 @@ class FoodCatalogPlanBuilder(val catalog: FoodCatalog) {
         )
         return Result(
             response,
-            Computation(catalog.version, params.attempt, params.tolerance, computed.map { it.day }, warnings),
+            Computation(catalog.version, params.attempt, params.tolerance, computed.map { it.day }, warnings, computed.sumOf { it.titlesReplaced }),
         )
     }
 
@@ -203,6 +220,7 @@ class FoodCatalogPlanBuilder(val catalog: FoodCatalog) {
         val generated: NutritionPlanContract.GeneratedDay,
         val verdictBlocking: Boolean,
         val warnings: List<NutritionValidationIssue>,
+        val titlesReplaced: Int = 0,
     )
 
     private fun computeDay(day: FoodCatalogPlanContract.Day, params: Params): ComputedDay {
@@ -224,6 +242,7 @@ class FoodCatalogPlanBuilder(val catalog: FoodCatalog) {
         val finalGrams = repair.mealGrams.map { meal -> meal.map { Math.round(it * 10.0) / 10.0 } }
         var totals = NutrientTotals.ZERO
         val changes = mutableListOf<Change>()
+        var titlesReplaced = 0
         val generatedMeals = day.meals.mapIndexed { mi, meal ->
             val ingredients = meal.items.mapIndexed { ii, item ->
                 val food = entry(item.foodId)
@@ -235,9 +254,11 @@ class FoodCatalogPlanBuilder(val catalog: FoodCatalog) {
                 acc + NutrientTotals(i.kcal!!.toDouble(), i.proteinG!!.toDouble(), i.carbsG!!.toDouble(), i.fatG!!.toDouble(), i.fiberG!!.toDouble(), i.sodiumMg!!.toDouble())
             }
             totals += mealTotals
+            val title = coherentTitle(meal.title, meal.items.map { entry(it.foodId) }, finalGrams[mi])
+            if (title != meal.title) titlesReplaced++
             NutritionPlanContract.GeneratedMeal(
                 type = meal.type,
-                title = meal.title,
+                title = title,
                 timeMinutes = meal.timeMinutes,
                 kcal = Math.round(mealTotals.kcal).toInt(),
                 proteinG = round1(mealTotals.proteinG).toFloat(),
@@ -317,7 +338,41 @@ class FoodCatalogPlanBuilder(val catalog: FoodCatalog) {
             generated = generated,
             verdictBlocking = verdict.isBlocking,
             warnings = warnings,
+            titlesReplaced = titlesReplaced,
         )
+    }
+
+    /**
+     * Titolo coerente con gli ingredienti. Se il titolo del modello cita un alimento del catalogo (nome o alias) che
+     * NON e' tra gli ingredienti del pasto, resta il titolo scritto dall'app con i 2-3 ingredienti principali per kcal
+     * ([generatedTitle]); altrimenti resta quello del modello. Un alimento citato e' presente se l'ingrediente e' la
+     * stessa voce, la sua coppia crudo/cotto, oppure una voce piu' specifica (nome/alias che contiene quello citato:
+     * "riso" con riso integrale). Nessun rifiuto e nessun retry.
+     */
+    internal fun coherentTitle(title: String, foods: List<FoodEntry>, grams: List<Double>): String {
+        val present = foods.flatMap { listOfNotNull(it.id, it.pairId) }.toSet()
+        val presentKeys = foods.flatMap { catalog.keysOf(it) }.map { " $it " }
+        val mismatch = catalog.mentionsIn(title).any { mention ->
+            mention.entry.id !in present && presentKeys.none { it.contains(" ${mention.key} ") }
+        }
+        if (!mismatch) return title
+        return generatedTitle(foods, grams) ?: title
+    }
+
+    /** "Salmone, patate e zucca": fino a 3 nomi di catalogo (senza stato, condimenti/spezie/integratori esclusi) per kcal. */
+    private fun generatedTitle(foods: List<FoodEntry>, grams: List<Double>): String? {
+        val rows = foods.mapIndexed { i, food ->
+            Triple(food, titleName(food), NutritionCalculator.ingredient(calcPer100(food), grams[i]).kcal)
+        }
+        val main = rows.filterNot { isCondimentLike(it.first) }.ifEmpty { rows }
+        val names = main.groupBy { it.second.lowercase() }.values
+            .map { group -> group.first().second to group.sumOf { it.third } }
+            .sortedByDescending { it.second }
+            .take(MAX_TITLE_FOODS)
+            .map { it.first }
+        if (names.isEmpty()) return null
+        val lowered = names.mapIndexed { i, n -> if (i == 0) n.replaceFirstChar { it.uppercase() } else n.replaceFirstChar { it.lowercase() } }
+        return if (lowered.size == 1) lowered[0] else lowered.dropLast(1).joinToString(", ") + " e " + lowered.last()
     }
 
     private fun entry(id: String): FoodEntry = catalog.byId(id) ?: throw Rejection("PIPE_I_FOOD_UNKNOWN:${FoodCatalogPlanContract.safeId(id)}")
@@ -384,6 +439,13 @@ class FoodCatalogPlanBuilder(val catalog: FoodCatalog) {
     companion object {
         const val PROTEIN_BELOW_TARGET = "PROTEIN_BELOW_TARGET"
         const val MAX_LISTED_IDS = 5
+        const val MAX_DETAIL_CHARS = 120
+        internal const val MAX_LOGGED_ATTEMPTS = 5
+        private const val MAX_TITLE_FOODS = 3
+        private const val MAX_CODE_CHARS = 60
+        private val CODE_PATTERN = Regex("^([A-Z][A-Z0-9_]*)(?::(.*))?$")
+        private val PARENTHESES = Regex("\\s*\\([^)]*\\)")
+        private val TRAILING_STATE = Regex("\\s+(cott[oaie]|crud[oaie])$", RegexOption.IGNORE_CASE)
         internal const val MAX_LISTED_CHANGES = 300
         private const val CHANGE_EPSILON_G = 0.05
         private const val CREATINE_NAME = "Creatina monoidrato"
@@ -393,6 +455,28 @@ class FoodCatalogPlanBuilder(val catalog: FoodCatalog) {
         )
         private val STATE_RAW = Regex("crud", RegexOption.IGNORE_CASE)
         private val STATE_COOKED = Regex("cott|bollit|lessat|arrost|grigliat|al forno|sodo", RegexOption.IGNORE_CASE)
+
+        /** Nome del catalogo per un titolo: senza parentesi, senza alternativa dopo " / " e senza lo stato crudo/cotto. */
+        internal fun titleName(food: FoodEntry): String =
+            food.name.replace(PARENTHESES, "").substringBefore(" / ").trim().replace(TRAILING_STATE, "").trim().ifEmpty { food.name }
+
+        /** Condimenti, spezie, sale, integratori e oli/burro: fuori dal titolo generato. */
+        internal fun isCondimentLike(food: FoodEntry): Boolean =
+            "SEASONING" in food.roles || "SUPPLEMENT" in food.roles ||
+                ("FAT" in food.roles && (food.density != null || food.id == "it.burro"))
+
+        /**
+         * Rifiuto di un tentativo in forma registrabile: il codice e' la parte iniziale `MAIUSCOLE_E_UNDERSCORE` del
+         * messaggio (i rifiuti dell'app sono `CODICE` o `CODICE:dettaglio`), il dettaglio e' troncato a
+         * [MAX_DETAIL_CHARS]. Se il messaggio non ha quella forma (per esempio un'eccezione di parsing JSON, che
+         * potrebbe citare il testo del modello) si registra solo `UNCLASSIFIED`, senza dettaglio.
+         */
+        fun rejectionOf(attempt: Int, error: Throwable): AttemptRejection {
+            val match = CODE_PATTERN.matchEntire(error.message.orEmpty().lineSequence().firstOrNull().orEmpty().trim())
+                ?: return AttemptRejection(attempt + 1, "UNCLASSIFIED", "")
+            val detail = match.groupValues[2].replace(Regex("\\s+"), " ").trim().take(MAX_DETAIL_CHARS)
+            return AttemptRejection(attempt + 1, match.groupValues[1].take(MAX_CODE_CHARS), detail)
+        }
 
         fun displayName(food: FoodEntry): String = when {
             food.state == FoodState.RAW && !STATE_RAW.containsMatchIn(food.name) -> "${food.name} (crudo)"
