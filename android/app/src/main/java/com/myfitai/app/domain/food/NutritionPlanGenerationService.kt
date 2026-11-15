@@ -257,17 +257,20 @@ class NutritionPlanGenerationService(
             maintenanceCeilingKcal = maintenanceCeilingKcal,
         )
         var attemptIndex = 0
+        // MFP2: motivi (codice stabile + dettaglio breve) dei tentativi di business rifiutati prima di quello accettato.
+        // Limite: l'indice conta solo i tentativi che hanno superato lo schema; i rifiuti di schema/JSON non passano da qui.
+        val rejectedAttempts = mutableListOf<FoodCatalogPlanBuilder.AttemptRejection>()
         val validated = aiRuntime.execute(
             request = request,
             maxSchemaRetries = 2,
             businessValidator = { json ->
+                val currentAttempt = attemptIndex++
                 runCatching {
-                    val currentAttempt = attemptIndex++
                     if (catalogPlan != null) {
                         // MFP2: parse -> catalogo -> riparazione verso il target del giorno -> piano con numeri CALCOLATI.
                         val ok = catalogPlan.evaluate(json, catalogContext, currentAttempt)
                         accepted = ok.response to ok.assessment
-                        acceptedComputation = ok.computation
+                        acceptedComputation = ok.computation.copy(attemptsLog = rejectedAttempts.toList())
                         return@runCatching
                     }
                     val response = NutritionPlanCompactContract.parseEnvelope(json, mealsPerDay)
@@ -292,6 +295,8 @@ class NutritionPlanGenerationService(
                     ).getOrThrow()
                     // Integrity and macros are informative (persisted in appValidation): they never block.
                     accepted = response to assessment
+                }.onFailure { error ->
+                    if (catalogPlan != null) rejectedAttempts += FoodCatalogPlanBuilder.rejectionOf(currentAttempt, error)
                 }
             },
         )

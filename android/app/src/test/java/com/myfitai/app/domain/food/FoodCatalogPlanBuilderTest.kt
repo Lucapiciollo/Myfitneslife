@@ -292,6 +292,109 @@ class FoodCatalogPlanBuilderTest {
         ).forEach { reason -> assertNotNull(reason, spec.fixHint(reason)) }
     }
 
+    private fun food(id: String) = catalog.byId(id)!!
+
+    @Test
+    fun mismatchedTitle_isReplacedByTheAppTitleFromTheMainIngredients_andCounted() {
+        // Caso reale della prova MFP2: titolo con zucchine ma ingrediente zucca.
+        val dinner = FoodCatalogPlanFixtures.MealSpec(
+            "DINNER", "Trancio di salmone con patate e zucchine", 1230, "Inforna il salmone con le patate e la zucca e condisci con l'olio.",
+            listOf("it.salmone" to "200", "it.patate" to "250", "it.zucca" to "150", "it.olio_evo" to "10"),
+        )
+        val accepted = evaluate(payload(FoodCatalogPlanFixtures.standardMeals.dropLast(1) + dinner))
+        val titles = accepted.response.days.single().meals.map { it.title }
+
+        assertEquals(1, accepted.computation.titlesReplaced)
+        val generated = titles.last()
+        assertTrue(generated, generated.startsWith("Salmone") || generated.startsWith("Patate"))
+        assertTrue(generated, generated.endsWith(" e zucca") && !generated.contains("zucchine", ignoreCase = true) && !generated.contains("olio", ignoreCase = true))
+        // I titoli coerenti dei modelli restano quelli del modello.
+        assertEquals(FoodCatalogPlanFixtures.standardMeals.dropLast(1).map { it.title }, titles.dropLast(1))
+        assertEquals(1, accepted.computation.toJson().getInt("titlesReplaced"))
+    }
+
+    @Test
+    fun coherentPlan_keepsEveryTitleOfTheModel() {
+        val accepted = evaluate()
+        assertEquals(FoodCatalogPlanFixtures.standardMeals.map { it.title }, accepted.response.days.single().meals.map { it.title })
+        assertEquals(0, accepted.computation.titlesReplaced)
+        assertEquals(0, accepted.computation.toJson().getInt("titlesReplaced"))
+    }
+
+    @Test
+    fun coherentTitle_acceptsAliasesPairsAndMoreSpecificFoods_butNotAMissingFood() {
+        val pollo = food("it.petto_pollo")
+        // "riso basmati" e' un alias del nome di catalogo "Riso bianco": coerente.
+        assertEquals("Riso basmati con pollo", builder.coherentTitle("Riso basmati con pollo", listOf(food("it.riso_basmati"), pollo), listOf(80.0, 150.0)))
+        // Termine generico con una voce piu' specifica ("riso" con riso a chicco medio): coerente.
+        assertEquals("Riso con pollo", builder.coherentTitle("Riso con pollo", listOf(food("it.riso_tondo"), pollo), listOf(80.0, 150.0)))
+        // Crudo/cotto della stessa voce: "merluzzo al forno" cita la voce cotta, l'ingrediente e' la voce cruda.
+        assertEquals("Merluzzo al forno con patate", builder.coherentTitle("Merluzzo al forno con patate", listOf(food("it.merluzzo"), food("it.patate")), listOf(200.0, 250.0)))
+        // Alimento assente: sostituito, senza olio, spezie e stato crudo/cotto.
+        val foods = listOf(pollo, food("it.olio_evo"), food("it.cannella"), food("it.zucca"))
+        assertEquals("Petto di pollo e zucca", builder.coherentTitle("Pollo e zucchine", foods, listOf(150.0, 15.0, 2.0, 200.0)))
+        // Un solo alimento principale: titolo con quel solo nome.
+        assertEquals("Petto di pollo", builder.coherentTitle("Pollo e zucchine", listOf(pollo, food("it.olio_evo")), listOf(150.0, 10.0)))
+    }
+
+    @Test
+    fun generatedTitle_usesAtMostThreeFoodsByKcalWithCommasAndFinalE() {
+        val foods = listOf(food("it.salmone"), food("it.patate"), food("it.zucca"), food("it.pane_integrale"))
+        // kcal: salmone 150 g > patate 300 g > pane 80 g > zucca 100 g (per100 del catalogo).
+        val title = builder.coherentTitle("Merluzzo con zucchine", foods, listOf(150.0, 300.0, 80.0, 100.0))
+        assertTrue(title, Regex("^[A-Z][^,]+, [^,]+ e [^,]+$").matches(title))
+        assertFalse(title, title.contains("(") || title.contains("crud", ignoreCase = true))
+        assertEquals("Branzino", FoodCatalogPlanBuilder.titleName(food("it.branzino")).substringBefore(" /"))
+        assertEquals("Salmone", FoodCatalogPlanBuilder.titleName(food("it.salmone_cotto")))
+    }
+
+    @Test
+    fun rejectionOf_keepsOnlyAStableCodeAndAShortDetail() {
+        val unknown = FoodCatalogPlanBuilder.rejectionOf(0, IllegalArgumentException("PIPE_I_FOOD_UNKNOWN:it.xx,it.yy"))
+        assertEquals(FoodCatalogPlanBuilder.AttemptRejection(1, "PIPE_I_FOOD_UNKNOWN", "it.xx,it.yy"), unknown)
+        assertEquals(FoodCatalogPlanBuilder.AttemptRejection(2, "PIPE_I_GRAMS_INVALID", ""), FoodCatalogPlanBuilder.rejectionOf(1, IllegalArgumentException("PIPE_I_GRAMS_INVALID")))
+        val long = FoodCatalogPlanBuilder.rejectionOf(2, IllegalArgumentException("TARGET_TOLERANCE_EXCEEDED:" + "x".repeat(400)))
+        assertEquals(3, long.attempt)
+        assertEquals(FoodCatalogPlanBuilder.MAX_DETAIL_CHARS, long.detail.length)
+        // Messaggi che non sono un codice dell'app (es. eccezioni di parsing con testo del modello) non vengono copiati.
+        val model = FoodCatalogPlanBuilder.rejectionOf(0, org.json.JSONException("Value Ciao mario at 0 of type java.lang.String"))
+        assertEquals(FoodCatalogPlanBuilder.AttemptRejection(1, "UNCLASSIFIED", ""), model)
+        assertEquals("UNCLASSIFIED", FoodCatalogPlanBuilder.rejectionOf(0, IllegalStateException()).code)
+    }
+
+    @Test
+    fun realRejections_areLoggedWithTheirCodes_andPersistedInTheComputation() {
+        val unknownFood = runCatching { evaluate(payload(extraLines = emptyList()).replace("it.mela", "it.non_esiste")) }.exceptionOrNull()!!
+        val first = FoodCatalogPlanBuilder.rejectionOf(0, unknownFood)
+        assertEquals("PIPE_I_FOOD_UNKNOWN", first.code)
+        val infeasible = runCatching { evaluate(ctx = context(targets = targets(kcal = 3500.0))) }.exceptionOrNull()!!
+        val second = FoodCatalogPlanBuilder.rejectionOf(1, infeasible)
+        assertEquals("TARGET_TOLERANCE_EXCEEDED", second.code)
+        assertTrue(second.detail, second.detail.startsWith("$dayEpoch:target=3500;actual="))
+        assertTrue(second.detail.length <= FoodCatalogPlanBuilder.MAX_DETAIL_CHARS)
+
+        val ok = evaluate(attempt = 2)
+        val log = ok.computation.copy(attemptsLog = listOf(first, second)).toJson().getJSONArray("attemptsLog")
+        assertEquals(2, log.length())
+        assertEquals(1, log.getJSONObject(0).getInt("attempt"))
+        assertEquals("PIPE_I_FOOD_UNKNOWN", log.getJSONObject(0).getString("code"))
+        assertEquals(2, log.getJSONObject(1).getInt("attempt"))
+        assertEquals(3, ok.computation.toJson().getInt("attempt"))
+        // Senza rifiuti precedenti il registro e' un array vuoto.
+        assertEquals(0, ok.computation.toJson().getJSONArray("attemptsLog").length())
+        // Il lettore tollerante del documento persistito legge ancora il piano.
+        val integrity = NutritionIntegrityValidator.validate(
+            response = ok.response,
+            targets = context().targets,
+            mealsPerDay = FoodCatalogPlanFixtures.MEALS_PER_DAY,
+            dailyTargets = context().dailyTargets,
+            assessment = ok.assessment,
+            computation = ok.computation.copy(attemptsLog = listOf(first, second)),
+        )
+        assertEquals(2, integrity.toJson().getJSONObject("computation").getJSONArray("attemptsLog").length())
+        assertTrue(NutritionIntegrityValidator.parse(integrity.toJson().toString())!!.valid)
+    }
+
     private companion object {
         const val AiExecutionServiceReasonCap = 320
     }
