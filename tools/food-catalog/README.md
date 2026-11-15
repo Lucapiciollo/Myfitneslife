@@ -42,6 +42,12 @@ viene saltato.
 - **tag** (`tags`): identificatori dei concetti di `FoodSynonyms` (domain/food) che la voce contiene (GLUTEN, MILK,
   LACTOSE, EGG, FISH, TREE_NUTS...). La dieta (vegetariana, vegana, pescetariana) e' derivata dai tag. NICKEL e SULPHITES
   non sono modellati. Controllo su elenco, non garanzia medica (vedi `06-ai/providers/shared/FOOD_CONSTRAINTS_LIMITS.md`).
+- **passi pratici (L6c)**: per le voci dosate a cucchiaino/cucchiaio (oli, burro, maionese, zucchero, miele, sciroppo
+  d'acero, salsa di soia, ketchup, concentrato di pomodoro, creme di frutta secca, tahin, marmellate, cacao amaro, semi di
+  sesamo; aceto di vino era gia' coerente) `stepG` e' il grammaggio del cucchiaino (o di mezzo cucchiaio) gia' in `units`
+  (tabella `STEP_FROM_UNIT` di `build_catalog.py`), `minG` = un passo, `maxG` = il multiplo di passo non sopra il vecchio
+  massimo. Cosi' olio 9 g = 2 cucchiaini, 13,5 g = 1 cucchiaio. Cambiano solo `minG/maxG/stepG` di 23 voci;
+  `catalogVersion` resta 1 (correzione compatibile: i piani salvano grammi, non passi).
 - **stagionalita'** (`s`: mesi, es. `6-9`, `11-3`), categorie, `min/max/step` sono giudizi curati, non dati USDA.
 - `edible` e' 1.0 salvo la voce `uovo` (0,88: valori USDA per parte edibile, senza guscio).
 - Alias: normalizzati (minuscolo, senza accenti, punteggiatura, articoli/preposizioni; stessa funzione di

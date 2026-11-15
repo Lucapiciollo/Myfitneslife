@@ -192,7 +192,8 @@ class MealAlternativeCatalogTest {
         assertEquals(2, prompts.size)
         assertTrue(prompts[1], prompts[1].contains("FIX:TARGET_TOLERANCE_EXCEEDED:1:target=870;actual="))
         assertTrue(generated.items.size >= MealAlternativeCatalogEngine.MIN_ALTERNATIVES)
-        generated.items.forEach { assertTrue("kcal=${it.kcal}", abs(it.kcal - 870.0) / 870.0 <= 0.04 + 1e-9) }
+        // kcal del pasto e' un intero arrotondato (halves): 835,2 kcal (esattamente -4%) diventano 835 -> 0,5 kcal di slack di arrotondamento.
+        generated.items.forEach { assertTrue("kcal=${it.kcal}", abs(it.kcal - 870.0) <= 870.0 * 0.04 + 0.5 + 1e-9) }
         // Con i retry accettati al 4% almeno una alternativa sta tra 3% e 4% (altrimenti il primo tentativo sarebbe passato).
         assertTrue(generated.items.any { abs(it.kcal - 870.0) / 870.0 > 0.03 })
 
