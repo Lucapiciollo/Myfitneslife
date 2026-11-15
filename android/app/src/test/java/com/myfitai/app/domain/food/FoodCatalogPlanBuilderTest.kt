@@ -235,21 +235,71 @@ class FoodCatalogPlanBuilderTest {
             "PIPE_M_PREPARATION_HAS_QUANTITY",
             rejection(payload().replace("Servi la mela a spicchi con il pane.", "Servi la mela con 2 fette di pane.")),
         )
-        assertEquals(
-            "PIPE_I_FOOD_UNKNOWN:it.mela_d_oro",
-            rejection(payload().replace("it.mela|150", "it.mela_d_oro|150")),
-        )
+        val unknown = rejection(payload().replace("it.mela|150", "it.mela_d_oro|150"))!!
+        assertTrue(unknown, unknown.startsWith("PIPE_I_FOOD_UNKNOWN:it.mela_d_oro>it.mela"))
         assertEquals("PIPE_I_GRAMS_INVALID", rejection(payload().replace("it.mela|150", "it.mela|centocinquanta")))
     }
 
     @Test
+    fun unknownFood_reasonSuggestsTheClosestCatalogIds_withinTheRetryLimit() {
+        // Caso reale L6d: id inventato 'it.fagiolini_bolliti'. A novembre i fagiolini sono fuori stagione (non sono nel
+        // CAT del prompt): i suggerimenti devono venire solo dal CAT, mai da voci che il modello non vede.
+        val message = rejection(payload().replace("it.mela|150", "it.fagiolini_bolliti|150"))!!
+        assertTrue(message, message.startsWith("PIPE_I_FOOD_UNKNOWN:it.fagiolini_bolliti>"))
+        assertTrue(message, message.length <= AiExecutionServiceReasonCap)
+        val suggestions = message.substringAfter('>').split(',')
+        assertTrue(message, suggestions.size in 1..3)
+        val cat = catalog.subsetFor(
+            com.myfitai.app.domain.food.catalog.CatalogConstraints(profile = DietaryProfile(), month = FoodCatalogPlanFixtures.day.monthValue),
+        ).map { it.id }.toSet()
+        assertTrue(message, suggestions.all { it in cat })
+        assertTrue(message, "it.fagiolini" !in suggestions)
+        assertTrue(message, suggestions.any { it.startsWith("it.fagioli_") })
+        // Deterministico.
+        assertEquals(message, rejection(payload().replace("it.mela|150", "it.fagiolini_bolliti|150")))
+        // Il messaggio resta nel limite anche con 5 id sconosciuti lunghi.
+        val many = (1..5).map { "it.fagiolini_bolliti_molto_lunghi_$it" }
+        val all = catalog.entries.map { it.id }
+        assertTrue(FoodCatalogPlanBuilder.unknownFoodReason(many, all).length <= AiExecutionServiceReasonCap)
+        // Il registry fornisce ancora il suggerimento di retry per il codice.
+        assertNotNull(AiContractRegistry.require(FoodCatalogPlanContract.SCHEMA_NAME).fixHint(message))
+        assertTrue(AiExecutionService.fixReason(message).length == message.length)
+    }
+
+    @Test
+    fun similarFoodIds_areDeterministic_sharedTokensFirst_thenFewerExtraTokens_thenAlphabetical() {
+        val ids = catalog.entries.map { it.id }
+        val similar = FoodCatalogPlanBuilder.similarFoodIds("it.fagiolini_bolliti", ids)
+        assertEquals(3, similar.size)
+        assertEquals(listOf("it.fagiolini", "it.fagiolini_cotti"), similar.take(2))
+        assertEquals(similar, FoodCatalogPlanBuilder.similarFoodIds("it.fagiolini_bolliti", ids.reversed()))
+        // Nessun token utile, nessun suggerimento (id non sicuro "?" incluso).
+        assertTrue(FoodCatalogPlanBuilder.similarFoodIds("?", ids).isEmpty())
+        assertTrue(FoodCatalogPlanBuilder.similarFoodIds("it.zzzzqqqq", ids).isEmpty())
+    }
+
+    @Test
     fun structuralRulesOfTheBusinessGateStillApply() {
-        // Giorno mancante rispetto a quello chiesto.
+        // Giorno mancante rispetto a quello chiesto: le date D restano validate, anche con un W sbagliato.
         assertEquals("WEEK_DATES_INVALID", rejection(payload(date = dayEpoch - 1)))
-        // Settimana sbagliata.
-        assertEquals("WEEK_START_MISMATCH", rejection(payload(weekStart = FoodCatalogPlanFixtures.monday.toEpochDay() + 7)))
+        assertEquals("WEEK_DATES_INVALID", rejection(payload(date = dayEpoch - 1, weekStart = 0)))
         // Pasti mancanti.
         assertEquals("PIPE_DAY_MUST_HAVE_4_MEALS", rejection(payload(FoodCatalogPlanFixtures.standardMeals.take(3))))
+    }
+
+    @Test
+    fun wrongWeekStartWritten_byTheModel_isOverriddenByTheApp() {
+        val monday = FoodCatalogPlanFixtures.monday.toEpochDay()
+        listOf(monday + 7, monday - 1, 0L, 20000L).forEach { wrong ->
+            val accepted = evaluate(payload(weekStart = wrong))
+            assertEquals("W=$wrong", monday, accepted.response.weekStartEpochDay)
+            assertTrue(accepted.assessment.accepted)
+            // Stesso piano di quello con W corretto.
+            assertEquals(evaluate().response, accepted.response)
+        }
+        assertEquals(monday, evaluate().response.weekStartEpochDay)
+        // Un W non numerico resta un errore di formato.
+        assertEquals("PIPE_W_INVALID", rejection(payload().replace("W|$monday", "W|lunedi")))
     }
 
     @Test

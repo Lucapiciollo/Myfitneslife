@@ -99,7 +99,10 @@ class AiExecutionService(
 
         /** Reason text for the retry prompt: stable codes/numbers only, truncated to a declared cap. */
         fun fixReason(reason: String): String =
-            reason.take(if (reason.startsWith("TARGET_TOLERANCE_EXCEEDED:")) FIX_TOLERANCE_REASON_MAX_CHARS else FIX_REASON_MAX_CHARS)
+            reason.take(
+                if (reason.startsWith("TARGET_TOLERANCE_EXCEEDED:") || reason.startsWith("PIPE_I_FOOD_UNKNOWN:")) FIX_TOLERANCE_REASON_MAX_CHARS
+                else FIX_REASON_MAX_CHARS,
+            )
     }
 
     private suspend fun <T> runPipeline(
