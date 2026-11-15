@@ -534,6 +534,7 @@ class FoodCatalogPlanBuilder(val catalog: FoodCatalog) {
         private const val MAX_SIMILAR_IDS = 3
         private const val MIN_TOKEN_CHARS = 3
         private const val MIN_COMMON_PREFIX = 5
+        private const val MIN_STEM_EQUAL = 3
 
         private val STATE_TOKEN = Regex("^(cott|crud|bollit|lessat|arrost|grigliat|secch|fresc)[oaie]$|^(scatola|forno|vapore)$")
 
@@ -541,29 +542,42 @@ class FoodCatalogPlanBuilder(val catalog: FoodCatalog) {
             id.removePrefix("it.").lowercase().split('_', '.', '-')
                 .filter { it.length >= MIN_TOKEN_CHARS && !STATE_TOKEN.matches(it) }
 
-        private fun tokenScore(a: String, b: String): Int = when {
-            a == b -> 2
-            a.commonPrefixWith(b).length >= MIN_COMMON_PREFIX -> 1
-            else -> 0
-        }
+        private fun stem(token: String): String = token.trimEnd('a', 'e', 'i', 'o')
 
         /**
-         * Fino a [MAX_SIMILAR_IDS] id di [candidates] simili a [unknown], deterministici: punteggio per token condivisi
-         * (uguale = 2, prefisso comune di almeno 5 caratteri = 1; i token di stato crudo/cotto/secco non contano), poi
-         * meno token in piu', poi ordine alfabetico.
+         * Punteggio di un token: lunghezza del prefisso comune delle radici (vocali finali a/e/i/o tolte, cosi'
+         * zucchina~zucchine~zucchini). Token identico = sua lunghezza; radici uguali (>= 3) o prefisso >= 5 contano.
+         */
+        private fun tokenScore(a: String, b: String): Int {
+            if (a == b) return a.length
+            val sa = stem(a)
+            val sb = stem(b)
+            val common = sa.commonPrefixWith(sb).length
+            return when {
+                sa == sb && sa.length >= MIN_STEM_EQUAL -> common
+                common >= MIN_COMMON_PREFIX -> common
+                else -> 0
+            }
+        }
+
+        private data class Scored(val id: String, val score: Int, val shared: Int, val extra: Int)
+
+        /**
+         * Fino a [MAX_SIMILAR_IDS] id di [candidates] simili a [unknown], deterministici: punteggio = somma per token della
+         * lunghezza del prefisso comune delle radici (token di stato crudo/cotto/secco ignorati), poi piu' token
+         * condivisi, poi meno token in piu', poi ordine alfabetico.
          */
         internal fun similarFoodIds(unknown: String, candidates: Collection<String>): List<String> {
             val wanted = idTokens(unknown)
             if (wanted.isEmpty()) return emptyList()
             return candidates.asSequence().map { id ->
                 val tokens = idTokens(id)
-                val score = wanted.sumOf { w -> tokens.maxOfOrNull { tokenScore(w, it) } ?: 0 }
-                Triple(id, score, tokens.size)
-            }.filter { it.second > 0 }
-                .sortedWith(compareByDescending<Triple<String, Int, Int>> { it.second }.thenBy { it.third }.thenBy { it.first })
-                .take(MAX_SIMILAR_IDS).map { it.first }.toList()
+                val scores = wanted.map { w -> tokens.maxOfOrNull { tokenScore(w, it) } ?: 0 }
+                Scored(id, scores.sum(), scores.count { it > 0 }, tokens.size)
+            }.filter { it.score > 0 }
+                .sortedWith(compareByDescending<Scored> { it.score }.thenByDescending { it.shared }.thenBy { it.extra }.thenBy { it.id })
+                .take(MAX_SIMILAR_IDS).map { it.id }.toList()
         }
-
         /** Motivo di retry per foodId sconosciuti, con suggerimenti dal CAT; al massimo [NutritionPlanAssessment.MAX_REASON_CHARS]. */
         internal fun unknownFoodReason(ids: List<String>, candidates: Collection<String>): String {
             val entries = ids.map { id ->

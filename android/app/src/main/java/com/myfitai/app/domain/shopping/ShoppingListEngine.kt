@@ -24,11 +24,35 @@ object ShoppingListEngine {
         val weightState: String?,
         val sourceCount: Int,
     ) {
-        fun displayQuantity(): String = when {
-            unit == "g" && quantity >= 1000.0 -> format(quantity / 1000.0) + " kg"
-            unit == "ml" && quantity >= 1000.0 -> format(quantity / 1000.0) + " l"
-            else -> format(quantity) + " " + unit
+        /**
+         * Quantita' mostrata nella lista (solo presentazione: [quantity] e la chiave restano quelli del piano).
+         * Per g e ml arrotonda SEMPRE per eccesso a numeri comodi, cosi' la spesa non si riduce mai.
+         */
+        fun displayQuantity(): String {
+            val shown = roundedQuantity()
+            return when {
+                unit == "g" && shown >= 1000.0 -> formatTrimmed(shown / 1000.0, 2) + " kg"
+                unit == "ml" && shown >= 1000.0 -> formatTrimmed(shown / 1000.0, 2) + " l"
+                else -> format(shown) + " " + unit
+            }
         }
+
+        /** [quantity] arrotondata per eccesso per g/ml (vedi [shoppingStep]); le altre unita' restano invariate. */
+        fun roundedQuantity(): Double = if (unit == "g" || unit == "ml") roundUpForShopping(quantity) else quantity
+    }
+
+    /** Passo di arrotondamento della spesa: <20 -> 1, 20..<100 -> 5, >=100 -> 10. */
+    internal fun shoppingStep(quantity: Double): Double = when {
+        quantity < 20.0 -> 1.0
+        quantity < 100.0 -> 5.0
+        else -> 10.0
+    }
+
+    /** Arrotonda per eccesso al passo comodo (tolleranza numerica per i valori gia' esatti). */
+    internal fun roundUpForShopping(quantity: Double): Double {
+        if (!quantity.isFinite() || quantity <= 0.0) return quantity
+        val step = shoppingStep(quantity)
+        return kotlin.math.ceil(quantity / step - 1e-9) * step
     }
 
     /**
@@ -253,6 +277,13 @@ object ShoppingListEngine {
         .replace(Regex("[^a-z0-9]+"), " ")
         .trim()
         .replace(Regex("\\s+"), " ")
+
+    private fun formatTrimmed(value: Double, decimals: Int): String {
+        val factor = Math.pow(10.0, decimals.toDouble())
+        val rounded = kotlin.math.ceil(value * factor - 1e-9) / factor
+        if (abs(rounded - rounded.toLong()) < 0.0001) return rounded.toLong().toString()
+        return String.format(Locale.ITALIAN, "%.${decimals}f", rounded).trimEnd('0').trimEnd(',')
+    }
 
     private fun format(value: Double): String {
         val rounded = kotlin.math.round(value * 10.0) / 10.0

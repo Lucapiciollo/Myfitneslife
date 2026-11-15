@@ -45,6 +45,54 @@ class ShoppingListEngineTest {
         assertEquals(listOf("Banana"), result.map { it.name })
     }
 
+    // ---- Quantita' leggibili (solo presentazione, sempre per eccesso) ----
+
+    private fun shown(quantity: Double, unit: String) =
+        ShoppingListEngine.Item("k", "X", "Altro", quantity, unit, null, 1).displayQuantity()
+
+    @Test
+    fun `display rounds g and ml up to comfortable numbers`() {
+        assertEquals("130 ml", shown(126.2, "ml"))
+        assertEquals("25 ml", shown(24.7, "ml"))
+        assertEquals("190 ml", shown(184.5, "ml"))
+        assertEquals("4 g", shown(3.2, "g"))
+        assertEquals("20 g", shown(19.6, "g"))
+        assertEquals("100 g", shown(97.0, "g"))
+        assertEquals("1,24 kg", shown(1234.0, "g"))
+        assertEquals("1 l", shown(999.5, "ml"))
+    }
+
+    @Test
+    fun `display keeps exact values and never rounds down`() {
+        assertEquals("5 g", shown(5.0, "g"))
+        assertEquals("20 g", shown(20.0, "g"))
+        assertEquals("55 g", shown(55.0, "g"))
+        assertEquals("100 g", shown(100.0, "g"))
+        assertEquals("250 g", shown(250.0, "g"))
+        assertEquals("1,5 kg", shown(1500.0, "g"))
+        assertEquals("1 kg", shown(1000.0, "g"))
+        assertEquals("2,5 pz", shown(2.5, "pz"))
+        generateSequence(0.1) { it + 0.37 }.takeWhile { it < 2500.0 }.forEach { q ->
+            assertTrue("q=$q", ShoppingListEngine.roundUpForShopping(q) >= q - 1e-6)
+            assertTrue("q=$q", ShoppingListEngine.roundUpForShopping(q) - q < ShoppingListEngine.shoppingStep(q) + 1e-6)
+        }
+    }
+
+    @Test
+    fun `rounding is presentation only and does not change keys or raw quantities`() {
+        val result = ShoppingListEngine.aggregate(snapshot(
+            ingredient("Albume", 100.1f, "ml", null),
+            ingredient("Albume", 26.1f, "ml", null),
+        ))
+        val item = result.single()
+        assertEquals(126.2, item.quantity, 0.001)
+        assertEquals(ShoppingListEngine.stableKey("Albume", "ml", null), item.key)
+        assertEquals("130 ml", item.displayQuantity())
+        // Stessa riga con quantita' diversa: stessa chiave (stato acquistato/dispensa invariato).
+        val other = ShoppingListEngine.aggregate(snapshot(ingredient("Albume", 90f, "ml", null))).single()
+        assertEquals(item.key, other.key)
+    }
+
     // ---- Piani con snapshot (MFP2): aggregazione per foodId ----
 
     private val catalog = FoodCatalogPlanFixtures.catalog
