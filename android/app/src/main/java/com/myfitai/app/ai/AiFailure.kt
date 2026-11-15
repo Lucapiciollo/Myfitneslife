@@ -173,11 +173,14 @@ sealed class AiFailure(
         fun stableBusinessCode(message: String?): String? {
             val head = message?.substringBefore(':')?.trim().orEmpty()
             if (head in BUSINESS_CODES) return head
+            if (PIPE_CODE.matches(head)) return head
             if (ARITY_CODE.matches(head)) return head
             return DYNAMIC_PREFIXES.firstOrNull { head.startsWith("${it}_") }
         }
 
         private val ARITY_CODE = Regex("^BA2_[A-Z]_ARITY_\\d{1,3}$")
+        /** Codici di formato del protocollo MFP2 scritti dall'app (`PIPE_I_FOOD_UNKNOWN`, `PIPE_M_INVALID`...): mai testo del modello. */
+        private val PIPE_CODE = Regex("^PIPE_[A-Z0-9_]{1,50}$")
         private val DYNAMIC_PREFIXES = listOf("BIA_RELIABILITY_INVALID")
 
         /** Closed set of codes emitted by the contract/business validators (moved verbatim from AiJobFailures). */
@@ -348,6 +351,14 @@ sealed class AiFailure(
         "UNDERSTANDING_MISSING",
         "UNSUPPORTED_DIAGNOSTIC_OR_CAUSAL_CLAIM",
         "UNSUPPORTED_MEDICAL_OR_CAUSAL_CLAIM",
+        // Piano settimanale (MFP1/MFP2, L6d): motivi del gate unico, scritti dall'app (il tail dopo ':' non si inoltra).
+        "TARGET_TOLERANCE_EXCEEDED",
+        "CALORIE_TARGET_INVALID",
+        "DEFICIT_PLAN_REACHES_MAINTENANCE",
+        "PREPARATION_INGREDIENT_OMITTED",
+        "WEEK_START_MISMATCH",
+        "WEEK_DATES_INVALID",
+        "GENERATION_START_INVALID",
         )
     }
 }

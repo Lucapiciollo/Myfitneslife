@@ -508,6 +508,20 @@ class FoodCatalogPlanBuilder(val catalog: FoodCatalog) {
             return AttemptRejection(attempt + 1, match.groupValues[1].take(MAX_CODE_CHARS), detail)
         }
 
+        /** Tag logcat della diagnostica MFP2 (L6d). */
+        const val LOG_TAG = "MyFitAiMfp2"
+
+        /**
+         * Riga di diagnostica per un tentativo rifiutato: numero tentativo (1-based), codice stabile e dettaglio breve
+         * (<= [MAX_DETAIL_CHARS], solo numeri/identificatori scritti dall'app). Mai testo del modello ne' dati personali.
+         */
+        fun logLine(rejection: AttemptRejection): String =
+            "rejected attempt=${rejection.attempt} code=${rejection.code} detail=${rejection.detail.take(MAX_DETAIL_CHARS)}"
+
+        /** Sintesi persistibile dell'ultimo fallimento di una generazione (tentativo, codice, dettaglio), <= 160 caratteri. */
+        fun failureSummary(rejection: AttemptRejection): String =
+            "attempt=${rejection.attempt};code=${rejection.code};detail=${rejection.detail}".take(160)
+
         fun displayName(food: FoodEntry): String = when {
             food.state == FoodState.RAW && !STATE_RAW.containsMatchIn(food.name) -> "${food.name} (crudo)"
             food.state == FoodState.COOKED && !STATE_COOKED.containsMatchIn(food.name) -> "${food.name} (cotto)"

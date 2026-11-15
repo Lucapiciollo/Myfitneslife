@@ -159,6 +159,7 @@ class AppDataContainer private constructor(context: Context) {
         planReview = planReviewService,
         foodCatalogLoader = foodCatalogLoader,
         useFoodCatalogPlan = { aiSettingsStore.useFoodCatalogPlan },
+        recordMfp2Failure = { aiSettingsStore.lastMfp2Failure = "${System.currentTimeMillis()}|$it" },
     )
 
     val cheatAdjustmentService = CheatAdjustmentService(
