@@ -176,6 +176,14 @@ class MealAlternativeActivity : BaseShellActivity() {
                  val verticalPadding = resources.getDimensionPixelSize(R.dimen.space_6)
                  setPadding(horizontalPadding, verticalPadding, horizontalPadding, verticalPadding)
             })
+            if (NutritionSourcePresentation.alternativeIsComputed(alternative.catalogVersion, history.getOrNull(index)?.meal?.nutritionSource)) {
+                // L6a: per le alternative calcolate si dichiara l'origine dei valori; le dichiarate restano come oggi.
+                body.addView(TextView(this).apply {
+                    setText(R.string.meal_alternatives_computed_values)
+                    setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
+                    setPadding(0, resources.getDimensionPixelSize(R.dimen.space_5), 0, 0)
+                })
+            }
             val ingredients = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 setBackgroundResource(R.drawable.bg_card)

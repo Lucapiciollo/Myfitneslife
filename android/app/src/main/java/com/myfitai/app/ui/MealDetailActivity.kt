@@ -205,11 +205,41 @@ class MealDetailActivity : BaseShellActivity() {
                 setPadding(0, verticalPadding, 0, verticalPadding)
             })
         } else {
+            val computed = NutritionSourcePresentation.isComputed(meal.nutritionSource)
             meal.ingredients.sortedBy { it.sortOrder }.forEach { ingredient ->
-                ingredientsList.addView(IngredientRowView(this).apply {
+                val row = IngredientRowView(this).apply {
                     setName(ingredient.name)
                     setQuantity(displayQuantity(ingredient))
                     setIcon(iconFor(ingredient))
+                }
+                // L6a: solo per i pasti calcolati e solo se lo snapshot ha valori; per gli altri la riga resta com'e'.
+                val nutritionLine = if (computed) NutritionSourcePresentation.ingredientNutritionLine(ingredient) else null
+                if (nutritionLine == null) {
+                    ingredientsList.addView(row)
+                } else {
+                    ingredientsList.addView(LinearLayout(this).apply {
+                        orientation = LinearLayout.VERTICAL
+                        addView(row)
+                        addView(TextView(this@MealDetailActivity).apply {
+                            text = nutritionLine
+                            setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
+                            contentDescription = getString(R.string.meal_detail_ingredient_nutrition_description, ingredient.name, nutritionLine)
+                        }, LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                        ).apply {
+                            marginStart = resources.getDimensionPixelSize(R.dimen.dashboard_thumbnail_size) +
+                                resources.getDimensionPixelSize(R.dimen.space_12)
+                            bottomMargin = resources.getDimensionPixelSize(R.dimen.space_4)
+                        })
+                    })
+                }
+            }
+            NutritionSourcePresentation.mealSourceRes(meal)?.let { sourceRes ->
+                ingredientsList.addView(TextView(this).apply {
+                    setText(sourceRes)
+                    setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
+                    setPadding(0, resources.getDimensionPixelSize(R.dimen.space_8), 0, 0)
                 })
             }
         }

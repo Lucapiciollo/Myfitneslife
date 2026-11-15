@@ -236,11 +236,32 @@ class FoodPlanActivity : BaseShellActivity() {
         }
         revealState(dailyTotalCard, generatedContentVisible)
         revealState(nutritionEstimateCard, generatedContentVisible)
+        renderNutritionInfo(state.snapshot?.version, day)
 
         renderGeneration(state, visibility, currentWeek, periodCanBeGenerated)
         renderPlanScheduleStatus(visibility.scheduleStatus)
         renderMeals(state.weekStart, day, state.consumptionRecords)
         renderTotals(day, state.snapshot?.version, state.consumptionRecords, state.calorieReference, planUpdatePending)
+    }
+
+    /**
+     * L6a: il riquadro informativo dichiara l'origine dei valori del piano (dichiarati dal modello, calcolati dal
+     * catalogo o misti); i piani dichiarati mantengono i testi storici. L'avviso proteine e' neutro e riguarda il giorno scelto.
+     */
+    private fun renderNutritionInfo(version: FoodPlanVersion?, day: FoodPlanDay?) {
+        val basis = NutritionSourcePresentation.planBasis(version)
+        findViewById<TextView>(R.id.nutritionEstimateTitle).setText(NutritionSourcePresentation.infoTitleRes(basis))
+        findViewById<TextView>(R.id.nutritionEstimateBody).setText(NutritionSourcePresentation.infoBodyRes(basis))
+        findViewById<View>(R.id.nutritionEstimateIcon).contentDescription =
+            getString(NutritionSourcePresentation.infoIconDescriptionRes(basis))
+        val note = day?.let { NutritionSourcePresentation.proteinBelowTarget(version?.appValidationJson, it.dateEpochDay) }
+        val proteinNote = findViewById<TextView>(R.id.proteinBelowTargetNote)
+        proteinNote.visibility = if (note == null) View.GONE else View.VISIBLE
+        proteinNote.text = when {
+            note == null -> ""
+            note.actual != null && note.target != null -> getString(R.string.food_plan_protein_below_target, note.actual, note.target)
+            else -> getString(R.string.food_plan_protein_below_target_plain)
+        }
     }
 
     private fun renderGeneration(state: FoodPlanViewModel.State, visibility: FoodPlanPresentation.Visibility, currentWeek: Boolean, periodCanBeGenerated: Boolean) {

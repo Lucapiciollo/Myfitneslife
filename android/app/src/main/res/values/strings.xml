@@ -491,6 +491,23 @@
     <string name="food_plan_ux2_macro_in_menu">Nel menu</string>
     <string name="food_plan_ux2_macro_menu_description">Nel menu: carboidrati %1$s, grassi %2$s</string>
 
+    <!-- L6a: origine dei valori nutrizionali (dichiarati dal modello, calcolati dal catalogo, piano misto) -->
+    <string name="food_plan_nutrition_info_title_declared">Valori nutrizionali stimati</string>
+    <string name="food_plan_nutrition_info_body_declared">Le calorie e i macronutrienti indicati nel piano alimentare sono stime elaborate dall\'intelligenza artificiale sulla base degli alimenti e delle quantità suggerite. I valori effettivi possono variare in funzione dei prodotti utilizzati, delle porzioni e delle modalità di preparazione. Il simbolo ≈ indica un valore approssimativo e non una misurazione esatta.</string>
+    <string name="food_plan_nutrition_info_icon_declared">Informazioni sui valori nutrizionali stimati</string>
+    <string name="food_plan_nutrition_info_title_computed">Valori nutrizionali calcolati</string>
+    <string name="food_plan_nutrition_info_body_computed">Calorie e macronutrienti sono calcolati dall\'app dagli alimenti e dai grammi del piano usando un catalogo alimentare (fonte USDA FoodData Central). Restano approssimati: cottura, marca e porzioni reali possono variare. Il simbolo ≈ indica un valore approssimativo e non una misurazione esatta.</string>
+    <string name="food_plan_nutrition_info_icon_computed">Informazioni sui valori nutrizionali calcolati</string>
+    <string name="food_plan_nutrition_info_title_mixed">Valori nutrizionali del piano</string>
+    <string name="food_plan_nutrition_info_body_mixed">Per i pasti con alimenti e grammi del catalogo alimentare (fonte USDA FoodData Central) calorie e macronutrienti sono calcolati dall\'app; per gli altri pasti sono stime elaborate dall\'intelligenza artificiale. In ogni caso restano approssimati: cottura, marca e porzioni reali possono variare. Il simbolo ≈ indica un valore approssimativo e non una misurazione esatta.</string>
+    <string name="food_plan_nutrition_info_icon_mixed">Informazioni sui valori nutrizionali del piano</string>
+    <string name="food_plan_protein_below_target">Proteine sotto l\'obiettivo di giornata: %1$s su %2$s.</string>
+    <string name="food_plan_protein_below_target_plain">Proteine sotto l\'obiettivo di giornata.</string>
+    <string name="meal_detail_source_catalog">Fonte: catalogo alimentare (USDA)</string>
+    <string name="meal_detail_source_catalog_label_estimate">Fonte: catalogo alimentare (USDA); per alcuni alimenti la stima è da etichetta</string>
+    <string name="meal_detail_ingredient_nutrition_description">%1$s: %2$s</string>
+    <string name="meal_alternatives_computed_values">Calorie e macronutrienti calcolati dall\'app dal catalogo alimentare (USDA).</string>
+
     <!-- UX4: registrare un pasto in meno tocchi (barra azioni del dettaglio, azione rapida in Cibo) -->
     <string name="meal_detail_ux4_mark_consumed">Segna come consumato</string>
     <string name="meal_detail_ux4_mark_skipped">Segna come saltato</string>

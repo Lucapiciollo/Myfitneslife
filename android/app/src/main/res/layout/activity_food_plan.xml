@@ -646,7 +646,8 @@
                         android:layout_width="@dimen/space_24"
                         android:layout_height="@dimen/space_24"
                         android:layout_marginEnd="@dimen/space_12"
-                        android:contentDescription="Informazioni sui valori nutrizionali stimati"
+                        android:id="@+id/nutritionEstimateIcon"
+                        android:contentDescription="@string/food_plan_nutrition_info_icon_declared"
                         android:src="@drawable/ic_help_outline"
                         app:tint="@color/text_secondary" />
                     <LinearLayout
@@ -655,16 +656,25 @@
                         android:layout_weight="1"
                         android:orientation="vertical">
                         <TextView
+                            android:id="@+id/nutritionEstimateTitle"
                             style="@style/Text.MyFitAI.CardTitle"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Valori nutrizionali stimati" />
+                            android:text="@string/food_plan_nutrition_info_title_declared" />
                         <TextView
+                            android:id="@+id/nutritionEstimateBody"
                             style="@style/Text.MyFitAI.BodyCompact"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="@dimen/space_4"
-                            android:text="Le calorie e i macronutrienti indicati nel piano alimentare sono stime elaborate dall'intelligenza artificiale sulla base degli alimenti e delle quantità suggerite. I valori effettivi possono variare in funzione dei prodotti utilizzati, delle porzioni e delle modalità di preparazione. Il simbolo ≈ indica un valore approssimativo e non una misurazione esatta." />
+                            android:text="@string/food_plan_nutrition_info_body_declared" />
+                        <TextView
+                            android:id="@+id/proteinBelowTargetNote"
+                            style="@style/Text.MyFitAI.BodyCompact"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/space_8"
+                            android:visibility="gone" />
                     </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
