@@ -18,7 +18,7 @@
 - Installazione `adb -s emulator-5554 install -r`: **Success**. Package `com.myfitai.app`, versione `0.1.0`; `firstInstallTime` è rimasto `2026-10-03 14:30:54`.
 
 ## Blocco runtime
-Dopo il primo avvio, Android ha mostrato `Process system isn't responding`; dopo aver scelto solo **Wait**, è comparso anche `System UI isn't responding`. Due attese non hanno ripristinato la schermata. Con l’autorizzazione dell’utente è stato effettuato un solo riavvio ordinario, senza wipe/reset; la procedura di attesa non ha rilevato `sys.boot_completed=1` entro 240 secondi. Una successiva lettura `adb devices -l` mostrava `emulator-5554` online, ma non è stata tentata una nuova apertura dell’app.
+Dopo il primo avvio, Android ha mostrato `Process system isn't responding`; dopo aver scelto solo **Wait**, è comparso anche `System UI isn't responding`. Due attese non hanno ripristinato la schermata. È stato tentato un solo riavvio ordinario dell’AVD, senza wipe/reset; la procedura di attesa non ha rilevato `sys.boot_completed=1` entro 240 secondi. Una successiva lettura `adb devices -l` mostrava `emulator-5554` online, ma non è stata tentata una nuova apertura dell’app. Il log successivamente ricevuto mostra errori gfxstream/OpenGL (`glReadPixels` 0x506, `glPixelStorei`/shader 0x501, compilazione shader fallita) e il salvataggio dello snapshot `default_boot` durante l’uscita dell’emulatore. È quindi plausibile un problema del backend grafico dell’AVD; non è una diagnosi definitiva della causa dell’ANR.
 
 Il filtro read-only di `dumpsys jobscheduler` non ha mostrato job `com.myfitai.app`; nessuna generazione o chiamata IA è stata avviata. Non sono state effettuate query al database.
 
@@ -37,4 +37,4 @@ Non sono stati creati copione, storyboard, timeline, audio, musica, sottotitoli 
 - Nessun brano con licenza documentata trovato nel progetto. Era previsto di creare una base ambient originale senza campioni esterni, ma non è stata composta.
 
 ## Per riprendere
-Ripristinare manualmente la stabilità di `Medium_Phone` e confermare che sia pronto. Riprendere esclusivamente su questo AVD e in-place; non usare un altro AVD o il device fisico. La directory di output esiste già: conservarne i file diagnostici e non sovrascriverli.
+Ripristinare manualmente la stabilità di `Medium_Phone` e confermare che sia pronto. Un eventuale test di avvio con renderer diverso richiede nuova autorizzazione; non usare `-wipe-data`, un altro AVD o il device fisico. Riprendere esclusivamente su questo AVD e in-place. La directory di output esiste già: conservarne i file diagnostici e non sovrascriverli.
