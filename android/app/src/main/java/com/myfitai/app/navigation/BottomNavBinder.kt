@@ -14,7 +14,7 @@ object BottomNavBinder {
     const val EXTRA_EMBEDDED_TAB = "myfitai_embedded_tab"
     const val EXTRA_SELECTED_TAB = "myfitai_selected_tab"
 
-    fun bind(activity: Activity, selected: Tab) {
+    fun bind(activity: Activity, selected: Tab, routeCurrentTabToRoot: Boolean = false) {
         val mapping = listOf(
             Triple(R.id.navHome, Tab.HOME, HomeActivity::class.java),
             Triple(R.id.navFood, Tab.FOOD, FoodPlanActivity::class.java),
@@ -30,7 +30,7 @@ object BottomNavBinder {
                 compoundDrawableTintList = ColorStateList.valueOf(tintColor)
                 background = if (tab == selected) activity.getDrawable(R.drawable.bg_nav_selected) else null
                 setOnClickListener {
-                    if (tab != selected) {
+                    if (tab != selected || routeCurrentTabToRoot) {
                         val host = (activity as? TabHostActivity) ?: (activity.parent as? TabHostActivity)
                         if (host != null) {
                             host.selectTab(tab)

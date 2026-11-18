@@ -18,6 +18,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.Timeout
 import org.junit.runner.RunWith
+import com.myfitai.app.ui.ProfileActivity
 import com.myfitai.app.ui.TabHostActivity
 import java.io.File
 
@@ -147,6 +148,57 @@ class BottomNavigationUiTest {
                 navigationLocation[1] - scrollBottom <= tolerance,
             )
         }
+    }
+
+    @Test
+    fun profileBottomNavigation_routesEveryTabToItsRoot() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val tabs = listOf(
+            com.myfitai.app.R.id.navHome,
+            com.myfitai.app.R.id.navFood,
+            com.myfitai.app.R.id.navProgress,
+            com.myfitai.app.R.id.navMore,
+        )
+        val rootContentIds = mapOf(
+            com.myfitai.app.R.id.navHome to "homeScrollView",
+            com.myfitai.app.R.id.navFood to "weekDaySelector",
+            com.myfitai.app.R.id.navProgress to "evolutionChart",
+            com.myfitai.app.R.id.navMore to "settingsContent",
+        )
+        val profileName = By.res("${context.packageName}:id/profileName")
+
+        tabs.forEach { tabId ->
+            ActivityScenario.launch<ProfileActivity>(Intent(context, ProfileActivity::class.java)).use { profile ->
+                assertTrue("Profile must be visible before testing its bottom navigation", device.wait(Until.hasObject(profileName), 5_000))
+                profile.onActivity { activity ->
+                    tabs.forEach { id ->
+                        assertTrue("Profile bottom tab is not clickable: $id", activity.findViewById<View>(id)?.isClickable == true)
+                    }
+                    assertTrue("Profile should be represented by the Altro tab", activity.findViewById<View>(com.myfitai.app.R.id.navMore).isSelected)
+                    activity.findViewById<View>(tabId).performClick()
+                }
+
+                assertTrue("Tapping a bottom tab should dismiss Profile from the foreground", device.wait(Until.gone(profileName), 5_000))
+                val rootContent = By.res("${context.packageName}:id/${rootContentIds.getValue(tabId)}")
+                assertTrue("The selected tab's root content is not visible: $tabId", device.wait(Until.hasObject(rootContent), 5_000))
+                val selectedTab = By.res("${context.packageName}:id/${resourcesName(tabId)}")
+                val deadline = System.currentTimeMillis() + 5_000L
+                var targetIsSelected = false
+                while (!targetIsSelected && System.currentTimeMillis() < deadline) {
+                    targetIsSelected = device.findObject(selectedTab)?.isSelected == true
+                    if (!targetIsSelected) Thread.sleep(100)
+                }
+                assertTrue("The selected bottom tab did not reach its root: $tabId", targetIsSelected)
+            }
+        }
+    }
+
+    private fun resourcesName(id: Int): String = when (id) {
+        com.myfitai.app.R.id.navHome -> "navHome"
+        com.myfitai.app.R.id.navFood -> "navFood"
+        com.myfitai.app.R.id.navProgress -> "navProgress"
+        com.myfitai.app.R.id.navMore -> "navMore"
+        else -> error("Unknown bottom tab id: $id")
     }
 
     @Test

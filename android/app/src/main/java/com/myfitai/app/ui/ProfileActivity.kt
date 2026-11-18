@@ -56,6 +56,7 @@ class ProfileActivity : BaseShellActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_profile)
         bindBack()
+        BottomNavBinder.bind(this, BottomNavBinder.Tab.MORE, routeCurrentTabToRoot = true)
         bindSettingsNavigation()
         bindProfileActions()
         ensureProfileSelection()
