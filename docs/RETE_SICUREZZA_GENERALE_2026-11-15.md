@@ -126,13 +126,15 @@ Test da scrivere:
 Default dei profili esistenti: dichiarazione "non compilata". Il gate chiede di compilarla prima del PROSSIMO piano e non tocca i piani già generati.
 
 **S3 - Integrazione nella generazione:**
-- gate dopo `NutritionPlanGenerationService.kt:113` e prima della costruzione del prompt (`:214`);
-- nuova `GenerationException.SafetyBlocked(decision)`, nello stile di `ConstraintsUnreadable` (`:62-64`);
-- mappatura nel job `WeeklyPlanAiJobHandler.kt:59`;
-- validatore del piano finale in `NutritionPlanContract.kt` vicino a `:196-201` (R11);
-- stessa chiamata nei servizi sgarro, alternative e advice.
+- applicare il gate al confine di scrittura del piano: prima del provider per le operazioni che generano un piano e prima della persistenza, ripetendo il controllo sul profilo esplicito, per ogni append di una nuova versione;
+- generazione settimanale manuale e automatica: preflight dopo il caricamento locale dei dati, prima del prompt/provider (`NutritionPlanGenerationService`), nuova validazione finale per ogni giorno e mappatura `SafetyBlocked(decision)` in `WeeklyPlanAiJobHandler` a failure terminale, non retry;
+- sgarro: consentire il tracking dell'evento, ma gate prima dell'AI/adattamento che scrive una versione e di nuovo prima dell'append; un blocco non deve annullare il tracking già confermato né cambiare automaticamente il goal;
+- alternative: la generazione/consultazione delle proposte non scrive piani e resta disponibile; gate solo su `apply`/`applyHistorical`, immediatamente prima dell'append;
+- advice nutrizionale: `NutritionAdviceService.ask` resta disponibile e non gated, perché non scrive piani; se una proposta viene accettata e applicata a un piano, gate prima della scrittura;
+- validatore finale in `NutritionPlanContract` vicino a `:196-201` (R11), verificando limiti giornalieri e retry senza allentare floor/cap o il mantenimento TDEE ±3%; avvisi fissi locali, mai scritti dal modello;
+- dichiarazione e raw JSON restano locali: non aggiungerli a prompt, payload job, log o telemetria. Il gate riceve solo dati sintetici per `profileId`.
 
-Max 5 file più i relativi test.
+Procedere in lotti sequenziali di massimo 5 file, test inclusi; i writer non devono condividere l'assunzione che il profilo attivo coincida col `profileId` del job.
 
 **S4 - UI e testi.**
 - sezione "Salute e sicurezza" nel profilo o onboarding (dichiarazioni, SCOFF opzionale);
@@ -207,4 +209,29 @@ Vietati nei testi: diagnosi, nomi di patologie come etichetta dell'utente, cure,
 
   Da verificare con test: piano sotto il pavimento per la tolleranza e pavimento > TDEE.
 - **Lotto consigliato per primo:** S1 (gate puro + golden test), poi S3 minimale. S2 solo dopo le risposte dell'utente.
-- **Serve dall'utente:** risposte alle domande 1-7. Le irreversibili sono 1, 2 e 3.
+- **Decisioni ricevute dall'utente (15/11/2026):** vedere la sezione 6; restano da validare professionalmente le condizioni/farmaci specifici prima di codificarne un elenco.
+
+## 6. Decisioni prodotto ricevute (15/11/2026)
+
+Queste decisioni supersedono i default proposti nelle sezioni 2-3, ma non costituiscono una validazione clinica delle soglie o delle fonti.
+
+1. **Perimetro 14+.** Profili e tracking sono disponibili dai 14 anni. Per chi ha 14–17 anni la generazione o modifica IA di un piano è bloccata e rimanda a un professionista; gli usi IA che non scrivono un piano restano disponibili, secondo l'interpretazione corrente. Non si applica un protocollo nutrizionale pediatrico. Sotto i 14 anni resta il limite esistente dell'app.
+2. **Gravidanza/allattamento e dichiarazione generica di condizione/terapia:** mostrare un avviso e consentire soltanto un piano di mantenimento; non generare deficit né surplus. L'elenco di condizioni/farmaci specifici non va codificato finché non è validato da un professionista.
+3. **Dichiarazioni di salute:** aggiungerle al profilo con migrazione Room additiva e chiederle ai profili esistenti prima della prossima generazione; la dichiarazione mancante blocca la generazione. I dati non vanno inoltrati ai provider IA.
+4. **DCA:** nessuno screening SCOFF; usare solo segnali oggettivi già disponibili e non presentarli come diagnosi.
+5. **Calorie:** approvati cap di deficit pari a 750 kcal/die e pavimento giornaliero `max(BMR, 1200/1500 kcal)` senza tolleranza ±3/4%. Il mantenimento usa il TDEE locale con tolleranza standard ±3%, inclusi i retry.
+6. **Età ≥ 65:** solo avviso non bloccante in caso di dimagrimento.
+7. **Età all'IA:** `ageYears` è già inviato nel contesto `U`; l'IA non decide la sicurezza. Il gate resta locale e deterministico.
+
+8. **BMI:** le proposte di gate per BMI <18,5/<17 restano inattive e non devono causare blocchi o avvisi di generazione.
+9. **IA sotto 18:** bloccare le operazioni IA che scrivono o aggiornano un piano; gli usi IA non plan-writing restano disponibili. Un consiglio che l'utente accetta e che diventa una modifica del piano deve passare dal gate prima della scrittura.
+10. **Schedulazioni:** non cambiare automaticamente l'obiettivo salvato; se un job non può rispettare il mantenimento, saltare la generazione e informare l'utente.
+
+## 6.1 Questioni S2/S3 non risolte
+
+- Definire se le note libere alimentari, già inoltrate al modello, vadano escluse dal contesto IA o mantenute con un avviso all'utente: non introdurre uno scanner improvvisato.
+- Escludere dichiarazione sanitaria da export/backup non protetti e richiederla di nuovo dopo il restore è l'ipotesi privacy più prudente, da confermare nel flusso backup.
+- L'elenco specifico di condizioni/farmaci resta escluso finché non validato professionalmente; la dichiarazione S2 resta generica.
+- Per i job automatici con dichiarazione positiva, mantenere la pianificazione ma saltare localmente l'esecuzione se l'obiettivo salvato non è mantenimento; non cambiare mai goal in automatico.
+
+S1 resta un gate di dominio non collegato al runtime. Prima di S3 occorre verificare che la dichiarazione generica e le transizioni verso il solo mantenimento siano coerenti con il perimetro sopra; la specifica clinica dell'elenco di condizioni/farmaci resta esclusa finché non revisionata.

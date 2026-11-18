@@ -6,6 +6,9 @@ import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.myfitai.app.data.local.entity.UserProfileEntity
+import com.myfitai.app.domain.safety.HealthDeclarationCodec
+import com.myfitai.app.domain.safety.HealthDeclarationDecodeResult
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -492,6 +495,101 @@ class DatabaseMigrationTest {
                 cursor.moveToFirst()
                 assertEquals("Luca", cursor.getString(0))
             }
+        }
+    }
+
+    @Test
+    fun migration22To23_addsUndeclaredHealthFieldAndPreservesProfilesAndPlans() {
+        val testDbName = "s2b-migration-test-${System.nanoTime()}.db"
+        try {
+            helper.createDatabase(testDbName, 22).apply {
+                try {
+                    execSQL("INSERT INTO user_profile (id, name, createdAtEpochMillis, updatedAtEpochMillis) VALUES (1, 'Profilo uno', 1000, 2000)")
+                    execSQL("INSERT INTO user_profile (id, name, createdAtEpochMillis, updatedAtEpochMillis) VALUES (2, 'Profilo due', 3000, 4000)")
+                    execSQL("INSERT INTO meal_plans (id, profileId, createdAtEpochMillis, weekStartEpochDay, status) VALUES (1, 1, 5000, 21000, 'ACTIVE')")
+                    execSQL("INSERT INTO meal_plans (id, profileId, createdAtEpochMillis, weekStartEpochDay, status) VALUES (2, 2, 6000, 21007, 'ARCHIVED')")
+                    execSQL("INSERT INTO meal_plan_versions (id, planId, versionNumber, createdAtEpochMillis, source, reason, targetKcal, targetProteinG, targetCarbsG, targetFatG) VALUES (1, 1, 1, 7000, 'GEMINI', 'AI_GENERATION', 2200, 160.0, 230.0, 70.0)")
+                    execSQL("INSERT INTO meal_plan_versions (id, planId, versionNumber, createdAtEpochMillis, source, reason, targetKcal, targetProteinG, targetCarbsG, targetFatG) VALUES (2, 2, 1, 8000, 'LEGACY', NULL, 1900, 140.0, 200.0, 60.0)")
+                    execSQL("INSERT INTO meal_plan_days (id, versionId, dateEpochDay, totalKcal, proteinG, carbsG, fatG) VALUES (1, 1, 21000, 2200, 160.0, 230.0, 70.0)")
+                    execSQL("INSERT INTO meal_plan_days (id, versionId, dateEpochDay, totalKcal, proteinG, carbsG, fatG) VALUES (2, 2, 21007, 1900, 140.0, 200.0, 60.0)")
+                } finally {
+                    close()
+                }
+            }
+
+            helper.runMigrationsAndValidate(
+                testDbName,
+                23,
+                true,
+                DatabaseMigrations.MIGRATION_22_23,
+            ).use { db ->
+                db.query("SELECT id, name, healthDeclarationJson FROM user_profile ORDER BY id").use { cursor ->
+                    assertEquals(2, cursor.count)
+                    assertTrue(cursor.moveToFirst())
+                    assertEquals(1, cursor.getLong(0))
+                    assertEquals("Profilo uno", cursor.getString(1))
+                    assertTrue("un profilo legacy non deve acquisire una dichiarazione implicita", cursor.isNull(2))
+                    assertEquals(HealthDeclarationDecodeResult.Absent, HealthDeclarationCodec.decode(cursor.getString(2)))
+                    assertTrue(cursor.moveToNext())
+                    assertEquals(2, cursor.getLong(0))
+                    assertEquals("Profilo due", cursor.getString(1))
+                    assertTrue("anche gli altri profili legacy restano non dichiarati", cursor.isNull(2))
+                }
+                db.query("SELECT id, profileId, status FROM meal_plans ORDER BY id").use { cursor ->
+                    assertEquals(2, cursor.count)
+                    assertTrue(cursor.moveToFirst())
+                    assertEquals(1, cursor.getLong(0))
+                    assertEquals(1, cursor.getLong(1))
+                    assertEquals("ACTIVE", cursor.getString(2))
+                    assertTrue(cursor.moveToNext())
+                    assertEquals(2, cursor.getLong(0))
+                    assertEquals(2, cursor.getLong(1))
+                    assertEquals("ARCHIVED", cursor.getString(2))
+                }
+                db.query("SELECT id, source, targetKcal FROM meal_plan_versions ORDER BY id").use { cursor ->
+                    assertEquals(2, cursor.count)
+                    assertTrue(cursor.moveToFirst())
+                    assertEquals(1, cursor.getLong(0))
+                    assertEquals("GEMINI", cursor.getString(1))
+                    assertEquals(2200, cursor.getInt(2))
+                    assertTrue(cursor.moveToNext())
+                    assertEquals(2, cursor.getLong(0))
+                    assertEquals("LEGACY", cursor.getString(1))
+                    assertEquals(1900, cursor.getInt(2))
+                }
+                db.query("SELECT id, totalKcal FROM meal_plan_days ORDER BY id").use { cursor ->
+                    assertEquals(2, cursor.count)
+                    assertTrue(cursor.moveToFirst())
+                    assertEquals(1, cursor.getLong(0))
+                    assertEquals(2200, cursor.getInt(1))
+                    assertTrue(cursor.moveToNext())
+                    assertEquals(2, cursor.getLong(0))
+                    assertEquals(1900, cursor.getInt(1))
+                }
+            }
+
+            val declaration = """{"schemaVersion":1,"policyVersion":"S2-A.1","pregnancyOrLactation":true,"clinicianManagedConditionOrMedication":false,"confirmedAtEpochMillis":1}"""
+            val profile = UserProfileEntity(
+                name = "Profilo test",
+                birthDateEpochDay = null,
+                heightCm = null,
+                currentWeightKg = null,
+                goal = null,
+                activityLevel = null,
+                wakeTimeMinutes = null,
+                sleepTimeMinutes = null,
+                dietaryPreferencesJson = null,
+                createdAtEpochMillis = 1,
+                updatedAtEpochMillis = 1,
+                healthDeclarationJson = declaration,
+            )
+            assertTrue(
+                "il JSON salute non deve finire nella rappresentazione testuale dell'entità",
+                profile.toString().contains("healthDeclarationJson=<redacted>") && !profile.toString().contains(declaration),
+            )
+        } finally {
+            context.deleteDatabase(testDbName)
+            context.getDatabasePath("$testDbName.lck").delete()
         }
     }
 }

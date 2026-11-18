@@ -42,6 +42,10 @@ interface UserProfileDao {
     @Query("UPDATE user_profile SET dietaryPreferencesJson = :json, updatedAtEpochMillis = :updatedAt WHERE id = :profileId")
     suspend fun updateDietaryPreferences(profileId: Long, json: String?, updatedAt: Long): Int
 
+    /** Compare-and-set della dichiarazione; IS confronta anche null senza perdere l'uguaglianza del raw JSON. */
+    @Query("UPDATE user_profile SET healthDeclarationJson = :json WHERE id = :profileId AND healthDeclarationJson IS :expectedJson")
+    suspend fun compareAndSetHealthDeclaration(profileId: Long, expectedJson: String?, json: String): Int
+
     @Delete
     suspend fun delete(profile: UserProfileEntity)
 }

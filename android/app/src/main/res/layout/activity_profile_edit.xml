@@ -1,5 +1,6 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -167,6 +168,174 @@
                             android:maxLines="1" />
                     </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/healthDeclarationCard"
+                style="@style/Widget.MyFitAI.FormCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_12"
+                android:visibility="gone"
+                app:cardBackgroundColor="@color/surface_primary">
+                <LinearLayout
+                    style="@style/Widget.MyFitAI.CompactSectionContent"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+                    <TextView
+                        style="@style/Text.MyFitAI.Section"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:accessibilityHeading="true"
+                        android:text="@string/profile_health_title"
+                        tools:targetApi="p" />
+                    <TextView
+                        style="@style/Text.MyFitAI.SettingsDescription"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_4"
+                        android:background="@drawable/bg_panel_tonal"
+                        android:padding="@dimen/card_content_padding_compact"
+                        android:text="@string/profile_health_privacy" />
+                    <TextView
+                        android:id="@+id/healthDeclarationStatus"
+                        style="@style/Text.MyFitAI.Body"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_8"
+                        android:accessibilityLiveRegion="polite"
+                        android:background="@drawable/bg_panel_tonal"
+                        android:padding="@dimen/card_content_padding_compact"
+                        android:textColor="@color/text_primary" />
+                    <ProgressBar
+                        android:id="@+id/healthDeclarationProgress"
+                        style="?android:attr/progressBarStyleSmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_horizontal"
+                        android:layout_marginTop="@dimen/space_8"
+                        android:contentDescription="@string/profile_health_loading"
+                        android:indeterminate="true"
+                        android:visibility="gone" />
+
+                    <TextView
+                        style="@style/Text.MyFitAI.BodyEmphasis"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_12"
+                        android:accessibilityHeading="true"
+                        android:labelFor="@id/healthPregnancyGroup"
+                        android:text="@string/profile_health_pregnancy_question"
+                        tools:targetApi="p" />
+                    <RadioGroup
+                        android:id="@+id/healthPregnancyGroup"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:saveEnabled="false"
+                        android:orientation="horizontal">
+                        <com.google.android.material.radiobutton.MaterialRadioButton
+                            android:id="@+id/healthPregnancyYes"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:saveEnabled="false"
+                            android:minHeight="@dimen/control_min_height"
+                            android:contentDescription="@string/profile_health_pregnancy_yes_cd"
+                            android:text="@string/profile_health_yes" />
+                        <com.google.android.material.radiobutton.MaterialRadioButton
+                            android:id="@+id/healthPregnancyNo"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:saveEnabled="false"
+                            android:minHeight="@dimen/control_min_height"
+                            android:contentDescription="@string/profile_health_pregnancy_no_cd"
+                            android:text="@string/profile_health_no" />
+                    </RadioGroup>
+                    <TextView
+                        android:id="@+id/healthPregnancyMissing"
+                        style="@style/Text.MyFitAI.Supporting"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_2"
+                        android:textColor="@color/text_secondary"
+                        android:visibility="gone" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/clearHealthPregnancyButton"
+                        style="@style/Widget.MyFitAI.Button.Outlined"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_4"
+                        android:contentDescription="@string/profile_health_clear_pregnancy_cd"
+                        android:minHeight="@dimen/control_min_height"
+                        android:text="@string/profile_health_clear_answer"
+                        android:visibility="gone" />
+
+                    <TextView
+                        style="@style/Text.MyFitAI.BodyEmphasis"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_12"
+                        android:accessibilityHeading="true"
+                        android:labelFor="@id/healthConditionGroup"
+                        android:text="@string/profile_health_condition_question"
+                        tools:targetApi="p" />
+                    <RadioGroup
+                        android:id="@+id/healthConditionGroup"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:saveEnabled="false"
+                        android:orientation="horizontal">
+                        <com.google.android.material.radiobutton.MaterialRadioButton
+                            android:id="@+id/healthConditionYes"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:saveEnabled="false"
+                            android:minHeight="@dimen/control_min_height"
+                            android:contentDescription="@string/profile_health_condition_yes_cd"
+                            android:text="@string/profile_health_yes" />
+                        <com.google.android.material.radiobutton.MaterialRadioButton
+                            android:id="@+id/healthConditionNo"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:saveEnabled="false"
+                            android:minHeight="@dimen/control_min_height"
+                            android:contentDescription="@string/profile_health_condition_no_cd"
+                            android:text="@string/profile_health_no" />
+                    </RadioGroup>
+                    <TextView
+                        android:id="@+id/healthConditionMissing"
+                        style="@style/Text.MyFitAI.Supporting"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_2"
+                        android:textColor="@color/text_secondary"
+                        android:visibility="gone" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/clearHealthConditionButton"
+                        style="@style/Widget.MyFitAI.Button.Outlined"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_4"
+                        android:contentDescription="@string/profile_health_clear_condition_cd"
+                        android:minHeight="@dimen/control_min_height"
+                        android:text="@string/profile_health_clear_answer"
+                        android:visibility="gone" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/healthDeclarationRetryButton"
+                        style="@style/Widget.MyFitAI.Button.Outlined"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_12"
+                        android:visibility="gone" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/saveHealthDeclarationButton"
+                        style="@style/Widget.MyFitAI.Button.Outlined"
+                        android:layout_width="match_parent"
+                        android:layout_height="@dimen/button_primary_min_height"
+                        android:layout_marginTop="@dimen/space_12"
+                        android:text="@string/profile_health_save" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

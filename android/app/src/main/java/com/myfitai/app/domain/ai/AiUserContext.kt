@@ -4,6 +4,8 @@ import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.domain.calculation.LocalCalculationEngine
 import com.myfitai.app.domain.calculation.ProfileCalculationMapper
 import com.myfitai.app.domain.calculation.SafetyCalorieFloor
+import com.myfitai.app.domain.safety.GenerationSafetyGate
+import com.myfitai.app.domain.safety.SafetyThresholds
 import java.time.LocalDate
 import java.time.Period
 import java.util.Locale
@@ -29,14 +31,13 @@ object AiUserContext {
         fun line(): String = if (active) "SAFETY_FLAG:ACTIVE(${reasons.joinToString(",")})" else "SAFETY_FLAG:NONE"
     }
 
-    const val SAFETY_MIN_ADULT_AGE = 18
-    const val SAFETY_ELDERLY_AGE = 75
-    const val SAFETY_LOW_BMI = 18.5
-    const val SAFETY_RAPID_LOSS_PERCENT_PER_WEEK = 1.0
-    const val SAFETY_RAPID_LOSS_MIN_SPAN_DAYS = 14
-    const val SAFETY_RAPID_LOSS_WINDOW_DAYS = 28
+    const val SAFETY_MIN_ADULT_AGE = SafetyThresholds.MIN_ADULT_AGE_YEARS
+    const val SAFETY_ELDERLY_AGE = SafetyThresholds.LEGACY_OLDER_ADULT_FLAG_AGE_YEARS
+    const val SAFETY_LOW_BMI = SafetyThresholds.LOW_BMI
+    const val SAFETY_RAPID_LOSS_PERCENT_PER_WEEK = SafetyThresholds.RAPID_LOSS_PERCENT_PER_WEEK
+    const val SAFETY_RAPID_LOSS_MIN_SPAN_DAYS = SafetyThresholds.RAPID_LOSS_MIN_SPAN_DAYS
+    const val SAFETY_RAPID_LOSS_WINDOW_DAYS = SafetyThresholds.RAPID_LOSS_WINDOW_DAYS
     // Soglie kcal minime: definite una sola volta in SafetyCalorieFloor.
-    private const val DAY_MILLIS = 86_400_000.0
 
     /**
      * @param weightObservations (epoch millis, kg) di qualunque fonte, in qualunque ordine.
@@ -55,22 +56,11 @@ object AiUserContext {
         if (ageYears != null && ageYears >= SAFETY_ELDERLY_AGE) reasons += "AGE_75_PLUS"
         if (goal == LocalCalculationEngine.Goal.WEIGHT_LOSS) {
             if (bmi != null && bmi < SAFETY_LOW_BMI) reasons += "LOW_BMI_WEIGHT_LOSS"
-            if (rapidWeightLoss(weightObservations)) reasons += "RAPID_WEIGHT_LOSS"
+            if (GenerationSafetyGate.isRapidWeightLoss(weightObservations)) reasons += "RAPID_WEIGHT_LOSS"
             val floor = SafetyCalorieFloor.absoluteMinimumKcal(ProfileCalculationMapper.sex(biologicalSex))
             if (targetKcal != null && targetKcal < floor) reasons += "EXTREME_LOW_TARGET"
         }
         return SafetyFlag(reasons.isNotEmpty(), reasons)
-    }
-
-    private fun rapidWeightLoss(observations: List<Pair<Long, Float>>): Boolean {
-        val ordered = observations.sortedBy { it.first }
-        val latest = ordered.lastOrNull() ?: return false
-        val window = ordered.filter { it.first >= latest.first - SAFETY_RAPID_LOSS_WINDOW_DAYS * DAY_MILLIS }
-        val first = window.firstOrNull() ?: return false
-        val spanDays = (latest.first - first.first) / DAY_MILLIS
-        if (spanDays < SAFETY_RAPID_LOSS_MIN_SPAN_DAYS || first.second <= 0f) return false
-        val weeklyLossPercent = (first.second - latest.second) / first.second * 100.0 / (spanDays / 7.0)
-        return weeklyLossPercent > SAFETY_RAPID_LOSS_PERCENT_PER_WEEK
     }
 
     fun profileLine(

@@ -7,6 +7,7 @@ import java.time.LocalDate
 /** Canonical provider-neutral contract for nutrition-period generation. */
 object NutritionPlanContract {
     const val SCHEMA_NAME = "myfitai_weekly_nutrition_plan_v2"
+    private const val SAFETY_EPSILON = 1e-9
 
     val schemaJson: String = JSONObject(
         """
@@ -229,6 +230,47 @@ object NutritionPlanContract {
         FoodConstraintValidator.validate(response, dietaryProfile).getOrThrow()
         if (enforceWeeklyVariety) validateWeeklyVariety(response)
         assessment
+    }
+
+    /** Hard daily safety limits; these are independent from the ±3/4% nutrition target tolerance. */
+    fun validateSafetyBounds(
+        response: Response,
+        minimumDailyKcal: Double? = null,
+        tdeeKcal: Double? = null,
+        maximumDailyDeficitKcal: Double? = null,
+        maintenanceOnly: Boolean = false,
+    ): Result<Unit> = runCatching {
+        require(minimumDailyKcal == null || (minimumDailyKcal.isFinite() && minimumDailyKcal > 0.0)) {
+            "SAFETY_FLOOR_INVALID"
+        }
+        require(tdeeKcal == null || (tdeeKcal.isFinite() && tdeeKcal > 0.0)) { "SAFETY_TDEE_INVALID" }
+        require(maximumDailyDeficitKcal == null || (maximumDailyDeficitKcal.isFinite() && maximumDailyDeficitKcal >= 0.0)) {
+            "SAFETY_DEFICIT_CAP_INVALID"
+        }
+        require(maximumDailyDeficitKcal == null || tdeeKcal != null) { "SAFETY_TDEE_REQUIRED_FOR_DEFICIT_CAP" }
+        require(!maintenanceOnly || tdeeKcal != null) { "SAFETY_TDEE_REQUIRED_FOR_MAINTENANCE" }
+
+        response.days.forEach { day ->
+            val actualKcal = day.totalKcal.toDouble()
+            if (minimumDailyKcal != null) {
+                require(actualKcal >= minimumDailyKcal - SAFETY_EPSILON) {
+                    "SAFETY_DAILY_KCAL_BELOW_FLOOR:${day.dateEpochDay}"
+                }
+            }
+            if (maximumDailyDeficitKcal != null && tdeeKcal != null) {
+                require(tdeeKcal - actualKcal <= maximumDailyDeficitKcal + SAFETY_EPSILON) {
+                    "SAFETY_DAILY_DEFICIT_ABOVE_CAP:${day.dateEpochDay}"
+                }
+            }
+            if (maintenanceOnly && tdeeKcal != null) {
+                require(
+                    actualKcal >= tdeeKcal * (1.0 - NutritionPlanAssessment.REFERENCE_TOLERANCE) - SAFETY_EPSILON &&
+                        actualKcal <= tdeeKcal * (1.0 + NutritionPlanAssessment.REFERENCE_TOLERANCE) + SAFETY_EPSILON,
+                ) {
+                    "SAFETY_MAINTENANCE_TARGET_OUT_OF_RANGE:${day.dateEpochDay}"
+                }
+            }
+        }
     }
 
     const val REQUIRED_MEALS_PER_DAY = 5

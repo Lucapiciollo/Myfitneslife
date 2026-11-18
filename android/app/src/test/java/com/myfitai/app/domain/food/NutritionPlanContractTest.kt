@@ -1,6 +1,10 @@
 package com.myfitai.app.domain.food
 
+import com.myfitai.app.domain.ai.AiJobOutcome
 import com.myfitai.app.domain.calculation.NutritionBusinessValidator
+import com.myfitai.app.domain.safety.SafetyDecision
+import com.myfitai.app.domain.safety.SafetyOutcome
+import com.myfitai.app.domain.safety.SafetyRuleCode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -161,6 +165,49 @@ class NutritionPlanContractTest {
                 maintenanceCeilingKcal = 2600.0,
             ).isSuccess,
         )
+    }
+
+    @Test
+    fun safetyFloorAndDeficitCapHaveNoNutritionTolerance() {
+        val exactFloor = response().copy(days = response().days.map { it.copy(totalKcal = 1500) })
+        val belowFloor = exactFloor.copy(days = exactFloor.days.mapIndexed { index, day -> if (index == 0) day.copy(totalKcal = 1499) else day })
+        assertTrue(NutritionPlanContract.validateSafetyBounds(exactFloor, minimumDailyKcal = 1500.0).isSuccess)
+        assertFalse(NutritionPlanContract.validateSafetyBounds(belowFloor, minimumDailyKcal = 1500.0).isSuccess)
+
+        val exactCap = response()
+        val overCap = exactCap.copy(days = exactCap.days.mapIndexed { index, day -> if (index == 0) day.copy(totalKcal = 2399) else day })
+        assertTrue(
+            NutritionPlanContract.validateSafetyBounds(
+                exactCap, tdeeKcal = 3150.0, maximumDailyDeficitKcal = 750.0,
+            ).isSuccess,
+        )
+        assertFalse(
+            NutritionPlanContract.validateSafetyBounds(
+                overCap, tdeeKcal = 3150.0, maximumDailyDeficitKcal = 750.0,
+            ).isSuccess,
+        )
+    }
+
+    @Test
+    fun maintenanceSafetyBandStaysAtThreePercentEvenOnRetryTolerance() {
+        val target = 2400.0
+        val withinThreePercent = response().copy(days = response().days.map { it.copy(totalKcal = 2472) })
+        assertTrue(NutritionPlanContract.validateSafetyBounds(withinThreePercent, tdeeKcal = target, maintenanceOnly = true).isSuccess)
+
+        val retryZone = response().copy(days = response().days.map { it.copy(totalKcal = 2484) })
+        assertTrue(NutritionPlanContract.validateBusiness(retryZone, week, targets, tolerance = 0.04).isSuccess)
+        assertFalse(NutritionPlanContract.validateSafetyBounds(retryZone, tdeeKcal = target, maintenanceOnly = true).isSuccess)
+    }
+
+    @Test
+    fun safetyBlockedMapsToTerminalFixedCopy() {
+        val outcome = WeeklyPlanAiJobHandler.safetyBlockedOutcome(
+            SafetyDecision(SafetyOutcome.BLOCK_REFER, listOf(SafetyRuleCode.HEALTH_DECLARATION_INCOMPLETE)),
+        )
+        assertTrue(outcome is AiJobOutcome.Failure)
+        val failure = outcome as AiJobOutcome.Failure
+        assertFalse(failure.message.contains("pregnancyOrLactation"))
+        assertFalse(failure.message.contains("clinicianManagedConditionOrMedication"))
     }
 
 

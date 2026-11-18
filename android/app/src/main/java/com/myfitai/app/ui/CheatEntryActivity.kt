@@ -78,6 +78,7 @@ class CheatEntryActivity : BaseShellActivity() {
             ?.getLongExtra(EXTRA_OCCURRED_DATE_EPOCH_DAY, LocalDate.now().toEpochDay())
             ?.let { selectedDate = LocalDate.ofEpochDay(it) }
         setContentView(R.layout.activity_cheat_entry)
+        bindFoodOnlyFreeTextWarnings()
         adaptLandscapeContent()
         bindBack()
         normalizeCheatSurfaces()
@@ -130,6 +131,25 @@ class CheatEntryActivity : BaseShellActivity() {
             }
         }
         visit(findViewById(android.R.id.content))
+    }
+
+    private fun bindFoodOnlyFreeTextWarnings() {
+        val warning = getString(R.string.cheat_free_text_privacy_warning)
+        listOf(R.id.descriptionInput, R.id.quantityInput, R.id.notesInput, R.id.clarificationInput).forEach { fieldId ->
+            val field = findViewById<View>(fieldId)
+            val inputLayout = findTextInputLayout(field)
+                ?: error("Cheat free-text field $fieldId must be wrapped in TextInputLayout")
+            inputLayout.helperText = warning
+        }
+    }
+
+    private fun findTextInputLayout(view: View): TextInputLayout? {
+        var current: View? = view
+        while (current != null) {
+            if (current is TextInputLayout) return current
+            current = current.parent as? View
+        }
+        return null
     }
 
     private fun adaptLandscapeContent() {

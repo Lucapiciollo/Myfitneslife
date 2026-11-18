@@ -14,27 +14,23 @@ import kotlinx.coroutines.flow.asStateFlow
  * un componente che cambia profilo lascerebbe le altre istanze su un profileId obsoleto e le
  * query profile-scoped non troverebbero i dati del profilo appena selezionato.
  */
-class ActiveProfileStore(context: Context) {
-    private val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-
-    init {
-        synchronized(initLock) {
-            if (!initialized) {
-                sharedActiveProfileId.value = prefs.getLong(KEY_ACTIVE_PROFILE_ID, NO_PROFILE)
-                initialized = true
-            }
+class ActiveProfileStore(context: Context, private val prefsName: String = PREFS_NAME) {
+    private val prefs = context.applicationContext.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
+    private val activeProfileState = synchronized(stateLock) {
+        sessionStates.getOrPut(prefsName) {
+            MutableStateFlow(prefs.getLong(KEY_ACTIVE_PROFILE_ID, NO_PROFILE))
         }
     }
 
-    val activeProfileId: StateFlow<Long> = sharedActiveProfileId.asStateFlow()
+    val activeProfileId: StateFlow<Long> = activeProfileState.asStateFlow()
 
-    fun currentIdOrNull(): Long? = sharedActiveProfileId.value.takeIf { it != NO_PROFILE }
+    fun currentIdOrNull(): Long? = activeProfileState.value.takeIf { it != NO_PROFILE }
 
     /** Re-reads the persisted session when another app-process component changed it. */
     fun refreshFromPersistence() {
         val persisted = prefs.getLong(KEY_ACTIVE_PROFILE_ID, NO_PROFILE)
-        if (persisted != NO_PROFILE && persisted != sharedActiveProfileId.value) {
-            sharedActiveProfileId.value = persisted
+        if (persisted != NO_PROFILE && persisted != activeProfileState.value) {
+            activeProfileState.value = persisted
         }
     }
 
@@ -43,7 +39,7 @@ class ActiveProfileStore(context: Context) {
     fun setActiveProfile(profileId: Long) {
         require(profileId > 0) { "profileId must be > 0" }
         prefs.edit().putLong(KEY_ACTIVE_PROFILE_ID, profileId).apply()
-        sharedActiveProfileId.value = profileId
+        activeProfileState.value = profileId
     }
 
     fun setDefaultProfile(profileId: Long) {
@@ -70,7 +66,7 @@ class ActiveProfileStore(context: Context) {
             else editor.remove(KEY_DEFAULT_PROFILE_ID)
         }
         editor.apply()
-        if (activeWasDeleted) sharedActiveProfileId.value = replacementProfileId ?: NO_PROFILE
+        if (activeWasDeleted) activeProfileState.value = replacementProfileId ?: NO_PROFILE
     }
 
     fun restoreDefaultProfile(): Long? {
@@ -81,7 +77,7 @@ class ActiveProfileStore(context: Context) {
 
     fun clear() {
         prefs.edit().remove(KEY_ACTIVE_PROFILE_ID).remove(KEY_DEFAULT_PROFILE_ID).apply()
-        sharedActiveProfileId.value = NO_PROFILE
+        activeProfileState.value = NO_PROFILE
     }
 
     companion object {
@@ -90,8 +86,7 @@ class ActiveProfileStore(context: Context) {
         private const val KEY_DEFAULT_PROFILE_ID = "default_profile_id"
         private const val NO_PROFILE = -1L
 
-        private val initLock = Any()
-        private var initialized = false
-        private val sharedActiveProfileId = MutableStateFlow(NO_PROFILE)
+        private val stateLock = Any()
+        private val sessionStates = mutableMapOf<String, MutableStateFlow<Long>>()
     }
 }

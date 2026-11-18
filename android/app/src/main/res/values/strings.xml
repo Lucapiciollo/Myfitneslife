@@ -53,6 +53,7 @@
     <string name="cheat_photo_ai_action">La stima IA dello sgarro dalla foto</string>
     <string name="cheat_text_ai_action">La valutazione IA dello sgarro</string>
     <string name="cheat_description_or_photo_required">Descrivi cosa hai mangiato oppure aggiungi una foto</string>
+    <string name="cheat_free_text_privacy_warning">Inserisci solo informazioni alimentari: non inserire diagnosi, farmaci, sintomi o altre informazioni sanitarie. Questi testi possono essere inviati al provider IA tramite un job e inclusi negli export e nei backup.</string>
     <string name="cheat_photo_processing">Attendi che termini la preparazione della foto.</string>
     <string name="cheat_photo_ai_progress">L’IA sta riconoscendo il cibo e stimando la porzione dalla foto…</string>
     <string name="meal_alternatives_ask_ai">Non trovi quello che cerchi? Chiedi ad AI</string>
@@ -659,4 +660,36 @@
     <string name="body_flag_body_fat_trend_down_context">Grasso corporeo da %1$s%% a %2$s%%</string>
     <string name="body_flag_body_fat_trend_down_why">Mostra la variazione tra BIA confrontabili quando supera il normale rumore della bilancia, circa 1 punto percentuale. Non esiste una soglia medica: è solo un andamento.</string>
     <string name="body_flag_body_fat_trend_down_limit">Il valore cambia con acqua corporea, pasti e orario: confronta solo misure prese nelle stesse condizioni.</string>
+    <!-- S2-D: dichiarazione salute locale nel profilo -->
+    <string name="profile_health_title">Dichiarazione salute</string>
+    <string name="profile_health_privacy">Queste risposte restano associate a questo profilo sul dispositivo e non vengono inviate all’IA.</string>
+    <string name="profile_health_loading">Caricamento della dichiarazione salute…</string>
+    <string name="profile_health_absent">Dichiarazione assente. Puoi rispondere anche solo a una domanda.</string>
+    <string name="profile_health_incomplete">Dichiarazione incompleta. Le risposte mancanti restano da completare; puoi salvare una dichiarazione parziale.</string>
+    <string name="profile_health_valid">Dichiarazione completa salvata.</string>
+    <string name="profile_health_invalid">La dichiarazione salvata non è leggibile. Nessuna risposta è selezionata: inserisci di nuovo entrambe per sostituirla.</string>
+    <string name="profile_health_unsupported">La dichiarazione usa una versione non supportata. Le risposte non sono state convertite: inserisci di nuovo entrambe per sostituirla.</string>
+    <string name="profile_health_load_error">Impossibile caricare la dichiarazione. Nessuna risposta è stata modificata; riprova.</string>
+    <string name="profile_health_save_error">Salvataggio non riuscito. La bozza resta qui: riprova. Nessuna risposta è stata persa.</string>
+    <string name="profile_health_stale">Il profilo visualizzato non è più attivo o la dichiarazione salvata è cambiata. La bozza resta associata al profilo visualizzato e non è stata salvata altrove.</string>
+    <string name="profile_health_draft_status">Bozza non salvata. Stato salvato: %1$s</string>
+    <string name="profile_health_saved">Dichiarazione salute salvata</string>
+    <string name="profile_health_saving">Salvataggio della dichiarazione…</string>
+    <string name="profile_health_pregnancy_question">Gravidanza o allattamento</string>
+    <string name="profile_health_condition_question">Hai una condizione o segui una terapia?</string>
+    <string name="profile_health_yes">Sì</string>
+    <string name="profile_health_no">No</string>
+    <string name="profile_health_pregnancy_yes_cd">Sì, gravidanza o allattamento</string>
+    <string name="profile_health_pregnancy_no_cd">No, gravidanza o allattamento</string>
+    <string name="profile_health_condition_yes_cd">Sì, condizione o terapia</string>
+    <string name="profile_health_condition_no_cd">No, condizione o terapia</string>
+    <string name="profile_health_answer_missing">Non indicata · da completare</string>
+    <string name="profile_health_answer_unavailable">Risposta non disponibile: inseriscila di nuovo</string>
+    <string name="profile_health_clear_answer">Rimuovi risposta</string>
+    <string name="profile_health_clear_pregnancy_cd">Rimuovi la risposta su gravidanza o allattamento</string>
+    <string name="profile_health_clear_condition_cd">Rimuovi la risposta su condizione o terapia</string>
+    <string name="profile_health_retry">Riprova il caricamento</string>
+    <string name="profile_health_refresh">Riprova sul profilo visualizzato</string>
+    <string name="profile_health_save">Salva dichiarazione</string>
+    <string name="profile_health_saved_inactive">Dichiarazione salute salvata per il profilo visualizzato. Il profilo attivo è cambiato: esci da questa schermata per continuare in sicurezza.</string>
 </resources>

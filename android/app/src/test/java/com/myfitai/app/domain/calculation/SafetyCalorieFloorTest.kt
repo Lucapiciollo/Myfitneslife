@@ -47,6 +47,46 @@ class SafetyCalorieFloorTest {
     }
 
     @Test
+    fun safeDailyRecovery_usesTheMoreRestrictiveFloorOrDeficitCapWithoutRoundingUp() {
+        assertEquals(
+            270,
+            SafetyCalorieFloor.maximumSafeDailyReductionKcal(
+                targetKcal = 2540,
+                tdeeKcal = 3019.2,
+                minimumKcal = 1948.5,
+                maximumDailyDeficitKcal = 750.0,
+            ),
+        )
+        assertEquals(
+            100,
+            SafetyCalorieFloor.maximumSafeDailyReductionKcal(
+                targetKcal = 2200,
+                tdeeKcal = 2600.0,
+                minimumKcal = 2100.0,
+                maximumDailyDeficitKcal = 750.0,
+            ),
+        )
+        assertEquals(
+            0,
+            SafetyCalorieFloor.maximumSafeDailyReductionKcal(
+                targetKcal = 2200,
+                tdeeKcal = 3100.0,
+                minimumKcal = 1900.0,
+                maximumDailyDeficitKcal = 750.0,
+            ),
+        )
+        assertEquals(
+            0,
+            SafetyCalorieFloor.maximumSafeDailyReductionKcal(
+                targetKcal = 2200,
+                tdeeKcal = null,
+                minimumKcal = 1500.0,
+                maximumDailyDeficitKcal = 750.0,
+            ),
+        )
+    }
+
+    @Test
     fun womanSedentary_164cm_78kg_targetAboveBmr_noClamp() {
         val r = calc(female, 62, 164.0, 78.0)
         assertEquals(1334.0, r.bmrKcal!!, 0.001)

@@ -24,7 +24,19 @@ data class UserProfileEntity(
     val updatedAtEpochMillis: Long,
     val biologicalSex: String? = null,
     val initialWeightKg: Float? = null,
-)
+    /** Dichiarazione salute locale e versionata; null significa che non è stata dichiarata. */
+    val healthDeclarationJson: String? = null,
+) {
+    /** Keep sensitive declaration answers out of accidental logs and diagnostic string interpolation. */
+    override fun toString(): String =
+        "UserProfileEntity(id=$id, name=$name, birthDateEpochDay=$birthDateEpochDay, heightCm=$heightCm, " +
+            "currentWeightKg=$currentWeightKg, goal=$goal, activityLevel=$activityLevel, " +
+            "wakeTimeMinutes=$wakeTimeMinutes, sleepTimeMinutes=$sleepTimeMinutes, " +
+            "dietaryPreferencesJson=$dietaryPreferencesJson, photoPath=$photoPath, " +
+            "createdAtEpochMillis=$createdAtEpochMillis, updatedAtEpochMillis=$updatedAtEpochMillis, " +
+            "biologicalSex=$biologicalSex, initialWeightKg=$initialWeightKg, " +
+            "healthDeclarationJson=<redacted>)"
+}
 
 @Entity(
     tableName = "bia_measurements",

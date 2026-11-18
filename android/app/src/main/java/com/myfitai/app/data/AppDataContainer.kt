@@ -168,6 +168,7 @@ class AppDataContainer private constructor(context: Context) {
         cheats = cheatEntryRepository,
         profiles = userProfileRepository,
         activeProfileStore = activeProfileStore,
+        calculations = profileCalculationService,
         foodCatalogLoader = foodCatalogLoader,
     )
 
@@ -189,6 +190,7 @@ class AppDataContainer private constructor(context: Context) {
         activeProfileStore = activeProfileStore,
         foodCatalogLoader = foodCatalogLoader,
         useFoodCatalogPlan = { aiSettingsStore.useFoodCatalogPlan },
+        calculations = profileCalculationService,
     )
 
     val weeklyReviewService = WeeklyReviewService(
@@ -235,6 +237,9 @@ class AppDataContainer private constructor(context: Context) {
         ))
     }
 
+    internal fun aiJobHandler(type: AiJobType) =
+        testAiJobRegistry?.handlerFor(type) ?: aiJobRegistry.handlerFor(type)
+
     val profileExportService = ProfileExportService(
         context = appContext,
         db = db,
@@ -258,6 +263,7 @@ class AppDataContainer private constructor(context: Context) {
 
     companion object {
         @Volatile private var instance: AppDataContainer? = null
+        @Volatile internal var testAiJobRegistry: AiJobRegistry? = null
 
         fun get(context: Context): AppDataContainer = instance ?: synchronized(this) {
             instance ?: AppDataContainer(context.applicationContext).also { instance = it }

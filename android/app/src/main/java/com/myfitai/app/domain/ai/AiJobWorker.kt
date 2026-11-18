@@ -11,7 +11,8 @@ class AiJobWorker(appContext: Context, params: WorkerParameters) : CoroutineWork
         val type = AiJobType.fromName(inputData.getString(KEY_TYPE)) ?: return Result.failure(workDataOf(KEY_ERROR to "Operazione IA non riconosciuta"))
         val profileId = inputData.getLong(KEY_PROFILE_ID, -1L)
         val jobKey = inputData.getString(KEY_JOB_KEY).orEmpty()
-        val handler = AppDataContainer.get(applicationContext).aiJobRegistry.handlerFor(type)
+        val appData = AppDataContainer.get(applicationContext)
+        val handler = appData.aiJobHandler(type)
             ?: return Result.failure(workDataOf(KEY_ERROR to "Handler IA non disponibile"))
         val imagePath = inputData.getString(KEY_IMAGE_PATH)
         val decision = AiJobRunner.run(
@@ -21,7 +22,7 @@ class AiJobWorker(appContext: Context, params: WorkerParameters) : CoroutineWork
             input = inputData,
             runAttemptCount = runAttemptCount,
             imagePath = imagePath,
-            deleteImage = AppDataContainer.get(applicationContext).aiImageJobStore::delete,
+            deleteImage = appData.aiImageJobStore::delete,
         )
         return when (decision) {
             is AiJobDecision.Success -> {

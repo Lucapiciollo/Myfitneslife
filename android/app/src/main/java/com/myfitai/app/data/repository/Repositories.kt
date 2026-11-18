@@ -5,11 +5,28 @@ import com.myfitai.app.data.local.MyFitAiDatabase
 import com.myfitai.app.data.local.dao.LegacyMealAlarmId
 import com.myfitai.app.data.local.entity.*
 import com.myfitai.app.domain.food.FoodSupplement
+import com.myfitai.app.domain.safety.HealthDeclaration
+import com.myfitai.app.domain.safety.HealthDeclarationCodec
+import com.myfitai.app.domain.safety.HealthDeclarationDecodeResult
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import org.json.JSONArray
 import org.json.JSONObject
+
+/** In-memory CAS token. The raw local health JSON is deliberately omitted from formatting. */
+class HealthDeclarationSnapshot internal constructor(
+    val profileId: Long,
+    val decoded: HealthDeclarationDecodeResult,
+    private val rawJson: String?,
+) {
+    internal fun hasSameRawBaseline(other: HealthDeclarationSnapshot): Boolean =
+        profileId == other.profileId && rawJson == other.rawJson
+
+    internal fun rawJsonForCompareAndSet(): String? = rawJson
+
+    override fun toString(): String = "HealthDeclarationSnapshot(profileId=$profileId, rawJson=<redacted>)"
+}
 
 class UserProfileRepository(private val db: MyFitAiDatabase) {
     val profiles: Flow<List<UserProfileEntity>> = db.userProfileDao().observeAll()
@@ -17,7 +34,41 @@ class UserProfileRepository(private val db: MyFitAiDatabase) {
     suspend fun get(profileId: Long) = db.userProfileDao().get(profileId)
     suspend fun getFirst() = db.userProfileDao().getFirst()
     suspend fun create(value: UserProfileEntity): Long = db.userProfileDao().insert(value)
-    suspend fun update(value: UserProfileEntity) = db.userProfileDao().update(value)
+    suspend fun update(value: UserProfileEntity) = db.withTransaction {
+        val dao = db.userProfileDao()
+        val current = dao.get(value.id) ?: return@withTransaction
+        dao.update(value.copy(healthDeclarationJson = current.healthDeclarationJson))
+    }
+    /** Null means the profile does not exist; an existing profile with no declaration returns a snapshot decoding to Absent. */
+    suspend fun healthDeclarationSnapshot(profileId: Long): HealthDeclarationSnapshot? {
+        require(profileId > 0) { "profileId must be > 0" }
+        val profile = db.userProfileDao().get(profileId) ?: return null
+        return HealthDeclarationSnapshot(
+            profileId = profileId,
+            decoded = HealthDeclarationCodec.decode(profile.healthDeclarationJson),
+            rawJson = profile.healthDeclarationJson,
+        )
+    }
+    /** Compatibility read API; callers that write must retain [HealthDeclarationSnapshot] and use its CAS token. */
+    suspend fun healthDeclaration(profileId: Long): HealthDeclarationDecodeResult? =
+        healthDeclarationSnapshot(profileId)?.decoded
+
+    /** Returns the committed snapshot, or null when the profile/baseline changed before the atomic update. */
+    suspend fun compareAndSetHealthDeclaration(
+        baseline: HealthDeclarationSnapshot,
+        declaration: HealthDeclaration,
+    ): HealthDeclarationSnapshot? {
+        val profileId = baseline.profileId
+        require(profileId > 0) { "profileId must be > 0" }
+        val json = HealthDeclarationCodec.encode(declaration)
+        val updated = db.userProfileDao().compareAndSetHealthDeclaration(
+            profileId = profileId,
+            expectedJson = baseline.rawJsonForCompareAndSet(),
+            json = json,
+        ) == 1
+        if (!updated) return null
+        return HealthDeclarationSnapshot(profileId, HealthDeclarationCodec.decode(json), json)
+    }
     /** @return true se il profilo esiste ancora ed e' stato aggiornato; tocca solo `dietaryPreferencesJson` e `updatedAtEpochMillis`. */
     suspend fun updateDietaryPreferences(profileId: Long, json: String?, updatedAt: Long): Boolean =
         db.userProfileDao().updateDietaryPreferences(profileId, json, updatedAt) == 1
@@ -195,6 +246,22 @@ object MealPlanWeekSelector {
 }
 
 class MealPlanRepository(private val db: MyFitAiDatabase) {
+    data class PlanVersionBaseline(val planId: Long?, val versionId: Long?)
+
+    data class GenerationPlanSnapshot(
+        val baseline: PlanVersionBaseline,
+        val snapshot: com.myfitai.app.domain.food.FoodPlanSnapshot?,
+    )
+
+    class SafetySnapshotChanged : IllegalStateException("SAFETY_PROFILE_CHANGED")
+    class PlanSnapshotChanged : IllegalStateException("PLAN_SNAPSHOT_STALE")
+
+    data class CheatPlanCommit(
+        val cheatId: Long,
+        val planVersionId: Long?,
+        val alreadyCommitted: Boolean = false,
+    )
+
     data class MealDetailContext(
         val planId: Long,
         val planVersionId: Long,
@@ -249,13 +316,133 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
             )
         )
 
+    /** Creates the week row, when needed, and its first version as one rollback-safe operation. */
+    suspend fun createOrAppendVersion(
+        profileId: Long,
+        weekStartEpochDay: Long,
+        createdAtEpochMillis: Long,
+        draft: PlanVersionDraft,
+        expectedProfileSnapshot: UserProfileEntity,
+        expectedPlanBaseline: PlanVersionBaseline? = null,
+        revalidateBeforeWrite: suspend () -> Unit,
+        validateBeforeAppend: suspend () -> Unit = {},
+    ): Pair<Long, Long> = db.withTransaction {
+        if (expectedProfileSnapshot.id != profileId || db.userProfileDao().get(profileId) != expectedProfileSnapshot) {
+            throw SafetySnapshotChanged()
+        }
+        revalidateBeforeWrite()
+        if (db.userProfileDao().get(profileId) != expectedProfileSnapshot) throw SafetySnapshotChanged()
+        val dao = db.mealPlanDao()
+        val currentPlan = dao.getPlanForWeek(profileId, weekStartEpochDay)
+        val currentVersion = currentPlan?.let { dao.getLatestVersion(profileId, it.id) }
+        if (
+            expectedPlanBaseline != null &&
+            PlanVersionBaseline(currentPlan?.id, currentVersion?.id) != expectedPlanBaseline
+        ) {
+            throw PlanSnapshotChanged()
+        }
+        // Final domain guard after profile/safety/CAS rechecks, still before any plan or version write.
+        validateBeforeAppend()
+        val planId = currentPlan?.id
+            ?: dao.insertPlan(
+                MealPlanEntity(
+                    profileId = profileId,
+                    createdAtEpochMillis = createdAtEpochMillis,
+                    weekStartEpochDay = weekStartEpochDay,
+                    status = "ACTIVE",
+                ),
+            )
+        val versionId = appendVersionInTransaction(profileId, planId, createdAtEpochMillis, draft, dao)
+        planId to versionId
+    }
+
     suspend fun appendVersion(
         profileId: Long,
         planId: Long,
         createdAtEpochMillis: Long,
         draft: PlanVersionDraft,
     ): Long = db.withTransaction {
-        val dao = db.mealPlanDao()
+        appendVersionInTransaction(profileId, planId, createdAtEpochMillis, draft, db.mealPlanDao())
+    }
+
+    /**
+     * Commits cheat tracking and its optional adaptation together. A failed append rolls the cheat row back;
+     * a failed safety recheck commits tracking only and never appends a plan version.
+     */
+    suspend fun recordCheatAndAppendVersion(
+        entry: CheatEntryEntity,
+        expectedProfileSnapshot: UserProfileEntity,
+        planId: Long,
+        expectedPlanVersionId: Long,
+        createdAtEpochMillis: Long,
+        draft: (cheatId: Long) -> PlanVersionDraft,
+        revalidateBeforeWrite: suspend () -> Boolean,
+    ): CheatPlanCommit = db.withTransaction {
+        val profileId = entry.profileId
+        require(profileId > 0 && expectedProfileSnapshot.id == profileId) { "PROFILE_ID_MISMATCH" }
+        val profileDao = db.userProfileDao()
+        val currentProfile = profileDao.get(profileId) ?: error("PROFILE_NOT_FOUND")
+        findPreviouslyCommittedCheat(entry, planId)?.let { return@withTransaction it }
+
+        val planDao = db.mealPlanDao()
+        val isExpectedPlanVersion = planDao.getLatestVersion(profileId, planId)?.id == expectedPlanVersionId
+        val safetySnapshotIsCurrent = revalidateBeforeWrite()
+        val canAppend = currentProfile == expectedProfileSnapshot && isExpectedPlanVersion && safetySnapshotIsCurrent &&
+            profileDao.get(profileId) == expectedProfileSnapshot
+        val cheatId = db.cheatEntryDao().insert(entry)
+        val versionId = if (canAppend) {
+            appendVersionInTransaction(profileId, planId, createdAtEpochMillis, draft(cheatId), db.mealPlanDao())
+        } else {
+            null
+        }
+        CheatPlanCommit(cheatId, versionId)
+    }
+
+    /** Stores tracking-only outcomes atomically and returns an existing event on an exact replay. */
+    suspend fun recordCheatTracking(entry: CheatEntryEntity): CheatPlanCommit = db.withTransaction {
+        require(entry.profileId > 0) { "PROFILE_ID_MISMATCH" }
+        findPreviouslyCommittedCheat(entry)?.let { return@withTransaction it }
+        CheatPlanCommit(db.cheatEntryDao().insert(entry), null)
+    }
+
+    /**
+     * Uses the persisted event payload plus its profile/time as an internal content key. No replay token is written
+     * to user-visible data. `planVersionId` is excluded because a successful replay observes its own new version.
+     */
+    private suspend fun findPreviouslyCommittedCheat(
+        entry: CheatEntryEntity,
+        knownPlanId: Long? = null,
+    ): CheatPlanCommit? {
+        val existing = db.cheatEntryDao()
+            .observeBetween(entry.profileId, entry.occurredAtEpochMillis, entry.occurredAtEpochMillis)
+            .first()
+            .firstOrNull { row -> row.copy(id = entry.id, planVersionId = entry.planVersionId) == entry }
+            ?: return null
+        val versionId = if (knownPlanId != null) {
+            db.mealPlanDao().observeVersions(entry.profileId, knownPlanId).first()
+                .firstOrNull { it.reason == "CHEAT_WEEKLY_RESERVOIR:${existing.id}" }
+                ?.id
+        } else {
+            val marker = "CHEAT_WEEKLY_RESERVOIR:${existing.id}"
+            var found: Long? = null
+            for (plan in db.mealPlanDao().observePlans(entry.profileId).first()) {
+                found = db.mealPlanDao().observeVersions(entry.profileId, plan.id).first()
+                    .firstOrNull { it.reason == marker }
+                    ?.id
+                if (found != null) break
+            }
+            found
+        }
+        return CheatPlanCommit(existing.id, versionId, alreadyCommitted = true)
+    }
+
+    private suspend fun appendVersionInTransaction(
+        profileId: Long,
+        planId: Long,
+        createdAtEpochMillis: Long,
+        draft: PlanVersionDraft,
+        dao: com.myfitai.app.data.local.dao.MealPlanDao,
+    ): Long {
         val plan = dao.getPlan(profileId, planId) ?: error("PLAN_NOT_FOUND_FOR_PROFILE")
         val previous = dao.getLatestVersion(profileId, plan.id)
         val nextVersion = (previous?.versionNumber ?: 0) + 1
@@ -303,13 +490,33 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
                 }
             }
         }
-        versionId
+        return versionId
     }
 
     suspend fun loadLatestSnapshot(profileId: Long, weekStartEpochDay: Long): com.myfitai.app.domain.food.FoodPlanSnapshot? = db.withTransaction {
         val dao = db.mealPlanDao()
         val plan = dao.getPlanForWeek(profileId, weekStartEpochDay) ?: return@withTransaction null
         val version = dao.getLatestVersion(profileId, plan.id) ?: return@withTransaction null
+        loadPlanSnapshot(profileId, plan, version, dao)
+    }
+
+    /** Captures the exact plan/version token and the data used by generation in one Room read transaction. */
+    suspend fun loadGenerationSnapshot(profileId: Long, weekStartEpochDay: Long): GenerationPlanSnapshot = db.withTransaction {
+        val dao = db.mealPlanDao()
+        val plan = dao.getPlanForWeek(profileId, weekStartEpochDay)
+        val version = plan?.let { dao.getLatestVersion(profileId, it.id) }
+        GenerationPlanSnapshot(
+            baseline = PlanVersionBaseline(plan?.id, version?.id),
+            snapshot = if (plan != null && version != null) loadPlanSnapshot(profileId, plan, version, dao) else null,
+        )
+    }
+
+    private suspend fun loadPlanSnapshot(
+        profileId: Long,
+        plan: MealPlanEntity,
+        version: MealPlanVersionEntity,
+        dao: com.myfitai.app.data.local.dao.MealPlanDao,
+    ): com.myfitai.app.domain.food.FoodPlanSnapshot {
         val days = dao.getDays(profileId, version.id).map { day ->
             com.myfitai.app.domain.food.FoodPlanDay(
                 id = day.id,
@@ -330,7 +537,7 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
                 hydrationNote = day.hydrationNote,
             )
         }
-        com.myfitai.app.domain.food.FoodPlanSnapshot(
+        return com.myfitai.app.domain.food.FoodPlanSnapshot(
             planId = plan.id,
             profileId = plan.profileId,
             weekStartEpochDay = plan.weekStartEpochDay,
@@ -381,9 +588,9 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
                 versionNumber = row.versionNumber,
                 dateEpochDay = row.dateEpochDay,
                 meal = row.toFoodMeal(dao.getIngredients(profileId, row.mealId).map { it.toFoodIngredient() }),
-            )
-        }
+        )
     }
+}
 
     private fun serializeSupplements(values: List<SupplementDraft>): String? {
         if (values.isEmpty()) return null

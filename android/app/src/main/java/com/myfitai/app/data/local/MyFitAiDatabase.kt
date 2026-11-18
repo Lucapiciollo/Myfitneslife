@@ -27,7 +27,7 @@ import com.myfitai.app.data.local.entity.*
         AiUsageRecordEntity::class,
         CustomFoodEntity::class,
     ],
-    version = 22,
+    version = 23,
     exportSchema = true,
 )
 abstract class MyFitAiDatabase : RoomDatabase() {
@@ -436,6 +436,13 @@ object DatabaseMigrations {
         }
     }
 
+    /** Adds the optional, local-only health declaration; existing profiles remain undeclared. */
+    val MIGRATION_22_23 = object : Migration(22, 23) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE user_profile ADD COLUMN healthDeclarationJson TEXT")
+        }
+    }
+
     private fun addMissingColumns(db: SupportSQLiteDatabase, table: String, definitions: List<String>) {
         val existing = mutableSetOf<String>()
         db.query("PRAGMA table_info($table)").use { cursor ->
@@ -470,5 +477,6 @@ object DatabaseMigrations {
         MIGRATION_19_20,
         MIGRATION_20_21,
         MIGRATION_21_22,
+        MIGRATION_22_23,
     )
 }

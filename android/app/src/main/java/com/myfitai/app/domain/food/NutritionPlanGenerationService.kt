@@ -14,6 +14,7 @@ import com.myfitai.app.data.repository.MealPlanRepository
 import com.myfitai.app.data.repository.PlanVersionDraft
 import com.myfitai.app.data.repository.SupplementDraft
 import com.myfitai.app.data.repository.UserProfileRepository
+import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.domain.calculation.AdaptiveNutritionTargetEngine
 import com.myfitai.app.domain.calculation.LocalCalculationEngine
 import com.myfitai.app.domain.calculation.MacroPolicy
@@ -25,6 +26,15 @@ import com.myfitai.app.domain.calculation.SafetyCalorieFloor
 import com.myfitai.app.domain.food.catalog.CatalogConstraints
 import com.myfitai.app.domain.food.catalog.FoodCatalogLoader
 import com.myfitai.app.domain.personalization.PersonalResponseService
+import com.myfitai.app.domain.profile.ProfileAgeRule
+import com.myfitai.app.domain.safety.GenerationSafetyGate
+import com.myfitai.app.domain.safety.HealthDeclarationCodec
+import com.myfitai.app.domain.safety.HealthDeclarationDecodeResult
+import com.myfitai.app.domain.safety.HealthDeclarationInput
+import com.myfitai.app.domain.safety.SafetyDecision
+import com.myfitai.app.domain.safety.SafetyInput
+import com.myfitai.app.domain.safety.SafetyOutcome
+import com.myfitai.app.domain.safety.SafetyThresholds
 import com.myfitai.app.domain.time.SystemTimeProvider
 import com.myfitai.app.domain.time.TimeProvider
 import com.myfitai.app.domain.ai.AiUserContext
@@ -63,8 +73,24 @@ class NutritionPlanGenerationService(
             /** Stable machine code, never part of the user text. */
             val code: String = DietaryProfile.UNREADABLE_CODE
         }
+        /** Local safety rejection; the decision contains rule codes only, never declaration values or JSON. */
+        class SafetyBlocked(val decision: SafetyDecision) : GenerationException("SAFETY_BLOCKED")
+        /** The profile's safety inputs changed while the provider was working; this is terminal and redacted. */
+        class SafetyChanged : GenerationException("SAFETY_PROFILE_CHANGED")
+        /** The weekly plan snapshot changed while the provider was working; the caller may retry from latest. */
+        class StalePlan : GenerationException("PLAN_SNAPSHOT_STALE")
         class InvalidAiOutput(message: String) : GenerationException(message)
     }
+
+    private data class SafetyRevalidationBaseline(
+        val profileSnapshot: UserProfileEntity,
+        val inputsFingerprint: String,
+        val input: SafetyInput,
+        val healthDeclaration: HealthDeclarationInput?,
+        val minimumDailyKcal: Double?,
+        val maximumDailyDeficitKcal: Double?,
+        val maintenanceOnly: Boolean,
+    )
 
     /** Log.w non bloccante (in JVM android.util.Log non esiste): una riga per ogni rifiuto MFP2, senza testo del modello. */
     private fun logMfp2Rejection(rejection: FoodCatalogPlanBuilder.AttemptRejection) {
@@ -84,6 +110,8 @@ class NutritionPlanGenerationService(
         val usage: AiUsageMetadata? = null,
         /** Non-blocking note when meals repeat; null when the plan is fully varied. */
         val varietyNotice: String? = null,
+        /** Non-blocking, fixed safety notice; it never includes health declaration answers. */
+        val safetyNotice: String? = null,
     )
 
     suspend fun generateWeek(weekStart: LocalDate): Result {
@@ -113,10 +141,28 @@ class NutritionPlanGenerationService(
         PlanPrerequisites.ageGate(profile, snapshot.latestWeightKg, time.today())?.let { throw GenerationException.NeedsInput(it) }
 
         val calc = snapshot.calculation
-        val existingPlan = plans.loadLatestSnapshot(profileId, monday.toEpochDay())
+        val initialPlanSnapshot = plans.loadGenerationSnapshot(profileId, monday.toEpochDay())
+        val existingPlan = initialPlanSnapshot.snapshot
         val existingTargets = existingPlan?.version
         val goal = ProfileCalculationMapper.goal(profile.goal)
-        val resolvedTargetKcal = calc.targetKcal ?: existingTargets?.targetKcal?.toDouble()
+        // The declaration is loaded from this explicit profileId; only decoded answers stay in memory.
+        val declarationSnapshot = profiles.healthDeclarationSnapshot(profileId)
+            ?: throw GenerationException.SafetyChanged()
+        if (HealthDeclarationCodec.decode(profile.healthDeclarationJson) != declarationSnapshot.decoded) {
+            throw GenerationException.SafetyChanged()
+        }
+        val declaration = (declarationSnapshot.decoded as? HealthDeclarationDecodeResult.Valid)?.declaration
+        val healthDeclaration = declaration?.let {
+            HealthDeclarationInput(it.pregnancyOrLactation, it.clinicianManagedConditionOrMedication)
+        }
+        val hasPositiveHealthDeclaration =
+            healthDeclaration?.pregnancyOrLactation == true || healthDeclaration?.clinicianManagedConditionOrMedication == true
+        // Never inherit a prior deficit target for a profile whose saved goal is maintenance and declaration is positive.
+        val resolvedTargetKcal = if (hasPositiveHealthDeclaration && goal == LocalCalculationEngine.Goal.MAINTENANCE) {
+            calc.tdeeKcal
+        } else {
+            calc.targetKcal ?: existingTargets?.targetKcal?.toDouble()
+        }
         val resolvedProteinG = calc.proteinG ?: existingTargets?.targetProteinG?.toDouble()
         val resolvedCarbsG = calc.carbsG ?: existingTargets?.targetCarbsG?.toDouble()
         val resolvedFatG = calc.fatG ?: existingTargets?.targetFatG?.toDouble()
@@ -149,7 +195,8 @@ class NutritionPlanGenerationService(
                 minimumKcal = safetyMinimumKcal,
             )
         )
-        val finalTargetKcal = adaptive.targetKcal ?: resolvedTargetKcal!!
+        val maintenanceOnly = hasPositiveHealthDeclaration && resolvedGoal == LocalCalculationEngine.Goal.MAINTENANCE
+        val finalTargetKcal = if (maintenanceOnly) calc.tdeeKcal!! else adaptive.targetKcal ?: resolvedTargetKcal!!
         // K6: protein and fat are decided ONCE on the profile target (MacroPolicy) and passed explicitly to the
         // recovery engine; only carbohydrates follow the (possibly adapted) calories.
         val macroAnchor = MacroPolicy.Anchor(resolvedProteinG!!, resolvedFatG!!)
@@ -172,7 +219,11 @@ class NutritionPlanGenerationService(
 
         val recoveryFrom = time.today().minusDays(CalorieRecoveryEngine.WINDOW_DAYS)
             .atStartOfDay(zone).toInstant().toEpochMilli()
-        val recentCheats = cheats.between(profileId, recoveryFrom, time.nowEpochMillis()).first()
+        val recentCheats = if (hasPositiveHealthDeclaration) {
+            emptyList()
+        } else {
+            cheats.between(profileId, recoveryFrom, time.nowEpochMillis()).first()
+        }
         val credits = buildList {
             for (entry in recentCheats) {
                 val totalKcal = entry.estimatedKcal?.takeIf { it > 0 } ?: continue
@@ -201,6 +252,51 @@ class NutritionPlanGenerationService(
         val dailyTargets = recoveryPlan.days
             .filter { !it.date.isBefore(generationStart) }
             .associate { it.date.toEpochDay() to it.targets }
+        // S3 gate: all inputs are local and profile-scoped; no declaration object/JSON is placed in the prompt.
+        val safetyRelevant = hasPositiveHealthDeclaration || SafetyCalorieFloor.appliesTo(resolvedGoal)
+        val safetyInput = SafetyInput(
+            ageYears = ProfileAgeRule.ageYears(profile.birthDateEpochDay, time.today()),
+            bmi = calc.bmi,
+            goal = resolvedGoal,
+            biologicalSex = ProfileCalculationMapper.sex(profile.biologicalSex),
+            healthDeclaration = healthDeclaration,
+            bmrKcal = if (safetyRelevant) calc.bmrKcal ?: Double.NaN else calc.bmrKcal,
+            tdeeKcal = if (safetyRelevant) calc.tdeeKcal ?: Double.NaN else calc.tdeeKcal,
+            targetKcal = finalTargetKcal,
+        )
+        val safetyDecision = GenerationSafetyGate.evaluate(safetyInput)
+        if (safetyDecision.outcome.priority >= SafetyOutcome.BLOCK_DEFICIT.priority) {
+            throw GenerationException.SafetyBlocked(safetyDecision)
+        }
+        val safetyNotice = when {
+            maintenanceOnly -> "Il piano usa l'obiettivo di mantenimento; l'obiettivo salvato nel profilo non è stato modificato."
+            safetyDecision.outcome == SafetyOutcome.ALLOW_WITH_NOTICE ->
+                "Per questo piano può essere utile un confronto con un professionista sanitario."
+            else -> null
+        }
+        val reductionGoal = SafetyCalorieFloor.appliesTo(resolvedGoal)
+        val minimumDailyKcal = safetyMinimumKcal.takeIf { reductionGoal }
+        val maximumDailyDeficitKcal = SafetyThresholds.MAX_DAILY_DEFICIT_KCAL.takeIf { reductionGoal }
+        val tdeeKcal = calc.tdeeKcal
+        val safetyBaseline = SafetyRevalidationBaseline(
+            profileSnapshot = profile,
+            inputsFingerprint = snapshot.inputsFingerprint,
+            input = safetyInput,
+            healthDeclaration = healthDeclaration,
+            minimumDailyKcal = minimumDailyKcal,
+            maximumDailyDeficitKcal = maximumDailyDeficitKcal,
+            maintenanceOnly = maintenanceOnly,
+        )
+
+        fun validateSafetyBounds(response: NutritionPlanContract.Response) {
+            NutritionPlanContract.validateSafetyBounds(
+                response = response,
+                minimumDailyKcal = minimumDailyKcal,
+                tdeeKcal = tdeeKcal,
+                maximumDailyDeficitKcal = maximumDailyDeficitKcal,
+                maintenanceOnly = maintenanceOnly,
+            ).getOrThrow()
+        }
         // The reference tolerance sent to the model and recorded in appValidation is always ±3%; retries accept ±4%.
         val targetTolerance = NutritionPlanAssessment.REFERENCE_TOLERANCE
         // One maintenance ceiling (the profile's TDEE) for deficit goals, the same for every day.
@@ -271,6 +367,16 @@ class NutritionPlanGenerationService(
         // MFP2: motivi (codice stabile + dettaglio breve) dei tentativi di business rifiutati prima di quello accettato.
         // Limite: l'indice conta solo i tentativi che hanno superato lo schema; i rifiuti di schema/JSON non passano da qui.
         val rejectedAttempts = mutableListOf<FoodCatalogPlanBuilder.AttemptRejection>()
+        val profileImmediatelyBeforeProvider = profiles.get(profileId)
+        val declarationImmediatelyBeforeProvider = profiles.healthDeclarationSnapshot(profileId)
+        val inputsImmediatelyBeforeProvider = calculations.profileSnapshot(profileId, time.today())
+        if (
+            profileImmediatelyBeforeProvider != profile ||
+            declarationImmediatelyBeforeProvider?.decoded != declarationSnapshot.decoded ||
+            inputsImmediatelyBeforeProvider?.inputsFingerprint != snapshot.inputsFingerprint
+        ) {
+            throw GenerationException.SafetyChanged()
+        }
         val validated = try { aiRuntime.execute(
             request = request,
             maxSchemaRetries = 2,
@@ -280,6 +386,7 @@ class NutritionPlanGenerationService(
                     if (catalogPlan != null) {
                         // MFP2: parse -> catalogo -> riparazione verso il target del giorno -> piano con numeri CALCOLATI.
                         val ok = catalogPlan.evaluate(json, catalogContext, currentAttempt)
+                        validateSafetyBounds(ok.response)
                         accepted = ok.response to ok.assessment
                         acceptedComputation = ok.computation.copy(attemptsLog = rejectedAttempts.toList())
                         return@runCatching
@@ -304,6 +411,7 @@ class NutritionPlanGenerationService(
                         maintenanceCeilingKcal = maintenanceCeilingKcal,
                         attempt = currentAttempt,
                     ).getOrThrow()
+                    validateSafetyBounds(response)
                     // Integrity and macros are informative (persisted in appValidation): they never block.
                     accepted = response to assessment
                 }.onFailure { error ->
@@ -324,6 +432,9 @@ class NutritionPlanGenerationService(
         }
         val (response, assessment) = accepted
             ?: throw GenerationException.InvalidAiOutput("INVALID_COMPACT_PROTOCOL")
+
+        // Defense in depth before review; a second profile-scoped recheck runs immediately before the atomic write.
+        validateSafetyBounds(response)
 
         val integrity = NutritionIntegrityValidator.validate(
             response = response,
@@ -459,9 +570,120 @@ class NutritionPlanGenerationService(
             },
         )
 
-        val planId = existing?.id ?: plans.createPlan(profileId, monday.toEpochDay(), time.nowEpochMillis())
-        val versionId = plans.appendVersion(profileId, planId, time.nowEpochMillis(), draft)
-        return Result(planId, versionId, validated.provider.name, validated.model, response.agentValidation, validated.usage, varietyReport.notice())
+        val (planId, versionId) = try {
+            plans.createOrAppendVersion(
+                profileId = profileId,
+                weekStartEpochDay = monday.toEpochDay(),
+                createdAtEpochMillis = time.nowEpochMillis(),
+                draft = draft,
+                expectedProfileSnapshot = safetyBaseline.profileSnapshot,
+                revalidateBeforeWrite = {
+                    revalidateSafetyBeforePersist(profileId, monday, response, safetyBaseline)
+                },
+                expectedPlanBaseline = initialPlanSnapshot.baseline,
+            )
+        } catch (_: MealPlanRepository.PlanSnapshotChanged) {
+            throw GenerationException.StalePlan()
+        } catch (_: MealPlanRepository.SafetySnapshotChanged) {
+            throw GenerationException.SafetyChanged()
+        }
+        return Result(
+            planId, versionId, validated.provider.name, validated.model, response.agentValidation, validated.usage,
+            varietyReport.notice(), safetyNotice,
+        )
+    }
+
+    /** Reload and recalculate only local profile/declaration state; never send it back to the provider. */
+    private suspend fun revalidateSafetyBeforePersist(
+        profileId: Long,
+        monday: LocalDate,
+        response: NutritionPlanContract.Response,
+        baseline: SafetyRevalidationBaseline,
+    ) {
+        val currentProfile = profiles.get(profileId) ?: throw GenerationException.SafetyChanged()
+        if (currentProfile != baseline.profileSnapshot) throw GenerationException.SafetyChanged()
+        val currentDeclarationSnapshot = profiles.healthDeclarationSnapshot(profileId)
+            ?: throw GenerationException.SafetyChanged()
+        if (HealthDeclarationCodec.decode(currentProfile.healthDeclarationJson) != currentDeclarationSnapshot.decoded) {
+            throw GenerationException.SafetyChanged()
+        }
+        val currentDeclaration = (currentDeclarationSnapshot.decoded as? HealthDeclarationDecodeResult.Valid)
+            ?.declaration
+            ?.let { HealthDeclarationInput(it.pregnancyOrLactation, it.clinicianManagedConditionOrMedication) }
+            ?: throw GenerationException.SafetyChanged()
+        val currentSnapshot = calculations.profileSnapshot(profileId, time.today())
+            ?: throw GenerationException.SafetyChanged()
+        val currentGoal = ProfileCalculationMapper.goal(currentProfile.goal) ?: throw GenerationException.SafetyChanged()
+        val currentCalc = currentSnapshot.calculation
+        val positiveDeclaration = currentDeclaration.pregnancyOrLactation == true ||
+            currentDeclaration.clinicianManagedConditionOrMedication == true
+        val currentMaintenanceOnly = positiveDeclaration && currentGoal == LocalCalculationEngine.Goal.MAINTENANCE
+        val previousTargets = plans.loadLatestSnapshot(profileId, monday.toEpochDay())?.version
+        val resolvedTarget = if (positiveDeclaration && currentGoal == LocalCalculationEngine.Goal.MAINTENANCE) {
+            currentCalc.tdeeKcal
+        } else {
+            currentCalc.targetKcal ?: previousTargets?.targetKcal?.toDouble()
+        } ?: throw GenerationException.SafetyChanged()
+        val weightKg = currentSnapshot.latestWeightKg?.toDouble() ?: throw GenerationException.SafetyChanged()
+        val currentMinimum = currentCalc.minimumKcal
+            ?: SafetyCalorieFloor.minimumKcal(currentCalc.bmrKcal, ProfileCalculationMapper.sex(currentProfile.biologicalSex))
+        val currentAdaptive = AdaptiveNutritionTargetEngine.adjust(
+            AdaptiveNutritionTargetEngine.Input(
+                goal = currentGoal,
+                tdeeKcal = currentCalc.tdeeKcal,
+                baseTargetKcal = resolvedTarget,
+                currentWeightKg = weightKg,
+                weight = currentSnapshot.biaMetrics.weight.toAdaptiveEvidence(),
+                bodyFat = currentSnapshot.biaMetrics.bodyFat.toAdaptiveEvidence(),
+                muscleMass = currentSnapshot.biaMetrics.muscleMass.toAdaptiveEvidence(),
+                waist = currentSnapshot.bodyMetrics.waist.toAdaptiveEvidence(),
+                abdomen = currentSnapshot.bodyMetrics.abdomen.toAdaptiveEvidence(),
+                minimumKcal = currentMinimum,
+            ),
+        )
+        val currentTargetKcal = if (currentMaintenanceOnly) {
+            currentCalc.tdeeKcal ?: throw GenerationException.SafetyChanged()
+        } else {
+            currentAdaptive.targetKcal ?: resolvedTarget
+        }
+        val safetyRelevant = positiveDeclaration || SafetyCalorieFloor.appliesTo(currentGoal)
+        val currentInput = SafetyInput(
+            ageYears = ProfileAgeRule.ageYears(currentProfile.birthDateEpochDay, time.today()),
+            bmi = currentCalc.bmi,
+            goal = currentGoal,
+            biologicalSex = ProfileCalculationMapper.sex(currentProfile.biologicalSex),
+            healthDeclaration = currentDeclaration,
+            bmrKcal = if (safetyRelevant) currentCalc.bmrKcal ?: Double.NaN else currentCalc.bmrKcal,
+            tdeeKcal = if (safetyRelevant) currentCalc.tdeeKcal ?: Double.NaN else currentCalc.tdeeKcal,
+            targetKcal = currentTargetKcal,
+        )
+        val currentDecision = GenerationSafetyGate.evaluate(currentInput)
+        val reductionGoal = SafetyCalorieFloor.appliesTo(currentGoal)
+        val minimumDailyKcal = currentMinimum.takeIf { reductionGoal }
+        val maximumDailyDeficitKcal = SafetyThresholds.MAX_DAILY_DEFICIT_KCAL.takeIf { reductionGoal }
+
+        // Any changed safety input is terminal, even if the old response happens to fit the new range.
+        if (
+            currentDecision.outcome.priority >= SafetyOutcome.BLOCK_DEFICIT.priority ||
+            currentSnapshot.inputsFingerprint != baseline.inputsFingerprint ||
+            currentDeclaration != baseline.healthDeclaration ||
+            currentInput != baseline.input ||
+            minimumDailyKcal != baseline.minimumDailyKcal ||
+            maximumDailyDeficitKcal != baseline.maximumDailyDeficitKcal ||
+            currentMaintenanceOnly != baseline.maintenanceOnly
+        ) {
+            throw GenerationException.SafetyChanged()
+        }
+        NutritionPlanContract.validateSafetyBounds(
+            response = response,
+            minimumDailyKcal = minimumDailyKcal,
+            tdeeKcal = currentCalc.tdeeKcal,
+            maximumDailyDeficitKcal = maximumDailyDeficitKcal,
+            maintenanceOnly = currentMaintenanceOnly,
+        ).getOrElse { throw GenerationException.SafetyChanged() }
+
+        // Bind the checked values to the exact full profile row passed into the commit transaction.
+        if (profiles.get(profileId) != currentProfile) throw GenerationException.SafetyChanged()
     }
 
     private fun buildUserPrompt(

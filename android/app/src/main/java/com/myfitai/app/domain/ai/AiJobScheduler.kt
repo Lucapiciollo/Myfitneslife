@@ -5,6 +5,7 @@ import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
+import androidx.work.Operation
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
@@ -14,7 +15,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.util.concurrent.TimeUnit
 
-class AiJobScheduler(context: Context) {
+class AiJobScheduler(
+    context: Context,
+    private val requiredNetworkType: NetworkType = NetworkType.CONNECTED,
+) {
     private val workManager = WorkManager.getInstance(context.applicationContext)
 
     fun enqueue(
@@ -24,10 +28,10 @@ class AiJobScheduler(context: Context) {
         initialDelayMillis: Long = 0L,
         params: Data = Data.EMPTY,
         replaceExisting: Boolean = false,
-    ) {
+    ): Operation {
         val request = OneTimeWorkRequestBuilder<AiJobWorker>()
             .setInputData(Data.Builder().putAll(params).putString(AiJobWorker.KEY_TYPE, type.name).putLong(AiJobWorker.KEY_PROFILE_ID, profileId).putString(AiJobWorker.KEY_JOB_KEY, jobKey).build())
-            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+            .setConstraints(Constraints.Builder().setRequiredNetworkType(requiredNetworkType).build())
             .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
             .setInitialDelay(initialDelayMillis.coerceAtLeast(0L), TimeUnit.MILLISECONDS)
             .apply {
@@ -39,7 +43,7 @@ class AiJobScheduler(context: Context) {
             }
             .build()
         val policy = if (replaceExisting) ExistingWorkPolicy.REPLACE else ExistingWorkPolicy.KEEP
-        workManager.enqueueUniqueWork(name(type, profileId, jobKey), policy, request)
+        return workManager.enqueueUniqueWork(name(type, profileId, jobKey), policy, request)
     }
 
     fun observe(type: AiJobType, profileId: Long, jobKey: String): Flow<WorkInfo?> =

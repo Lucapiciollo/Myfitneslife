@@ -23,7 +23,22 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "0.1.0"
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "com.myfitai.app.IsolatedAndroidJUnitRunner"
+    }
+
+    testBuildType = "qa"
+
+    buildTypes {
+        create("qa") {
+            initWith(getByName("debug"))
+            applicationIdSuffix = ".qa"
+            matchingFallbacks += listOf("debug")
+        }
+    }
+
+    sourceSets.getByName("qa").apply {
+        java.srcDir("$projectDir/src/debug/java")
+        manifest.srcFile("$projectDir/src/debug/AndroidManifest.xml")
     }
 
     buildFeatures {

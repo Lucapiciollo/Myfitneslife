@@ -4,6 +4,8 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.AutoCompleteTextView
+import android.widget.ProgressBar
+import android.widget.RadioGroup
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
@@ -22,7 +24,13 @@ import com.myfitai.app.domain.profile.ProfileAgeRule
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.domain.profile.ActivityLevelChoices
 import com.myfitai.app.data.local.entity.UserProfileEntity
+import com.myfitai.app.domain.safety.HealthDeclaration
+import com.myfitai.app.domain.safety.HealthDeclarationDecodeResult
 import com.myfitai.app.ui.profile.ProfileEditViewModel
+import com.myfitai.app.ui.profile.ProfileEditViewModel.HealthDeclarationDraft
+import com.myfitai.app.ui.profile.ProfileEditViewModel.HealthDeclarationSaveState
+import com.myfitai.app.ui.profile.ProfileEditViewModel.HealthDeclarationSaveStatus
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
@@ -54,11 +62,41 @@ class ProfileEditActivity : BaseShellActivity() {
     private lateinit var wakeTimeInput: TextInputEditText
     private lateinit var sleepTimeInput: TextInputEditText
     private lateinit var saveButton: MaterialButton
+    private lateinit var healthDeclarationCard: View
+    private lateinit var healthDeclarationStatus: TextView
+    private lateinit var healthDeclarationProgress: ProgressBar
+    private lateinit var healthPregnancyGroup: RadioGroup
+    private lateinit var healthConditionGroup: RadioGroup
+    private lateinit var healthPregnancyMissing: TextView
+    private lateinit var healthConditionMissing: TextView
+    private lateinit var healthRetryButton: MaterialButton
+    private lateinit var healthSaveButton: MaterialButton
+    private lateinit var healthClearPregnancyButton: MaterialButton
+    private lateinit var healthClearConditionButton: MaterialButton
 
     private var birthDateEpochDay: Long? = null
     private var wakeTimeMinutes: Int? = null
     private var sleepTimeMinutes: Int? = null
     private var initialRenderedProfileId: Long? = null
+    private var healthDeclarationProfileId: Long? = null
+    private var healthDeclarationStatusState = HealthDeclarationUiState.LOADING
+    private var healthDeclarationOperationIsSave = false
+    private var healthDeclarationSaving = false
+    private var renderingHealthDeclaration = false
+    private val healthDeclarationDraft: HealthDeclarationDraft
+        get() = viewModel.healthDeclarationEditor.value.draft
+
+    private enum class HealthDeclarationUiState {
+        LOADING,
+        ABSENT,
+        INCOMPLETE,
+        VALID,
+        INVALID,
+        UNSUPPORTED,
+        ERROR,
+        STALE,
+        SAVED,
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -77,6 +115,7 @@ class ProfileEditActivity : BaseShellActivity() {
             else -> bindBack()
         }
         bindViews()
+        bindHealthDeclaration()
         if (isCreate) {
             findViewById<View>(R.id.goalLayout).visibility = View.GONE
             findViewById<TextView>(R.id.goalSectionTitle).text = "Attività"
@@ -101,6 +140,278 @@ class ProfileEditActivity : BaseShellActivity() {
         wakeTimeInput = findViewById(R.id.wakeTimeInput)
         sleepTimeInput = findViewById(R.id.sleepTimeInput)
         saveButton = findViewById(R.id.saveProfileButton)
+    }
+
+    private fun bindHealthDeclaration() {
+        healthDeclarationCard = findViewById(R.id.healthDeclarationCard)
+        healthDeclarationStatus = findViewById(R.id.healthDeclarationStatus)
+        healthDeclarationProgress = findViewById(R.id.healthDeclarationProgress)
+        healthPregnancyGroup = findViewById(R.id.healthPregnancyGroup)
+        healthConditionGroup = findViewById(R.id.healthConditionGroup)
+        healthPregnancyMissing = findViewById(R.id.healthPregnancyMissing)
+        healthConditionMissing = findViewById(R.id.healthConditionMissing)
+        healthRetryButton = findViewById(R.id.healthDeclarationRetryButton)
+        healthSaveButton = findViewById(R.id.saveHealthDeclarationButton)
+        healthClearPregnancyButton = findViewById(R.id.clearHealthPregnancyButton)
+        healthClearConditionButton = findViewById(R.id.clearHealthConditionButton)
+
+        healthPregnancyGroup.setOnCheckedChangeListener { _, checkedId ->
+            if (!renderingHealthDeclaration) {
+                updateHealthDeclarationDraft(
+                    healthDeclarationDraft.copy(pregnancyOrLactation = answerFromRadio(checkedId, R.id.healthPregnancyYes, R.id.healthPregnancyNo)),
+                )
+            }
+        }
+        healthConditionGroup.setOnCheckedChangeListener { _, checkedId ->
+            if (!renderingHealthDeclaration) {
+                updateHealthDeclarationDraft(
+                    healthDeclarationDraft.copy(clinicianManagedConditionOrMedication = answerFromRadio(checkedId, R.id.healthConditionYes, R.id.healthConditionNo)),
+                )
+            }
+        }
+        healthClearPregnancyButton.setOnClickListener {
+            updateHealthDeclarationDraft(healthDeclarationDraft.copy(pregnancyOrLactation = null))
+        }
+        healthClearConditionButton.setOnClickListener {
+            updateHealthDeclarationDraft(healthDeclarationDraft.copy(clinicianManagedConditionOrMedication = null))
+        }
+        healthRetryButton.setOnClickListener {
+            val profileId = healthDeclarationProfileId ?: return@setOnClickListener
+            if (healthDeclarationStatusState == HealthDeclarationUiState.STALE) {
+                MaterialAlertDialogBuilder(this)
+                    .setTitle("Abbandonare la bozza?")
+                    .setMessage("Le risposte non salvate verranno eliminate e sarà ricaricata la dichiarazione corrente del profilo.")
+                    .setNegativeButton("Annulla", null)
+                    .setPositiveButton("Abbandona e ricarica") { _, _ ->
+                        viewModel.abandonHealthDeclarationDraft(profileId)
+                        if (data.activeProfileStore.currentIdOrNull() != profileId) {
+                            finish()
+                            return@setPositiveButton
+                        }
+                        loadHealthDeclaration(profileId, preserveDraft = false)
+                    }
+                    .show()
+            } else {
+                loadHealthDeclaration(profileId, preserveDraft = true)
+            }
+        }
+        healthSaveButton.setOnClickListener { saveHealthDeclaration() }
+    }
+
+    private fun answerFromRadio(checkedId: Int, yesId: Int, noId: Int): Boolean? = when (checkedId) {
+        yesId -> true
+        noId -> false
+        else -> null
+    }
+
+    private fun updateHealthDeclarationDraft(updated: HealthDeclarationDraft) {
+        if (!canEditHealthDeclaration()) return
+        healthDeclarationProfileId?.let { viewModel.updateHealthDeclarationDraft(it, updated) }
+        if (healthDeclarationStatusState == HealthDeclarationUiState.SAVED) {
+            healthDeclarationStatusState = viewModel.healthDeclarationEditor.value.baseline?.decoded?.toUiState()
+                ?: HealthDeclarationUiState.ABSENT
+        }
+        renderHealthDeclaration()
+    }
+
+    private fun canEditHealthDeclaration(): Boolean {
+        val editor = viewModel.healthDeclarationEditor.value
+        val loaded = editor.profileId == healthDeclarationProfileId && editor.baseline != null && !editor.stale && healthDeclarationStatusState in setOf(
+            HealthDeclarationUiState.ABSENT,
+            HealthDeclarationUiState.INCOMPLETE,
+            HealthDeclarationUiState.VALID,
+            HealthDeclarationUiState.INVALID,
+            HealthDeclarationUiState.UNSUPPORTED,
+            HealthDeclarationUiState.SAVED,
+        )
+        val retryableSaveError = healthDeclarationStatusState == HealthDeclarationUiState.ERROR &&
+            healthDeclarationOperationIsSave && editor.baseline != null && !editor.stale
+        return !healthDeclarationSaving && (loaded || retryableSaveError) &&
+            data.activeProfileStore.currentIdOrNull() == healthDeclarationProfileId
+    }
+
+    private fun loadHealthDeclaration(profileId: Long, preserveDraft: Boolean) {
+        if (isCreate || profileId <= 0L) return
+        healthDeclarationProfileId = profileId
+        healthDeclarationStatusState = HealthDeclarationUiState.LOADING
+        healthDeclarationOperationIsSave = false
+        renderHealthDeclaration()
+        applyHealthDeclarationSaveState(viewModel.healthDeclarationSaveState.value)
+
+        lifecycleScope.launch {
+            val result = try {
+                viewModel.readHealthDeclaration(profileId, refresh = preserveDraft)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                if (healthDeclarationProfileId != profileId) return@launch
+                healthDeclarationStatusState = HealthDeclarationUiState.ERROR
+                healthDeclarationOperationIsSave = false
+                renderHealthDeclaration()
+                return@launch
+            }
+            if (healthDeclarationProfileId != profileId) return@launch
+            val editor = viewModel.healthDeclarationEditor.value
+            if (viewModel.healthDeclarationSaveState.value.let {
+                    it.profileId == profileId && it.status == HealthDeclarationSaveStatus.SAVED
+                }
+            ) {
+                // A retained committed save remains SAVED even if the active-profile read is now rejected.
+                healthDeclarationStatusState = HealthDeclarationUiState.SAVED
+                renderHealthDeclaration()
+                return@launch
+            }
+            if (result == null || data.activeProfileStore.currentIdOrNull() != profileId) {
+                healthDeclarationStatusState = HealthDeclarationUiState.STALE
+                renderHealthDeclaration()
+                return@launch
+            }
+            if (editor.profileId != profileId || editor.baseline == null || editor.stale) {
+                // Una bozza stale resta legata alla baseline originale finché questa schermata non viene riaperta.
+                healthDeclarationStatusState = HealthDeclarationUiState.STALE
+                renderHealthDeclaration()
+                return@launch
+            }
+            healthDeclarationStatusState = if (viewModel.healthDeclarationSaveState.value.let {
+                    it.profileId == profileId && it.status == HealthDeclarationSaveStatus.SAVED
+                }
+            ) HealthDeclarationUiState.SAVED else result.toUiState()
+            renderHealthDeclaration()
+        }
+    }
+
+    private fun saveHealthDeclaration() {
+        val profileId = healthDeclarationProfileId ?: return
+        if (!canEditHealthDeclaration() || !canSaveHealthDeclaration()) return
+        if (initialRenderedProfileId != profileId || data.activeProfileStore.currentIdOrNull() != profileId) {
+            healthDeclarationStatusState = HealthDeclarationUiState.STALE
+            renderHealthDeclaration()
+            return
+        }
+        val editor = viewModel.healthDeclarationEditor.value
+        val declaration = HealthDeclaration(
+            pregnancyOrLactation = editor.draft.pregnancyOrLactation,
+            clinicianManagedConditionOrMedication = editor.draft.clinicianManagedConditionOrMedication,
+            confirmedAtEpochMillis = System.currentTimeMillis(),
+        )
+        healthDeclarationSaving = true
+        healthDeclarationOperationIsSave = true
+        renderHealthDeclaration()
+        lifecycleScope.launch {
+            try {
+                if (healthDeclarationProfileId != profileId || data.activeProfileStore.currentIdOrNull() != profileId) {
+                    healthDeclarationStatusState = HealthDeclarationUiState.STALE
+                    return@launch
+                }
+                if (!viewModel.saveHealthDeclaration(profileId, declaration)) {
+                    return@launch
+                }
+                if (healthDeclarationProfileId == profileId) {
+                    Toast.makeText(this@ProfileEditActivity, R.string.profile_health_saved, Toast.LENGTH_SHORT).show()
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                if (healthDeclarationProfileId != profileId) return@launch
+                healthDeclarationStatusState = HealthDeclarationUiState.ERROR
+                healthDeclarationOperationIsSave = true
+                healthDeclarationSaving = false
+                renderHealthDeclaration()
+            }
+        }
+    }
+
+    private fun canSaveHealthDeclaration(): Boolean {
+        val editor = viewModel.healthDeclarationEditor.value
+        val baseline = editor.baseline?.decoded ?: return false
+        if (!editor.dirty || editor.stale || !canEditHealthDeclaration()) return false
+        val requiresFullReAnswer = baseline is HealthDeclarationDecodeResult.Invalid ||
+            baseline is HealthDeclarationDecodeResult.UnsupportedVersion
+        return !requiresFullReAnswer || (
+            editor.draft.pregnancyOrLactation != null &&
+                editor.draft.clinicianManagedConditionOrMedication != null
+        )
+    }
+
+    private fun renderHealthDeclaration() {
+        if (!::healthDeclarationStatus.isInitialized) return
+        val editor = viewModel.healthDeclarationEditor.value
+        val draft = editor.draft
+        val baseline = editor.baseline?.decoded
+        val state = healthDeclarationStatusState
+        val statusRes = when (state) {
+            HealthDeclarationUiState.LOADING -> R.string.profile_health_loading
+            HealthDeclarationUiState.ABSENT -> R.string.profile_health_absent
+            HealthDeclarationUiState.INCOMPLETE -> R.string.profile_health_incomplete
+            HealthDeclarationUiState.VALID -> R.string.profile_health_valid
+            HealthDeclarationUiState.INVALID -> R.string.profile_health_invalid
+            HealthDeclarationUiState.UNSUPPORTED -> R.string.profile_health_unsupported
+            HealthDeclarationUiState.ERROR -> if (healthDeclarationOperationIsSave) R.string.profile_health_save_error else R.string.profile_health_load_error
+            HealthDeclarationUiState.STALE -> R.string.profile_health_stale
+            HealthDeclarationUiState.SAVED -> if (editor.stale || data.activeProfileStore.currentIdOrNull() != healthDeclarationProfileId) {
+                R.string.profile_health_saved_inactive
+            } else {
+                R.string.profile_health_saved
+            }
+        }
+        val baseStatus = getString(statusRes)
+        healthDeclarationStatus.text = if (editor.dirty && state in setOf(
+                HealthDeclarationUiState.ABSENT,
+                HealthDeclarationUiState.INCOMPLETE,
+                HealthDeclarationUiState.VALID,
+                HealthDeclarationUiState.INVALID,
+                HealthDeclarationUiState.UNSUPPORTED,
+            )
+        ) getString(R.string.profile_health_draft_status, baseStatus) else baseStatus
+        if (healthDeclarationSaving) healthDeclarationStatus.setText(R.string.profile_health_saving)
+
+        renderingHealthDeclaration = true
+        healthPregnancyGroup.check(radioId(draft.pregnancyOrLactation, R.id.healthPregnancyYes, R.id.healthPregnancyNo))
+        healthConditionGroup.check(radioId(draft.clinicianManagedConditionOrMedication, R.id.healthConditionYes, R.id.healthConditionNo))
+        renderingHealthDeclaration = false
+
+        val answersUnavailable = baseline == null ||
+            baseline is HealthDeclarationDecodeResult.Invalid ||
+            baseline is HealthDeclarationDecodeResult.UnsupportedVersion
+        renderMissingAnswer(healthPregnancyMissing, draft.pregnancyOrLactation, answersUnavailable)
+        renderMissingAnswer(healthConditionMissing, draft.clinicianManagedConditionOrMedication, answersUnavailable)
+        healthDeclarationProgress.visibility = if (state == HealthDeclarationUiState.LOADING || healthDeclarationSaving) View.VISIBLE else View.GONE
+
+        val canEdit = canEditHealthDeclaration()
+        healthPregnancyGroup.isEnabled = canEdit
+        healthConditionGroup.isEnabled = canEdit
+        for (index in 0 until healthPregnancyGroup.childCount) healthPregnancyGroup.getChildAt(index).isEnabled = canEdit
+        for (index in 0 until healthConditionGroup.childCount) healthConditionGroup.getChildAt(index).isEnabled = canEdit
+        healthClearPregnancyButton.isEnabled = canEdit && draft.pregnancyOrLactation != null
+        healthClearConditionButton.isEnabled = canEdit && draft.clinicianManagedConditionOrMedication != null
+        healthClearPregnancyButton.visibility = if (draft.pregnancyOrLactation != null) View.VISIBLE else View.GONE
+        healthClearConditionButton.visibility = if (draft.clinicianManagedConditionOrMedication != null) View.VISIBLE else View.GONE
+        healthSaveButton.isEnabled = canSaveHealthDeclaration()
+        healthRetryButton.visibility = if (!healthDeclarationSaving && state in setOf(HealthDeclarationUiState.ERROR, HealthDeclarationUiState.STALE)) View.VISIBLE else View.GONE
+        healthRetryButton.setText(if (state == HealthDeclarationUiState.STALE) R.string.profile_health_refresh else R.string.profile_health_retry)
+    }
+
+    private fun radioId(answer: Boolean?, yesId: Int, noId: Int): Int = when (answer) {
+        true -> yesId
+        false -> noId
+        null -> View.NO_ID
+    }
+
+    private fun renderMissingAnswer(view: TextView, answer: Boolean?, unavailable: Boolean) {
+        if (answer != null) {
+            view.visibility = View.GONE
+            return
+        }
+        view.setText(if (unavailable) R.string.profile_health_answer_unavailable else R.string.profile_health_answer_missing)
+        view.visibility = View.VISIBLE
+    }
+
+    private fun HealthDeclarationDecodeResult.toUiState(): HealthDeclarationUiState = when (this) {
+        HealthDeclarationDecodeResult.Absent -> HealthDeclarationUiState.ABSENT
+        is HealthDeclarationDecodeResult.Incomplete -> HealthDeclarationUiState.INCOMPLETE
+        is HealthDeclarationDecodeResult.Valid -> HealthDeclarationUiState.VALID
+        is HealthDeclarationDecodeResult.Invalid -> HealthDeclarationUiState.INVALID
+        is HealthDeclarationDecodeResult.UnsupportedVersion -> HealthDeclarationUiState.UNSUPPORTED
     }
 
     private fun bindDropdowns() {
@@ -224,6 +535,21 @@ class ProfileEditActivity : BaseShellActivity() {
                     }
                 }
                 launch { viewModel.error.collect { message -> Toast.makeText(this@ProfileEditActivity, message, Toast.LENGTH_SHORT).show() } }
+                launch { viewModel.healthDeclarationSaveState.collect(::applyHealthDeclarationSaveState) }
+                launch {
+                    data.activeProfileStore.activeProfileId.collect { activeId ->
+                        val renderedId = initialRenderedProfileId
+                        if (renderedId != null && activeId != renderedId && healthDeclarationStatusState != HealthDeclarationUiState.STALE) {
+                            // Keep the draft attached to its original profile and refuse writes after a profile switch.
+                            viewModel.markHealthDeclarationStale(renderedId)
+                            healthDeclarationStatusState = if (viewModel.healthDeclarationSaveState.value.let {
+                                    it.profileId == renderedId && it.status == HealthDeclarationSaveStatus.SAVED
+                                }
+                            ) HealthDeclarationUiState.SAVED else HealthDeclarationUiState.STALE
+                            renderHealthDeclaration()
+                        }
+                    }
+                }
             }
         }
     }
@@ -247,6 +573,7 @@ class ProfileEditActivity : BaseShellActivity() {
     }
 
     private fun render(profile: UserProfileEntity) {
+        healthDeclarationCard.visibility = View.VISIBLE
         findViewById<TextView>(R.id.title).text = "Modifica ${profile.name}"
         nameInput.setText(profile.name)
         birthDateEpochDay = profile.birthDateEpochDay
@@ -264,6 +591,33 @@ class ProfileEditActivity : BaseShellActivity() {
         sleepTimeInput.setText(profile.sleepTimeMinutes?.let(::formatMinutes).orEmpty())
         // Un profilo già salvato con età fuori range viene segnalato subito, prima di qualsiasi salvataggio.
         showBirthDateIssue()
+        loadHealthDeclaration(profile.id, preserveDraft = false)
+    }
+
+    private fun applyHealthDeclarationSaveState(saveState: HealthDeclarationSaveState) {
+        if (saveState.profileId == null || saveState.profileId != healthDeclarationProfileId) return
+        if (saveState.status == HealthDeclarationSaveStatus.IDLE) return
+        healthDeclarationOperationIsSave = true
+        when (saveState.status) {
+            HealthDeclarationSaveStatus.IDLE -> return
+            HealthDeclarationSaveStatus.SAVING -> {
+                healthDeclarationSaving = true
+            }
+            HealthDeclarationSaveStatus.SAVED -> {
+                healthDeclarationSaving = false
+                healthDeclarationStatusState = HealthDeclarationUiState.SAVED
+            }
+            HealthDeclarationSaveStatus.STALE,
+            HealthDeclarationSaveStatus.CONFLICT -> {
+                healthDeclarationSaving = false
+                healthDeclarationStatusState = HealthDeclarationUiState.STALE
+            }
+            HealthDeclarationSaveStatus.FAILED -> {
+                healthDeclarationSaving = false
+                healthDeclarationStatusState = HealthDeclarationUiState.ERROR
+            }
+        }
+        renderHealthDeclaration()
     }
 
     private fun ageText(messageRes: Int, minAge: Int, maxAge: Int): String = getString(messageRes, minAge, maxAge)
