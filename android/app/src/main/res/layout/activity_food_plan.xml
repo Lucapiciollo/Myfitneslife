@@ -609,6 +609,13 @@
                             android:layout_height="@dimen/button_primary_min_height"
                             android:layout_marginTop="@dimen/space_12"
                             android:text="Genera piano con IA" />
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/selectPlanRangeButton"
+                            style="@style/Widget.MyFitAI.Button.Outlined"
+                            android:layout_width="match_parent"
+                            android:layout_height="@dimen/button_secondary_min_height"
+                            android:layout_marginTop="@dimen/space_8"
+                            android:text="@string/food_plan_range_select_action" />
                     </LinearLayout>
                 </LinearLayout>
 

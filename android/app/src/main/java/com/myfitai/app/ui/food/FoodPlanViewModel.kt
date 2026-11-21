@@ -13,6 +13,8 @@ import com.myfitai.app.data.repository.BodyMeasurementRepository
 import com.myfitai.app.data.local.entity.FoodConsumptionEntity
 import com.myfitai.app.domain.food.FoodPlanDay
 import com.myfitai.app.domain.food.FoodPlanSnapshot
+import com.myfitai.app.domain.food.DateRange
+import com.myfitai.app.domain.food.NutritionPlanPeriod
 import com.myfitai.app.domain.food.NutritionPlanGenerationService
 import com.myfitai.app.domain.calculation.PlanFingerprint
 import com.myfitai.app.domain.calculation.ProfileCalculationService
@@ -206,6 +208,39 @@ class FoodPlanViewModel(
                     replaceExisting = true,
                     params = androidx.work.workDataOf(
                         WeeklyPlanAiJobHandler.KEY_PERIOD_WEEKS to schedulePreferences.periodWeeks(profileId),
+                    ),
+                )
+            }
+        }
+    }
+
+    fun generateDateRange(range: DateRange) {
+        if (generationState.value.running) return
+        val validatedRange = NutritionPlanPeriod.validateSelectableRange(range, time.today())
+            .getOrNull()
+            ?.let { candidate -> runCatching { NutritionPlanPeriod.requireGenerationLength(candidate) }.getOrNull() }
+        if (validatedRange == null) {
+            generationState.value = GenerationState(error = "Seleziona un intervallo da oggi alla fine del mese corrente, lungo al massimo 31 giorni.")
+            return
+        }
+
+        val week = NutritionPlanPeriod.monday(validatedRange.start)
+        selectedWeekStart.value = week
+        selectedDayIndex.value = todayIndexInWeek(week)
+        generationState.value = GenerationState(running = true)
+        viewModelScope.launch {
+            val profileId = activeProfileStore.currentIdOrNull()
+            if (profileId == null) {
+                generationState.value = GenerationState(error = "Nessun profilo attivo")
+            } else {
+                aiJobScheduler.enqueue(
+                    type = AiJobType.WEEKLY_PLAN,
+                    profileId = profileId,
+                    jobKey = week.toEpochDay().toString(),
+                    replaceExisting = true,
+                    params = androidx.work.workDataOf(
+                        WeeklyPlanAiJobHandler.KEY_RANGE_START_EPOCH_DAY to validatedRange.start.toEpochDay(),
+                        WeeklyPlanAiJobHandler.KEY_RANGE_END_EPOCH_DAY to validatedRange.endInclusive.toEpochDay(),
                     ),
                 )
             }

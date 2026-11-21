@@ -130,7 +130,12 @@ class FoodCatalogPlanBuilder(val catalog: FoodCatalog) {
 
     data class Result(val response: NutritionPlanContract.Response, val computation: Computation)
 
-    /** Tutto cio' che il gate di [NutritionPlanContract.validateBusinessAssessed] richiede oltre ai target. */
+    /**
+     * Tutto cio' che il gate di [NutritionPlanContract.validateBusinessAssessed] richiede oltre ai target.
+     * [requestedRange] null = chiamante legacy a settimane: date e W derivano da monday/periodWeeks/generationStart come in
+     * MFP1. Con un range esplicito: al massimo [NutritionPlanPeriod.MAX_RANGE_DAYS] giorni e parametri a settimane coerenti
+     * (lunedi' del primo giorno, primo giorno, settimane di calendario coperte), verificati a ogni costruzione o copy().
+     */
     data class Context(
         val monday: java.time.LocalDate,
         val generationStart: java.time.LocalDate,
@@ -141,7 +146,19 @@ class FoodCatalogPlanBuilder(val catalog: FoodCatalog) {
         val sportsMode: SportsNutritionClassifier.Mode,
         val mealsPerDay: Int,
         val maintenanceCeilingKcal: Double?,
-    )
+        val requestedRange: DateRange? = null,
+    ) {
+        init {
+            requestedRange?.let { range ->
+                NutritionPlanPeriod.requireGenerationLength(range)
+                NutritionPlanPeriod.requireCoherentLegacyParams(range, monday, generationStart, periodWeeks)
+            }
+        }
+
+        /** Date esatte da generare, ricalcolate a ogni accesso: un copy() non lascia mai un range stantio. */
+        val dateRange: DateRange
+            get() = requestedRange ?: NutritionPlanPeriod.legacyDateRange(monday, periodWeeks, generationStart)
+    }
 
     class Accepted(
         val response: NutritionPlanContract.Response,
@@ -161,9 +178,9 @@ class FoodCatalogPlanBuilder(val catalog: FoodCatalog) {
         } catch (e: IllegalArgumentException) {
             throw withSimilarFoodIds(e, context)
         }
-        // W e' un dato che l'app conosce gia' (lunedi' della richiesta): il valore scritto dal modello e' solo
-        // informativo e viene sostituito, cosi' un numero riscritto male non fa fallire un piano valido. Le date dei
-        // giorni (D) restano validate dal gate.
+        // W e' un dato che l'app conosce gia' (lunedi' della richiesta; con un range esplicito il Context garantisce che
+        // sia il lunedi' del primo giorno): il valore scritto dal modello e' solo informativo e viene sostituito, cosi' un
+        // numero riscritto male non fa fallire un piano valido. Le date dei giorni (D) restano validate dal gate.
         val proposal = parsed.copy(weekStartEpochDay = context.monday.toEpochDay())
         val built = build(
             proposal,
@@ -190,6 +207,7 @@ class FoodCatalogPlanBuilder(val catalog: FoodCatalog) {
             expectedPeriodWeeks = context.periodWeeks,
             maintenanceCeilingKcal = context.maintenanceCeilingKcal,
             attempt = attempt,
+            expectedDateRange = context.requestedRange,
         ).getOrThrow()
         return Accepted(built.response, assessment, built.computation)
     }
@@ -203,7 +221,7 @@ class FoodCatalogPlanBuilder(val catalog: FoodCatalog) {
         if (!message.startsWith(UNKNOWN_FOOD_PREFIX)) return error
         val ids = message.removePrefix(UNKNOWN_FOOD_PREFIX).split(',').map { it.trim() }.filter { it.isNotEmpty() }
         val candidates = catalog.subsetFor(
-            CatalogConstraints(profile = context.dietaryProfile, month = context.generationStart.monthValue),
+            CatalogConstraints(profile = context.dietaryProfile, month = context.dateRange.start.monthValue),
         ).map { it.id }
         return IllegalArgumentException(unknownFoodReason(ids, candidates))
     }

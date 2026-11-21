@@ -16,6 +16,9 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.datepicker.CalendarConstraints
+import com.google.android.material.datepicker.DateValidatorPointForward
+import com.google.android.material.datepicker.MaterialDatePicker
 import com.myfitai.app.R
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.domain.food.FoodMeal
@@ -23,6 +26,7 @@ import com.myfitai.app.domain.food.FoodSupplement
 import com.myfitai.app.domain.food.FoodPlanDay
 import com.myfitai.app.domain.food.FoodPlanMetrics
 import com.myfitai.app.domain.food.FoodPlanVersion
+import com.myfitai.app.domain.food.DateRange
 import com.myfitai.app.domain.food.NutritionPlanPeriod
 import com.myfitai.app.domain.profile.ProfileAgeRule
 import com.myfitai.app.data.profile.NutritionPlanSchedulePreferences
@@ -47,6 +51,7 @@ import com.myfitai.app.domain.calculation.PlanStaleness
 import com.myfitai.app.domain.calculation.ProfileCalculationMapper
 import java.time.Instant
 import java.time.ZoneId
+import java.time.ZoneOffset
 
 class FoodPlanActivity : BaseShellActivity() {
 
@@ -84,6 +89,7 @@ class FoodPlanActivity : BaseShellActivity() {
                 .putExtra(CheatEntryActivity.EXTRA_OCCURRED_DATE_EPOCH_DAY, selectedDate))
         }
         gateAiClick(findViewById(R.id.generatePlanButton)) { confirmPlanGeneration() }
+        gateAiClick(findViewById(R.id.selectPlanRangeButton)) { selectPlanRange() }
         findViewById<View>(R.id.planSettingsButton).setOnClickListener { startActivity(Intent(this, NutritionPlanSettingsActivity::class.java)) }
         findViewById<View>(R.id.aiConfigurationNoticeButton).setOnClickListener { AiSettingsEntry.open(this) }
         bindFoodHelp()
@@ -137,6 +143,13 @@ class FoodPlanActivity : BaseShellActivity() {
     private fun openProfileEditor() = startActivity(Intent(this, ProfileEditActivity::class.java))
 
     private fun confirmPlanGeneration() {
+        if (!ensureProfileAgeIsValid()) return
+        confirmAiRequest("La generazione del piano alimentare") {
+            viewModel.generateCurrentWeek()
+        }
+    }
+
+    private fun ensureProfileAgeIsValid(): Boolean {
         if (viewModel.state.value.profileAgeStatus != ProfileAgeRule.Status.VALID) {
             MaterialAlertDialogBuilder(this)
                 .setTitle(R.string.food_plan_profile_age_dialog_title)
@@ -144,12 +157,73 @@ class FoodPlanActivity : BaseShellActivity() {
                 .setPositiveButton(R.string.food_plan_open_profile) { _, _ -> openProfileEditor() }
                 .setNegativeButton(R.string.action_cancel, null)
                 .show()
-            return
+            return false
         }
-        confirmAiRequest("La generazione del piano alimentare") {
-            viewModel.generateCurrentWeek()
-        }
+        return true
     }
+
+    private fun selectPlanRange() {
+        val today = LocalDate.now()
+        val todayMillis = today.toPickerUtcMillis()
+        val monthEndMillis = today.withDayOfMonth(today.lengthOfMonth()).toPickerUtcMillis()
+        val constraints = CalendarConstraints.Builder()
+            .setStart(todayMillis)
+            .setEnd(monthEndMillis)
+            .setOpenAt(todayMillis)
+            .setValidator(DateValidatorPointForward.from(todayMillis))
+            .build()
+        val picker = MaterialDatePicker.Builder.dateRangePicker()
+            .setTheme(R.style.ThemeOverlay_MyFitAI_MaterialCalendar)
+            .setTitleText(R.string.food_plan_range_picker_title)
+            .setCalendarConstraints(constraints)
+            .build()
+        picker.addOnPositiveButtonClickListener { selection ->
+            val selectedRange = runCatching {
+                DateRange(selection.first.toPickerDate(), selection.second.toPickerDate())
+            }.getOrNull()
+            val validRange = selectedRange
+                ?.let { NutritionPlanPeriod.validateSelectableRange(it, LocalDate.now()).getOrNull() }
+                ?.let { candidate -> runCatching { NutritionPlanPeriod.requireGenerationLength(candidate) }.getOrNull() }
+            if (validRange == null) {
+                showPlanRangeValidationError()
+            } else {
+                confirmPlanRangeGeneration(validRange)
+            }
+        }
+        picker.show(supportFragmentManager, "food_plan_range_picker")
+    }
+
+    private fun confirmPlanRangeGeneration(range: DateRange) {
+        if (!ensureProfileAgeIsValid()) return
+        val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.ITALIAN)
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.food_plan_range_confirm_title)
+            .setMessage(getString(
+                R.string.food_plan_range_confirm_message,
+                range.start.format(formatter),
+                range.endInclusive.format(formatter),
+                range.dayCount,
+            ))
+            .setNegativeButton(R.string.action_cancel, null)
+            .setPositiveButton(R.string.food_plan_range_confirm_action) { _, _ ->
+                confirmAiRequest(getString(R.string.food_plan_range_ai_action)) {
+                    viewModel.generateDateRange(range)
+                }
+            }
+            .show()
+    }
+
+    private fun showPlanRangeValidationError() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.food_plan_range_invalid_title)
+            .setMessage(R.string.food_plan_range_invalid_message)
+            .setPositiveButton(R.string.help_dialog_confirm, null)
+            .show()
+    }
+
+    private fun LocalDate.toPickerUtcMillis(): Long = atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+
+    private fun Long.toPickerDate(): LocalDate = Instant.ofEpochMilli(this).atZone(ZoneOffset.UTC).toLocalDate()
 
     private fun render(state: FoodPlanViewModel.State) {
         val weekEnd = state.weekStart.plusDays(6)
@@ -272,6 +346,7 @@ class FoodPlanActivity : BaseShellActivity() {
             }
         }
         val button = findViewById<MaterialButton>(R.id.generatePlanButton)
+        val rangeButton = findViewById<MaterialButton>(R.id.selectPlanRangeButton)
         val statusContainer = findViewById<View>(R.id.generationStatusContainer)
         val progress = findViewById<ProgressBar>(R.id.generationProgress)
         val status = findViewById<TextView>(R.id.generationStatusText)
@@ -280,6 +355,7 @@ class FoodPlanActivity : BaseShellActivity() {
         val generation = state.generation
         revealState(button, periodCanBeGenerated)
         setAiActionEnabled(button, periodCanBeGenerated && !generation.running)
+        setAiActionEnabled(rangeButton, !generation.running)
         button.text = when { generation.running -> "Generazione in corso…"; state.hasPlan -> "Rigenera piano con IA"; else -> "Genera piano con IA" }
         // Stesso pulsante, due stili condivisi: cambiano solo lo stile (Primary/Outlined) e l'enabled.
         applyButtonStyle(button, if (state.hasPlan && !generation.running) R.style.Widget_MyFitAI_Button_Outlined else R.style.Widget_MyFitAI_Button_Primary)

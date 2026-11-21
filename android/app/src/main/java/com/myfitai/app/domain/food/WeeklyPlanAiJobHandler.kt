@@ -7,6 +7,8 @@ import com.myfitai.app.domain.ai.AiJobOutcome
 import com.myfitai.app.domain.ai.AiJobWorker
 import com.myfitai.app.domain.safety.SafetyDecision
 import com.myfitai.app.domain.safety.SafetyRuleCode
+import com.myfitai.app.domain.time.SystemTimeProvider
+import com.myfitai.app.domain.time.TimeProvider
 import com.myfitai.app.notifications.NotificationScheduler
 import java.time.LocalDate
 
@@ -15,24 +17,46 @@ class WeeklyPlanAiJobHandler(
     private val notifications: NotificationScheduler,
     private val plans: MealPlanRepository,
     private val automaticScheduler: NutritionPlanScheduler,
+    private val time: TimeProvider = SystemTimeProvider,
 ) : AiJobHandler {
     override suspend fun execute(profileId: Long, jobKey: String, params: Data): AiJobOutcome {
-        val automatic = params.getBoolean(KEY_AUTOMATIC, false)
+        val hasRangeStart = params.keyValueMap.containsKey(KEY_RANGE_START_EPOCH_DAY)
+        val hasRangeEnd = params.keyValueMap.containsKey(KEY_RANGE_END_EPOCH_DAY)
+        val hasRange = hasRangeStart || hasRangeEnd
+        val automatic = params.getBoolean(KEY_AUTOMATIC, false) && !hasRange
         return try {
-            val weekEpochDay = params.getLong(KEY_WEEK_START_EPOCH_DAY, Long.MIN_VALUE)
-                .takeIf { it != Long.MIN_VALUE }
-                ?: jobKey.toLongOrNull()
-                ?: return AiJobOutcome.Failure("Settimana non valida")
-            val weekStart = LocalDate.ofEpochDay(weekEpochDay)
-            val periodWeeks = params.getInt(KEY_PERIOD_WEEKS, 1).coerceIn(1, 4)
+            val result = if (hasRange) {
+                if (!hasRangeStart || !hasRangeEnd) return invalidRangeOutcome()
+                val range = try {
+                    DateRange(
+                        LocalDate.ofEpochDay(params.getLong(KEY_RANGE_START_EPOCH_DAY, Long.MIN_VALUE)),
+                        LocalDate.ofEpochDay(params.getLong(KEY_RANGE_END_EPOCH_DAY, Long.MIN_VALUE)),
+                    )
+                } catch (_: RuntimeException) {
+                    return invalidRangeOutcome()
+                }
+                if (range.dayCount > NutritionPlanPeriod.MAX_RANGE_DAYS) {
+                    return AiJobOutcome.Failure("L'intervallo selezionato non può superare 31 giorni.")
+                }
+                if (range.start.isBefore(time.today())) {
+                    return AiJobOutcome.Failure("L'intervallo deve iniziare da oggi o da una data futura.")
+                }
+                service.generateRange(profileId, range)
+            } else {
+                val weekEpochDay = params.getLong(KEY_WEEK_START_EPOCH_DAY, Long.MIN_VALUE)
+                    .takeIf { it != Long.MIN_VALUE }
+                    ?: jobKey.toLongOrNull()
+                    ?: return AiJobOutcome.Failure("Settimana non valida")
+                val weekStart = LocalDate.ofEpochDay(weekEpochDay)
+                val periodWeeks = params.getInt(KEY_PERIOD_WEEKS, 1).coerceIn(1, 4)
 
-            if (automatic && plans.getPlanForWeek(profileId, weekStart.toEpochDay()) != null) {
-                return AiJobOutcome.Success(
-                    Data.Builder().putString("message", "Piano già presente: generazione automatica non necessaria.").build()
-                )
+                if (automatic && plans.getPlanForWeek(profileId, weekStart.toEpochDay()) != null) {
+                    return AiJobOutcome.Success(
+                        Data.Builder().putString("message", "Piano già presente: generazione automatica non necessaria.").build()
+                    )
+                }
+                service.generatePeriod(profileId, weekStart, periodWeeks)
             }
-
-            val result = service.generatePeriod(profileId, weekStart, periodWeeks)
             runCatching { notifications.refresh() }
             AiJobOutcome.Success(
                 Data.Builder()
@@ -44,6 +68,12 @@ class WeeklyPlanAiJobHandler(
             AiJobOutcome.Failure(PlanPrerequisites.message(error.prerequisites))
         } catch (error: NutritionPlanGenerationService.GenerationException.PastWeek) {
             AiJobOutcome.Failure("Le settimane concluse sono storico in sola lettura.")
+        } catch (error: NutritionPlanGenerationService.GenerationException.InvalidRange) {
+            when (error.code) {
+                "DATE_RANGE_TOO_LONG" -> AiJobOutcome.Failure("L'intervallo selezionato non può superare 31 giorni.")
+                "DATE_RANGE_START_BEFORE_TODAY" -> AiJobOutcome.Failure("L'intervallo deve iniziare da oggi o da una data futura.")
+                else -> invalidRangeOutcome()
+            }
         } catch (error: NutritionPlanGenerationService.GenerationException.ConstraintsUnreadable) {
             unreadableConstraintsOutcome(error)
         } catch (error: NutritionPlanGenerationService.GenerationException.SafetyBlocked) {
@@ -82,7 +112,11 @@ class WeeklyPlanAiJobHandler(
         }
 
         const val KEY_WEEK_START_EPOCH_DAY = "week_start_epoch_day"
+        const val KEY_RANGE_START_EPOCH_DAY = "range_start_epoch_day"
+        const val KEY_RANGE_END_EPOCH_DAY = "range_end_epoch_day"
         const val KEY_AUTOMATIC = "automatic_generation"
         const val KEY_PERIOD_WEEKS = "period_weeks"
+
+        private fun invalidRangeOutcome() = AiJobOutcome.Failure("L'intervallo di date selezionato non è valido.")
     }
 }

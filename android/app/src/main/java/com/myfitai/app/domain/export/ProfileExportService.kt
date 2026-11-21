@@ -7,6 +7,7 @@ import com.myfitai.app.data.local.MyFitAiDatabase
 import com.myfitai.app.data.local.entity.MealPlanEntity
 import com.myfitai.app.data.repository.toFoodIngredient
 import com.myfitai.app.data.repository.toFoodMeal
+import com.myfitai.app.data.repository.MealPlanRepository
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.domain.body.BodyProportionEngine
 import com.myfitai.app.domain.calculation.LocalCalculationEngine
@@ -20,6 +21,7 @@ import com.myfitai.app.domain.food.FoodPlanDay
 import com.myfitai.app.domain.food.FoodPlanSnapshot
 import com.myfitai.app.domain.food.FoodPlanVersion
 import com.myfitai.app.domain.food.FoodSupplement
+import com.myfitai.app.domain.food.DateRange
 import com.myfitai.app.domain.food.NutritionPlanPeriod
 import com.myfitai.app.domain.food.catalog.AssetFoodCatalogLoader
 import com.myfitai.app.domain.food.catalog.FoodCatalogLoader
@@ -36,10 +38,30 @@ import kotlinx.coroutines.flow.first
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
+import java.io.OutputStream
 import java.time.LocalDate
 import java.time.Period
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+
+/** Persisted plan provenance retained for each date in a range PDF. */
+data class PlanRangePdfDay(
+    val day: FoodPlanDay,
+    val planId: Long,
+    val planWeekStartEpochDay: Long,
+    val versionId: Long,
+    val versionNumber: Int,
+)
+
+/** Immutable preview used both for the coverage confirmation and the final PDF write. */
+data class PreparedPlanRangePdf(
+    val profileId: Long,
+    val profileName: String,
+    val range: DateRange,
+    val days: List<PlanRangePdfDay>,
+    val uncoveredDates: List<LocalDate>,
+    val shoppingItems: List<ShoppingListEngine.Item>,
+)
 
 class ProfileExportService(
     context: Context,
@@ -58,6 +80,71 @@ class ProfileExportService(
 
     private val appContext = context.applicationContext
     private val catalogLoader: FoodCatalogLoader = foodCatalogLoader ?: AssetFoodCatalogLoader(appContext.assets)
+    private val mealPlanRepository = MealPlanRepository(db)
+
+    /** Loads the exact effective plan days for an inclusive export range without using generation settings. */
+    suspend fun preparePlanRangePdf(range: DateRange): PreparedPlanRangePdf {
+        activeProfileStore.refreshFromPersistence()
+        val profileId = activeProfileStore.currentIdOrNull() ?: error("Nessun profilo attivo")
+        return preparePlanRangePdf(profileId, range)
+    }
+
+    /** Re-reads a previously previewed profile without following a later active-profile switch. */
+    suspend fun preparePlanRangePdf(profileId: Long, range: DateRange): PreparedPlanRangePdf {
+        require(profileId > 0) { "Profilo non valido" }
+        require(range.dayCount <= NutritionPlanPeriod.MAX_RANGE_DAYS) { "DATE_RANGE_TOO_LONG" }
+        val profile = db.userProfileDao().get(profileId) ?: error("Profilo non disponibile")
+        val read = mealPlanRepository.loadRangeDays(profileId, range)
+        val days = read.days.map { item ->
+            PlanRangePdfDay(
+                day = item.day,
+                planId = item.planId,
+                planWeekStartEpochDay = item.planWeekStartEpochDay,
+                versionId = item.versionId,
+                versionNumber = item.versionNumber,
+            )
+        }
+        val shoppingItems = if (days.isEmpty()) {
+            emptyList()
+        } else {
+            val first = days.first()
+            // Use only persisted ingredient quantities here: range days can originate from different catalog versions.
+            val selectedDays = FoodPlanSnapshot(
+                planId = first.planId,
+                profileId = profileId,
+                weekStartEpochDay = NutritionPlanPeriod.monday(range.start).toEpochDay(),
+                version = FoodPlanVersion(
+                    id = first.versionId,
+                    versionNumber = first.versionNumber,
+                    createdAtEpochMillis = 0L,
+                    source = "EXPORT_RANGE",
+                    reason = null,
+                    targetKcal = null,
+                    targetProteinG = null,
+                    targetCarbsG = null,
+                    targetFatG = null,
+                    days = days.map { it.day },
+                    catalogVersion = null,
+                ),
+            )
+            ShoppingListEngine.aggregate(selectedDays)
+        }
+        return PreparedPlanRangePdf(
+            profileId = profileId,
+            profileName = profile.name,
+            range = range,
+            days = days,
+            uncoveredDates = read.uncoveredEpochDays.map(LocalDate::ofEpochDay),
+            shoppingItems = shoppingItems,
+        )
+    }
+
+    /** Writes only after the caller has obtained a user-selected SAF destination. */
+    fun writePreparedPlanRangePdf(prepared: PreparedPlanRangePdf, output: OutputStream) {
+        require(prepared.range.dayCount <= NutritionPlanPeriod.MAX_RANGE_DAYS) { "DATE_RANGE_TOO_LONG" }
+        require(prepared.days.isNotEmpty()) { "NO_PLANNED_DAYS" }
+        PdfExportRenderer(appContext).writePlanRangeReport(output, prepared)
+    }
 
     suspend fun export(format: Format): ExportedFile {
         activeProfileStore.refreshFromPersistence()

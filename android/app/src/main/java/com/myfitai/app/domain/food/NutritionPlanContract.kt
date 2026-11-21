@@ -15,7 +15,7 @@ object NutritionPlanContract {
           "type":"object","additionalProperties":false,
           "properties":{
             "weekStartEpochDay":{"type":"integer"},
-             "days":{"type":"array","minItems":1,"maxItems":28,"items":{
+             "days":{"type":"array","minItems":1,"maxItems":${NutritionPlanPeriod.MAX_RANGE_DAYS},"items":{
               "type":"object","additionalProperties":false,
               "properties":{
                 "dateEpochDay":{"type":"integer"},"totalKcal":{"type":"integer"},"proteinG":{"type":"number"},"carbsG":{"type":"number"},"fatG":{"type":"number"},
@@ -146,16 +146,22 @@ object NutritionPlanContract {
         dietaryProfile: DietaryProfile = DietaryProfile(),
         tolerance: Double = NutritionBusinessValidator.DEFAULT_TOLERANCE,
         targetBelowOnly: Boolean = false,
-        expectedFirstDate: LocalDate = expectedWeekStart,
-        expectedPeriodWeeks: Int = 1,
+        expectedFirstDate: LocalDate? = null,
+        expectedPeriodWeeks: Int? = null,
         maintenanceCeilingKcal: Double? = null,
+        expectedDateRange: DateRange? = null,
     ): Result<Unit> = validateBusinessAssessed(
         response, expectedWeekStart, targets, sportsMode, enforceWeeklyVariety, mealsPerDay, dailyTargets,
         dietaryProfile, tolerance, targetBelowOnly, expectedFirstDate, expectedPeriodWeeks,
-        maintenanceCeilingKcal,
+        maintenanceCeilingKcal, expectedDateRange = expectedDateRange,
     ).map { }
 
-    /** Same gate as [validateBusiness], returning the accepted [NutritionPlanAssessment.Assessment] (attempt = business attempt index). */
+    /**
+     * Same gate as [validateBusiness], returning the accepted [NutritionPlanAssessment.Assessment] (attempt = business attempt index).
+     * Without [expectedDateRange] the legacy week path applies unchanged (first date defaults to [expectedWeekStart],
+     * weeks to 1). With it, the plan must cover exactly that range (at most [NutritionPlanPeriod.MAX_RANGE_DAYS] days)
+     * and any week parameter passed must describe the same request ([NutritionPlanPeriod.requireCoherentLegacyParams]).
+     */
     fun validateBusinessAssessed(
         response: Response,
         expectedWeekStart: LocalDate,
@@ -167,20 +173,33 @@ object NutritionPlanContract {
         dietaryProfile: DietaryProfile = DietaryProfile(),
         tolerance: Double = NutritionBusinessValidator.DEFAULT_TOLERANCE,
         targetBelowOnly: Boolean = false,
-        expectedFirstDate: LocalDate = expectedWeekStart,
-        expectedPeriodWeeks: Int = 1,
+        expectedFirstDate: LocalDate? = null,
+        expectedPeriodWeeks: Int? = null,
         // A deficit-oriented plan must never reach maintenance expenditure,
         // even when it falls within the target's percentage tolerance.
         maintenanceCeilingKcal: Double? = null,
         attempt: Int = 0,
+        expectedDateRange: DateRange? = null,
     ): Result<NutritionPlanAssessment.Assessment> = runCatching {
         require(maintenanceCeilingKcal == null || (maintenanceCeilingKcal.isFinite() && maintenanceCeilingKcal > 0.0)) {
             "MAINTENANCE_CEILING_INVALID"
         }
-        require(response.weekStartEpochDay == expectedWeekStart.toEpochDay()) { "WEEK_START_MISMATCH" }
-        val expectedLastDate = expectedWeekStart.plusWeeks(expectedPeriodWeeks.toLong()).minusDays(1)
-        require(!expectedFirstDate.isBefore(expectedWeekStart) && !expectedFirstDate.isAfter(expectedLastDate)) { "GENERATION_START_INVALID" }
-        val expectedDates = NutritionPlanPeriod.dates(expectedWeekStart, expectedPeriodWeeks, expectedFirstDate)
+        val expectedDateList = if (expectedDateRange == null) {
+            // Legacy week path: same checks, order and W anchor as before the range contract (MFP1 == MFP2).
+            val firstDate = expectedFirstDate ?: expectedWeekStart
+            val periodWeeks = expectedPeriodWeeks ?: 1
+            require(response.weekStartEpochDay == expectedWeekStart.toEpochDay()) { "WEEK_START_MISMATCH" }
+            val expectedLastDate = expectedWeekStart.plusWeeks(periodWeeks.toLong()).minusDays(1)
+            require(!firstDate.isBefore(expectedWeekStart) && !firstDate.isAfter(expectedLastDate)) { "GENERATION_START_INVALID" }
+            NutritionPlanPeriod.dates(expectedWeekStart, periodWeeks, firstDate)
+        } else {
+            // Range path: caller-side checks first, then the response. W is the Monday of the first requested date.
+            NutritionPlanPeriod.requireGenerationLength(expectedDateRange)
+            NutritionPlanPeriod.requireCoherentLegacyParams(expectedDateRange, expectedWeekStart, expectedFirstDate, expectedPeriodWeeks)
+            require(response.weekStartEpochDay == expectedWeekStart.toEpochDay()) { "WEEK_START_MISMATCH" }
+            NutritionPlanPeriod.dates(expectedDateRange)
+        }
+        val expectedDates = expectedDateList
             .map(LocalDate::toEpochDay)
             .toSet()
         require(response.days.size == expectedDates.size) { "WEEK_MUST_HAVE_${expectedDates.size}_DAYS" }

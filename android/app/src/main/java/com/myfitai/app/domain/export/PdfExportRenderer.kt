@@ -19,9 +19,11 @@ import com.myfitai.app.domain.calculation.WeightReading
 import com.myfitai.app.domain.food.FoodMeal
 import com.myfitai.app.domain.food.FoodPlanDay
 import com.myfitai.app.domain.food.FoodPlanSnapshot
+import com.myfitai.app.domain.food.NutritionPlanPeriod
 import com.myfitai.app.domain.shopping.ShoppingListEngine
 import java.io.File
 import java.io.FileOutputStream
+import java.io.OutputStream
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -658,6 +660,227 @@ internal class PdfExportRenderer(context: Context) {
 
         FileOutputStream(file).use(document::writeTo)
         document.close()
+    }
+
+    /** Renders the selected inclusive period, including uncovered dates and per-day plan provenance. */
+    fun writePlanRangeReport(output: OutputStream, input: PreparedPlanRangePdf) {
+        require(input.days.isNotEmpty()) { "NO_PLANNED_DAYS" }
+        require(input.range.dayCount <= NutritionPlanPeriod.MAX_RANGE_DAYS) { "DATE_RANGE_TOO_LONG" }
+
+        val days = input.days.sortedBy { it.day.dateEpochDay }
+        val missingDates = input.uncoveredDates.sorted()
+        val rangeLabel = "${formatDate(input.range.start)} - ${formatDate(input.range.endInclusive)}"
+        val document = PdfDocument()
+        var pageNumber = 1
+
+        try {
+            // Copertina con intervallo inclusivo e copertura effettiva letta dal piano persistito.
+            run {
+                val page = startPage(document, pageNumber)
+                val canvas = page.canvas
+                drawHeader(canvas, "Piano alimentare per periodo", "$rangeLabel | ${input.profileName}")
+
+                drawCard(canvas, pageMargin, 150f, contentWidth, 142f)
+                text(canvas, "Intervallo selezionato", contentLeft, 181f, typography.sectionSecondary, palette.text, true)
+                text(canvas, "${input.range.start} - ${input.range.endInclusive} (date incluse)", contentLeft, 209f, typography.body, palette.muted)
+                text(canvas, "Copertura del piano", contentLeft, 245f, typography.sectionSecondary, palette.text, true)
+                text(canvas, "${days.size} di ${input.range.dayCount} giornate pianificate", contentLeft, 272f, typography.bodyLarge, palette.accent, true)
+
+                drawCard(canvas, pageMargin, 310f, contentWidth, 200f, palette.panelSecondary)
+                text(canvas, "Date senza piano (${missingDates.size})", contentLeft, 342f, typography.sectionSecondary, palette.text, true)
+                val missingText = if (missingDates.isEmpty()) {
+                    "Nessuna: copertura completa nell'intervallo selezionato."
+                } else {
+                    missingDates.joinToString(", ") { it.format(DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.ITALIAN)) }
+                }
+                wrapLines(missingText, contentWidth - 36f, typography.captionCompact, false).forEachIndexed { index, line ->
+                    text(canvas, line, contentLeft, 369f + index * geometry.bodyLineHeightCompact, typography.captionCompact, palette.muted)
+                }
+                text(
+                    canvas,
+                    "Ogni giornata pianificata indica il piano e la versione da cui proviene.",
+                    contentLeft,
+                    478f,
+                    typography.captionCompact,
+                    palette.muted,
+                )
+                drawFooter(canvas, pageNumber, "Piano periodo")
+                document.finishPage(page)
+                pageNumber++
+            }
+
+            // Mantiene l'impaginazione e i contenuti del PDF settimanale, con provenienza esplicita per ogni giorno.
+            days.forEach { sourceDay ->
+                val day = sourceDay.day
+                val mealPages = paginateMeals(day.meals.sortedBy(FoodMeal::sortOrder))
+                mealPages.forEachIndexed { partIndex, meals ->
+                    val page = startPage(document, pageNumber)
+                    val canvas = page.canvas
+                    val sourceWeek = LocalDate.ofEpochDay(sourceDay.planWeekStartEpochDay)
+                        .format(DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.ITALIAN))
+                    val target = listOfNotNull(
+                        day.targetKcal?.let { "$it kcal" },
+                        day.targetProteinG?.let { "P ${formatGram(it)}" },
+                        day.targetCarbsG?.let { "C ${formatGram(it)}" },
+                        day.targetFatG?.let { "F ${formatGram(it)}" },
+                    ).joinToString(" / ").ifBlank { "non indicato" }
+                    val provenance = "${input.range.start}–${input.range.endInclusive} | piano #${sourceDay.planId}, settimana $sourceWeek, versione ${sourceDay.versionNumber} (ID ${sourceDay.versionId}) · target $target"
+                    drawHeader(canvas, "Piano alimentare per periodo", provenance)
+                    drawDayCard(canvas, day, meals, 150f, partIndex > 0)
+                    drawFooter(canvas, pageNumber, "Piano periodo")
+                    document.finishPage(page)
+                    pageNumber++
+                }
+            }
+
+            // Lista della spesa derivata soltanto dai giorni pianificati compresi nell'intervallo.
+            val groups = input.shoppingItems.groupBy { it.category }.toSortedMap(String.CASE_INSENSITIVE_ORDER)
+            var page = startPage(document, pageNumber)
+            var canvas = page.canvas
+            drawHeader(canvas, "Lista della spesa", "Aggregata dai giorni pianificati dell'intervallo")
+            if (groups.isEmpty()) {
+                drawCard(canvas, pageMargin, 150f, contentWidth, 72f, palette.panelSecondary)
+                text(canvas, "Nessun ingrediente da aggregare", contentLeft, 188f, typography.bodyCompact, palette.muted)
+            } else {
+                data class ShoppingRowFragment(
+                    val item: ShoppingListEngine.Item,
+                    val lines: List<String>,
+                    val firstFragment: Boolean,
+                    val height: Float,
+                )
+
+                var column = 0
+                val columnX = floatArrayOf(geometry.shoppingColumnLeftX, geometry.shoppingColumnRightX)
+                val columnWidth = geometry.shoppingColumnWidth
+                val columnBottom = FloatArray(geometry.shoppingColumnCount) { geometry.shoppingColumnStartY }
+
+                fun finishShoppingPage() {
+                    drawFooter(canvas, pageNumber, "Piano periodo")
+                    document.finishPage(page)
+                    pageNumber++
+                    page = startPage(document, pageNumber)
+                    canvas = page.canvas
+                    drawHeader(canvas, "Lista della spesa", "Continua")
+                    column = 0
+                    columnBottom.indices.forEach { columnBottom[it] = geometry.shoppingColumnStartY }
+                }
+
+                fun nextShoppingColumn() {
+                    column++
+                    if (column >= geometry.shoppingColumnCount) finishShoppingPage()
+                }
+
+                fun shoppingItemHeight(lineCount: Int): Float = max(
+                    geometry.shoppingItemMinHeight,
+                    lineCount * geometry.shoppingItemTextLineHeight + geometry.shoppingItemVerticalPadding,
+                )
+
+                groups.forEach { (category, items) ->
+                    val rows = items.map { item -> item to wrapLines(item.name, 135f, typography.captionCompact, false) }
+                    var itemIndex = 0
+                    var lineOffset = 0
+                    var categoryContinuation = false
+
+                    while (itemIndex < rows.size) {
+                        val categoryHeaderFootprint = geometry.shoppingCategoryHeaderHeight + geometry.shoppingCategoryHeaderBottomGap
+                        var availableHeight = geometry.shoppingColumnBottomLimit - columnBottom[column]
+                        val minimumBlockHeight = categoryHeaderFootprint + geometry.shoppingItemMinHeight
+                        if (availableHeight < minimumBlockHeight) {
+                            nextShoppingColumn()
+                            availableHeight = geometry.shoppingColumnBottomLimit - columnBottom[column]
+                        }
+                        check(availableHeight >= minimumBlockHeight) { "PDF_SHOPPING_COLUMN_TOO_SHORT" }
+
+                        val rowSpace = availableHeight - categoryHeaderFootprint
+                        val fragments = mutableListOf<ShoppingRowFragment>()
+                        var rowsHeight = 0f
+                        while (itemIndex < rows.size) {
+                            val (item, lines) = rows[itemIndex]
+                            val remainingLineCount = lines.size - lineOffset
+                            val itemHeight = shoppingItemHeight(remainingLineCount)
+                            val remainingRowSpace = rowSpace - rowsHeight
+
+                            if (itemHeight <= remainingRowSpace) {
+                                fragments += ShoppingRowFragment(
+                                    item = item,
+                                    lines = lines.subList(lineOffset, lines.size),
+                                    firstFragment = lineOffset == 0,
+                                    height = itemHeight,
+                                )
+                                rowsHeight += itemHeight
+                                itemIndex++
+                                lineOffset = 0
+                            } else if (fragments.isEmpty() && remainingLineCount > 0) {
+                                // An unusually tall single row is split by wrapped text lines instead of crossing the footer.
+                                val lineCount = ((remainingRowSpace - geometry.shoppingItemVerticalPadding) /
+                                    geometry.shoppingItemTextLineHeight).toInt()
+                                    .coerceAtLeast(1)
+                                    .coerceAtMost(remainingLineCount)
+                                val nextLineOffset = lineOffset + lineCount
+                                val fragmentHeight = shoppingItemHeight(lineCount)
+                                fragments += ShoppingRowFragment(
+                                    item = item,
+                                    lines = lines.subList(lineOffset, nextLineOffset),
+                                    firstFragment = lineOffset == 0,
+                                    height = fragmentHeight,
+                                )
+                                rowsHeight += fragmentHeight
+                                if (nextLineOffset == lines.size) {
+                                    itemIndex++
+                                    lineOffset = 0
+                                } else {
+                                    lineOffset = nextLineOffset
+                                }
+                            } else {
+                                break
+                            }
+                        }
+
+                        if (fragments.isEmpty()) {
+                            nextShoppingColumn()
+                            continue
+                        }
+
+                        val x = columnX[column]
+                        val y = columnBottom[column]
+                        val cardHeight = categoryHeaderFootprint + rowsHeight - geometry.shoppingCategoryBottomPadding
+                        drawCard(canvas, x, y, columnWidth, cardHeight)
+                        text(
+                            canvas,
+                            category.uppercase(Locale.ITALIAN) + if (categoryContinuation) " (continua)" else "",
+                            x + geometry.shoppingCategoryHorizontalInset,
+                            y + geometry.shoppingCategoryTitleBaseline,
+                            typography.summary,
+                            palette.accent,
+                            true,
+                        )
+                        var rowY = y + categoryHeaderFootprint
+                        fragments.forEach { fragment ->
+                            if (fragment.firstFragment) {
+                                drawCheckbox(canvas, x + geometry.shoppingCategoryHorizontalInset, rowY - geometry.shoppingCheckboxVerticalOffset)
+                            }
+                            fragment.lines.forEachIndexed { lineIndex, line ->
+                                text(canvas, line, x + geometry.shoppingItemTextHorizontalInset, rowY + lineIndex * geometry.shoppingItemTextLineHeight, typography.captionCompact, palette.text)
+                            }
+                            if (fragment.firstFragment) {
+                                text(canvas, fragment.item.displayQuantity(), x + columnWidth - geometry.shoppingQuantityHorizontalInset, rowY, typography.captionCompact, palette.text, true, alignRight = true)
+                            }
+                            rowY += fragment.height
+                        }
+                        columnBottom[column] = y + categoryHeaderFootprint + rowsHeight + geometry.shoppingRowGap
+                        categoryContinuation = true
+
+                        if (itemIndex < rows.size) nextShoppingColumn()
+                    }
+                }
+            }
+
+            drawFooter(canvas, pageNumber, "Piano periodo")
+            document.finishPage(page)
+            document.writeTo(output)
+        } finally {
+            document.close()
+        }
     }
 
     internal fun paginateMeals(meals: List<FoodMeal>, availableHeight: Float = 555f): List<List<FoodMeal>> {

@@ -79,6 +79,8 @@ class NutritionPlanGenerationService(
         class SafetyChanged : GenerationException("SAFETY_PROFILE_CHANGED")
         /** The weekly plan snapshot changed while the provider was working; the caller may retry from latest. */
         class StalePlan : GenerationException("PLAN_SNAPSHOT_STALE")
+        /** Invalid explicit range; the code is stable and contains no profile or provider data. */
+        class InvalidRange(val code: String) : GenerationException(code)
         class InvalidAiOutput(message: String) : GenerationException(message)
     }
 
@@ -130,6 +132,36 @@ class NutritionPlanGenerationService(
         val today = time.today()
         if (NutritionPlanPeriod.isEntirelyPast(monday, periodWeeks, today)) throw GenerationException.PastWeek()
         val generationStart = NutritionPlanPeriod.generationStart(monday, today)
+        return generatePlan(profileId, monday, periodWeeks, generationStart)
+    }
+
+    /** Generates only [range] and atomically appends one version per touched Monday. */
+    suspend fun generateRange(profileId: Long, range: DateRange): Result {
+        try {
+            NutritionPlanPeriod.requireGenerationLength(range)
+        } catch (error: IllegalArgumentException) {
+            throw GenerationException.InvalidRange(error.message ?: "DATE_RANGE_INVALID")
+        }
+        if (range.start.isBefore(time.today())) {
+            throw GenerationException.InvalidRange("DATE_RANGE_START_BEFORE_TODAY")
+        }
+        return generatePlan(
+            profileId = profileId,
+            monday = NutritionPlanPeriod.monday(range.start),
+            periodWeeks = NutritionPlanPeriod.calendarWeeksSpanned(range),
+            generationStart = range.start,
+            explicitRange = range,
+        )
+    }
+
+    private suspend fun generatePlan(
+        profileId: Long,
+        monday: LocalDate,
+        periodWeeks: Int,
+        generationStart: LocalDate,
+        explicitRange: DateRange? = null,
+    ): Result {
+        val dateRange = explicitRange ?: DateRange(generationStart, NutritionPlanPeriod.endDate(monday, periodWeeks))
 
         val profile = profiles.get(profileId)
             ?: throw GenerationException.NeedsInput(listOf(PlanPrerequisite.PROFILE))
@@ -141,6 +173,8 @@ class NutritionPlanGenerationService(
         PlanPrerequisites.ageGate(profile, snapshot.latestWeightKg, time.today())?.let { throw GenerationException.NeedsInput(it) }
 
         val calc = snapshot.calculation
+        // Capture every touched week's CAS token before reading plan context or starting provider work.
+        val rangeBaseline = explicitRange?.let { plans.loadRangeBaseline(profileId, it) }
         val initialPlanSnapshot = plans.loadGenerationSnapshot(profileId, monday.toEpochDay())
         val existingPlan = initialPlanSnapshot.snapshot
         val existingTargets = existingPlan?.version
@@ -239,16 +273,28 @@ class NutritionPlanGenerationService(
                 add(CalorieRecoveryEngine.Credit(entry.id, occurredOn, remainingKcal))
             }
         }
-        val recoveryPlan = CalorieRecoveryEngine.plan(
-            monday = monday,
-            today = time.today(),
-            baseTargets = baseTargets,
-            weightKg = weightKg,
-            goal = resolvedGoal,
-            credits = credits,
-            periodWeeks = periodWeeks,
-            minimumKcal = safetyMinimumKcal,
-        )
+        val recoveryPlan = if (explicitRange != null) {
+            CalorieRecoveryEngine.plan(
+                dateRange = explicitRange,
+                today = time.today(),
+                baseTargets = baseTargets,
+                weightKg = weightKg,
+                goal = resolvedGoal,
+                credits = credits,
+                minimumKcal = safetyMinimumKcal,
+            )
+        } else {
+            CalorieRecoveryEngine.plan(
+                monday = monday,
+                today = time.today(),
+                baseTargets = baseTargets,
+                weightKg = weightKg,
+                goal = resolvedGoal,
+                credits = credits,
+                periodWeeks = periodWeeks,
+                minimumKcal = safetyMinimumKcal,
+            )
+        }
         val dailyTargets = recoveryPlan.days
             .filter { !it.date.isBefore(generationStart) }
             .associate { it.date.toEpochDay() to it.targets }
@@ -309,7 +355,7 @@ class NutritionPlanGenerationService(
         val catalogPlan = if (useFoodCatalogPlan()) foodCatalogLoader?.load()?.let { FoodCatalogPlanBuilder(it) } else null
         val userPrompt = buildUserPrompt(
             monday = monday,
-            generationStart = generationStart,
+            dateRange = dateRange,
             periodWeeks = periodWeeks,
             profile = profile,
             baseTargets = baseTargets,
@@ -362,6 +408,7 @@ class NutritionPlanGenerationService(
             sportsMode = sportsMode,
             mealsPerDay = mealsPerDay,
             maintenanceCeilingKcal = maintenanceCeilingKcal,
+            requestedRange = explicitRange,
         )
         var attemptIndex = 0
         // MFP2: motivi (codice stabile + dettaglio breve) dei tentativi di business rifiutati prima di quello accettato.
@@ -410,6 +457,7 @@ class NutritionPlanGenerationService(
                         expectedPeriodWeeks = periodWeeks,
                         maintenanceCeilingKcal = maintenanceCeilingKcal,
                         attempt = currentAttempt,
+                        expectedDateRange = explicitRange,
                     ).getOrThrow()
                     validateSafetyBounds(response)
                     // Integrity and macros are informative (persisted in appValidation): they never block.
@@ -454,8 +502,12 @@ class NutritionPlanGenerationService(
         )
         val integrityWithVariety = integrity.copy(warnings = integrity.warnings + varietyReport.issues())
 
-        val existing = plans.getPlanForWeek(profileId, monday.toEpochDay())
-        val reviewReason = if (existing == null) {
+        val hasExistingPlan = if (rangeBaseline != null) {
+            rangeBaseline.effectiveWeeks.values.any { it != null }
+        } else {
+            plans.getPlanForWeek(profileId, monday.toEpochDay()) != null
+        }
+        val reviewReason = if (!hasExistingPlan) {
             PlanReviewPolicy.Reason.NEW_WEEKLY_PLAN
         } else {
             PlanReviewPolicy.Reason.FULL_REGENERATION
@@ -571,17 +623,36 @@ class NutritionPlanGenerationService(
         )
 
         val (planId, versionId) = try {
-            plans.createOrAppendVersion(
-                profileId = profileId,
-                weekStartEpochDay = monday.toEpochDay(),
-                createdAtEpochMillis = time.nowEpochMillis(),
-                draft = draft,
-                expectedProfileSnapshot = safetyBaseline.profileSnapshot,
-                revalidateBeforeWrite = {
-                    revalidateSafetyBeforePersist(profileId, monday, response, safetyBaseline)
-                },
-                expectedPlanBaseline = initialPlanSnapshot.baseline,
-            )
+            if (explicitRange != null) {
+                val commits = plans.commitRangeVersions(
+                    profileId = profileId,
+                    range = explicitRange,
+                    createdAtEpochMillis = time.nowEpochMillis(),
+                    draft = draft,
+                    expectedProfileSnapshot = safetyBaseline.profileSnapshot,
+                    expectedBaseline = checkNotNull(rangeBaseline),
+                    revalidateBeforeWrite = {
+                        if (explicitRange.start.isBefore(time.today())) {
+                            throw GenerationException.InvalidRange("DATE_RANGE_START_BEFORE_TODAY")
+                        }
+                        revalidateSafetyBeforePersist(profileId, monday, response, safetyBaseline)
+                    },
+                )
+                val first = commits.firstOrNull() ?: error("PLAN_RANGE_COMMIT_EMPTY")
+                first.planId to first.versionId
+            } else {
+                plans.createOrAppendVersion(
+                    profileId = profileId,
+                    weekStartEpochDay = monday.toEpochDay(),
+                    createdAtEpochMillis = time.nowEpochMillis(),
+                    draft = draft,
+                    expectedProfileSnapshot = safetyBaseline.profileSnapshot,
+                    revalidateBeforeWrite = {
+                        revalidateSafetyBeforePersist(profileId, monday, response, safetyBaseline)
+                    },
+                    expectedPlanBaseline = initialPlanSnapshot.baseline,
+                )
+            }
         } catch (_: MealPlanRepository.PlanSnapshotChanged) {
             throw GenerationException.StalePlan()
         } catch (_: MealPlanRepository.SafetySnapshotChanged) {
@@ -688,7 +759,7 @@ class NutritionPlanGenerationService(
 
     private fun buildUserPrompt(
         monday: LocalDate,
-        generationStart: LocalDate,
+        dateRange: DateRange,
         periodWeeks: Int,
         profile: com.myfitai.app.data.local.entity.UserProfileEntity,
         baseTargets: NutritionBusinessValidator.Targets,
@@ -713,7 +784,8 @@ class NutritionPlanGenerationService(
         appendLine("GOAL_OUTCOME_POLICY:If GOAL_OUTCOMES is present, treat it as user-confirmed evidence about previous periods. Evaluate whether meal composition, timing, adherence context and practical strategy should improve in the new plan. Do not diagnose, infer causality, override local targets, or change calories/macros because of an outcome alone. A NOT_REACHED result is a signal to review the plan and context, not permission for punitive restriction.")
         appendLine("REC:${recoveryPlan.availableBeforeKcal}|${recoveryPlan.plannedRecoveryKcal}|${recoveryPlan.remainingKcal}|10")
         appendLine("MEALS_PER_DAY:$mealsPerDay")
-        appendLine("GENERATE_FROM:${generationStart.toEpochDay()}|${NutritionPlanPeriod.endDate(monday, periodWeeks).toEpochDay()}")
+        appendLine("GENERATE_FROM:${dateRange.start.toEpochDay()}|${dateRange.endInclusive.toEpochDay()}")
+        appendLine("REQUESTED_DATES:${dateRange.dayCount}")
         appendLine("PERIOD_WEEKS:$periodWeeks")
         appendLine("SM:${sportsMode.name}")
         appendLine("U:${AiUserContext.profileLine(profile, time.today(), snapshot.latestWeightKg)}")
@@ -802,6 +874,7 @@ class NutritionPlanGenerationService(
 MyFitAI NutritionPlanAgent. Your ONLY operational responsibility is generating a complete nutrition plan for the requested period from the authoritative targets and context supplied by the app. Never choose/change the user's goal, interpret progress, or adapt a recorded deviation/cheat; dedicated agents own those tasks. Output exactly one JSON object with exactly one property named `data`; `data` must be a string beginning with the exact line `MFP1`, followed by the pipe records below. Do not output `schema`, `status`, metadata or any other property. Do not omit `MFP1`, do not replace it with another header, do not use markdown, and do not add text outside records.
 ${AiUserContext.INPUT_DESCRIPTION}
 ${NutritionPlanCompactContract.PROTOCOL}
+DATE COVERAGE: Generate exactly one day for every date in GENERATE_FROM, inclusive, and no other dates. Do not round either endpoint to a whole week; the first or last calendar week may be partial. The app rejects missing, extra, duplicate, or out-of-range dates locally.
  E is the estimated maintenance expenditure (TDEE), or ? for a goal without a mandatory deficit. It is NOT the diet target: T and each TD are already adjusted for the user's chosen goal. If E is numeric, ensure the sum of meals plus caloric supplements is strictly BELOW E for every generated day; never fill all maintenance calories merely because the target tolerance permits it. T is the base local target. Every TD line is the AUTHORITATIVE target for that specific epoch day and overrides T for that day. CENTER the actual daily sum of meals and caloric supplements on that day's TD kcal AND protein/carbs/fat targets, ideally within 1% where practicable. The ±3% in T/TD is ONLY the app's outer acceptance margin for rounding and food composition, NOT bonus calories or a range to saturate. Do not systematically aim at its upper bound. The goal-specific deficit or surplus is already included in TD: never apply a second calorie adjustment. REC is informational only: available|planned|remaining|maxDailyPercent. Never calculate, increase or decrease recovery yourself and never compensate beyond TD. B0/B/BT order is weightKg|bodyFatPct|muscleMassKg|skeletalMuscleKg|bodyWaterPct|visceralFat and means baseline/current/recent-trend-delta. BM0/BM/BMD/BMT order is chest|waist|abdomen|shoulders|glutes|hips|armLeft|armRight|thighLeft|thighRight|calfLeft|calfRight and means baseline/current/previous-delta/recent-trend-delta. `?` means unavailable. Body/BIA signals are contextual only: use them jointly to inform food choice, distribution and timing, never to autonomously alter calories/macros, diagnose disease, dehydration, edema or muscle loss, or infer causality from one reading. Weight alone must never drive a dietary change. GOAL_OUTCOMES in the personal context are user-confirmed results for previous plan periods. Review them as evidence about strategy and adherence context for the new plan, but never treat them as causal proof, diagnosis, or permission to override local targets or apply punitive restriction.
 DP format is A=allergies;I=intolerances;E=excludedFoods;D=dislikedFoods;P=preferredFoods;S=dietStyle;N=free-text food preferences. A, I, E and S are HARD constraints: never output an ingredient that violates them. D, P and N are SOFT preferences only. Read them and follow them when possible, but never change, stretch or bypass the authoritative calorie and macro targets to satisfy them. Requests in N, including quantities, frequency goals and weekly objectives such as "pizza once per week" or "gelato twice per week", are suggestions rather than mandatory requirements. Include or distribute them only when they fit naturally within the daily TD targets; otherwise reduce, replace or omit them and keep the targets exact. Do not weaken, reinterpret or override hard constraints. The app independently validates every ingredient and rejects violations.
  Rules: generate exactly the dates in GENERATE_FROM (inclusive) through its end date, with exactly MEALS_PER_DAY meals per day. The complete record order is W, then for each requested date exactly one D followed by its M records, each meal's I records, and optional S/H records; after the final requested date emit exactly ONE V record as the final line. Never emit V inside a day or more than once. Use distinct meal slots with practical timing unless the supplied schedule requires different names. Never use `|` or line breaks inside a text field. All kcal/macros are numeric. D totals are transport hints only: the app recalculates authoritative daily kcal/protein/carbs/fat from all M records plus caloric S records. Therefore calculate the SUM of M+S values before emitting each D, refine portions to match that day's exact TD kcal and macros as closely as possible, and use the supplied tolerance only as a last-resort acceptance bound; do not rely on D values to satisfy the target. For every meal/supplement, kcal must remain coherent with 4*proteinG + 4*carbsG + 9*fatG within the app integrity tolerance. Count oils, dressings and caloric drinks. Protein powder is optional and its kcal/macros count. Creatine only when SM=SPORT and always 0 kcal/P/C/F. H may give cautious hydration guidance. No punitive compensation. V notes <= 8 words. Preparation must be a brief, precise and truthful sequence of steps using only ingredients explicitly present in the following I records. Every edible ingredient, condiment and caloric beverage used in the recipe must have its own I record with numeric quantity, unit and displayDose; never mention an omitted food in preparation (for example gruyere/gruviera must be an ingredient if used). Do not claim cooking, marinating, blending, melting or seasoning steps that are not supported by the listed ingredients. Skeleton: MFP1 -> W -> all requested dates (D -> M/I/S/H) -> V exactly once.

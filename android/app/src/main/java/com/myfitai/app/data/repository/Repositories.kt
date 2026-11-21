@@ -4,7 +4,12 @@ import androidx.room.withTransaction
 import com.myfitai.app.data.local.MyFitAiDatabase
 import com.myfitai.app.data.local.dao.LegacyMealAlarmId
 import com.myfitai.app.data.local.entity.*
+import com.myfitai.app.domain.food.DateRange
+import com.myfitai.app.domain.food.FoodPlanDay
+import com.myfitai.app.domain.food.FoodPlanSnapshot
 import com.myfitai.app.domain.food.FoodSupplement
+import com.myfitai.app.domain.food.NutritionPlanPeriod
+import com.myfitai.app.domain.food.PlanRangePartitioner
 import com.myfitai.app.domain.safety.HealthDeclaration
 import com.myfitai.app.domain.safety.HealthDeclarationCodec
 import com.myfitai.app.domain.safety.HealthDeclarationDecodeResult
@@ -255,6 +260,39 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
 
     class SafetySnapshotChanged : IllegalStateException("SAFETY_PROFILE_CHANGED")
     class PlanSnapshotChanged : IllegalStateException("PLAN_SNAPSHOT_STALE")
+
+    /** Per-week CAS token of [range]: Monday epoch day -> plan/version baseline, captured in one read transaction. */
+    data class RangePlanBaseline(
+        val profileId: Long,
+        val range: DateRange,
+        val weeks: Map<Long, PlanVersionBaseline>,
+        /** Plan/version actually selected for each week by the same resolver used for range reads. */
+        val effectiveWeeks: Map<Long, PlanVersionBaseline?> = weeks.mapValues { (_, baseline) ->
+            baseline.takeIf { it.planId != null && it.versionId != null }
+        },
+    )
+
+    data class RangeWeekCommit(val weekStartEpochDay: Long, val planId: Long, val versionId: Long)
+
+    /**
+     * Effective day of [dateEpochDay] with its provenance. [planWeekStartEpochDay] may precede the date's own week
+     * when the day comes from a legacy multi-week plan stored on its first Monday.
+     */
+    data class RangePlanDay(
+        val dateEpochDay: Long,
+        val planId: Long,
+        val planWeekStartEpochDay: Long,
+        val versionId: Long,
+        val versionNumber: Int,
+        val day: FoodPlanDay,
+    )
+
+    /** At most one entry per range date, ascending; [uncoveredEpochDays] lists the range dates with no planned day. */
+    data class RangePlanDays(
+        val range: DateRange,
+        val days: List<RangePlanDay>,
+        val uncoveredEpochDays: List<Long>,
+    )
 
     data class CheatPlanCommit(
         val cheatId: Long,
@@ -509,6 +547,174 @@ class MealPlanRepository(private val db: MyFitAiDatabase) {
             baseline = PlanVersionBaseline(plan?.id, version?.id),
             snapshot = if (plan != null && version != null) loadPlanSnapshot(profileId, plan, version, dao) else null,
         )
+    }
+
+    /** Captures the plan/version token of every week touched by [range] in one Room read transaction. */
+    suspend fun loadRangeBaseline(profileId: Long, range: DateRange): RangePlanBaseline = db.withTransaction {
+        val dao = db.mealPlanDao()
+        val weekStarts = PlanRangePartitioner.weekStarts(range)
+        RangePlanBaseline(
+            profileId = profileId,
+            range = range,
+            weeks = weekStarts.associateWith { currentWeekBaseline(profileId, it, dao) },
+            effectiveWeeks = currentEffectiveWeekBaselines(profileId, weekStarts, dao),
+        )
+    }
+
+    /**
+     * Range regeneration replaces the touched weeks: every touched Monday gets a new version (its week row is created
+     * when missing) holding only the range days of that week; previous versions are never modified or deleted.
+     * Profile, safety and the baselines of all weeks are rechecked in one transaction, as in [createOrAppendVersion]:
+     * every version is appended or none is.
+     *
+     * @throws PlanRangePartitioner.CoverageMismatch or [IllegalArgumentException] before any database access
+     * @throws SafetySnapshotChanged / [PlanSnapshotChanged] with no write
+     */
+    suspend fun commitRangeVersions(
+        profileId: Long,
+        range: DateRange,
+        createdAtEpochMillis: Long,
+        draft: PlanVersionDraft,
+        expectedProfileSnapshot: UserProfileEntity,
+        expectedBaseline: RangePlanBaseline,
+        revalidateBeforeWrite: suspend () -> Unit,
+        validateBeforeAppend: suspend () -> Unit = {},
+    ): List<RangeWeekCommit> {
+        val weeks = PlanRangePartitioner.partition(range, draft)
+        val expectedWeekStarts = weeks.mapTo(hashSetOf()) { it.weekStartEpochDay }
+        require(
+            expectedBaseline.profileId == profileId && expectedBaseline.range == range &&
+                expectedBaseline.weeks.keys == expectedWeekStarts &&
+                expectedBaseline.effectiveWeeks.keys == expectedWeekStarts,
+        ) { "PLAN_RANGE_BASELINE_MISMATCH" }
+        return db.withTransaction {
+            if (expectedProfileSnapshot.id != profileId || db.userProfileDao().get(profileId) != expectedProfileSnapshot) {
+                throw SafetySnapshotChanged()
+            }
+            revalidateBeforeWrite()
+            if (db.userProfileDao().get(profileId) != expectedProfileSnapshot) throw SafetySnapshotChanged()
+            val dao = db.mealPlanDao()
+            val currentEffectiveWeeks = currentEffectiveWeekBaselines(
+                profileId,
+                weeks.map { it.weekStartEpochDay },
+                dao,
+            )
+            // Both the exact row and the resolver-selected source are compared before the first write.
+            // A stale intermediate or legacy-backed week leaves every week untouched.
+            weeks.forEach { week ->
+                val weekStart = week.weekStartEpochDay
+                if (
+                    currentWeekBaseline(profileId, weekStart, dao) != expectedBaseline.weeks[weekStart] ||
+                    currentEffectiveWeeks[weekStart] != expectedBaseline.effectiveWeeks[weekStart]
+                ) {
+                    throw PlanSnapshotChanged()
+                }
+            }
+            validateBeforeAppend()
+            weeks.map { week ->
+                val planId = dao.getPlanForWeek(profileId, week.weekStartEpochDay)?.id
+                    ?: dao.insertPlan(
+                        MealPlanEntity(
+                            profileId = profileId,
+                            createdAtEpochMillis = createdAtEpochMillis,
+                            weekStartEpochDay = week.weekStartEpochDay,
+                            status = "ACTIVE",
+                        ),
+                    )
+                RangeWeekCommit(
+                    weekStartEpochDay = week.weekStartEpochDay,
+                    planId = planId,
+                    versionId = appendVersionInTransaction(profileId, planId, createdAtEpochMillis, week.draft, dao),
+                )
+            }
+        }
+    }
+
+    /**
+     * Effective day of every date in [range] with its plan/version provenance, using the Food/Home week rule
+     * ([MealPlanWeekSelector]): the exact week plan first, otherwise the newest multi-week plan covering that week.
+     * One read transaction keeps all weeks consistent.
+     */
+    suspend fun loadRangeDays(profileId: Long, range: DateRange): RangePlanDays = db.withTransaction {
+        val dao = db.mealPlanDao()
+        val planWeekStarts = dao.getPlans(profileId).map { it.weekStartEpochDay }
+        val latestByPlanWeek = HashMap<Long, FoodPlanSnapshot?>()
+        val selectedByWeek = HashMap<Long, FoodPlanSnapshot?>()
+        val days = mutableListOf<RangePlanDay>()
+        val uncovered = mutableListOf<Long>()
+        NutritionPlanPeriod.dates(range).forEach { date ->
+            val epochDay = date.toEpochDay()
+            val week = NutritionPlanPeriod.monday(date).toEpochDay()
+            if (week !in selectedByWeek) {
+                selectedByWeek[week] = MealPlanWeekSelector.pick(
+                    planWeekStarts = planWeekStarts,
+                    weekStartEpochDay = week,
+                    load = { start ->
+                        if (start !in latestByPlanWeek) latestByPlanWeek[start] = latestSnapshotInTransaction(profileId, start, dao)
+                        latestByPlanWeek[start]
+                    },
+                    coveredDays = { snapshot -> snapshot.version.days.map { it.dateEpochDay } },
+                )
+            }
+            val snapshot = selectedByWeek[week]
+            val day = snapshot?.version?.days?.firstOrNull { it.dateEpochDay == epochDay }
+            if (snapshot != null && day != null) {
+                days += RangePlanDay(
+                    dateEpochDay = epochDay,
+                    planId = snapshot.planId,
+                    planWeekStartEpochDay = snapshot.weekStartEpochDay,
+                    versionId = snapshot.version.id,
+                    versionNumber = snapshot.version.versionNumber,
+                    day = day,
+                )
+            } else {
+                uncovered += epochDay
+            }
+        }
+        RangePlanDays(range, days, uncovered)
+    }
+
+    private suspend fun currentWeekBaseline(
+        profileId: Long,
+        weekStartEpochDay: Long,
+        dao: com.myfitai.app.data.local.dao.MealPlanDao,
+    ): PlanVersionBaseline {
+        val plan = dao.getPlanForWeek(profileId, weekStartEpochDay)
+        return PlanVersionBaseline(plan?.id, plan?.let { dao.getLatestVersion(profileId, it.id) }?.id)
+    }
+
+    /** Captures the exact plans selected for the requested weeks by the Food/Home resolver rule. */
+    private suspend fun currentEffectiveWeekBaselines(
+        profileId: Long,
+        weekStarts: List<Long>,
+        dao: com.myfitai.app.data.local.dao.MealPlanDao,
+    ): Map<Long, PlanVersionBaseline?> {
+        val planWeekStarts = dao.getPlans(profileId).map { it.weekStartEpochDay }
+        val latestByPlanWeek = HashMap<Long, FoodPlanSnapshot?>()
+        return weekStarts.associateWith { weekStart ->
+            val snapshot = MealPlanWeekSelector.pick(
+                planWeekStarts = planWeekStarts,
+                weekStartEpochDay = weekStart,
+                load = { start ->
+                    if (start !in latestByPlanWeek) {
+                        latestByPlanWeek[start] = latestSnapshotInTransaction(profileId, start, dao)
+                    }
+                    latestByPlanWeek[start]
+                },
+                coveredDays = { selected -> selected.version.days.map { it.dateEpochDay } },
+            )
+            snapshot?.let { PlanVersionBaseline(it.planId, it.version.id) }
+        }
+    }
+
+    private suspend fun latestSnapshotInTransaction(
+        profileId: Long,
+        weekStartEpochDay: Long,
+        dao: com.myfitai.app.data.local.dao.MealPlanDao,
+    ): FoodPlanSnapshot? {
+        val plan = dao.getPlanForWeek(profileId, weekStartEpochDay) ?: return null
+        val version = dao.getLatestVersion(profileId, plan.id) ?: return null
+        return loadPlanSnapshot(profileId, plan, version, dao)
     }
 
     private suspend fun loadPlanSnapshot(

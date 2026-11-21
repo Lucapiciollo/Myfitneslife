@@ -77,6 +77,14 @@
     <string name="food_plan_historical_banner">Piano storico in sola lettura · le modifiche del profilo non rigenerano questa settimana</string>
     <string name="food_plan_empty_current">Nessun piano per questa settimana. Genera un piano per vedere pasti, quantità e valori nutrizionali.</string>
     <string name="food_plan_empty_history">Nessun piano salvato per questa settimana storica.</string>
+    <string name="food_plan_range_select_action">Scegli date</string>
+    <string name="food_plan_range_picker_title">Seleziona il periodo del piano</string>
+    <string name="food_plan_range_confirm_title">Conferma periodo</string>
+    <string name="food_plan_range_confirm_message">Generare il piano dal %1$s al %2$s inclusi (%3$d giorni)?</string>
+    <string name="food_plan_range_confirm_action">Continua</string>
+    <string name="food_plan_range_ai_action">La generazione del piano alimentare per il periodo selezionato</string>
+    <string name="food_plan_range_invalid_title">Intervallo non valido</string>
+    <string name="food_plan_range_invalid_message">Scegli un intervallo che inizi da oggi o da una data futura, termini entro la fine di questo mese e non superi 31 giorni.</string>
     <string name="measurement_group_arms">Braccia</string>
     <string name="measurement_group_thighs">Cosce</string>
     <string name="measurement_group_calves">Polpacci</string>

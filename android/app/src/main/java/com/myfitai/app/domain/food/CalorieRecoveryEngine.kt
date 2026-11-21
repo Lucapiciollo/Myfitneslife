@@ -35,7 +35,7 @@ object CalorieRecoveryEngine {
         val availableBeforeKcal: Int,
         val plannedRecoveryKcal: Int,
         val remainingKcal: Int,
-        /** Exact amount allocated in this generated week for each source cheat. */
+        /** Exact amount allocated in this generated period (the requested inclusive dates) for each source cheat. */
         val plannedBySource: Map<Long, Int>,
         val days: List<DayPlan>,
     )
@@ -55,11 +55,38 @@ object CalorieRecoveryEngine {
          */
         minimumKcal: Double = SafetyCalorieFloor.MIN_KCAL_OTHER,
     ): Result {
+        requireInputs(baseTargets, weightKg, minimumKcal)
+        return allocate(NutritionPlanPeriod.dates(monday, periodWeeks), today, baseTargets, credits, minimumKcal)
+    }
+
+    /** Range-first entry point: exactly the requested inclusive dates, at most [NutritionPlanPeriod.MAX_RANGE_DAYS]. */
+    fun plan(
+        dateRange: DateRange,
+        today: LocalDate,
+        baseTargets: NutritionBusinessValidator.Targets,
+        weightKg: Double,
+        goal: LocalCalculationEngine.Goal,
+        credits: List<Credit>,
+        minimumKcal: Double = SafetyCalorieFloor.MIN_KCAL_OTHER,
+    ): Result {
+        requireInputs(baseTargets, weightKg, minimumKcal)
+        NutritionPlanPeriod.requireGenerationLength(dateRange)
+        return allocate(NutritionPlanPeriod.dates(dateRange), today, baseTargets, credits, minimumKcal)
+    }
+
+    private fun requireInputs(baseTargets: NutritionBusinessValidator.Targets, weightKg: Double, minimumKcal: Double) {
         require(baseTargets.kcal > 0.0)
         require(weightKg > 0.0)
         require(minimumKcal.isFinite() && minimumKcal >= 0.0) { "MINIMUM_KCAL_INVALID" }
+    }
 
-        val dates = NutritionPlanPeriod.dates(monday, periodWeeks)
+    private fun allocate(
+        dates: List<LocalDate>,
+        today: LocalDate,
+        baseTargets: NutritionBusinessValidator.Targets,
+        credits: List<Credit>,
+        minimumKcal: Double,
+    ): Result {
         val validCredits = credits
             .filter { it.kcal > 0 }
             .sortedWith(compareBy<Credit> { it.occurredOn }.thenBy { it.sourceId })

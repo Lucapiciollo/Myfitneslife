@@ -143,6 +143,10 @@ interface MealPlanDao {
     @Query("SELECT * FROM meal_plans WHERE profileId = :profileId ORDER BY weekStartEpochDay DESC, id DESC")
     fun observePlans(profileId: Long): Flow<List<MealPlanEntity>>
 
+    /** One-shot read of [observePlans], safe inside a Room transaction. */
+    @Query("SELECT * FROM meal_plans WHERE profileId = :profileId ORDER BY weekStartEpochDay DESC, id DESC")
+    suspend fun getPlans(profileId: Long): List<MealPlanEntity>
+
     @Query("SELECT v.id AS versionId, m.id AS mealId FROM meals m INNER JOIN meal_plan_days d ON d.id = m.dayId INNER JOIN meal_plan_versions v ON v.id = d.versionId INNER JOIN meal_plans p ON p.id = v.planId WHERE p.profileId = :profileId")
     suspend fun getLegacyMealAlarmIds(profileId: Long): List<LegacyMealAlarmId>
 
