@@ -5,6 +5,7 @@ import com.myfitai.app.ai.AiRuntimeService
 import com.myfitai.app.ai.AiSettingsStore
 import com.myfitai.app.data.local.MyFitAiDatabase
 import com.myfitai.app.data.profile.ActiveProfileStore
+import com.myfitai.app.data.profile.ActivityLevelFactorsStore
 import com.myfitai.app.data.profile.MealCountPreferences
 import com.myfitai.app.data.profile.NutritionPlanUpdatePreferences
 import com.myfitai.app.data.profile.NutritionPlanSchedulePreferences
@@ -61,6 +62,7 @@ class AppDataContainer private constructor(context: Context) {
     private val db = MyFitAiDatabase.getInstance(appContext)
 
     val activeProfileStore = ActiveProfileStore(appContext)
+    val activityLevelFactors = ActivityLevelFactorsStore(appContext)
     val mealCountPreferences = MealCountPreferences(appContext)
     val nutritionPlanUpdatePreferences = NutritionPlanUpdatePreferences(appContext)
     val nutritionPlanSchedulePreferences = NutritionPlanSchedulePreferences(appContext)
@@ -96,6 +98,7 @@ class AppDataContainer private constructor(context: Context) {
         bia = biaRepository,
         bodyMeasurements = bodyMeasurementRepository,
         activeProfileStore = activeProfileStore,
+        activityLevelFactors = activityLevelFactors,
     )
 
     val personalResponseService = PersonalResponseService(
@@ -204,6 +207,7 @@ class AppDataContainer private constructor(context: Context) {
         activeProfileStore = activeProfileStore,
         foodConsumptions = foodConsumptionRepository,
         profiles = userProfileRepository,
+        activityLevelFactors = activityLevelFactors,
     )
 
     val aiJobRegistry by lazy {
@@ -249,6 +253,7 @@ class AppDataContainer private constructor(context: Context) {
         biaFrequencyPreferences = biaFrequencyPreferences,
         aiAutomationPreferences = aiAutomationPreferences,
         nutritionPlanUpdatePreferences = nutritionPlanUpdatePreferences,
+        activityLevelFactors = activityLevelFactors,
     )
     val profileBackupService = ProfileBackupService(
         context = appContext,

@@ -57,6 +57,8 @@ import com.myfitai.app.ui.widgets.TargetProgressRingView
 import com.myfitai.app.ui.widgets.BodyMeasurementTrendView
 import com.myfitai.app.ui.motion.UiMotion
 import kotlinx.coroutines.launch
+import java.text.DecimalFormat
+import java.text.DecimalFormatSymbols
 import java.time.Instant
 import java.time.LocalDate
 import java.time.DayOfWeek
@@ -83,6 +85,7 @@ class HomeActivity : BaseShellActivity() {
             bodyExpectationGoalRepository = data.bodyExpectationGoalRepository,
             nutritionPlanSchedulePreferences = data.nutritionPlanSchedulePreferences,
             activeProfileStore = data.activeProfileStore,
+            activityLevelFactors = data.activityLevelFactors,
             profileCalculationService = data.profileCalculationService,
         )
     }
@@ -410,6 +413,7 @@ class HomeActivity : BaseShellActivity() {
 
     override fun onResume() {
         super.onResume()
+        viewModel.refreshActivityLevelFactors()
         renderPlanUpdateNotice()
         renderAiConfigurationNotice()
         renderBiaDueNotice(viewModel.state.value)
@@ -686,7 +690,13 @@ class HomeActivity : BaseShellActivity() {
         findViewById<View>(R.id.caloriesBiaBmrRow).visibility = if (hasBiaBmr) View.VISIBLE else View.GONE
         findViewById<View>(R.id.caloriesBiaBmrDivider).visibility = if (hasBiaBmr) View.VISIBLE else View.GONE
         findViewById<TextView>(R.id.caloriesTdeeValue).text = kcal(calories.tdee)
-        findViewById<TextView>(R.id.caloriesBaseNoSportValue).text = kcal(calories.baseNoSport)
+        val baseNoSportValue = findViewById<TextView>(R.id.caloriesBaseNoSportValue)
+        val coefficientLabel = calories.sedentaryCoefficient?.let(::formatActivityCoefficient)
+            ?: getString(R.string.dashboard_metric_unavailable)
+        (baseNoSportValue.parent as? ViewGroup)?.getChildAt(0)?.let { label ->
+            (label as? TextView)?.text = getString(R.string.home_ux12_base_no_sport, coefficientLabel)
+        }
+        baseNoSportValue.text = kcal(calories.baseNoSport)
         findViewById<TextView>(R.id.caloriesTargetValue).text = kcal(calories.target)
         val caloriesConsumedText = findViewById<TextView>(R.id.caloriesConsumedText)
         caloriesConsumedText.text = calories.consumedKcal?.let { DisplayNumberFormatter.integer(it) } ?: "-"
@@ -937,6 +947,11 @@ class HomeActivity : BaseShellActivity() {
     }
 
     private fun formatNumber(value: Float): String = DisplayNumberFormatter.decimal(value)
+
+    private fun formatActivityCoefficient(value: Double): String = DecimalFormat(
+        "0.00#",
+        DecimalFormatSymbols.getInstance(Locale.ITALIAN),
+    ).apply { isGroupingUsed = false }.format(value)
 
     private companion object {
         const val LANDSCAPE_GRID_TAG = "home_landscape_grid"

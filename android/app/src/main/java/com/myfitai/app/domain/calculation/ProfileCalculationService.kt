@@ -1,6 +1,7 @@
 package com.myfitai.app.domain.calculation
 
 import com.myfitai.app.data.profile.ActiveProfileStore
+import com.myfitai.app.data.profile.ActivityLevelFactorsStore
 import com.myfitai.app.data.repository.BiaRepository
 import com.myfitai.app.data.repository.BodyMeasurementRepository
 import com.myfitai.app.data.repository.UserProfileRepository
@@ -20,6 +21,7 @@ class ProfileCalculationService(
     private val bia: BiaRepository,
     private val bodyMeasurements: BodyMeasurementRepository,
     private val activeProfileStore: ActiveProfileStore,
+    private val activityLevelFactors: ActivityLevelFactorsStore? = null,
 ) {
 
     data class MetricSnapshot(
@@ -115,6 +117,13 @@ class ProfileCalculationService(
             if (birth.isAfter(today)) null else Period.between(birth, today).years
         }
 
+        val activityLevel = ProfileCalculationMapper.activity(profile.activityLevel)
+        val configuredFactors = activityLevelFactors?.read()
+        val calculationActivityLevel = when {
+            activityLevelFactors == null -> activityLevel
+            configuredFactors != null -> activityLevel
+            else -> null
+        }
         val calculation = LocalCalculationEngine.calculate(
             LocalCalculationEngine.Input(
                 weightKg = weightKg,
@@ -125,9 +134,10 @@ class ProfileCalculationService(
                 bodyFatReferenceWeightKg = katchSource.referenceWeightKg?.toDouble(),
                 bodyFatMeasuredAtEpochMillis = katchSource.measuredAtEpochMillis,
                 bodyFatFallbackReason = katchSource.fallbackReason,
-                activityLevel = ProfileCalculationMapper.activity(profile.activityLevel),
+                activityLevel = calculationActivityLevel,
                 goal = ProfileCalculationMapper.goal(profile.goal),
                 waistCm = latestAvailableWaist?.toDouble(),
+                activityMultiplier = activityLevel?.let { configuredFactors?.get(it) },
             )
         )
 

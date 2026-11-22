@@ -60,6 +60,8 @@ object LocalCalculationEngine {
         val bodyFatMeasuredAtEpochMillis: Long? = null,
         /** Motivo per cui il grasso non e stato usato (BODY_FAT_MISSING / BODY_FAT_TOO_OLD), solo per dichiararlo. */
         val bodyFatFallbackReason: String? = null,
+        /** Coefficiente configurato globalmente; null mantiene il valore storico dell'enum. */
+        val activityMultiplier: Double? = null,
     )
 
     data class Result(
@@ -114,7 +116,13 @@ object LocalCalculationEngine {
 
         val bmrWithMethod = calculateBmr(input, weight, height)
         val bmr = bmrWithMethod?.first
-        val tdee = if (bmr != null && input.activityLevel != null) bmr * input.activityLevel.multiplier else null
+        val activityMultiplier = if (input.activityLevel == null) {
+            null
+        } else {
+            (input.activityMultiplier ?: input.activityLevel.multiplier)
+                .takeIf { it.isFinite() && it in 1.0..2.5 }
+        }
+        val tdee = if (bmr != null && activityMultiplier != null) bmr * activityMultiplier else null
         val unclampedTarget = if (tdee != null && input.goal != null) tdee * goalEnergyFactor(input.goal) else null
         val minimumKcal = if (bmr != null) SafetyCalorieFloor.minimumKcal(bmr, input.biologicalSex) else null
         val clamp = if (unclampedTarget != null && SafetyCalorieFloor.appliesTo(input.goal)) {

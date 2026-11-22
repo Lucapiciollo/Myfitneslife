@@ -9,6 +9,7 @@ import com.myfitai.app.data.local.entity.FoodConsumptionEntity
 import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.data.local.entity.BodyExpectationGoalEntity
 import com.myfitai.app.data.profile.ActiveProfileStore
+import com.myfitai.app.data.profile.ActivityLevelFactorsStore
 import com.myfitai.app.data.profile.NutritionPlanSchedulePreferences
 import com.myfitai.app.data.repository.BiaRepository
 import com.myfitai.app.data.repository.BodyMeasurementRepository
@@ -67,6 +68,7 @@ class HomeViewModel(
     private val bodyExpectationGoalRepository: BodyExpectationGoalRepository,
     private val nutritionPlanSchedulePreferences: NutritionPlanSchedulePreferences,
     private val activeProfileStore: ActiveProfileStore,
+    private val activityLevelFactors: ActivityLevelFactorsStore,
     private val profileCalculationService: ProfileCalculationService,
     private val time: TimeProvider = SystemTimeProvider,
 ) : ViewModel() {
@@ -81,6 +83,8 @@ class HomeViewModel(
         val tdee: Int? = null,
         /** BMR x fattore sedentario: fabbisogno senza sport, mostrato nei dettagli del calcolo. */
         val baseNoSport: Int? = null,
+        /** Coefficiente sedentario globale, usato solo per il riferimento senza sport. */
+        val sedentaryCoefficient: Double? = null,
         val target: Int? = null,
         val goalLabel: String? = null,
         val energyPercent: Int? = null,
@@ -161,6 +165,9 @@ class HomeViewModel(
         }
     }
 
+    private val activityFactorRefresh = MutableStateFlow(0L)
+    private val refreshedSource = combine(source, activityFactorRefresh) { currentSource, _ -> currentSource }
+
     private val upcomingMealsSource = profileAndDay.flatMapLatest { (profileId, _) ->
         if (profileId <= 0L) {
             flowOf<List<NextMealState>>(emptyList())
@@ -211,7 +218,7 @@ class HomeViewModel(
     }
 
     val state: StateFlow<DashboardState> = combine(
-        source,
+        refreshedSource,
         selectedRange,
         upcomingMealsSource,
         recoverySource,
@@ -282,6 +289,11 @@ class HomeViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DashboardState())
 
     fun selectRange(index: Int) { selectedRange.value = index.coerceIn(0, 3) }
+
+    /** Re-reads global activity factors after returning from Settings. */
+    fun refreshActivityLevelFactors() {
+        activityFactorRefresh.value += 1
+    }
 
     fun confirmExpectation(status: String, note: String? = null) {
         val profileId = activeProfileStore.currentIdOrNull() ?: return
@@ -371,6 +383,7 @@ class HomeViewModel(
         val snapshot = profileCalculationService.profileSnapshot(profile.id)
         val calculation = snapshot?.calculation
         val metrics = OperationalNutritionMetrics.calculate(calculation)
+        val sedentaryCoefficient = activityLevelFactors.coefficientFor(LocalCalculationEngine.ActivityLevel.SEDENTARY)
         val tdeeInt = metrics.tdeeKcal?.let { Math.round(it).toInt() }
         val targetInt = metrics.targetKcal?.let { Math.round(it).toInt() }
         val energyPercent = if (tdeeInt != null && targetInt != null && tdeeInt > 0) {
@@ -382,7 +395,8 @@ class HomeViewModel(
             bmr = metrics.bmrKcal?.let { Math.round(it).toInt() },
             biaBmr = latestBia?.bmrKcal?.let { Math.round(it).toInt() },
             tdee = tdeeInt,
-            baseNoSport = com.myfitai.app.domain.display.BaseCalories.withoutSport(metrics.bmrKcal),
+            baseNoSport = com.myfitai.app.domain.display.BaseCalories.withoutSport(metrics.bmrKcal, sedentaryCoefficient),
+            sedentaryCoefficient = sedentaryCoefficient,
             target = targetInt,
             proteinTargetG = metrics.proteinG,
             planTarget = targetInt,
@@ -539,12 +553,26 @@ class HomeViewModel(
         private val bodyExpectationGoalRepository: BodyExpectationGoalRepository,
         private val nutritionPlanSchedulePreferences: NutritionPlanSchedulePreferences,
         private val activeProfileStore: ActiveProfileStore,
+        private val activityLevelFactors: ActivityLevelFactorsStore,
         private val profileCalculationService: ProfileCalculationService,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(HomeViewModel::class.java))
-            return HomeViewModel(profiles, biaRepository, bodyRepository, mealPlanRepository, cheatRepository, recoveryRepository, foodConsumptionRepository, bodyExpectationGoalRepository, nutritionPlanSchedulePreferences, activeProfileStore, profileCalculationService) as T
+            return HomeViewModel(
+                profiles,
+                biaRepository,
+                bodyRepository,
+                mealPlanRepository,
+                cheatRepository,
+                recoveryRepository,
+                foodConsumptionRepository,
+                bodyExpectationGoalRepository,
+                nutritionPlanSchedulePreferences,
+                activeProfileStore,
+                activityLevelFactors,
+                profileCalculationService,
+            ) as T
         }
     }
 }

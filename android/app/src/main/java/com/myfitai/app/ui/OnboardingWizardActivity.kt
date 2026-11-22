@@ -33,6 +33,7 @@ import com.myfitai.app.ai.OpenAiProvider
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.data.profile.NutritionPlanSchedulePreferences
+import com.myfitai.app.domain.calculation.LocalCalculationEngine
 import com.myfitai.app.domain.food.DietaryProfile
 import com.myfitai.app.domain.profile.ActivityLevelChoices
 import com.myfitai.app.domain.profile.ProfileAgeRule
@@ -73,6 +74,9 @@ class OnboardingWizardActivity : AppCompatActivity() {
     private lateinit var validation: TextView
 
     private var profile: UserProfileEntity? = null
+    private var activityFactors: Map<LocalCalculationEngine.ActivityLevel, Double>? = null
+    private var activityChoices: List<ActivityLevelChoices.Choice> = emptyList()
+    private var activityLevelDraft: String? = null
     private var step = 0
     private var saving = false
     private var birthDateEpochDay: Long? = null
@@ -189,6 +193,7 @@ class OnboardingWizardActivity : AppCompatActivity() {
     }
 
     private fun loadProfile(value: UserProfileEntity) {
+        activityLevelDraft = value.activityLevel
         dietaryDraft = DietaryProfile.parse(value.dietaryPreferencesJson)
         birthDateEpochDay = value.birthDateEpochDay
         wakeMinutes = value.wakeTimeMinutes
@@ -231,16 +236,31 @@ class OnboardingWizardActivity : AppCompatActivity() {
         sexInput = dropdown(content, R.string.profile_sex_hint, listOf("Maschio", "Femmina"))
         heightInput = textInput(content, R.string.profile_height_hint, "numberDecimal", singleLine = true)
         weightInput = textInput(content, R.string.profile_weight_hint, "numberDecimal", singleLine = true)
-        // Un valore storico fuori dalle 3 scelte si mostra com'e e resta salvato finche l'utente non ne sceglie un altro.
-        val activityChoices = ActivityLevelChoices.options(resources.getStringArray(R.array.profile_activity_levels).toList(), profile?.activityLevel)
-        activityInput = dropdown(content, R.string.profile_activity_hint, activityChoices, R.string.profile_activity_helper)
+        // read() returns null for a present-but-unreadable table; do not silently substitute defaults.
+        activityFactors = runCatching { data.activityLevelFactors.read() }.getOrNull()
+        activityChoices = ActivityLevelChoices.catalogOptions(
+            resources.getStringArray(R.array.profile_activity_levels).toList(),
+            activityFactors,
+        )
+        activityInput = dropdown(content, R.string.profile_activity_hint, activityChoices.map { it.label })
+        activityInput?.isEnabled = activityFactors != null
+        activityInput?.setOnItemClickListener { _, _, position, _ ->
+            activityChoices.getOrNull(position)?.let { choice ->
+                activityLevelDraft = choice.value
+                (activityInput?.parent as? TextInputLayout)?.helperText = choice.description
+            }
+        }
         goalInput = dropdown(content, R.string.profile_goal_hint, resources.getStringArray(R.array.profile_goals).toList())
         nameInput?.setText(profile?.name.orEmpty())
         birthDateInput?.setText(birthDateEpochDay?.let { LocalDate.ofEpochDay(it).format(formatter) }.orEmpty())
         sexInput?.setText(profile?.biologicalSex.orEmpty(), false)
         heightInput?.setText(profile?.heightCm?.let(::formatNumber).orEmpty())
         weightInput?.setText(profile?.currentWeightKg?.let(::formatNumber).orEmpty())
-        activityInput?.setText(profile?.activityLevel.orEmpty(), false)
+        val selectedActivity = activityLevelDraft ?: profile?.activityLevel
+        activityInput?.setText(ActivityLevelChoices.displayValue(selectedActivity, activityFactors), false)
+        (activityInput?.parent as? TextInputLayout)?.helperText =
+            if (activityFactors == null) getString(R.string.activity_factor_unreadable_profile)
+            else ActivityLevelChoices.descriptionFor(selectedActivity)
         goalInput?.setText(profile?.goal.orEmpty(), false)
         stepContent.addView(card)
     }
@@ -371,7 +391,12 @@ class OnboardingWizardActivity : AppCompatActivity() {
 
     private fun captureCurrentStep() {
         when (step) {
-            0 -> Unit
+            0 -> activityLevelDraft = ActivityLevelChoices.storedValue(
+                displayed = activityInput?.text?.toString(),
+                original = activityLevelDraft ?: profile?.activityLevel,
+                coefficients = activityFactors,
+                choices = activityChoices,
+            )
             1 -> dietaryDraft = DietaryProfile(
                 preferredFoods = DietaryProfile.csv(preferredFoodsInput?.text?.toString()),
                 dislikedFoods = DietaryProfile.csv(dislikedFoodsInput?.text?.toString()),
@@ -403,7 +428,12 @@ class OnboardingWizardActivity : AppCompatActivity() {
             if (sex !in setOf("Maschio", "Femmina")) add(getString(R.string.validation_required_sex))
             if (height == null || height !in 80f..250f) add(getString(R.string.validation_invalid_height))
             if (weight == null || weight !in 20f..400f) add(getString(R.string.validation_invalid_weight))
-            if (activityInput?.text?.toString().orEmpty().isBlank()) add(getString(R.string.validation_required_activity))
+            if (profile == null) {
+                if (activityFactors == null) add(getString(R.string.activity_factor_unreadable_profile))
+                else if (activityInput?.text?.toString().orEmpty().isBlank()) {
+                    add(getString(R.string.validation_required_activity))
+                }
+            }
         }
         if (errors.isEmpty()) return true
         validation.text = errors.joinToString("\n")
@@ -462,7 +492,12 @@ class OnboardingWizardActivity : AppCompatActivity() {
         val height = parseFloat(heightInput?.text?.toString())
         val weight = parseFloat(weightInput?.text?.toString())
         val goal = goalInput?.text?.toString()?.trim()?.takeIf { it.isNotBlank() }
-        val activity = activityInput?.text?.toString()?.trim()?.takeIf { it.isNotBlank() }
+        val activity = ActivityLevelChoices.storedValue(
+            displayed = activityInput?.text?.toString(),
+            original = profile?.activityLevel,
+            coefficients = activityFactors,
+            choices = activityChoices,
+        )
         val existing = profile
         val dietaryJson = dietaryDraft.toJson()
         if (existing == null) {

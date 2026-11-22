@@ -5,6 +5,7 @@ import androidx.core.content.FileProvider
 import androidx.room.withTransaction
 import com.myfitai.app.data.local.MyFitAiDatabase
 import com.myfitai.app.data.local.entity.MealPlanEntity
+import com.myfitai.app.data.profile.ActivityLevelFactorsStore
 import com.myfitai.app.data.repository.toFoodIngredient
 import com.myfitai.app.data.repository.toFoodMeal
 import com.myfitai.app.data.repository.MealPlanRepository
@@ -74,6 +75,7 @@ class ProfileExportService(
     private val aiAutomationPreferences: AiAutomationPreferences? = null,
     private val nutritionPlanUpdatePreferences: NutritionPlanUpdatePreferences? = null,
     foodCatalogLoader: FoodCatalogLoader? = null,
+    private val activityLevelFactors: ActivityLevelFactorsStore? = null,
 ) {
     enum class Format { JSON, CSV_ZIP, PDF, WEEKLY_PLAN_PDF }
     data class ExportedFile(val file: File, val mimeType: String)
@@ -199,6 +201,13 @@ class ProfileExportService(
                 // Stessa regola di Home, Misure e motore: WeightResolver e l'unica fonte del peso corrente.
                 val weightObservations = WeightResolver.observations(bia, body, profileId)
                 val weight = WeightResolver.resolve(weightObservations, profile.currentWeightKg)
+                val configuredActivityFactors = activityLevelFactors?.read()
+                val activityLevel = ProfileCalculationMapper.activity(profile.activityLevel)
+                val calculationActivityLevel = when {
+                    activityLevelFactors == null -> activityLevel
+                    configuredActivityFactors != null -> activityLevel
+                    else -> null
+                }
                 val recordedWeights = weightObservations.map { it.measuredAtEpochMillis to it.valueKg }
                 val latestWaist = body.lastOrNull { it.waistCm != null }?.waistCm
                 val ageYears = profile.birthDateEpochDay?.let { epochDay ->
@@ -212,9 +221,10 @@ class ProfileExportService(
                         ageYears = ageYears,
                         biologicalSex = biologicalSex(profile.biologicalSex),
                         bodyFatPercent = latestBia?.bodyFatPercent?.toDouble(),
-                        activityLevel = ProfileCalculationMapper.activity(profile.activityLevel),
+                        activityLevel = calculationActivityLevel,
                         goal = ProfileCalculationMapper.goal(profile.goal),
                         waistCm = latestWaist?.toDouble(),
+                        activityMultiplier = activityLevel?.let { configuredActivityFactors?.get(it) },
                     )
                 )
                 val file = exportFile(profile.name, "report-profilo", "pdf")
@@ -241,7 +251,13 @@ class ProfileExportService(
                         // UX7: stessa regola di Home/Cibo/review: impronta del piano vs impronta di adesso, flag solo per i piani senza impronta.
                         planUpdatePending = PlanStaleness.isStale(
                             planFingerprint = latestPlan?.version?.inputsFingerprint,
-                            currentFingerprint = PlanFingerprint.of(profile, bia, body, time.today()),
+                            currentFingerprint = PlanFingerprint.of(
+                                profile,
+                                bia,
+                                body,
+                                time.today(),
+                                activityMultiplier = activityLevel?.let { configuredActivityFactors?.get(it) },
+                            ),
                             legacyPendingFlag = nutritionPlanUpdatePreferences?.isPending(profileId) == true,
                         ),
                     )

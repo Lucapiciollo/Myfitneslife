@@ -68,6 +68,11 @@ class FoodPlanActivity : BaseShellActivity() {
     private var suppressDaySelectionMotion = true
     private var lastCalorieReference: FoodPlanViewModel.CalorieReference? = null
 
+    override fun onResume() {
+        super.onResume()
+        viewModel.refreshProfileCalculation()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_food_plan)

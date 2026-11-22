@@ -5,6 +5,29 @@
     android:orientation="vertical"
     android:background="@color/bg_primary">
 
+    <LinearLayout style="@style/Widget.MyFitAI.ScreenHeader">
+        <ImageButton
+            android:id="@+id/backButton"
+            android:layout_width="@dimen/screen_header_icon_size"
+            android:layout_height="@dimen/screen_header_icon_size"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Indietro"
+            android:padding="@dimen/space_8"
+            android:src="@drawable/ic_arrow_back"
+            app:tint="@color/text_primary" />
+        <TextView
+            android:id="@+id/title"
+            style="@style/Text.MyFitAI.ScreenTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="Impostazioni" />
+        <Space
+            android:layout_width="@dimen/screen_header_icon_size"
+            android:layout_height="@dimen/layout_geometry_shim_thickness" />
+    </LinearLayout>
+
     <ScrollView
         android:id="@+id/settingsScroll"
         android:layout_width="match_parent"
@@ -21,12 +44,6 @@
              android:paddingHorizontal="@dimen/space_16"
              android:paddingTop="@dimen/space_8"
              android:paddingBottom="@dimen/space_24">
-
-             <LinearLayout style="@style/Widget.MyFitAI.ScreenHeader">
-                 <ImageButton android:id="@+id/backButton" android:layout_width="@dimen/screen_header_icon_size" android:layout_height="@dimen/screen_header_icon_size" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="Indietro" android:padding="@dimen/space_8" android:src="@drawable/ic_arrow_back" app:tint="@color/text_primary" />
-                 <TextView android:id="@+id/title" style="@style/Text.MyFitAI.ScreenTitle" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:gravity="center" android:text="Impostazioni" />
-                  <Space android:layout_width="@dimen/screen_header_icon_size" android:layout_height="@dimen/layout_geometry_shim_thickness" />
-            </LinearLayout>
 
               <com.google.android.material.card.MaterialCardView
                   android:id="@+id/aiEntriesCard"
@@ -124,9 +141,11 @@
                     <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowAppGuide" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_help_outline" app:srLabel="Come funziona MyFitAI" app:srDescription="@string/settings_desc_guide" />
                      <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowMeasurements" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_person" app:srLabel="Rilevazioni" app:srDescription="@string/settings_desc_measurements" />
                    <View android:layout_width="match_parent" android:layout_height="@dimen/border_width_default" android:background="@color/divider" />
-                   <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowBiaFrequency" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_gear" app:srLabel="Frequenza rilevazione BIA" app:srDescription="Ricorda in Home quando è il momento di ripetere la rilevazione" />
-                   <View android:layout_width="match_parent" android:layout_height="@dimen/border_width_default" android:background="@color/divider" />
-                   <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowMealCount" android:visibility="gone" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="Pasti al giorno" />
+                    <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowBiaFrequency" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_gear" app:srLabel="Frequenza rilevazione BIA" app:srDescription="Ricorda in Home quando è il momento di ripetere la rilevazione" />
+                    <View android:layout_width="match_parent" android:layout_height="@dimen/border_width_default" android:background="@color/divider" />
+                    <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowActivityFactors" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_gear" app:srLabel="@string/settings_row_activity_factors" app:srDescription="@string/settings_row_activity_factors_desc" />
+                    <View android:layout_width="match_parent" android:layout_height="@dimen/border_width_default" android:background="@color/divider" />
+                    <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowMealCount" android:visibility="gone" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_food" app:srLabel="Pasti al giorno" />
                    <TextView android:id="@+id/mealCountValue" style="@style/Text.MyFitAI.Caption" android:visibility="gone" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingStart="@dimen/space_16" android:paddingBottom="@dimen/space_8" android:text="Pasti al giorno" />
                  <com.myfitai.app.ui.widgets.SettingRowView android:id="@+id/rowUnits" android:layout_width="match_parent" android:layout_height="wrap_content" app:srIcon="@drawable/ic_setting_gear" app:srLabel="Unità di misura" />
                   <View android:layout_width="match_parent" android:layout_height="@dimen/border_width_default" android:background="@color/divider" />
@@ -197,6 +216,318 @@
              </com.google.android.material.card.MaterialCardView>
 
             </LinearLayout>
+    </ScrollView>
+
+    <ScrollView
+        android:id="@+id/activityFactorsScroll"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:fillViewport="true"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:id="@+id/activityFactorsContent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="@dimen/space_16"
+            android:paddingTop="@dimen/space_8"
+            android:paddingBottom="@dimen/space_24">
+
+            <TextView
+                style="@style/Text.MyFitAI.CardTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/activity_factors_formula" />
+
+            <TextView
+                style="@style/Text.MyFitAI.SettingsDescription"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_8"
+                android:background="@drawable/bg_panel_tonal"
+                android:padding="@dimen/space_12"
+                android:text="@string/activity_factors_scope" />
+
+            <TextView
+                android:id="@+id/activityFactorsStatus"
+                style="@style/Text.MyFitAI.SettingsDescription"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_8"
+                android:accessibilityLiveRegion="polite"
+                android:visibility="gone" />
+
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.MyFitAI.Card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_12">
+                <LinearLayout
+                    style="@style/Widget.MyFitAI.WhiteCardContent"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+                    <TextView
+                        android:id="@+id/activityFactorNameSedentary"
+                        style="@style/Text.MyFitAI.SettingsLabel"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:labelFor="@id/activityFactorInputSedentary"
+                        android:text="@string/activity_factor_name_sedentary" />
+                    <TextView
+                        style="@style/Text.MyFitAI.SettingsDescription"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_2"
+                        android:text="@string/activity_factor_description_sedentary" />
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/activityFactorLayoutSedentary"
+                        style="@style/Widget.MyFitAI.InputReadableCompact"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_8"
+                        android:hint="@string/activity_factor_input_hint">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/activityFactorInputSedentary"
+                            style="@style/Widget.MyFitAI.InputEditTextReadableCompact"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:imeOptions="actionNext"
+                            android:importantForAutofill="no"
+                            android:inputType="numberDecimal"
+                            android:singleLine="true" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                    <TextView
+                        android:id="@+id/activityFactorStatusSedentary"
+                        style="@style/Text.MyFitAI.SettingsStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_2" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.MyFitAI.Card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_8">
+                <LinearLayout
+                    style="@style/Widget.MyFitAI.WhiteCardContent"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+                    <TextView
+                        android:id="@+id/activityFactorNameLight"
+                        style="@style/Text.MyFitAI.SettingsLabel"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:labelFor="@id/activityFactorInputLight"
+                        android:text="@string/activity_factor_name_light" />
+                    <TextView
+                        style="@style/Text.MyFitAI.SettingsDescription"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_2"
+                        android:text="@string/activity_factor_description_light" />
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/activityFactorLayoutLight"
+                        style="@style/Widget.MyFitAI.InputReadableCompact"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_8"
+                        android:hint="@string/activity_factor_input_hint">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/activityFactorInputLight"
+                            style="@style/Widget.MyFitAI.InputEditTextReadableCompact"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:imeOptions="actionNext"
+                            android:importantForAutofill="no"
+                            android:inputType="numberDecimal"
+                            android:singleLine="true" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                    <TextView
+                        android:id="@+id/activityFactorStatusLight"
+                        style="@style/Text.MyFitAI.SettingsStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_2" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.MyFitAI.Card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_8">
+                <LinearLayout
+                    style="@style/Widget.MyFitAI.WhiteCardContent"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+                    <TextView
+                        android:id="@+id/activityFactorNameModerate"
+                        style="@style/Text.MyFitAI.SettingsLabel"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:labelFor="@id/activityFactorInputModerate"
+                        android:text="@string/activity_factor_name_moderate" />
+                    <TextView
+                        style="@style/Text.MyFitAI.SettingsDescription"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_2"
+                        android:text="@string/activity_factor_description_moderate" />
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/activityFactorLayoutModerate"
+                        style="@style/Widget.MyFitAI.InputReadableCompact"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_8"
+                        android:hint="@string/activity_factor_input_hint">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/activityFactorInputModerate"
+                            style="@style/Widget.MyFitAI.InputEditTextReadableCompact"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:imeOptions="actionNext"
+                            android:importantForAutofill="no"
+                            android:inputType="numberDecimal"
+                            android:singleLine="true" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                    <TextView
+                        android:id="@+id/activityFactorStatusModerate"
+                        style="@style/Text.MyFitAI.SettingsStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_2" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.MyFitAI.Card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_8">
+                <LinearLayout
+                    style="@style/Widget.MyFitAI.WhiteCardContent"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+                    <TextView
+                        android:id="@+id/activityFactorNameVeryActive"
+                        style="@style/Text.MyFitAI.SettingsLabel"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:labelFor="@id/activityFactorInputVeryActive"
+                        android:text="@string/activity_factor_name_very_active" />
+                    <TextView
+                        style="@style/Text.MyFitAI.SettingsDescription"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_2"
+                        android:text="@string/activity_factor_description_very_active" />
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/activityFactorLayoutVeryActive"
+                        style="@style/Widget.MyFitAI.InputReadableCompact"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_8"
+                        android:hint="@string/activity_factor_input_hint">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/activityFactorInputVeryActive"
+                            style="@style/Widget.MyFitAI.InputEditTextReadableCompact"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:imeOptions="actionNext"
+                            android:importantForAutofill="no"
+                            android:inputType="numberDecimal"
+                            android:singleLine="true" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                    <TextView
+                        android:id="@+id/activityFactorStatusVeryActive"
+                        style="@style/Text.MyFitAI.SettingsStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_2" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.MyFitAI.Card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_8">
+                <LinearLayout
+                    style="@style/Widget.MyFitAI.WhiteCardContent"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+                    <TextView
+                        android:id="@+id/activityFactorNameExtreme"
+                        style="@style/Text.MyFitAI.SettingsLabel"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:labelFor="@id/activityFactorInputExtreme"
+                        android:text="@string/activity_factor_name_extreme" />
+                    <TextView
+                        style="@style/Text.MyFitAI.SettingsDescription"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_2"
+                        android:text="@string/activity_factor_description_extreme" />
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/activityFactorLayoutExtreme"
+                        style="@style/Widget.MyFitAI.InputReadableCompact"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_8"
+                        android:hint="@string/activity_factor_input_hint">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/activityFactorInputExtreme"
+                            style="@style/Widget.MyFitAI.InputEditTextReadableCompact"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:imeOptions="actionDone"
+                            android:importantForAutofill="no"
+                            android:inputType="numberDecimal"
+                            android:singleLine="true" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                    <TextView
+                        android:id="@+id/activityFactorStatusExtreme"
+                        style="@style/Text.MyFitAI.SettingsStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_2" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/resetActivityFactorsButton"
+                style="@style/Widget.MyFitAI.Button.Outlined"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/button_secondary_min_height"
+                android:layout_marginTop="@dimen/space_16"
+                android:text="@string/activity_factor_reset" />
+
+            <TextView
+                style="@style/Text.MyFitAI.SettingsDescription"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_4"
+                android:text="@string/activity_factor_reset_draft_help" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/saveActivityFactorsButton"
+                style="@style/Widget.MyFitAI.Button.Primary"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/button_primary_min_height"
+                android:layout_marginTop="@dimen/space_12"
+                android:text="@string/action_save" />
+        </LinearLayout>
     </ScrollView>
 
     <include layout="@layout/view_bottom_navigation" />

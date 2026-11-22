@@ -3,6 +3,8 @@ package com.myfitai.app.domain.calculation
 import com.myfitai.app.data.local.entity.BiaMeasurementEntity
 import com.myfitai.app.data.local.entity.BodyMeasurementEntity
 import com.myfitai.app.data.local.entity.UserProfileEntity
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.security.MessageDigest
 import java.time.LocalDate
 import java.time.ZoneId
@@ -26,6 +28,7 @@ object PlanFingerprint {
         resolvedWeightKg: Float?,
         bodyFatPercent: Float?,
         bodyFatReferenceWeightKg: Float?,
+        activityMultiplier: Double? = null,
     ): String {
         val canonical = listOf(
             VERSION,
@@ -38,7 +41,7 @@ object PlanFingerprint {
             "w=${decimal(resolvedWeightKg)}",
             "bf=${decimal(bodyFatPercent)}",
             "bfw=${decimal(bodyFatReferenceWeightKg)}",
-        ).joinToString("|")
+        ).joinToString("|") + configuredActivityFactor(profile, activityMultiplier)?.let { "|actf=$it" }.orEmpty()
         val digest = MessageDigest.getInstance("SHA-256").digest(canonical.toByteArray(Charsets.UTF_8))
         return digest.joinToString("") { "%02x".format(it) }.take(LENGTH)
     }
@@ -50,10 +53,20 @@ object PlanFingerprint {
         bodyHistory: List<BodyMeasurementEntity>,
         today: LocalDate,
         zone: ZoneId = ZoneId.systemDefault(),
+        activityMultiplier: Double? = null,
     ): String {
         val weight = WeightResolver.resolve(WeightResolver.observations(biaHistory, bodyHistory, profile.id), profile.currentWeightKg)
         val bodyFat = KatchBodyFatSelector.select(biaHistory, today, zone)
-        return of(profile, weight.valueKg, bodyFat.bodyFatPercent, bodyFat.referenceWeightKg)
+        return of(profile, weight.valueKg, bodyFat.bodyFatPercent, bodyFat.referenceWeightKg, activityMultiplier)
+    }
+
+    /** Omits configured defaults so fingerprints created before this field remain current. */
+    private fun configuredActivityFactor(profile: UserProfileEntity, activityMultiplier: Double?): String? {
+        val level = ProfileCalculationMapper.activity(profile.activityLevel) ?: return null
+        val factor = activityMultiplier?.takeIf { it.isFinite() } ?: return null
+        val normalized = BigDecimal.valueOf(factor).setScale(3, RoundingMode.HALF_UP).stripTrailingZeros()
+        val default = BigDecimal.valueOf(level.multiplier).stripTrailingZeros()
+        return normalized.takeUnless { it.compareTo(default) == 0 }?.toPlainString()
     }
 
     private fun text(value: String?): String = value?.trim()?.takeIf { it.isNotEmpty() }?.uppercase(Locale.ROOT) ?: "-"

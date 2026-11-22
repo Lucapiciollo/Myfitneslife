@@ -5,6 +5,7 @@ import com.myfitai.app.ai.AiRuntimeGateway
 import com.myfitai.app.ai.AiStructuredRequest
 import com.myfitai.app.data.local.entity.WeeklyReviewEntity
 import com.myfitai.app.data.profile.ActiveProfileStore
+import com.myfitai.app.data.profile.ActivityLevelFactorsStore
 import com.myfitai.app.data.repository.BiaRepository
 import com.myfitai.app.data.repository.BodyMeasurementRepository
 import com.myfitai.app.data.repository.CheatEntryRepository
@@ -15,6 +16,7 @@ import com.myfitai.app.data.repository.UserProfileRepository
 import com.myfitai.app.domain.ai.AiUserContext
 import com.myfitai.app.domain.ai.UnsupportedClaimGuard
 import com.myfitai.app.domain.calculation.PlanFingerprint
+import com.myfitai.app.domain.calculation.ProfileCalculationMapper
 import com.myfitai.app.domain.calculation.WeightResolver
 import com.myfitai.app.domain.food.FoodPlanMetrics
 import com.myfitai.app.domain.personalization.PersonalResponseService
@@ -38,6 +40,7 @@ class WeeklyReviewService(
     private val time: TimeProvider = SystemTimeProvider,
     private val foodConsumptions: FoodConsumptionRepository? = null,
     private val profiles: UserProfileRepository? = null,
+    private val activityLevelFactors: ActivityLevelFactorsStore? = null,
 ) {
     data class LocalMetrics(
         val weekStart: LocalDate, val weekEnd: LocalDate,
@@ -141,7 +144,11 @@ class WeeklyReviewService(
             muscleMassDeltaSpanDays = muscleDelta?.spanDays,
             waistDeltaSpanDays = waistDelta?.spanDays,
             planInputsFingerprint = plan?.version?.inputsFingerprint,
-            currentInputsFingerprint = profiles?.get(profileId)?.let { PlanFingerprint.of(it, allBia, allBody, time.today(), zone) },
+            currentInputsFingerprint = profiles?.get(profileId)?.let { profile ->
+                val activityMultiplier = ProfileCalculationMapper.activity(profile.activityLevel)
+                    ?.let { activityLevelFactors?.read()?.get(it) }
+                PlanFingerprint.of(profile, allBia, allBody, time.today(), zone, activityMultiplier)
+            },
         )
     }
 

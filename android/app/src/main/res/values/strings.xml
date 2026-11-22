@@ -262,11 +262,54 @@
     <string name="ai_automations_no_profile">Nessun profilo attivo</string>
     <string name="settings_card_ai">Intelligenza artificiale</string>
     <string name="settings_row_ai">Impostazioni IA</string>
+    <string name="settings_title">Impostazioni</string>
     <string name="settings_row_ai_desc">Provider, chiavi, modelli e costi. Per tutti i profili</string>
     <string name="settings_row_ai_status_unconfigured">Non configurata</string>
     <string name="settings_row_automations">Automazioni IA</string>
     <string name="settings_row_automations_desc">Del profilo attivo</string>
     <string name="settings_row_automations_desc_named">Del profilo attivo: %1$s</string>
+    <string name="settings_row_activity_factors">Coefficienti attività</string>
+    <string name="settings_row_activity_factors_desc">Valori TDEE globali per tutti i profili</string>
+    <string name="activity_factors_title">Coefficienti attività</string>
+    <string name="activity_factors_formula">Formula di riferimento: TDEE = BMR × coefficiente</string>
+    <string name="activity_factors_scope">Questi valori sono globali e si applicano a tutti i profili. Le nuove stime cambieranno per tutti; i piani storici resteranno invariati e non verranno rigenerati automaticamente.</string>
+    <string name="activity_factor_name_sedentary">Sedentario</string>
+    <string name="activity_factor_description_sedentary">Lavoro sedentario, pochi passi, nessun allenamento.</string>
+    <string name="activity_factor_name_light">Leggermente attivo</string>
+    <string name="activity_factor_description_light">Vita prevalentemente sedentaria, ma qualche camminata o 1–3 allenamenti leggeri.</string>
+    <string name="activity_factor_name_moderate">Moderatamente attivo</string>
+    <string name="activity_factor_description_moderate">Movimento quotidiano discreto e allenamento regolare, circa 3–5 volte a settimana.</string>
+    <string name="activity_factor_name_very_active">Molto attivo</string>
+    <string name="activity_factor_description_very_active">Lavoro attivo o allenamenti intensi e frequenti.</string>
+    <string name="activity_factor_name_extreme">Estremamente attivo</string>
+    <string name="activity_factor_description_extreme">Attività fisica molto elevata, spesso associata a lavoro fisico impegnativo e allenamenti intensi.</string>
+    <string name="activity_factor_input_hint">Coefficiente</string>
+    <string name="activity_factor_input_cd">Coefficiente attività per %1$s. Da 1,000 a 2,500, massimo 3 decimali.</string>
+    <string name="activity_factor_loading">Lettura dei coefficienti…</string>
+    <string name="activity_factor_load_error">La configurazione salvata non è leggibile. Nessun valore predefinito viene mostrato come già salvato: inserisci i coefficienti o usa Ripristina predefiniti, poi salva e conferma.</string>
+    <string name="activity_factor_unreadable_profile">I coefficienti dell’attività salvati non sono leggibili: il livello non è modificabile. Apri Impostazioni &gt; Coefficienti attività e scegli Ripristina predefiniti.</string>
+    <string name="activity_factor_load_error_reset_draft">La configurazione salvata non è leggibile. I valori predefiniti qui sotto sono solo una bozza; premi Salva e conferma per sostituirla.</string>
+    <string name="activity_factor_save_error">Salvataggio non riuscito. I valori precedenti sono rimasti invariati; riprova.</string>
+    <string name="activity_factor_save_success">Coefficienti globali salvati.</string>
+    <string name="activity_factor_saving">Salvataggio dei coefficienti…</string>
+    <string name="activity_factor_default_value">Predefinito · %1$s</string>
+    <string name="activity_factor_personalized_value">Personalizzato · predefinito %1$s</string>
+    <string name="activity_factor_draft_default_value">Bozza predefinita · %1$s</string>
+    <string name="activity_factor_draft_personalized_value">Bozza personalizzata · predefinito %1$s</string>
+    <string name="activity_factor_default_reference">Riferimento predefinito: %1$s</string>
+    <string name="activity_factor_draft_notice">Modifiche non salvate: le stime resteranno invariate finché non confermi il salvataggio.</string>
+    <string name="activity_factor_reset">Ripristina predefiniti</string>
+    <string name="activity_factor_reset_draft_help">Il ripristino cambia solo questa bozza. I valori diventano effettivi dopo Salva e conferma.</string>
+    <string name="activity_factor_reset_draft_notice">Valori predefiniti caricati nella bozza; non sono ancora salvati.</string>
+    <string name="activity_factor_error_required">Inserisci un coefficiente.</string>
+    <string name="activity_factor_error_format">Usa un numero decimale, con virgola o punto.</string>
+    <string name="activity_factor_error_precision">Usa al massimo 3 cifre decimali.</string>
+    <string name="activity_factor_error_range">Il valore deve essere compreso tra 1,000 e 2,500.</string>
+    <string name="activity_factor_error_less_next">Deve essere minore del coefficiente del livello successivo.</string>
+    <string name="activity_factor_error_greater_previous">Deve essere maggiore del coefficiente del livello precedente.</string>
+    <string name="activity_factor_confirm_title">Salvare i coefficienti per tutti i profili?</string>
+    <string name="activity_factor_confirm_message">Le nuove stime cambieranno per tutti i profili. I piani storici resteranno invariati e non verrà avviata alcuna rigenerazione automatica. Confermi il salvataggio globale?</string>
+    <string name="activity_factor_confirm_save">Salva per tutti</string>
     <string name="dietary_unreadable_title">Le preferenze salvate in precedenza non sono leggibili: la generazione di piani e alternative è bloccata finché non le riesamini</string>
     <string name="dietary_unreadable_raw_label">Testo salvato in precedenza (puoi selezionarlo e copiarlo)</string>
     <string name="dietary_unreadable_copy">Copia testo</string>
@@ -577,7 +620,7 @@
     <string name="weekly_review_ux5b_plan_stale_note">Il piano è precedente al cambio di profilo</string>
     <string name="export_ux5b_plan_stale_note">Piano non aggiornato al profilo attuale</string>
     <!-- UX12: fabbisogno base senza sport -->
-    <string name="home_ux12_base_no_sport">Fabbisogno base, senza sport (BMR × 1,20)</string>
+    <string name="home_ux12_base_no_sport">Fabbisogno base, senza sport (BMR × %1$s)</string>
 
     <!-- ===== FLAG L2: segnalazioni corporee in Progresso. Chiavi = BodyFlagCode.messageKey + _title/_context/_why/_limit (guardia: BodyFlagTextsTest). Linguaggio prudente, mai testi dell'IA. ===== -->
     <string name="body_flag_card_title">Segnali da approfondire</string>
