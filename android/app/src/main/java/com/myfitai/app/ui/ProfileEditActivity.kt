@@ -22,6 +22,7 @@ import com.google.android.material.timepicker.TimeFormat
 import com.myfitai.app.R
 import com.myfitai.app.domain.profile.ProfileAgeRule
 import com.myfitai.app.data.AppDataContainer
+import com.myfitai.app.domain.calculation.LocalCalculationEngine
 import com.myfitai.app.domain.profile.ActivityLevelChoices
 import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.domain.safety.HealthDeclaration
@@ -78,6 +79,9 @@ class ProfileEditActivity : BaseShellActivity() {
     private var wakeTimeMinutes: Int? = null
     private var sleepTimeMinutes: Int? = null
     private var initialRenderedProfileId: Long? = null
+    private var originalActivityLevel: String? = null
+    private var activityFactors: Map<LocalCalculationEngine.ActivityLevel, Double>? = null
+    private var activityChoices: List<ActivityLevelChoices.Choice> = emptyList()
     private var healthDeclarationProfileId: Long? = null
     private var healthDeclarationStatusState = HealthDeclarationUiState.LOADING
     private var healthDeclarationOperationIsSave = false
@@ -417,11 +421,25 @@ class ProfileEditActivity : BaseShellActivity() {
     private fun bindDropdowns() {
         sexInput.setMyFitAiDropdownItems(listOf("Maschio", "Femmina"))
         goalInput.setMyFitAiDropdownItems(resources.getStringArray(R.array.profile_goals).toList())
-        activityInput.setMyFitAiDropdownItems(activityBaseChoices())
-        findViewById<TextInputLayout>(R.id.activityLayout).helperText = getString(R.string.profile_activity_helper)
+        bindActivityChoices()
+        activityInput.setOnItemClickListener { _, _, position, _ ->
+            findViewById<TextInputLayout>(R.id.activityLayout).helperText = activityChoices.getOrNull(position)?.description
+        }
     }
 
     private fun activityBaseChoices(): List<String> = resources.getStringArray(R.array.profile_activity_levels).toList()
+
+    private fun bindActivityChoices(stored: String? = null) {
+        // read() returns null only for a present-but-unreadable table; it must not be treated as defaults.
+        activityFactors = runCatching { data.activityLevelFactors.read() }.getOrNull()
+        activityChoices = ActivityLevelChoices.catalogOptions(activityBaseChoices(), activityFactors)
+        activityInput.setMyFitAiDropdownItems(activityChoices.map { it.label })
+        activityInput.isEnabled = activityFactors != null
+        activityInput.setText(ActivityLevelChoices.displayValue(stored, activityFactors), false)
+        findViewById<TextInputLayout>(R.id.activityLayout).helperText =
+            if (activityFactors == null) getString(R.string.activity_factor_unreadable_profile)
+            else ActivityLevelChoices.descriptionFor(stored)
+    }
 
     private fun bindPickers() {
         birthDateInput.setOnClickListener {
@@ -462,7 +480,12 @@ class ProfileEditActivity : BaseShellActivity() {
             val height = parseFloat(heightInput.text?.toString())
             val weight = parseFloat(weightInput.text?.toString())
             val goal = goalInput.text?.toString()?.trim().orEmpty()
-            val activity = activityInput.text?.toString()?.trim().orEmpty()
+            val activity = ActivityLevelChoices.storedValue(
+                displayed = activityInput.text?.toString(),
+                original = originalActivityLevel,
+                coefficients = activityFactors,
+                choices = activityChoices,
+            )
 
             var valid = true
             fun fail(layoutId: Int, message: String) {
@@ -482,7 +505,11 @@ class ProfileEditActivity : BaseShellActivity() {
                 if (sex !in setOf("Maschio", "Femmina")) fail(R.id.sexLayout, "Seleziona il sesso biologico")
                 if (height == null) fail(R.id.heightLayout, "Inserisci l'altezza")
                 if (weight == null) fail(R.id.weightLayout, "Inserisci il peso iniziale")
-                if (activity.isBlank()) fail(R.id.activityLayout, "Seleziona il livello di attività")
+                if (activityFactors == null) {
+                    fail(R.id.activityLayout, getString(R.string.activity_factor_unreadable_profile))
+                } else if (activity.isNullOrBlank()) {
+                    fail(R.id.activityLayout, "Seleziona il livello di attività")
+                }
             }
             if (!valid) return@setOnClickListener
 
@@ -582,9 +609,8 @@ class ProfileEditActivity : BaseShellActivity() {
         heightInput.setText(profile.heightCm?.let(::formatNumber).orEmpty())
         weightInput.setText(profile.currentWeightKg?.let(::formatNumber).orEmpty())
         goalInput.setText(profile.goal.orEmpty(), false)
-        // Un valore storico fuori dalle 3 scelte si mostra com'e e resta salvato finche l'utente non ne sceglie un altro.
-        activityInput.setMyFitAiDropdownItems(ActivityLevelChoices.options(activityBaseChoices(), profile.activityLevel))
-        activityInput.setText(profile.activityLevel.orEmpty(), false)
+        originalActivityLevel = profile.activityLevel
+        bindActivityChoices(profile.activityLevel)
         wakeTimeMinutes = profile.wakeTimeMinutes
         sleepTimeMinutes = profile.sleepTimeMinutes
         wakeTimeInput.setText(profile.wakeTimeMinutes?.let(::formatMinutes).orEmpty())

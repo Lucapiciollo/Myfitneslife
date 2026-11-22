@@ -10,7 +10,10 @@ import com.myfitai.app.data.repository.FoodConsumptionRepository
 import com.myfitai.app.data.repository.UserProfileRepository
 import com.myfitai.app.data.repository.BiaRepository
 import com.myfitai.app.data.repository.BodyMeasurementRepository
+import com.myfitai.app.data.local.entity.BiaMeasurementEntity
+import com.myfitai.app.data.local.entity.BodyMeasurementEntity
 import com.myfitai.app.data.local.entity.FoodConsumptionEntity
+import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.domain.food.FoodPlanDay
 import com.myfitai.app.domain.food.FoodPlanSnapshot
 import com.myfitai.app.domain.food.DateRange
@@ -80,6 +83,13 @@ class FoodPlanViewModel(
         val currentInputsFingerprint: String?,
         val profileAgeStatus: ProfileAgeRule.Status = ProfileAgeRule.Status.VALID,
     )
+    private data class ProfileCalculationInputs(
+        val snapshot: FoodPlanSnapshot?,
+        val records: List<FoodConsumptionEntity>,
+        val profile: UserProfileEntity?,
+        val bia: List<BiaMeasurementEntity>,
+        val bodyMeasurements: List<BodyMeasurementEntity>,
+    )
     data class GenerationState(
         val running: Boolean = false,
         val error: String? = null,
@@ -106,13 +116,15 @@ class FoodPlanViewModel(
     private val selectedWeekStart = MutableStateFlow(planWeekMonday(LocalDate.now()))
     private val selectedDayIndex = MutableStateFlow(todayIndexInWeek(selectedWeekStart.value))
     private val generationState = MutableStateFlow(GenerationState())
+    private val profileCalculationRefresh = MutableStateFlow(0L)
     private val calorieReference = activeProfileStore.activeProfileId.flatMapLatest { profileId ->
         if (profileId <= 0L) flowOf(CalorieReference(null, null, null, null))
         else combine(
             profileRepository.profile(profileId),
             biaRepository.all(profileId),
             bodyMeasurementRepository.all(profileId),
-        ) { _, _, _ ->
+            profileCalculationRefresh,
+        ) { _, _, _, _ ->
             // Same numbers for every day: the profile's TDEE and target.
             val result = calculations.profileSnapshot(profileId)?.calculation
             val metrics = OperationalNutritionMetrics.calculate(result)
@@ -146,19 +158,31 @@ class FoodPlanViewModel(
             if (profileId <= 0L) flowOf(SourceData(selectedWeekStart.value, null, emptyList(), null))
         else selectedWeekStart.flatMapLatest { weekStart ->
             combine(
-                repository.latestSnapshotForDisplayedWeek(profileId, weekStart.toEpochDay()),
-                consumptionRepository.all(profileId),
-                profileRepository.profile(profileId),
-                biaRepository.all(profileId),
-                bodyMeasurementRepository.all(profileId),
-            ) { snapshot, records, profile, bia, bodyMeasurements ->
+                combine(
+                    repository.latestSnapshotForDisplayedWeek(profileId, weekStart.toEpochDay()),
+                    consumptionRepository.all(profileId),
+                    profileRepository.profile(profileId),
+                    biaRepository.all(profileId),
+                    bodyMeasurementRepository.all(profileId),
+                ) { snapshot, records, profile, bia, bodyMeasurements ->
+                    ProfileCalculationInputs(snapshot, records, profile, bia, bodyMeasurements)
+                },
+                profileCalculationRefresh,
+            ) { inputs, _ ->
+                val calculation = calculations.profileSnapshot(profileId)?.calculation
+                // TDEE/BMR recovers the effective multiplier selected by the configured profile calculator.
+                val activityMultiplier = calculation?.bmrKcal
+                    ?.takeIf { it > 0.0 }
+                    ?.let { bmr -> calculation.tdeeKcal?.div(bmr) }
                 SourceData(
                     weekStart,
-                    snapshot,
-                    records,
-                    profile?.let { PlanFingerprint.of(it, bia, bodyMeasurements, time.today()) },
+                    inputs.snapshot,
+                    inputs.records,
+                    inputs.profile?.let {
+                        PlanFingerprint.of(it, inputs.bia, inputs.bodyMeasurements, time.today(), activityMultiplier = activityMultiplier)
+                    },
                     // Stessa fonte di data del servizio (TimeProvider); data assente = nessun avviso.
-                    profile?.let { ProfileAgeRule.warningStatus(it.birthDateEpochDay, time.today()) } ?: ProfileAgeRule.Status.VALID,
+                    inputs.profile?.let { ProfileAgeRule.warningStatus(it.birthDateEpochDay, time.today()) } ?: ProfileAgeRule.Status.VALID,
                 )
             }
         }
@@ -186,6 +210,11 @@ class FoodPlanViewModel(
         selectedWeekStart.value = planWeekMonday(LocalDate.ofEpochDay(weekStartEpochDay))
         selectedDayIndex.value = todayIndexInWeek(selectedWeekStart.value)
         clearGenerationMessage()
+    }
+
+    /** Re-reads the persisted profile calculation after returning from Settings or another editing screen. */
+    fun refreshProfileCalculation() {
+        profileCalculationRefresh.value += 1
     }
 
     fun previousWeek() { if (!generationState.value.running) { selectedWeekStart.value = selectedWeekStart.value.minusWeeks(1); selectedDayIndex.value = 0; clearGenerationMessage() } }

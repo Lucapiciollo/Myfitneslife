@@ -245,8 +245,15 @@ object DayChange {
 
 /** Home: fabbisogno base senza sport = metabolismo a riposo x fattore sedentario (stesso fattore del livello Sedentario). */
 object BaseCalories {
-    fun withoutSport(bmrKcal: Double?): Int? {
+    fun withoutSport(bmrKcal: Double?, sedentaryCoefficient: Double?): Int? {
         if (bmrKcal == null || !bmrKcal.isFinite() || bmrKcal <= 0.0) return null
-        return Math.round(bmrKcal * com.myfitai.app.domain.calculation.LocalCalculationEngine.ActivityLevel.SEDENTARY.multiplier).toInt()
+        if (sedentaryCoefficient == null || !sedentaryCoefficient.isFinite() || sedentaryCoefficient <= 0.0) return null
+        return Math.round(bmrKcal * sedentaryCoefficient).toInt()
     }
+
+    /** Compatibility overload for existing callers that have no configured-factor source. */
+    fun withoutSport(bmrKcal: Double?): Int? = withoutSport(
+        bmrKcal,
+        com.myfitai.app.domain.calculation.LocalCalculationEngine.ActivityLevel.SEDENTARY.multiplier,
+    )
 }
