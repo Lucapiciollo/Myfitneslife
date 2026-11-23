@@ -77,6 +77,32 @@ class UserProfileRepository(private val db: MyFitAiDatabase) {
     /** @return true se il profilo esiste ancora ed e' stato aggiornato; tocca solo `dietaryPreferencesJson` e `updatedAtEpochMillis`. */
     suspend fun updateDietaryPreferences(profileId: Long, json: String?, updatedAt: Long): Boolean =
         db.userProfileDao().updateDietaryPreferences(profileId, json, updatedAt) == 1
+    suspend fun saveAnamnesis(
+        profileId: Long,
+        json: String?,
+        updatedAt: Long,
+        healthBaseline: HealthDeclarationSnapshot?,
+        healthDeclaration: HealthDeclaration?,
+    ): HealthDeclarationSnapshot? = db.withTransaction {
+        if (healthDeclaration != null) {
+            val baseline = healthBaseline ?: return@withTransaction null
+            val updated = db.userProfileDao().compareAndSetHealthDeclaration(
+                profileId = profileId,
+                expectedJson = baseline.rawJsonForCompareAndSet(),
+                json = HealthDeclarationCodec.encode(healthDeclaration),
+            )
+            if (updated != 1) return@withTransaction null
+        }
+        if (db.userProfileDao().updateAnamnesis(profileId, json, updatedAt) != 1) {
+            error("Profilo non disponibile")
+        }
+        val saved = db.userProfileDao().get(profileId) ?: return@withTransaction null
+        HealthDeclarationSnapshot(
+            profileId = profileId,
+            decoded = HealthDeclarationCodec.decode(saved.healthDeclarationJson),
+            rawJson = saved.healthDeclarationJson,
+        )
+    }
     suspend fun delete(value: UserProfileEntity) = db.userProfileDao().delete(value)
 }
 

@@ -172,6 +172,37 @@
             </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.MyFitAI.FormCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_12">
+                <LinearLayout
+                    style="@style/Widget.MyFitAI.CompactSectionContent"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+                    <TextView
+                        style="@style/Text.MyFitAI.Section"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/profile_anamnesis_title" />
+                    <TextView
+                        style="@style/Text.MyFitAI.SettingsDescription"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_4"
+                        android:text="@string/profile_anamnesis_privacy" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/openAnamnesisButton"
+                        style="@style/Widget.MyFitAI.Button.Outlined"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_8"
+                        android:text="@string/profile_anamnesis_open" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
                 android:id="@+id/healthDeclarationCard"
                 style="@style/Widget.MyFitAI.FormCard"
                 android:layout_width="match_parent"

@@ -26,8 +26,10 @@ import com.myfitai.app.data.local.entity.*
         BodyExpectationGoalEntity::class,
         AiUsageRecordEntity::class,
         CustomFoodEntity::class,
+        MoodCheckInEntity::class,
+        WeeklyDiaryNoteEntity::class,
     ],
-    version = 23,
+    version = 25,
     exportSchema = true,
 )
 abstract class MyFitAiDatabase : RoomDatabase() {
@@ -43,6 +45,7 @@ abstract class MyFitAiDatabase : RoomDatabase() {
     abstract fun aiUsageDao(): AiUsageDao
     abstract fun calorieRecoveryQueryDao(): CalorieRecoveryQueryDao
     abstract fun customFoodDao(): CustomFoodDao
+    abstract fun emotionalDiaryDao(): EmotionalDiaryDao
 
     companion object {
         const val DATABASE_NAME = "myfitai.db"
@@ -443,6 +446,36 @@ object DatabaseMigrations {
         }
     }
 
+    val MIGRATION_23_24 = object : Migration(23, 24) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("""CREATE TABLE IF NOT EXISTS mood_check_ins (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                profileId INTEGER NOT NULL DEFAULT 1,
+                dateEpochDay INTEGER NOT NULL,
+                mood TEXT NOT NULL,
+                recordedAtEpochMillis INTEGER NOT NULL,
+                updatedAtEpochMillis INTEGER NOT NULL
+            )""".trimIndent())
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_mood_check_ins_profileId ON mood_check_ins(profileId)")
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_mood_check_ins_profileId_dateEpochDay ON mood_check_ins(profileId, dateEpochDay)")
+            db.execSQL("""CREATE TABLE IF NOT EXISTS weekly_diary_notes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                profileId INTEGER NOT NULL DEFAULT 1,
+                weekStartEpochDay INTEGER NOT NULL,
+                note TEXT NOT NULL,
+                updatedAtEpochMillis INTEGER NOT NULL
+            )""".trimIndent())
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_weekly_diary_notes_profileId ON weekly_diary_notes(profileId)")
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_weekly_diary_notes_profileId_weekStartEpochDay ON weekly_diary_notes(profileId, weekStartEpochDay)")
+        }
+    }
+
+    val MIGRATION_24_25 = object : Migration(24, 25) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE user_profile ADD COLUMN anamnesisJson TEXT")
+        }
+    }
+
     private fun addMissingColumns(db: SupportSQLiteDatabase, table: String, definitions: List<String>) {
         val existing = mutableSetOf<String>()
         db.query("PRAGMA table_info($table)").use { cursor ->
@@ -478,5 +511,7 @@ object DatabaseMigrations {
         MIGRATION_20_21,
         MIGRATION_21_22,
         MIGRATION_22_23,
+        MIGRATION_23_24,
+        MIGRATION_24_25,
     )
 }

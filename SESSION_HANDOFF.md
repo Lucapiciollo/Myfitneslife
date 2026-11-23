@@ -10,20 +10,23 @@ This file records the verified working state so another OpenCode session or anot
 
 The authoritative implementation plan remains `DEVELOPMENT_PLAN.md`. This handoff adds operational continuity and does not replace it.
 
-Note (13/11/2026): product decision to remove workouts (Workouts/NewWorkout screens, training program, daily check-in, ActivityBasis). Only the profile activity level remains (Sedentario x1,20 / Moderato x1,55 / Molto attivo x1,725; TDEE = BMR x factor; one target for all days). Plan: `docs/PIANO_SEMPLIFICAZIONE_ATTIVITA.md`. Every mention of workouts, check-in or training program below is historical and SUPERSEDED by that plan; nothing is marked done until implemented and verified.
+## Current Snapshot (2026-11-23)
 
-## Snapshot
+`DEVELOPMENT_PLAN.md` is authoritative. The sections below this current snapshot contain older QA history and may be superseded; use the plan and the current Git state for decisions.
 
-- Date: 2026-09-24
-- App: Android Views/XML, not Jetpack Compose
-- Canonical UI mock: `assets/MOCK_APPROVATO_MYFITAI_V2_COMPLETO.png`
-- Visual theme: warm near-white background, white surfaces, MyFitAI green, charcoal text
-- Current UI work: second pass on operational measurement screens
-- Current focus: `BiaActivity`, `BodyMeasuresActivity`, and their form/history flows
-- AI, Room, ViewModels, navigation, and persistence contracts must remain unchanged during UI work
-- Never remove the demo app installation or its seeded demo data/profile; use in-place debug installs only and never clear app data during QA.
+- Branch: `develop`, HEAD `2566a24c0d91caf8804d0e57aace4058e917ef52`, identical to `origin/develop` at checkout. The previous feature branch had the same commit, so the worktree was moved without a merge.
+- The worktree is intentionally dirty: 20 modified tracked files plus untracked app/schema sources, screenshots, and tutorial assets. Nothing is staged, committed, or pushed. Do not reset/clean or discard these changes.
+- Current source delta includes the emotional diary, profile-scoped persistence and deletion/export/backup integration, profile anamnesis/health-declaration code, Room schema/migration updates, and related tests/UI. The exact complete file list is in `git status --short`.
+- The untracked `artifacts/video/myfitai-tutorial/` subtree alone contains 215 files totaling about 236.6 MB. Review whether these media renders belong in Git before staging; use Git LFS or an external artifact store if appropriate.
+- Emotional diary QA is recorded complete in `DEVELOPMENT_PLAN.md`: `testDebugUnitTest` and `testQaUnitTest` each reported 1,336 tests, 0 failures/errors and 2 skipped; `assembleDebug`, `assembleQaAndroidTest`, and `lintDebug` passed. The migration and profile-isolation instrumentation tests passed on a read-only API 35 AVD. Manual Samsung QA verified mood/note create, edit, delete, default-not-persisted behavior and Settings entry. The optional backup-fixture test was skipped because real fixture files were unavailable.
+- On 2026-11-23, `:app:assembleQa` succeeded (Gradle reported tasks up-to-date). Package `com.myfitai.app.qa` was removed and freshly installed as requested; it opens `OnboardingWizardActivity` with a clean QA database. Production package `com.myfitai.app` and its data were not touched; its original `firstInstallTime` remains 2026-10-06. Package `.test` was not touched.
+- Cross-PC transfer is not yet complete: the current source/assets and this handoff are local, uncommitted changes. To make them available elsewhere, review/stage the intended files, commit on `develop`, and push to the shared remote. Do not blindly add all generated media.
+- Product decision (13/11/2026): workouts, training program, daily check-in, and `ActivityBasis` were removed; only profile activity level remains. Older workout/check-in notes below are historical.
+- Continue from `AGENTS.md`, then `DEVELOPMENT_PLAN.md`, then this snapshot. Do not treat raw unchecked boxes as a current backlog without reconciling later verified entries.
 
-## Verified Work Completed
+## Historical Verified Work
+
+The following sections preserve previous UI and QA notes for context; they are not a current task list.
 
 The following UI pilots are already implemented and committed in the current history:
 
@@ -156,35 +159,30 @@ Not verified in the latest delta:
 
 ## Next Target
 
-1. Run `git fetch --all --prune` and confirm the working tree is clean except intentionally untracked local artifacts.
-2. Read `DEVELOPMENT_PLAN.md`, then inspect the BIA/body-measurement mock regions and current layouts.
-3. Finish the UI second pass for:
-   - `android/app/src/main/res/layout/activity_bia.xml`
-   - `android/app/src/main/res/layout/activity_body_measures.xml`
-   - `android/app/src/main/res/layout/activity_new_body_measurement.xml`
-   - the corresponding Activity/widget code only where presentation changes are required
-4. Preserve all existing IDs, routes, ViewModels, Room calls, AI job scheduling, import preview, edit/delete behavior, and history semantics.
-5. Build, run relevant unit/instrumentation tests, install on a connected device, and capture screenshots before declaring the pass complete.
-6. Update `DEVELOPMENT_PLAN.md` only for behavior or QA that is genuinely verified.
+1. On another PC, read `AGENTS.md`, `DEVELOPMENT_PLAN.md`, and this current snapshot before changing code.
+2. Obtain the intended source and assets from the shared remote after this worktree is reviewed, committed, and pushed. This PC currently has uncommitted/untracked work that is not available remotely.
+3. Reconcile contradictory historical checkboxes in `DEVELOPMENT_PLAN.md`, especially the S3 safety-gate entries; do not infer completion from an old note or a mock.
+4. Continue with the genuinely open gates in `DEVELOPMENT_PLAN.md`: OpenAI runtime/parity, real BIA/Progress Coach provider checks, complete photo/E2E flows, OS-level notification delivery/tap, adaptive split-screen and remaining token/UI audits.
+5. Preserve the existing profile/data and credential-security rules. Run focused build/tests first, then only non-destructive device QA; update the plan only with verified outcomes.
 
-After the measurement pass, the remaining UI review queue is:
+## Portable Windows Build Commands
 
-- `SettingsActivity`
-- `ProfileEditActivity` now has device smoke/screenshot coverage; visual redesign remains optional unless a concrete mismatch is found
-- `MealDetailActivity`, `ShoppingListActivity`, and `WeeklyReviewActivity` now have combined device coverage; no production UI change was required in this pass
-- `MealDetailActivity`
-- `ShoppingListActivity`
-- `WeeklyReviewActivity`
-- complete end-to-end visual/functional QA across profile, diet, cheat, review, export, and photo flows
-- Next QA focus after the UI coverage pass: export flows, local notifications, photo import/camera paths, and the full connected suite
-- Export is no longer pending in `DEVELOPMENT_PLAN.md`; next QA focus is local notifications, photo import/camera paths, and the full connected suite
-- Deterministic notification scheduling/receiver coverage is now verified; remaining notification risk is real background delivery/permission behavior, alongside photo import/camera paths and the full connected suite
-- Photo conversion/lifecycle and sgarro photo-dialog coverage are verified; real Photo Picker/camera capture remains explicitly unverified
-- BottomNavigation residual resolved in test infrastructure only: `TabHostActivity.currentTabActivity()` exposes the embedded root to instrumentation assertions; production navigation behavior was not changed
-- Gemini HTTP runtime is now verified on the physical device: manual BYOK configuration was already present, `myfitai_provider_verification` returned structured JSON with `finishReason=STOP`, weekly-plan generation used `myfitai_weekly_nutrition_pipe_v1` in JSON-only mode, usage metadata was received, the initial invalid output was rejected locally, the retry passed validation, and the plan was persisted and visible in the weekly UI. OpenAI HTTP runtime and real provider parity are intentionally deferred for a later phase; never automate, read, log, or commit credentials
-- Secure manual-runtime path is confirmed: enter a key only in `SettingsActivity`, use `Verifica e salva`, run the target provider flow on the device, then use `Sostituisci`/`Elimina`; keys are read just-in-time from `SecureAiCredentialStore` and must never enter chat, logs, tests, exports, or navigation arguments
-- Physical-device prerequisite verified: the debug QA seeder created an active local profile on `SM-A546B`, `SplashActivity` reopened `TabHostActivity`, and the `Altro` tab reached `Impostazioni` with the protected provider fields available for manual key entry; no key was inserted or read by automation
-- Current device result: Gemini is active as `Gemini BYOK`, the weekly plan for `21–27 Settembre 2026` is visible with generated version date `22/09/2026`, and the persisted meal cards are rendered. No API key value was inspected or logged
+Install Java 17, Android SDK (platform/build tools for compile SDK 36), and Gradle 8.14.3 on the target PC. The repository has no Gradle wrapper; the temporary Gradle installation on this PC is not automatically transferred. From the repository root in PowerShell:
+
+```powershell
+$sdk = Join-Path $env:LOCALAPPDATA 'Android\Sdk'
+$env:ANDROID_HOME = $sdk
+$env:ANDROID_SDK_ROOT = $sdk
+$gradle = Join-Path $env:TEMP 'gradle-8.14.3\bin\gradle.bat'
+& $gradle -p android :app:assembleDebug
+& $gradle -p android :app:testDebugUnitTest
+& $gradle -p android :app:assembleQa
+& $gradle -p android :app:testQaUnitTest
+& $gradle -p android :app:assembleQaAndroidTest
+& $gradle -p android :app:lintDebug
+```
+
+For ADB on Windows, use `Join-Path $env:LOCALAPPDATA 'Android\Sdk\platform-tools\adb.exe'`. Never uninstall or clear the production/demo package as part of routine QA. The QA package reinstall on 2026-11-23 was explicitly requested and affected only `com.myfitai.app.qa`.
 
 ## Release Readiness Review
 
@@ -228,28 +226,14 @@ For each group: preserve IDs/routes/ViewModels/Room/AI jobs, compare against the
 
 ## Git Continuity
 
-- Target branch: `develop`
-- Working branch used for the UI pass: `opencode/nutrition-path-integrated`
-- The remote `origin/develop` was at `c911f23` before this handoff commit.
-- The local `develop` branch was stale and diverged from the remote by one local commit and 292 remote commits. It must be synchronized deliberately, not merged blindly.
-- The local stale line should be preserved as `backup/develop-before-ui-sync` before moving local `develop` to the current UI line.
-- Do not commit `.playwright-mcp/` or `assets/ui-concepts/`; they are local/untracked artifacts already present in the workspace.
+- Current branch: `develop`, at `2566a24c0d91caf8804d0e57aace4058e917ef52`, equal to `origin/develop` at checkout.
+- The prior branch `feature/myfitai-profile-nutrition-plan` pointed to the same SHA. The full dirty worktree was retained on `develop`; no merge, commit, or push was done.
+- Preserve every modified and untracked item. Before syncing, review `git status --short`, especially the roughly 236.6 MB tutorial media subtree; avoid adding generated renders unless intentionally sharing them.
+- The handoff itself is also a local modification until committed and pushed.
 
-## Useful Commands
+## Historical Notes
 
-From `android/`:
-
-```powershell
-& 'C:\Users\LucaPiciollo\.gradle\wrapper\dists\gradle-8.14.3-all\10utluxaxniiv4wxiphsi49nj\gradle-8.14.3\bin\gradle.bat' :app:assembleDebug
-& 'C:\Users\LucaPiciollo\.gradle\wrapper\dists\gradle-8.14.3-all\10utluxaxniiv4wxiphsi49nj\gradle-8.14.3\bin\gradle.bat' :app:testDebugUnitTest
-& 'C:\Users\LucaPiciollo\.gradle\wrapper\dists\gradle-8.14.3-all\10utluxaxniiv4wxiphsi49nj\gradle-8.14.3\bin\gradle.bat' :app:connectedDebugAndroidTest '-Pandroid.testInstrumentationRunnerArguments.class=com.myfitai.app.e2e.ActivitySmokeTest'
-```
-
-ADB path on the known Windows machine:
-
-```powershell
-& 'C:\Users\LucaPiciollo\AppData\Local\Android\Sdk\platform-tools\adb.exe' devices
-```
+The detailed UI and release notes below were recorded in earlier sessions. They are retained as history, not as the current next-step list; verify them against `DEVELOPMENT_PLAN.md` and the current source before relying on them.
 
 ## Do Not Change
 

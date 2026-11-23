@@ -42,6 +42,9 @@ interface UserProfileDao {
     @Query("UPDATE user_profile SET dietaryPreferencesJson = :json, updatedAtEpochMillis = :updatedAt WHERE id = :profileId")
     suspend fun updateDietaryPreferences(profileId: Long, json: String?, updatedAt: Long): Int
 
+    @Query("UPDATE user_profile SET anamnesisJson = :json, updatedAtEpochMillis = :updatedAt WHERE id = :profileId")
+    suspend fun updateAnamnesis(profileId: Long, json: String?, updatedAt: Long): Int
+
     /** Compare-and-set della dichiarazione; IS confronta anche null senza perdere l'uguaglianza del raw JSON. */
     @Query("UPDATE user_profile SET healthDeclarationJson = :json WHERE id = :profileId AND healthDeclarationJson IS :expectedJson")
     suspend fun compareAndSetHealthDeclaration(profileId: Long, expectedJson: String?, json: String): Int
@@ -290,4 +293,34 @@ interface WeeklyReviewDao {
     suspend fun upsert(value: WeeklyReviewEntity): Long
     @Query("DELETE FROM weekly_reviews WHERE profileId = :profileId")
     suspend fun deleteByProfile(profileId: Long)
+}
+
+@Dao
+interface EmotionalDiaryDao {
+    @Query("SELECT * FROM mood_check_ins WHERE profileId = :profileId AND dateEpochDay BETWEEN :fromEpochDay AND :toEpochDay ORDER BY dateEpochDay DESC")
+    fun observeMoods(profileId: Long, fromEpochDay: Long, toEpochDay: Long): Flow<List<MoodCheckInEntity>>
+
+    @Query("SELECT * FROM mood_check_ins WHERE profileId = :profileId AND dateEpochDay = :dateEpochDay LIMIT 1")
+    suspend fun getMood(profileId: Long, dateEpochDay: Long): MoodCheckInEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertMood(value: MoodCheckInEntity): Long
+
+    @Query("DELETE FROM mood_check_ins WHERE profileId = :profileId AND dateEpochDay = :dateEpochDay")
+    suspend fun deleteMood(profileId: Long, dateEpochDay: Long)
+
+    @Query("SELECT * FROM weekly_diary_notes WHERE profileId = :profileId AND weekStartEpochDay = :weekStartEpochDay LIMIT 1")
+    suspend fun getWeeklyNote(profileId: Long, weekStartEpochDay: Long): WeeklyDiaryNoteEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertWeeklyNote(value: WeeklyDiaryNoteEntity): Long
+
+    @Query("DELETE FROM weekly_diary_notes WHERE profileId = :profileId AND weekStartEpochDay = :weekStartEpochDay")
+    suspend fun deleteWeeklyNote(profileId: Long, weekStartEpochDay: Long)
+
+    @Query("DELETE FROM mood_check_ins WHERE profileId = :profileId")
+    suspend fun deleteMoodsByProfile(profileId: Long)
+
+    @Query("DELETE FROM weekly_diary_notes WHERE profileId = :profileId")
+    suspend fun deleteWeeklyNotesByProfile(profileId: Long)
 }

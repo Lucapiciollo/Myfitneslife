@@ -10,6 +10,7 @@ import com.myfitai.app.data.profile.MealCountPreferences
 import com.myfitai.app.data.profile.NutritionPlanUpdatePreferences
 import com.myfitai.app.data.profile.NutritionPlanSchedulePreferences
 import com.myfitai.app.data.profile.ProfilePhotoStore
+import com.myfitai.app.data.profile.ProfileAnamnesisDocumentStore
 import com.myfitai.app.data.profile.AiAutomationPreferences
 import com.myfitai.app.data.repository.*
 import com.myfitai.app.domain.body.BodyProportionAnalysisService
@@ -52,6 +53,7 @@ import com.myfitai.app.domain.progress.ProgressAnalysisAiJobHandler
 import com.myfitai.app.data.profile.BiaFrequencyPreferences
 import com.myfitai.app.domain.review.WeeklyReviewService
 import com.myfitai.app.domain.data.DataDeletionService
+import com.myfitai.app.domain.diary.EmotionalDiaryService
 import com.myfitai.app.notifications.NotificationScheduler
 
 /**
@@ -67,6 +69,7 @@ class AppDataContainer private constructor(context: Context) {
     val nutritionPlanUpdatePreferences = NutritionPlanUpdatePreferences(appContext)
     val nutritionPlanSchedulePreferences = NutritionPlanSchedulePreferences(appContext)
     val profilePhotoStore = ProfilePhotoStore(appContext)
+    val profileAnamnesisDocumentStore = ProfileAnamnesisDocumentStore(appContext)
     val biaFrequencyPreferences = BiaFrequencyPreferences(appContext)
     val progressAnalysisPreferences = ProgressAnalysisPreferences(appContext)
     val aiAutomationPreferences = AiAutomationPreferences(appContext)
@@ -92,6 +95,8 @@ class AppDataContainer private constructor(context: Context) {
     )
     val weeklyReviewRepository = WeeklyReviewRepository(db)
     val bodyExpectationGoalRepository = BodyExpectationGoalRepository(db)
+    val emotionalDiaryRepository = EmotionalDiaryRepository(db)
+    val emotionalDiaryService = EmotionalDiaryService(emotionalDiaryRepository)
 
     val profileCalculationService = ProfileCalculationService(
         profiles = userProfileRepository,
@@ -145,6 +150,7 @@ class AppDataContainer private constructor(context: Context) {
         aiAutomationPreferences = aiAutomationPreferences,
         mealCountPreferences = mealCountPreferences,
         profilePhotoStore = profilePhotoStore,
+        profileAnamnesisDocumentStore = profileAnamnesisDocumentStore,
         notificationScheduler = notificationScheduler,
         context = appContext,
     )
@@ -264,6 +270,7 @@ class AppDataContainer private constructor(context: Context) {
         nutritionPlanSchedulePreferences = nutritionPlanSchedulePreferences,
         aiAutomationPreferences = aiAutomationPreferences,
         profilePhotoStore = profilePhotoStore,
+        profileAnamnesisDocumentStore = profileAnamnesisDocumentStore,
     )
 
     companion object {

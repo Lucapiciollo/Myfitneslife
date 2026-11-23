@@ -46,6 +46,7 @@
         <activity android:name=".ui.MealDetailActivity" />
         <activity android:name=".ui.MealAlternativeActivity" />
         <activity android:name=".ui.WeeklyReviewActivity" />
+        <activity android:name=".ui.EmotionalDiaryActivity" android:exported="false" />
         <activity android:name=".ui.ShoppingListActivity" />
         <activity android:name=".ui.NotificationsActivity" />
         <activity android:name=".ui.PhysicalEvolutionActivity" android:launchMode="singleTop" />

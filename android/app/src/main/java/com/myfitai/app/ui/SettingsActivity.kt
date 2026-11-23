@@ -107,6 +107,7 @@ class SettingsActivity : BaseShellActivity() {
         bindActivityFactorsEditor()
 
         findViewById<View>(R.id.rowAppGuide).setOnClickListener { showAppGuide() }
+        findViewById<View>(R.id.rowEmotionalDiary).setOnClickListener { go(EmotionalDiaryActivity::class.java) }
         findViewById<View>(R.id.rowMeasurements).setOnClickListener { go(MeasurementsActivity::class.java) }
         findViewById<SettingRowView>(R.id.rowBiaFrequency).setOnClickListener { showBiaFrequencySettings() }
         findViewById<SettingRowView>(R.id.rowActivityFactors).setOnClickListener { showActivityFactorSettings() }
@@ -759,9 +760,10 @@ class SettingsActivity : BaseShellActivity() {
             DeletionAction("misurazioni corporee", "peso, altezza e le altre rilevazioni corporee registrate", data.dataDeletionService::deleteBodyMeasurements),
             DeletionAction("sgarri registrati", "gli sgarri e il relativo storico", data.dataDeletionService::deleteCheatEntries),
             DeletionAction("riepiloghi settimanali", "le review settimanali", data.dataDeletionService::deleteWeeklyReviews),
+            DeletionAction("diario emotivo", "le registrazioni giornaliere e le note settimanali", data.dataDeletionService::deleteEmotionalDiary),
             DeletionAction(
                 "tutti i dati di attività",
-                "piani alimentari, pasti e consumi, misurazioni BIA e corporee, sgarri e riepiloghi settimanali",
+                "piani alimentari, pasti e consumi, misurazioni BIA e corporee, sgarri, riepiloghi settimanali e diario emotivo",
                 data.dataDeletionService::deleteRecordedData,
             ),
         )

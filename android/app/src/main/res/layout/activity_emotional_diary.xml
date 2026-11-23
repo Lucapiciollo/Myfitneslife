@@ -1,0 +1,215 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg_primary">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/screen_header_height"
+        android:gravity="center_vertical"
+        android:background="@drawable/bg_screen_header"
+        android:paddingHorizontal="@dimen/space_8">
+        <ImageButton
+            android:id="@+id/backButton"
+            android:layout_width="@dimen/screen_header_icon_size"
+            android:layout_height="@dimen/screen_header_icon_size"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Indietro"
+            android:padding="@dimen/space_8"
+            android:src="@drawable/ic_arrow_back"
+            app:tint="@color/text_primary" />
+        <ImageButton
+            android:id="@+id/prevWeekButton"
+            android:layout_width="@dimen/week_navigation_icon_size"
+            android:layout_height="@dimen/week_navigation_icon_size"
+            android:background="@android:color/transparent"
+            android:contentDescription="Settimana precedente"
+            android:padding="@dimen/space_8"
+            android:src="@drawable/ic_arrow_back"
+            app:tint="@color/text_primary" />
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical">
+            <TextView
+                style="@style/Text.MyFitAI.ScreenTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="Diario emotivo" />
+            <TextView
+                android:id="@+id/weekLabel"
+                style="@style/Text.MyFitAI.ScreenDate"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_4"
+                android:gravity="center" />
+        </LinearLayout>
+        <ImageButton
+            android:id="@+id/nextWeekButton"
+            android:layout_width="@dimen/week_navigation_icon_size"
+            android:layout_height="@dimen/week_navigation_icon_size"
+            android:background="@android:color/transparent"
+            android:contentDescription="Settimana successiva"
+            android:padding="@dimen/space_8"
+            android:rotation="180"
+            android:src="@drawable/ic_arrow_back"
+            app:tint="@color/text_primary" />
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:fillViewport="true">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="@dimen/space_16"
+            android:paddingTop="@dimen/space_8"
+            android:paddingBottom="@dimen/space_24">
+
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.MyFitAI.Card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_8">
+                <LinearLayout
+                    style="@style/Widget.MyFitAI.HomeSectionContent"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+                    <com.myfitai.app.ui.widgets.SectionHeaderView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Umore quotidiano" />
+                    <LinearLayout
+                        android:id="@+id/weekDays"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_8"
+                        android:orientation="vertical" />
+                    <TextView
+                        android:id="@+id/selectedDayLabel"
+                        style="@style/Text.MyFitAI.CardTitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_16" />
+                    <TextView
+                        android:id="@+id/moodStatus"
+                        style="@style/Text.MyFitAI.Caption"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_4"
+                        android:accessibilityLiveRegion="polite" />
+                    <RadioGroup
+                        android:id="@+id/moodOptions"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_8"
+                        android:orientation="vertical">
+                        <com.google.android.material.radiobutton.MaterialRadioButton
+                            android:id="@+id/moodVeryBad"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:minHeight="@dimen/control_min_height"
+                            android:text="😞 Molto male"
+                            android:textAppearance="@style/Text.MyFitAI.Body" />
+                        <com.google.android.material.radiobutton.MaterialRadioButton
+                            android:id="@+id/moodBad"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:minHeight="@dimen/control_min_height"
+                            android:text="🙁 Male"
+                            android:textAppearance="@style/Text.MyFitAI.Body" />
+                        <com.google.android.material.radiobutton.MaterialRadioButton
+                            android:id="@+id/moodNeutral"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:minHeight="@dimen/control_min_height"
+                            android:text="😐 Neutro"
+                            android:textAppearance="@style/Text.MyFitAI.Body" />
+                        <com.google.android.material.radiobutton.MaterialRadioButton
+                            android:id="@+id/moodGood"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:minHeight="@dimen/control_min_height"
+                            android:text="🙂 Bene"
+                            android:textAppearance="@style/Text.MyFitAI.Body" />
+                        <com.google.android.material.radiobutton.MaterialRadioButton
+                            android:id="@+id/moodVeryGood"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:minHeight="@dimen/control_min_height"
+                            android:text="😄 Molto bene"
+                            android:textAppearance="@style/Text.MyFitAI.Body" />
+                    </RadioGroup>
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/deleteMoodButton"
+                        style="@style/Widget.MyFitAI.Button.Text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Rimuovi registrazione"
+                        android:textAllCaps="false"
+                        android:visibility="gone" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.MyFitAI.Card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_12">
+                <LinearLayout
+                    style="@style/Widget.MyFitAI.HomeSectionContent"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+                    <com.myfitai.app.ui.widgets.SectionHeaderView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Nota della settimana" />
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_8"
+                        android:hint="Nota facoltativa">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/weeklyNoteInput"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="top|start"
+                            android:inputType="textCapSentences|textMultiLine"
+                            android:minLines="3"
+                            android:maxLines="8" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/saveWeeklyNoteButton"
+                        style="@style/Widget.MyFitAI.Button.Primary"
+                        android:layout_width="match_parent"
+                        android:layout_height="@dimen/button_primary_min_height"
+                        android:layout_marginTop="@dimen/space_12"
+                        android:text="Salva nota"
+                        android:textAllCaps="false" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/deleteWeeklyNoteButton"
+                        style="@style/Widget.MyFitAI.Button.Text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="end"
+                        android:text="Elimina nota"
+                        android:textAllCaps="false"
+                        android:visibility="gone" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+    </ScrollView>
+
+    <include layout="@layout/view_bottom_navigation" />
+</LinearLayout>

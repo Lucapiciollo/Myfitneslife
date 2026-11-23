@@ -32,15 +32,22 @@ import com.myfitai.app.ai.GeminiByokProvider
 import com.myfitai.app.ai.OpenAiProvider
 import com.myfitai.app.data.AppDataContainer
 import com.myfitai.app.data.local.entity.UserProfileEntity
+import com.myfitai.app.data.repository.HealthDeclarationSnapshot
 import com.myfitai.app.data.profile.NutritionPlanSchedulePreferences
 import com.myfitai.app.domain.calculation.LocalCalculationEngine
 import com.myfitai.app.domain.food.DietaryProfile
 import com.myfitai.app.domain.profile.ActivityLevelChoices
+import com.myfitai.app.domain.profile.AnamnesisDose
 import com.myfitai.app.domain.profile.ProfileAgeRule
+import com.myfitai.app.domain.profile.ProfileAnamnesis
+import com.myfitai.app.domain.profile.ProfileAnamnesisCodec
+import com.myfitai.app.domain.profile.ProfileAnamnesisDecodeResult
 import com.myfitai.app.notifications.NotificationPreferences
 import com.myfitai.app.security.AiCredentialProvider
 import com.myfitai.app.security.SecureAiCredentialStore
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
@@ -55,6 +62,7 @@ class OnboardingWizardActivity : AppCompatActivity() {
     private val aiSettings by lazy { AiSettingsStore(this) }
     private val notificationPreferences by lazy { NotificationPreferences(this) }
     private val isNewProfile by lazy { intent.getBooleanExtra(EXTRA_NEW_PROFILE, false) }
+    private val isAnamnesisOnly by lazy { intent.getBooleanExtra(EXTRA_ANAMNESIS_ONLY, false) }
     private val editingId by lazy { intent.getLongExtra(EXTRA_PROFILE_ID, 0L).takeIf { it > 0L } }
     private val isBootstrap by lazy { intent.getBooleanExtra(EXTRA_BOOTSTRAP, false) }
     /** API setup belongs only to the first app bootstrap, never to re-profile flows. */
@@ -88,8 +96,25 @@ class OnboardingWizardActivity : AppCompatActivity() {
     private var planTimeMinutes = NutritionPlanSchedulePreferences.DEFAULT_TIME_MINUTES
     private var selectedProvider = AiCredentialProvider.GEMINI
     private var dietaryDraft = DietaryProfile()
+    private var anamnesisDraft = ProfileAnamnesis()
+    private var anamnesisUnreadable = false
+    private var healthDeclarationBaseline: HealthDeclarationSnapshot? = null
+    private val anamnesisTextInputs = mutableMapOf<String, TextInputEditText>()
+    private val anamnesisDropdowns = mutableMapOf<String, AutoCompleteTextView>()
+    private val selectedAnamnesisDocuments = mutableListOf<Uri>()
+    private var anamnesisDocumentSummary: TextView? = null
+    private var addAnamnesisDocumentsButton: MaterialButton? = null
+    private var removeAnamnesisDocumentsButton: MaterialButton? = null
     private val backupOpenLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) confirmBackupImport(uri)
+    }
+    private val anamnesisDocumentsLauncher = registerForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
+        val remaining = MAX_ANAMNESIS_DOCUMENTS - anamnesisDraft.documents.size - selectedAnamnesisDocuments.size
+        selectedAnamnesisDocuments += uris.take(remaining.coerceAtLeast(0))
+        if (uris.size > remaining.coerceAtLeast(0)) {
+            Toast.makeText(this, R.string.anamnesis_documents_limit, Toast.LENGTH_SHORT).show()
+        }
+        updateAnamnesisDocumentSummary()
     }
 
     private var nameInput: TextInputEditText? = null
@@ -119,7 +144,7 @@ class OnboardingWizardActivity : AppCompatActivity() {
 
     private val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy", Locale.ITALIAN)
     private val totalSteps: Int
-        get() = if (showAiStep) 5 else 4
+        get() = if (isAnamnesisOnly) 1 else if (showAiStep) 6 else 5
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -147,7 +172,12 @@ class OnboardingWizardActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val id = if (isNewProfile) null else editingId ?: data.activeProfileStore.currentIdOrNull()
             profile = id?.let { data.userProfileRepository.get(it) }
-            profile?.let(::loadProfile)
+            if (isAnamnesisOnly && profile == null) {
+                Toast.makeText(this@OnboardingWizardActivity, R.string.onboarding_save_error, Toast.LENGTH_SHORT).show()
+                finish()
+                return@launch
+            }
+            profile?.let { loadProfile(it) }
             renderStep()
         }
     }
@@ -192,9 +222,15 @@ class OnboardingWizardActivity : AppCompatActivity() {
         }
     }
 
-    private fun loadProfile(value: UserProfileEntity) {
+    private suspend fun loadProfile(value: UserProfileEntity) {
         activityLevelDraft = value.activityLevel
         dietaryDraft = DietaryProfile.parse(value.dietaryPreferencesJson)
+        when (val decoded = ProfileAnamnesisCodec.decode(value.anamnesisJson)) {
+            ProfileAnamnesisDecodeResult.Absent -> anamnesisDraft = ProfileAnamnesis()
+            is ProfileAnamnesisDecodeResult.Valid -> anamnesisDraft = decoded.anamnesis
+            ProfileAnamnesisDecodeResult.Invalid, is ProfileAnamnesisDecodeResult.UnsupportedVersion -> anamnesisUnreadable = true
+        }
+        healthDeclarationBaseline = data.userProfileRepository.healthDeclarationSnapshot(value.id)
         birthDateEpochDay = value.birthDateEpochDay
         wakeMinutes = value.wakeTimeMinutes
         sleepMinutes = value.sleepTimeMinutes
@@ -214,13 +250,23 @@ class OnboardingWizardActivity : AppCompatActivity() {
         stepTitle.setText(stepTitleResource())
         stepDescription.setText(stepDescriptionResource())
         previousButton.visibility = if (step == 0) View.INVISIBLE else View.VISIBLE
-        nextButton.setText(if (step == totalSteps - 1) R.string.onboarding_finish else R.string.action_next)
-        when (step) {
-            0 -> renderProfileStep()
-            1 -> renderFoodPreferencesStep()
-            2 -> renderMealsStep()
-            3 -> renderScheduleStep()
-            4 -> if (showAiStep) renderAiStep()
+        nextButton.setText(when {
+            isAnamnesisOnly -> R.string.anamnesis_save
+            step == totalSteps - 1 -> R.string.onboarding_finish
+            else -> R.string.action_next
+        })
+        nextButton.isEnabled = !saving
+        if (isAnamnesisOnly) {
+            renderAnamnesisStep()
+        } else {
+            when (step) {
+                0 -> renderProfileStep()
+                1 -> renderFoodPreferencesStep()
+                2 -> renderMealsStep()
+                3 -> renderScheduleStep()
+                4 -> renderAnamnesisStep()
+                5 -> if (showAiStep) renderAiStep()
+            }
         }
     }
 
@@ -389,7 +435,152 @@ class OnboardingWizardActivity : AppCompatActivity() {
         stepContent.addView(card)
     }
 
+    private fun renderAnamnesisStep() {
+        anamnesisTextInputs.clear()
+        anamnesisDropdowns.clear()
+        val card = card()
+        val fields = content(card)
+        if (anamnesisUnreadable) {
+            addDescription(fields, R.string.anamnesis_unreadable)
+            stepContent.addView(card)
+            return
+        }
+        addDescription(fields, R.string.anamnesis_privacy)
+
+        addAnamnesisSection(fields, R.string.anamnesis_activity_title)
+        anamnesisInput(fields, "usualWeight", R.string.anamnesis_usual_weight_hint, "numberDecimal", anamnesisDraft.usualWeightKg?.let(::formatNumber))
+        anamnesisInput(fields, "profession", R.string.anamnesis_profession_hint, "textCapSentences", anamnesisDraft.profession)
+        anamnesisInput(fields, "steps", R.string.anamnesis_steps_hint, "number", anamnesisDraft.averageDailySteps?.toString())
+        anamnesisInput(fields, "trainingType", R.string.anamnesis_training_type_hint, "textCapSentences", anamnesisDraft.trainingType)
+        anamnesisInput(fields, "trainingFrequency", R.string.anamnesis_training_frequency_hint, "number", anamnesisDraft.trainingSessionsPerWeek?.toString())
+        anamnesisInput(fields, "water", R.string.anamnesis_water_hint, "number", anamnesisDraft.dailyWaterMl?.toString())
+
+        addAnamnesisSection(fields, R.string.anamnesis_women_title)
+        anamnesisDropdown(fields, "cycle", R.string.anamnesis_cycle_hint, listOf(
+            getString(R.string.anamnesis_cycle_regular),
+            getString(R.string.anamnesis_cycle_irregular),
+            getString(R.string.anamnesis_cycle_absent),
+            getString(R.string.anamnesis_not_applicable),
+        ), cycleLabel(anamnesisDraft.cycleStatus))
+        anamnesisDropdown(fields, "contraceptives", R.string.anamnesis_contraceptives_hint, yesNoOptions(), boolLabel(anamnesisDraft.contraceptivesUsed))
+        anamnesisInput(fields, "contraceptiveDetails", R.string.anamnesis_contraceptives_details_hint, "textCapSentences", anamnesisDraft.contraceptiveDetails)
+        anamnesisInput(fields, "gynecologicalConditions", R.string.anamnesis_gynecological_conditions_hint, "textCapSentencesMultiLine", anamnesisDraft.gynecologicalConditions, multiline = true)
+        anamnesisDropdown(fields, "menopause", R.string.anamnesis_menopause_hint, yesNoOptions(), boolLabel(anamnesisDraft.menopause))
+
+        addAnamnesisSection(fields, R.string.anamnesis_health_title)
+        anamnesisInput(fields, "healthConditions", R.string.anamnesis_health_conditions_hint, "textCapSentencesMultiLine", anamnesisDraft.healthConditions, multiline = true)
+        anamnesisInput(fields, "gastrointestinalSymptoms", R.string.anamnesis_gastrointestinal_symptoms_hint, "textCapSentencesMultiLine", anamnesisDraft.gastrointestinalSymptoms, multiline = true)
+        anamnesisInput(fields, "bowelHabits", R.string.anamnesis_bowel_habits_hint, "textCapSentencesMultiLine", anamnesisDraft.bowelHabits, multiline = true)
+        anamnesisInput(fields, "medications", R.string.anamnesis_medications_hint, "textCapSentencesMultiLine", doseLines(anamnesisDraft.medications), multiline = true)
+        anamnesisInput(fields, "supplements", R.string.anamnesis_supplements_hint, "textCapSentencesMultiLine", doseLines(anamnesisDraft.supplements), multiline = true)
+
+        addAnamnesisSection(fields, R.string.anamnesis_exams_goal_title)
+        anamnesisDropdown(fields, "recentExams", R.string.anamnesis_recent_exams_hint, yesNoOptions(), boolLabel(anamnesisDraft.recentExams))
+        anamnesisDocumentSummary = TextView(this).apply {
+            setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
+            layoutParams = marginParams(R.dimen.space_8)
+        }
+        fields.addView(anamnesisDocumentSummary)
+        addAnamnesisDocumentsButton = MaterialButton(this).apply {
+            setText(R.string.anamnesis_documents_add)
+            layoutParams = marginParams(R.dimen.space_8)
+            setOnClickListener {
+                if (anamnesisDraft.documents.size + selectedAnamnesisDocuments.size >= MAX_ANAMNESIS_DOCUMENTS) {
+                    Toast.makeText(this@OnboardingWizardActivity, R.string.anamnesis_documents_limit, Toast.LENGTH_SHORT).show()
+                } else {
+                    anamnesisDocumentsLauncher.launch(arrayOf("application/pdf", "image/png", "image/jpeg"))
+                }
+            }
+        }
+        fields.addView(addAnamnesisDocumentsButton)
+        removeAnamnesisDocumentsButton = MaterialButton(this).apply {
+            setText(R.string.anamnesis_documents_remove)
+            layoutParams = marginParams(R.dimen.space_8)
+            setOnClickListener {
+                selectedAnamnesisDocuments.clear()
+                anamnesisDraft = anamnesisDraft.copy(documents = emptyList())
+                updateAnamnesisDocumentSummary()
+            }
+        }
+        fields.addView(removeAnamnesisDocumentsButton)
+        addDescription(fields, R.string.anamnesis_documents_limit)
+        anamnesisDropdown(fields, "desiredOutcome", R.string.anamnesis_outcome_hint, listOf(
+            getString(R.string.anamnesis_outcome_weight_loss),
+            getString(R.string.anamnesis_outcome_recomposition),
+            getString(R.string.anamnesis_outcome_muscle),
+            getString(R.string.anamnesis_outcome_performance),
+            getString(R.string.anamnesis_outcome_health),
+        ), outcomeLabel(anamnesisDraft.desiredOutcome))
+        anamnesisInput(fields, "desiredTimeframe", R.string.anamnesis_timeframe_hint, "textCapSentences", anamnesisDraft.desiredTimeframe)
+        updateAnamnesisDocumentSummary()
+        stepContent.addView(card)
+    }
+
+    private fun addAnamnesisSection(parent: LinearLayout, titleId: Int) {
+        parent.addView(TextView(this).apply {
+            setText(titleId)
+            setTextAppearance(R.style.Text_MyFitAI_SettingsDescription)
+            typeface = android.graphics.Typeface.DEFAULT_BOLD
+            layoutParams = marginParams(R.dimen.space_12)
+        })
+    }
+
+    private fun anamnesisInput(parent: LinearLayout, key: String, hintId: Int, inputType: String, value: String?, multiline: Boolean = false) {
+        val input = textInput(parent, hintId, inputType, singleLine = !multiline)
+        input.setText(value.orEmpty())
+        anamnesisTextInputs[key] = input
+    }
+
+    private fun anamnesisDropdown(parent: LinearLayout, key: String, hintId: Int, options: List<String>, value: String?) {
+        val input = dropdown(parent, hintId, options)
+        if (value != null) input.setText(value, false)
+        anamnesisDropdowns[key] = input
+    }
+
+    private fun yesNoOptions() = listOf(getString(R.string.profile_health_yes), getString(R.string.profile_health_no))
+
+    private fun boolLabel(value: Boolean?): String? = when (value) {
+        true -> getString(R.string.profile_health_yes)
+        false -> getString(R.string.profile_health_no)
+        null -> null
+    }
+
+    private fun cycleLabel(value: ProfileAnamnesis.CycleStatus?): String? = when (value) {
+        ProfileAnamnesis.CycleStatus.REGULAR -> getString(R.string.anamnesis_cycle_regular)
+        ProfileAnamnesis.CycleStatus.IRREGULAR -> getString(R.string.anamnesis_cycle_irregular)
+        ProfileAnamnesis.CycleStatus.ABSENT -> getString(R.string.anamnesis_cycle_absent)
+        ProfileAnamnesis.CycleStatus.NOT_APPLICABLE -> getString(R.string.anamnesis_not_applicable)
+        null -> null
+    }
+
+    private fun outcomeLabel(value: ProfileAnamnesis.DesiredOutcome?): String? = when (value) {
+        ProfileAnamnesis.DesiredOutcome.WEIGHT_LOSS -> getString(R.string.anamnesis_outcome_weight_loss)
+        ProfileAnamnesis.DesiredOutcome.BODY_RECOMPOSITION -> getString(R.string.anamnesis_outcome_recomposition)
+        ProfileAnamnesis.DesiredOutcome.MUSCLE_GAIN -> getString(R.string.anamnesis_outcome_muscle)
+        ProfileAnamnesis.DesiredOutcome.PERFORMANCE -> getString(R.string.anamnesis_outcome_performance)
+        ProfileAnamnesis.DesiredOutcome.HEALTH_EDUCATION -> getString(R.string.anamnesis_outcome_health)
+        null -> null
+    }
+
+    private fun doseLines(doses: List<AnamnesisDose>) = doses.joinToString("\n") { "${it.name} | ${it.dosage}" }
+
+    private fun updateAnamnesisDocumentSummary() {
+        val count = anamnesisDraft.documents.size + selectedAnamnesisDocuments.size
+        val savedNames = anamnesisDraft.documents.map { it.displayName }
+        val summary = buildList {
+            if (count > 0) add(getString(R.string.anamnesis_documents_count, count))
+            addAll(savedNames)
+        }
+        anamnesisDocumentSummary?.text = if (count == 0) getString(R.string.anamnesis_documents_none) else summary.joinToString("\n")
+        removeAnamnesisDocumentsButton?.visibility = if (count == 0) View.GONE else View.VISIBLE
+        addAnamnesisDocumentsButton?.isEnabled = count < MAX_ANAMNESIS_DOCUMENTS
+    }
+
     private fun captureCurrentStep() {
+        if (isAnamnesisOnly || step == 4) {
+            captureAnamnesisDraft()
+            return
+        }
         when (step) {
             0 -> activityLevelDraft = ActivityLevelChoices.storedValue(
                 displayed = activityInput?.text?.toString(),
@@ -412,11 +603,12 @@ class OnboardingWizardActivity : AppCompatActivity() {
                 sleepMinutes = parseTime(sleepInput?.text?.toString()) ?: sleepMinutes
             }
             3 -> notificationsEnabled = notificationSwitch?.isChecked ?: notificationsEnabled
-            4 -> Unit
+            4, 5 -> Unit
         }
     }
 
     private fun validateStep(): Boolean {
+        if (isAnamnesisOnly || step == 4) return validateAnamnesis()
         if (step != 0) return true
         val name = nameInput?.text?.toString()?.trim().orEmpty()
         val sex = sexInput?.text?.toString().orEmpty()
@@ -441,6 +633,82 @@ class OnboardingWizardActivity : AppCompatActivity() {
         return false
     }
 
+    private fun captureAnamnesisDraft() {
+        fun text(key: String) = anamnesisTextInputs[key]?.text?.toString()?.trim()?.takeIf(String::isNotBlank)
+        fun boolean(key: String): Boolean? = when (anamnesisDropdowns[key]?.text?.toString()) {
+            getString(R.string.profile_health_yes) -> true
+            getString(R.string.profile_health_no) -> false
+            else -> null
+        }
+        anamnesisDraft = anamnesisDraft.copy(
+            usualWeightKg = parseFloat(text("usualWeight")),
+            profession = text("profession"),
+            averageDailySteps = text("steps")?.toIntOrNull(),
+            trainingType = text("trainingType"),
+            trainingSessionsPerWeek = text("trainingFrequency")?.toIntOrNull(),
+            dailyWaterMl = text("water")?.toIntOrNull(),
+            cycleStatus = when (anamnesisDropdowns["cycle"]?.text?.toString()) {
+                getString(R.string.anamnesis_cycle_regular) -> ProfileAnamnesis.CycleStatus.REGULAR
+                getString(R.string.anamnesis_cycle_irregular) -> ProfileAnamnesis.CycleStatus.IRREGULAR
+                getString(R.string.anamnesis_cycle_absent) -> ProfileAnamnesis.CycleStatus.ABSENT
+                getString(R.string.anamnesis_not_applicable) -> ProfileAnamnesis.CycleStatus.NOT_APPLICABLE
+                else -> null
+            },
+            contraceptivesUsed = boolean("contraceptives"),
+            contraceptiveDetails = text("contraceptiveDetails"),
+            gynecologicalConditions = text("gynecologicalConditions"),
+            menopause = boolean("menopause"),
+            healthConditions = text("healthConditions"),
+            gastrointestinalSymptoms = text("gastrointestinalSymptoms"),
+            bowelHabits = text("bowelHabits"),
+            medications = parseDoseLines(text("medications")),
+            supplements = parseDoseLines(text("supplements")),
+            recentExams = boolean("recentExams"),
+            desiredOutcome = when (anamnesisDropdowns["desiredOutcome"]?.text?.toString()) {
+                getString(R.string.anamnesis_outcome_weight_loss) -> ProfileAnamnesis.DesiredOutcome.WEIGHT_LOSS
+                getString(R.string.anamnesis_outcome_recomposition) -> ProfileAnamnesis.DesiredOutcome.BODY_RECOMPOSITION
+                getString(R.string.anamnesis_outcome_muscle) -> ProfileAnamnesis.DesiredOutcome.MUSCLE_GAIN
+                getString(R.string.anamnesis_outcome_performance) -> ProfileAnamnesis.DesiredOutcome.PERFORMANCE
+                getString(R.string.anamnesis_outcome_health) -> ProfileAnamnesis.DesiredOutcome.HEALTH_EDUCATION
+                else -> null
+            },
+            desiredTimeframe = text("desiredTimeframe"),
+        )
+    }
+
+    private fun parseDoseLines(value: String?): List<AnamnesisDose> = value.orEmpty().lines()
+        .map(String::trim)
+        .filter(String::isNotBlank)
+        .map { line ->
+            val parts = line.split('|', limit = 2)
+            AnamnesisDose(parts[0].trim(), parts.getOrNull(1)?.trim().orEmpty())
+        }
+
+    private fun validateAnamnesis(): Boolean {
+        if (anamnesisUnreadable) {
+            return true
+        }
+        val numberKeys = listOf("usualWeight", "steps", "trainingFrequency", "water")
+        val numbersValid = numberKeys.all { key ->
+            val value = anamnesisTextInputs[key]?.text?.toString()?.trim().orEmpty()
+            value.isBlank() || when (key) {
+                "usualWeight" -> parseFloat(value) != null
+                else -> value.toIntOrNull() != null
+            }
+        }
+        val doseLinesValid = listOf("medications", "supplements").all { key ->
+            anamnesisTextInputs[key]?.text?.toString().orEmpty().lines().all { line ->
+                line.isBlank() || line.split('|', limit = 2).let { it.size == 2 && it[0].isNotBlank() && it[1].isNotBlank() }
+            }
+        }
+        captureAnamnesisDraft()
+        val modelValid = runCatching { ProfileAnamnesisCodec.encode(anamnesisDraft) }.isSuccess
+        if (numbersValid && doseLinesValid && modelValid && anamnesisDraft.documents.size + selectedAnamnesisDocuments.size <= MAX_ANAMNESIS_DOCUMENTS) return true
+        validation.setText(R.string.anamnesis_invalid)
+        validation.visibility = View.VISIBLE
+        return false
+    }
+
     private fun saveWizard() {
         if (!validateStep() || saving) return
         captureCurrentStep()
@@ -448,7 +716,12 @@ class OnboardingWizardActivity : AppCompatActivity() {
         nextButton.isEnabled = false
         lifecycleScope.launch {
             runCatching {
+                if (isAnamnesisOnly) {
+                    persistAnamnesis(profile?.id ?: error(getString(R.string.onboarding_save_error)))
+                    return@runCatching
+                }
                 val profileId = saveProfile()
+                persistAnamnesis(profileId)
                 data.mealCountPreferences.set(profileId, mealCount)
                 data.nutritionPlanSchedulePreferences.setFrequency(profileId, NutritionPlanSchedulePreferences.Frequency.WEEKLY)
                 data.nutritionPlanSchedulePreferences.setDayOfWeek(profileId, planDay)
@@ -468,6 +741,10 @@ class OnboardingWizardActivity : AppCompatActivity() {
                 data.notificationScheduler.refresh()
             }.onSuccess {
                 Toast.makeText(this@OnboardingWizardActivity, R.string.onboarding_saved, Toast.LENGTH_SHORT).show()
+                if (isAnamnesisOnly) {
+                    finish()
+                    return@onSuccess
+                }
                 startActivity(Intent(this@OnboardingWizardActivity, TabHostActivity::class.java).apply {
                     putExtra(com.myfitai.app.navigation.BottomNavBinder.EXTRA_SELECTED_TAB, com.myfitai.app.navigation.BottomNavBinder.Tab.HOME.name)
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
@@ -479,6 +756,35 @@ class OnboardingWizardActivity : AppCompatActivity() {
                 validation.text = error.message ?: getString(R.string.onboarding_save_error)
                 validation.visibility = View.VISIBLE
             }
+        }
+    }
+
+    private suspend fun persistAnamnesis(profileId: Long) {
+        if (anamnesisUnreadable) return
+        val store = data.profileAnamnesisDocumentStore
+        try {
+            val addedDocuments = withContext(Dispatchers.IO) {
+                selectedAnamnesisDocuments.map { store.copyFrom(profileId, it) }
+            }
+            val updated = anamnesisDraft.copy(documents = anamnesisDraft.documents + addedDocuments)
+            val json = ProfileAnamnesisCodec.encode(updated)
+            check(data.userProfileRepository.saveAnamnesis(
+                profileId = profileId,
+                json = json,
+                updatedAt = System.currentTimeMillis(),
+                healthBaseline = healthDeclarationBaseline,
+                healthDeclaration = null,
+            ) != null) { getString(R.string.onboarding_save_error) }
+            withContext(Dispatchers.IO) {
+                store.deleteExcept(profileId, updated.documents.mapTo(mutableSetOf()) { it.id })
+            }
+            anamnesisDraft = updated
+            selectedAnamnesisDocuments.clear()
+        } catch (error: Throwable) {
+            withContext(Dispatchers.IO) {
+                store.deleteExcept(profileId, anamnesisDraft.documents.mapTo(mutableSetOf()) { it.id })
+            }
+            throw error
         }
     }
 
@@ -610,6 +916,7 @@ class OnboardingWizardActivity : AppCompatActivity() {
         }
         val input = layout.findViewById<TextInputEditText>(R.id.onboardingTextInput).apply {
             this.inputType = when (inputType) {
+                "number" -> android.text.InputType.TYPE_CLASS_NUMBER
                 "numberDecimal" -> android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
                 "textPassword" -> android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
                 "textPersonName" -> android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PERSON_NAME
@@ -677,19 +984,21 @@ class OnboardingWizardActivity : AppCompatActivity() {
     private fun dayLabel(day: DayOfWeek) = when (day) {
         DayOfWeek.MONDAY -> "Lunedì"; DayOfWeek.TUESDAY -> "Martedì"; DayOfWeek.WEDNESDAY -> "Mercoledì"; DayOfWeek.THURSDAY -> "Giovedì"; DayOfWeek.FRIDAY -> "Venerdì"; DayOfWeek.SATURDAY -> "Sabato"; DayOfWeek.SUNDAY -> "Domenica"
     }
-    private fun stepTitleResource(): Int = when (step) {
-        0 -> R.string.onboarding_step_profile
-        1 -> R.string.onboarding_step_food
-        2 -> R.string.onboarding_step_meals
-        3 -> R.string.onboarding_step_schedule
+    private fun stepTitleResource(): Int = when {
+        isAnamnesisOnly || step == 4 -> R.string.onboarding_step_anamnesis
+        step == 0 -> R.string.onboarding_step_profile
+        step == 1 -> R.string.onboarding_step_food
+        step == 2 -> R.string.onboarding_step_meals
+        step == 3 -> R.string.onboarding_step_schedule
         else -> R.string.onboarding_step_ai
     }
 
-    private fun stepDescriptionResource(): Int = when (step) {
-        0 -> R.string.onboarding_step_profile_description
-        1 -> R.string.onboarding_food_preferences_description
-        2 -> R.string.onboarding_step_meals_description
-        3 -> R.string.onboarding_step_schedule_description
+    private fun stepDescriptionResource(): Int = when {
+        isAnamnesisOnly || step == 4 -> R.string.onboarding_step_anamnesis_description
+        step == 0 -> R.string.onboarding_step_profile_description
+        step == 1 -> R.string.onboarding_food_preferences_description
+        step == 2 -> R.string.onboarding_step_meals_description
+        step == 3 -> R.string.onboarding_step_schedule_description
         else -> R.string.onboarding_step_ai_description
     }
 
@@ -697,5 +1006,7 @@ class OnboardingWizardActivity : AppCompatActivity() {
         const val EXTRA_BOOTSTRAP = "onboarding_bootstrap"
         const val EXTRA_PROFILE_ID = "onboarding_profile_id"
         const val EXTRA_NEW_PROFILE = "onboarding_new_profile"
+        const val EXTRA_ANAMNESIS_ONLY = "onboarding_anamnesis_only"
+        private const val MAX_ANAMNESIS_DOCUMENTS = 5
     }
 }

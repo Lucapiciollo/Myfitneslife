@@ -10,6 +10,7 @@ import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.data.local.entity.BiaAnalysisResultEntity
 import com.myfitai.app.data.local.entity.BodyExpectationGoalEntity
 import com.myfitai.app.data.local.entity.FoodConsumptionEntity
+import com.myfitai.app.data.repository.EmotionalDiaryRepository
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.domain.food.FoodConsumptionService
 import com.myfitai.app.domain.food.FoodConsumptionStatus
@@ -22,8 +23,13 @@ import com.myfitai.app.data.repository.MealPlanRepository
 import com.myfitai.app.data.repository.PlanVersionDraft
 import com.myfitai.app.data.repository.SupplementDraft
 import com.myfitai.app.domain.data.DataDeletionService
+import com.myfitai.app.domain.diary.EmotionalDiaryService
+import com.myfitai.app.domain.diary.MoodLevel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import java.time.Clock
+import java.time.Instant
+import java.time.ZoneOffset
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -69,6 +75,70 @@ class MyFitAiDatabaseTest {
         val all = dao.observeAll(profileId).first()
         assertEquals(listOf(secondId, firstId), all.map { it.id })
         assertEquals(listOf(89f, 90f), all.map { it.waistCm })
+    }
+
+    @Test
+    fun emotionalDiary_isProfileScopedAndSupportsEditingAndDeleting() = runBlocking {
+        val firstProfileId = db.userProfileDao().insert(profile("Diario uno"))
+        val secondProfileId = db.userProfileDao().insert(profile("Diario due"))
+        val monday = 20780L
+        val service = EmotionalDiaryService(
+            EmotionalDiaryRepository(db),
+            Clock.fixed(Instant.parse("2026-11-23T12:00:00Z"), ZoneOffset.UTC),
+        )
+
+        assertEquals(null, service.moodForDay(firstProfileId, monday))
+        service.saveMood(firstProfileId, monday, MoodLevel.GOOD)
+        val firstEntry = service.moodForDay(firstProfileId, monday)!!
+        service.saveMood(firstProfileId, monday, MoodLevel.VERY_GOOD)
+        val editedEntry = service.moodForDay(firstProfileId, monday)!!
+        assertEquals(MoodLevel.VERY_GOOD.storageKey, editedEntry.mood)
+        assertEquals(firstEntry.recordedAtEpochMillis, editedEntry.recordedAtEpochMillis)
+        assertEquals(null, service.moodForDay(secondProfileId, monday))
+        service.saveMood(secondProfileId, monday, MoodLevel.BAD)
+
+        service.saveWeeklyNote(firstProfileId, monday, "  Settimana impegnativa  ")
+        assertEquals("Settimana impegnativa", service.weeklyNote(firstProfileId, monday)?.note)
+        service.saveWeeklyNote(firstProfileId, monday, "   ")
+        assertEquals(null, service.weeklyNote(firstProfileId, monday))
+
+        service.deleteMood(firstProfileId, monday)
+        assertEquals(null, service.moodForDay(firstProfileId, monday))
+        assertEquals(1, service.moodsForWeek(secondProfileId, monday).first().size)
+    }
+
+    @Test
+    fun emotionalDiary_deletionIsProfileScopedAndIncludedInProfileRemoval() = runBlocking {
+        val firstProfileId = db.userProfileDao().insert(profile("Diario da eliminare"))
+        val secondProfileId = db.userProfileDao().insert(profile("Diario da conservare"))
+        val monday = 20780L
+        val diary = EmotionalDiaryService(
+            EmotionalDiaryRepository(db),
+            Clock.fixed(Instant.parse("2026-11-23T12:00:00Z"), ZoneOffset.UTC),
+        )
+        diary.saveMood(firstProfileId, monday, MoodLevel.NEUTRAL)
+        diary.saveWeeklyNote(firstProfileId, monday, "Nota uno")
+        diary.saveMood(secondProfileId, monday, MoodLevel.GOOD)
+        diary.saveWeeklyNote(secondProfileId, monday, "Nota due")
+        val profileStore = ActiveProfileStore(
+            ApplicationProvider.getApplicationContext(),
+            "emotional_diary_deletion_${System.nanoTime()}",
+        ).apply { selectProfile(firstProfileId) }
+        val deletionService = DataDeletionService(db, profileStore)
+
+        deletionService.deleteEmotionalDiary()
+        assertEquals(null, diary.moodForDay(firstProfileId, monday))
+        assertEquals(null, diary.weeklyNote(firstProfileId, monday))
+        assertEquals(MoodLevel.GOOD.storageKey, diary.moodForDay(secondProfileId, monday)?.mood)
+        assertEquals("Nota due", diary.weeklyNote(secondProfileId, monday)?.note)
+
+        diary.saveMood(firstProfileId, monday, MoodLevel.BAD)
+        diary.saveWeeklyNote(firstProfileId, monday, "Nota profilo")
+        deletionService.deleteProfile(firstProfileId)
+        assertEquals(null, db.userProfileDao().get(firstProfileId))
+        assertEquals(null, diary.moodForDay(firstProfileId, monday))
+        assertEquals(null, diary.weeklyNote(firstProfileId, monday))
+        assertEquals(MoodLevel.GOOD.storageKey, diary.moodForDay(secondProfileId, monday)?.mood)
     }
 
     @Test

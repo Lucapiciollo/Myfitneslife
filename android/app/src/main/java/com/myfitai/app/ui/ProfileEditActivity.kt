@@ -119,6 +119,9 @@ class ProfileEditActivity : BaseShellActivity() {
             else -> bindBack()
         }
         bindViews()
+        findViewById<View>(R.id.openAnamnesisButton).setOnClickListener {
+            startActivity(Intent(this, OnboardingWizardActivity::class.java).putExtra(OnboardingWizardActivity.EXTRA_ANAMNESIS_ONLY, true))
+        }
         bindHealthDeclaration()
         if (isCreate) {
             findViewById<View>(R.id.goalLayout).visibility = View.GONE

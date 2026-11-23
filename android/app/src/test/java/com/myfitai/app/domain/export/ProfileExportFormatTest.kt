@@ -52,6 +52,10 @@ class ProfileExportFormatTest {
         listOf("workouts", "dailyActivityCheckIns", "workoutsEnabled", "trainingProgram", "trainingActivityBasis").forEach {
             assertFalse("export v3 contiene $it", text.contains("\"$it\""))
         }
+        assertFalse(root.has("moodCheckIns"))
+        assertFalse(root.has("weeklyDiaryNotes"))
+        assertFalse(ProfileExportFormat.CSV_TABLES.contains("moodCheckIns"))
+        assertFalse(ProfileExportFormat.CSV_TABLES.contains("weeklyDiaryNotes"))
         assertEquals(1, root.getJSONArray("biaMeasurements").length())
         assertEquals(1, root.getJSONArray("mealPlans").length())
         assertEquals(4, root.getJSONObject("profilePreferences").getInt("mealCount"))

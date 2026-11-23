@@ -499,6 +499,80 @@ class DatabaseMigrationTest {
     }
 
     @Test
+    fun migration23To24_createsEmptyProfileScopedDiaryTables() {
+        val testDbName = "diary-migration-test-${System.nanoTime()}.db"
+        try {
+            helper.createDatabase(testDbName, 23).apply {
+                try {
+                    execSQL("INSERT INTO user_profile (id, name, createdAtEpochMillis, updatedAtEpochMillis) VALUES (1, 'Profilo esistente', 1000, 2000)")
+                } finally {
+                    close()
+                }
+            }
+
+            helper.runMigrationsAndValidate(
+                testDbName,
+                24,
+                true,
+                DatabaseMigrations.MIGRATION_23_24,
+            ).use { db ->
+                db.query("SELECT id, name FROM user_profile WHERE id = 1").use { cursor ->
+                    assertTrue(cursor.moveToFirst())
+                    assertEquals(1, cursor.getLong(0))
+                    assertEquals("Profilo esistente", cursor.getString(1))
+                }
+                db.query("SELECT COUNT(*) FROM mood_check_ins").use { cursor ->
+                    assertTrue(cursor.moveToFirst())
+                    assertEquals(0, cursor.getInt(0))
+                }
+                db.query("SELECT COUNT(*) FROM weekly_diary_notes").use { cursor ->
+                    assertTrue(cursor.moveToFirst())
+                    assertEquals(0, cursor.getInt(0))
+                }
+                db.execSQL("INSERT INTO mood_check_ins (profileId, dateEpochDay, mood, recordedAtEpochMillis, updatedAtEpochMillis) VALUES (1, 20780, 'GOOD', 10, 10)")
+                db.execSQL("INSERT INTO mood_check_ins (profileId, dateEpochDay, mood, recordedAtEpochMillis, updatedAtEpochMillis) VALUES (2, 20780, 'NEUTRAL', 20, 20)")
+                db.query("SELECT COUNT(*) FROM mood_check_ins WHERE dateEpochDay = 20780").use { cursor ->
+                    assertTrue(cursor.moveToFirst())
+                    assertEquals(2, cursor.getInt(0))
+                }
+            }
+        } finally {
+            context.deleteDatabase(testDbName)
+        }
+    }
+
+    @Test
+    fun migration24To25_addsEmptyAnamnesisAndPreservesExistingProfile() {
+        val testDbName = "anamnesis-migration-test-${System.nanoTime()}.db"
+        try {
+            helper.createDatabase(testDbName, 24).apply {
+                try {
+                    execSQL("INSERT INTO user_profile (id, name, currentWeightKg, createdAtEpochMillis, updatedAtEpochMillis) VALUES (1, 'Profilo esistente', 72.5, 1000, 2000)")
+                } finally {
+                    close()
+                }
+            }
+
+            helper.runMigrationsAndValidate(
+                testDbName,
+                25,
+                true,
+                DatabaseMigrations.MIGRATION_24_25,
+            ).use { db ->
+                db.query("SELECT id, name, currentWeightKg, anamnesisJson FROM user_profile WHERE id = 1").use { cursor ->
+                    assertTrue(cursor.moveToFirst())
+                    assertEquals(1, cursor.getLong(0))
+                    assertEquals("Profilo esistente", cursor.getString(1))
+                    assertEquals(72.5, cursor.getDouble(2), 0.001)
+                    assertTrue(cursor.isNull(3))
+                }
+            }
+        } finally {
+            context.deleteDatabase(testDbName)
+        }
+    }
+
+    @Test
     fun migration22To23_addsUndeclaredHealthFieldAndPreservesProfilesAndPlans() {
         val testDbName = "s2b-migration-test-${System.nanoTime()}.db"
         try {
@@ -582,10 +656,14 @@ class DatabaseMigrationTest {
                 createdAtEpochMillis = 1,
                 updatedAtEpochMillis = 1,
                 healthDeclarationJson = declaration,
+                anamnesisJson = "dati anamnestici riservati",
             )
             assertTrue(
-                "il JSON salute non deve finire nella rappresentazione testuale dell'entità",
-                profile.toString().contains("healthDeclarationJson=<redacted>") && !profile.toString().contains(declaration),
+                "i dati sensibili non devono finire nella rappresentazione testuale dell'entità",
+                profile.toString().contains("healthDeclarationJson=<redacted>") &&
+                    profile.toString().contains("anamnesisJson=<redacted>") &&
+                    !profile.toString().contains(declaration) &&
+                    !profile.toString().contains("dati anamnestici riservati"),
             )
         } finally {
             context.deleteDatabase(testDbName)

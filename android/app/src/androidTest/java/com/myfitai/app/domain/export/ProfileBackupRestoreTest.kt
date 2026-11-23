@@ -6,6 +6,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.myfitai.app.data.local.MyFitAiDatabase
+import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.data.profile.ActiveProfileStore
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -13,6 +14,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Before
@@ -73,6 +75,34 @@ class ProfileBackupRestoreTest {
         } catch (expected: IllegalArgumentException) {
             // atteso
         }
+    }
+
+    @Test
+    fun profileExportOmitsAnamnesisJsonAndDocumentMetadata() = runBlocking {
+        val privateValue = "anamnesis-private-7c8f"
+        val profileId = db.userProfileDao().insert(UserProfileEntity(
+            name = "Profilo Test",
+            birthDateEpochDay = 7_000L,
+            heightCm = 170f,
+            currentWeightKg = 70f,
+            goal = "Mantenimento",
+            activityLevel = "Moderato",
+            wakeTimeMinutes = 420,
+            sleepTimeMinutes = 1_380,
+            dietaryPreferencesJson = null,
+            createdAtEpochMillis = 1,
+            updatedAtEpochMillis = 2,
+            anamnesisJson = """{"schemaVersion":1,"profession":"$privateValue","documents":[{"id":"private-document-id","displayName":"private-exam.pdf","mimeType":"application/pdf"}]}""",
+        ))
+
+        val exported = ProfileExportService(context, db, store).exportProfile(profileId)
+        files += exported.file
+        val json = exported.file.readText()
+
+        assertFalse(json.contains("anamnesisJson"))
+        assertFalse(json.contains(privateValue))
+        assertFalse(json.contains("private-document-id"))
+        assertFalse(json.contains("private-exam.pdf"))
     }
 
     private fun write(root: JSONObject): Uri {

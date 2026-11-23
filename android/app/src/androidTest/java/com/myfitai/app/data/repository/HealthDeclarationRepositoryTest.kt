@@ -15,6 +15,8 @@ import com.myfitai.app.data.local.MyFitAiDatabase
 import com.myfitai.app.data.local.entity.UserProfileEntity
 import com.myfitai.app.data.profile.ActiveProfileStore
 import com.myfitai.app.R
+import com.myfitai.app.domain.profile.ProfileAnamnesis
+import com.myfitai.app.domain.profile.ProfileAnamnesisCodec
 import com.myfitai.app.domain.safety.HealthDeclaration
 import com.myfitai.app.domain.safety.HealthDeclarationCodec
 import com.myfitai.app.domain.safety.HealthDeclarationDecodeResult
@@ -136,6 +138,33 @@ class HealthDeclarationRepositoryTest {
         assertEquals(now + 6, updated.updatedAtEpochMillis)
         assertEquals(staleSnapshot.dietaryPreferencesJson, updated.dietaryPreferencesJson)
         assertEquals(HealthDeclarationDecodeResult.Valid(savedDeclaration), profiles.healthDeclaration(profileA))
+    }
+
+    @Test
+    fun anamnesisSaveUpdatesOnlyItsFieldAndPreservesHealthDeclaration() = runBlocking {
+        val declaration = declaration(pregnancyOrLactation = false, clinicianManaged = true, at = now + 7)
+        val initialBaseline = profiles.healthDeclarationSnapshot(profileA)!!
+        assertTrue(profiles.compareAndSetHealthDeclaration(initialBaseline, declaration) != null)
+        val baseline = profiles.healthDeclarationSnapshot(profileA)!!
+        val beforeA = profiles.get(profileA)!!
+        val beforeB = profiles.get(profileB)!!
+        val json = ProfileAnamnesisCodec.encode(ProfileAnamnesis(profession = "Professione privata"))
+
+        val saved = profiles.saveAnamnesis(
+            profileId = profileA,
+            json = json,
+            updatedAt = now + 8,
+            healthBaseline = baseline,
+            healthDeclaration = null,
+        )
+
+        assertTrue(saved != null)
+        assertEquals(HealthDeclarationDecodeResult.Valid(declaration), saved!!.decoded)
+        assertEquals(
+            beforeA.copy(anamnesisJson = json, updatedAtEpochMillis = now + 8),
+            profiles.get(profileA),
+        )
+        assertEquals(beforeB, profiles.get(profileB))
     }
 
     @Test

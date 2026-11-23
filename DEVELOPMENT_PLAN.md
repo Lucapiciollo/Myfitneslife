@@ -59,6 +59,17 @@ App Android personale, local-first, per monitorare profilo corporeo, BIA e misur
 - [x] DB v5: consumi alimentari persistenti con snapshot nutrizionale, stato consumato/saltato e isolamento per profilo, piano e giorno.
 - [x] DB v6: usage IA persistiti con token, pricing snapshot e costo stimato per provider/modello.
 
+### Diario emotivo (implementazione e verifiche completate)
+- [x] Una registrazione esplicita al giorno per profilo, scegliendo tra `Molto male`, `Male`, `Neutro`, `Bene`, `Molto bene`; modificabile o eliminabile e distinta da aderenza, review nutrizionale e indicatori-premio.
+- [x] Per il giorno corrente senza scelta, mostrare `Molto male` come default automatico non confermato; non persisterlo, non conteggiarlo come risposta e non applicarlo retroattivamente ai giorni precedenti all'introduzione della funzione.
+- [x] Una nota libera facoltativa per settimana lunedì-domenica, modificabile o eliminabile.
+- [x] Dati locali e per profilo; non inviarli all'IA e cancellarli con i dati registrati o con il profilo.
+- [x] Escludere diario e note da export JSON/CSV/PDF e backup manuale.
+- [x] QA manuale 23/11/2026 sul package `.qa`: default automatico non persistito, registrazione/modifica/eliminazione umore, salvataggio/eliminazione nota e accesso da Impostazioni verificati; nessun dato demo toccato.
+- [x] Gate locali con Gradle 8.14.3 temporaneo: `testDebugUnitTest` e `testQaUnitTest` (1.336 test ciascuno, 0 fallimenti/errori, 2 skipped ciascuno), `assembleDebug`, `assembleQaAndroidTest` e `lintDebug` superati. APK Debug e APK AndroidTest QA prodotti. I test instrumented sono stati eseguiti solo su AVD read-only API 35, non sul Samsung.
+- [x] Test instrumented su AVD read-only: `migration23To24_createsEmptyProfileScopedDiaryTables` verificato (profilo esistente preservato, tabelle nuove vuote e indici per profilo); `emotionalDiary_isProfileScopedAndSupportsEditingAndDeleting` e `emotionalDiary_deletionIsProfileScopedAndIncludedInProfileRemoval` superati. Corretto il fixture del test multi-profilo, che non inseriva il record atteso nel secondo profilo.
+- [x] Export/backup: `ProfileExportFormatTest` verifica l'assenza delle chiavi diary nei payload JSON e CSV (5 test, 0 fallimenti/errori, 1 skipped perché i backup reali opzionali non sono presenti). Il backup manuale e quello prima della cancellazione profilo usano l'export JSON canonico; il percorso PDF non interroga né passa dati del diario al renderer.
+
 ### Motore locale
 - [x] BMI.
 - [x] BMR con priorità Katch-McArdle quando body fat è disponibile e plausibile.

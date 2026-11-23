@@ -11,6 +11,7 @@ import com.myfitai.app.data.profile.BiaFrequencyPreferences
 import com.myfitai.app.data.profile.NutritionPlanSchedulePreferences
 import com.myfitai.app.data.profile.AiAutomationPreferences
 import com.myfitai.app.data.profile.ProfilePhotoStore
+import com.myfitai.app.data.profile.ProfileAnamnesisDocumentStore
 import org.json.JSONObject
 
 class ProfileBackupService(
@@ -22,10 +23,13 @@ class ProfileBackupService(
     private val nutritionPlanSchedulePreferences: NutritionPlanSchedulePreferences? = null,
     private val aiAutomationPreferences: AiAutomationPreferences? = null,
     private val profilePhotoStore: ProfilePhotoStore? = null,
+    private val profileAnamnesisDocumentStore: ProfileAnamnesisDocumentStore? = null,
 ) {
     private val resolver = context.applicationContext.contentResolver
 
-    suspend fun restore(uri: Uri): String = db.withTransaction {
+    suspend fun restore(uri: Uri): String {
+        var replacedProfileId: Long? = null
+        val restoredName = db.withTransaction {
         val bytes = resolver.openInputStream(uri)?.use { it.readBytes() } ?: error("Impossibile leggere il backup")
         require(bytes.size <= MAX_BYTES) { "Backup troppo grande" }
         val root = JSONObject(bytes.toString(Charsets.UTF_8))
@@ -49,6 +53,7 @@ class ProfileBackupService(
             initialWeightKg = profile.floatOrNull("initialWeightKg"),
         ))
         if (replace) {
+            replacedProfileId = profileId
             db.biaAnalysisResultDao().deleteByProfile(profileId)
             db.bodyExpectationGoalDao().deleteByProfile(profileId)
             db.biaMeasurementDao().deleteByProfile(profileId)
@@ -80,6 +85,9 @@ class ProfileBackupService(
         restorePreferences(root, profileId)
         activeProfiles.selectProfile(profileId, makeDefault = false)
         profile.optString("name", "Profilo importato")
+        }
+        replacedProfileId?.let { profileAnamnesisDocumentStore?.deleteProfile(it) }
+        return restoredName
     }
 
     private suspend fun restoreBiaAnalysisResults(root: JSONObject, profileId: Long, biaIds: Map<Long, Long>) {

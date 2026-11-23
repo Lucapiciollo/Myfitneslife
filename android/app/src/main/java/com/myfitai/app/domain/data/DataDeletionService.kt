@@ -10,6 +10,7 @@ import com.myfitai.app.data.profile.MealCountPreferences
 import com.myfitai.app.data.profile.NutritionPlanSchedulePreferences
 import com.myfitai.app.data.profile.NutritionPlanUpdatePreferences
 import com.myfitai.app.data.profile.ProfilePhotoStore
+import com.myfitai.app.data.profile.ProfileAnamnesisDocumentStore
 import com.myfitai.app.domain.ai.AiJobScheduler
 import com.myfitai.app.domain.ai.AiJobType
 import com.myfitai.app.domain.body.BiaProgressCoachScheduler
@@ -32,6 +33,7 @@ class DataDeletionService(
     private val aiAutomationPreferences: AiAutomationPreferences? = null,
     private val mealCountPreferences: MealCountPreferences? = null,
     private val profilePhotoStore: ProfilePhotoStore? = null,
+    private val profileAnamnesisDocumentStore: ProfileAnamnesisDocumentStore? = null,
     private val notificationScheduler: NotificationScheduler? = null,
     private val context: Context? = null,
 ) {
@@ -60,6 +62,11 @@ class DataDeletionService(
 
     suspend fun deleteWeeklyReviews() = withProfile { db.weeklyReviewDao().deleteByProfile(it) }
 
+    suspend fun deleteEmotionalDiary() = withProfile { db.emotionalDiaryDao().let { dao ->
+        dao.deleteMoodsByProfile(it)
+        dao.deleteWeeklyNotesByProfile(it)
+    } }
+
     suspend fun deleteRecordedData() = withProfile { profileId ->
         deleteProfileRecords(profileId)
     }
@@ -81,6 +88,7 @@ class DataDeletionService(
         }
         invalidateProgressAnalysis(profileId)
         profilePhotoStore?.delete(profile.photoPath)
+        profileAnamnesisDocumentStore?.deleteProfile(profileId)
         clearProfilePreferences(profileId)
         activeProfileStore.onProfileDeleted(profileId, replacementId)
         notificationScheduler?.refresh()
@@ -101,6 +109,8 @@ class DataDeletionService(
         db.foodConsumptionDao().deleteByProfile(profileId)
         db.cheatEntryDao().deleteByProfile(profileId)
         db.weeklyReviewDao().deleteByProfile(profileId)
+        db.emotionalDiaryDao().deleteMoodsByProfile(profileId)
+        db.emotionalDiaryDao().deleteWeeklyNotesByProfile(profileId)
         db.customFoodDao().deleteByProfile(profileId)
     }
 

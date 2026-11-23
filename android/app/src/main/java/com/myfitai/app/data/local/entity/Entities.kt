@@ -26,6 +26,8 @@ data class UserProfileEntity(
     val initialWeightKg: Float? = null,
     /** Dichiarazione salute locale e versionata; null significa che non è stata dichiarata. */
     val healthDeclarationJson: String? = null,
+    /** Anamnesi opzionale locale; contenuto sensibile redatto dai log e non incluso negli export. */
+    val anamnesisJson: String? = null,
 ) {
     /** Keep sensitive declaration answers out of accidental logs and diagnostic string interpolation. */
     override fun toString(): String =
@@ -35,7 +37,7 @@ data class UserProfileEntity(
             "dietaryPreferencesJson=$dietaryPreferencesJson, photoPath=$photoPath, " +
             "createdAtEpochMillis=$createdAtEpochMillis, updatedAtEpochMillis=$updatedAtEpochMillis, " +
             "biologicalSex=$biologicalSex, initialWeightKg=$initialWeightKg, " +
-            "healthDeclarationJson=<redacted>)"
+            "healthDeclarationJson=<redacted>, anamnesisJson=<redacted>)"
 }
 
 @Entity(
@@ -306,6 +308,31 @@ data class WeeklyReviewEntity(
     val adherencePercent: Float?,
     val summary: String,
     val structuredJson: String?,
+)
+
+@Entity(
+    tableName = "mood_check_ins",
+    indices = [Index("profileId"), Index(value = ["profileId", "dateEpochDay"], unique = true)],
+)
+data class MoodCheckInEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @ColumnInfo(defaultValue = "1") val profileId: Long,
+    val dateEpochDay: Long,
+    val mood: String,
+    val recordedAtEpochMillis: Long,
+    val updatedAtEpochMillis: Long,
+)
+
+@Entity(
+    tableName = "weekly_diary_notes",
+    indices = [Index("profileId"), Index(value = ["profileId", "weekStartEpochDay"], unique = true)],
+)
+data class WeeklyDiaryNoteEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @ColumnInfo(defaultValue = "1") val profileId: Long,
+    val weekStartEpochDay: Long,
+    val note: String,
+    val updatedAtEpochMillis: Long,
 )
 
 @Entity(
